@@ -12,32 +12,30 @@ import java.util.*;
 public interface CableNetworkComponent extends CanConnectCables {
 
     default void updateNetwork(BlockPos pos, Level level) {
-        Queue<Pair<BlockPos, BlockPos>> toCheck = new ArrayDeque<>();
+        Queue<ConnectionAdjacency> toCheck = new ArrayDeque<>();
         List<BlockPos> checked = new ArrayList<>();
-        Map<BlockPos, TransformerBlock.TransformerType> transformers = new HashMap<>();
+        List<TerminalConnection> transformers = new ArrayList<>();
 
-        toCheck.add(new Pair<>(pos, null));
+        toCheck.add(new ConnectionAdjacency(pos, null, -1));
 
         while (!toCheck.isEmpty()) {
-            Pair<BlockPos, BlockPos> current = toCheck.poll();
+            ConnectionAdjacency current = toCheck.poll();
             if (checked.contains(current.getFirst())) continue;
             checked.add(current.getFirst());
 
             Block block = level.getBlockState(current.getFirst()).getBlock();
             if (block instanceof TransformerBlock) {
                 TransformerBlock.TransformerType type = ((TransformerBlock) block).getTransformerType();
-                transformers.put(current.getFirst(), type);
+                transformers.add(new TerminalConnection(current.getFirst(), type, -1));
             }
 
             if (block instanceof CableNetworkComponent) {
-                ((CableNetworkComponent) block).getConnectedPositions(level, current.component1(), current.component2()).forEach((key, value) -> {
-                    toCheck.add(new Pair<>(key, value));
-                });
+                toCheck.addAll(((CableNetworkComponent) block).getConnectedPositions(level, current.getFirst(), current.getSecond()));
             }
         }
 
-        transformers.keySet().forEach(blockPos -> {
-            BlockEntity blockEntity = level.getBlockEntity(blockPos);
+        transformers.forEach(transformer -> {
+            BlockEntity blockEntity = level.getBlockEntity(transformer.pos);
 
             if (blockEntity instanceof TransformerBlockEntity) {
                 ((TransformerBlockEntity) blockEntity).updateTransformers(transformers);
@@ -45,5 +43,7 @@ public interface CableNetworkComponent extends CanConnectCables {
         });
     }
 
-    Map<BlockPos, BlockPos> getConnectedPositions(Level level, BlockPos selfPos, BlockPos from);
+    List<ConnectionAdjacency> getConnectedPositions(Level level, BlockPos selfPos, BlockPos from);
+
+    record TerminalConnection(BlockPos pos, TransformerBlock.TransformerType type, int channelForController) { }
 }

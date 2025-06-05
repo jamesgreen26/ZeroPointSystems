@@ -55,26 +55,26 @@ public class DenseCablesBlock extends Block implements QuadCableNetworkConnector
                 BlockPos neighborA = pos.offset(optionA.getNormal());
                 BlockPos neighborB = pos.offset(optionB.getNormal());
 
-                BlockPos componentA = getConnectedComponent(pos, neighborA, state, level, 0);
+                @Nullable ConnectionAdjacency componentA = getConnectedComponent(pos, neighborA, state, level, 0);
 
                 if (componentA != null) {
-                    BlockState componentState = level.getBlockState(componentA);
+                    BlockState componentState = level.getBlockState(componentA.getFirst());
                     Block component = componentState.getBlock();
 
                     if (component instanceof CableNetworkComponent) {
-                        ((CableNetworkComponent) component).updateNetwork(componentA, level);
+                        ((CableNetworkComponent) component).updateNetwork(componentA.getFirst(), level);
                         return;
                     }
                 }
 
-                BlockPos componentB = getConnectedComponent(pos, neighborB, state, level, 0);
+                @Nullable ConnectionAdjacency componentB = getConnectedComponent(pos, neighborB, state, level, 0);
 
                 if (componentB != null) {
-                    BlockState componentState = level.getBlockState(componentB);
+                    BlockState componentState = level.getBlockState(componentB.getFirst());
                     Block component = componentState.getBlock();
 
                     if (component instanceof CableNetworkComponent) {
-                        ((CableNetworkComponent) component).updateNetwork(componentB, level);
+                        ((CableNetworkComponent) component).updateNetwork(componentB.getFirst(), level);
                     }
                 }
             }
@@ -82,7 +82,7 @@ public class DenseCablesBlock extends Block implements QuadCableNetworkConnector
     }
 
     @Override
-    public @Nullable BlockPos getConnectedComponent(BlockPos self, BlockPos from, BlockState selfState, Level level, int recursion) {
+    public @Nullable ConnectionAdjacency getConnectedComponent(BlockPos self, BlockPos from, BlockState selfState, Level level, int recursion) {
         if (recursion > 256) return null;
 
         if (selfState.is(ModBlocks.DENSE_CABLES.get())) {
@@ -104,7 +104,7 @@ public class DenseCablesBlock extends Block implements QuadCableNetworkConnector
                 if (toBlock instanceof QuadCableNetworkConnector) {
                     return ((QuadCableNetworkConnector) toBlock).getConnectedComponent(to, self, toState, level, recursion + 1);
                 } else if (toBlock instanceof QuadCableNetworkComponent) {
-                    return to;
+                    return new ConnectionAdjacency(to, self, -1);
                 }
             }
         }

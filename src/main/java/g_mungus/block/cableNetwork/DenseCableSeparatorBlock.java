@@ -191,8 +191,8 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
     }
 
     @Override
-    public Map<BlockPos, BlockPos> getConnectedPositions(Level level, BlockPos selfPos, BlockPos from) {
-        Map<BlockPos, BlockPos> result = new HashMap<>();
+    public List<ConnectionAdjacency> getConnectedPositions(Level level, BlockPos selfPos, BlockPos from) {
+        List<ConnectionAdjacency> result = new ArrayList<>();
         Channel channel = getChannelForNeighborPos(selfPos, from, level.getBlockState(selfPos));
         BlockPos end = getOtherEnd(level, selfPos);
 
@@ -207,7 +207,7 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
             Direction connectionDir = Direction.fromDelta(end.getX() - neighborPos.getX(), end.getY() - neighborPos.getY(), end.getZ() - neighborPos.getZ());
 
             if (neighborState.getBlock() instanceof CanConnectCables && ((CanConnectCables) neighborState.getBlock()).shouldCablesConnectToThis(neighborState, connectionDir)) {
-                result.put(neighborPos, end);
+                result.add(new ConnectionAdjacency(neighborPos, end, -1));
             }
         }
 
@@ -229,41 +229,37 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
         BlockState neighborState = level.getBlockState(neighborPos);
         Block neighborBlock = neighborState.getBlock();
 
-        Queue<Pair<BlockPos, BlockPos>> toCheck = new ArrayDeque<>();
+        Queue<ConnectionAdjacency> toCheck = new ArrayDeque<>();
         List<BlockPos> checked = new ArrayList<>();
-        Map<BlockPos, TransformerBlock.TransformerType> transformers = new HashMap<>();
+        List<TerminalConnection> transformers = new ArrayList<>();
 
         checked.add(pos);
 
         if (neighborBlock instanceof CanConnectCables && ((CanConnectCables) neighborBlock).shouldCablesConnectToThis(neighborState, connectionDir)) {
-            toCheck.add(new Pair<>(neighborPos, pos));
+            toCheck.add(new ConnectionAdjacency(neighborPos, pos, -1));
         }
 
-        Map<BlockPos, BlockPos> otherEnd = ((DenseCableSeparatorBlock) state.getBlock()).getConnectedPositions(level, pos, neighborPos);
-        otherEnd.forEach((key, value) -> {
-            toCheck.add(new Pair<>(key, value));
-        });
+        List<ConnectionAdjacency> otherEnd = ((DenseCableSeparatorBlock) state.getBlock()).getConnectedPositions(level, pos, neighborPos);
+        toCheck.addAll(otherEnd);
 
         while (!toCheck.isEmpty()) {
-            Pair<BlockPos, BlockPos> current = toCheck.poll();
+            ConnectionAdjacency current = toCheck.poll();
             if (checked.contains(current.getFirst())) continue;
             checked.add(current.getFirst());
 
             Block block = level.getBlockState(current.getFirst()).getBlock();
             if (block instanceof TransformerBlock) {
                 TransformerBlock.TransformerType type = ((TransformerBlock) block).getTransformerType();
-                transformers.put(current.getFirst(), type);
+                transformers.add(new TerminalConnection(current.getFirst(), type, -1));
             }
 
             if (block instanceof CableNetworkComponent) {
-                ((CableNetworkComponent) block).getConnectedPositions(level, current.component1(), current.component2()).forEach((key, value) -> {
-                    toCheck.add(new Pair<>(key, value));
-                });
+                toCheck.addAll(((CableNetworkComponent) block).getConnectedPositions(level, current.getFirst(), current.getSecond()));
             }
         }
 
-        transformers.keySet().forEach(blockPos -> {
-            BlockEntity blockEntity = level.getBlockEntity(blockPos);
+        transformers.forEach(transformer -> {
+            BlockEntity blockEntity = level.getBlockEntity(transformer.pos());
 
             if (blockEntity instanceof TransformerBlockEntity) {
                 ((TransformerBlockEntity) blockEntity).updateTransformers(transformers);
@@ -289,7 +285,12 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
                 if (nextBlock instanceof QuadCableNetworkComponent) {
                     return next;
                 } else if (nextBlock instanceof QuadCableNetworkConnector) {
-                    return ((QuadCableNetworkConnector) nextBlock).getConnectedComponent(next, self, nextState, level, 0);
+                    ConnectionAdjacency result = ((QuadCableNetworkConnector) nextBlock).getConnectedComponent(next, self, nextState, level, 0);
+                    if (result == null) {
+                        return null;
+                    } else {
+                        return result.getFirst();
+                    }
                 }
             }
         }

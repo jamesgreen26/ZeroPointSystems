@@ -127,34 +127,34 @@ public class CableBlock extends Block implements CableNetworkComponent {
     }
 
     @Override
-    public Map<BlockPos, BlockPos> getConnectedPositions(Level level, BlockPos selfPos, BlockPos from) {
-        Map<BlockPos, BlockPos> connections = new ConcurrentHashMap<>();
+    public List<ConnectionAdjacency> getConnectedPositions(Level level, BlockPos selfPos, BlockPos from) {
+        List<ConnectionAdjacency> connections = new ArrayList<>();
         BlockState state = level.getBlockState(selfPos);
 
         if (state.getBlock() instanceof CableBlock) {
             if (state.getValue(UP)) {
-                connections.put(selfPos.above(), selfPos);
+                connections.add(new ConnectionAdjacency(selfPos.above(), selfPos, -1));
             }
             if (state.getValue(DOWN)) {
-                connections.put(selfPos.below(), selfPos);
+                connections.add(new ConnectionAdjacency(selfPos.below(), selfPos, -1));
             }
             if (state.getValue(NORTH)) {
-                connections.put(selfPos.north(), selfPos);
+                connections.add(new ConnectionAdjacency(selfPos.north(), selfPos, -1));
             }
             if (state.getValue(SOUTH)) {
-                connections.put(selfPos.south(), selfPos);
+                connections.add(new ConnectionAdjacency(selfPos.south(), selfPos, -1));
             }
             if (state.getValue(EAST)) {
-                connections.put(selfPos.east(), selfPos);
+                connections.add(new ConnectionAdjacency(selfPos.east(), selfPos, -1));
             }
             if (state.getValue(WEST)) {
-                connections.put(selfPos.west(), selfPos);
+                connections.add(new ConnectionAdjacency(selfPos.west(), selfPos, -1));
             }
         }
 
-        connections.keySet().forEach(key -> {
-            if (!(level.getBlockState(key).getBlock() instanceof CableNetworkComponent)) {
-                connections.remove(key);
+        connections.forEach(connectionAdjacency -> {
+            if (!(level.getBlockState(connectionAdjacency.getFirst()).getBlock() instanceof CableNetworkComponent)) {
+                connections.remove(connectionAdjacency);
             }
         });
 

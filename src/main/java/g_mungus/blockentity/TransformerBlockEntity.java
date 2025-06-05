@@ -1,5 +1,6 @@
 package g_mungus.blockentity;
 
+import g_mungus.block.cableNetwork.CableNetworkComponent;
 import g_mungus.block.cableNetwork.TransformerBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -7,6 +8,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -18,12 +20,12 @@ public abstract class TransformerBlockEntity extends BlockEntity {
 
     private final Map<BlockPos, TransformerBlock.TransformerType> transformers = new ConcurrentHashMap<>();
 
-    public void updateTransformers(Map<BlockPos, TransformerBlock.TransformerType> transformers) {
+    public void updateTransformers(List<CableNetworkComponent.TerminalConnection> transformers) {
         this.transformers.clear();
-        transformers.forEach((pos, type) -> {
+        transformers.forEach(transformer -> {
             // Convert world position to relative position
-            BlockPos relativePos = pos.subtract(this.worldPosition);
-            this.transformers.put(relativePos, type);
+            BlockPos relativePos = transformer.pos().subtract(this.worldPosition);
+            this.transformers.put(relativePos, transformer.type());
         });
     }
 

@@ -106,6 +106,128 @@
         "facing_a=west,facing_b=south": {
             "model": "zps:block/dense_cable_bend_horizontal",
             "y": 180
+        },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "connections=2,facing_a=up,facing_b=up": {
+            "model": "zps:block/dense_cable_bend_up"
+        },
+        "connections=1,facing_a=down,facing_b=up": {
+            "model": "zps:block/dense_cable_bend_down"
+        },
+        "connections=0,facing_a=south,facing_b=north": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "connections=0,facing_a=east,facing_b=west": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "connections=2,facing_a=up,facing_b=down": {
+            "model": "zps:block/dense_cable_bend_up"
+        },
+        "connections=1,facing_a=north,facing_b=north": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "connections=1,facing_a=west,facing_b=east": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "connections=0,facing_a=down,facing_b=down": {
+            "model": "zps:block/dense_cable_bend_down"
+        },
+        "connections=2,facing_a=west,facing_b=east": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "connections=0,facing_a=up,facing_b=down": {
+            "model": "zps:block/dense_cable_bend_up"
+        },
+        "connections=0,facing_a=north,facing_b=south": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "connections=1,facing_a=up,facing_b=up": {
+            "model": "zps:block/dense_cable_bend_up"
+        },
+        "connections=2,facing_a=south,facing_b=south": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "connections=2,facing_a=north,facing_b=south": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "connections=1,facing_a=down,facing_b=down": {
+            "model": "zps:block/dense_cable_bend_down"
+        },
+        "connections=2,facing_a=south,facing_b=north": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "connections=0,facing_a=up,facing_b=up": {
+            "model": "zps:block/dense_cable_bend_up"
+        },
+        "connections=0,facing_a=east,facing_b=east": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "connections=0,facing_a=west,facing_b=east": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "connections=1,facing_a=south,facing_b=north": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "connections=2,facing_a=north,facing_b=north": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "connections=1,facing_a=south,facing_b=south": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "connections=0,facing_a=south,facing_b=south": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "connections=2,facing_a=down,facing_b=down": {
+            "model": "zps:block/dense_cable_bend_down"
+        },
+        "connections=1,facing_a=north,facing_b=south": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "connections=2,facing_a=east,facing_b=west": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "connections=0,facing_a=down,facing_b=up": {
+            "model": "zps:block/dense_cable_bend_down"
+        },
+        "connections=1,facing_a=west,facing_b=west": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "connections=0,facing_a=north,facing_b=north": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "connections=0,facing_a=west,facing_b=west": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "connections=1,facing_a=up,facing_b=down": {
+            "model": "zps:block/dense_cable_bend_up"
+        },
+        "connections=1,facing_a=east,facing_b=east": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "connections=2,facing_a=west,facing_b=west": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "connections=2,facing_a=east,facing_b=east": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "connections=2,facing_a=down,facing_b=up": {
+            "model": "zps:block/dense_cable_bend_down"
+        },
+        "connections=1,facing_a=east,facing_b=west": {
+            "model": "zps:block/dense_cable_bend_horizontal"
         }
     }
 } 

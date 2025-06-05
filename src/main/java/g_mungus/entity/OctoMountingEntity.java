@@ -65,11 +65,6 @@ public class OctoMountingEntity extends Entity {
     }
 
     @Override
-    public @NotNull Vec3 getDismountLocationForPassenger(@NotNull LivingEntity pLivingEntity) {
-        return super.getDismountLocationForPassenger(pLivingEntity).add(0, 0.5f, 0);
-    }
-
-    @Override
     public LivingEntity getControllingPassenger() {
          if (isController && !this.getPassengers().isEmpty()) {
              return (LivingEntity) this.getPassengers().get(0);

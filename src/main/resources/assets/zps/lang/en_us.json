@@ -6,6 +6,7 @@
     "block.zps.stepup_transformer": "Step-Up Transformer",
     "block.zps.stepdown_transformer": "Step-Down Transformer",
     "block.zps.redstone_converter": "Redstone Converter",
+    "block.zps.octo_controller": "Octo-Controller",
 
     "item.zps.cable": "Cable",
     "item.zps.dense_cables": "Dense Cables",
@@ -14,6 +15,7 @@
     "item.zps.stepup_transformer": "Step-Up Transformer",
     "item.zps.stepdown_transformer": "Step-Down Transformer",
     "item.zps.redstone_converter": "Redstone Converter",
+    "item.zps.octo_controller": "Octo-Controller",
 
     "creativetab.zps_tab": "Zero Point Systems",
 

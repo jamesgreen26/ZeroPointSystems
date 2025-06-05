@@ -65,12 +65,8 @@ public class OctoMountingEntity extends Entity {
     }
 
     @Override
-    public @NotNull Vec3 getDismountLocationForPassenger(@NotNull LivingEntity livingEntity) {
-        if (position().z >= 12288000 && blockEntity == null) {
-            // Don't teleport to the ship if we can't find the ship
-            return livingEntity.position();
-        }
-        return super.getDismountLocationForPassenger(livingEntity);
+    public @NotNull Vec3 getDismountLocationForPassenger(@NotNull LivingEntity pLivingEntity) {
+        return super.getDismountLocationForPassenger(pLivingEntity).add(0, 0.5f, 0);
     }
 
     @Override

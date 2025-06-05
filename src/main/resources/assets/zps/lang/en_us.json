@@ -1,0 +1,29 @@
+{
+    "block.zps.cable": "Cable",
+    "block.zps.dense_cables": "Dense Cables",
+    "block.zps.dense_cable_separator": "Dense Cable Separator",
+    "block.zps.dense_cable_bend": "Dense Cable Bend",
+    "block.zps.stepup_transformer": "Step-Up Transformer",
+    "block.zps.stepdown_transformer": "Step-Down Transformer",
+    "block.zps.redstone_converter": "Redstone Converter",
+
+    "item.zps.cable": "Cable",
+    "item.zps.dense_cables": "Dense Cables",
+    "item.zps.dense_cable_separator": "Dense Cable Separator",
+    "item.zps.dense_cable_bend": "Dense Cable Bend",
+    "item.zps.stepup_transformer": "Step-Up Transformer",
+    "item.zps.stepdown_transformer": "Step-Down Transformer",
+    "item.zps.redstone_converter": "Redstone Converter",
+
+    "creativetab.zps_tab": "Zero Point Systems",
+
+    "key.zps.a": "Channel A",
+    "key.zps.b": "Channel B",
+    "key.zps.c": "Channel C",
+    "key.zps.d": "Channel D",
+    "key.zps.e": "Channel E",
+    "key.zps.f": "Channel F",
+    "key.zps.g": "Channel G",
+    "key.zps.h": "Channel H",
+    "key.categories.zps": "Zero Point Systems"
+}

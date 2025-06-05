@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "axis=x": {
+      "model": "zps:block/dense_cables",
+      "x": 90,
+      "y": 90
+    },
+    "axis=y": {
+      "model": "zps:block/dense_cables"
+    },
+    "axis=z": {
+      "model": "zps:block/dense_cables",
+      "x": 90
+    }
+  }
+}

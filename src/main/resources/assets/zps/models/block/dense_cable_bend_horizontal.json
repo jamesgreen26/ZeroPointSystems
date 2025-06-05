@@ -1,0 +1,12 @@
+{
+    "parent": "block/cube",
+    "textures": {
+        "down": "zps:block/dense_cable_bend",
+        "up": "zps:block/dense_cable_bend",
+        "north": "zps:block/dense_cables_end",
+        "south": "zps:block/dense_cable_bend",
+        "east": "zps:block/dense_cables_end",
+        "west": "zps:block/dense_cable_bend",
+        "particle": "zps:block/cable_separator_end"
+    }
+} 

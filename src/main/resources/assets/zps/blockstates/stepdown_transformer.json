@@ -1,0 +1,116 @@
+{
+    "multipart": [
+        {
+            "when": {
+                "facing": "down"
+            },
+            "apply": {
+                "model": "zps:block/stepdown_transformer"
+            }
+        },
+        {
+            "when": {
+                "facing": "up"
+            },
+            "apply": {
+                "model": "zps:block/stepdown_transformer",
+                "x": 180
+            }
+        },
+        {
+            "when": {
+                "facing": "north"
+            },
+            "apply": {
+                "model": "zps:block/stepdown_transformer",
+                "x": 270
+            }
+        },
+        {
+            "when": {
+                "facing": "east"
+            },
+            "apply": {
+                "model": "zps:block/stepdown_transformer",
+                "x": 270,
+                "y": 90
+            }
+        },
+        {
+            "when": {
+                "facing": "south"
+            },
+            "apply": {
+                "model": "zps:block/stepdown_transformer",
+                "x": 270,
+                "y": 180
+            }
+        },
+        {
+            "when": {
+                "facing": "west"
+            },
+            "apply": {
+                "model": "zps:block/stepdown_transformer",
+                "x": 270,
+                "y": 270
+            }
+        },
+        {
+            "when": {
+                "north": "true"
+            },
+            "apply": {
+                "model": "zps:block/cable_side",
+                "x": 90
+            }
+        },
+        {
+            "when": {
+                "south": "true"
+            },
+            "apply": {
+                "model": "zps:block/cable_side",
+                "x": 90,
+                "y": 180
+            }
+        },
+        {
+            "when": {
+                "east": "true"
+            },
+            "apply": {
+                "model": "zps:block/cable_side",
+                "x": 90,
+                "y": 90
+            }
+        },
+        {
+            "when": {
+                "west": "true"
+            },
+            "apply": {
+                "model": "zps:block/cable_side",
+                "x": 90,
+                "y": 270
+            }
+        },
+        {
+            "when": {
+                "up": "true"
+            },
+            "apply": {
+                "model": "zps:block/cable_side"
+            }
+        },
+        {
+            "when": {
+                "down": "true"
+            },
+            "apply": {
+                "model": "zps:block/cable_side",
+                "x": 180
+            }
+        }
+    ]
+} 

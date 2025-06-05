@@ -1,0 +1,65 @@
+{
+    "multipart": [
+        {
+            "apply": {
+                "model": "zps:block/cable_core"
+            }
+        },
+        {
+            "when": {
+                "north": "true"
+            },
+            "apply": {
+                "model": "zps:block/cable_side",
+                "x": 90
+            }
+        },
+        {
+            "when": {
+                "south": "true"
+            },
+            "apply": {
+                "model": "zps:block/cable_side",
+                "x": 90,
+                "y": 180
+            }
+        },
+        {
+            "when": {
+                "east": "true"
+            },
+            "apply": {
+                "model": "zps:block/cable_side",
+                "x": 90,
+                "y": 90
+            }
+        },
+        {
+            "when": {
+                "west": "true"
+            },
+            "apply": {
+                "model": "zps:block/cable_side",
+                "x": 90,
+                "y": 270
+            }
+        },
+        {
+            "when": {
+                "up": "true"
+            },
+            "apply": {
+                "model": "zps:block/cable_side"
+            }
+        },
+        {
+            "when": {
+                "down": "true"
+            },
+            "apply": {
+                "model": "zps:block/cable_side",
+                "x": 180
+            }
+        }
+    ]
+} 

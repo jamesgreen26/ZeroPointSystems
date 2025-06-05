@@ -1,0 +1,111 @@
+{
+    "variants": {
+
+        "facing_a=up,facing_b=north": {
+            "model": "zps:block/dense_cable_bend_up"
+        },
+        "facing_a=up,facing_b=south": {
+            "model": "zps:block/dense_cable_bend_up",
+            "y": 180
+        },
+        "facing_a=up,facing_b=east": {
+            "model": "zps:block/dense_cable_bend_up",
+            "y": 90
+        },
+        "facing_a=up,facing_b=west": {
+            "model": "zps:block/dense_cable_bend_up",
+            "y": 270
+        },
+
+
+        "facing_a=north,facing_b=up": {
+            "model": "zps:block/dense_cable_bend_up"
+        },
+        "facing_a=south,facing_b=up": {
+            "model": "zps:block/dense_cable_bend_up",
+            "y": 180
+        },
+        "facing_a=east,facing_b=up": {
+            "model": "zps:block/dense_cable_bend_up",
+            "y": 90
+        },
+        "facing_a=west,facing_b=up": {
+            "model": "zps:block/dense_cable_bend_up",
+            "y": 270
+        },
+
+
+
+
+        "facing_a=down,facing_b=north": {
+            "model": "zps:block/dense_cable_bend_down"
+        },
+        "facing_a=down,facing_b=south": {
+            "model": "zps:block/dense_cable_bend_down",
+            "y": 180
+        },
+        "facing_a=down,facing_b=east": {
+            "model": "zps:block/dense_cable_bend_down",
+            "y": 90
+        },
+        "facing_a=down,facing_b=west": {
+            "model": "zps:block/dense_cable_bend_down",
+            "y": 270
+        },
+
+
+        "facing_a=north,facing_b=down": {
+            "model": "zps:block/dense_cable_bend_down"
+        },
+        "facing_a=south,facing_b=down": {
+            "model": "zps:block/dense_cable_bend_down",
+            "y": 180
+        },
+
+        "facing_a=east,facing_b=down": {
+            "model": "zps:block/dense_cable_bend_down",
+            "y": 90
+        },
+
+        "facing_a=west,facing_b=down": {
+            "model": "zps:block/dense_cable_bend_down",
+            "y": 270
+        },
+
+
+
+        "facing_a=north,facing_b=east": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "facing_a=north,facing_b=west": {
+            "model": "zps:block/dense_cable_bend_horizontal",
+            "y": 270
+        },
+
+        "facing_a=south,facing_b=east": {
+            "model": "zps:block/dense_cable_bend_horizontal",
+            "y": 90
+        },
+        "facing_a=south,facing_b=west": {
+            "model": "zps:block/dense_cable_bend_horizontal",
+            "y": 180
+        },
+
+        "facing_a=east,facing_b=north": {
+            "model": "zps:block/dense_cable_bend_horizontal"
+        },
+        "facing_a=east,facing_b=south": {
+            "model": "zps:block/dense_cable_bend_horizontal",
+            "y": 90
+        },
+
+        "facing_a=west,facing_b=north": {
+            "model": "zps:block/dense_cable_bend_horizontal",
+            "y": 270
+        },
+        "facing_a=west,facing_b=south": {
+            "model": "zps:block/dense_cable_bend_horizontal",
+            "y": 180
+        }
+    }
+} 

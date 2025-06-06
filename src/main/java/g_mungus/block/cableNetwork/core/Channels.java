@@ -24,4 +24,12 @@ public class Channels {
             case 8 -> { return OCT_A; }
         }
     }
+
+    public static int getFinalChannel(int channelCount) {
+        switch (channelCount) {
+            default -> { return MAIN; }
+            case 4 -> { return QUAD_4; }
+            case 8 -> { return OCT_H; }
+        }
+    }
 }

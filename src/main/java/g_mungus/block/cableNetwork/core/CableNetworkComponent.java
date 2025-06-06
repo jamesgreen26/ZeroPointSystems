@@ -19,7 +19,7 @@ public interface CableNetworkComponent {
 
 
     default void updateNetwork(BlockPos pos, Level level) {
-        for (int initialChannel = Channels.getInitialChannel(getTotalChannelCount()); initialChannel < getTotalChannelCount(); initialChannel++) {
+        for (int initialChannel = Channels.getInitialChannel(getTotalChannelCount()); initialChannel <= Channels.getFinalChannel(getTotalChannelCount()); initialChannel++) {
             Queue<NetworkNode> toCheck = new ArrayDeque<>();
             List<NetworkNode> checked = new ArrayList<>();
             List<NetworkNode> terminals = new ArrayList<>();

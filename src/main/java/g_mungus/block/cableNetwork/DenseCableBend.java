@@ -166,7 +166,7 @@ public class DenseCableBend extends Block implements CableNetworkComponent {
 
     @Override
     public int getNewChannel(BlockPos self, NetworkNode input, Level level) {
-        return 0;
+        return input.channel();
     }
 
     private boolean isConnectingSide(BlockPos a, BlockPos b, BlockState state) {

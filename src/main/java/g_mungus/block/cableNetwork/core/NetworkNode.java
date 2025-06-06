@@ -12,4 +12,9 @@ public record NetworkNode(BlockPos pos, int channel, boolean terminal) {
         if (!(o instanceof NetworkNode that)) return false;
         return channel() == that.channel() && terminal() == that.terminal() && Objects.equals(pos(), that.pos());
     }
+
+    @Override
+    public String toString() {
+        return "pos:" + pos.toShortString() + " channel: " + channel;
+    }
 }

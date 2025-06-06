@@ -1,5 +1,6 @@
 package g_mungus.block.cableNetwork;
 
+import g_mungus.ZPSMod;
 import g_mungus.block.ModBlocks;
 import g_mungus.block.cableNetwork.core.CableNetworkComponent;
 import g_mungus.block.cableNetwork.core.Channels;
@@ -133,6 +134,7 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
     @Override
     public List<BlockPos> getConnectingNeighbors(NetworkNode self, Level level) {
         BlockState state = level.getBlockState(self.pos());
+        ZPSMod.LOGGER.info("block: {}", state.getBlock().getName());
         return List.of(
                 self.pos().offset(state.getValue(FACING).getNormal()),
                 getNeighborPosForChannel(self.channel(), self.pos(), state)
@@ -190,11 +192,16 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
             case 3 -> facing.getNormal().cross(c0);
         };
 
+        ZPSMod.LOGGER.info("Position: {}, channel: {}", self.offset(selected).toShortString(), channel);
+
         return self.offset(selected);
     }
 
     public int getChannelForNeighborPos(BlockPos self, BlockPos neighbor, BlockState state) {
-        if (!state.is(ModBlocks.DENSE_CABLE_SEPARATOR.get())) return -1;
+        if (!state.is(ModBlocks.DENSE_CABLE_SEPARATOR.get())) {
+            ZPSMod.LOGGER.info("not a cable separator: {} at {}", state.getBlock().getName(), self);
+            return -1;
+        }
         Direction facing = state.getValue(FACING);
         int rotation = state.getValue(ROTATION);
 
@@ -211,14 +218,16 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
 
         // Check if the offset matches any of the possible channel positions
         if (offset.equals(c0)) {
-            return 1 + (rotation) % 4;
+            return 1 + ((rotation) % 4);
         } else if (offset.equals(facing.getNormal().cross(c0).multiply(-1))) {
-            return 1 + (rotation + 1) % 4;
+            return 1 + ((rotation + 1) % 4);
         } else if (offset.equals(c0.multiply(-1))) {
-            return 1 + (rotation + 2) % 4;
+            return 1 + ((rotation + 2) % 4);
         } else if (offset.equals(facing.getNormal().cross(c0))) {
-            return 1 + (rotation + 3) % 4;
+            return 1 + ((rotation + 3) % 4);
         }
+
+        ZPSMod.LOGGER.info("none matched at {}", self);
 
         return -1;
     }

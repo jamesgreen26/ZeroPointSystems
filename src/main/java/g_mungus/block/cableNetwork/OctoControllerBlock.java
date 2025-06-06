@@ -1,4 +1,4 @@
-package g_mungus.block;
+package g_mungus.block.cableNetwork;
 
 import g_mungus.blockentity.ModBlockEntities;
 import g_mungus.blockentity.OctoControllerBlockEntity;

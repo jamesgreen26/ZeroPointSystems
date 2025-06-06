@@ -1,8 +1,12 @@
 package g_mungus.block.cableNetwork;
 
+import g_mungus.block.cableNetwork.core.CableNetworkComponent;
+import g_mungus.block.cableNetwork.core.Channels;
+import g_mungus.block.cableNetwork.core.NetworkNode;
+import g_mungus.util.Utils;
+import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -16,19 +20,15 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class CableBlock extends Block implements CableNetworkComponent {
-    public static final BooleanProperty NORTH = BooleanProperty.create("north");
-    public static final BooleanProperty SOUTH = BooleanProperty.create("south");
-    public static final BooleanProperty EAST = BooleanProperty.create("east");
-    public static final BooleanProperty WEST = BooleanProperty.create("west");
-    public static final BooleanProperty UP = BooleanProperty.create("up");
-    public static final BooleanProperty DOWN = BooleanProperty.create("down");
+    public static BooleanProperty NORTH = BooleanProperty.create("north");
+    public static BooleanProperty SOUTH = BooleanProperty.create("south");
+    public static BooleanProperty EAST = BooleanProperty.create("east");
+    public static BooleanProperty WEST = BooleanProperty.create("west");
+    public static BooleanProperty UP = BooleanProperty.create("up");
+    public static BooleanProperty DOWN = BooleanProperty.create("down");
 
     private static final VoxelShape CORE = Block.box(6, 6, 6, 10, 10, 10);
     private static final VoxelShape NORTH_SHAPE = Block.box(6, 6, 0, 10, 10, 6);
@@ -91,14 +91,40 @@ public class CableBlock extends Block implements CableNetworkComponent {
         }
     }
 
+    @Override
+    public boolean isTerminal() {
+        return false;
+    }
+
+    @Override
+    public int getTotalChannelCount() {
+        return 1;
+    }
+
+    @Override
+    public int getChannelCountForConnection(BlockPos self, BlockPos from, Level level) {
+        return 1;
+    }
+
+    @Override
+    public List<BlockPos> getConnectingNeighbors(NetworkNode self, Level level) {
+        return Utils.getNeighbors(self.pos());
+    }
+
+    @Override
+    public int getNewChannel(BlockPos self, NetworkNode input, Level level) {
+        return Channels.MAIN;
+    }
+
+
     @NotNull
-    BlockState getNewBlockState(BlockState state, Level level, BlockPos pos) {
-        boolean north = canFormConnection(state, level, pos, Direction.NORTH);
-        boolean south = canFormConnection(state, level, pos, Direction.SOUTH);
-        boolean east = canFormConnection(state, level, pos, Direction.EAST);
-        boolean west = canFormConnection(state, level, pos, Direction.WEST);
-        boolean up = canFormConnection(state, level, pos, Direction.UP);
-        boolean down = canFormConnection(state, level, pos, Direction.DOWN);
+    public BlockState getNewBlockState(BlockState state, Level level, BlockPos pos) {
+        boolean north = canConnect(pos, pos.offset(Direction.NORTH.getNormal()), level);
+        boolean south = canConnect(pos, pos.offset(Direction.SOUTH.getNormal()), level);
+        boolean east = canConnect(pos, pos.offset(Direction.EAST.getNormal()), level);
+        boolean west = canConnect(pos, pos.offset(Direction.WEST.getNormal()), level);
+        boolean up = canConnect(pos, pos.offset(Direction.UP.getNormal()), level);
+        boolean down = canConnect(pos, pos.offset(Direction.DOWN.getNormal()), level);
 
         return state
                 .setValue(NORTH, north)
@@ -107,57 +133,5 @@ public class CableBlock extends Block implements CableNetworkComponent {
                 .setValue(WEST, west)
                 .setValue(UP, up)
                 .setValue(DOWN, down);
-    }
-
-    private boolean canFormConnection(BlockState state, Level level, BlockPos pos, Direction direction) {
-        boolean shouldConnectToThis = shouldCablesConnectToThis(state, direction);
-        boolean shouldConnectToOther = otherCanConnect(level, pos.offset(direction.getNormal()), direction.getOpposite());
-        return shouldConnectToThis && shouldConnectToOther;
-    }
-
-    private boolean otherCanConnect(Level level, BlockPos pos, Direction direction) {
-        BlockState state = level.getBlockState(pos);
-        Block block = state.getBlock();
-        return (block instanceof CanConnectCables && ((CanConnectCables) block).shouldCablesConnectToThis(state, direction));
-    }
-
-    @Override
-    public boolean shouldCablesConnectToThis(BlockState blockState, Direction direction) {
-        return true;
-    }
-
-    @Override
-    public List<ConnectionAdjacency> getConnectedPositions(Level level, BlockPos selfPos, BlockPos from) {
-        List<ConnectionAdjacency> connections = new ArrayList<>();
-        BlockState state = level.getBlockState(selfPos);
-
-        if (state.getBlock() instanceof CableBlock) {
-            if (state.getValue(UP)) {
-                connections.add(new ConnectionAdjacency(selfPos.above(), selfPos, -1));
-            }
-            if (state.getValue(DOWN)) {
-                connections.add(new ConnectionAdjacency(selfPos.below(), selfPos, -1));
-            }
-            if (state.getValue(NORTH)) {
-                connections.add(new ConnectionAdjacency(selfPos.north(), selfPos, -1));
-            }
-            if (state.getValue(SOUTH)) {
-                connections.add(new ConnectionAdjacency(selfPos.south(), selfPos, -1));
-            }
-            if (state.getValue(EAST)) {
-                connections.add(new ConnectionAdjacency(selfPos.east(), selfPos, -1));
-            }
-            if (state.getValue(WEST)) {
-                connections.add(new ConnectionAdjacency(selfPos.west(), selfPos, -1));
-            }
-        }
-
-        connections.forEach(connectionAdjacency -> {
-            if (!(level.getBlockState(connectionAdjacency.getFirst()).getBlock() instanceof CableNetworkComponent)) {
-                connections.remove(connectionAdjacency);
-            }
-        });
-
-        return connections;
     }
 }

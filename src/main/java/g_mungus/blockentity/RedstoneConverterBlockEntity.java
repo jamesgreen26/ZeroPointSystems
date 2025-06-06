@@ -1,7 +1,7 @@
 package g_mungus.blockentity;
 
 import g_mungus.block.ModBlocks;
-import g_mungus.block.cableNetwork.CableNetworkComponent;
+import g_mungus.block.cableNetwork.core.NetworkNode;
 import g_mungus.block.cableNetwork.TransformerBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
@@ -12,7 +12,7 @@ import net.minecraft.world.phys.Vec3;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class RedstoneConverterBlockEntity extends TransformerBlockEntity {
+public class RedstoneConverterBlockEntity extends NetworkTerminal {
     public RedstoneConverterBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.REDSTONE_CONVERTER.get(), pos, state);
     }
@@ -29,18 +29,9 @@ public class RedstoneConverterBlockEntity extends TransformerBlockEntity {
     }
 
     @Override
-    public void updateTransformers(List<CableNetworkComponent.TerminalConnection> transformers) {
-        super.updateTransformers(transformers);
+    public void defineTerminals(List<NetworkNode> terminals) {
+        super.defineTerminals(terminals);
 
-        if (transformers.stream().anyMatch(transformer -> (
-                transformer.type() == TransformerBlock.TransformerType.STEPDOWN || transformer.type() == TransformerBlock.TransformerType.STEPUP
-                )
-        )) {
-            if (level != null) {
-                Vec3 center = worldPosition.getCenter();
-                level.explode(null, center.x, center.y, center.z, 4f, Level.ExplosionInteraction.BLOCK);
-            }
-        }
         updateAllSignals();
     }
 
@@ -53,24 +44,21 @@ public class RedstoneConverterBlockEntity extends TransformerBlockEntity {
     private void updateAllSignals() {
         AtomicInteger maxSuppliedSignal = new AtomicInteger();
         if (level != null) {
-            getTransformers().forEach((blockPos, transformerType) -> {
-                if (transformerType.equals(TransformerBlock.TransformerType.REDSTONE)) {
-                    BlockEntity blockEntity = level.getBlockEntity(blockPos);
-                    if (blockEntity instanceof RedstoneConverterBlockEntity) {
-                        int signal = ((RedstoneConverterBlockEntity) blockEntity).getCurrentSuppliedSignal();
-                        if (signal > maxSuppliedSignal.get()) {
-                            maxSuppliedSignal.set(signal);
-                        }
+            getTerminals().forEach(node -> {
+                BlockEntity blockEntity = level.getBlockEntity(node.pos());
+                if (blockEntity instanceof RedstoneConverterBlockEntity redstoneConverter) {
+                    int signal = redstoneConverter.getCurrentSuppliedSignal();
+                    if (signal > maxSuppliedSignal.get()) {
+                        maxSuppliedSignal.set(signal);
                     }
                 }
+
             });
 
-            getTransformers().forEach((blockPos, transformerType) -> {
-                if (transformerType.equals(TransformerBlock.TransformerType.REDSTONE)) {
-                    BlockEntity blockEntity = level.getBlockEntity(blockPos);
-                    if (blockEntity instanceof RedstoneConverterBlockEntity) {
-                        ((RedstoneConverterBlockEntity) blockEntity).receiveSignal(maxSuppliedSignal.get());
-                    }
+            getTerminals().forEach(node -> {
+                BlockEntity blockEntity = level.getBlockEntity(node.pos());
+                if (blockEntity instanceof RedstoneConverterBlockEntity) {
+                    ((RedstoneConverterBlockEntity) blockEntity).receiveSignal(maxSuppliedSignal.get());
                 }
             });
         }

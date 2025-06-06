@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -15,12 +16,6 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
 public abstract class TransformerBlock extends CableBlock implements EntityBlock {
-
-    public enum TransformerType {
-        STEPUP, STEPDOWN, REDSTONE;
-    }
-
-    public abstract TransformerType getTransformerType();
 
     public static final DirectionProperty FACING = DirectionProperty.create("facing");
 
@@ -85,8 +80,13 @@ public abstract class TransformerBlock extends CableBlock implements EntityBlock
     }
 
     @Override
-    public boolean shouldCablesConnectToThis(BlockState blockState, Direction direction) {
-        return (blockState.getValue(FACING) != direction);
+    public int getChannelCountForConnection(BlockPos self, BlockPos from, Level level) {
+        BlockState state = level.getBlockState(self);
+        if (state.hasProperty(FACING) && !from.equals(self.offset(state.getValue(FACING).getNormal()))) {
+            return 1;
+        } else {
+            return 0;
+        }
     }
 
     @Nullable
@@ -101,5 +101,10 @@ public abstract class TransformerBlock extends CableBlock implements EntityBlock
 
     public static BlockPos getFacingPos(BlockPos pos, BlockState state) {
         return pos.offset(state.getValue(FACING).getNormal());
+    }
+
+    @Override
+    public boolean isTerminal() {
+        return true;
     }
 }

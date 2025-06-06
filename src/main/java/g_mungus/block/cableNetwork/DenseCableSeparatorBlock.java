@@ -1,8 +1,10 @@
 package g_mungus.block.cableNetwork;
 
 import g_mungus.block.ModBlocks;
-import g_mungus.blockentity.TransformerBlockEntity;
-import kotlin.Pair;
+import g_mungus.block.cableNetwork.core.CableNetworkComponent;
+import g_mungus.block.cableNetwork.core.Channels;
+import g_mungus.block.cableNetwork.core.NetworkNode;
+import g_mungus.blockentity.NetworkTerminal;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
@@ -24,10 +26,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-public class DenseCableSeparatorBlock extends Block implements CableNetworkComponent, QuadCableNetworkComponent {
+public class DenseCableSeparatorBlock extends Block implements CableNetworkComponent {
 
     public static final DirectionProperty FACING = DirectionProperty.create("facing");
-    public static final BooleanProperty CONNECTED = BooleanProperty.create("dense_connected");
     public static final IntegerProperty ROTATION = IntegerProperty.create("rotation", 0, 3);
     public static final BooleanProperty NORTH = BooleanProperty.create("north");
     public static final BooleanProperty SOUTH = BooleanProperty.create("south");
@@ -42,7 +43,6 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
         this.registerDefaultState(this.stateDefinition.any()
                 .setValue(FACING, Direction.NORTH)
                 .setValue(ROTATION, 0)
-                .setValue(CONNECTED, false)
                 .setValue(NORTH, false)
                 .setValue(SOUTH, false)
                 .setValue(EAST, false)
@@ -53,11 +53,10 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
     }
 
     @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+    protected void createBlockStateDefinition(StateDefinition.@NotNull Builder<Block, BlockState> builder) {
         super.createBlockStateDefinition(builder);
         builder.add(FACING);
         builder.add(ROTATION);
-        builder.add(CONNECTED);
         builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN);
     }
 
@@ -84,9 +83,7 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
             facing = facing.getOpposite();
         }
         return getNewBlockState(
-                defaultBlockState()
-                        .setValue(FACING, facing)
-                        .setValue(CONNECTED, shouldConnectDensePrePlace(context.getLevel(), facing, context.getClickedPos())),
+                defaultBlockState().setValue(FACING, facing),
                 context.getLevel(),
                 context.getClickedPos()
         );
@@ -95,79 +92,71 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
     @Override
     public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
         if (!level.isClientSide) {
-            boolean currentlyConnected = state.getValue(CONNECTED);
-            boolean shouldConnect = shouldConnectDense(level, state.getValue(FACING), pos);
-
-            boolean currentNorth = state.getValue(NORTH);
-            boolean currentSouth = state.getValue(SOUTH);
-            boolean currentEast = state.getValue(EAST);
-            boolean currentWest = state.getValue(WEST);
-            boolean currentUp = state.getValue(UP);
-            boolean currentDown = state.getValue(DOWN);
-
-            BlockState newState = getNewBlockState(state, level, pos);
-
-            boolean newNorth = newState.getValue(NORTH);
-            boolean newSouth = newState.getValue(SOUTH);
-            boolean newEast = newState.getValue(EAST);
-            boolean newWest = newState.getValue(WEST);
-            boolean newUp = newState.getValue(UP);
-            boolean newDown = newState.getValue(DOWN);
-
-            boolean connectionsChanged = !(
-                    newNorth == currentNorth
-                            && newSouth == currentSouth
-                            && newEast == currentEast
-                            && newWest == currentWest
-                            && newUp == currentUp
-                            && newDown == currentDown
-            );
-
-            if (connectionsChanged || currentlyConnected != shouldConnect) {
-                level.setBlock(pos, newState.setValue(CONNECTED, shouldConnect), 3);
-            }
-
-            if (currentlyConnected != shouldConnect) {
-                updateNetwork(pos, level);
-            } else if (connectionsChanged) {
-                Channel channel = getChannelForNeighborPos(pos, fromPos, state);
-
-                if (channel != null) {
-                    updateNetworkForChannel(pos, level, channel, state);
-                }
-            }
+            updateConnections(state, level, pos);
         }
     }
 
-    private boolean shouldConnectDensePrePlace(Level level, Direction facing, BlockPos pos) {
-        BlockPos neighborPos = pos.offset(facing.getNormal());
-        BlockState neighborState = level.getBlockState(neighborPos);
-        Block neighborBlock = neighborState.getBlock();
+    private void updateConnections(BlockState state, Level level, BlockPos pos) {
+        BlockState newState = getNewBlockState(state, level, pos);
 
-        return (neighborBlock instanceof QuadCableNetworkAble
-                && ((QuadCableNetworkAble) neighborBlock).canQuadConnectTo(neighborPos, pos, neighborState)
+        if (!state.equals(newState)) {
+            level.setBlock(pos, newState, 3);
+            updateNetwork(pos, level);
+        }
+    }
+
+    @Override
+    public boolean isTerminal() {
+        return false;
+    }
+
+    @Override
+    public int getTotalChannelCount() {
+        return 4;
+    }
+
+    @Override
+    public int getChannelCountForConnection(BlockPos self, BlockPos from, Level level) {
+        BlockState state = level.getBlockState(self);
+        if (state.hasProperty(FACING)) {
+            if (from.equals(self.offset(state.getValue(FACING).getNormal()))) {
+                return 4;
+            } else if (from.equals(self.offset(state.getValue(FACING).getOpposite().getNormal()))) {
+                return 0;
+            } else {
+                return 1;
+            }
+        }
+        return 0;
+    }
+
+    @Override
+    public List<BlockPos> getConnectingNeighbors(NetworkNode self, Level level) {
+        BlockState state = level.getBlockState(self.pos());
+        return List.of(
+                self.pos().offset(state.getValue(FACING).getNormal()),
+                getNeighborPosForChannel(self.channel(), self.pos(), state)
         );
     }
 
-    private boolean shouldConnectDense(Level level, Direction facing, BlockPos pos) {
-        BlockPos neighborPos = pos.offset(facing.getNormal());
-        BlockState neighborState = level.getBlockState(neighborPos);
-        Block neighborBlock = neighborState.getBlock();
-
-        return (neighborBlock instanceof QuadCableNetworkAble
-                && ((QuadCableNetworkAble) neighborBlock).canQuadConnectTo(neighborPos, pos, neighborState)
-                && this.canQuadConnectTo(pos, neighborPos, level.getBlockState(pos))
-        );
+    @Override
+    public int getNewChannel(BlockPos self, NetworkNode input, Level level) {
+        BlockState state = level.getBlockState(self);
+        if (input.channel() == Channels.MAIN) {
+            return getChannelForNeighborPos(self, input.pos(), state);
+        } else {
+            return input.channel();
+        }
     }
 
     @NotNull
-    BlockState getNewBlockState(BlockState state, Level level, BlockPos pos) {
-        boolean north = canFormConnection(state, level, pos, Direction.NORTH);
-        boolean south = canFormConnection(state, level, pos, Direction.SOUTH);
-        boolean east = canFormConnection(state, level, pos, Direction.EAST);
-        boolean west = canFormConnection(state, level, pos, Direction.WEST);
-        boolean up = canFormConnection(state, level, pos, Direction.UP);
-        boolean down = canFormConnection(state, level, pos, Direction.DOWN);
+    public BlockState getNewBlockState(BlockState state, Level level, BlockPos pos) {
+        boolean north = canConnect(pos, pos.offset(Direction.NORTH.getNormal()), level);
+        boolean south = canConnect(pos, pos.offset(Direction.SOUTH.getNormal()), level);
+        boolean east = canConnect(pos, pos.offset(Direction.EAST.getNormal()), level);
+        boolean west = canConnect(pos, pos.offset(Direction.WEST.getNormal()), level);
+        boolean up = canConnect(pos, pos.offset(Direction.UP.getNormal()), level);
+        boolean down = canConnect(pos, pos.offset(Direction.DOWN.getNormal()), level);
 
         return state
                 .setValue(NORTH, north)
@@ -178,127 +167,8 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
                 .setValue(DOWN, down);
     }
 
-    private boolean canFormConnection(BlockState state, Level level, BlockPos pos, Direction direction) {
-        boolean shouldConnectToThis = shouldCablesConnectToThis(state, direction);
-        boolean shouldConnectToOther = otherCanConnect(level, pos.offset(direction.getNormal()), direction.getOpposite());
-        return shouldConnectToThis && shouldConnectToOther;
-    }
-
-    private boolean otherCanConnect(Level level, BlockPos pos, Direction direction) {
-        BlockState state = level.getBlockState(pos);
-        Block block = state.getBlock();
-        return (block instanceof CanConnectCables && ((CanConnectCables) block).shouldCablesConnectToThis(state, direction));
-    }
-
-    @Override
-    public List<ConnectionAdjacency> getConnectedPositions(Level level, BlockPos selfPos, BlockPos from) {
-        List<ConnectionAdjacency> result = new ArrayList<>();
-        Channel channel = getChannelForNeighborPos(selfPos, from, level.getBlockState(selfPos));
-        BlockPos end = getOtherEnd(level, selfPos);
-
-        if (channel == null || end == null) return result;
-
-        BlockState endState = level.getBlockState(end);
-
-        if (endState.is(ModBlocks.DENSE_CABLE_SEPARATOR.get())) {
-            DenseCableSeparatorBlock endBlock = (DenseCableSeparatorBlock) endState.getBlock();
-            BlockPos neighborPos = endBlock.getNeighborPosForChannel(channel, end, endState);
-            BlockState neighborState = level.getBlockState(neighborPos);
-            Direction connectionDir = Direction.fromDelta(end.getX() - neighborPos.getX(), end.getY() - neighborPos.getY(), end.getZ() - neighborPos.getZ());
-
-            if (neighborState.getBlock() instanceof CanConnectCables && ((CanConnectCables) neighborState.getBlock()).shouldCablesConnectToThis(neighborState, connectionDir)) {
-                result.add(new ConnectionAdjacency(neighborPos, end, -1));
-            }
-        }
-
-        return result;
-    }
-
-    @Override
-    public void updateNetwork(BlockPos pos, Level level) {
-        BlockState state = level.getBlockState(pos);
-        if (!state.is(ModBlocks.DENSE_CABLE_SEPARATOR.get())) return;
-        Arrays.stream(Channel.values()).forEach(channel -> {
-            updateNetworkForChannel(pos, level, channel, state);
-        });
-    }
-
-    private static void updateNetworkForChannel(BlockPos pos, Level level, Channel channel, BlockState state) {
-        BlockPos neighborPos = ((DenseCableSeparatorBlock) state.getBlock()).getNeighborPosForChannel(channel, pos, state);
-        Direction connectionDir = Direction.fromDelta(pos.getX() - neighborPos.getX(), pos.getY() - neighborPos.getY(), pos.getZ() - neighborPos.getZ());
-        BlockState neighborState = level.getBlockState(neighborPos);
-        Block neighborBlock = neighborState.getBlock();
-
-        Queue<ConnectionAdjacency> toCheck = new ArrayDeque<>();
-        List<BlockPos> checked = new ArrayList<>();
-        List<TerminalConnection> transformers = new ArrayList<>();
-
-        checked.add(pos);
-
-        if (neighborBlock instanceof CanConnectCables && ((CanConnectCables) neighborBlock).shouldCablesConnectToThis(neighborState, connectionDir)) {
-            toCheck.add(new ConnectionAdjacency(neighborPos, pos, -1));
-        }
-
-        List<ConnectionAdjacency> otherEnd = ((DenseCableSeparatorBlock) state.getBlock()).getConnectedPositions(level, pos, neighborPos);
-        toCheck.addAll(otherEnd);
-
-        while (!toCheck.isEmpty()) {
-            ConnectionAdjacency current = toCheck.poll();
-            if (checked.contains(current.getFirst())) continue;
-            checked.add(current.getFirst());
-
-            Block block = level.getBlockState(current.getFirst()).getBlock();
-            if (block instanceof TransformerBlock) {
-                TransformerBlock.TransformerType type = ((TransformerBlock) block).getTransformerType();
-                transformers.add(new TerminalConnection(current.getFirst(), type, -1));
-            }
-
-            if (block instanceof CableNetworkComponent) {
-                toCheck.addAll(((CableNetworkComponent) block).getConnectedPositions(level, current.getFirst(), current.getSecond()));
-            }
-        }
-
-        transformers.forEach(transformer -> {
-            BlockEntity blockEntity = level.getBlockEntity(transformer.pos());
-
-            if (blockEntity instanceof TransformerBlockEntity) {
-                ((TransformerBlockEntity) blockEntity).updateTransformers(transformers);
-            }
-        });
-    }
-
-    @Override
-    public boolean shouldCablesConnectToThis(BlockState blockState, Direction direction) {
-        return blockState.getValue(FACING).getAxis() != direction.getAxis();
-    }
-
-    public @Nullable BlockPos getOtherEnd(Level level, BlockPos self) {
-        BlockState state = level.getBlockState(self);
-        if (state.is(ModBlocks.DENSE_CABLE_SEPARATOR.get())) {
-            Direction facing = state.getValue(FACING);
-            BlockPos next = self.offset(facing.getNormal());
-
-            BlockState nextState = level.getBlockState(next);
-            Block nextBlock = nextState.getBlock();
-
-            if (nextBlock instanceof QuadCableNetworkAble && ((QuadCableNetworkAble) nextBlock).canQuadConnectTo(next, self, nextState)) {
-                if (nextBlock instanceof QuadCableNetworkComponent) {
-                    return next;
-                } else if (nextBlock instanceof QuadCableNetworkConnector) {
-                    ConnectionAdjacency result = ((QuadCableNetworkConnector) nextBlock).getConnectedComponent(next, self, nextState, level, 0);
-                    if (result == null) {
-                        return null;
-                    } else {
-                        return result.getFirst();
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    public BlockPos getNeighborPosForChannel(Channel channel, BlockPos separator, BlockState state) {
-        if (!state.is(ModBlocks.DENSE_CABLE_SEPARATOR.get())) return separator;
+    public BlockPos getNeighborPosForChannel(int channel, BlockPos self, BlockState state) {
+        if (!state.is(ModBlocks.DENSE_CABLE_SEPARATOR.get())) return self;
         Direction facing = state.getValue(FACING);
         int rotation = state.getValue(ROTATION);
 
@@ -311,7 +181,7 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
             c0 = Direction.NORTH.getNormal();
         }
 
-        int index = (8 + channel.getIndex() - rotation) % 4;
+        int index = (8 + channel - rotation - 1) % 4;
 
         Vec3i selected = switch (index) {
             default -> c0;
@@ -320,11 +190,11 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
             case 3 -> facing.getNormal().cross(c0);
         };
 
-        return separator.offset(selected);
+        return self.offset(selected);
     }
 
-    public @Nullable QuadCableNetworkComponent.Channel getChannelForNeighborPos(BlockPos separator, BlockPos neighbor, BlockState state) {
-        if (!state.is(ModBlocks.DENSE_CABLE_SEPARATOR.get())) return null;
+    public int getChannelForNeighborPos(BlockPos self, BlockPos neighbor, BlockState state) {
+        if (!state.is(ModBlocks.DENSE_CABLE_SEPARATOR.get())) return -1;
         Direction facing = state.getValue(FACING);
         int rotation = state.getValue(ROTATION);
 
@@ -337,25 +207,19 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
             c0 = Direction.NORTH.getNormal();
         }
 
-        Vec3i offset = neighbor.subtract(separator);
+        Vec3i offset = neighbor.subtract(self);
 
         // Check if the offset matches any of the possible channel positions
         if (offset.equals(c0)) {
-            return Channel.values()[(rotation) % 4];
+            return 1 + (rotation) % 4;
         } else if (offset.equals(facing.getNormal().cross(c0).multiply(-1))) {
-            return Channel.values()[(rotation + 1) % 4];
+            return 1 + (rotation + 1) % 4;
         } else if (offset.equals(c0.multiply(-1))) {
-            return Channel.values()[(rotation + 2) % 4];
+            return 1 + (rotation + 2) % 4;
         } else if (offset.equals(facing.getNormal().cross(c0))) {
-            return Channel.values()[(rotation + 3) % 4];
+            return 1 + (rotation + 3) % 4;
         }
 
-        return null;
-    }
-
-    @Override
-    public boolean canQuadConnectTo(BlockPos self, BlockPos to, BlockState selfState) {
-        if (!selfState.is(ModBlocks.DENSE_CABLE_SEPARATOR.get())) return false;
-        return self.offset(selfState.getValue(FACING).getNormal()).equals(to);
+        return -1;
     }
 }

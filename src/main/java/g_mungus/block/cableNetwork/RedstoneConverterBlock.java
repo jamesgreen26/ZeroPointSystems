@@ -14,11 +14,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class RedstoneConverterBlock extends TransformerBlock {
-    @Override
-    public TransformerType getTransformerType() {
-        return TransformerType.REDSTONE;
-    }
-
     public RedstoneConverterBlock(Properties properties) {
         super(properties);
     }

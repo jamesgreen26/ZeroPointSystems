@@ -7,11 +7,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
 public class StepdownTransformerBlock extends TransformerBlock {
-    @Override
-    public TransformerType getTransformerType() {
-        return TransformerType.STEPDOWN;
-    }
-
     public StepdownTransformerBlock(Properties properties) {
         super(properties);
     }

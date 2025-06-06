@@ -1,8 +1,12 @@
 package g_mungus.block.cableNetwork;
 
 import g_mungus.block.ModBlocks;
+import g_mungus.block.cableNetwork.core.CableNetworkComponent;
+import g_mungus.block.cableNetwork.core.Channels;
+import g_mungus.block.cableNetwork.core.NetworkNode;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Vec3i;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -13,7 +17,9 @@ import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import org.jetbrains.annotations.Nullable;
 
-public class DenseCablesBlock extends Block implements QuadCableNetworkConnector {
+import java.util.List;
+
+public class DenseCablesBlock extends Block implements CableNetworkComponent {
     public static final EnumProperty<Direction.Axis> AXIS = BlockStateProperties.AXIS;
     public static final IntegerProperty CONNECTIONS = IntegerProperty.create("connections", 0, 2);
 
@@ -35,115 +41,71 @@ public class DenseCablesBlock extends Block implements QuadCableNetworkConnector
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         Direction.Axis axis = context.getNearestLookingDirection().getAxis();
-        return this.defaultBlockState().setValue(AXIS, axis).setValue(CONNECTIONS, getConnections(axis, context.getClickedPos(), context.getLevel()));
+        return this.defaultBlockState().setValue(AXIS, axis);
     }
 
     @Override
     public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
         if (!level.isClientSide) {
-            int currentConnections = state.getValue(CONNECTIONS);
-            int newConnections = getConnections(state.getValue(AXIS), pos, level);
-
-            if (currentConnections != newConnections) {
-                level.setBlock(pos, state.setValue(CONNECTIONS, newConnections), 3);
-
-                Direction.Axis axis = state.getValue(AXIS);
-
-                Direction optionA = Direction.fromAxisAndDirection(axis, Direction.AxisDirection.POSITIVE);
-                Direction optionB = Direction.fromAxisAndDirection(axis, Direction.AxisDirection.NEGATIVE);
-
-                BlockPos neighborA = pos.offset(optionA.getNormal());
-                BlockPos neighborB = pos.offset(optionB.getNormal());
-
-                @Nullable ConnectionAdjacency componentA = getConnectedComponent(pos, neighborA, state, level, 0);
-
-                if (componentA != null) {
-                    BlockState componentState = level.getBlockState(componentA.getFirst());
-                    Block component = componentState.getBlock();
-
-                    if (component instanceof CableNetworkComponent) {
-                        ((CableNetworkComponent) component).updateNetwork(componentA.getFirst(), level);
-                        return;
-                    }
-                }
-
-                @Nullable ConnectionAdjacency componentB = getConnectedComponent(pos, neighborB, state, level, 0);
-
-                if (componentB != null) {
-                    BlockState componentState = level.getBlockState(componentB.getFirst());
-                    Block component = componentState.getBlock();
-
-                    if (component instanceof CableNetworkComponent) {
-                        ((CableNetworkComponent) component).updateNetwork(componentB.getFirst(), level);
-                    }
-                }
-            }
+            updateConnections(state, level, pos);
         }
+    }
+
+    private void updateConnections(BlockState state, Level level, BlockPos pos) {
+        BlockState newState = getNewBlockState(state, level, pos);
+
+        if (!state.equals(newState)) {
+            level.setBlock(pos, newState, 3);
+            updateNetwork(pos, level);
+        }
+    }
+
+    private BlockState getNewBlockState(BlockState state, Level level, BlockPos pos) {
+        return state.setValue(CONNECTIONS, getConnectedNodes(new NetworkNode(pos, Channels.QUAD_1, false), level, List.of()).size());
     }
 
     @Override
-    public @Nullable ConnectionAdjacency getConnectedComponent(BlockPos self, BlockPos from, BlockState selfState, Level level, int recursion) {
-        if (recursion > 256) return null;
-
-        if (selfState.is(ModBlocks.DENSE_CABLES.get())) {
-            Direction optionA = Direction.fromAxisAndDirection(selfState.getValue(AXIS), Direction.AxisDirection.POSITIVE);
-            Direction optionB = Direction.fromAxisAndDirection(selfState.getValue(AXIS), Direction.AxisDirection.NEGATIVE);
-
-            BlockPos to;
-
-            if (from.equals(self.offset(optionA.getNormal()))) {
-                to = self.offset(optionB.getNormal());
-            } else {
-                to = self.offset(optionA.getNormal());
-            }
-
-            BlockState toState = level.getBlockState(to);
-            Block toBlock = toState.getBlock();
-
-            if (toBlock instanceof QuadCableNetworkAble && ((QuadCableNetworkAble) toBlock).canQuadConnectTo(to, self, toState)) {
-                if (toBlock instanceof QuadCableNetworkConnector) {
-                    return ((QuadCableNetworkConnector) toBlock).getConnectedComponent(to, self, toState, level, recursion + 1);
-                } else if (toBlock instanceof QuadCableNetworkComponent) {
-                    return new ConnectionAdjacency(to, self, -1);
-                }
-            }
-        }
-
-        return null;
-    }
-
-    int getConnections(Direction.Axis axis, BlockPos pos, Level level) {
-        int result = 0;
-
-        Direction optionA = Direction.fromAxisAndDirection(axis, Direction.AxisDirection.POSITIVE);
-        Direction optionB = Direction.fromAxisAndDirection(axis, Direction.AxisDirection.NEGATIVE);
-
-        BlockPos neighborA = pos.offset(optionA.getNormal());
-        BlockPos neighborB = pos.offset(optionB.getNormal());
-
-        BlockState stateA = level.getBlockState(neighborA);
-        BlockState stateB = level.getBlockState(neighborB);
-
-        Block blockA = stateA.getBlock();
-        Block blockB = stateB.getBlock();
-        if (blockA instanceof QuadCableNetworkAble && ((QuadCableNetworkAble) blockA).canQuadConnectTo(neighborA, pos, stateA)) {
-            result++;
-        }
-        if (blockB instanceof QuadCableNetworkAble && ((QuadCableNetworkAble) blockB).canQuadConnectTo(neighborB, pos, stateB)) {
-            result++;
-        }
-        return result;
-    }
-
-    @Override
-    public boolean canQuadConnectTo(BlockPos self, BlockPos to, BlockState selfState) {
-
-        if (selfState.is(ModBlocks.DENSE_CABLES.get())) {
-            Direction optionA = Direction.fromAxisAndDirection(selfState.getValue(AXIS), Direction.AxisDirection.POSITIVE);
-            Direction optionB = Direction.fromAxisAndDirection(selfState.getValue(AXIS), Direction.AxisDirection.NEGATIVE);
-
-            return to.equals(self.offset(optionA.getNormal())) || to.equals(self.offset(optionB.getNormal()));
-        }
+    public boolean isTerminal() {
         return false;
+    }
+
+    @Override
+    public int getTotalChannelCount() {
+        return 4;
+    }
+
+    @Override
+    public int getChannelCountForConnection(BlockPos self, BlockPos from, Level level) {
+        BlockState state = level.getBlockState(self);
+        if (isConnectingSide(self, from, state)) {
+            return 4;
+        }
+        return 0;
+    }
+
+    @Override
+    public List<BlockPos> getConnectingNeighbors(NetworkNode self, Level level) {
+        BlockState state = level.getBlockState(self.pos());
+        Direction.Axis axis = state.getValue(AXIS);
+        return List.of(
+                self.pos().offset(Direction.get(Direction.AxisDirection.POSITIVE, axis).getNormal()),
+                self.pos().offset(Direction.get(Direction.AxisDirection.NEGATIVE, axis).getNormal())
+        );
+    }
+
+    @Override
+    public int getNewChannel(BlockPos self, NetworkNode input, Level level) {
+        return 0;
+    }
+
+    private boolean isConnectingSide(BlockPos a, BlockPos b, BlockState state) {
+        Direction.Axis axis = state.getValue(AXIS);
+        Vec3i delta = a.subtract(b);
+        Direction connection = Direction.fromDelta(delta.getX(), delta.getY(), delta.getZ());
+        if (connection != null) {
+            return connection.getAxis() == axis;
+        } else {
+            return false;
+        }
     }
 }

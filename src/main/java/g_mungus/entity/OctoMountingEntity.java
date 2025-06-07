@@ -1,5 +1,6 @@
 package g_mungus.entity;
 
+import g_mungus.ZPSMod;
 import g_mungus.blockentity.OctoControllerBlockEntity;
 import g_mungus.client.ModKeybinds;
 import g_mungus.networking.OctovariantControlPacket;
@@ -50,7 +51,7 @@ public class OctoMountingEntity extends Entity {
     protected void defineSynchedData() {}
 
     private void sendControlPacket() {
-        if (!level().isClientSide || blockEntity == null) return;
+        if (!level().isClientSide) return;
 
         int a = ModKeybinds.KEY_A.isDown()? 15 : 0;
         int b = ModKeybinds.KEY_B.isDown()? 15 : 0;

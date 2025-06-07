@@ -56,7 +56,7 @@ public class OctovariantControlPacket {
         context.enqueueWork(() -> {
             if (context.getSender() != null) {
                 if (context.getSender().getVehicle() instanceof OctoMountingEntity seat) {
-                    if (seat.isController) {
+                    if (seat.isController && seat.blockEntity != null) {
                         seat.blockEntity.setA(packet.a());
                         seat.blockEntity.setB(packet.b());
                         seat.blockEntity.setC(packet.c());

@@ -1,6 +1,7 @@
 package g_mungus.block.cableNetwork;
 
 import g_mungus.block.cableNetwork.core.CableNetworkComponent;
+import g_mungus.block.cableNetwork.core.Channels;
 import g_mungus.block.cableNetwork.core.NetworkNode;
 import g_mungus.blockentity.ModBlockEntities;
 import g_mungus.blockentity.OctoControllerBlockEntity;
@@ -95,9 +96,14 @@ public class OctoControllerBlock extends BaseEntityBlock implements CableNetwork
 
     @Override
     public List<BlockPos> getConnectingNeighbors(NetworkNode self, Level level) {
-        BlockState state = level.getBlockState(self.pos());
-        BlockPos behind = self.pos().offset(state.getValue(FACING).getOpposite().getNormal());
-        return List.of(self.pos(), behind);
+        if (self.channel() >= Channels.OCT_E) {
+            BlockState state = level.getBlockState(self.pos());
+            return List.of(self.pos().offset(state.getValue(FACING).getOpposite().getNormal()));
+        } else if (self.channel() >= Channels.OCT_A) {
+            return List.of(self.pos().below());
+        } else {
+            return List.of();
+        }
     }
 
     @Override

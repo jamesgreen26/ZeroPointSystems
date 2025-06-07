@@ -51,9 +51,6 @@ public interface CableNetworkComponent {
                     terminal.defineTerminals(terminals);
                 }
             });
-
-            ZPSMod.LOGGER.info("Network size: {}, terminal count: {}", checked.size(), terminals.size());
-
         }
     }
 

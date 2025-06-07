@@ -12,8 +12,8 @@ public class ModItems {
     public static final DeferredRegister<Item> ITEMS = 
         DeferredRegister.create(ForgeRegistries.ITEMS, ZPSMod.MOD_ID);
 
-    public static final RegistryObject<Item> CABLE = ITEMS.register("cable",
-        () -> new BlockItem(ModBlocks.CABLE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> OCTO_CONTROLLER = ITEMS.register("octo_controller",
+            () -> new BlockItem(ModBlocks.OCTO_CONTROLLER.get(), new Item.Properties()));
 
     public static final RegistryObject<Item> DENSE_CABLES = ITEMS.register("dense_cables",
         () -> new BlockItem(ModBlocks.DENSE_CABLES.get(), new Item.Properties()));
@@ -33,6 +33,6 @@ public class ModItems {
     public static final RegistryObject<Item> REDSTONE_CONVERTER = ITEMS.register("redstone_converter",
             () -> new BlockItem(ModBlocks.REDSTONE_CONVERTER.get(), new Item.Properties()));
 
-    public static final RegistryObject<Item> OCTO_CONTROLLER = ITEMS.register("octo_controller",
-            () -> new BlockItem(ModBlocks.OCTO_CONTROLLER.get(), new Item.Properties()));
+    public static final RegistryObject<Item> CABLE = ITEMS.register("cable",
+            () -> new BlockItem(ModBlocks.CABLE.get(), new Item.Properties()));
 } 

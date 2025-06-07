@@ -134,7 +134,6 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
     @Override
     public List<BlockPos> getConnectingNeighbors(NetworkNode self, Level level) {
         BlockState state = level.getBlockState(self.pos());
-        ZPSMod.LOGGER.info("block: {}", state.getBlock().getName());
         return List.of(
                 self.pos().offset(state.getValue(FACING).getNormal()),
                 getNeighborPosForChannel(self.channel(), self.pos(), state)
@@ -192,14 +191,12 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
             case 3 -> facing.getNormal().cross(c0);
         };
 
-        ZPSMod.LOGGER.info("Position: {}, channel: {}", self.offset(selected).toShortString(), channel);
 
         return self.offset(selected);
     }
 
     public int getChannelForNeighborPos(BlockPos self, BlockPos neighbor, BlockState state) {
         if (!state.is(ModBlocks.DENSE_CABLE_SEPARATOR.get())) {
-            ZPSMod.LOGGER.info("not a cable separator: {} at {}", state.getBlock().getName(), self);
             return -1;
         }
         Direction facing = state.getValue(FACING);
@@ -226,8 +223,6 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
         } else if (offset.equals(facing.getNormal().cross(c0))) {
             return 1 + ((rotation + 3) % 4);
         }
-
-        ZPSMod.LOGGER.info("none matched at {}", self);
 
         return -1;
     }

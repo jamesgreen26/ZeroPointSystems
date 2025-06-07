@@ -33,6 +33,18 @@ public class OctoMountingEntity extends Entity {
         Level level = this.level();
 
         if (!level.isClientSide && this.getPassengers().isEmpty()) {
+
+            if (blockEntity != null) {
+                blockEntity.setA(0);
+                blockEntity.setB(0);
+                blockEntity.setC(0);
+                blockEntity.setD(0);
+                blockEntity.setE(0);
+                blockEntity.setF(0);
+                blockEntity.setG(0);
+                blockEntity.setH(0);
+            }
+
             // Kill this entity if nothing is riding it
             kill();
             return;

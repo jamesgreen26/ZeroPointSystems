@@ -83,7 +83,7 @@ public interface CableNetworkComponent {
     default @Nullable CableNetworkComponent getConnectedComponent(BlockPos self, BlockPos from, Level level) {
         Block blockProspect = level.getBlockState(from).getBlock();
         if (blockProspect instanceof CableNetworkComponent component &&
-                getChannelCountForConnection(self, from, level) == component.getChannelCountForConnection(from, self, level)
+                getChannelCountForConnection(self, from, level) == component.getChannelCountForConnection(from, self, level) && getChannelCountForConnection(self, from, level) > 0
         ) {
             return component;
         } else {

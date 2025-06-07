@@ -1,14 +1,14 @@
 package g_mungus.blockentity;
 
 import g_mungus.block.cableNetwork.core.NetworkNode;
-import g_mungus.block.cableNetwork.TransformerBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,58 +19,83 @@ public abstract class NetworkTerminal extends BlockEntity {
         super(type, pos, state);
     }
 
-    private final List<NetworkNode> terminals = new ArrayList<>();
+    private final Map<Integer, List<NetworkNode>> terminals = new ConcurrentHashMap<>();
 
-    public void defineTerminals(List<NetworkNode> terminals) {
-        this.terminals.clear();
-
-        terminals.forEach(terminal -> {
-            BlockPos relativePos = terminal.pos().subtract(this.worldPosition);
-            this.terminals.add(new NetworkNode(relativePos, terminal.channel(), terminal.terminal()));
-        });
+    public void defineTerminals(List<NetworkNode> terminals, int channel) {
+        this.terminals.put(channel, terminals.stream().map(node ->
+            new NetworkNode(
+                node.pos().subtract(this.worldPosition),
+                node.channel(),
+                node.terminal())
+            ).toList()
+        );
     }
 
-    public List<NetworkNode>  getTerminals() {
-        List<NetworkNode>  worldTransformers = new ArrayList<>();
-        terminals.forEach(node -> {
-            // Convert relative position back to world position
-            BlockPos worldPos = node.pos().offset(this.worldPosition);
-            worldTransformers.add(new NetworkNode(worldPos, node.channel(), node.terminal()));
-        });
-        return worldTransformers;
-    }
-
-    @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
-        CompoundTag terminals = new CompoundTag();
-        this.terminals.forEach(node -> {
-            CompoundTag posTag = new CompoundTag();
-            posTag.putInt("x", node.pos().getX());
-            posTag.putInt("y", node.pos().getY());
-            posTag.putInt("z", node.pos().getZ());
-            posTag.putInt("channel", node.channel());
-            terminals.put(node.pos().toString(), posTag);
-        });
-        tag.put("terminals", terminals);
+    public List<NetworkNode>  getTerminals(int channel) {
+        return terminals.get(channel).stream().map(node ->
+            new NetworkNode(
+                node.pos().offset(this.worldPosition),
+                node.channel(),
+                node.terminal()
+            )
+        ).toList();
     }
 
     @Override
     public void load(CompoundTag tag) {
         super.load(tag);
         terminals.clear();
-        if (tag.contains("terminals")) {
-            CompoundTag terminalsTag = tag.getCompound("terminals");
-            for (String key : terminalsTag.getAllKeys()) {
-                CompoundTag posTag = terminalsTag.getCompound(key);
-                BlockPos pos = new BlockPos(
-                    posTag.getInt("x"),
-                    posTag.getInt("y"),
-                    posTag.getInt("z")
-                );
-                int channel = posTag.getInt("channel");
-                terminals.add(new NetworkNode(pos, channel, true));
+        
+        if (tag.contains("Terminals", Tag.TAG_LIST)) {
+            ListTag terminalsList = tag.getList("Terminals", Tag.TAG_COMPOUND);
+            for (int i = 0; i < terminalsList.size(); i++) {
+                CompoundTag terminalTag = terminalsList.getCompound(i);
+                int channel = terminalTag.getInt("Channel");
+                
+                ListTag nodesList = terminalTag.getList("Nodes", Tag.TAG_COMPOUND);
+                List<NetworkNode> nodes = nodesList.stream()
+                    .map(nodeTag -> {
+                        CompoundTag nodeCompound = (CompoundTag) nodeTag;
+                        BlockPos pos = new BlockPos(
+                            nodeCompound.getInt("X"),
+                            nodeCompound.getInt("Y"),
+                            nodeCompound.getInt("Z")
+                        );
+                        int nodeChannel = nodeCompound.getInt("Channel");
+                        boolean isTerminal = nodeCompound.getBoolean("IsTerminal");
+                        return new NetworkNode(pos, nodeChannel, isTerminal);
+                    })
+                    .toList();
+                
+                terminals.put(channel, nodes);
             }
         }
+    }
+
+    @Override
+    protected void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
+        
+        ListTag terminalsList = new ListTag();
+        terminals.forEach((channel, nodes) -> {
+            CompoundTag terminalTag = new CompoundTag();
+            terminalTag.putInt("Channel", channel);
+            
+            ListTag nodesList = new ListTag();
+            nodes.forEach(node -> {
+                CompoundTag nodeTag = new CompoundTag();
+                nodeTag.putInt("X", node.pos().getX());
+                nodeTag.putInt("Y", node.pos().getY());
+                nodeTag.putInt("Z", node.pos().getZ());
+                nodeTag.putInt("Channel", node.channel());
+                nodeTag.putBoolean("IsTerminal", node.terminal());
+                nodesList.add(nodeTag);
+            });
+            
+            terminalTag.put("Nodes", nodesList);
+            terminalsList.add(terminalTag);
+        });
+        
+        tag.put("Terminals", terminalsList);
     }
 }

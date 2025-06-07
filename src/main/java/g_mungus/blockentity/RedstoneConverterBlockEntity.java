@@ -1,13 +1,12 @@
 package g_mungus.blockentity;
 
 import g_mungus.block.ModBlocks;
+import g_mungus.block.cableNetwork.core.Channels;
 import g_mungus.block.cableNetwork.core.NetworkNode;
 import g_mungus.block.cableNetwork.TransformerBlock;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,8 +28,8 @@ public class RedstoneConverterBlockEntity extends NetworkTerminal {
     }
 
     @Override
-    public void defineTerminals(List<NetworkNode> terminals) {
-        super.defineTerminals(terminals);
+    public void defineTerminals(List<NetworkNode> terminals, int channel) {
+        super.defineTerminals(terminals, channel);
 
         updateAllSignals();
     }
@@ -44,7 +43,7 @@ public class RedstoneConverterBlockEntity extends NetworkTerminal {
     private void updateAllSignals() {
         AtomicInteger maxSuppliedSignal = new AtomicInteger();
         if (level != null) {
-            getTerminals().forEach(node -> {
+            getTerminals(Channels.MAIN).forEach(node -> {
                 BlockEntity blockEntity = level.getBlockEntity(node.pos());
                 if (blockEntity instanceof RedstoneConverterBlockEntity redstoneConverter) {
                     int signal = redstoneConverter.getCurrentSuppliedSignal();
@@ -55,7 +54,7 @@ public class RedstoneConverterBlockEntity extends NetworkTerminal {
 
             });
 
-            getTerminals().forEach(node -> {
+            getTerminals(Channels.MAIN).forEach(node -> {
                 BlockEntity blockEntity = level.getBlockEntity(node.pos());
                 if (blockEntity instanceof RedstoneConverterBlockEntity) {
                     ((RedstoneConverterBlockEntity) blockEntity).receiveSignal(maxSuppliedSignal.get());

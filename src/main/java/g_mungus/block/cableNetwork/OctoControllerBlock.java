@@ -1,5 +1,7 @@
 package g_mungus.block.cableNetwork;
 
+import g_mungus.block.cableNetwork.core.CableNetworkComponent;
+import g_mungus.block.cableNetwork.core.NetworkNode;
 import g_mungus.blockentity.ModBlockEntities;
 import g_mungus.blockentity.OctoControllerBlockEntity;
 import net.minecraft.core.BlockPos;
@@ -21,7 +23,9 @@ import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class OctoControllerBlock extends BaseEntityBlock {
+import java.util.List;
+
+public class OctoControllerBlock extends BaseEntityBlock implements CableNetworkComponent {
     public static final DirectionProperty FACING = DirectionProperty.create("facing", Direction.Plane.HORIZONTAL);
 
     public OctoControllerBlock(Properties properties) {
@@ -66,5 +70,42 @@ public class OctoControllerBlock extends BaseEntityBlock {
             return InteractionResult.CONSUME;
         }
         return InteractionResult.PASS;
+    }
+
+    @Override
+    public boolean isTerminal() {
+        return true;
+    }
+
+    @Override
+    public int getTotalChannelCount() {
+        return 8;
+    }
+
+    @Override
+    public int getChannelCountForConnection(BlockPos self, BlockPos from, Level level) {
+        BlockState state = level.getBlockState(self);
+        BlockPos behind = self.offset(state.getValue(FACING).getOpposite().getNormal());
+        if (from.equals(behind) || from.equals(self.below())) {
+            return 4;
+        } else {
+            return 0;
+        }
+    }
+
+    @Override
+    public List<BlockPos> getConnectingNeighbors(NetworkNode self, Level level) {
+        BlockState state = level.getBlockState(self.pos());
+        BlockPos behind = self.pos().offset(state.getValue(FACING).getOpposite().getNormal());
+        return List.of(self.pos(), behind);
+    }
+
+    @Override
+    public int getNewChannel(BlockPos self, NetworkNode input, Level level) {
+        if (input.pos().equals(self.below())) {
+            return input.channel() + 4;
+        } else {
+            return input.channel() + 8;
+        }
     }
 }

@@ -48,7 +48,7 @@ public interface CableNetworkComponent {
                 BlockEntity blockEntity = level.getBlockEntity(terminalNode.pos());
 
                 if (blockEntity instanceof NetworkTerminal terminal) {
-                    terminal.defineTerminals(terminals);
+                    terminal.defineTerminals(terminals, terminalNode.channel());
                 }
             });
         }

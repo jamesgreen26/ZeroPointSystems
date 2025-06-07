@@ -57,14 +57,14 @@ public class OctovariantControlPacket {
             if (context.getSender() != null) {
                 if (context.getSender().getVehicle() instanceof OctoMountingEntity seat) {
                     if (seat.isController) {
-                        seat.blockEntity.a = packet.a;
-                        seat.blockEntity.b = packet.b;
-                        seat.blockEntity.c = packet.c;
-                        seat.blockEntity.d = packet.d;
-                        seat.blockEntity.e = packet.e;
-                        seat.blockEntity.f = packet.f;
-                        seat.blockEntity.g = packet.g;
-                        seat.blockEntity.h = packet.h;
+                        seat.blockEntity.setA(packet.a());
+                        seat.blockEntity.setB(packet.b());
+                        seat.blockEntity.setC(packet.c());
+                        seat.blockEntity.setD(packet.d());
+                        seat.blockEntity.setE(packet.e());
+                        seat.blockEntity.setF(packet.f());
+                        seat.blockEntity.setG(packet.g());
+                        seat.blockEntity.setH(packet.h());
                     }
                 }
             }

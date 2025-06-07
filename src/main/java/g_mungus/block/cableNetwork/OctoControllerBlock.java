@@ -19,6 +19,7 @@ import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.NotNull;
@@ -28,15 +29,22 @@ import java.util.List;
 
 public class OctoControllerBlock extends BaseEntityBlock implements CableNetworkComponent {
     public static final DirectionProperty FACING = DirectionProperty.create("facing", Direction.Plane.HORIZONTAL);
+    public static BooleanProperty BACK = BooleanProperty.create("back");
+    public static BooleanProperty DOWN = BooleanProperty.create("down");
 
     public OctoControllerBlock(Properties properties) {
         super(properties);
-        this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
+        this.registerDefaultState(
+                this.stateDefinition.any()
+                        .setValue(FACING, Direction.NORTH)
+                        .setValue(BACK, false)
+                        .setValue(DOWN, false)
+        );
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING);
+        builder.add(FACING, BACK, DOWN);
     }
 
     @Nullable
@@ -113,5 +121,33 @@ public class OctoControllerBlock extends BaseEntityBlock implements CableNetwork
         } else {
             return input.channel() + 8;
         }
+    }
+
+    @Override
+    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
+        if (!level.isClientSide) {
+            updateConnections(state, level, pos);
+        }
+    }
+
+    private void updateConnections(BlockState state, Level level, BlockPos pos) {
+        BlockState newState = getNewBlockState(state, level, pos);
+
+        if (!state.equals(newState)) {
+            level.setBlock(pos, newState, 3);
+            updateNetwork(pos, level);
+        }
+    }
+
+    @NotNull
+    public BlockState getNewBlockState(BlockState state, Level level, BlockPos pos) {
+        Direction backDirection = state.getValue(FACING).getOpposite();
+
+        boolean back = canConnect(pos, pos.offset(backDirection.getNormal()), level);
+        boolean down = canConnect(pos, pos.offset(Direction.DOWN.getNormal()), level);
+
+        return state
+                .setValue(BACK, back)
+                .setValue(DOWN, down);
     }
 }

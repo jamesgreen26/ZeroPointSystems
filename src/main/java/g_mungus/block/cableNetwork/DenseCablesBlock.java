@@ -95,7 +95,7 @@ public class DenseCablesBlock extends Block implements CableNetworkComponent {
 
     @Override
     public int getNewChannel(BlockPos self, NetworkNode input, Level level) {
-        return input.channel();
+        return Channels.toQuad(input.channel());
     }
 
     private boolean isConnectingSide(BlockPos a, BlockPos b, BlockState state) {

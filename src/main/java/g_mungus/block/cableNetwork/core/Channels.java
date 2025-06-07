@@ -32,4 +32,8 @@ public class Channels {
             case 8 -> { return OCT_H; }
         }
     }
+
+    public static int toQuad(int in) {
+        return ((in - 1) % 4) + 1;
+    }
 }

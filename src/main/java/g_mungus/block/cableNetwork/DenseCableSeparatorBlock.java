@@ -147,7 +147,7 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
         if (input.channel() == Channels.MAIN) {
             return getChannelForNeighborPos(self, input.pos(), state);
         } else {
-            return input.channel();
+            return Channels.toQuad(input.channel());
         }
     }
 

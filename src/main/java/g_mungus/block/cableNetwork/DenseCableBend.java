@@ -1,6 +1,5 @@
 package g_mungus.block.cableNetwork;
 
-import g_mungus.block.ModBlocks;
 import g_mungus.block.cableNetwork.core.CableNetworkComponent;
 import g_mungus.block.cableNetwork.core.Channels;
 import g_mungus.block.cableNetwork.core.NetworkNode;
@@ -14,7 +13,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -166,7 +164,7 @@ public class DenseCableBend extends Block implements CableNetworkComponent {
 
     @Override
     public int getNewChannel(BlockPos self, NetworkNode input, Level level) {
-        return input.channel();
+        return Channels.toQuad(input.channel());
     }
 
     private boolean isConnectingSide(BlockPos a, BlockPos b, BlockState state) {

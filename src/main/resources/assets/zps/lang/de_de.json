@@ -1,0 +1,31 @@
+{
+    "block.zps.cable": "kabel",
+    "block.zps.dense_cables": "besser Kabel",
+    "block.zps.dense_cable_separator": "Besser Kabel trenner",
+    "block.zps.dense_cable_bend": "Besser kabel Kurve",
+    "block.zps.stepup_transformer": "Strom Ausgang",
+    "block.zps.stepdown_transformer": "StromEingang",
+    "block.zps.redstone_converter": "Redstone Konvektor",
+    "block.zps.octo_controller": "Octo Controller",
+
+    "item.zps.cable": "Kabel",
+    "item.zps.dense_cables": "besser Kabel",
+    "item.zps.dense_cable_separator": "besser Kabel trenner",
+    "item.zps.dense_cable_bend": "Besser Kabel Kurve",
+    "item.zps.stepup_transformer": "Strom ausgang",
+    "item.zps.stepdown_transformer": "StromEingang",
+    "item.zps.redstone_converter": "Redstone Konvektor",
+    "item.zps.octo_controller": "Octo Controller",
+
+    "creativetab.zps_tab": "Zero Point Systems",
+
+    "key.zps.a": "kanal A",
+    "key.zps.b": "kanal B",
+    "key.zps.c": "kanal C",
+    "key.zps.d": "kanal D",
+    "key.zps.e": "kanal E",
+    "key.zps.f": "kanal F",
+    "key.zps.g": "kanal G",
+    "key.zps.h": "kanal H",
+    "key.categories.zps": "Zero Point Systems"
+}

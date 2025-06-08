@@ -1,0 +1,31 @@
+{
+    "block.zps.cable": "Câble",
+    "block.zps.dense_cables": "Câble dense",
+    "block.zps.dense_cable_separator": "Séparateur de câble dense",
+    "block.zps.dense_cable_bend": "Câble dense courbé",
+    "block.zps.stepup_transformer": "Interface de transmission",
+    "block.zps.stepdown_transformer": "Interface de réception",
+    "block.zps.redstone_converter": "Convertisseur à redstone",
+    "block.zps.octo_controller": "Controlleur Octo",
+
+    "item.zps.cable": "Câble",
+    "item.zps.dense_cables": "Câble dense",
+    "item.zps.dense_cable_separator": "Séparateur de câble dense",
+    "item.zps.dense_cable_bend": "Câble dense courbé",
+    "item.zps.stepup_transformer": "Interface de transmission",
+    "item.zps.stepdown_transformer": "Interface de réception",
+    "item.zps.redstone_converter": "Convertisseur à redstone",
+    "item.zps.octo_controller": "Controlleur Octo",
+
+    "creativetab.zps_tab": "Zero Point Systems",
+
+    "key.zps.a": "Canal A",
+    "key.zps.b": "Canal B",
+    "key.zps.c": "Canal C",
+    "key.zps.d": "Canal D",
+    "key.zps.e": "Canal E",
+    "key.zps.f": "Canal F",
+    "key.zps.g": "Canal G",
+    "key.zps.h": "Canal H",
+    "key.categories.zps": "Zero Point Systems"
+}

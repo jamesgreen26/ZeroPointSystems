@@ -1,17 +1,17 @@
 modLoader = "javafml"
 loaderVersion = "[47,)"
 #issueTrackerURL = ""
-license = "Insert License Here"
+license = "MIT"
 
 [[mods]]
 modId = "zps"
 version = "${version}"
 displayName = "Zero Point Systems"
-authors = "Me!"
+authors = "G_Mungus"
 description = '''
-This is an example description! Tell everyone what your mod is about!
+Advanced solutions delivering unmatched efficiency and flexibility.
 '''
-#logoFile = ""
+logoFile = "assets/zps/icon.png"
 
 [[dependencies.zps]]
 modId = "forge"

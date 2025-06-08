@@ -21,7 +21,7 @@ public class StepDownTransformerBlockEntity extends NetworkTerminal {
 
     public StepDownTransformerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.STEPDOWN_TRANSFORMER.get(), pos, state);
-        this.energyHandler = new EnergyStorage(100000, 1000, 1000);
+        this.energyHandler = new EnergyStorage(5000, 1000, 1000);
         this.energy = LazyOptional.of(() -> energyHandler);
     }
 

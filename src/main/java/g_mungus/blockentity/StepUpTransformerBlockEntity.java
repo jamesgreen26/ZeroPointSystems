@@ -29,7 +29,7 @@ public class StepUpTransformerBlockEntity extends NetworkTerminal {
 
     public StepUpTransformerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.STEPUP_TRANSFORMER.get(), pos, state);
-        this.energyHandler = new EnergyStorage(100000, 1000, 1000);
+        this.energyHandler = new EnergyStorage(5000, 1000, 1000);
         this.energy = LazyOptional.of(() -> energyHandler);
     }
 

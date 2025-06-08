@@ -41,10 +41,12 @@ public class StepUpTransformerBlockEntity extends NetworkTerminal {
         BlockPos targetPos = pos.relative(facing);
         BlockEntity targetEntity = level.getBlockEntity(targetPos);
 
+        int canStore = Math.min(1000, blockEntity.energyHandler.getMaxEnergyStored() - blockEntity.energyHandler.getEnergyStored());
+
         if (targetEntity != null) {
-            targetEntity.getCapability(ForgeCapabilities.ENERGY, facing.getOpposite()).ifPresent(storage -> {
+            targetEntity.getCapability(ForgeCapabilities.ENERGY, facing).ifPresent(storage -> {
                 if (storage.canExtract()) {
-                    int energyToExtract = Math.min(storage.getEnergyStored(), 1000);
+                    int energyToExtract = Math.min(storage.getEnergyStored(), canStore);
                     int energyExtracted = storage.extractEnergy(energyToExtract, false);
                     if (energyExtracted > 0) {
                         blockEntity.energyHandler.receiveEnergy(energyExtracted, false);
@@ -70,8 +72,6 @@ public class StepUpTransformerBlockEntity extends NetworkTerminal {
             }
         });
 
-        ZPSMod.LOGGER.info("receiving terminal count: {}", receivingTerminalCount.get());
-
         // Second pass: distribute energy proportionally
         if (receivingTerminalCount.get() > 0) {
             int availableEnergy = blockEntity.energyHandler.getEnergyStored();
@@ -86,7 +86,6 @@ public class StepUpTransformerBlockEntity extends NetworkTerminal {
                         if (storage.canReceive()) {
                             int energySent = blockEntity.energyHandler.extractEnergy(energyPerTransformer, false);
                             if (energySent > 0) {
-                                ZPSMod.LOGGER.info("energy sent: {}", energySent);
                                 storage.receiveEnergy(energySent, false);
                             }
                         }

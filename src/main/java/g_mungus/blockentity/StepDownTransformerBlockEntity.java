@@ -32,10 +32,12 @@ public class StepDownTransformerBlockEntity extends NetworkTerminal {
         BlockPos targetPos = pos.relative(facing);
         BlockEntity targetEntity = level.getBlockEntity(targetPos);
 
+        int canSend = Math.min(blockEntity.energyHandler.getEnergyStored(), 1000);
+
         if (targetEntity != null) {
             targetEntity.getCapability(ForgeCapabilities.ENERGY, facing.getOpposite()).ifPresent(storage -> {
                 if (storage.canReceive()) {
-                    int energyToSend = Math.min(blockEntity.energyHandler.getEnergyStored(), 1000);
+                    int energyToSend = Math.min(canSend, storage.getMaxEnergyStored() - storage.getEnergyStored());
                     if (energyToSend > 0) {
                         int energySent = blockEntity.energyHandler.extractEnergy(energyToSend, false);
                         if (energySent > 0) {

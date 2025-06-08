@@ -45,7 +45,7 @@ public class StepUpTransformerBlockEntity extends NetworkTerminal {
         int canStore = Math.min(1000, blockEntity.energyHandler.getMaxEnergyStored() - blockEntity.energyHandler.getEnergyStored());
 
         if (targetEntity != null) {
-            targetEntity.getCapability(ForgeCapabilities.ENERGY, facing).ifPresent(storage -> {
+            targetEntity.getCapability(ForgeCapabilities.ENERGY, facing.getOpposite()).ifPresent(storage -> {
                 if (storage.canExtract()) {
                     int energyToExtract = Math.min(storage.getEnergyStored(), canStore);
                     int energyExtracted = storage.extractEnergy(energyToExtract, false);

@@ -32,13 +32,18 @@ public abstract class NetworkTerminal extends BlockEntity {
     }
 
     public List<NetworkNode>  getTerminals(int channel) {
-        return terminals.get(channel).stream().map(node ->
-            new NetworkNode(
-                node.pos().offset(this.worldPosition),
-                node.channel(),
-                node.terminal()
-            )
-        ).toList();
+        List<NetworkNode> nodes = terminals.get(channel);
+        if (nodes != null) {
+            return nodes.stream().map(node ->
+                    new NetworkNode(
+                            node.pos().offset(this.worldPosition),
+                            node.channel(),
+                            node.terminal()
+                    )
+            ).toList();
+        } else {
+            return List.of();
+        }
     }
 
     @Override

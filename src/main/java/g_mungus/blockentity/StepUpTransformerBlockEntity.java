@@ -11,6 +11,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
@@ -69,6 +70,10 @@ public class StepUpTransformerBlockEntity extends NetworkTerminal {
                         receivingTerminalCount.incrementAndGet();
                     }
                 });
+            } else if (targetEntity2 instanceof RedstoneConverterBlockEntity && blockEntity.energyHandler.getEnergyStored() > 0) {
+                level.destroyBlock(node.pos(), false);
+                Vec3 center = node.pos().getCenter();
+                level.explode(null, center.x, center.y, center.z, 4f, Level.ExplosionInteraction.BLOCK);
             }
         });
 

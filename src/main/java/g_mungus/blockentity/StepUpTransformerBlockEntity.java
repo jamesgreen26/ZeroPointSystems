@@ -56,27 +56,28 @@ public class StepUpTransformerBlockEntity extends NetworkTerminal {
         // Distribute energy to connected terminals
         List<NetworkNode> terminals = blockEntity.getTerminals(Channels.MAIN);
 
-        AtomicInteger totalEnergyNeeded = new AtomicInteger(0);
+        AtomicInteger receivingTerminalCount = new AtomicInteger(0);
         
         // First pass: calculate total energy needed
         terminals.forEach(node -> {
             BlockEntity targetEntity2 = level.getBlockEntity(node.pos());
             if (targetEntity2 instanceof StepDownTransformerBlockEntity) {
                 targetEntity2.getCapability(ForgeCapabilities.ENERGY, level.getBlockState(node.pos()).getValue(StepdownTransformerBlock.FACING)).ifPresent(storage -> {
-                    if (storage.canReceive()) {
-                        int energyNeeded = storage.getMaxEnergyStored() - storage.getEnergyStored();
-                        totalEnergyNeeded.addAndGet(energyNeeded);
+                    if (storage.canReceive() && storage.getMaxEnergyStored() > storage.getEnergyStored()) {
+                        receivingTerminalCount.incrementAndGet();
                     }
                 });
             }
         });
 
+        ZPSMod.LOGGER.info("receiving terminal count: {}", receivingTerminalCount.get());
+
         // Second pass: distribute energy proportionally
-        if (totalEnergyNeeded.get() > 0) {
+        if (receivingTerminalCount.get() > 0) {
             int availableEnergy = blockEntity.energyHandler.getEnergyStored();
 
             // Calculate how much energy to send per transformer
-            int energyPerTransformer = Math.min(availableEnergy, 1000); // Send up to 1000 RF/t per transformer
+            int energyPerTransformer = Math.min(availableEnergy, 1000) / receivingTerminalCount.get(); // Send up to 1000 RF/t per transformer
             
             terminals.forEach(node -> {
                 BlockEntity targetEntity2 = level.getBlockEntity(node.pos());
@@ -85,6 +86,7 @@ public class StepUpTransformerBlockEntity extends NetworkTerminal {
                         if (storage.canReceive()) {
                             int energySent = blockEntity.energyHandler.extractEnergy(energyPerTransformer, false);
                             if (energySent > 0) {
+                                ZPSMod.LOGGER.info("energy sent: {}", energySent);
                                 storage.receiveEnergy(energySent, false);
                             }
                         }

@@ -1,6 +1,5 @@
 package g_mungus.blockentity;
 
-import g_mungus.ZPSMod;
 import g_mungus.block.cableNetwork.TransformerBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -29,14 +28,11 @@ public class StepDownTransformerBlockEntity extends NetworkTerminal {
     public static void tick(Level level, BlockPos pos, BlockState state, StepDownTransformerBlockEntity blockEntity) {
         if (level.isClientSide()) return;
 
-        ZPSMod.LOGGER.info("StepDown tick - Energy stored: {}", blockEntity.energyHandler.getEnergyStored());
-
         Direction facing = state.getValue(TransformerBlock.FACING);
         BlockPos targetPos = pos.relative(facing);
         BlockEntity targetEntity = level.getBlockEntity(targetPos);
 
         if (targetEntity != null) {
-            ZPSMod.LOGGER.info("Found target entity at {}", targetPos);
             targetEntity.getCapability(ForgeCapabilities.ENERGY, facing.getOpposite()).ifPresent(storage -> {
                 if (storage.canReceive()) {
                     int energyToSend = Math.min(blockEntity.energyHandler.getEnergyStored(), 1000);
@@ -44,19 +40,10 @@ public class StepDownTransformerBlockEntity extends NetworkTerminal {
                         int energySent = blockEntity.energyHandler.extractEnergy(energyToSend, false);
                         if (energySent > 0) {
                             storage.receiveEnergy(energySent, false);
-                            ZPSMod.LOGGER.info("Sent {} energy to target", energySent);
-                        } else {
-                            ZPSMod.LOGGER.info("Failed to send energy to target");
                         }
-                    } else {
-                        ZPSMod.LOGGER.info("No energy available to send");
                     }
-                } else {
-                    ZPSMod.LOGGER.info("Target cannot receive energy");
                 }
             });
-        } else {
-            ZPSMod.LOGGER.info("No target entity found at {}", targetPos);
         }
     }
 
@@ -77,8 +64,6 @@ public class StepDownTransformerBlockEntity extends NetworkTerminal {
         if (cap == ForgeCapabilities.ENERGY) {
             if (side != null && side == getBlockState().getValue(TransformerBlock.FACING)) {
                 return energy.cast();
-            } else {
-                ZPSMod.LOGGER.info("Energy capability requested from invalid side: {}", side);
             }
         }
         return super.getCapability(cap, side);

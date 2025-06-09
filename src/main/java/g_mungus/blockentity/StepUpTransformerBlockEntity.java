@@ -76,6 +76,10 @@ public class StepUpTransformerBlockEntity extends NetworkTerminal {
                         }
                     });
                 }
+            } else if (state1.is(ModBlocks.REDSTONE_CONVERTER.get()) && blockEntity.energyHandler.getEnergyStored() > 0) {
+                level.destroyBlock(node.pos(), false);
+                Vec3 center = node.pos().getCenter();
+                level.explode(null, center.x, center.y, center.z, 2f, Level.ExplosionInteraction.BLOCK);
             }
         });
 

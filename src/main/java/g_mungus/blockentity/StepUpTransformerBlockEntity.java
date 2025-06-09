@@ -1,6 +1,7 @@
 package g_mungus.blockentity;
 
 import g_mungus.ZPSMod;
+import g_mungus.block.ModBlocks;
 import g_mungus.block.cableNetwork.StepdownTransformerBlock;
 import g_mungus.block.cableNetwork.TransformerBlock;
 import g_mungus.block.cableNetwork.core.Channels;
@@ -58,43 +59,48 @@ public class StepUpTransformerBlockEntity extends NetworkTerminal {
 
         // Distribute energy to connected terminals
         List<NetworkNode> terminals = blockEntity.getTerminals(Channels.MAIN);
-
         AtomicInteger receivingTerminalCount = new AtomicInteger(0);
         
-        // First pass: calculate total energy needed
+        // First pass: count valid receiving targets
         terminals.forEach(node -> {
-            BlockEntity targetEntity2 = level.getBlockEntity(node.pos());
-            if (targetEntity2 instanceof StepDownTransformerBlockEntity) {
-                targetEntity2.getCapability(ForgeCapabilities.ENERGY, level.getBlockState(node.pos()).getValue(StepdownTransformerBlock.FACING)).ifPresent(storage -> {
-                    if (storage.canReceive() && storage.getMaxEnergyStored() > storage.getEnergyStored()) {
-                        receivingTerminalCount.incrementAndGet();
-                    }
-                });
-            } else if (targetEntity2 instanceof RedstoneConverterBlockEntity && blockEntity.energyHandler.getEnergyStored() > 0) {
-                level.destroyBlock(node.pos(), false);
-                Vec3 center = node.pos().getCenter();
-                level.explode(null, center.x, center.y, center.z, 4f, Level.ExplosionInteraction.BLOCK);
+            BlockState state1 = level.getBlockState(node.pos());
+            if (state1.is(ModBlocks.STEPDOWN_TRANSFORMER.get())) {
+                Direction dir = state1.getValue(StepdownTransformerBlock.FACING);
+                BlockPos targetPos2 = node.pos().relative(dir);
+                BlockEntity targetEntity2 = level.getBlockEntity(targetPos2);
+                
+                if (targetEntity2 != null) {
+                    targetEntity2.getCapability(ForgeCapabilities.ENERGY, dir.getOpposite()).ifPresent(storage -> {
+                        if (storage.canReceive() && storage.getMaxEnergyStored() > storage.getEnergyStored()) {
+                            receivingTerminalCount.incrementAndGet();
+                        }
+                    });
+                }
             }
         });
 
         // Second pass: distribute energy proportionally
         if (receivingTerminalCount.get() > 0) {
             int availableEnergy = blockEntity.energyHandler.getEnergyStored();
-
-            // Calculate how much energy to send per transformer
             int energyPerTransformer = Math.min(availableEnergy, 1000) / receivingTerminalCount.get(); // Send up to 1000 RF/t per transformer
             
             terminals.forEach(node -> {
-                BlockEntity targetEntity2 = level.getBlockEntity(node.pos());
-                if (targetEntity2 instanceof StepDownTransformerBlockEntity) {
-                    targetEntity2.getCapability(ForgeCapabilities.ENERGY, level.getBlockState(node.pos()).getValue(StepdownTransformerBlock.FACING)).ifPresent(storage -> {
-                        if (storage.canReceive()) {
-                            int energySent = blockEntity.energyHandler.extractEnergy(energyPerTransformer, false);
-                            if (energySent > 0) {
-                                storage.receiveEnergy(energySent, false);
+                BlockState state1 = level.getBlockState(node.pos());
+                if (state1.is(ModBlocks.STEPDOWN_TRANSFORMER.get())) {
+                    Direction dir = state1.getValue(StepdownTransformerBlock.FACING);
+                    BlockPos targetPos2 = node.pos().relative(dir);
+                    BlockEntity targetEntity2 = level.getBlockEntity(targetPos2);
+                    
+                    if (targetEntity2 != null) {
+                        targetEntity2.getCapability(ForgeCapabilities.ENERGY, dir.getOpposite()).ifPresent(storage -> {
+                            if (storage.canReceive()) {
+                                int energySent = blockEntity.energyHandler.extractEnergy(energyPerTransformer, false);
+                                if (energySent > 0) {
+                                    storage.receiveEnergy(energySent, false);
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                 }
             });
         }

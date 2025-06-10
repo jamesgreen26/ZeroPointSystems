@@ -2,7 +2,8 @@ package g_mungus.zps.networking;
 
 import g_mungus.zps.entity.OctoMountingEntity;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.neoforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
@@ -54,8 +55,9 @@ public class OctovariantControlPacket {
     public static void handle(OctovariantControlPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
         NetworkEvent.Context context = contextSupplier.get();
         context.enqueueWork(() -> {
-            if (context.getSender() != null) {
-                if (context.getSender().getVehicle() instanceof OctoMountingEntity seat) {
+            ServerPlayer player = context.getSender();
+            if (player != null) {
+                if (player.getVehicle() instanceof OctoMountingEntity seat) {
                     if (seat.isController && seat.blockEntity != null) {
                         seat.blockEntity.setA(packet.a());
                         seat.blockEntity.setB(packet.b());

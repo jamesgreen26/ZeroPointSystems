@@ -5,12 +5,12 @@ import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.entity.ModEntities;
 import g_mungus.zps.item.ModCreativeTabs;
 import g_mungus.zps.item.ModItems;
-
 import g_mungus.zps.networking.ZPSGamePackets;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,21 +19,25 @@ public final class ZPSMod {
     public static final String MOD_ID = "zps";
     public static Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
-    public ZPSMod(FMLJavaModLoadingContext context) {
-        IEventBus modEventBus = context.getModEventBus();
+    public ZPSMod(IEventBus modBus, ModContainer container) {
 
         // Register blocks and block entities
-        ModBlocks.BLOCKS.register(modEventBus);
-        ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
-        ModItems.ITEMS.register(modEventBus);
-        ModCreativeTabs.register(modEventBus);
-        ModEntities.ENTITIES.register(modEventBus);
+        ModBlocks.BLOCKS.register(modBus);
+        ModBlockEntities.BLOCK_ENTITIES.register(modBus);
+        ModItems.ITEMS.register(modBus);
+        ModCreativeTabs.register(modBus);
+        ModEntities.ENTITIES.register(modBus);
 
         // Register common setup event
-        modEventBus.addListener(this::commonSetup);
+        modBus.addListener(this::commonSetup);
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         ZPSGamePackets.register();
     }
+
+    private void clientSetup(final FMLClientSetupEvent event) {
+        
+    }
+
 }

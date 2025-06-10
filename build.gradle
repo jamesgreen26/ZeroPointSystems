@@ -10,37 +10,46 @@ base {
     archivesName = project.archives_name
 }
 
-loom {
-    silentMojangMappingsLicense()
-
-    forge {
-        mixinConfig 'zps.mixins.json'
-    }
-}
-
 repositories {
+    // Add NeoForged repository.
+    maven {
+        name = 'NeoForged'
+        url = 'https://maven.neoforged.net/releases'
+    }
+    maven {
+        name = 'NeoForged Snapshots'
+        url = 'https://maven.neoforged.net/snapshots'
+    }
+    maven {
+        name = 'NeoForged Maven'
+        url = 'https://maven.neoforged.net/'
+    }
+    maven {
+        name = 'NeoForged Beta'
+        url = 'https://maven.neoforged.net/beta'
+    }
+
     // Add repositories to retrieve artifacts from in here.
     // You should only use this when depending on other mods because
     // Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
     // See https://docs.gradle.org/current/userguide/declaring_repositories.html
     // for more information about repositories.
-    mavenLocal()
+}
+
+loom {
+    silentMojangMappingsLicense()
 }
 
 dependencies {
     minecraft "net.minecraft:minecraft:$project.minecraft_version"
     mappings loom.officialMojangMappings()
-    forge "net.minecraftforge:forge:$project.forge_version"
-
-
-    api "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10"
-    api "org.jetbrains.kotlin:kotlin-reflect:1.9.10"
+    neoForge "net.neoforged:neoforge:$project.neoforge_version"
 }
 
 processResources {
     inputs.property 'version', project.version
 
-    filesMatching('META-INF/mods.toml') {
+    filesMatching('META-INF/neoforge.mods.toml') {
         expand version: project.version
     }
 }
@@ -51,12 +60,12 @@ java {
     // If you remove this line, sources will not be generated.
     withSourcesJar()
 
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 tasks.withType(JavaCompile).configureEach {
-    it.options.release = 17
+    it.options.release = 21
 }
 
 // Configure Maven publishing.

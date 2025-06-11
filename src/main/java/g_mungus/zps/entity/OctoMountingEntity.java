@@ -73,7 +73,7 @@ public class OctoMountingEntity extends Entity {
         int g = ModKeybinds.KEY_G.isDown()? 15 : 0;
         int h = ModKeybinds.KEY_H.isDown()? 15 : 0;
 
-        ZPSGamePackets.INSTANCE.sendToServer(new OctovariantControlPacket(a, b, c, d, e, f, g, h));
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(new OctovariantControlPacket(a, b, c, d, e, f, g, h));
     }
 
     @Override
@@ -83,10 +83,5 @@ public class OctoMountingEntity extends Entity {
         } else {
              return null;
         }
-    }
-
-    @Override
-    public @NotNull Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return new ClientboundAddEntityPacket(this);
     }
 }

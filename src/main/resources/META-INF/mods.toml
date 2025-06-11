@@ -16,24 +16,16 @@ logoFile = "assets/zps/icon.png"
 [[dependencies.zps]]
 modId = "neoforge"
 type = "required"
-versionRange = "[21.1.0-beta,)"
+versionRange = "[21.1,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.zps]]
 modId = "minecraft"
 type = "required"
-versionRange = "[1.21.0,)"
+versionRange = "[1.21.1,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[mixins]]
 config = "zps.mixins.json"
-
-[[mods]]
-modId = "neoforge"
-version = "21.1.0-beta"
-displayName = "NeoForge"
-description = '''
-NeoForge is a free, open-source modding API for Minecraft.
-'''

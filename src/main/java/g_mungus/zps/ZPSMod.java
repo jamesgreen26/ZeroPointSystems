@@ -9,8 +9,6 @@ import g_mungus.zps.networking.ZPSGamePackets;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,24 +18,12 @@ public final class ZPSMod {
     public static Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     public ZPSMod(IEventBus modBus, ModContainer container) {
-
-        // Register blocks and block entities
         ModBlocks.BLOCKS.register(modBus);
         ModBlockEntities.BLOCK_ENTITIES.register(modBus);
         ModItems.ITEMS.register(modBus);
         ModCreativeTabs.register(modBus);
         ModEntities.ENTITIES.register(modBus);
 
-        // Register common setup event
-        modBus.addListener(this::commonSetup);
+        modBus.addListener(ZPSGamePackets::onRegisterPayloadHandler);
     }
-
-    private void commonSetup(final FMLCommonSetupEvent event) {
-        ZPSGamePackets.register();
-    }
-
-    private void clientSetup(final FMLClientSetupEvent event) {
-        
-    }
-
 }

@@ -16,18 +16,6 @@ repositories {
         name = 'NeoForged'
         url = 'https://maven.neoforged.net/releases'
     }
-    maven {
-        name = 'NeoForged Snapshots'
-        url = 'https://maven.neoforged.net/snapshots'
-    }
-    maven {
-        name = 'NeoForged Maven'
-        url = 'https://maven.neoforged.net/'
-    }
-    maven {
-        name = 'NeoForged Beta'
-        url = 'https://maven.neoforged.net/beta'
-    }
 
     // Add repositories to retrieve artifacts from in here.
     // You should only use this when depending on other mods because

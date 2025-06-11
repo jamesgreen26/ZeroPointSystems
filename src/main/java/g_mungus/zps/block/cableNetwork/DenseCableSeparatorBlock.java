@@ -59,8 +59,8 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
     }
 
     @Override
-    public @NotNull InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult arg6) {
-        if (player.getItemInHand(hand).isEmpty() && player.isShiftKeyDown()) {
+    protected @NotNull InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult arg5) {
+        if (player.isShiftKeyDown()) {
             level.setBlock(pos, state.setValue(ROTATION, (state.getValue(ROTATION) + 1) % 4), Block.UPDATE_CLIENTS);
 
             Block block = state.getBlock();

@@ -2,6 +2,7 @@ package g_mungus.zps.blockentity;
 
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -31,7 +32,7 @@ public abstract class NetworkTerminal extends BlockEntity {
         );
     }
 
-    public List<NetworkNode>  getTerminals(int channel) {
+    public List<NetworkNode> getTerminals(int channel) {
         List<NetworkNode> nodes = terminals.get(channel);
         if (nodes != null) {
             return nodes.stream().map(node ->
@@ -47,8 +48,8 @@ public abstract class NetworkTerminal extends BlockEntity {
     }
 
     @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
+    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider provider) {
+        super.loadAdditional(tag, provider);
         terminals.clear();
         
         if (tag.contains("Terminals", Tag.TAG_LIST)) {
@@ -61,11 +62,7 @@ public abstract class NetworkTerminal extends BlockEntity {
                 List<NetworkNode> nodes = nodesList.stream()
                     .map(nodeTag -> {
                         CompoundTag nodeCompound = (CompoundTag) nodeTag;
-                        BlockPos pos = new BlockPos(
-                            nodeCompound.getInt("X"),
-                            nodeCompound.getInt("Y"),
-                            nodeCompound.getInt("Z")
-                        );
+                        BlockPos pos = BlockPos.of(nodeCompound.getLong("Pos"));
                         int nodeChannel = nodeCompound.getInt("Channel");
                         boolean isTerminal = nodeCompound.getBoolean("IsTerminal");
                         return new NetworkNode(pos, nodeChannel, isTerminal);
@@ -78,8 +75,8 @@ public abstract class NetworkTerminal extends BlockEntity {
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
+    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider provider) {
+        super.saveAdditional(tag, provider);
         
         ListTag terminalsList = new ListTag();
         terminals.forEach((channel, nodes) -> {
@@ -89,9 +86,7 @@ public abstract class NetworkTerminal extends BlockEntity {
             ListTag nodesList = new ListTag();
             nodes.forEach(node -> {
                 CompoundTag nodeTag = new CompoundTag();
-                nodeTag.putInt("X", node.pos().getX());
-                nodeTag.putInt("Y", node.pos().getY());
-                nodeTag.putInt("Z", node.pos().getZ());
+                nodeTag.putLong("Pos", node.pos().asLong());
                 nodeTag.putInt("Channel", node.channel());
                 nodeTag.putBoolean("IsTerminal", node.terminal());
                 nodesList.add(nodeTag);

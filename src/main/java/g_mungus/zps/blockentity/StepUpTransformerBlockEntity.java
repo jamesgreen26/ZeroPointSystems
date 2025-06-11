@@ -7,6 +7,7 @@ import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
@@ -59,6 +60,20 @@ public class StepUpTransformerBlockEntity extends NetworkTerminal {
                 () -> {} // No-op invalidation listener
             );
         }
+    }
+
+    @Override
+    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider provider) {
+        super.loadAdditional(tag, provider);
+        if (tag.contains("Energy", CompoundTag.TAG_INT)) {
+            energyHandler.deserializeNBT(provider, tag.get("Energy"));
+        }
+    }
+
+    @Override
+    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider provider) {
+        super.saveAdditional(tag, provider);
+        tag.put("Energy", energyHandler.serializeNBT(provider));
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, StepUpTransformerBlockEntity blockEntity) {
@@ -115,30 +130,14 @@ public class StepUpTransformerBlockEntity extends NetworkTerminal {
                     if (targetEntity != null) {
                         IEnergyStorage storage = level.getCapability(Capabilities.EnergyStorage.BLOCK, targetPos, dir.getOpposite());
                         if (storage != null && storage.canReceive()) {
-                            int energySent = blockEntity.energyHandler.extractEnergy(energyPerTransformer, false);
+                            int energySent = storage.receiveEnergy(energyPerTransformer, false);
                             if (energySent > 0) {
-                                storage.receiveEnergy(energySent, false);
+                                blockEntity.energyHandler.extractEnergy(energySent, false);
                             }
                         }
                     }
                 }
             });
-        }
-    }
-
-    @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
-        if (level != null) {
-            energyHandler.deserializeNBT(level.registryAccess(), tag.get("Energy"));
-        }
-    }
-
-    @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
-        if (level != null) {
-            tag.put("Energy", energyHandler.serializeNBT(level.registryAccess()));
         }
     }
 

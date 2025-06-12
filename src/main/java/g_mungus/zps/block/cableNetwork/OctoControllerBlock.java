@@ -16,10 +16,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.BaseEntityBlock;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.EntityBlock;
-import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -32,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 public class OctoControllerBlock extends Block implements EntityBlock, CableNetworkComponent {
-    public static final DirectionProperty FACING = DirectionProperty.create("facing", Direction.Plane.HORIZONTAL);
+    public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static BooleanProperty BACK = BooleanProperty.create("back");
     public static BooleanProperty DOWN = BooleanProperty.create("down");
 

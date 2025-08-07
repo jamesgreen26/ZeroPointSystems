@@ -5,14 +5,11 @@ import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.block.cableNetwork.TransformerBlock;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
-public class RedstoneConverterBlockEntity extends NetworkTerminal implements RedstoneCapableTerminal {
+public class RedstoneConverterBlockEntity extends NetworkTerminal implements RedstoneSendingTerminal, RedstoneReceivingTerminal {
     public RedstoneConverterBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.REDSTONE_CONVERTER.get(), pos, state);
     }
@@ -41,7 +38,8 @@ public class RedstoneConverterBlockEntity extends NetworkTerminal implements Red
         updateAllSignals(level, getTerminals(Channels.MAIN));
     }
 
-    public void receiveSignal(int strength) {
+    @Override
+    public void receiveSignal(int strength, int channel) {
         if (level == null) return;
         currentSignal = strength;
 

@@ -7,7 +7,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public interface RedstoneCapableTerminal {
+public interface RedstoneSendingTerminal {
     int getCurrentSuppliedSignal(int channel);
 
     default void updateAllSignals(Level level, List<NetworkNode> terminals) {
@@ -15,7 +15,7 @@ public interface RedstoneCapableTerminal {
         if (level != null) {
             terminals.forEach(node -> {
                 BlockEntity blockEntity = level.getBlockEntity(node.pos());
-                if (blockEntity instanceof RedstoneCapableTerminal terminal) {
+                if (blockEntity instanceof RedstoneSendingTerminal terminal) {
                     int signal = terminal.getCurrentSuppliedSignal(node.channel());
                     if (signal > maxSuppliedSignal.get()) {
                         maxSuppliedSignal.set(signal);
@@ -25,8 +25,8 @@ public interface RedstoneCapableTerminal {
 
             terminals.forEach(node -> {
                 BlockEntity blockEntity = level.getBlockEntity(node.pos());
-                if (blockEntity instanceof RedstoneConverterBlockEntity) {
-                    ((RedstoneConverterBlockEntity) blockEntity).receiveSignal(maxSuppliedSignal.get());
+                if (blockEntity instanceof RedstoneReceivingTerminal receivingTerminal) {
+                    receivingTerminal.receiveSignal(maxSuppliedSignal.get(), node.channel());
                 }
             });
         }

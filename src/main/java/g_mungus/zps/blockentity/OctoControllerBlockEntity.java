@@ -10,7 +10,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class OctoControllerBlockEntity extends RideableNetworkTerminal<OctoMountingEntity> implements RedstoneCapableTerminal{
+public class OctoControllerBlockEntity extends RideableNetworkTerminal<OctoMountingEntity> implements RedstoneSendingTerminal {
 
     private final ConcurrentMap<Integer, Integer> outputSignals = new ConcurrentHashMap<>();
 

@@ -140,7 +140,7 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
     @Override
     public int getNewChannel(BlockPos self, NetworkNode input, Level level) {
         BlockState state = level.getBlockState(self);
-        if (input.channel() == Channels.MAIN) {
+        if (input.channel() == Channels.MAIN || !isOnSameAxis(self, input.pos(), state.getValue(FACING))) {
             return getChannelForNeighborPos(self, input.pos(), state);
         } else {
             return Channels.toQuad(input.channel());
@@ -222,5 +222,17 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
         }
 
         return -1;
+    }
+
+    private static boolean isOnSameAxis(BlockPos pos1, BlockPos pos2, Direction direction) {
+        int dx = pos2.getX() - pos1.getX();
+        int dy = pos2.getY() - pos1.getY();
+        int dz = pos2.getZ() - pos1.getZ();
+
+        return switch (direction.getAxis()) {
+            case X -> dy == 0 && dz == 0 && dx != 0;
+            case Y -> dx == 0 && dz == 0 && dy != 0;
+            case Z -> dx == 0 && dy == 0 && dz != 0;
+        };
     }
 }

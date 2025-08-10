@@ -6,6 +6,8 @@ import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.block.cableNetwork.TransformerBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
 
 import java.util.List;
 
@@ -52,5 +54,23 @@ public class RedstoneConverterBlockEntity extends NetworkTerminal implements Red
             BlockPos neighborPos = TransformerBlock.getFacingPos(pos, state);
             level.updateNeighborsAt(neighborPos, level.getBlockState(neighborPos).getBlock());
         }
+    }
+
+    @Override
+    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider provider) {
+        super.loadAdditional(tag, provider);
+        if (tag.contains("CurrentSignal")) {
+            this.currentSignal = tag.getInt("CurrentSignal");
+        }
+        if (tag.contains("CurrentSuppliedSignal")) {
+            this.currentSuppliedSignal = tag.getInt("CurrentSuppliedSignal");
+        }
+    }
+
+    @Override
+    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider provider) {
+        super.saveAdditional(tag, provider);
+        tag.putInt("CurrentSignal", this.currentSignal);
+        tag.putInt("CurrentSuppliedSignal", this.currentSuppliedSignal);
     }
 } 

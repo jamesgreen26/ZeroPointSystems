@@ -57,8 +57,8 @@ public class RedstoneConverterBlockEntity extends NetworkTerminal implements Red
     }
 
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider provider) {
-        super.loadAdditional(tag, provider);
+    protected void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
         if (tag.contains("CurrentSignal")) {
             this.currentSignal = tag.getInt("CurrentSignal");
         }
@@ -68,8 +68,8 @@ public class RedstoneConverterBlockEntity extends NetworkTerminal implements Red
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider provider) {
-        super.saveAdditional(tag, provider);
+    public void load(CompoundTag tag) {
+        super.load(tag);
         tag.putInt("CurrentSignal", this.currentSignal);
         tag.putInt("CurrentSuppliedSignal", this.currentSuppliedSignal);
     }

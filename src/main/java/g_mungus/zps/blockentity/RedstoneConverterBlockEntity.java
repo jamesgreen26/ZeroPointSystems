@@ -59,18 +59,18 @@ public class RedstoneConverterBlockEntity extends NetworkTerminal implements Red
     @Override
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
+        tag.putInt("CurrentSignal", this.currentSignal);
+        tag.putInt("CurrentSuppliedSignal", this.currentSuppliedSignal);
+    }
+
+    @Override
+    public void load(CompoundTag tag) {
+        super.load(tag);
         if (tag.contains("CurrentSignal")) {
             this.currentSignal = tag.getInt("CurrentSignal");
         }
         if (tag.contains("CurrentSuppliedSignal")) {
             this.currentSuppliedSignal = tag.getInt("CurrentSuppliedSignal");
         }
-    }
-
-    @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
-        tag.putInt("CurrentSignal", this.currentSignal);
-        tag.putInt("CurrentSuppliedSignal", this.currentSuppliedSignal);
     }
 } 

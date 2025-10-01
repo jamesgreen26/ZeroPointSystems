@@ -4,6 +4,7 @@ import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.entity.ModEntities;
 import g_mungus.zps.entity.OctoMountingEntity;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -31,9 +32,10 @@ public class OctoControllerBlockEntity extends RideableNetworkTerminal<OctoMount
     }
 
     @Override
-    void registerSeatEntity(OctoMountingEntity seat) {
+    void registerSeatEntity(OctoMountingEntity seat, Vec3i offset) {
         seat.blockEntity = this;
         seat.isController = true;
+        seat.offset = offset;
     }
 
     @Override

@@ -2,6 +2,7 @@ package g_mungus.zps.blockentity;
 
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -43,7 +44,7 @@ public abstract class RideableNetworkTerminal<T extends Entity> extends NetworkT
     }
 
     abstract EntityType<T> getSeatEntity();
-    abstract void registerSeatEntity(T seat);
+    abstract void registerSeatEntity(T seat, Vec3i offset);
 
     public T spawnSeat(BlockPos blockPos, BlockState state, ServerLevel level) {
 
@@ -52,7 +53,7 @@ public abstract class RideableNetworkTerminal<T extends Entity> extends NetworkT
 
         T entity = getSeatEntity().create(level);
         if (entity != null) {
-            registerSeatEntity(entity);
+            registerSeatEntity(entity, blockPos.subtract(newPos));
 
             Vector3dc seatEntityPos = new Vector3d(newPos.getX() + 0.5, (newPos.getY() - 0.5) + height, newPos.getZ() + 0.5);
             entity.moveTo(seatEntityPos.x(), seatEntityPos.y(), seatEntityPos.z());
@@ -67,14 +68,5 @@ public abstract class RideableNetworkTerminal<T extends Entity> extends NetworkT
             level.addFreshEntityWithPassengers(entity);
         }
         return entity;
-    }
-
-    @Override
-    public void setRemoved() {
-        if (this.getLevel() != null && !this.getLevel().isClientSide) {
-            seats.forEach(Entity::kill);
-            seats.clear();
-        }
-        super.setRemoved();
     }
 }

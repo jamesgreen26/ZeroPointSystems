@@ -1,9 +1,11 @@
 package g_mungus.zps.entity;
 
+import g_mungus.zps.block.cableNetwork.OctoControllerBlock;
 import g_mungus.zps.blockentity.OctoControllerBlockEntity;
 import g_mungus.zps.client.ModKeybinds;
 import g_mungus.zps.networking.OctovariantControlPacket;
 import g_mungus.zps.networking.ZPSGamePackets;
+import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -12,11 +14,13 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 
 public class OctoMountingEntity extends Entity {
     public OctoControllerBlockEntity blockEntity = null;
     public boolean isController = false;
+    public Vec3i offset = Vec3i.ZERO;
 
     public OctoMountingEntity(@NotNull EntityType<OctoMountingEntity> type, @NotNull Level level) {
         super(type, level);
@@ -28,27 +32,73 @@ public class OctoMountingEntity extends Entity {
     public void tick() {
         this.baseTick();
 
-        Level level = this.level();
-
-        if (!level.isClientSide && this.getPassengers().isEmpty()) {
-
-            if (blockEntity != null) {
-                blockEntity.setA(0);
-                blockEntity.setB(0);
-                blockEntity.setC(0);
-                blockEntity.setD(0);
-                blockEntity.setE(0);
-                blockEntity.setF(0);
-                blockEntity.setG(0);
-                blockEntity.setH(0);
-            }
-
-            // Kill this entity if nothing is riding it
-            kill();
+        if (level().isClientSide) {
+            sendControlPacket();
             return;
         }
 
-        sendControlPacket();
+        if (!verifyControllerBlock()) {
+            cleanupAndDiscard();
+        }
+    }
+
+    private boolean verifyControllerBlock() {
+        if (isNextToControllerBlock(offset)) {
+            ensureBlockEntityLinked();
+            return !getPassengers().isEmpty();
+        }
+
+        if (searchAdjacentForController()) {
+            return !getPassengers().isEmpty();
+        }
+
+        return false;
+    }
+
+    private boolean isNextToControllerBlock(Vec3i testOffset) {
+        BlockState state = level().getBlockState(blockPosition().offset(testOffset));
+        return state.getBlock() instanceof OctoControllerBlock && state.getValue(OctoControllerBlock.FACING).getOpposite().getNormal().subtract(testOffset).distManhattan(Vec3i.ZERO) == 0;
+    }
+
+    private boolean searchAdjacentForController() {
+        Vec3i[] adjacentOffsets = {
+            new Vec3i(1, 0, 0),
+            new Vec3i(-1, 0, 0),
+            new Vec3i(0, 0, 1),
+            new Vec3i(0, 0, -1)
+        };
+
+        for (Vec3i testOffset : adjacentOffsets) {
+            if (isNextToControllerBlock(testOffset)) {
+                offset = testOffset;
+                ensureBlockEntityLinked();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void ensureBlockEntityLinked() {
+        if (blockEntity == null) {
+            if (level().getBlockEntity(blockPosition().offset(offset)) instanceof OctoControllerBlockEntity newBlockEntity) {
+                blockEntity = newBlockEntity;
+                isController = true;
+            }
+        }
+    }
+
+    private void cleanupAndDiscard() {
+        if (blockEntity != null) {
+            blockEntity.setA(0);
+            blockEntity.setB(0);
+            blockEntity.setC(0);
+            blockEntity.setD(0);
+            blockEntity.setE(0);
+            blockEntity.setF(0);
+            blockEntity.setG(0);
+            blockEntity.setH(0);
+        }
+        this.discard();
     }
 
     @Override

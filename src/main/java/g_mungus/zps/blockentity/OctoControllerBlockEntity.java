@@ -23,6 +23,7 @@ public class OctoControllerBlockEntity extends RideableNetworkTerminal<OctoMount
              i++
         ) {
             outputSignals.put(i, 0);
+            supplySignal(i, 0);
         }
     }
 

@@ -96,9 +96,13 @@ public class StepUpTransformerBlockEntity extends NetworkTerminal {
                     if (targetEntity2 != null) {
                         targetEntity2.getCapability(ForgeCapabilities.ENERGY, dir.getOpposite()).ifPresent(storage -> {
                             if (storage.canReceive()) {
-                                int energySent = blockEntity.energyHandler.extractEnergy(energyPerTransformer, false);
-                                if (energySent > 0) {
-                                    storage.receiveEnergy(energySent, false);
+                                int canExtract = blockEntity.energyHandler.extractEnergy(energyPerTransformer, true);
+                                int canReceive = storage.receiveEnergy(canExtract, true);
+
+                                int toSend = Math.min(canExtract, canReceive);
+                                if (toSend > 0) {
+                                    int extracted = blockEntity.energyHandler.extractEnergy(toSend, false);
+                                    storage.receiveEnergy(extracted, false);
                                 }
                             }
                         });

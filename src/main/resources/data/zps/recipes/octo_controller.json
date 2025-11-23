@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "T": {
+      "item": "minecraft:tinted_glass"
+    },
+    "C": {
+      "item": "zps:dense_cables"
+    },
+    "R": {
+      "item": "minecraft:repeater"
+    }
+  },
+  "pattern": [
+    "IT ",
+    "CRI",
+    "ICI"
+  ],
+  "result": {
+    "item": "zps:octo_controller",
+    "count": 1
+  },
+  "show_notification": true
+}

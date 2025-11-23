@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "D": {
+      "item": "zps:dense_cables"
+    }
+  },
+  "pattern": [
+    "D"
+  ],
+  "result": {
+    "item": "zps:dense_cable_bend",
+    "count": 1
+  },
+  "show_notification": true
+}

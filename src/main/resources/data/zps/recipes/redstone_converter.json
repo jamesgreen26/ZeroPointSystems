@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "C": {
+      "item": "zps:cable"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    }
+  },
+  "pattern": [
+    " C ",
+    "III",
+    "RRR"
+  ],
+  "result": {
+    "item": "zps:redstone_converter",
+    "count": 1
+  },
+  "show_notification": true
+}

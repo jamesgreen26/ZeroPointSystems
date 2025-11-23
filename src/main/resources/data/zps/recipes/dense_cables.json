@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "C": {
+      "item": "zps:cable"
+    }
+  },
+  "pattern": [
+    "ICI",
+    "ICI",
+    "ICI"
+  ],
+  "result": {
+    "item": "zps:dense_cables",
+    "count": 1
+  },
+  "show_notification": true
+}

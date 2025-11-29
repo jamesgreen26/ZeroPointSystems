@@ -1,0 +1,22 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"textures": {
+		"0": "zps:block/dense_cable_core",
+		"particle": "zps:block/dense_cable_core"
+	},
+	"elements": [
+		{
+			"from": [2, 2, 2],
+			"to": [14, 14, 14],
+			"faces": {
+				"north": {"uv": [0, 0, 12, 12], "texture": "#0"},
+				"east": {"uv": [0, 0, 12, 12], "texture": "#0"},
+				"south": {"uv": [0, 0, 12, 12], "texture": "#0"},
+				"west": {"uv": [0, 0, 12, 12], "texture": "#0"},
+				"up": {"uv": [12, 12, 0, 0], "texture": "#0"},
+				"down": {"uv": [0, 0, 12, 12], "texture": "#0"}
+			}
+		}
+	]
+}

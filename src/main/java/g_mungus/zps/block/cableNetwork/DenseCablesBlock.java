@@ -80,11 +80,6 @@ public class DenseCablesBlock extends CableBlock {
     }
 
     @Override
-    public int getChannelCountForConnection(BlockPos self, BlockPos from, Level level) {
-        return 4;
-    }
-
-    @Override
     public int getNewChannel(BlockPos self, NetworkNode input, Level level) {
         return Channels.toQuad(input.channel());
     }

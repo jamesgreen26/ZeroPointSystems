@@ -7,6 +7,7 @@ import g_mungus.zps.util.Utils;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Vec3i;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -93,7 +94,9 @@ public class CableBlock extends Block implements CableNetworkComponent {
         BlockState newState = getNewBlockState(state, level, pos);
 
         if (!state.equals(newState)) {
-            level.setBlock(pos, newState, 3);
+            if (!state.getValue(INSULATED)) {
+                level.setBlock(pos, newState, 3);
+            }
             updateNetwork(pos, level);
         }
     }
@@ -110,7 +113,32 @@ public class CableBlock extends Block implements CableNetworkComponent {
 
     @Override
     public int getChannelCountForConnection(BlockPos self, BlockPos from, Level level) {
-        return 1;
+        BlockState state = level.getBlockState(self);
+        if (state.hasProperty(INSULATED) && state.getValue(INSULATED)) {
+            Vec3i n = from.subtract(self);
+            Direction direction = Direction.fromDelta(n.getX(), n.getY(), n.getZ());
+
+            boolean shouldConnect = false;
+
+            if (direction == Direction.NORTH) {
+                shouldConnect = state.getValue(NORTH);
+            } else if (direction == Direction.SOUTH) {
+                shouldConnect = state.getValue(SOUTH);
+            } else if (direction == Direction.EAST) {
+                shouldConnect = state.getValue(EAST);
+            } else if (direction == Direction.WEST) {
+                shouldConnect = state.getValue(WEST);
+            } else if (direction == Direction.UP) {
+                shouldConnect = state.getValue(UP);
+            } else if (direction == Direction.DOWN) {
+                shouldConnect = state.getValue(DOWN);
+            }
+
+            if (!shouldConnect) {
+                return 0;
+            }
+        }
+        return getTotalChannelCount();
     }
 
     @Override

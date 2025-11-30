@@ -60,4 +60,9 @@ public class ModBlocks {
                     .strength(2.0f)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
+
+    public static final RegistryObject<Block> CABLE_INSULATION = BLOCKS.register("cable_insulation",
+            () -> new CableInsulationBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(1.5f)
+                    .requiresCorrectToolForDrops()));
 } 

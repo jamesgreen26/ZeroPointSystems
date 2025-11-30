@@ -35,4 +35,7 @@ public class ModItems {
 
     public static final RegistryObject<Item> CABLE = ITEMS.register("cable",
             () -> new BlockItem(ModBlocks.CABLE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> CABLE_INSULATION = ITEMS.register("cable_insulation",
+            () -> new BlockItem(ModBlocks.CABLE_INSULATION.get(), new Item.Properties()));
 } 

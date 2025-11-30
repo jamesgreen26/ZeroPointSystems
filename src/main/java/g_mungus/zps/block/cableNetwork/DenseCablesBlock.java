@@ -58,6 +58,10 @@ public class DenseCablesBlock extends CableBlock {
 
     @Override
     public @NotNull VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        if (state.getValue(INSULATED)) {
+            return Shapes.block();
+        }
+
         VoxelShape shape = CORE;
 
         if (state.getValue(NORTH)) shape = Shapes.or(shape, NORTH_SHAPE);

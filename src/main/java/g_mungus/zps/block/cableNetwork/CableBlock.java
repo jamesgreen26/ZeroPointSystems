@@ -3,11 +3,15 @@ package g_mungus.zps.block.cableNetwork;
 import g_mungus.zps.block.cableNetwork.core.CableNetworkComponent;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
+import g_mungus.zps.item.ModItems;
 import g_mungus.zps.util.Utils;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -15,6 +19,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -74,6 +79,21 @@ public class CableBlock extends Block implements CableNetworkComponent {
         if (state.getValue(DOWN)) shape = Shapes.or(shape, DOWN_SHAPE);
 
         return shape;
+    }
+
+    @Override
+    public InteractionResult use(BlockState state, Level level, BlockPos blockPos, Player arg4, InteractionHand arg5, BlockHitResult arg6) {
+        if (!state.getValue(INSULATED) && arg4.getItemInHand(arg5).is(ModItems.CABLE_INSULATION.get())) {
+            if (!level.isClientSide()) {
+                level.setBlock(blockPos, state.setValue(INSULATED, true), 3);
+            }
+            if (!arg4.isCreative()) {
+                arg4.getItemInHand(arg5).shrink(1);
+            }
+            return InteractionResult.SUCCESS;
+        } else {
+            return super.use(state, level, blockPos, arg4, arg5, arg6);
+        }
     }
 
     @Nullable

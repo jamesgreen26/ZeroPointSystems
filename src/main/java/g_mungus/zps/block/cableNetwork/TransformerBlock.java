@@ -111,7 +111,7 @@ public abstract class TransformerBlock extends CableBlock implements EntityBlock
     @Nullable
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        Direction facing = context.getNearestLookingDirection();
+        Direction facing = context.getClickedFace().getOpposite();
         if (context.getPlayer() != null && context.getPlayer().isShiftKeyDown()) {
             facing = facing.getOpposite();
         }

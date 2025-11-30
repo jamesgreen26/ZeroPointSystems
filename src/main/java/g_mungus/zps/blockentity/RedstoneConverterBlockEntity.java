@@ -43,17 +43,22 @@ public class RedstoneConverterBlockEntity extends NetworkTerminal implements Red
     @Override
     public void receiveSignal(int strength, int channel) {
         if (level == null) return;
+        BlockPos pos = getBlockPos();
+        int oldSignal = level.getBestNeighborSignal(pos);
+
         currentSignal = strength;
 
-        BlockPos pos = getBlockPos();
         BlockState state = level.getBlockState(pos);
 
-        level.updateNeighborsAt(pos, state.getBlock());
+        if (currentSignal != oldSignal) {
+            if (state.is(ModBlocks.REDSTONE_CONVERTER.get())) {
 
-        if (state.is(ModBlocks.REDSTONE_CONVERTER.get())) {
-            BlockPos neighborPos = TransformerBlock.getFacingPos(pos, state);
-            level.updateNeighborsAt(neighborPos, level.getBlockState(neighborPos).getBlock());
+                level.updateNeighborsAt(pos, state.getBlock());
+                BlockPos neighborPos = TransformerBlock.getFacingPos(pos, state);
+                level.updateNeighborsAt(neighborPos, level.getBlockState(neighborPos).getBlock());
+            }
         }
+
     }
 
     @Override

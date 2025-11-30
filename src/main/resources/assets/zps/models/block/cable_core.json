@@ -1,4 +1,5 @@
 {
+	"parent": "block/cube",
 	"credit": "Made with Blockbench",
 	"textures": {
 		"0": "zps:block/cable",

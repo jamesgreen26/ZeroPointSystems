@@ -67,6 +67,9 @@ public abstract class TransformerBlock extends CableBlock implements EntityBlock
 
     @Override
     public VoxelShape getBlockSupportShape(BlockState state, BlockGetter level, BlockPos pos) {
+        if (state.getValue(INSULATED)) {
+            return Shapes.block();
+        }
         return switch (state.getValue(FACING)) {
             case DOWN -> DOWN_SHAPE_SUPPORT;
             case UP -> UP_SHAPE_SUPPORT;

@@ -18,7 +18,7 @@ public class RedstoneConverterBlockEntity extends NetworkTerminal implements Red
     private int currentSignal = 0;
     private int currentSuppliedSignal = 0;
 
-    private long nextExtraUpdate = 0L;
+    private long lastUpdate = 0L;
 
     public int getCurrentSignal() {
         return currentSignal;
@@ -51,10 +51,10 @@ public class RedstoneConverterBlockEntity extends NetworkTerminal implements Red
 
         BlockState state = level.getBlockState(pos);
 
-        long now = System.currentTimeMillis();
+        long now = level.getGameTime();
 
-        if (currentSignal != oldSignal || now > nextExtraUpdate) {
-            nextExtraUpdate = now + 50;
+        if (currentSignal != oldSignal || now > lastUpdate) {
+            lastUpdate = now;
             if (state.is(ModBlocks.REDSTONE_CONVERTER.get())) {
 
                 level.updateNeighborsAt(pos, state.getBlock());

@@ -1,5 +1,7 @@
 package g_mungus.zps.block.cableNetwork;
 
+import g_mungus.zps.ZPSMod;
+import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.core.CableNetworkComponent;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
@@ -69,7 +71,11 @@ public class OctoControllerBlock extends BaseEntityBlock implements CableNetwork
     }
 
     @Override
-    public @NotNull InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult arg6) {
+    public @NotNull InteractionResult use(BlockState state, Level level, BlockPos pos, @NotNull Player player, @NotNull InteractionHand hand, BlockHitResult arg6) {
+        if (player.getItemInHand(hand).is(ModBlocks.DENSE_CABLES.get().asItem())) {
+            return InteractionResult.PASS;
+        }
+
         if (level.isClientSide()) return InteractionResult.SUCCESS;
 
         BlockEntity blockEntity = level.getBlockEntity(pos);

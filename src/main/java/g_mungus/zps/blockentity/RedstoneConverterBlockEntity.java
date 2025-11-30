@@ -6,7 +6,6 @@ import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.block.cableNetwork.TransformerBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 
 import java.util.List;
@@ -18,6 +17,8 @@ public class RedstoneConverterBlockEntity extends NetworkTerminal implements Red
 
     private int currentSignal = 0;
     private int currentSuppliedSignal = 0;
+
+    private long nextExtraUpdate = 0L;
 
     public int getCurrentSignal() {
         return currentSignal;
@@ -50,7 +51,10 @@ public class RedstoneConverterBlockEntity extends NetworkTerminal implements Red
 
         BlockState state = level.getBlockState(pos);
 
-        if (currentSignal != oldSignal) {
+        long now = System.currentTimeMillis();
+
+        if (currentSignal != oldSignal || now > nextExtraUpdate) {
+            nextExtraUpdate = now + 50;
             if (state.is(ModBlocks.REDSTONE_CONVERTER.get())) {
 
                 level.updateNeighborsAt(pos, state.getBlock());

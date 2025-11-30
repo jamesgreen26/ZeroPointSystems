@@ -2,6 +2,8 @@ package g_mungus.zps.block.cableNetwork.core;
 
 import g_mungus.zps.blockentity.NetworkTerminal;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Vec3i;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -12,6 +14,25 @@ import java.util.*;
 
 public interface CableNetworkComponent {
 
+    default void updateSelfAndNeighbors(BlockState newState, Level level, BlockPos pos, BlockState oldState) {
+        if (level.isClientSide() || newState.equals(oldState)) return;
+
+        if (newState.getBlock() instanceof CableNetworkComponent component) {
+            component.updateConnections(newState, level, pos);
+        }
+
+        for (var dir : Direction.values()) {
+            Vec3i offset = dir.getNormal();
+            BlockPos neighborPos = pos.offset(offset);
+            BlockState neighborState = level.getBlockState(neighborPos);
+
+            if (neighborState.getBlock() instanceof CableNetworkComponent component) {
+                component.updateConnections(neighborState, level, neighborPos);
+            }
+        }
+    }
+
+    void updateConnections(BlockState state, Level level, BlockPos pos);
 
     default void updateNetwork(BlockPos pos, Level level) {
         for (int initialChannel = Channels.getInitialChannel(getTotalChannelCount()); initialChannel <= Channels.getFinalChannel(getTotalChannelCount()); initialChannel++) {

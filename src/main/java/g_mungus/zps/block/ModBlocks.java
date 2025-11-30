@@ -25,12 +25,6 @@ public class ModBlocks {
             .requiresCorrectToolForDrops()
             .noOcclusion()));
 
-    public static final RegistryObject<Block> DENSE_CABLE_BEND = BLOCKS.register("dense_cable_bend",
-        () -> new DenseCableBend(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
-            .strength(2.5f)
-            .requiresCorrectToolForDrops()
-            .noOcclusion()));
-
     public static final RegistryObject<Block> DENSE_CABLE_SEPARATOR = BLOCKS.register("dense_cable_separator",
             () -> new DenseCableSeparatorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(2.5f)

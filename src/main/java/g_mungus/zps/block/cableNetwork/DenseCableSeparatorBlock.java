@@ -65,8 +65,8 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
 
             Block block = state.getBlock();
 
-            if (block instanceof DenseCableSeparatorBlock) {
-                ((DenseCableSeparatorBlock) block).updateNetwork(pos, level);
+            if (block instanceof DenseCableSeparatorBlock separatorBlock) {
+                separatorBlock.updateNetwork(pos, level);
             }
             return InteractionResult.SUCCESS;
         }
@@ -88,13 +88,21 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
     }
 
     @Override
-    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
-        if (!level.isClientSide) {
-            updateConnections(state, level, pos);
-        }
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
+        super.onRemove(state, level, pos, newState, moved);
+
+        updateSelfAndNeighbors(newState, level, pos, state);
     }
 
-    private void updateConnections(BlockState state, Level level, BlockPos pos) {
+    @Override
+    public void onPlace(BlockState newState, Level level, BlockPos pos, BlockState oldState, boolean moved) {
+        super.onPlace(newState, level, pos, oldState, moved);
+
+        updateSelfAndNeighbors(newState, level, pos, oldState);
+    }
+
+    @Override
+    public void updateConnections(BlockState state, Level level, BlockPos pos) {
         BlockState newState = getNewBlockState(state, level, pos);
 
         if (!state.equals(newState)) {

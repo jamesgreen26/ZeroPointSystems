@@ -18,9 +18,6 @@ public class ModItems {
     public static final RegistryObject<Item> DENSE_CABLES = ITEMS.register("dense_cables",
         () -> new BlockItem(ModBlocks.DENSE_CABLES.get(), new Item.Properties()));
 
-    public static final RegistryObject<Item> DENSE_CABLE_BEND = ITEMS.register("dense_cable_bend",
-        () -> new BlockItem(ModBlocks.DENSE_CABLE_BEND.get(), new Item.Properties()));
-
     public static final RegistryObject<Item> DENSE_CABLE_SEPARATOR = ITEMS.register("dense_cable_separator",
             () -> new BlockItem(ModBlocks.DENSE_CABLE_SEPARATOR.get(), new Item.Properties()));
 

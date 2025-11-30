@@ -1,13 +1,11 @@
 package g_mungus.zps.block.cableNetwork;
 
-import g_mungus.zps.ZPSMod;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -95,16 +93,6 @@ public abstract class TransformerBlock extends CableBlock implements EntityBlock
             return super.getChannelCountForConnection(self, from, level);
         } else {
             return 0;
-        }
-    }
-
-    @Override
-    public void onPlace(BlockState arg, Level arg2, BlockPos arg3, BlockState arg4, boolean bl) {
-        super.onPlace(arg, arg2, arg3, arg4, bl);
-
-        BlockState state = arg2.getBlockState(arg3);
-        if (!arg4.is(state.getBlock())) {
-            state.getBlock().neighborChanged(state, arg2, arg3, Blocks.AIR, arg3, false);
         }
     }
 

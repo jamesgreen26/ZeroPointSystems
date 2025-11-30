@@ -1,5 +1,6 @@
 package g_mungus.zps.block.cableNetwork;
 
+import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.cableNetwork.core.CableNetworkComponent;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
@@ -16,6 +17,7 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
@@ -107,19 +109,27 @@ public class CableBlock extends Block implements CableNetworkComponent {
     }
 
     @Override
-    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
-        if (!level.isClientSide) {
-            updateConnections(state, level, pos);
-        }
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
+        super.onRemove(state, level, pos, newState, moved);
+
+        updateSelfAndNeighbors(newState, level, pos, state);
     }
 
-    private void updateConnections(BlockState state, Level level, BlockPos pos) {
+    @Override
+    public void onPlace(BlockState newState, Level level, BlockPos pos, BlockState oldState, boolean moved) {
+        super.onPlace(newState, level, pos, oldState, moved);
+
+        updateSelfAndNeighbors(newState, level, pos, oldState);
+    }
+
+    @Override
+    public void updateConnections(BlockState state, Level level, BlockPos pos) {
         BlockState newState = getNewBlockState(state, level, pos);
 
-        if (!state.equals(newState)) {
-            if (!state.getValue(INSULATED)) {
-                level.setBlock(pos, newState, 3);
-            }
+        if (!state.equals(newState) && !state.getValue(INSULATED)) {
+            level.setBlock(pos, newState, 3);
+            updateNetwork(pos, level);
+        } else if (state.getValue(INSULATED)) {
             updateNetwork(pos, level);
         }
     }

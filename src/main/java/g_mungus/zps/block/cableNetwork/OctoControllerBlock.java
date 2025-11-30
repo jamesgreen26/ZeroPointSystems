@@ -9,6 +9,7 @@ import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.OctoControllerBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -130,13 +131,21 @@ public class OctoControllerBlock extends BaseEntityBlock implements CableNetwork
     }
 
     @Override
-    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
-        if (!level.isClientSide) {
-            updateConnections(state, level, pos);
-        }
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
+        super.onRemove(state, level, pos, newState, moved);
+
+        updateSelfAndNeighbors(newState, level, pos, state);
     }
 
-    private void updateConnections(BlockState state, Level level, BlockPos pos) {
+    @Override
+    public void onPlace(BlockState newState, Level level, BlockPos pos, BlockState oldState, boolean moved) {
+        super.onPlace(newState, level, pos, oldState, moved);
+
+        updateSelfAndNeighbors(newState, level, pos, oldState);
+    }
+
+    @Override
+    public void updateConnections(BlockState state, Level level, BlockPos pos) {
         BlockState newState = getNewBlockState(state, level, pos);
 
         if (!state.equals(newState)) {

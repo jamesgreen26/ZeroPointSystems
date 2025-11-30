@@ -86,6 +86,9 @@ public class CableBlock extends Block implements CableNetworkComponent {
         if (!state.getValue(INSULATED) && arg4.getItemInHand(arg5).is(ModItems.CABLE_INSULATION.get())) {
             if (!level.isClientSide()) {
                 level.setBlock(blockPos, state.setValue(INSULATED, true), 3);
+            } else {
+                net.minecraft.world.level.block.SoundType soundType = state.getSoundType();
+                level.playSound(arg4, blockPos, soundType.getPlaceSound(), net.minecraft.sounds.SoundSource.BLOCKS, 1f, 1f);
             }
             if (!arg4.isCreative()) {
                 arg4.getItemInHand(arg5).shrink(1);

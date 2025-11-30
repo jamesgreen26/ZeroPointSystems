@@ -1,13 +1,25 @@
 {
     "multipart": [
         {
+            "when": {
+                "insulated": "false"
+            },
             "apply": {
                 "model": "zps:block/cable_core"
             }
         },
         {
             "when": {
-                "north": "true"
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulation_core"
+            }
+        },
+        {
+            "when": {
+                "north": "true",
+                "insulated": "false"
             },
             "apply": {
                 "model": "zps:block/cable_side",
@@ -16,7 +28,28 @@
         },
         {
             "when": {
-                "south": "true"
+                "north": "true",
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulated_single",
+                "x": 90
+            }
+        },
+        {
+            "when": {
+                "north": "false",
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulated_end",
+                "x": 90
+            }
+        },
+        {
+            "when": {
+                "south": "true",
+                "insulated": "false"
             },
             "apply": {
                 "model": "zps:block/cable_side",
@@ -26,7 +59,30 @@
         },
         {
             "when": {
-                "east": "true"
+                "south": "true",
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulated_single",
+                "x": 90,
+                "y": 180
+            }
+        },
+        {
+            "when": {
+                "south": "false",
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulated_end",
+                "x": 90,
+                "y": 180
+            }
+        },
+        {
+            "when": {
+                "east": "true",
+                "insulated": "false"
             },
             "apply": {
                 "model": "zps:block/cable_side",
@@ -36,7 +92,30 @@
         },
         {
             "when": {
-                "west": "true"
+                "east": "true",
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulated_single",
+                "x": 90,
+                "y": 90
+            }
+        },
+        {
+            "when": {
+                "east": "false",
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulated_end",
+                "x": 90,
+                "y": 90
+            }
+        },
+        {
+            "when": {
+                "west": "true",
+                "insulated": "false"
             },
             "apply": {
                 "model": "zps:block/cable_side",
@@ -46,7 +125,30 @@
         },
         {
             "when": {
-                "up": "true"
+                "west": "true",
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulated_single",
+                "x": 90,
+                "y": 270
+            }
+        },
+        {
+            "when": {
+                "west": "false",
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulated_end",
+                "x": 90,
+                "y": 270
+            }
+        },
+        {
+            "when": {
+                "up": "true",
+                "insulated": "false"
             },
             "apply": {
                 "model": "zps:block/cable_side"
@@ -54,10 +156,49 @@
         },
         {
             "when": {
-                "down": "true"
+                "up": "true",
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulated_single"
+            }
+        },
+        {
+            "when": {
+                "up": "false",
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulated_end"
+            }
+        },
+        {
+            "when": {
+                "down": "true",
+                "insulated": "false"
             },
             "apply": {
                 "model": "zps:block/cable_side",
+                "x": 180
+            }
+        },
+        {
+            "when": {
+                "down": "true",
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulated_single",
+                "x": 180
+            }
+        },
+        {
+            "when": {
+                "down": "false",
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulated_end",
                 "x": 180
             }
         }

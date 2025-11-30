@@ -29,6 +29,7 @@ public class CableBlock extends Block implements CableNetworkComponent {
     public static BooleanProperty WEST = BooleanProperty.create("west");
     public static BooleanProperty UP = BooleanProperty.create("up");
     public static BooleanProperty DOWN = BooleanProperty.create("down");
+    public static BooleanProperty INSULATED = BooleanProperty.create("insulated");
 
     private static final VoxelShape CORE = Block.box(6, 6, 6, 10, 10, 10);
     private static final VoxelShape NORTH_SHAPE = Block.box(6, 6, 0, 10, 10, 6);
@@ -46,16 +47,22 @@ public class CableBlock extends Block implements CableNetworkComponent {
                 .setValue(EAST, false)
                 .setValue(WEST, false)
                 .setValue(UP, false)
-                .setValue(DOWN, false));
+                .setValue(DOWN, false)
+                .setValue(INSULATED, false)
+        );
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN);
+        builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN, INSULATED);
     }
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        if (state.getValue(INSULATED)) {
+            return Shapes.block();
+        }
+
         VoxelShape shape = CORE;
 
         if (state.getValue(NORTH)) shape = Shapes.or(shape, NORTH_SHAPE);

@@ -2,7 +2,8 @@
     "multipart": [
         {
             "when": {
-                "facing": "down"
+                "facing": "down",
+                "insulated": "false"
             },
             "apply": {
                 "model": "zps:block/stepup_transformer"
@@ -10,7 +11,8 @@
         },
         {
             "when": {
-                "facing": "up"
+                "facing": "up",
+                "insulated": "false"
             },
             "apply": {
                 "model": "zps:block/stepup_transformer",
@@ -19,7 +21,8 @@
         },
         {
             "when": {
-                "facing": "north"
+                "facing": "north",
+                "insulated": "false"
             },
             "apply": {
                 "model": "zps:block/stepup_transformer",
@@ -28,7 +31,8 @@
         },
         {
             "when": {
-                "facing": "east"
+                "facing": "east",
+                "insulated": "false"
             },
             "apply": {
                 "model": "zps:block/stepup_transformer",
@@ -38,7 +42,8 @@
         },
         {
             "when": {
-                "facing": "south"
+                "facing": "south",
+                "insulated": "false"
             },
             "apply": {
                 "model": "zps:block/stepup_transformer",
@@ -48,7 +53,8 @@
         },
         {
             "when": {
-                "facing": "west"
+                "facing": "west",
+                "insulated": "false"
             },
             "apply": {
                 "model": "zps:block/stepup_transformer",
@@ -58,7 +64,78 @@
         },
         {
             "when": {
-                "north": "true"
+                "facing": "up",
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulated_stepup_transformer"
+            }
+        },
+        {
+            "when": {
+                "facing": "down",
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulated_stepup_transformer",
+                "x": 180
+            }
+        },
+        {
+            "when": {
+                "facing": "north",
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulated_stepup_transformer",
+                "x": 90
+            }
+        },
+        {
+            "when": {
+                "facing": "east",
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulated_stepup_transformer",
+                "x": 90,
+                "y": 90
+            }
+        },
+        {
+            "when": {
+                "facing": "south",
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulated_stepup_transformer",
+                "x": 90,
+                "y": 180
+            }
+        },
+        {
+            "when": {
+                "facing": "west",
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulated_stepup_transformer",
+                "x": 90,
+                "y": 270
+            }
+        },
+        {
+            "when": {
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulation_core"
+            }
+        },
+        {
+            "when": {
+                "north": "true",
+                "insulated": "false"
             },
             "apply": {
                 "model": "zps:block/cable_side",
@@ -67,7 +144,53 @@
         },
         {
             "when": {
-                "south": "true"
+                "north": "true",
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulated_single",
+                "x": 90
+            }
+        },
+        {
+            "when": {
+                "AND": [
+                    {
+                        "insulated": "true"
+                    },
+                    {
+                        "north": "false"
+                    },
+                    {
+                        "OR": [
+                            {
+                                "facing": "east"
+                            },
+                            {
+                                "facing": "south"
+                            },
+                            {
+                                "facing": "west"
+                            },
+                            {
+                                "facing": "up"
+                            },
+                            {
+                                "facing": "down"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "apply": {
+                "model": "zps:block/insulated_end",
+                "x": 90
+            }
+        },
+        {
+            "when": {
+                "south": "true",
+                "insulated": "false"
             },
             "apply": {
                 "model": "zps:block/cable_side",
@@ -77,7 +200,55 @@
         },
         {
             "when": {
-                "east": "true"
+                "south": "true",
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulated_single",
+                "x": 90,
+                "y": 180
+            }
+        },
+        {
+            "when": {
+                "AND": [
+                    {
+                        "insulated": "true"
+                    },
+                    {
+                        "south": "false"
+                    },
+                    {
+                        "OR": [
+                            {
+                                "facing": "north"
+                            },
+                            {
+                                "facing": "east"
+                            },
+                            {
+                                "facing": "west"
+                            },
+                            {
+                                "facing": "up"
+                            },
+                            {
+                                "facing": "down"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "apply": {
+                "model": "zps:block/insulated_end",
+                "x": 90,
+                "y": 180
+            }
+        },
+        {
+            "when": {
+                "east": "true",
+                "insulated": "false"
             },
             "apply": {
                 "model": "zps:block/cable_side",
@@ -87,7 +258,55 @@
         },
         {
             "when": {
-                "west": "true"
+                "east": "true",
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulated_single",
+                "x": 90,
+                "y": 90
+            }
+        },
+        {
+            "when": {
+                "AND": [
+                    {
+                        "insulated": "true"
+                    },
+                    {
+                        "east": "false"
+                    },
+                    {
+                        "OR": [
+                            {
+                                "facing": "north"
+                            },
+                            {
+                                "facing": "south"
+                            },
+                            {
+                                "facing": "west"
+                            },
+                            {
+                                "facing": "up"
+                            },
+                            {
+                                "facing": "down"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "apply": {
+                "model": "zps:block/insulated_end",
+                "x": 90,
+                "y": 90
+            }
+        },
+        {
+            "when": {
+                "west": "true",
+                "insulated": "false"
             },
             "apply": {
                 "model": "zps:block/cable_side",
@@ -97,7 +316,55 @@
         },
         {
             "when": {
-                "up": "true"
+                "west": "true",
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulated_single",
+                "x": 90,
+                "y": 270
+            }
+        },
+        {
+            "when": {
+                "AND": [
+                    {
+                        "insulated": "true"
+                    },
+                    {
+                        "west": "false"
+                    },
+                    {
+                        "OR": [
+                            {
+                                "facing": "north"
+                            },
+                            {
+                                "facing": "east"
+                            },
+                            {
+                                "facing": "south"
+                            },
+                            {
+                                "facing": "up"
+                            },
+                            {
+                                "facing": "down"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "apply": {
+                "model": "zps:block/insulated_end",
+                "x": 90,
+                "y": 270
+            }
+        },
+        {
+            "when": {
+                "up": "true",
+                "insulated": "false"
             },
             "apply": {
                 "model": "zps:block/cable_side"
@@ -105,10 +372,99 @@
         },
         {
             "when": {
-                "down": "true"
+                "up": "true",
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulated_single"
+            }
+        },
+        {
+            "when": {
+                "AND": [
+                    {
+                        "insulated": "true"
+                    },
+                    {
+                        "up": "false"
+                    },
+                    {
+                        "OR": [
+                            {
+                                "facing": "north"
+                            },
+                            {
+                                "facing": "east"
+                            },
+                            {
+                                "facing": "south"
+                            },
+                            {
+                                "facing": "west"
+                            },
+                            {
+                                "facing": "down"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "apply": {
+                "model": "zps:block/insulated_end"
+            }
+        },
+        {
+            "when": {
+                "down": "true",
+                "insulated": "false"
             },
             "apply": {
                 "model": "zps:block/cable_side",
+                "x": 180
+            }
+        },
+        {
+            "when": {
+                "down": "true",
+                "insulated": "true"
+            },
+            "apply": {
+                "model": "zps:block/insulated_single",
+                "x": 180
+            }
+        },
+        {
+            "when": {
+                "AND": [
+                    {
+                        "insulated": "true"
+                    },
+                    {
+                        "down": "false"
+                    },
+                    {
+                        "OR": [
+                            {
+                                "facing": "north"
+                            },
+                            {
+                                "facing": "east"
+                            },
+                            {
+                                "facing": "south"
+                            },
+                            {
+                                "facing": "west"
+                            },
+                            {
+                                "facing": "up"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "apply": {
+                "model": "zps:block/insulated_end",
                 "x": 180
             }
         }

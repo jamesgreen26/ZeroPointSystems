@@ -44,11 +44,15 @@ public abstract class TransformerBlock extends CableBlock implements EntityBlock
                 .setValue(UP, false)
                 .setValue(DOWN, false)
                 .setValue(FACING, Direction.DOWN)
+                .setValue(INSULATED, false)
         );
     }
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        if (state.getValue(INSULATED)) {
+            return Shapes.block();
+        }
         VoxelShape transformerShape = switch (state.getValue(FACING)) {
             case DOWN -> DOWN_SHAPE;
             case UP -> UP_SHAPE;
@@ -83,7 +87,7 @@ public abstract class TransformerBlock extends CableBlock implements EntityBlock
     public int getChannelCountForConnection(BlockPos self, BlockPos from, Level level) {
         BlockState state = level.getBlockState(self);
         if (state.hasProperty(FACING) && !from.equals(self.offset(state.getValue(FACING).getNormal()))) {
-            return 1;
+            return super.getChannelCountForConnection(self, from, level);
         } else {
             return 0;
         }

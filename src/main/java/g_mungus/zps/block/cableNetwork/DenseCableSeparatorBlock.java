@@ -1,7 +1,7 @@
 package g_mungus.zps.block.cableNetwork;
 
 import g_mungus.zps.block.ModBlocks;
-import g_mungus.zps.block.cableNetwork.core.CableNetworkComponent;
+import g_mungus.zps.block.cableNetwork.core.CableComponentBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import net.minecraft.core.BlockPos;
@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-public class DenseCableSeparatorBlock extends Block implements CableNetworkComponent {
+public class DenseCableSeparatorBlock extends CableComponentBlock {
 
     public static final DirectionProperty FACING = DirectionProperty.create("facing");
     public static final IntegerProperty ROTATION = IntegerProperty.create("rotation", 0, 3);
@@ -85,20 +85,6 @@ public class DenseCableSeparatorBlock extends Block implements CableNetworkCompo
                 context.getLevel(),
                 context.getClickedPos()
         );
-    }
-
-    @Override
-    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
-        super.onRemove(state, level, pos, newState, moved);
-
-        updateSelfAndNeighbors(newState, level, pos, state);
-    }
-
-    @Override
-    public void onPlace(BlockState newState, Level level, BlockPos pos, BlockState oldState, boolean moved) {
-        super.onPlace(newState, level, pos, oldState, moved);
-
-        updateSelfAndNeighbors(newState, level, pos, oldState);
     }
 
     @Override

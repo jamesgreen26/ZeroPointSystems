@@ -1,23 +1,21 @@
 package g_mungus.zps.block.cableNetwork;
 
-import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
-import g_mungus.zps.block.cableNetwork.core.CableNetworkComponent;
+import g_mungus.zps.block.cableNetwork.core.CableComponentBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.OctoControllerBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -30,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class OctoControllerBlock extends BaseEntityBlock implements CableNetworkComponent {
+public class OctoControllerBlock extends CableComponentBlock implements EntityBlock {
     public static final DirectionProperty FACING = DirectionProperty.create("facing", Direction.Plane.HORIZONTAL);
     public static BooleanProperty BACK = BooleanProperty.create("back");
     public static BooleanProperty DOWN = BooleanProperty.create("down");
@@ -128,20 +126,6 @@ public class OctoControllerBlock extends BaseEntityBlock implements CableNetwork
         } else {
             return input.channel() + 8;
         }
-    }
-
-    @Override
-    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
-        super.onRemove(state, level, pos, newState, moved);
-
-        updateSelfAndNeighbors(newState, level, pos, state);
-    }
-
-    @Override
-    public void onPlace(BlockState newState, Level level, BlockPos pos, BlockState oldState, boolean moved) {
-        super.onPlace(newState, level, pos, oldState, moved);
-
-        updateSelfAndNeighbors(newState, level, pos, oldState);
     }
 
     @Override

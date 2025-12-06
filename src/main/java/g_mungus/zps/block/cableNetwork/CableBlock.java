@@ -1,12 +1,10 @@
 package g_mungus.zps.block.cableNetwork;
 
-import g_mungus.zps.ZPSMod;
-import g_mungus.zps.block.cableNetwork.core.CableNetworkComponent;
+import g_mungus.zps.block.cableNetwork.core.CableComponentBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.item.ModItems;
 import g_mungus.zps.util.Utils;
-import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
@@ -18,7 +16,6 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
@@ -32,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class CableBlock extends Block implements CableNetworkComponent {
+public class CableBlock extends CableComponentBlock {
     public static BooleanProperty NORTH = BooleanProperty.create("north");
     public static BooleanProperty SOUTH = BooleanProperty.create("south");
     public static BooleanProperty EAST = BooleanProperty.create("east");
@@ -111,25 +108,11 @@ public class CableBlock extends Block implements CableNetworkComponent {
     }
 
     @Override
-    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
-        super.onRemove(state, level, pos, newState, moved);
-
-        updateSelfAndNeighbors(newState, level, pos, state);
-    }
-
-    @Override
     public boolean onDestroyedByPlayer(BlockState state, Level level, BlockPos pos, Player player, boolean willHarvest, FluidState fluid) {
         if (player != null && !player.isCreative() && state.hasProperty(INSULATED) && state.getValue(INSULATED)) {
             popResource(level, pos, new ItemStack(ModItems.CABLE_INSULATION.get(), 1));
         }
         return super.onDestroyedByPlayer(state, level, pos, player, willHarvest, fluid);
-    }
-
-    @Override
-    public void onPlace(BlockState newState, Level level, BlockPos pos, BlockState oldState, boolean moved) {
-        super.onPlace(newState, level, pos, oldState, moved);
-
-        updateSelfAndNeighbors(newState, level, pos, oldState);
     }
 
     @Override

@@ -5,7 +5,7 @@
                 "insulated": "false"
             },
             "apply": {
-                "model": "zps:block/cable_core"
+                "model": "zps:block/light_pipe_core"
             }
         },
         {
@@ -22,7 +22,7 @@
                 "insulated": "false"
             },
             "apply": {
-                "model": "zps:block/cable_side",
+                "model": "zps:block/light_pipe_side",
                 "x": 90
             }
         },
@@ -52,7 +52,7 @@
                 "insulated": "false"
             },
             "apply": {
-                "model": "zps:block/cable_side",
+                "model": "zps:block/light_pipe_side",
                 "x": 90,
                 "y": 180
             }
@@ -85,7 +85,7 @@
                 "insulated": "false"
             },
             "apply": {
-                "model": "zps:block/cable_side",
+                "model": "zps:block/light_pipe_side",
                 "x": 90,
                 "y": 90
             }
@@ -118,7 +118,7 @@
                 "insulated": "false"
             },
             "apply": {
-                "model": "zps:block/cable_side",
+                "model": "zps:block/light_pipe_side",
                 "x": 90,
                 "y": 270
             }
@@ -151,7 +151,7 @@
                 "insulated": "false"
             },
             "apply": {
-                "model": "zps:block/cable_side"
+                "model": "zps:block/light_pipe_side"
             }
         },
         {
@@ -178,7 +178,7 @@
                 "insulated": "false"
             },
             "apply": {
-                "model": "zps:block/cable_side",
+                "model": "zps:block/light_pipe_side",
                 "x": 180
             }
         },

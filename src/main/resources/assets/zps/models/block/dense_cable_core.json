@@ -1,4 +1,6 @@
 {
+	"format_version": "1.21.6",
+	"credit": "Made with Blockbench",
 	"parent": "block/cube",
 	"textures": {
 		"0": "zps:block/dense_cable_core",

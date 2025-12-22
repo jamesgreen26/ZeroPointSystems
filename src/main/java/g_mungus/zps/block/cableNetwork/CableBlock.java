@@ -1,6 +1,7 @@
 package g_mungus.zps.block.cableNetwork;
 
 import g_mungus.zps.block.cableNetwork.core.CableComponentBlock;
+import g_mungus.zps.block.cableNetwork.core.BuiltinCableStandards;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.item.ModItems;
@@ -113,6 +114,11 @@ public class CableBlock extends CableComponentBlock {
             popResource(level, pos, new ItemStack(ModItems.CABLE_INSULATION.get(), 1));
         }
         return super.onDestroyedByPlayer(state, level, pos, player, willHarvest, fluid);
+    }
+
+    @Override
+    public String getCableStandard() {
+        return BuiltinCableStandards.DEFAULT;
     }
 
     @Override

@@ -8,6 +8,7 @@
     "block.zps.redstone_converter": "Redstone Converter",
     "block.zps.octo_controller": "Octo-Controller",
     "block.zps.cable_insulation": "Cable Insulation",
+    "block.zps.light_pipe_cable": "Light-Pipe Data Cable",
 
     "item.zps.cable": "Cable",
     "item.zps.dense_cables": "Dense Cables",
@@ -18,6 +19,7 @@
     "item.zps.redstone_converter": "Redstone Converter",
     "item.zps.octo_controller": "Octo-Controller",
     "item.zps.cable_insulation": "Cable Insulation",
+    "item.zps.light_pipe_cable": "Light-Pipe Data Cable",
 
     "creativetab.zps_tab": "Zero Point Systems",
 

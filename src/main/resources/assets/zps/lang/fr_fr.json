@@ -7,6 +7,7 @@
     "block.zps.stepdown_transformer": "Interface de réception",
     "block.zps.redstone_converter": "Convertisseur à redstone",
     "block.zps.octo_controller": "Controlleur Octo",
+    "block.zps.light_pipe_cable": "Câble optique",
 
     "item.zps.cable": "Câble",
     "item.zps.dense_cables": "Câble dense",
@@ -16,6 +17,7 @@
     "item.zps.stepdown_transformer": "Interface de réception",
     "item.zps.redstone_converter": "Convertisseur à redstone",
     "item.zps.octo_controller": "Controlleur Octo",
+    "item.zps.light_pipe_cable": "Câble optique",
 
     "creativetab.zps_tab": "Zero Point Systems",
 

@@ -14,6 +14,8 @@ import java.util.*;
 
 public interface CableNetworkComponent {
 
+    String getCableStandard();
+
     default void updateSelfAndNeighbors(BlockState newState, Level level, BlockPos pos, BlockState oldState) {
         if (level.isClientSide() || newState.equals(oldState)) return;
 
@@ -96,7 +98,8 @@ public interface CableNetworkComponent {
     default @Nullable CableNetworkComponent getConnectedComponent(BlockPos self, BlockPos from, Level level) {
         Block blockProspect = level.getBlockState(from).getBlock();
         if (blockProspect instanceof CableNetworkComponent component &&
-                getChannelCountForConnection(self, from, level) == component.getChannelCountForConnection(from, self, level) && getChannelCountForConnection(self, from, level) > 0
+                getChannelCountForConnection(self, from, level) == component.getChannelCountForConnection(from, self, level) && getChannelCountForConnection(self, from, level) > 0 &&
+                component.getCableStandard().equals(getCableStandard())
         ) {
             return component;
         } else {

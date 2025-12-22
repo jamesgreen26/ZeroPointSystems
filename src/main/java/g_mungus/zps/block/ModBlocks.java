@@ -2,6 +2,7 @@ package g_mungus.zps.block;
 
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.cableNetwork.*;
+import g_mungus.zps.block.cableNetwork.light_pipe.LightPipeCableBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -59,4 +60,10 @@ public class ModBlocks {
             () -> new CableInsulationBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(1.5f)
                     .requiresCorrectToolForDrops()));
+
+    public static final RegistryObject<Block> LIGHT_PIPE = BLOCKS.register("light_pipe_cable",
+            () -> new LightPipeCableBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
 } 

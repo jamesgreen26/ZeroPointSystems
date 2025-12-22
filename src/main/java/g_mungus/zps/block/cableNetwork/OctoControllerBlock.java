@@ -1,6 +1,7 @@
 package g_mungus.zps.block.cableNetwork;
 
 import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.block.cableNetwork.core.BuiltinCableStandards;
 import g_mungus.zps.block.cableNetwork.core.CableComponentBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
@@ -126,6 +127,11 @@ public class OctoControllerBlock extends CableComponentBlock implements EntityBl
         } else {
             return input.channel() + 8;
         }
+    }
+
+    @Override
+    public String getCableStandard() {
+        return BuiltinCableStandards.DEFAULT;
     }
 
     @Override

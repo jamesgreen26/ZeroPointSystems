@@ -7,6 +7,7 @@
     "block.zps.stepdown_transformer": "StromEingang",
     "block.zps.redstone_converter": "Redstone Konvektor",
     "block.zps.octo_controller": "Octo Controller",
+    "block.zps.light_pipe_cable": "Lichtwellen-Kabel",
 
     "item.zps.cable": "Kabel",
     "item.zps.dense_cables": "besser Kabel",
@@ -16,6 +17,7 @@
     "item.zps.stepdown_transformer": "StromEingang",
     "item.zps.redstone_converter": "Redstone Konvektor",
     "item.zps.octo_controller": "Octo Controller",
+    "item.zps.light_pipe_cable": "Lichtwellen-Kabel",
 
     "creativetab.zps_tab": "Zero Point Systems",
 

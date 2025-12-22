@@ -1,6 +1,7 @@
 package g_mungus.zps.block.cableNetwork;
 
 import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.block.cableNetwork.core.BuiltinCableStandards;
 import g_mungus.zps.block.cableNetwork.core.CableComponentBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
@@ -85,6 +86,11 @@ public class DenseCableSeparatorBlock extends CableComponentBlock {
                 context.getLevel(),
                 context.getClickedPos()
         );
+    }
+
+    @Override
+    public String getCableStandard() {
+        return BuiltinCableStandards.DEFAULT;
     }
 
     @Override

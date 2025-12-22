@@ -8,6 +8,7 @@
     "block.zps.redstone_converter": "Redstone Konvektor",
     "block.zps.octo_controller": "Octo Controller",
     "block.zps.light_pipe_cable": "Lichtwellen-Kabel",
+    "block.zps.script_transmitter": "Skript-Sender",
 
     "item.zps.cable": "Kabel",
     "item.zps.dense_cables": "besser Kabel",
@@ -18,6 +19,7 @@
     "item.zps.redstone_converter": "Redstone Konvektor",
     "item.zps.octo_controller": "Octo Controller",
     "item.zps.light_pipe_cable": "Lichtwellen-Kabel",
+    "item.zps.script_transmitter": "Skript-Sender",
 
     "creativetab.zps_tab": "Zero Point Systems",
 

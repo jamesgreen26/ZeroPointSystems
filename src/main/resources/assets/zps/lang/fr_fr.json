@@ -8,6 +8,7 @@
     "block.zps.redstone_converter": "Convertisseur à redstone",
     "block.zps.octo_controller": "Controlleur Octo",
     "block.zps.light_pipe_cable": "Câble optique",
+    "block.zps.script_transmitter": "Émetteur de Script",
 
     "item.zps.cable": "Câble",
     "item.zps.dense_cables": "Câble dense",
@@ -18,6 +19,7 @@
     "item.zps.redstone_converter": "Convertisseur à redstone",
     "item.zps.octo_controller": "Controlleur Octo",
     "item.zps.light_pipe_cable": "Câble optique",
+    "item.zps.script_transmitter": "Émetteur de Script",
 
     "creativetab.zps_tab": "Zero Point Systems",
 

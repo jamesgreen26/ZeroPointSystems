@@ -9,6 +9,7 @@
     "block.zps.octo_controller": "Octo-Controller",
     "block.zps.cable_insulation": "Cable Insulation",
     "block.zps.light_pipe_cable": "Light-Pipe Data Cable",
+    "block.zps.script_transmitter": "Script Transmitter",
 
     "item.zps.cable": "Cable",
     "item.zps.dense_cables": "Dense Cables",
@@ -20,6 +21,7 @@
     "item.zps.octo_controller": "Octo-Controller",
     "item.zps.cable_insulation": "Cable Insulation",
     "item.zps.light_pipe_cable": "Light-Pipe Data Cable",
+    "item.zps.script_transmitter": "Script Transmitter",
 
     "creativetab.zps_tab": "Zero Point Systems",
 

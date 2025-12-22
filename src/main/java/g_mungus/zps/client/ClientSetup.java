@@ -1,8 +1,11 @@
 package g_mungus.zps.client;
 
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.client.renderer.OctoMountingRenderer;
 import g_mungus.zps.entity.ModEntities;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
@@ -21,6 +24,7 @@ public class ClientSetup {
     public static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
             EntityRenderers.register(ModEntities.OCTO_MOUNTING.get(), OctoMountingRenderer::new);
+            ItemBlockRenderTypes.setRenderLayer(ModBlocks.DENSE_CABLE_SEPARATOR.get(), RenderType.cutout());
         });
     }
 } 

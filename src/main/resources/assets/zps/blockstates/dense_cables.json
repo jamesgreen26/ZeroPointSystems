@@ -22,7 +22,7 @@
         "insulated": "false"
       },
       "apply": {
-        "model": "zps:block/dense_cable_side_alt",
+        "model": "zps:block/dense_cable_side",
         "x": 90
       }
     },
@@ -118,7 +118,7 @@
         "insulated": "false"
       },
       "apply": {
-        "model": "zps:block/dense_cable_side_alt",
+        "model": "zps:block/dense_cable_side",
         "x": 90,
         "y": 270
       }
@@ -178,9 +178,8 @@
         "insulated": "false"
       },
       "apply": {
-        "model": "zps:block/dense_cable_side_alt",
-        "x": 180,
-        "y": 180
+        "model": "zps:block/dense_cable_side",
+        "x": 180
       }
     },
     {

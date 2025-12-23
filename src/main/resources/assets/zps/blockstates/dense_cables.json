@@ -7,6 +7,36 @@
             "insulated": "false"
           },
           {
+            "north": "true"
+          },
+          {
+            "south": "true"
+          },
+          {
+            "east": "false"
+          },
+          {
+            "west": "false"
+          },
+          {
+            "up": "false"
+          },
+          {
+            "down": "false"
+          }
+        ]
+      },
+      "apply": {
+        "model": "zps:block/dense_cables_straight"
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "insulated": "false"
+          },
+          {
             "NOT": {
               "AND": [
                 {

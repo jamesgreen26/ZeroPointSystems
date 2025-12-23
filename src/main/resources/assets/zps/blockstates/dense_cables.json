@@ -37,6 +37,68 @@
             "insulated": "false"
           },
           {
+            "north": "false"
+          },
+          {
+            "south": "false"
+          },
+          {
+            "east": "true"
+          },
+          {
+            "west": "true"
+          },
+          {
+            "up": "false"
+          },
+          {
+            "down": "false"
+          }
+        ]
+      },
+      "apply": {
+        "model": "zps:block/dense_cables_straight",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "insulated": "false"
+          },
+          {
+            "north": "false"
+          },
+          {
+            "south": "false"
+          },
+          {
+            "east": "false"
+          },
+          {
+            "west": "false"
+          },
+          {
+            "up": "true"
+          },
+          {
+            "down": "true"
+          }
+        ]
+      },
+      "apply": {
+        "model": "zps:block/dense_cables_straight",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "insulated": "false"
+          },
+          {
             "NOT": {
               "AND": [
                 {

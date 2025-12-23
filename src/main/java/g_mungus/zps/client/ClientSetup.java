@@ -29,6 +29,7 @@ public class ClientSetup {
             EntityRenderers.register(ModEntities.OCTO_MOUNTING.get(), OctoMountingRenderer::new);
             BlockEntityRenderers.register(ModBlockEntities.SCRIPT_TRANSMITTER.get(), ScriptTransmitterBlockEntityRenderer::new);
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DENSE_CABLE_SEPARATOR.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer(ModBlocks.LIGHT_PIPE.get(), RenderType.translucent());
         });
     }
 } 

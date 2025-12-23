@@ -2,7 +2,8 @@
 	"format_version": "1.21.6",
 	"credit": "Made with Blockbench",
 	"textures": {
-		"1": "zps:block/compound_data_cable"
+		"1": "zps:block/compound_data_cable",
+		"particle": "zps:block/compound_data_cable"
 	},
 	"elements": [
 		{

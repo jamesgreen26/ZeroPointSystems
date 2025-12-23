@@ -26,8 +26,13 @@ public class ModBlockEntities {
             () -> BlockEntityType.Builder.of(StepDownTransformerBlockEntity::new, 
                 ModBlocks.STEPDOWN_TRANSFORMER.get()).build(null));
 
-    public static final RegistryObject<BlockEntityType<OctoControllerBlockEntity>> OCTO_CONTROLLER = 
-        BLOCK_ENTITIES.register("octo_controller", 
-            () -> BlockEntityType.Builder.of(OctoControllerBlockEntity::new, 
+    public static final RegistryObject<BlockEntityType<OctoControllerBlockEntity>> OCTO_CONTROLLER =
+        BLOCK_ENTITIES.register("octo_controller",
+            () -> BlockEntityType.Builder.of(OctoControllerBlockEntity::new,
                 ModBlocks.OCTO_CONTROLLER.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<ScriptTransmitterBlockEntity>> SCRIPT_TRANSMITTER =
+        BLOCK_ENTITIES.register("script_transmitter",
+            () -> BlockEntityType.Builder.of(ScriptTransmitterBlockEntity::new,
+                ModBlocks.SCRIPT_TRANSMITTER.get()).build(null));
 } 

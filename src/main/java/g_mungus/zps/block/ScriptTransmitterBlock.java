@@ -4,11 +4,15 @@ import g_mungus.zps.block.cableNetwork.core.BuiltinCableStandards;
 import g_mungus.zps.block.cableNetwork.core.CableComponentBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
+import g_mungus.zps.blockentity.ModBlockEntities;
+import g_mungus.zps.blockentity.ScriptTransmitterBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -19,13 +23,15 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class ScriptTransmitterBlock extends CableComponentBlock {
+public class ScriptTransmitterBlock extends CableComponentBlock implements EntityBlock {
     public static BooleanProperty CONNECTED = BooleanProperty.create("connected");
+    public static BooleanProperty HAS_BOOK = BooleanProperty.create("has_book");
     public static DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
 
     public ScriptTransmitterBlock(Properties properties) {
         super(properties);
         this.registerDefaultState(this.stateDefinition.any()
+                .setValue(HAS_BOOK, false)
                 .setValue(FACING, Direction.NORTH)
                 .setValue(CONNECTED, false)
         );
@@ -33,7 +39,7 @@ public class ScriptTransmitterBlock extends CableComponentBlock {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, CONNECTED);
+        builder.add(FACING, CONNECTED, HAS_BOOK);
     }
 
     @Nullable
@@ -100,5 +106,10 @@ public class ScriptTransmitterBlock extends CableComponentBlock {
         Direction backDirection = state.getValue(FACING).getOpposite();
         boolean connected = canConnect(pos, pos.offset(backDirection.getNormal()), level);
         return state.setValue(CONNECTED, connected);
+    }
+
+    @Override
+    public @Nullable BlockEntity newBlockEntity(@NotNull BlockPos pos, @NotNull BlockState state) {
+        return new ScriptTransmitterBlockEntity(pos, state);
     }
 }

@@ -32,6 +32,13 @@ dependencies {
     mappings loom.officialMojangMappings()
     forge "net.minecraftforge:forge:$project.forge_version"
 
+    implementation("io.github.llamalad7:mixinextras-common:0.5.0")
+    implementation("io.github.llamalad7:mixinextras-forge:0.5.0")
+
+    annotationProcessor("io.github.llamalad7:mixinextras-common:0.5.0")
+
+    include("io.github.llamalad7:mixinextras-common:0.5.0")
+    include("io.github.llamalad7:mixinextras-forge:0.5.0")
 
     api "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10"
     api "org.jetbrains.kotlin:kotlin-reflect:1.9.10"

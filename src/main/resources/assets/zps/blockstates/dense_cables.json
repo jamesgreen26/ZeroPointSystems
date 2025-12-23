@@ -2,7 +2,83 @@
   "multipart": [
     {
       "when": {
-        "insulated": "false"
+        "AND": [
+          {
+            "insulated": "false"
+          },
+          {
+            "NOT": {
+              "AND": [
+                {
+                  "north": "true"
+                },
+                {
+                  "south": "true"
+                },
+                {
+                  "east": "false"
+                },
+                {
+                  "west": "false"
+                },
+                {
+                  "up": "false"
+                },
+                {
+                  "down": "false"
+                }
+              ]
+            }
+          },
+          {
+            "NOT": {
+              "AND": [
+                {
+                  "east": "true"
+                },
+                {
+                  "west": "true"
+                },
+                {
+                  "north": "false"
+                },
+                {
+                  "south": "false"
+                },
+                {
+                  "up": "false"
+                },
+                {
+                  "down": "false"
+                }
+              ]
+            }
+          },
+          {
+            "NOT": {
+              "AND": [
+                {
+                  "up": "true"
+                },
+                {
+                  "down": "true"
+                },
+                {
+                  "north": "false"
+                },
+                {
+                  "south": "false"
+                },
+                {
+                  "east": "false"
+                },
+                {
+                  "west": "false"
+                }
+              ]
+            }
+          }
+        ]
       },
       "apply": {
         "model": "zps:block/dense_cable_core"

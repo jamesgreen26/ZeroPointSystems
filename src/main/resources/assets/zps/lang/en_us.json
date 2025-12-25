@@ -33,5 +33,10 @@
     "key.zps.f": "Channel F",
     "key.zps.g": "Channel G",
     "key.zps.h": "Channel H",
-    "key.categories.zps": "Zero Point Systems"
+    "key.categories.zps": "Zero Point Systems",
+
+
+    "zps.ponder.cable.header": "Cables",
+    "zps.ponder.cable.text_1": "Cables don't do anything on their own.",
+    "zps.ponder.cable.text_2": "Add Redstone Converters to send a redstone signal."
 }

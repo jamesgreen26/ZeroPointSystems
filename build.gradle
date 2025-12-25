@@ -25,6 +25,8 @@ repositories {
     // See https://docs.gradle.org/current/userguide/declaring_repositories.html
     // for more information about repositories.
     mavenLocal()
+
+    maven { url = "https://maven.createmod.net" }
 }
 
 dependencies {
@@ -42,6 +44,7 @@ dependencies {
 
     api "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10"
     api "org.jetbrains.kotlin:kotlin-reflect:1.9.10"
+    include (modImplementation("net.createmod.ponder:Ponder-Forge-${minecraft_version}:${ponder_version}"))
 }
 
 processResources {

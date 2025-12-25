@@ -2,12 +2,15 @@ package g_mungus.zps;
 
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.ModBlockEntities;
+import g_mungus.zps.client.ponder.ZPSPonderPlugin;
 import g_mungus.zps.entity.ModEntities;
 import g_mungus.zps.item.ModCreativeTabs;
 import g_mungus.zps.item.ModItems;
 
 import g_mungus.zps.networking.ZPSGamePackets;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -31,6 +34,8 @@ public final class ZPSMod {
 
         // Register common setup event
         modEventBus.addListener(this::commonSetup);
+
+        DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> ZPSPonderPlugin::registerPlugin);
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {

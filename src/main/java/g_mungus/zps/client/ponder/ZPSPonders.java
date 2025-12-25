@@ -33,5 +33,10 @@ public class ZPSPonders {
                 ModBlocks.CABLE_INSULATION.get()
         ).addStoryBoard("insulation", ZPSPonderScenes::insulationTutorial);
 
+        HELPER.forComponents(
+                ModBlocks.DENSE_CABLES.get(),
+                ModBlocks.DENSE_CABLE_SEPARATOR.get()
+        ).addStoryBoard("dense_cables", ZPSPonderScenes::denseCablesTutorial);
+
     }
 }

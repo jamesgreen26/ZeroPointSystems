@@ -50,5 +50,10 @@
 
     "zps.ponder.insulation.header": "Cable Insulation",
     "zps.ponder.insulation.text_1": "Bare cables will always connect, and sometimes this is not wanted.",
-    "zps.ponder.insulation.text_2": "Apply Insulation to prevent cable blocks from making new connections."
+    "zps.ponder.insulation.text_2": "Apply Insulation to prevent cable blocks from making new connections.",
+
+    "zps.ponder.dense_cables.header": "Dense Cables",
+    "zps.ponder.dense_cables.text_1": "Tight spaces can be tricky.",
+    "zps.ponder.dense_cables.text_2": "Dense Cables can transmit 4 signals through a single block.",
+    "zps.ponder.dense_cables.text_3": "Use Dense Cable Separators to merge multiple regular cables into a Dense Cable."
 }

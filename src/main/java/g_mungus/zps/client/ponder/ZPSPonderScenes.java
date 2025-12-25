@@ -2,6 +2,7 @@ package g_mungus.zps.client.ponder;
 
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.CableBlock;
+import g_mungus.zps.block.cableNetwork.RedstoneConverterBlock;
 import g_mungus.zps.item.ModItems;
 import net.createmod.ponder.api.PonderPalette;
 import net.createmod.ponder.api.element.ElementLink;
@@ -145,5 +146,57 @@ public class ZPSPonderScenes {
         builder.idle(20);
         builder.world().showSection(util.select().fromTo(3, 2, 0, 3, 2, 7), Direction.DOWN);
         builder.idle(30);
+    }
+
+    public static void denseCablesTutorial(SceneBuilder builder, SceneBuildingUtil util) {
+        builder.configureBasePlate(0, 0, 7);
+        builder.title("dense_cables", "Dense Cables");
+        builder.showBasePlate();
+        builder.idle(5);
+
+        builder.world().showSection(util.select().fromTo(2,1,0,2,1,7), Direction.DOWN);
+        builder.world().showSection(util.select().fromTo(4,1,0,4,1,7), Direction.DOWN);
+
+        builder.world().showSection(util.select().fromTo(1,1,3,1,1,3), Direction.DOWN);
+        builder.world().showSection(util.select().fromTo(5,1,3,5,1,3), Direction.DOWN);
+        builder.world().showSection(util.select().fromTo(0,2,3,7,2,3), Direction.DOWN);
+
+        builder.overlay().showText(60).text("Tight spaces can be tricky.");
+        builder.idle(60);
+        builder.world().hideSection(util.select().fromTo(1,1,3,2,1,3), Direction.UP);
+        builder.world().hideSection(util.select().fromTo(4,1,3,5,1,3), Direction.UP);
+        builder.world().hideSection(util.select().fromTo(0,2,3,7,2,3), Direction.UP);
+        builder.rotateCameraY(-45);
+        builder.idle(10);
+        builder.overlay().showText(60).text("Dense Cables can transmit 4 signals through a single block.");
+        builder.idle(10);
+        builder.world().showSection(util.select().fromTo(3,1,2,3,1,4), Direction.DOWN);
+        builder.idle(60);
+        builder.overlay().showText(80).text("Use Dense Cable Separators to merge multiple regular cables into a Dense Cable.");
+        builder.idle(30);
+        builder.world().showSection(util.select().fromTo(3,1,1,3,1,1), Direction.DOWN);
+        builder.world().showSection(util.select().fromTo(3,1,5,3,1,5), Direction.DOWN);
+        builder.world().setBlock(new BlockPos(2,1,1), ModBlocks.REDSTONE_CONVERTER.get().defaultBlockState().setValue(RedstoneConverterBlock.FACING, Direction.NORTH).setValue(RedstoneConverterBlock.EAST, true), false);
+        builder.world().setBlock(new BlockPos(2,1,5), ModBlocks.REDSTONE_CONVERTER.get().defaultBlockState().setValue(RedstoneConverterBlock.FACING, Direction.SOUTH).setValue(RedstoneConverterBlock.EAST, true), false);
+
+        builder.world().setBlock(new BlockPos(4,1,1), ModBlocks.REDSTONE_CONVERTER.get().defaultBlockState().setValue(RedstoneConverterBlock.FACING, Direction.NORTH).setValue(RedstoneConverterBlock.WEST, true), false);
+        builder.world().setBlock(new BlockPos(4,1,5), ModBlocks.REDSTONE_CONVERTER.get().defaultBlockState().setValue(RedstoneConverterBlock.FACING, Direction.SOUTH).setValue(RedstoneConverterBlock.WEST, true), false);
+        builder.idle(60);
+        builder.world().showSection(util.select().fromTo(1,1,3,2,1,3), Direction.DOWN);
+        builder.world().showSection(util.select().fromTo(4,1,3,5,1,3), Direction.DOWN);
+        builder.world().showSection(util.select().fromTo(0,2,3,7,2,3), Direction.DOWN);
+        builder.idle(5);
+        builder.rotateCameraY(45);
+        builder.idle(25);
+        builder.world().toggleRedstonePower(util.select().fromTo(2,1,0,2,1,7));
+        builder.idle(10);
+        builder.world().toggleRedstonePower(util.select().fromTo(2,1,0,2,1,7));
+        builder.idle(10);
+        builder.world().toggleRedstonePower(util.select().fromTo(4,1,0,4,1,7));
+        builder.idle(10);
+        builder.world().toggleRedstonePower(util.select().fromTo(4,1,0,4,1,7));
+        builder.idle(20);
+
+
     }
 }

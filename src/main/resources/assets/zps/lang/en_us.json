@@ -38,5 +38,9 @@
 
     "zps.ponder.cable.header": "Cables",
     "zps.ponder.cable.text_1": "Cables don't do anything on their own.",
-    "zps.ponder.cable.text_2": "Add Redstone Converters to send a redstone signal."
+    "zps.ponder.cable.text_2": "Add Redstone Converters to send a redstone signal.",
+
+    "zps.ponder.energy.header": "Energy Cables",
+    "zps.ponder.energy.text_1": "Stepup Transformers draw FE from their adjacent block...",
+    "zps.ponder.energy.text_2": "...and deposit the FE to connected Stepdown Transformers."
 }

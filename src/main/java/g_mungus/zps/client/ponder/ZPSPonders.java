@@ -15,5 +15,11 @@ public class ZPSPonders {
                 ModBlocks.REDSTONE_CONVERTER.get()
         ).addStoryBoard("cable", ZPSPonderScenes::cableTutorial);
 
+        HELPER.forComponents(
+                ModBlocks.CABLE.get(),
+                ModBlocks.STEPUP_TRANSFORMER.get(),
+                ModBlocks.STEPDOWN_TRANSFORMER.get()
+        ).addStoryBoard("energy", ZPSPonderScenes::energyTutorial);
+
     }
 }

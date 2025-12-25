@@ -21,5 +21,12 @@ public class ZPSPonders {
                 ModBlocks.STEPDOWN_TRANSFORMER.get()
         ).addStoryBoard("energy", ZPSPonderScenes::energyTutorial);
 
+        HELPER.forComponents(
+                ModBlocks.STEPUP_TRANSFORMER.get(),
+                ModBlocks.STEPDOWN_TRANSFORMER.get(),
+                ModBlocks.REDSTONE_CONVERTER.get(),
+                ModBlocks.CABLE_INSULATION.get()
+        ).addStoryBoard("energy_explode", ZPSPonderScenes::energyExplodeTutorial);
+
     }
 }

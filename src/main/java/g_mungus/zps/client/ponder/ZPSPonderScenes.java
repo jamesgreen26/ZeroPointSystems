@@ -60,4 +60,31 @@ public class ZPSPonderScenes {
 
         builder.idle(50);
     }
+
+    public static void energyExplodeTutorial(SceneBuilder builder, SceneBuildingUtil util) {
+        builder.configureBasePlate(0, 0, 7);
+        builder.title("energy_explode", "Overvolting a Converter");
+        builder.showBasePlate();
+        builder.idle(5);
+
+        builder.world().showSection(util.select().fromTo(0,1,0,7,1,7), Direction.DOWN);
+        builder.idle(5);
+
+        builder.world().showSection(util.select().fromTo(5,2,0,7,2,7), Direction.DOWN);
+        builder.idle(5);
+        builder.world().showSection(util.select().fromTo(0,2,0,3,2,7), Direction.DOWN);
+        builder.idle(20);
+        builder.overlay().showText(60).text("Be careful not to supply FE to a Redstone Converter...");
+        builder.idle(60);
+        builder.effects().emitParticles(new Vec3(5.5, 3.5, 1.5), builder.effects().simpleParticleEmitter(ParticleTypes.ELECTRIC_SPARK, new Vec3(0, -1, 0)), 2, 20);
+
+        builder.idle(5);
+
+        builder.effects().emitParticles(new Vec3(1.5, 3.5, 5.5), builder.effects().simpleParticleEmitter(ParticleTypes.EXPLOSION_EMITTER, new Vec3(0, 0, 0)), 1, 1);
+        builder.world().destroyBlock(new BlockPos(1, 2, 5));
+        builder.world().destroyBlock(new BlockPos(1, 1, 5));
+        builder.idle(30);
+        builder.overlay().showText(60).text("Redstone Converters cannot handle the higher voltage, and will explode.");
+        builder.idle(60);
+    }
 }

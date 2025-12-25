@@ -42,5 +42,9 @@
 
     "zps.ponder.energy.header": "Energy Cables",
     "zps.ponder.energy.text_1": "Stepup Transformers draw FE from their adjacent block...",
-    "zps.ponder.energy.text_2": "...and deposit the FE to connected Stepdown Transformers."
+    "zps.ponder.energy.text_2": "...and deposit the FE to connected Stepdown Transformers.",
+
+    "zps.ponder.energy_explode.header": "Overvolting a Converter",
+    "zps.ponder.energy_explode.text_1": "Be careful not to supply FE to a Redstone Converter...",
+    "zps.ponder.energy_explode.text_2": "Redstone Converters cannot handle the higher voltage, and will explode."
 }

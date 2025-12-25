@@ -38,5 +38,9 @@ public class ZPSPonders {
                 ModBlocks.DENSE_CABLE_SEPARATOR.get()
         ).addStoryBoard("dense_cables", ZPSPonderScenes::denseCablesTutorial);
 
+        HELPER.forComponents(
+                ModBlocks.OCTO_CONTROLLER.get()
+        ).addStoryBoard("octo_controller", ZPSPonderScenes::octoControllerTutorial);
+
     }
 }

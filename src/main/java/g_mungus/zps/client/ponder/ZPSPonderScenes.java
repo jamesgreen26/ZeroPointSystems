@@ -3,22 +3,24 @@ package g_mungus.zps.client.ponder;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.CableBlock;
 import g_mungus.zps.block.cableNetwork.RedstoneConverterBlock;
+import g_mungus.zps.entity.ModEntities;
+import g_mungus.zps.entity.OctoMountingEntity;
 import g_mungus.zps.item.ModItems;
 import net.createmod.ponder.api.PonderPalette;
 import net.createmod.ponder.api.element.ElementLink;
 import net.createmod.ponder.api.element.EntityElement;
 import net.createmod.ponder.api.scene.SceneBuilder;
 import net.createmod.ponder.api.scene.SceneBuildingUtil;
-import net.createmod.ponder.api.scene.Selection;
-import net.createmod.ponder.api.scene.SelectionUtil;
-import net.createmod.ponder.foundation.PonderSceneBuildingUtil;
-import net.createmod.ponder.foundation.PonderWorldParticles;
-import net.minecraft.client.particle.GlowParticle;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.monster.piglin.AbstractPiglin;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
@@ -198,5 +200,56 @@ public class ZPSPonderScenes {
         builder.idle(20);
 
 
+    }
+
+    public static void octoControllerTutorial(SceneBuilder builder, SceneBuildingUtil util) {
+        builder.configureBasePlate(0, 0, 7);
+        builder.title("octo_controller", "Octo-Controller");
+        builder.world().showSection(util.select().everywhere(), Direction.UP);
+        builder.idle(5);
+
+        ElementLink<EntityElement> piglin = builder.world().createEntity(level -> BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse("minecraft:piglin")).create(level));
+        builder.world().modifyEntity(piglin, entity -> {
+            if (entity instanceof AbstractPiglin it) {
+                it.setImmuneToZombification(true);
+            }
+            entity.moveTo(3.5, 2, 1);
+        });
+        builder.overlay().showText(60).text("Interact with an Octo-Controller to control it.");
+
+        builder.idle(30);
+        builder.world().modifyEntity(piglin, entity -> {
+            if (entity instanceof AbstractPiglin it) {
+                it.swing(InteractionHand.MAIN_HAND);
+                entity.moveTo(3.5, 2, 1.5);
+
+                Entity seat = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse("minecraft:armor_stand")).create(entity.level());
+                if (seat instanceof ArmorStand) {
+                    seat.setInvisible(true);
+                    seat.setNoGravity(true);
+
+                    entity.startRiding(seat, true);
+                }
+            }
+        });
+        builder.idle(40);
+        builder.overlay().showText(60).text("Use arrow keys and WASD to control the 8 redstone outputs.");
+        builder.idle(20);
+        builder.world().toggleRedstonePower(util.select().position(1, 3, 5));
+        builder.idle(8);
+        builder.world().toggleRedstonePower(util.select().position(1, 3, 5));
+        builder.idle(8);
+        builder.world().toggleRedstonePower(util.select().position(4, 3, 6));
+        builder.idle(8);
+        builder.world().toggleRedstonePower(util.select().position(4, 3, 6));
+        builder.idle(8);
+        builder.world().toggleRedstonePower(util.select().position(2, 3, 6));
+        builder.idle(8);
+        builder.world().toggleRedstonePower(util.select().position(2, 3, 6));
+        builder.idle(8);
+        builder.world().toggleRedstonePower(util.select().position(5, 3, 5));
+        builder.idle(8);
+        builder.world().toggleRedstonePower(util.select().position(5, 3, 5));
+        builder.idle(20);
     }
 }

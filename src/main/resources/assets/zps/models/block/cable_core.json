@@ -31,14 +31,19 @@
 			"scale": [0.375, 0.375, 0.375]
 		},
 		"firstperson_righthand": {
-			"rotation": [0, -45, 0]
+			"rotation": [0, 45, 0],
+			"scale": [0.625, 0.625, 0.625]
 		},
 		"firstperson_lefthand": {
-			"rotation": [0, -45, 0]
+			"rotation": [0, 45, 0],
+			"scale": [0.625, 0.625, 0.625]
 		},
 		"gui": {
-			"rotation": [30, -135, 0],
-			"scale": [1.2, 1.2, 1.2]
+			"rotation": [30, 45, 0],
+			"scale": [0.625, 0.625, 0.625]
+		},
+		"ground": {
+			"scale": [0.25, 0.25, 0.25]
 		}
 	}
 }

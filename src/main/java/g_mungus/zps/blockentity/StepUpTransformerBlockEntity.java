@@ -1,5 +1,6 @@
 package g_mungus.zps.blockentity;
 
+import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.StepdownTransformerBlock;
 import g_mungus.zps.block.cableNetwork.TransformerBlock;
@@ -115,7 +116,11 @@ public class StepUpTransformerBlockEntity extends NetworkTerminal {
     @Override
     public void load(CompoundTag tag) {
         super.load(tag);
-        energyHandler.deserializeNBT(tag.get("Energy"));
+        try {
+            energyHandler.deserializeNBT(tag.get("Energy"));
+        } catch (Throwable e) {
+            ZPSMod.LOGGER.warn("Failed to deserialize NBT: ", e);
+        }
     }
 
     @Override

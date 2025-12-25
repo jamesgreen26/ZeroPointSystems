@@ -46,5 +46,9 @@
 
     "zps.ponder.energy_explode.header": "Overvolting a Converter",
     "zps.ponder.energy_explode.text_1": "Be careful not to supply FE to a Redstone Converter...",
-    "zps.ponder.energy_explode.text_2": "Redstone Converters cannot handle the higher voltage, and will explode."
+    "zps.ponder.energy_explode.text_2": "Redstone Converters cannot handle the higher voltage, and will explode.",
+
+    "zps.ponder.insulation.header": "Cable Insulation",
+    "zps.ponder.insulation.text_1": "Bare cables will always connect, and sometimes this is not wanted.",
+    "zps.ponder.insulation.text_2": "Apply Insulation to prevent cable blocks from making new connections."
 }

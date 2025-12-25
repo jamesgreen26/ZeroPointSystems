@@ -28,5 +28,10 @@ public class ZPSPonders {
                 ModBlocks.CABLE_INSULATION.get()
         ).addStoryBoard("energy_explode", ZPSPonderScenes::energyExplodeTutorial);
 
+        HELPER.forComponents(
+                ModBlocks.CABLE.get(),
+                ModBlocks.CABLE_INSULATION.get()
+        ).addStoryBoard("insulation", ZPSPonderScenes::insulationTutorial);
+
     }
 }

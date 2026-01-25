@@ -1,11 +1,14 @@
 package g_mungus.zps.blockentity.light_pipe;
 
+import g_mungus.zps.block.cableNetwork.core.Channels;
+import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.NetworkTerminalImpl;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
@@ -20,7 +23,9 @@ import net.minecraft.world.inventory.LecternMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.WrittenBookItem;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.LecternBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
@@ -29,10 +34,6 @@ import javax.annotation.Nullable;
 
 public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements Clearable, MenuProvider {
 
-    public static final int DATA_PAGE = 0;
-    public static final int NUM_DATA = 1;
-    public static final int SLOT_BOOK = 0;
-    public static final int NUM_SLOTS = 1;
     private final Container bookAccess = new Container() {
         public int getContainerSize() {
             return 1;
@@ -112,6 +113,31 @@ public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements
     int page;
     private int pageCount;
 
+    public void sendScript() {
+        Level level = this.level;
+        if (level == null) return;
+        for (NetworkNode terminal : getTerminals(Channels.MAIN)) {
+            BlockEntity blockEntity = level.getBlockEntity(terminal.pos());
+            if (blockEntity instanceof LightPipeDataReceiver.Text textReceiver) {
+                textReceiver.acceptText(getPageContents());
+            } else if (blockEntity instanceof LightPipeDataReceiver.Video videoReceiver) {
+                //todo
+            }
+        }
+    }
+
+    private String getPageContents() {
+        if (book != null) {
+            CompoundTag tag = book.getTag();
+            if (tag != null) {
+                ListTag pages = tag.getList("pages", 8);
+                if (pages.size() > page) {
+                    return pages.getString(page);
+                }
+            }
+        }
+        return "";
+    }
 
     public ScriptTransmitterBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SCRIPT_TRANSMITTER.get(), pos, state);
@@ -135,6 +161,7 @@ public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements
         this.page = 0;
         this.pageCount = 0;
         LecternBlock.resetBookState(null, this.getLevel(), this.getBlockPos(), this.getBlockState(), false);
+        sendScript();
     }
 
     public void setBook(ItemStack arg, @Nullable Player arg2) {
@@ -142,6 +169,7 @@ public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements
         this.page = 0;
         this.pageCount = WrittenBookItem.getPageCount(this.book);
         this.setChanged();
+        sendScript();
     }
 
     void setPage(int i) {
@@ -150,6 +178,7 @@ public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements
             this.page = j;
             this.setChanged();
             LecternBlock.signalPageChange(this.getLevel(), this.getBlockPos(), this.getBlockState());
+            sendScript();
         }
 
     }

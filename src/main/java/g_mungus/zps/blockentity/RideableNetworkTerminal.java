@@ -17,7 +17,7 @@ import org.joml.Vector3dc;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class RideableNetworkTerminal<T extends Entity> extends NetworkTerminal{
+public abstract class RideableNetworkTerminal<T extends Entity> extends NetworkTerminalImpl {
 
     public RideableNetworkTerminal(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);

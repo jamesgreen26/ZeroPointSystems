@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class StepUpTransformerBlockEntity extends NetworkTerminal {
+public class StepUpTransformerBlockEntity extends NetworkTerminalImpl {
     private final EnergyStorage energyHandler;
     private final LazyOptional<IEnergyStorage> energy;
 

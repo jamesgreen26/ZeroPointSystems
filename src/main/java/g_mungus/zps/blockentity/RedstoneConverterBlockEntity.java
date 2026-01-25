@@ -10,7 +10,7 @@ import net.minecraft.nbt.CompoundTag;
 
 import java.util.List;
 
-public class RedstoneConverterBlockEntity extends NetworkTerminal implements RedstoneSendingTerminal, RedstoneReceivingTerminal {
+public class RedstoneConverterBlockEntity extends NetworkTerminalImpl implements RedstoneSendingTerminal, RedstoneReceivingTerminal {
     public RedstoneConverterBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.REDSTONE_CONVERTER.get(), pos, state);
     }

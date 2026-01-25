@@ -5,38 +5,30 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class NetworkTerminal extends BlockEntity {
+public interface NetworkTerminal {
+    Map<Integer, List<NetworkNode>> getTerminalHolder();
+    BlockPos getWorldPos();
 
-    public NetworkTerminal(BlockEntityType<?> type, BlockPos pos, BlockState state) {
-        super(type, pos, state);
-    }
-
-    private final Map<Integer, List<NetworkNode>> terminals = new ConcurrentHashMap<>();
-
-    public void defineTerminals(List<NetworkNode> terminals, int channel) {
-        this.terminals.put(channel, terminals.stream().map(node ->
+    default void defineTerminals(List<NetworkNode> terminals, int channel) {
+        this.getTerminalHolder().put(channel, terminals.stream().map(node ->
             new NetworkNode(
-                node.pos().subtract(this.worldPosition),
+                node.pos().subtract(getWorldPos()),
                 node.channel(),
                 node.terminal())
             ).toList()
         );
     }
 
-    public List<NetworkNode>  getTerminals(int channel) {
-        List<NetworkNode> nodes = terminals.get(channel);
+    default List<NetworkNode> getTerminals(int channel) {
+        List<NetworkNode> nodes = getTerminalHolder().get(channel);
         if (nodes != null) {
             return nodes.stream().map(node ->
                     new NetworkNode(
-                            node.pos().offset(this.worldPosition),
+                            node.pos().offset(getWorldPos()),
                             node.channel(),
                             node.terminal()
                     )
@@ -46,9 +38,8 @@ public abstract class NetworkTerminal extends BlockEntity {
         }
     }
 
-    @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
+    default void loadNetwork(CompoundTag tag) {
+        var terminals = getTerminalHolder();
         terminals.clear();
         
         if (tag.contains("Terminals", Tag.TAG_LIST)) {
@@ -77,12 +68,9 @@ public abstract class NetworkTerminal extends BlockEntity {
         }
     }
 
-    @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
-        
+    default void saveNetwork(CompoundTag tag) {
         ListTag terminalsList = new ListTag();
-        terminals.forEach((channel, nodes) -> {
+        getTerminalHolder().forEach((channel, nodes) -> {
             CompoundTag terminalTag = new CompoundTag();
             terminalTag.putInt("Channel", channel);
             

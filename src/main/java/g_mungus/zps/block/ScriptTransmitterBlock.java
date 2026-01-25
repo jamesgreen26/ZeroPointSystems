@@ -1,23 +1,33 @@
 package g_mungus.zps.block;
 
-import g_mungus.zps.block.cableNetwork.core.BuiltinCableStandards;
-import g_mungus.zps.block.cableNetwork.core.CableComponentBlock;
-import g_mungus.zps.block.cableNetwork.core.Channels;
-import g_mungus.zps.block.cableNetwork.core.NetworkNode;
+import g_mungus.zps.block.cableNetwork.core.*;
 import g_mungus.zps.blockentity.ScriptTransmitterBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.stats.Stats;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.LecternBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.LecternBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -26,8 +36,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class ScriptTransmitterBlock extends CableComponentBlock implements EntityBlock {
+public class ScriptTransmitterBlock extends LecternBlock implements EntityBlock, CableNetworkComponent {
     public static BooleanProperty CONNECTED = BooleanProperty.create("connected");
+    public static BooleanProperty POWERED = LecternBlock.POWERED;
     public static BooleanProperty HAS_BOOK = BlockStateProperties.HAS_BOOK;
     public static DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
 
@@ -42,22 +53,48 @@ public class ScriptTransmitterBlock extends CableComponentBlock implements Entit
                 .setValue(HAS_BOOK, false)
                 .setValue(FACING, Direction.NORTH)
                 .setValue(CONNECTED, false)
+                .setValue(POWERED, false)
         );
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, CONNECTED, HAS_BOOK);
+        builder.add(FACING, CONNECTED, HAS_BOOK, POWERED);
     }
 
-    @Nullable
     @Override
-    public BlockState getStateForPlacement(BlockPlaceContext context) {
+    public @NotNull BlockState getStateForPlacement(BlockPlaceContext context) {
         Direction facing = context.getHorizontalDirection().getOpposite();
         if (context.getPlayer() != null && context.getPlayer().isShiftKeyDown()) {
             facing = facing.getOpposite();
         }
         return this.defaultBlockState().setValue(FACING, facing);
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
+        if (!state.is(newState.getBlock())) {
+            if (state.getValue(HAS_BOOK)) {
+                this.popBook(state, level, pos);
+            }
+
+            if (state.getValue(POWERED)) {
+                level.updateNeighborsAt(pos.below(), this);
+            }
+
+            super.onRemove(state, level, pos, newState, moved);
+        }
+
+        updateSelfAndNeighbors(newState, level, pos, state);
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public void onPlace(BlockState newState, Level level, BlockPos pos, BlockState oldState, boolean moved) {
+        super.onPlace(newState, level, pos, oldState, moved);
+
+        updateSelfAndNeighbors(newState, level, pos, oldState);
     }
 
     @Override
@@ -132,12 +169,74 @@ public class ScriptTransmitterBlock extends CableComponentBlock implements Entit
     }
 
     @Override
-    public VoxelShape getOcclusionShape(BlockState arg, BlockGetter arg2, BlockPos arg3) {
-        return Block.box(0.0F, 0.0F, 0.0F, 16.0F, 2.0F, 16.0F);
+    public InteractionResult use(BlockState arg, Level arg2, BlockPos arg3, Player arg4, InteractionHand arg5, BlockHitResult arg6) {
+        if (arg.getValue(HAS_BOOK)) {
+            if (!arg2.isClientSide) {
+                this.openScreen(arg2, arg3, arg4);
+            }
+
+            return InteractionResult.sidedSuccess(arg2.isClientSide);
+        } else {
+            ItemStack itemStack = arg4.getItemInHand(arg5);
+            return !itemStack.isEmpty() && !itemStack.is(ItemTags.LECTERN_BOOKS) ? InteractionResult.CONSUME : InteractionResult.PASS;
+        }
     }
 
-    public boolean useShapeForLightOcclusion(BlockState arg) {
-        return true;
+    private void openScreen(Level arg, BlockPos arg2, Player arg3) {
+        BlockEntity blockEntity = arg.getBlockEntity(arg2);
+        if (blockEntity instanceof ScriptTransmitterBlockEntity transmitterBlockEntity) {
+            arg3.openMenu(transmitterBlockEntity);
+            arg3.awardStat(Stats.INTERACT_WITH_LECTERN);
+        }
+    }
+
+    private void popBook(BlockState arg, Level arg2, BlockPos arg3) {
+        BlockEntity blockEntity = arg2.getBlockEntity(arg3);
+        if (blockEntity instanceof ScriptTransmitterBlockEntity transmitterBlockEntity) {
+            Direction direction = arg.getValue(FACING);
+            ItemStack itemStack = transmitterBlockEntity.getBook().copy();
+            float f = 0.25F * (float)direction.getStepX();
+            float g = 0.25F * (float)direction.getStepZ();
+            ItemEntity itemEntity = new ItemEntity(arg2, (double)arg3.getX() + (double)0.5F + (double)f, (double)(arg3.getY() + 1), (double)arg3.getZ() + (double)0.5F + (double)g, itemStack);
+            itemEntity.setDefaultPickUpDelay();
+            arg2.addFreshEntity(itemEntity);
+            transmitterBlockEntity.clearContent();
+        }
+
+    }
+
+    public int getAnalogOutputSignal(BlockState arg, Level arg2, BlockPos arg3) {
+        if (arg.getValue(HAS_BOOK)) {
+            BlockEntity blockEntity = arg2.getBlockEntity(arg3);
+            if (blockEntity instanceof ScriptTransmitterBlockEntity) {
+                return ((ScriptTransmitterBlockEntity)blockEntity).getRedstoneSignal();
+            }
+        }
+
+        return 0;
+    }
+
+
+    public static boolean tryPlaceBook(Entity arg, Level arg2, BlockPos arg3, BlockState arg4, ItemStack arg5) {
+        if (!(Boolean)arg4.getValue(HAS_BOOK)) {
+            if (!arg2.isClientSide) {
+                placeBook(arg, arg2, arg3, arg4, arg5);
+            }
+
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private static void placeBook(Entity arg, Level arg2, BlockPos arg3, BlockState arg4, ItemStack arg5) {
+        BlockEntity blockEntity = arg2.getBlockEntity(arg3);
+        if (blockEntity instanceof ScriptTransmitterBlockEntity be) {
+            be.setBook(arg5.split(1));
+            resetBookState(arg, arg2, arg3, arg4, true);
+            arg2.playSound((Player)null, arg3, SoundEvents.BOOK_PUT, SoundSource.BLOCKS, 1.0F, 1.0F);
+        }
+
     }
 
     static {

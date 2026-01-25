@@ -1,0 +1,42 @@
+[
+  {
+    "block": "zps:cable",
+    "mass": 15.0
+  },
+  {
+    "block": "zps:dense_cables",
+    "mass": 450.0
+  },
+  {
+    "block": "zps:dense_cable_separator",
+    "mass": 1000.0
+  },
+  {
+    "block": "zps:stepup_transformer",
+    "mass": 170.0
+  },
+  {
+    "block": "zps:stepdown_transformer",
+    "mass": 170.0
+  },
+  {
+    "block": "zps:redstone_converter",
+    "mass": 170.0
+  },
+  {
+    "block": "zps:octo_controller",
+    "mass": 1000.0
+  },
+  {
+    "block": "zps:cable_insulation",
+    "mass": 1000.0
+  },
+  {
+    "block": "zps:light_pipe_cable",
+    "mass": 15.0
+  },
+  {
+    "block": "zps:script_transmitter",
+    "mass": 450.0
+  }
+]

@@ -7,6 +7,8 @@
     "SelectorDeserializerNotMixin"
   ],
   "mixins": [
+    "WritableBookMixin",
+    "WrittenBookMixin"
   ],
   "injectors": {
     "defaultRequire": 1

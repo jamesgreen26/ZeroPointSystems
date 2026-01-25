@@ -23,6 +23,7 @@ public class ClientSetup {
         ModKeybinds.register(event);
     }
 
+    @SuppressWarnings("removal")
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {

@@ -1,5 +1,7 @@
-package g_mungus.zps.blockentity;
+package g_mungus.zps.blockentity.light_pipe;
 
+import g_mungus.zps.blockentity.ModBlockEntities;
+import g_mungus.zps.blockentity.NetworkTerminalImpl;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
@@ -10,7 +12,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.Clearable;
 import net.minecraft.world.Container;
 import net.minecraft.world.MenuProvider;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;

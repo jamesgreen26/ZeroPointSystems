@@ -41,4 +41,7 @@ public class ModItems {
 
     public static final RegistryObject<Item> SCRIPT_TRANSMITTER = ITEMS.register("script_transmitter",
             () -> new BlockItem(ModBlocks.SCRIPT_TRANSMITTER.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> TEXT_DISPLAY = ITEMS.register("text_display",
+            () -> new BlockItem(ModBlocks.TEXT_DISPLAY.get(), new Item.Properties()));
 } 

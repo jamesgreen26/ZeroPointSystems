@@ -3,6 +3,8 @@ package g_mungus.zps.block;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.cableNetwork.*;
 import g_mungus.zps.block.cableNetwork.light_pipe.LightPipeCableBlock;
+import g_mungus.zps.block.cableNetwork.light_pipe.ScriptTransmitterBlock;
+import g_mungus.zps.block.cableNetwork.light_pipe.TextDisplayBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -71,4 +73,10 @@ public class ModBlocks {
             () -> new ScriptTransmitterBlock(BlockBehaviour.Properties.copy(Blocks.LECTERN)
                     .strength(2.5f)
                     .requiresCorrectToolForDrops()));
+
+    public static final RegistryObject<Block> TEXT_DISPLAY = BLOCKS.register("text_display",
+            () -> new TextDisplayBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
 } 

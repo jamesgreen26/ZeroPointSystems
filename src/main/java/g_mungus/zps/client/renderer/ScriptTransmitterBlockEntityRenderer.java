@@ -2,8 +2,8 @@ package g_mungus.zps.client.renderer;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
-import g_mungus.zps.block.ScriptTransmitterBlock;
-import g_mungus.zps.blockentity.ScriptTransmitterBlockEntity;
+import g_mungus.zps.block.cableNetwork.light_pipe.ScriptTransmitterBlock;
+import g_mungus.zps.blockentity.light_pipe.ScriptTransmitterBlockEntity;
 import net.minecraft.client.model.BookModel;
 import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.renderer.RenderType;

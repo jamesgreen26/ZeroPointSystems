@@ -1,7 +1,7 @@
-package g_mungus.zps.block;
+package g_mungus.zps.block.cableNetwork.light_pipe;
 
 import g_mungus.zps.block.cableNetwork.core.*;
-import g_mungus.zps.blockentity.ScriptTransmitterBlockEntity;
+import g_mungus.zps.blockentity.light_pipe.ScriptTransmitterBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvents;
@@ -21,7 +21,6 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.LecternBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.LecternBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -72,7 +71,6 @@ public class ScriptTransmitterBlock extends LecternBlock implements EntityBlock,
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
         if (!state.is(newState.getBlock())) {
             if (state.getValue(HAS_BOOK)) {

@@ -2,6 +2,8 @@ package g_mungus.zps.blockentity;
 
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.blockentity.light_pipe.ScriptTransmitterBlockEntity;
+import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -35,4 +37,9 @@ public class ModBlockEntities {
         BLOCK_ENTITIES.register("script_transmitter",
             () -> BlockEntityType.Builder.of(ScriptTransmitterBlockEntity::new,
                 ModBlocks.SCRIPT_TRANSMITTER.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<TextDisplayBlockEntity>> TEXT_DISPLAY =
+            BLOCK_ENTITIES.register("text_display",
+                    () -> BlockEntityType.Builder.of(TextDisplayBlockEntity::new,
+                            ModBlocks.TEXT_DISPLAY.get()).build(null));
 } 

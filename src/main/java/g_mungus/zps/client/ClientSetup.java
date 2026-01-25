@@ -5,6 +5,7 @@ import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.client.renderer.OctoMountingRenderer;
 import g_mungus.zps.client.renderer.ScriptTransmitterBlockEntityRenderer;
+import g_mungus.zps.client.renderer.TextDisplayBlockEntityRenderer;
 import g_mungus.zps.entity.ModEntities;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
@@ -29,6 +30,7 @@ public class ClientSetup {
         event.enqueueWork(() -> {
             EntityRenderers.register(ModEntities.OCTO_MOUNTING.get(), OctoMountingRenderer::new);
             BlockEntityRenderers.register(ModBlockEntities.SCRIPT_TRANSMITTER.get(), ScriptTransmitterBlockEntityRenderer::new);
+            BlockEntityRenderers.register(ModBlockEntities.TEXT_DISPLAY.get(), TextDisplayBlockEntityRenderer::new);
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DENSE_CABLE_SEPARATOR.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.LIGHT_PIPE.get(), RenderType.translucent());
         });

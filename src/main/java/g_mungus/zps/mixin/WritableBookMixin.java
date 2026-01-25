@@ -1,7 +1,7 @@
 package g_mungus.zps.mixin;
 
 import g_mungus.zps.block.ModBlocks;
-import g_mungus.zps.block.ScriptTransmitterBlock;
+import g_mungus.zps.block.cableNetwork.light_pipe.ScriptTransmitterBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.WritableBookItem;

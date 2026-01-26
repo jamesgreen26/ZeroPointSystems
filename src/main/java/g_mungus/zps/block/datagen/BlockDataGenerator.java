@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -13,7 +13,7 @@ public class BlockDataGenerator {
     public static String FOLDER = "src/main/resources/";
     private static final Logger log = LoggerFactory.getLogger(BlockDataGenerator.class);
 
-    public static final Map<String, List<BlockType>> blocksToDatagen = new HashMap<>();
+    public static final Map<String, List<BlockType>> blocksToDatagen = new LinkedHashMap<>();
     static {
         blocksToDatagen.put("space_plating", List.of(BlockType.simple, BlockType.stairs, BlockType.slab, BlockType.wall));
         blocksToDatagen.put("riveted_space_plating", List.of(BlockType.simple, BlockType.stairs, BlockType.slab, BlockType.wall));

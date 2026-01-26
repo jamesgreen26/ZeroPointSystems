@@ -49,6 +49,51 @@ public class ModItems {
     public static final RegistryObject<Item> TEXT_DISPLAY = ITEMS.register("text_display",
             () -> new BlockItem(ModBlocks.TEXT_DISPLAY.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> SPACE_METAL_INGOT = ITEMS.register("space_metal_ingot",
+        () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> SPACE_METAL_PLATE = ITEMS.register("space_metal_plate",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> SPACE_METAL_MESH = ITEMS.register("space_metal_mesh",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> SPACE_METAL_ROD = ITEMS.register("space_metal_rod",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> SPACE_METAL_PIPE = ITEMS.register("space_metal_pipe",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> SPACE_METAL_SCREW = ITEMS.register("space_metal_screw",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> SPACE_METAL_BOLT = ITEMS.register("space_metal_bolt",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> SPACE_METAL_SPRING = ITEMS.register("space_metal_spring",
+            () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> CAPACITOR = ITEMS.register("capacitor",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> TRANSISTOR = ITEMS.register("transistor",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> MODULATOR = ITEMS.register("modulator",
+            () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> COPPER_MAGNETRON = ITEMS.register("copper_magnetron",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> GOLD_MAGNETRON = ITEMS.register("gold_magnetron",
+            () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> COPPER_WIRE = ITEMS.register("copper_wire",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> GOLD_WIRE = ITEMS.register("gold_wire",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> VERDITE_WIRE = ITEMS.register("verdite_wire",
+            () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> EMPTY_SPOOL = ITEMS.register("empty_spool",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> COPPER_SPOOL = ITEMS.register("copper_spool",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> GOLD_SPOOL = ITEMS.register("gold_spool",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> VERDITE_SPOOL = ITEMS.register("verdite_spool",
+            () -> new Item(new Item.Properties()));
+
 /// DECOR ITEMS
 
     public static final RegistryObject<Item> SPACE_TRUSS = ITEMS.register("space_truss",

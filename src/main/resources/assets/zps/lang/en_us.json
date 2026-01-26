@@ -10,6 +10,7 @@
     "block.zps.cable_insulation": "Cable Insulation",
     "block.zps.light_pipe_cable": "Light-Pipe Data Cable",
     "block.zps.script_transmitter": "Script Transmitter",
+    "block.zps.text_display": "Text Display",
 
     "item.zps.cable": "Cable",
     "item.zps.dense_cables": "Dense Cables",
@@ -22,6 +23,7 @@
     "item.zps.cable_insulation": "Cable Insulation",
     "item.zps.light_pipe_cable": "Light-Pipe Data Cable",
     "item.zps.script_transmitter": "Script Transmitter",
+    "item.zps.text_display": "Text Display",
 
     "creativetab.zps_tab": "Zero Point Systems",
 

@@ -1,0 +1,6 @@
+  {
+    "parent": "minecraft:block/wall_inventory",
+    "textures": {
+      "wall": "zps:block/decor/light_blue_space_plating"
+    }
+  }

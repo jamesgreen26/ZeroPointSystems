@@ -1,0 +1,6 @@
+  {
+    "parent": "minecraft:block/template_wall_post",
+    "textures": {
+      "wall": "zps:block/decor/green_space_plating"
+    }
+  }

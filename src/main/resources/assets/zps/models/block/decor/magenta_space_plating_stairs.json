@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/stairs",
+  "textures": {
+    "bottom": "zps:block/decor/magenta_space_plating",
+    "top": "zps:block/decor/magenta_space_plating",
+    "side": "zps:block/decor/magenta_space_plating"
+  }
+}

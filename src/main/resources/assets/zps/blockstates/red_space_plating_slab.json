@@ -1,0 +1,13 @@
+  {
+    "variants": {
+      "type=bottom": {
+        "model": "zps:block/decor/red_space_plating_slab"
+      },
+      "type=top": {
+        "model": "zps:block/decor/red_space_plating_slab_top"
+      },
+      "type=double": {
+        "model": "zps:block/decor/red_space_plating"
+      }
+    }
+  }

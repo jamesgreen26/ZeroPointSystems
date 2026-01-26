@@ -8,9 +8,14 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class ModItems {
     public static final DeferredRegister<Item> ITEMS = 
         DeferredRegister.create(ForgeRegistries.ITEMS, ZPSMod.MOD_ID);
+
+    public static Map<String, RegistryObject<Item>> DYNAMIC_ITEMS = new HashMap<>();
 
     public static final RegistryObject<Item> OCTO_CONTROLLER = ITEMS.register("octo_controller",
             () -> new BlockItem(ModBlocks.OCTO_CONTROLLER.get(), new Item.Properties()));

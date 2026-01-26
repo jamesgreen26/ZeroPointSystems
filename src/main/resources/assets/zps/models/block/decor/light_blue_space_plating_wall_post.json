@@ -1,0 +1,6 @@
+  {
+    "parent": "minecraft:block/template_wall_post",
+    "textures": {
+      "wall": "zps:block/decor/light_blue_space_plating"
+    }
+  }

@@ -1,0 +1,23 @@
+{
+  "values": [
+    "zps:light_gray_space_plating_wall",
+    "zps:blue_space_plating_wall",
+    "zps:pink_space_plating_wall",
+    "zps:lime_space_plating_wall",
+    "zps:black_space_plating_wall",
+    "zps:orange_space_plating_wall",
+    "zps:cyan_space_plating_wall",
+    "zps:brown_space_plating_wall",
+    "zps:light_blue_space_plating_wall",
+    "zps:green_space_plating_wall",
+    "zps:yellow_space_plating_wall",
+    "zps:red_space_plating_wall",
+    "zps:purple_space_plating_wall",
+    "zps:gray_space_plating_wall",
+    "zps:agate_space_plating_wall",
+    "zps:space_plating_wall",
+    "zps:magenta_space_plating_wall",
+    "zps:chrome_space_plating_wall"
+  ],
+  "replace": false
+}

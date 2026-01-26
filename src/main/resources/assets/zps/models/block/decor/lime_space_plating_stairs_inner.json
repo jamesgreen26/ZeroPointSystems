@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/inner_stairs",
+  "textures": {
+    "bottom": "zps:block/decor/lime_space_plating",
+    "top": "zps:block/decor/lime_space_plating",
+    "side": "zps:block/decor/lime_space_plating"
+  }
+}

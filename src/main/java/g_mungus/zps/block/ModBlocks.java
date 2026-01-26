@@ -3,6 +3,7 @@ package g_mungus.zps.block;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.cableNetwork.*;
 import g_mungus.zps.block.cableNetwork.light_pipe.LightPipeCableBlock;
+import g_mungus.zps.block.cableNetwork.light_pipe.RadioTransmitter;
 import g_mungus.zps.block.cableNetwork.light_pipe.ScriptTransmitterBlock;
 import g_mungus.zps.block.cableNetwork.light_pipe.TextDisplayBlock;
 import g_mungus.zps.block.datagen.BlockDataGenerator;
@@ -93,6 +94,12 @@ public class ModBlocks {
 
     public static final RegistryObject<Block> TEXT_DISPLAY = BLOCKS.register("text_display",
             () -> new TextDisplayBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+
+    public static final RegistryObject<Block> RADIO_TRANSMITTER = BLOCKS.register("radio_transmitter",
+            () -> new RadioTransmitter(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(2.0f)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));

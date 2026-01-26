@@ -2,6 +2,7 @@ package g_mungus.zps.blockentity;
 
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.blockentity.light_pipe.RadioTransmitterBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.ScriptTransmitterBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -42,4 +43,9 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("text_display",
                     () -> BlockEntityType.Builder.of(TextDisplayBlockEntity::new,
                             ModBlocks.TEXT_DISPLAY.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<RadioTransmitterBlockEntity>> RADIO_TRANSMITTER =
+            BLOCK_ENTITIES.register("radio_transmitter",
+                    () -> BlockEntityType.Builder.of(RadioTransmitterBlockEntity::new,
+                            ModBlocks.RADIO_TRANSMITTER.get()).build(null));
 } 

@@ -1,6 +1,7 @@
 package g_mungus.zps.block.cableNetwork.light_pipe;
 
 import g_mungus.zps.block.cableNetwork.core.*;
+import g_mungus.zps.blockentity.light_pipe.LightPipeDataSender;
 import g_mungus.zps.blockentity.light_pipe.ScriptTransmitterBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -85,6 +86,13 @@ public class ScriptTransmitterBlock extends LecternBlock implements EntityBlock,
         }
 
         updateSelfAndNeighbors(newState, level, pos, state);
+
+        if (!state.is(newState.getBlock())) {
+            BlockEntity be = level.getBlockEntity(pos);
+            if (be instanceof LightPipeDataSender sender) {
+                sender.onRemove(level);
+            }
+        }
     }
 
     @Override

@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "zps:block/decor/riveted_space_plating"
+  }
+}

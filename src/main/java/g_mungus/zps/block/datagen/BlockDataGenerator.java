@@ -16,6 +16,7 @@ public class BlockDataGenerator {
     public static final Map<String, List<BlockType>> blocksToDatagen = new HashMap<>();
     static {
         blocksToDatagen.put("space_plating", List.of(BlockType.simple, BlockType.stairs, BlockType.slab, BlockType.wall));
+        blocksToDatagen.put("riveted_space_plating", List.of(BlockType.simple, BlockType.stairs, BlockType.slab, BlockType.wall));
         blocksToDatagen.put("red_space_plating", List.of(BlockType.simple, BlockType.stairs, BlockType.slab, BlockType.wall));
         blocksToDatagen.put("orange_space_plating", List.of(BlockType.simple, BlockType.stairs, BlockType.slab, BlockType.wall));
         blocksToDatagen.put("yellow_space_plating", List.of(BlockType.simple, BlockType.stairs, BlockType.slab, BlockType.wall));

@@ -132,6 +132,14 @@ public class ModBlocks {
             )
     );
 
+    public static final RegistryObject<Block> RIVETED_SPACE_PLATING = BLOCKS.register("riveted_space_plating",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .strength(3.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)
+            )
+    );
+
     public static final RegistryObject<Block> RED_SPACE_PLATING = BLOCKS.register("red_space_plating",
             () -> new Block(BlockBehaviour.Properties.of()
                     .strength(3.0f)

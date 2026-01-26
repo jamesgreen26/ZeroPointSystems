@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "zps:block/decor/catwalk_stairs" },
+    "facing=south": { "model": "zps:block/decor/catwalk_stairs", "y": 180 },
+    "facing=west": { "model": "zps:block/decor/catwalk_stairs", "y": 270 },
+    "facing=east": { "model": "zps:block/decor/catwalk_stairs", "y": 90 }
+  }
+}

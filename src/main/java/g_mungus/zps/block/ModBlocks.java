@@ -134,6 +134,24 @@ public class ModBlocks {
             )
     );
 
+    public static final RegistryObject<Block> CATWALK = BLOCKS.register("catwalk",
+            () -> new CatwalkBlock(BlockBehaviour.Properties.of()
+                    .strength(3.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.NETHERITE_BLOCK)
+                    .noOcclusion()
+            )
+    );
+
+    public static final RegistryObject<Block> CATWALK_STAIRS = BLOCKS.register("catwalk_stairs",
+            () -> new CatwalkStairsBlock(BlockBehaviour.Properties.of()
+                    .strength(3.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.NETHERITE_BLOCK)
+                    .noOcclusion()
+            )
+    );
+
 
 /// CAUTION BLOCKS
 

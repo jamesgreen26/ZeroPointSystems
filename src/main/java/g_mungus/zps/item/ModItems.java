@@ -63,6 +63,12 @@ public class ModItems {
     public static final RegistryObject<Item> SPACE_MESH_BLOCK = ITEMS.register("space_mesh_block",
             () -> new BlockItem(ModBlocks.SPACE_MESH_BLOCK.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> CATWALK = ITEMS.register("catwalk",
+            () -> new BlockItem(ModBlocks.CATWALK.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> CATWALK_STAIRS = ITEMS.register("catwalk_stairs",
+            () -> new BlockItem(ModBlocks.CATWALK_STAIRS.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> CAUTION_BLOCK = ITEMS.register("caution_block",
             () -> new BlockItem(ModBlocks.CAUTION_BLOCK.get(), new Item.Properties()));
 

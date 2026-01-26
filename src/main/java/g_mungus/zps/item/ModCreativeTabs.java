@@ -40,6 +40,8 @@ public class ModCreativeTabs {
                         output.accept(ModItems.SPACE_SCAFFOLD.get());
                         output.accept(ModItems.SPACE_GRATING_BLOCK.get());
                         output.accept(ModItems.SPACE_MESH_BLOCK.get());
+                        output.accept(ModItems.CATWALK.get());
+                        output.accept(ModItems.CATWALK_STAIRS.get());
                         output.accept(ModItems.CAUTION_BLOCK.get());
                         output.accept(ModItems.RADIATION_CAUTION_BLOCK.get());
                         output.accept(ModItems.VOID_CAUTION_BLOCK.get());

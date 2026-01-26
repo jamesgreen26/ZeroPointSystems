@@ -272,7 +272,7 @@ public class ScriptTransmitterBlock extends LecternBlock implements EntityBlock,
         // Directional antenna shapes (rotated 22.5°)
         SHAPE_NORTH = Shapes.or(Block.box(0.0F, 10.0F, 1.0F, 16.0F, 14.0F, 5.333333), Block.box(0.0F, 12.0F, 5.333333, 16.0F, 16.0F, 9.666667), Block.box(0.0F, 14.0F, 9.666667, 16.0F, 18.0F, 14.0F), baseNorth);
         SHAPE_SOUTH = Shapes.or(Block.box(0.0F, 10.0F, 10.666667, 16.0F, 14.0F, 15.0F), Block.box(0.0F, 12.0F, 6.333333, 16.0F, 16.0F, 10.666667), Block.box(0.0F, 14.0F, 2.0F, 16.0F, 18.0F, 6.333333), baseSouth);
-        SHAPE_EAST = Shapes.or(Block.box(10.666667, 10.0F, 0.0F, 15.0F, 14.0F, 16.0F), Block.box(6.333333, 12.0F, 0.0F, 10.666667, 16.0F, 16.0F), Block.box(2.0F, 14.0F, 0.0F, 6.333333, 18.0F, 16.0F), baseEast);
-        SHAPE_WEST = Shapes.or(Block.box(1.0F, 10.0F, 0.0F, 5.333333, 14.0F, 16.0F), Block.box(5.333333, 12.0F, 0.0F, 9.666667, 16.0F, 16.0F), Block.box(9.666667, 14.0F, 0.0F, 14.0F, 18.0F, 16.0F), baseWest);
+        SHAPE_EAST = Shapes.or(Block.box(10.666667, 10.0F, 0.0F, 15.0F, 14.0F, 16.0F), Block.box(6.333333, 12.0F, 0.0F, 10.666667, 16.0F, 16.0F), Block.box(2.0F, 14.0F, 0.0F, 6.333333, 18.0F, 16.0F), baseWest);
+        SHAPE_WEST = Shapes.or(Block.box(1.0F, 10.0F, 0.0F, 5.333333, 14.0F, 16.0F), Block.box(5.333333, 12.0F, 0.0F, 9.666667, 16.0F, 16.0F), Block.box(9.666667, 14.0F, 0.0F, 14.0F, 18.0F, 16.0F), baseEast);
     }
 }

@@ -26,7 +26,7 @@ import java.util.List;
 public class TextDisplayBlock extends CableComponentBlock implements EntityBlock {
 
     public static BooleanProperty CONNECTED = BooleanProperty.create("connected");
-    public static DirectionProperty FACING = BlockStateProperties.FACING;
+    public static DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
 
 
     public TextDisplayBlock(Properties arg) {
@@ -42,7 +42,7 @@ public class TextDisplayBlock extends CableComponentBlock implements EntityBlock
 
     @Override
     public @NotNull BlockState getStateForPlacement(BlockPlaceContext context) {
-        Direction facing = context.getNearestLookingDirection().getOpposite();
+        Direction facing = context.getHorizontalDirection().getOpposite();
         if (context.getPlayer() != null && context.getPlayer().isShiftKeyDown()) {
             facing = facing.getOpposite();
         }

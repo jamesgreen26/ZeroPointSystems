@@ -61,5 +61,6 @@
 
     "zps.ponder.octo_controller.header": "Octo-Controller",
     "zps.ponder.octo_controller.text_1": "Interact with an Octo-Controller to control it.",
-    "zps.ponder.octo_controller.text_2": "Use arrow keys and WASD to control the 8 redstone outputs."
+    "zps.ponder.octo_controller.text_2": "Use arrow keys and WASD to control the 8 redstone outputs.",
+    "creativetab.zps_tab_deco": "Zero Point Systems Blocks"
 }

@@ -277,7 +277,7 @@ public class ModBlocks {
                         /* block registered manually */
 
                         String id = entry.getKey();
-                        ModItems.DYNAMIC_ITEMS.put(id, ModItems.ITEMS.register(id,
+                        ModItems.DYNAMIC_ITEMS.add(ModItems.ITEMS.register(id,
                                 () -> new BlockItem(blockLookup(entry.getKey()).get(), new Item.Properties())));
                     }
                     case slab -> {
@@ -285,7 +285,7 @@ public class ModBlocks {
                         RegistryObject<Block> slab = BLOCKS.register(id,
                                 () -> new SlabBlock(((BlockBehaviourAccessor) blockLookup(entry.getKey()).get()).getProperties()));
 
-                        ModItems.DYNAMIC_ITEMS.put(id, ModItems.ITEMS.register(id,
+                        ModItems.DYNAMIC_ITEMS.add(ModItems.ITEMS.register(id,
                                 () -> new BlockItem(slab.get(), new Item.Properties())));
                     }
                     case stairs -> {
@@ -296,7 +296,7 @@ public class ModBlocks {
                                     return new StairBlock(block::defaultBlockState, ((BlockBehaviourAccessor) block).getProperties());
                                 });
 
-                        ModItems.DYNAMIC_ITEMS.put(id, ModItems.ITEMS.register(id,
+                        ModItems.DYNAMIC_ITEMS.add(ModItems.ITEMS.register(id,
                                 () -> new BlockItem(stairs.get(), new Item.Properties())));
                     }
 
@@ -308,7 +308,7 @@ public class ModBlocks {
                                     return new WallBlock(BlockBehaviour.Properties.copy(block).forceSolidOn());
                                 });
 
-                        ModItems.DYNAMIC_ITEMS.put(id, ModItems.ITEMS.register(id,
+                        ModItems.DYNAMIC_ITEMS.add(ModItems.ITEMS.register(id,
                                 () -> new BlockItem(wall.get(), new Item.Properties())));
                     }
                 }

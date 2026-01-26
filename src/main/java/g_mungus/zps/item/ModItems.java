@@ -8,14 +8,13 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class ModItems {
     public static final DeferredRegister<Item> ITEMS = 
         DeferredRegister.create(ForgeRegistries.ITEMS, ZPSMod.MOD_ID);
 
-    public static Map<String, RegistryObject<Item>> DYNAMIC_ITEMS = new HashMap<>();
+    public static List<RegistryObject<Item>> DYNAMIC_ITEMS = new ArrayList<>();
 
     public static final RegistryObject<Item> OCTO_CONTROLLER = ITEMS.register("octo_controller",
             () -> new BlockItem(ModBlocks.OCTO_CONTROLLER.get(), new Item.Properties()));
@@ -49,4 +48,13 @@ public class ModItems {
 
     public static final RegistryObject<Item> TEXT_DISPLAY = ITEMS.register("text_display",
             () -> new BlockItem(ModBlocks.TEXT_DISPLAY.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> CAUTION_BLOCK = ITEMS.register("caution_block",
+            () -> new BlockItem(ModBlocks.CAUTION_BLOCK.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> RADIATION_CAUTION_BLOCK = ITEMS.register("radiation_caution_block",
+            () -> new BlockItem(ModBlocks.RADIATION_CAUTION_BLOCK.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> VOID_CAUTION_BLOCK = ITEMS.register("void_caution_block",
+            () -> new BlockItem(ModBlocks.VOID_CAUTION_BLOCK.get(), new Item.Properties()));
 } 

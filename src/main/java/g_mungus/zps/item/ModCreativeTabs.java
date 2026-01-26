@@ -18,13 +18,29 @@ public class ModCreativeTabs {
             .title(Component.translatable("creativetab.zps_tab"))
             .icon(() -> new ItemStack(ModItems.DENSE_CABLE_SEPARATOR.get()))
             .displayItems((parameters, output) -> {
-
-                // Add all our items to the tab
-                ModItems.ITEMS.getEntries().forEach(itemRegistryObject -> {
-                    output.accept(itemRegistryObject.get());
-                });
-
+                output.accept(ModItems.OCTO_CONTROLLER.get());
+                output.accept(ModItems.DENSE_CABLE_SEPARATOR.get());
+                output.accept(ModItems.CABLE_INSULATION.get());
+                output.accept(ModItems.STEPUP_TRANSFORMER.get());
+                output.accept(ModItems.STEPDOWN_TRANSFORMER.get());
+                output.accept(ModItems.REDSTONE_CONVERTER.get());
+                output.accept(ModItems.DENSE_CABLES.get());
+                output.accept(ModItems.CABLE.get());
+                output.accept(ModItems.LIGHT_PIPE.get());
+                output.accept(ModItems.SCRIPT_TRANSMITTER.get());
+                output.accept(ModItems.TEXT_DISPLAY.get());
             }).build());
+
+    public static final RegistryObject<CreativeModeTab> ZPS_DECO_TAB = CREATIVE_MODE_TABS.register("zps_tab_deco",
+            () -> CreativeModeTab.builder()
+                    .title(Component.translatable("creativetab.zps_tab_deco"))
+                    .icon(() -> new ItemStack(ModItems.CAUTION_BLOCK.get()))
+                    .displayItems((parameters, output) -> {
+                        output.accept(ModItems.CAUTION_BLOCK.get());
+                        output.accept(ModItems.RADIATION_CAUTION_BLOCK.get());
+                        output.accept(ModItems.VOID_CAUTION_BLOCK.get());
+                        ModItems.DYNAMIC_ITEMS.forEach(item -> output.accept(item.get()));
+                    }).build());
 
     public static void register(IEventBus eventBus) {
         CREATIVE_MODE_TABS.register(eventBus);

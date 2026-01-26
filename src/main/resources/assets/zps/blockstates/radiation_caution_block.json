@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "zps:block/decor/radiation_caution_block"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "zps:block/decor/space_mesh_block"
+    }
+  }
+}

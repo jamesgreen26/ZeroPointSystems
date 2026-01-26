@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "axis=x": {
+      "model": "zps:block/decor/space_truss",
+        "y": 90,
+        "x": 90
+    },
+    "axis=y": {
+      "model": "zps:block/decor/space_truss"
+    },
+    "axis=z": {
+      "model": "zps:block/decor/space_truss",
+        "x": 90
+    }
+  }
+}

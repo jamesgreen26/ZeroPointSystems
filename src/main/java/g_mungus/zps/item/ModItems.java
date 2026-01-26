@@ -49,6 +49,20 @@ public class ModItems {
     public static final RegistryObject<Item> TEXT_DISPLAY = ITEMS.register("text_display",
             () -> new BlockItem(ModBlocks.TEXT_DISPLAY.get(), new Item.Properties()));
 
+/// DECOR ITEMS
+
+    public static final RegistryObject<Item> SPACE_TRUSS = ITEMS.register("space_truss",
+        () -> new BlockItem(ModBlocks.SPACE_TRUSS.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> SPACE_SCAFFOLD = ITEMS.register("space_scaffold",
+            () -> new BlockItem(ModBlocks.SPACE_SCAFFOLD.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> SPACE_GRATING_BLOCK = ITEMS.register("space_grating_block",
+            () -> new BlockItem(ModBlocks.SPACE_GRATING_BLOCK.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> SPACE_MESH_BLOCK = ITEMS.register("space_mesh_block",
+            () -> new BlockItem(ModBlocks.SPACE_MESH_BLOCK.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> CAUTION_BLOCK = ITEMS.register("caution_block",
             () -> new BlockItem(ModBlocks.CAUTION_BLOCK.get(), new Item.Properties()));
 

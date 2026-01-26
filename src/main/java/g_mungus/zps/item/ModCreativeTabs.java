@@ -34,8 +34,12 @@ public class ModCreativeTabs {
     public static final RegistryObject<CreativeModeTab> ZPS_DECO_TAB = CREATIVE_MODE_TABS.register("zps_tab_deco",
             () -> CreativeModeTab.builder()
                     .title(Component.translatable("creativetab.zps_tab_deco"))
-                    .icon(() -> new ItemStack(ModItems.CAUTION_BLOCK.get()))
+                    .icon(() -> new ItemStack(ModItems.SPACE_TRUSS.get()))
                     .displayItems((parameters, output) -> {
+                        output.accept(ModItems.SPACE_TRUSS.get());
+                        output.accept(ModItems.SPACE_SCAFFOLD.get());
+                        output.accept(ModItems.SPACE_GRATING_BLOCK.get());
+                        output.accept(ModItems.SPACE_MESH_BLOCK.get());
                         output.accept(ModItems.CAUTION_BLOCK.get());
                         output.accept(ModItems.RADIATION_CAUTION_BLOCK.get());
                         output.accept(ModItems.VOID_CAUTION_BLOCK.get());

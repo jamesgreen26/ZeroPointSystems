@@ -33,6 +33,10 @@ public class ClientSetup {
             BlockEntityRenderers.register(ModBlockEntities.TEXT_DISPLAY.get(), TextDisplayBlockEntityRenderer::new);
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DENSE_CABLE_SEPARATOR.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.LIGHT_PIPE.get(), RenderType.translucent());
+
+            ItemBlockRenderTypes.setRenderLayer(ModBlocks.SPACE_SCAFFOLD.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer(ModBlocks.SPACE_TRUSS.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer(ModBlocks.SPACE_GRATING_BLOCK.get(), RenderType.cutout());
         });
     }
 } 

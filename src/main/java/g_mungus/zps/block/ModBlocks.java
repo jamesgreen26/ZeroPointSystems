@@ -97,6 +97,43 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
 
+/// DECOR BLOCKS
+
+    public static final RegistryObject<Block> SPACE_TRUSS = BLOCKS.register("space_truss",
+            () -> new RotatedPillarBlock(BlockBehaviour.Properties.of()
+                    .strength(3.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.NETHERITE_BLOCK)
+                    .noOcclusion()
+            )
+    );
+
+    public static final RegistryObject<Block> SPACE_SCAFFOLD = BLOCKS.register("space_scaffold",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .strength(3.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.NETHERITE_BLOCK)
+                    .noOcclusion()
+            )
+    );
+
+    public static final RegistryObject<Block> SPACE_MESH_BLOCK = BLOCKS.register("space_mesh_block",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .strength(3.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.NETHERITE_BLOCK)
+            )
+    );
+
+    public static final RegistryObject<Block> SPACE_GRATING_BLOCK = BLOCKS.register("space_grating_block",
+            () -> new GlassBlock(BlockBehaviour.Properties.of()
+                    .strength(3.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.NETHERITE_BLOCK)
+                    .noOcclusion()
+            )
+    );
+
 
 /// CAUTION BLOCKS
 

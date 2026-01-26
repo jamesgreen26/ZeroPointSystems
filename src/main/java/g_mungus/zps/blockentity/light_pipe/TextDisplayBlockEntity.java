@@ -1,15 +1,21 @@
 package g_mungus.zps.blockentity.light_pipe;
 
+import g_mungus.zps.block.cableNetwork.core.Channels;
+import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.NetworkTerminalImpl;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 public class TextDisplayBlockEntity extends NetworkTerminalImpl implements LightPipeDataReceiver.Text {
     public TextDisplayBlockEntity(BlockPos pos, BlockState state) {
@@ -42,6 +48,26 @@ public class TextDisplayBlockEntity extends NetworkTerminalImpl implements Light
 
     public String getDisplayText() {
         return currentDisplayText;
+    }
+
+    @Override
+    public void defineTerminals(List<NetworkNode> terminals, int channel) {
+        super.defineTerminals(terminals, channel);
+        if (level != null) {
+            if (!hasSender(level)) {
+                acceptText("");
+            }
+        }
+    }
+
+    private boolean hasSender(Level level) {
+        for (NetworkNode terminal : getTerminals(Channels.MAIN)) {
+            BlockEntity be = level.getBlockEntity(terminal.pos());
+            if (be instanceof LightPipeDataSender) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

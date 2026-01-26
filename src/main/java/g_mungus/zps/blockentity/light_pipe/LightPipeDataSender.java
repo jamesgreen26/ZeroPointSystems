@@ -71,7 +71,7 @@ public interface LightPipeDataSender extends NetworkTerminal {
         StringBuilder out = new StringBuilder();
         Random random = new Random();
         for (int i = 0; i < length; i++) {
-            out.append(random.nextInt(4096));
+            out.append(Character.toChars(random.nextInt(32, 128)));
         }
         return out.toString();
     }

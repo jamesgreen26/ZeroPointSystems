@@ -75,6 +75,20 @@ public class TextDisplayBlock extends CableComponentBlock implements EntityBlock
     }
 
     @Override
+    public boolean hasAnalogOutputSignal(BlockState arg) {
+        return true;
+    }
+
+    @Override
+    public int getAnalogOutputSignal(BlockState arg, Level arg2, BlockPos arg3) {
+        BlockEntity blockEntity = arg2.getBlockEntity(arg3);
+        if (blockEntity instanceof TextDisplayBlockEntity it) {
+            return Math.min((int) Math.ceil((15 * ((double)it.getDisplayText().length()) / ((double) it.getMaxLength()))), 15);
+        }
+        return 0;
+    }
+
+    @Override
     public int getChannelCountForConnection(BlockPos self, BlockPos from, Level level) {
         BlockState state = level.getBlockState(self);
         BlockPos behind = self.offset(state.getValue(FACING).getOpposite().getNormal());

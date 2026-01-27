@@ -5,6 +5,7 @@ lib/
 run/
 bin/
 run-data/
+logs/
 .settings/
 .project
 .classpath

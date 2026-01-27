@@ -1,7 +1,6 @@
 package g_mungus.zps.blockentity.light_pipe;
 
 import ace.actually.radios.RadioSpec;
-import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.block.cableNetwork.light_pipe.RadioTransmitter;
@@ -26,19 +25,40 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
         super(ModBlockEntities.RADIO_TRANSMITTER.get(), pos, state);
     }
 
+    private static final List<Integer> FREQUENCIES = List.of(5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80);
+
     private String currentDisplayText = "";
-    public int radioFrequency = 5;
+    private int radioFrequencyIndex = 0;
+
+    public void cycleFrequencies() {
+        clearTransmission();
+        radioFrequencyIndex = (radioFrequencyIndex + 1) % FREQUENCIES.size();
+        setChanged();
+        updateTransmission();
+
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(
+                    worldPosition,
+                    getBlockState(),
+                    getBlockState(),
+                    Block.UPDATE_CLIENTS
+            );
+        }
+    }
+
+    public int getRadioFrequency() {
+        return FREQUENCIES.get(radioFrequencyIndex);
+    }
 
     public void updateTransmission() {
         if (level instanceof ServerLevel serverLevel) {
-//            ZPSMod.LOGGER.info("transmitting message: {}", currentDisplayText);
-            RadioSpec.transmit(serverLevel, getBlockPos(), radioFrequency, currentDisplayText, "");
+            RadioSpec.transmit(serverLevel, getBlockPos(), getRadioFrequency(), currentDisplayText, "");
         }
     }
 
     public void clearTransmission() {
         if (level instanceof ServerLevel serverLevel) {
-            RadioSpec.transmit(serverLevel, getBlockPos(), radioFrequency, "", "");
+            RadioSpec.transmit(serverLevel, getBlockPos(), getRadioFrequency(), "", "");
         }
     }
 
@@ -58,6 +78,10 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
                 );
             }
         }
+    }
+
+    public int getRequiredAntennaStrength() {
+        return (int)((getRadioFrequency() / 20.0) + 1.5);
     }
 
     public int getAntennaStrength() {
@@ -124,11 +148,13 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
         tag.putString("DisplayText", currentDisplayText);
+        tag.putInt("RadioFrequencyIndex", radioFrequencyIndex);
     }
 
     @Override
     public void load(CompoundTag tag) {
         super.load(tag);
         currentDisplayText = tag.getString("DisplayText");
+        radioFrequencyIndex = tag.getInt("RadioFrequencyIndex");
     }
 }

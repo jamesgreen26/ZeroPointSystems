@@ -8,9 +8,13 @@ import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.blockentity.light_pipe.RadioTransmitterBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -21,6 +25,7 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -61,6 +66,22 @@ public class RadioTransmitter extends CableComponentBlock implements EntityBlock
             facing = facing.getOpposite();
         }
         return this.defaultBlockState().setValue(FACING, facing);
+    }
+
+    @Override
+    public @NotNull InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult arg6) {
+        if ((player.getItemInHand(hand).isEmpty() && player.isShiftKeyDown()) ||
+                BuiltInRegistries.ITEM.getKey(player.getItemInHand(hand).getItem()).equals(ResourceLocation.fromNamespaceAndPath("create", "wrench"))
+        ) {
+            if (!level.isClientSide()) {
+                BlockEntity blockEntity = level.getBlockEntity(pos);
+                if (blockEntity instanceof RadioTransmitterBlockEntity transmitter) {
+                    transmitter.cycleFrequencies();
+                }
+            }
+            return InteractionResult.SUCCESS;
+        }
+        return InteractionResult.PASS;
     }
 
     @Override

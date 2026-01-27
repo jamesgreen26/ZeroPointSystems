@@ -32,7 +32,7 @@
                 "insulated": "true"
             },
             "apply": {
-                "model": "zps:block/insulated_single",
+                "model": "zps:block/insulated_single_light_pipe",
                 "x": 90
             }
         },
@@ -63,7 +63,7 @@
                 "insulated": "true"
             },
             "apply": {
-                "model": "zps:block/insulated_single",
+                "model": "zps:block/insulated_single_light_pipe",
                 "x": 90,
                 "y": 180
             }
@@ -96,7 +96,7 @@
                 "insulated": "true"
             },
             "apply": {
-                "model": "zps:block/insulated_single",
+                "model": "zps:block/insulated_single_light_pipe",
                 "x": 90,
                 "y": 90
             }
@@ -129,7 +129,7 @@
                 "insulated": "true"
             },
             "apply": {
-                "model": "zps:block/insulated_single",
+                "model": "zps:block/insulated_single_light_pipe",
                 "x": 90,
                 "y": 270
             }
@@ -160,7 +160,7 @@
                 "insulated": "true"
             },
             "apply": {
-                "model": "zps:block/insulated_single"
+                "model": "zps:block/insulated_single_light_pipe"
             }
         },
         {
@@ -188,7 +188,7 @@
                 "insulated": "true"
             },
             "apply": {
-                "model": "zps:block/insulated_single",
+                "model": "zps:block/insulated_single_light_pipe",
                 "x": 180
             }
         },

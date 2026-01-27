@@ -12,6 +12,7 @@ import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -29,6 +30,7 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
 
     private String currentDisplayText = "";
     private int radioFrequencyIndex = 0;
+    private int antennas = 0;
 
     public void cycleFrequencies() {
         clearTransmission();
@@ -52,7 +54,11 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
 
     public void updateTransmission() {
         if (level instanceof ServerLevel serverLevel) {
-            RadioSpec.transmit(serverLevel, getBlockPos(), getRadioFrequency(), currentDisplayText, "");
+            if (antennas >= getRequiredAntennaStrength()) {
+                RadioSpec.transmit(serverLevel, getBlockPos(), getRadioFrequency(), currentDisplayText, "");
+            } else {
+                clearTransmission();
+            }
         }
     }
 
@@ -84,8 +90,7 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
         return (int)((getRadioFrequency() / 20.0) + 1.5);
     }
 
-    public int getAntennaStrength() {
-        if (level == null) return 0;
+    public void updateAntennaStrength(LevelAccessor level) {
         int up = 0;
         int result = 0;
         do {
@@ -94,7 +99,10 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
                 result++;
             }
         } while (up == result);
-        return result;
+        if (result != antennas) {
+            antennas = result;
+            updateTransmission();
+        }
     }
 
     @Override
@@ -112,6 +120,8 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
         if (level != null) {
             if (!hasSender(level)) {
                 acceptText("");
+            } else if (level instanceof ServerLevel) {
+                updateAntennaStrength(level);
             }
         }
     }
@@ -156,5 +166,8 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
         super.load(tag);
         currentDisplayText = tag.getString("DisplayText");
         radioFrequencyIndex = tag.getInt("RadioFrequencyIndex");
+        if (level instanceof ServerLevel) {
+            updateAntennaStrength(level);
+        }
     }
 }

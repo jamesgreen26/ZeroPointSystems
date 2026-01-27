@@ -1,6 +1,7 @@
 package g_mungus.zps.block.cableNetwork.light_pipe;
 
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.core.BuiltinCableStandards;
 import g_mungus.zps.block.cableNetwork.core.CableComponentBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
@@ -26,11 +27,15 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraftforge.event.level.BlockEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
+@Mod.EventBusSubscriber
 public class RadioTransmitter extends CableComponentBlock implements EntityBlock {
 
     public static final TagKey<Block> ANTENNAE = TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "antennae"));
@@ -83,6 +88,22 @@ public class RadioTransmitter extends CableComponentBlock implements EntityBlock
         }
         return InteractionResult.PASS;
     }
+
+    @SubscribeEvent
+    public static void onNeighborUpdate(BlockEvent.NeighborNotifyEvent event) {
+        var level = event.getLevel();
+        BlockPos pos = event.getPos().below();
+
+        while (level.getBlockState(pos).is(ANTENNAE)) {
+            pos = pos.below();
+        }
+
+        BlockEntity be = level.getBlockEntity(pos);
+        if (be instanceof RadioTransmitterBlockEntity transmitter) {
+            transmitter.updateAntennaStrength(level);
+        }
+    }
+
 
     @Override
     public String getCableStandard() {

@@ -58,14 +58,14 @@ public class TextDisplayBlockEntityRenderer implements BlockEntityRenderer<TextD
         poseStack.scale(scale, -scale, scale);
 
         String text = blockEntity.getDisplayText();
-        int maxCols = 14;
-        int maxRows = 14;
+        int maxCols = 12;
+        int maxRows = 12;
 
         int cellSize = 8; // font pixels per character cell
 
         // Top-left origin of the grid
-        int originX = -56;
-        int originY = -56;
+        int originX = -48;
+        int originY = -48;
 
         for (int i = 0; i < text.length() && i < maxCols * maxRows; i++) {
             char c = text.charAt(i);

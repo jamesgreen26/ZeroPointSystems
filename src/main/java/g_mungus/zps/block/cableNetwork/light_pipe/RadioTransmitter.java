@@ -18,6 +18,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -94,13 +95,23 @@ public class RadioTransmitter extends CableComponentBlock implements EntityBlock
         var level = event.getLevel();
         BlockPos pos = event.getPos().below();
 
-        while (level.getBlockState(pos).is(ANTENNAE)) {
+        while (isValidAntennaBlock(level.getBlockState(pos))) {
             pos = pos.below();
         }
 
         BlockEntity be = level.getBlockEntity(pos);
         if (be instanceof RadioTransmitterBlockEntity transmitter) {
             transmitter.updateAntennaStrength(level);
+        }
+    }
+
+    public static boolean isValidAntennaBlock(BlockState state) {
+        if (state.hasProperty(BlockStateProperties.AXIS)
+                && !state.getValue(BlockStateProperties.AXIS).equals(Direction.Axis.Y)
+        ) {
+            return false;
+        } else {
+            return state.is(ANTENNAE);
         }
     }
 

@@ -95,7 +95,7 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
         int result = 0;
         do {
             up++;
-            if (level.getBlockState(getBlockPos().offset(0, up, 0)).is(RadioTransmitter.ANTENNAE)) {
+            if (RadioTransmitter.isValidAntennaBlock(level.getBlockState(getBlockPos().offset(0, up, 0)))) {
                 result++;
             }
         } while (up == result);

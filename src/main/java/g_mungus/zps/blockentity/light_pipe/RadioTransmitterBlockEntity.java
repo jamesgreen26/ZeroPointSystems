@@ -21,17 +21,16 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements LightPipeDataReceiver.Text {
+public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements LightPipeDataReceiver.Text, HasFrequency {
     public RadioTransmitterBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.RADIO_TRANSMITTER.get(), pos, state);
     }
-
-    private static final List<Integer> FREQUENCIES = List.of(5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80);
 
     private String currentDisplayText = "";
     private int radioFrequencyIndex = 0;
     private int antennas = 0;
 
+    @Override
     public void cycleFrequencies() {
         clearTransmission();
         radioFrequencyIndex = (radioFrequencyIndex + 1) % FREQUENCIES.size();
@@ -110,10 +109,6 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
         return 196;
     }
 
-    public String getDisplayText() {
-        return currentDisplayText;
-    }
-
     @Override
     public void defineTerminals(List<NetworkNode> terminals, int channel) {
         super.defineTerminals(terminals, channel);
@@ -159,6 +154,7 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
         super.saveAdditional(tag);
         tag.putString("DisplayText", currentDisplayText);
         tag.putInt("RadioFrequencyIndex", radioFrequencyIndex);
+        tag.putInt("AntennaStrength", antennas);
     }
 
     @Override
@@ -166,6 +162,7 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
         super.load(tag);
         currentDisplayText = tag.getString("DisplayText");
         radioFrequencyIndex = tag.getInt("RadioFrequencyIndex");
+        antennas = tag.getInt("AntennaStrength");
         if (level instanceof ServerLevel) {
             updateAntennaStrength(level);
         }

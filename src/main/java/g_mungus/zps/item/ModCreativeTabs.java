@@ -34,6 +34,7 @@ public class ModCreativeTabs {
                         ModItems.SCRIPT_TRANSMITTER,
                         ModItems.TEXT_DISPLAY,
                         ModItems.RADIO_TRANSMITTER,
+                        ModItems.RADIO_RECEIVER,
 
                         ModItems.SPACE_METAL_INGOT,
                         ModItems.SPACE_METAL_PLATE,

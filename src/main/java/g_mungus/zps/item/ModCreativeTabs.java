@@ -33,6 +33,7 @@ public class ModCreativeTabs {
                         ModItems.LIGHT_PIPE,
                         ModItems.SCRIPT_TRANSMITTER,
                         ModItems.TEXT_DISPLAY,
+                        ModItems.RADIO_TRANSMITTER,
 
                         ModItems.SPACE_METAL_INGOT,
                         ModItems.SPACE_METAL_PLATE,

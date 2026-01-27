@@ -49,6 +49,9 @@ public class ModItems {
     public static final RegistryObject<Item> TEXT_DISPLAY = ITEMS.register("text_display",
             () -> new BlockItem(ModBlocks.TEXT_DISPLAY.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> RADIO_TRANSMITTER = ITEMS.register("radio_transmitter",
+            () -> new BlockItem(ModBlocks.RADIO_TRANSMITTER.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> SPACE_METAL_INGOT = ITEMS.register("space_metal_ingot",
         () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> SPACE_METAL_PLATE = ITEMS.register("space_metal_plate",

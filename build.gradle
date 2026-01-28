@@ -28,6 +28,9 @@ repositories {
 
     maven { url = "https://maven.createmod.net" }
     maven {url = "https://api.modrinth.com/maven"}
+    flatDir {
+        dirs 'libs'
+    }
 }
 
 dependencies {
@@ -43,7 +46,7 @@ dependencies {
     include("io.github.llamalad7:mixinextras-forge:0.5.0")
 
     modImplementation("maven.modrinth:fusion-connected-textures:1.2.12-forge-mc1.20.1")
-    include (modImplementation(files("libs/radios-1.0.2.jar")))
+    include(modImplementation("ace.actually.radios:radios:1.0.2"))
 
     api "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10"
     api "org.jetbrains.kotlin:kotlin-reflect:1.9.10"

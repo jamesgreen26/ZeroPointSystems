@@ -2,10 +2,7 @@ package g_mungus.zps.blockentity;
 
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
-import g_mungus.zps.blockentity.light_pipe.RadioReceiverBlockEntity;
-import g_mungus.zps.blockentity.light_pipe.RadioTransmitterBlockEntity;
-import g_mungus.zps.blockentity.light_pipe.ScriptTransmitterBlockEntity;
-import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
+import g_mungus.zps.blockentity.light_pipe.*;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -54,4 +51,9 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("radio_receiver",
                     () -> BlockEntityType.Builder.of(RadioReceiverBlockEntity::new,
                             ModBlocks.RADIO_RECEIVER.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<ScriptComparatorBlockEntity>> SCRIPT_COMPARATOR =
+            BLOCK_ENTITIES.register("script_comparator",
+                    () -> BlockEntityType.Builder.of(ScriptComparatorBlockEntity::new,
+                            ModBlocks.SCRIPT_COMPARATOR.get()).build(null));
 } 

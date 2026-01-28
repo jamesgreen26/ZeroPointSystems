@@ -68,7 +68,7 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
     }
 
     @Override
-    public void acceptText(String message) {
+    public void acceptText(int channel, String message) {
         if (!message.equals(currentDisplayText)) {
             currentDisplayText = message;
             setChanged();
@@ -114,7 +114,7 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
         super.defineTerminals(terminals, channel);
         if (level != null) {
             if (!hasSender(level)) {
-                acceptText("");
+                acceptText(channel, "");
             } else if (level instanceof ServerLevel) {
                 updateAntennaStrength(level);
             }

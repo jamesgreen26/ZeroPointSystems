@@ -17,19 +17,24 @@ public class Channels {
     public static final int OCT_G = 11;
     public static final int OCT_H = 12;
 
+    public static final int PAIR_A = 14;
+    public static final int PAIR_B = 15;
+
     public static int getInitialChannel(int channelCount) {
         switch (channelCount) {
-            default -> { return MAIN; }
+            case 2 -> { return PAIR_A; }
             case 4 -> { return QUAD_1; }
             case 8 -> { return OCT_A; }
+            default -> { return MAIN; }
         }
     }
 
     public static int getFinalChannel(int channelCount) {
         switch (channelCount) {
-            default -> { return MAIN; }
+            case 2 -> { return PAIR_B; }
             case 4 -> { return QUAD_4; }
             case 8 -> { return OCT_H; }
+            default -> { return MAIN; }
         }
     }
 

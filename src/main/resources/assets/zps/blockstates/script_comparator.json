@@ -1,0 +1,62 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "axis": "x",
+        "powered": "false"
+      },
+      "apply": {
+        "model": "zps:block/script_comparator",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "axis": "y",
+        "powered": "false"
+      },
+      "apply": {
+        "model": "zps:block/script_comparator",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "axis": "z",
+        "powered": "false"
+      },
+      "apply": {
+        "model": "zps:block/script_comparator"
+      }
+    },
+    {
+      "when": {
+        "axis": "x",
+        "powered": "true"
+      },
+      "apply": {
+        "model": "zps:block/script_comparator_powered",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "axis": "y",
+        "powered": "true"
+      },
+      "apply": {
+        "model": "zps:block/script_comparator_powered",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "axis": "z",
+        "powered": "true"
+      },
+      "apply": {
+        "model": "zps:block/script_comparator_powered"
+      }
+    }
+  ]
+}

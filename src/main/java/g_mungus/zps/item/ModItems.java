@@ -55,6 +55,9 @@ public class ModItems {
     public static final RegistryObject<Item> RADIO_RECEIVER = ITEMS.register("radio_receiver",
             () -> new BlockItem(ModBlocks.RADIO_RECEIVER.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> SCRIPT_COMPARATOR = ITEMS.register("script_comparator",
+            () -> new BlockItem(ModBlocks.SCRIPT_COMPARATOR.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> SPACE_METAL_INGOT = ITEMS.register("space_metal_ingot",
         () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> SPACE_METAL_PLATE = ITEMS.register("space_metal_plate",

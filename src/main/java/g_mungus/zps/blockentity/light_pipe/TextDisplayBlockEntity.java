@@ -25,7 +25,7 @@ public class TextDisplayBlockEntity extends NetworkTerminalImpl implements Light
     private String currentDisplayText = "";
 
     @Override
-    public void acceptText(String message) {
+    public void acceptText(int channel, String message) {
         if (!message.equals(currentDisplayText)) {
             currentDisplayText = message;
             setChanged();
@@ -55,7 +55,7 @@ public class TextDisplayBlockEntity extends NetworkTerminalImpl implements Light
         super.defineTerminals(terminals, channel);
         if (level != null) {
             if (!hasSender(level)) {
-                acceptText("");
+                acceptText(channel, "");
             }
         }
     }

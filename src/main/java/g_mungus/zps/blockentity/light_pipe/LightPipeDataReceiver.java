@@ -6,13 +6,13 @@ import org.joml.Vector3ic;
 public interface LightPipeDataReceiver {
 
     interface Text extends LightPipeDataReceiver {
-        void acceptText(String message);
+        void acceptText(int channel, String message);
 
         int getMaxLength();
     }
 
     interface Video extends LightPipeDataReceiver {
-        void acceptNextFrame(Vector3ic[][] frame);
+        void acceptNextFrame(int channel, Vector3ic[][] frame);
 
         Vector2ic getResolution();
     }

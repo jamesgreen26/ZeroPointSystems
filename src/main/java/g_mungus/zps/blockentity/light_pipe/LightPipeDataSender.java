@@ -18,17 +18,18 @@ public interface LightPipeDataSender extends NetworkTerminal {
 
         for (NetworkNode terminal : getTerminals(Channels.MAIN)) {
             BlockEntity be = level.getBlockEntity(terminal.pos());
+            int channel = terminal.channel();
             if (be instanceof LightPipeDataReceiver.Text receiver) {
                 if (clear) {
-                    receiver.acceptText(provideNextDisplayText(receiver.getMaxLength()));
+                    receiver.acceptText(channel, provideNextDisplayText(receiver.getMaxLength()));
                 } else {
-                    receiver.acceptText(generateGarbledString(receiver.getMaxLength()));
+                    receiver.acceptText(channel, generateGarbledString(receiver.getMaxLength()));
                 }
             } else if (be instanceof LightPipeDataReceiver.Video receiver) {
                 if (clear) {
-                    receiver.acceptNextFrame(provideNextVideoFrame(receiver.getResolution()));
+                    receiver.acceptNextFrame(channel, provideNextVideoFrame(receiver.getResolution()));
                 } else {
-                    receiver.acceptNextFrame(generateGarbledVideo(receiver.getResolution()));
+                    receiver.acceptNextFrame(channel, generateGarbledVideo(receiver.getResolution()));
                 }
             }
         }

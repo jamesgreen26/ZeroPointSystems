@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "top=true": {
+      "model": "zps:block/antenna_top"
+    },
+    "top=false": {
+      "model": "zps:block/antenna_bar"
+    }
+  }
+}

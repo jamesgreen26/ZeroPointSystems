@@ -1,7 +1,6 @@
 {
   "values": [
-    "minecraft:iron_bars",
-    "minecraft:chain"
+    "zps:radio_antenna"
   ],
   "replace": false
 }

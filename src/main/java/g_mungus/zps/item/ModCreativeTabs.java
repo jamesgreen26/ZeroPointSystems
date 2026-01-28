@@ -32,10 +32,11 @@ public class ModCreativeTabs {
                         ModItems.CABLE,
                         ModItems.LIGHT_PIPE,
                         ModItems.SCRIPT_TRANSMITTER,
+                        ModItems.SCRIPT_COMPARATOR,
                         ModItems.TEXT_DISPLAY,
                         ModItems.RADIO_TRANSMITTER,
                         ModItems.RADIO_RECEIVER,
-                        ModItems.SCRIPT_COMPARATOR,
+                        ModItems.RADIO_ANTENNA,
 
                         ModItems.SPACE_METAL_INGOT,
                         ModItems.SPACE_METAL_PLATE,

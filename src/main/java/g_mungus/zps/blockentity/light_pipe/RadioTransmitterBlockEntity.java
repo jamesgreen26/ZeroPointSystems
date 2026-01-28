@@ -3,7 +3,6 @@ package g_mungus.zps.blockentity.light_pipe;
 import ace.actually.radios.RadioSpec;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
-import g_mungus.zps.block.cableNetwork.light_pipe.RadioTransmitter;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.NetworkTerminalImpl;
 import net.minecraft.core.BlockPos;
@@ -21,7 +20,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements LightPipeDataReceiver.Text, HasFrequency {
+public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements LightPipeDataReceiver.Text, RadioBlockEntity {
     public RadioTransmitterBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.RADIO_TRANSMITTER.get(), pos, state);
     }
@@ -47,6 +46,7 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
         }
     }
 
+    @Override
     public int getRadioFrequency() {
         return FREQUENCIES.get(radioFrequencyIndex);
     }
@@ -85,16 +85,13 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
         }
     }
 
-    public int getRequiredAntennaStrength() {
-        return (int)((getRadioFrequency() / 20.0) + 1.5);
-    }
-
+    @Override
     public void updateAntennaStrength(LevelAccessor level) {
         int up = 0;
         int result = 0;
         do {
             up++;
-            if (RadioTransmitter.isValidAntennaBlock(level.getBlockState(getBlockPos().offset(0, up, 0)))) {
+            if (RadioBlockEntity.isValidAntennaBlock(level.getBlockState(getBlockPos().offset(0, up, 0)))) {
                 result++;
             }
         } while (up == result);

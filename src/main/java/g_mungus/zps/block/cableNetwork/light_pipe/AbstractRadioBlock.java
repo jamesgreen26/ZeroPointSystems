@@ -4,7 +4,7 @@ import g_mungus.zps.block.cableNetwork.core.BuiltinCableStandards;
 import g_mungus.zps.block.cableNetwork.core.CableComponentBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
-import g_mungus.zps.blockentity.light_pipe.HasFrequency;
+import g_mungus.zps.blockentity.light_pipe.RadioBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -61,7 +61,7 @@ public abstract class AbstractRadioBlock extends CableComponentBlock implements 
         ) {
             if (!level.isClientSide()) {
                 BlockEntity blockEntity = level.getBlockEntity(pos);
-                if (blockEntity instanceof HasFrequency it) {
+                if (blockEntity instanceof RadioBlockEntity it) {
                     it.cycleFrequencies();
                 }
             }

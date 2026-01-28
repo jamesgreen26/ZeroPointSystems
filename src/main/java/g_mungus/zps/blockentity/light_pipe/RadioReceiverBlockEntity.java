@@ -2,7 +2,6 @@ package g_mungus.zps.blockentity.light_pipe;
 
 import ace.actually.radios.RadioSignal;
 import ace.actually.radios.RadioSpec;
-import com.google.common.collect.Multimap;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.NetworkTerminalImpl;
@@ -11,7 +10,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
@@ -22,19 +21,24 @@ import org.joml.Vector3ic;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class RadioReceiverBlockEntity extends NetworkTerminalImpl implements LightPipeDataSender, HasFrequency {
+public class RadioReceiverBlockEntity extends NetworkTerminalImpl implements LightPipeDataSender, RadioBlockEntity {
 
     private int radioFrequencyIndex = 0;
     private String currentDisplayText = "";
+    private int antennas = 0;
     private static final int tickFrequency = 8;
     private final int tickOffset = new Random().nextInt(tickFrequency);
 
     public void tick() {
         if (level instanceof ServerLevel serverLevel && (serverLevel.getGameTime() + tickOffset) % tickFrequency == 0) {
-            List<RadioSignal> signals = RadioSpec.receive(serverLevel, getWorldPos(), getRadioFrequency(), false, List.of());
-            String displayText = computeDisplayText(signals);
-            if (Objects.equals(currentDisplayText, displayText)) return;
-            currentDisplayText = displayText;
+            if (antennas >= getRequiredAntennaStrength()) {
+                List<RadioSignal> signals = RadioSpec.receive(serverLevel, getWorldPos(), getRadioFrequency(), false, List.of());
+                String displayText = computeDisplayText(signals);
+                if (Objects.equals(currentDisplayText, displayText)) return;
+                currentDisplayText = displayText;
+            } else {
+                currentDisplayText = "";
+            }
             updateClient();
             updateSignal(serverLevel);
         }
@@ -92,7 +96,7 @@ public class RadioReceiverBlockEntity extends NetworkTerminalImpl implements Lig
         return out.toString();
     }
 
-
+    @Override
     public int getRadioFrequency() {
         return FREQUENCIES.get(radioFrequencyIndex);
     }
@@ -122,6 +126,21 @@ public class RadioReceiverBlockEntity extends NetworkTerminalImpl implements Lig
     public void cycleFrequencies() {
         radioFrequencyIndex = (radioFrequencyIndex + 1) % FREQUENCIES.size();
         updateClient();
+    }
+
+    @Override
+    public void updateAntennaStrength(LevelAccessor level) {
+        int up = 0;
+        int result = 0;
+        do {
+            up++;
+            if (RadioBlockEntity.isValidAntennaBlock(level.getBlockState(getBlockPos().offset(0, up, 0)))) {
+                result++;
+            }
+        } while (up == result);
+        if (result != antennas) {
+            antennas = result;
+        }
     }
 
     private void updateClient() {
@@ -160,6 +179,7 @@ public class RadioReceiverBlockEntity extends NetworkTerminalImpl implements Lig
         super.saveAdditional(tag);
         tag.putString("DisplayText", currentDisplayText);
         tag.putInt("RadioFrequencyIndex", radioFrequencyIndex);
+        tag.putInt("AntennaStrength", antennas);
     }
 
     @Override
@@ -167,5 +187,9 @@ public class RadioReceiverBlockEntity extends NetworkTerminalImpl implements Lig
         super.load(tag);
         currentDisplayText = tag.getString("DisplayText");
         radioFrequencyIndex = tag.getInt("RadioFrequencyIndex");
+        antennas = tag.getInt("AntennaStrength");
+        if (level instanceof ServerLevel) {
+            updateAntennaStrength(level);
+        }
     }
 }

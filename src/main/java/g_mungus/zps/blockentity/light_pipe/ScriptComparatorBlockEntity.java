@@ -59,11 +59,6 @@ public class ScriptComparatorBlockEntity extends NetworkTerminalImpl implements 
     }
 
     @Override
-    public int getMaxLength() {
-        return 144;
-    }
-
-    @Override
     public void defineTerminals(List<NetworkNode> terminals, int channel) {
         super.defineTerminals(terminals, channel);
         if (level != null) {

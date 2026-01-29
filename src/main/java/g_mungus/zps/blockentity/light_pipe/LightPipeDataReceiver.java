@@ -8,7 +8,9 @@ public interface LightPipeDataReceiver {
     interface Text extends LightPipeDataReceiver {
         void acceptText(int channel, String message);
 
-        int getMaxLength();
+        default int getMaxLength() {
+            return 900; // 30x30 is max resolution for text display
+        }
     }
 
     interface Video extends LightPipeDataReceiver {

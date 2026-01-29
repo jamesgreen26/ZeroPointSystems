@@ -67,11 +67,23 @@ public class TextDisplayBlockEntityRenderer implements BlockEntityRenderer<TextD
         int originX = -48;
         int originY = -48;
 
-        for (int i = 0; i < text.length() && i < maxCols * maxRows; i++) {
+        int col = 0;
+        int row = 0;
+
+        for (int i = 0; i < text.length(); i++) {
             char c = text.charAt(i);
 
-            int col = i % maxCols;
-            int row = i / maxCols;
+            // Handle newline character
+            if (c == '\n') {
+                row++;
+                col = 0;
+                continue;
+            }
+
+            // Stop if we've exceeded the grid bounds
+            if (row >= maxRows) {
+                break;
+            }
 
             int x = originX + col * cellSize;
             int y = originY + row * cellSize;
@@ -88,6 +100,12 @@ public class TextDisplayBlockEntityRenderer implements BlockEntityRenderer<TextD
                     0,
                     packedLight
             );
+
+            col++;
+            if (col >= maxCols) {
+                col = 0;
+                row++;
+            }
         }
 
         poseStack.popPose();

@@ -192,9 +192,47 @@ public class ScriptComparator extends CableComponentBlock implements EntityBlock
 
         public boolean compare(String a, String b) {
             return switch (this) {
-                case equals -> a.equals(b);
-                case contains -> a.contains(b) || b.contains(a);
+                case equals -> matchesExact(a, b);
+                case contains -> containsPattern(a, b) || containsPattern(b, a);
             };
+        }
+
+        private static boolean matchesExact(String a, String b) {
+            if (a.length() != b.length()) {
+                return false;
+            }
+            for (int i = 0; i < a.length(); i++) {
+                char ca = a.charAt(i);
+                char cb = b.charAt(i);
+                if (ca != '*' && cb != '*' && ca != cb) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static boolean containsPattern(String text, String pattern) {
+            if (pattern.length() > text.length()) {
+                return false;
+            }
+
+            for (int i = 0; i <= text.length() - pattern.length(); i++) {
+                if (matchesAt(text, pattern, i)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static boolean matchesAt(String text, String pattern, int startPos) {
+            for (int i = 0; i < pattern.length(); i++) {
+                char pt = pattern.charAt(i);
+                char tx = text.charAt(startPos + i);
+                if (pt != '*' && pt != tx) {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 }

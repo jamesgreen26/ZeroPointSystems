@@ -52,6 +52,9 @@ dependencies {
     api "org.jetbrains.kotlin:kotlin-reflect:1.9.10"
     include (modImplementation("net.createmod.ponder:Ponder-Forge-${minecraft_version}:${ponder_version}"))
     include (modImplementation("dev.engine-room.flywheel:flywheel-forge-${minecraft_version}:${flywheel_version}"))
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 processResources {
@@ -74,6 +77,10 @@ java {
 
 tasks.withType(JavaCompile).configureEach {
     it.options.release = 17
+}
+
+test {
+    useJUnitPlatform()
 }
 
 // Configure Maven publishing.

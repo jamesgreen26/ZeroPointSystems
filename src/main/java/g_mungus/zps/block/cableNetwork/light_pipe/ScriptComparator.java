@@ -8,6 +8,7 @@ import g_mungus.zps.blockentity.light_pipe.ScriptComparatorBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
+import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -20,31 +21,33 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
 public class ScriptComparator extends CableComponentBlock implements EntityBlock {
 
-    public static EnumProperty<Direction.Axis> AXIS = BlockStateProperties.AXIS;
+    public static EnumProperty<Direction.Axis> AXIS = BlockStateProperties.HORIZONTAL_AXIS;
     public static IntegerProperty CONNECTIONS = IntegerProperty.create("connections", 0, 2);
     public static BooleanProperty POWERED = BlockStateProperties.POWERED;
+    public static EnumProperty<ComparisonMode> MODE = EnumProperty.create("comparison_mode", ComparisonMode.class);
 
     public ScriptComparator(Properties arg) {
         super(arg);
-        this.registerDefaultState(this.stateDefinition.any().setValue(AXIS, Direction.Axis.X).setValue(CONNECTIONS, 0).setValue(POWERED, false));
+        this.registerDefaultState(this.stateDefinition.any().setValue(AXIS, Direction.Axis.X).setValue(CONNECTIONS, 0).setValue(POWERED, false).setValue(MODE, ComparisonMode.equals));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> arg) {
         super.createBlockStateDefinition(arg);
-        arg.add(AXIS, CONNECTIONS, POWERED);
+        arg.add(AXIS, CONNECTIONS, POWERED, MODE);
     }
 
     @Nullable
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        Direction facing = context.getNearestLookingDirection();
+        Direction facing = context.getHorizontalDirection();
         return this.defaultBlockState().setValue(AXIS, facing.getAxis());
     }
 
@@ -135,5 +138,20 @@ public class ScriptComparator extends CableComponentBlock implements EntityBlock
     @Override
     public @Nullable BlockEntity newBlockEntity(BlockPos arg, BlockState arg2) {
         return new ScriptComparatorBlockEntity(arg, arg2);
+    }
+
+    public enum ComparisonMode implements StringRepresentable {
+        equals("equals"), contains("contains");
+
+        private final String name;
+
+        ComparisonMode(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public @NotNull String getSerializedName() {
+            return name;
+        }
     }
 }

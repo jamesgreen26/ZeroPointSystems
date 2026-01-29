@@ -4,11 +4,18 @@ import g_mungus.zps.block.cableNetwork.core.BuiltinCableStandards;
 import g_mungus.zps.block.cableNetwork.core.CableComponentBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
+import g_mungus.zps.blockentity.light_pipe.RadioBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.ScriptComparatorBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.StringRepresentable;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -21,6 +28,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -52,6 +60,11 @@ public class ScriptComparator extends CableComponentBlock implements EntityBlock
     }
 
     @Override
+    public boolean canConnectRedstone(BlockState state, BlockGetter level, BlockPos pos, @Nullable Direction direction) {
+        return true;
+    }
+
+    @Override
     public String getCableStandard() {
         return BuiltinCableStandards.LIGHT_PIPE;
     }
@@ -64,6 +77,25 @@ public class ScriptComparator extends CableComponentBlock implements EntityBlock
             level.setBlock(pos, newState, 3);
             updateNetwork(pos, level);
         }
+    }
+
+    @Override
+    public @NotNull InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult arg6) {
+        if ((player.getItemInHand(hand).isEmpty() && player.isShiftKeyDown()) ||
+                BuiltInRegistries.ITEM.getKey(player.getItemInHand(hand).getItem()).equals(ResourceLocation.fromNamespaceAndPath("create", "wrench"))
+        ) {
+            if (state.hasProperty(MODE)) {
+                BlockEntity blockEntity = level.getBlockEntity(pos);
+
+                ComparisonMode next = state.getValue(MODE).next();
+                level.setBlock(pos, state.setValue(MODE, next), Block.UPDATE_ALL);
+                if (level instanceof ServerLevel && blockEntity instanceof ScriptComparatorBlockEntity comparator) {
+                    comparator.updateState();
+                }
+            }
+            return InteractionResult.SUCCESS;
+        }
+        return InteractionResult.PASS;
     }
 
     private BlockState getNewBlockState(BlockState state, Level level, BlockPos pos) {
@@ -152,6 +184,17 @@ public class ScriptComparator extends CableComponentBlock implements EntityBlock
         @Override
         public @NotNull String getSerializedName() {
             return name;
+        }
+
+        public ComparisonMode next() {
+            return values()[(this.ordinal() + 1) % values().length];
+        }
+
+        public boolean compare(String a, String b) {
+            return switch (this) {
+                case equals -> a.equals(b);
+                case contains -> a.contains(b) || b.contains(a);
+            };
         }
     }
 }

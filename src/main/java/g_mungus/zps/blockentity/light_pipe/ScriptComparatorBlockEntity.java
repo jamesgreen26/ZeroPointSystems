@@ -48,7 +48,8 @@ public class ScriptComparatorBlockEntity extends NetworkTerminalImpl implements 
             BlockState existingState = serverLevel.getBlockState(getBlockPos());
             if (existingState.is(ModBlocks.SCRIPT_COMPARATOR.get())) {
                 boolean isPowered = existingState.getValue(ScriptComparator.POWERED);
-                boolean shouldBePowered = textA.trim().equals(textB.trim());
+                ScriptComparator.ComparisonMode mode = existingState.getValue(ScriptComparator.MODE);
+                boolean shouldBePowered = !textA.isBlank() && !textB.isBlank() && mode.compare(textA.trim(), textB.trim());
                 if (isPowered != shouldBePowered) {
                     serverLevel.setBlock(getBlockPos(), existingState.setValue(ScriptComparator.POWERED, shouldBePowered), Block.UPDATE_ALL);
                     serverLevel.updateNeighborsAt(getBlockPos(), existingState.getBlock());

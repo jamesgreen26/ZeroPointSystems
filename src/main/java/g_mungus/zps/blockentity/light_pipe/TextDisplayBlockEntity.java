@@ -43,7 +43,7 @@ public class TextDisplayBlockEntity extends NetworkTerminalImpl implements Light
 
     @Override
     public int getMaxLength() {
-        return 144;
+        return 900; // 30x30 is max resolution
     }
 
     public String getDisplayText() {

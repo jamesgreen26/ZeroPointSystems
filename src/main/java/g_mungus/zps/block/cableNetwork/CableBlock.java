@@ -1,7 +1,9 @@
 package g_mungus.zps.block.cableNetwork;
 
-import g_mungus.zps.block.cableNetwork.core.CableComponentBlock;
+import g_mungus.zps.block.CableInsulationBlock;
+import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.core.BuiltinCableStandards;
+import g_mungus.zps.block.cableNetwork.core.CableComponentBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.item.ModItems;
@@ -15,7 +17,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -26,9 +27,6 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -114,14 +112,18 @@ public class CableBlock extends CableComponentBlock {
     }
 
     @Override
-    @SuppressWarnings("deprecation")
-    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
+    public boolean onDestroyedByPlayer(BlockState state, Level level, BlockPos pos, Player player, boolean willHarvest, FluidState fluid) {
         if (state.hasProperty(INSULATED) && state.getValue(INSULATED)) {
-            newState = state.setValue(INSULATED, false);
-            level.setBlock(pos, newState, 3);
-            popResource(level, pos, new ItemStack(ModItems.CABLE_INSULATION.get(), 1));
+            level.setBlock(pos, state.setValue(INSULATED, false), level.isClientSide ? 11 : 3);
+            if (!level.isClientSide() && !player.isCreative()) {
+                popResource(level, pos, new ItemStack(ModItems.CABLE_INSULATION.get(), 1));
+            }
+            CableInsulationBlock insulationBlock = (CableInsulationBlock) ModBlocks.CABLE_INSULATION.get();
+            insulationBlock.spawnDestroyParticlesPublic(level, player, pos, insulationBlock.defaultBlockState());
+            return false;
         }
-        super.onRemove(state, level, pos, newState, moved);
+        super.onDestroyedByPlayer(state, level, pos, player, willHarvest, fluid);
+        return true;
     }
 
     @Override

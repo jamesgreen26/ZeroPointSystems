@@ -2,6 +2,7 @@ package g_mungus.zps.block;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -32,6 +33,10 @@ public class CableInsulationBlock extends Block {
         );
     }
 
+    public void spawnDestroyParticlesPublic(Level arg, Player arg2, BlockPos arg3, BlockState arg4) {
+        super.spawnDestroyParticles(arg, arg2, arg3, arg4);
+    }
+
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN);
@@ -44,8 +49,9 @@ public class CableInsulationBlock extends Block {
         return getNewBlockState(blockState, arg.getLevel(), arg.getClickedPos());
     }
 
+    @SuppressWarnings("deprecation")
     @Override
-    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
+    public void neighborChanged(@NotNull BlockState state, Level level, @NotNull BlockPos pos, @NotNull Block block, @NotNull BlockPos fromPos, boolean isMoving) {
         if (!level.isClientSide) {
             BlockState newState = getNewBlockState(state, level, pos);
 

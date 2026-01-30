@@ -8,6 +8,7 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
+@SuppressWarnings("ConstantConditions")
 public class ModBlockEntities {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES = 
         DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, ZPSMod.MOD_ID);
@@ -42,10 +43,10 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(TextDisplayBlockEntity::new,
                             ModBlocks.TEXT_DISPLAY.get()).build(null));
 
-    public static final RegistryObject<BlockEntityType<PrintingPressBlockEntity>> PRINTING_PRESS =
-            BLOCK_ENTITIES.register("printing_press",
-                    () -> BlockEntityType.Builder.of(PrintingPressBlockEntity::new,
-                            ModBlocks.PRINTING_PRESS.get()).build(null));
+    public static final RegistryObject<BlockEntityType<DataTranscriberBlockEntity>> DATA_TRANSCRIBER =
+            BLOCK_ENTITIES.register("data_transcriber",
+                    () -> BlockEntityType.Builder.of(DataTranscriberBlockEntity::new,
+                            ModBlocks.DATA_TRANSCRIBER.get()).build(null));
 
     public static final RegistryObject<BlockEntityType<RadioTransmitterBlockEntity>> RADIO_TRANSMITTER =
             BLOCK_ENTITIES.register("radio_transmitter",

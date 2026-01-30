@@ -1,6 +1,6 @@
 package g_mungus.zps.blockentity.light_pipe;
 
-import g_mungus.zps.block.cableNetwork.light_pipe.PrintingPressBlock;
+import g_mungus.zps.block.cableNetwork.light_pipe.DataTranscriberBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -16,9 +16,9 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.LecternBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
-public class PrintingPressBlockEntity extends AbstractTextDataReceiver {
-    public PrintingPressBlockEntity(BlockPos pos, BlockState state) {
-        super(ModBlockEntities.PRINTING_PRESS.get(), pos, state);
+public class DataTranscriberBlockEntity extends AbstractTextDataReceiver {
+    public DataTranscriberBlockEntity(BlockPos pos, BlockState state) {
+        super(ModBlockEntities.DATA_TRANSCRIBER.get(), pos, state);
     }
 
     private long lastPrintTime = -20L;
@@ -26,7 +26,7 @@ public class PrintingPressBlockEntity extends AbstractTextDataReceiver {
     public void tick() {
         if (level == null) return;
         BlockState state = getBlockState();
-        if (!state.hasProperty(PrintingPressBlock.POWERED) || !state.getValue(PrintingPressBlock.POWERED)) return;
+        if (!state.hasProperty(DataTranscriberBlock.POWERED) || !state.getValue(DataTranscriberBlock.POWERED)) return;
         long time = level.getGameTime();
         if (lastPrintTime + 10 < time) {
             lastPrintTime = time;

@@ -4,12 +4,11 @@ import g_mungus.zps.block.cableNetwork.core.BuiltinCableStandards;
 import g_mungus.zps.block.cableNetwork.core.CableComponentBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
-import g_mungus.zps.blockentity.light_pipe.PrintingPressBlockEntity;
+import g_mungus.zps.blockentity.light_pipe.DataTranscriberBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.SignalGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -25,20 +24,20 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class PrintingPressBlock  extends CableComponentBlock implements EntityBlock {
+public class DataTranscriberBlock extends CableComponentBlock implements EntityBlock {
 
     public static BooleanProperty CONNECTED = BooleanProperty.create("connected");
     public static DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static BooleanProperty POWERED = BlockStateProperties.POWERED;
 
 
-    public PrintingPressBlock(Properties arg) {
+    public DataTranscriberBlock(Properties arg) {
         super(arg);
         this.registerDefaultState(this.stateDefinition.any().setValue(CONNECTED, false).setValue(FACING, Direction.NORTH).setValue(POWERED, false));
     }
 
     @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> arg) {
+    protected void createBlockStateDefinition(StateDefinition.@NotNull Builder<Block, BlockState> arg) {
         super.createBlockStateDefinition(arg);
         arg.add(CONNECTED, FACING, POWERED);
     }
@@ -137,15 +136,15 @@ public class PrintingPressBlock  extends CableComponentBlock implements EntityBl
 
 
     @Override
-    public @Nullable BlockEntity newBlockEntity(BlockPos arg, BlockState arg2) {
-        return new PrintingPressBlockEntity(arg, arg2);
+    public @Nullable BlockEntity newBlockEntity(@NotNull BlockPos arg, @NotNull BlockState arg2) {
+        return new DataTranscriberBlockEntity(arg, arg2);
     }
 
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, @NotNull BlockState state, @NotNull BlockEntityType<T> type) {
         return level.isClientSide() ? null : (level1, pos, state1, blockEntity) -> {
-            if (blockEntity instanceof PrintingPressBlockEntity it) {
+            if (blockEntity instanceof DataTranscriberBlockEntity it) {
                 it.tick();
             }
         };

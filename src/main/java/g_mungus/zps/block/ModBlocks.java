@@ -15,8 +15,7 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
-import java.util.Optional;
-
+@SuppressWarnings("unused")
 public class ModBlocks {
     public static final DeferredRegister<Block> BLOCKS = 
         DeferredRegister.create(ForgeRegistries.BLOCKS, ZPSMod.MOD_ID);
@@ -95,8 +94,8 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
 
-    public static final RegistryObject<Block> PRINTING_PRESS = BLOCKS.register("printing_press",
-            () -> new PrintingPressBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+    public static final RegistryObject<Block> DATA_TRANSCRIBER = BLOCKS.register("data_transcriber",
+            () -> new DataTranscriberBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(2.0f)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));

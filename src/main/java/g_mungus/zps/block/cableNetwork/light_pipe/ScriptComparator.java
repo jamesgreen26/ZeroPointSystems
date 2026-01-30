@@ -1,5 +1,6 @@
 package g_mungus.zps.block.cableNetwork.light_pipe;
 
+import g_mungus.zps.Compat;
 import g_mungus.zps.block.cableNetwork.core.BuiltinCableStandards;
 import g_mungus.zps.block.cableNetwork.core.CableComponentBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
@@ -81,9 +82,7 @@ public class ScriptComparator extends CableComponentBlock implements EntityBlock
 
     @Override
     public @NotNull InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult arg6) {
-        if ((player.getItemInHand(hand).isEmpty() && player.isShiftKeyDown()) ||
-                BuiltInRegistries.ITEM.getKey(player.getItemInHand(hand).getItem()).equals(ResourceLocation.fromNamespaceAndPath("create", "wrench"))
-        ) {
+        if ((player.getItemInHand(hand).isEmpty() && player.isShiftKeyDown()) || Compat.isCreateWrench(player.getItemInHand(hand).getItem())) {
             if (state.hasProperty(MODE)) {
                 BlockEntity blockEntity = level.getBlockEntity(pos);
 

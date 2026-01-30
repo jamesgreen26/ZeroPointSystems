@@ -5,7 +5,6 @@ import g_mungus.zps.block.cableNetwork.core.BuiltinCableStandards;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.item.ModItems;
-import g_mungus.zps.util.Utils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
@@ -28,6 +27,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class CableBlock extends CableComponentBlock {
@@ -175,7 +175,15 @@ public class CableBlock extends CableComponentBlock {
 
     @Override
     public List<BlockPos> getConnectingNeighbors(NetworkNode self, Level level) {
-        return Utils.getNeighbors(self.pos());
+        BlockPos origin = self.pos();
+        return new ArrayList<>(List.of(
+                origin.above(),
+                origin.below(),
+                origin.north(),
+                origin.east(),
+                origin.south(),
+                origin.west()
+        ));
     }
 
     @Override

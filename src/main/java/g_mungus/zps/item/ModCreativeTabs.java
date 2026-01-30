@@ -10,8 +10,7 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
 
-import java.util.List;
-
+@SuppressWarnings("unused")
 public class ModCreativeTabs {
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = 
         DeferredRegister.create(Registries.CREATIVE_MODE_TAB, ZPSMod.MOD_ID);
@@ -20,46 +19,45 @@ public class ModCreativeTabs {
         () -> CreativeModeTab.builder()
             .title(Component.translatable("creativetab.zps_tab"))
             .icon(() -> new ItemStack(ModItems.DENSE_CABLE_SEPARATOR.get()))
-            .displayItems((parameters, output) -> {
-                addAll(output,
-                        ModItems.OCTO_CONTROLLER,
-                        ModItems.DENSE_CABLE_SEPARATOR,
-                        ModItems.CABLE_INSULATION,
-                        ModItems.STEPUP_TRANSFORMER,
-                        ModItems.STEPDOWN_TRANSFORMER,
-                        ModItems.REDSTONE_CONVERTER,
-                        ModItems.DENSE_CABLES,
-                        ModItems.CABLE,
-                        ModItems.LIGHT_PIPE,
-                        ModItems.SCRIPT_TRANSMITTER,
-                        ModItems.SCRIPT_COMPARATOR,
-                        ModItems.TEXT_DISPLAY,
-                        ModItems.RADIO_TRANSMITTER,
-                        ModItems.RADIO_RECEIVER,
-                        ModItems.RADIO_ANTENNA,
+            .displayItems((parameters, output) -> addAll(output,
+                    ModItems.OCTO_CONTROLLER,
+                    ModItems.DENSE_CABLE_SEPARATOR,
+                    ModItems.CABLE_INSULATION,
+                    ModItems.STEPUP_TRANSFORMER,
+                    ModItems.STEPDOWN_TRANSFORMER,
+                    ModItems.REDSTONE_CONVERTER,
+                    ModItems.DENSE_CABLES,
+                    ModItems.CABLE,
+                    ModItems.LIGHT_PIPE,
+                    ModItems.SCRIPT_TRANSMITTER,
+                    ModItems.DATA_TRANSCRIBER,
+                    ModItems.SCRIPT_COMPARATOR,
+                    ModItems.TEXT_DISPLAY,
+                    ModItems.RADIO_TRANSMITTER,
+                    ModItems.RADIO_RECEIVER,
+                    ModItems.RADIO_ANTENNA,
 
-                        ModItems.SPACE_METAL_INGOT,
-                        ModItems.SPACE_METAL_PLATE,
-                        ModItems.SPACE_METAL_MESH,
-                        ModItems.SPACE_METAL_ROD,
-                        ModItems.SPACE_METAL_PIPE,
-                        ModItems.SPACE_METAL_SCREW,
-                        ModItems.SPACE_METAL_BOLT,
-                        ModItems.SPACE_METAL_SPRING,
-                        ModItems.CAPACITOR,
-                        ModItems.TRANSISTOR,
-                        ModItems.MODULATOR,
-                        ModItems.COPPER_MAGNETRON,
-                        ModItems.GOLD_MAGNETRON,
-                        ModItems.COPPER_WIRE,
-                        ModItems.GOLD_WIRE,
-                        ModItems.VERDITE_WIRE,
-                        ModItems.EMPTY_SPOOL,
-                        ModItems.COPPER_SPOOL,
-                        ModItems.GOLD_SPOOL,
-                        ModItems.VERDITE_SPOOL
-                );
-            }).build());
+                    ModItems.SPACE_METAL_INGOT,
+                    ModItems.SPACE_METAL_PLATE,
+                    ModItems.SPACE_METAL_MESH,
+                    ModItems.SPACE_METAL_ROD,
+                    ModItems.SPACE_METAL_PIPE,
+                    ModItems.SPACE_METAL_SCREW,
+                    ModItems.SPACE_METAL_BOLT,
+                    ModItems.SPACE_METAL_SPRING,
+                    ModItems.CAPACITOR,
+                    ModItems.TRANSISTOR,
+                    ModItems.MODULATOR,
+                    ModItems.COPPER_MAGNETRON,
+                    ModItems.GOLD_MAGNETRON,
+                    ModItems.COPPER_WIRE,
+                    ModItems.GOLD_WIRE,
+                    ModItems.VERDITE_WIRE,
+                    ModItems.EMPTY_SPOOL,
+                    ModItems.COPPER_SPOOL,
+                    ModItems.GOLD_SPOOL,
+                    ModItems.VERDITE_SPOOL
+            )).build());
 
     public static final RegistryObject<CreativeModeTab> ZPS_DECO_TAB = CREATIVE_MODE_TABS.register("zps_tab_deco",
         () -> CreativeModeTab.builder()

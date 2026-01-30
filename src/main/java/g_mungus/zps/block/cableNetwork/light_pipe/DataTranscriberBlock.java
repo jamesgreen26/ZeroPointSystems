@@ -72,9 +72,6 @@ public class DataTranscriberBlock extends CableComponentBlock implements EntityB
     @Override
     public @NotNull BlockState getStateForPlacement(BlockPlaceContext context) {
         Direction facing = context.getHorizontalDirection().getOpposite();
-        if (context.getPlayer() != null && context.getPlayer().isShiftKeyDown()) {
-            facing = facing.getOpposite();
-        }
         return this.defaultBlockState().setValue(FACING, facing);
     }
 

@@ -80,6 +80,11 @@ public class PrintingPressBlockEntity extends AbstractTextDataReceiver {
             return original;
         }
 
+        // If the length is less than 512, probably this text was handwritten and is safe to use
+        if (original.length() < 512) {
+            return original;
+        }
+
         final int MAX_LINES = 14;
         final int MAX_CHARS_PER_LINE = 19;
         final int MAX_TOTAL_CHARS = 1023;

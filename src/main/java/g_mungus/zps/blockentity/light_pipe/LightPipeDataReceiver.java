@@ -8,6 +8,7 @@ public interface LightPipeDataReceiver {
     interface Text extends LightPipeDataReceiver {
         void acceptText(int channel, String message);
 
+        /// beware, text with length < 512 will be considered safe to write to a book
         default int getMaxLength() {
             return 900; // 30x30 is max resolution for text display
         }

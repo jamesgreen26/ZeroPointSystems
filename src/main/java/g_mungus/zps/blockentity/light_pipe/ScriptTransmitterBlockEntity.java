@@ -26,6 +26,7 @@ import net.minecraft.world.level.block.LecternBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.NotNull;
 import org.joml.Vector2ic;
 import org.joml.Vector3ic;
 
@@ -244,10 +245,10 @@ public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements
         return true;
     }
 
-    public void load(CompoundTag arg) {
+    public void load(@NotNull CompoundTag arg) {
         super.load(arg);
         if (arg.contains("Book", 10)) {
-            this.book = this.resolveBook(ItemStack.of(arg.getCompound("Book")), (Player)null);
+            this.book = this.resolveBook(ItemStack.of(arg.getCompound("Book")), null);
         } else {
             this.book = ItemStack.EMPTY;
         }
@@ -256,7 +257,7 @@ public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements
         this.page = Mth.clamp(arg.getInt("Page"), 0, this.pageCount - 1);
     }
 
-    protected void saveAdditional(CompoundTag arg) {
+    protected void saveAdditional(@NotNull CompoundTag arg) {
         super.saveAdditional(arg);
         if (!this.getBook().isEmpty()) {
             arg.put("Book", this.getBook().save(new CompoundTag()));

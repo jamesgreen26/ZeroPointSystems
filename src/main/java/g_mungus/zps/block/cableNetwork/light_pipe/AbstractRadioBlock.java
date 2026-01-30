@@ -31,8 +31,8 @@ import java.util.List;
 public abstract class AbstractRadioBlock extends CableComponentBlock implements EntityBlock {
 
 
-    public static BooleanProperty CONNECTED = BooleanProperty.create("connected");
-    public static DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final BooleanProperty CONNECTED = BooleanProperty.create("connected");
+    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
 
 
     public AbstractRadioBlock(Properties arg) {

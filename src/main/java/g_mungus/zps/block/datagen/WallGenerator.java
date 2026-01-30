@@ -163,7 +163,7 @@ public class WallGenerator {
                 }
               ]
             }
-              """.formatted(name);
+            """.formatted(name);
         String path = BlockDataGenerator.FOLDER + "assets/zps/blockstates/" + name + "_wall.json";
 
         FileWriter.writeFile(path, json);

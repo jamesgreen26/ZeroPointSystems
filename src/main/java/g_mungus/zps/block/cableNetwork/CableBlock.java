@@ -36,13 +36,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CableBlock extends CableComponentBlock {
-    public static BooleanProperty NORTH = BooleanProperty.create("north");
-    public static BooleanProperty SOUTH = BooleanProperty.create("south");
-    public static BooleanProperty EAST = BooleanProperty.create("east");
-    public static BooleanProperty WEST = BooleanProperty.create("west");
-    public static BooleanProperty UP = BooleanProperty.create("up");
-    public static BooleanProperty DOWN = BooleanProperty.create("down");
-    public static BooleanProperty INSULATED = BooleanProperty.create("insulated");
+    public static final BooleanProperty NORTH = BooleanProperty.create("north");
+    public static final BooleanProperty SOUTH = BooleanProperty.create("south");
+    public static final BooleanProperty EAST = BooleanProperty.create("east");
+    public static final BooleanProperty WEST = BooleanProperty.create("west");
+    public static final BooleanProperty UP = BooleanProperty.create("up");
+    public static final BooleanProperty DOWN = BooleanProperty.create("down");
+    public static final BooleanProperty INSULATED = BooleanProperty.create("insulated");
 
     private static final VoxelShape CORE = Block.box(6, 6, 6, 10, 10, 10);
     private static final VoxelShape NORTH_SHAPE = Block.box(6, 6, 0, 10, 10, 6);

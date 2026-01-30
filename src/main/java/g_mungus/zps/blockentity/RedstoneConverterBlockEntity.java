@@ -7,6 +7,7 @@ import g_mungus.zps.block.cableNetwork.TransformerBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.nbt.CompoundTag;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
@@ -66,14 +67,14 @@ public class RedstoneConverterBlockEntity extends NetworkTerminalImpl implements
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag) {
+    protected void saveAdditional(@NotNull CompoundTag tag) {
         super.saveAdditional(tag);
         tag.putInt("CurrentSignal", this.currentSignal);
         tag.putInt("CurrentSuppliedSignal", this.currentSuppliedSignal);
     }
 
     @Override
-    public void load(CompoundTag tag) {
+    public void load(@NotNull CompoundTag tag) {
         super.load(tag);
         if (tag.contains("CurrentSignal")) {
             this.currentSignal = tag.getInt("CurrentSignal");

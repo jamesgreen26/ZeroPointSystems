@@ -39,10 +39,10 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 public class ScriptTransmitterBlock extends LecternBlock implements EntityBlock, CableNetworkComponent {
-    public static BooleanProperty CONNECTED = BooleanProperty.create("connected");
-    public static BooleanProperty POWERED = LecternBlock.POWERED;
-    public static BooleanProperty HAS_BOOK = BlockStateProperties.HAS_BOOK;
-    public static DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final BooleanProperty CONNECTED = BooleanProperty.create("connected");
+    public static final BooleanProperty POWERED = LecternBlock.POWERED;
+    public static final BooleanProperty HAS_BOOK = BlockStateProperties.HAS_BOOK;
+    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
 
     public static final VoxelShape SHAPE_NORTH;
     public static final VoxelShape SHAPE_SOUTH;
@@ -218,7 +218,7 @@ public class ScriptTransmitterBlock extends LecternBlock implements EntityBlock,
             ItemStack itemStack = transmitterBlockEntity.getBook().copy();
             float f = 0.25F * (float)direction.getStepX();
             float g = 0.25F * (float)direction.getStepZ();
-            ItemEntity itemEntity = new ItemEntity(arg2, (double)arg3.getX() + (double)0.5F + (double)f, (double)(arg3.getY() + 1), (double)arg3.getZ() + (double)0.5F + (double)g, itemStack);
+            ItemEntity itemEntity = new ItemEntity(arg2, (double)arg3.getX() + (double)0.5F + (double)f, arg3.getY() + 1, (double)arg3.getZ() + (double)0.5F + (double)g, itemStack);
             itemEntity.setDefaultPickUpDelay();
             arg2.addFreshEntity(itemEntity);
             transmitterBlockEntity.clearContent();
@@ -255,7 +255,7 @@ public class ScriptTransmitterBlock extends LecternBlock implements EntityBlock,
         if (blockEntity instanceof ScriptTransmitterBlockEntity be) {
             be.setBook(arg5.split(1));
             resetBookState(arg, arg2, arg3, arg4, true);
-            arg2.playSound((Player)null, arg3, SoundEvents.BOOK_PUT, SoundSource.BLOCKS, 1.0F, 1.0F);
+            arg2.playSound(null, arg3, SoundEvents.BOOK_PUT, SoundSource.BLOCKS, 1.0F, 1.0F);
         }
 
     }

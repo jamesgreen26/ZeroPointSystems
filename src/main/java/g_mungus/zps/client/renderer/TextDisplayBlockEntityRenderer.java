@@ -15,7 +15,7 @@ import org.jetbrains.annotations.NotNull;
 
 public class TextDisplayBlockEntityRenderer implements BlockEntityRenderer<TextDisplayBlockEntity> {
 
-    Font font;
+    final Font font;
 
     public TextDisplayBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
         this.font = context.getFont();

@@ -13,12 +13,12 @@ import org.jetbrains.annotations.Nullable;
 
 public class CableInsulationBlock extends Block {
 
-    public static BooleanProperty NORTH = BooleanProperty.create("north");
-    public static BooleanProperty SOUTH = BooleanProperty.create("south");
-    public static BooleanProperty EAST = BooleanProperty.create("east");
-    public static BooleanProperty WEST = BooleanProperty.create("west");
-    public static BooleanProperty UP = BooleanProperty.create("up");
-    public static BooleanProperty DOWN = BooleanProperty.create("down");
+    public static final BooleanProperty NORTH = BooleanProperty.create("north");
+    public static final BooleanProperty SOUTH = BooleanProperty.create("south");
+    public static final BooleanProperty EAST = BooleanProperty.create("east");
+    public static final BooleanProperty WEST = BooleanProperty.create("west");
+    public static final BooleanProperty UP = BooleanProperty.create("up");
+    public static final BooleanProperty DOWN = BooleanProperty.create("down");
 
     public CableInsulationBlock(Properties arg) {
         super(arg);

@@ -185,10 +185,10 @@ public class DenseCableSeparatorBlock extends CableComponentBlock {
         int index = (8 + channel - rotation - 1) % 4;
 
         Vec3i selected = switch (index) {
-            default -> c0;
             case 1 -> facing.getNormal().cross(c0).multiply(-1);
             case 2 -> c0.multiply(-1);
             case 3 -> facing.getNormal().cross(c0);
+            default -> c0;
         };
 
 

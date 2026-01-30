@@ -52,6 +52,7 @@ dependencies {
     modImplementation("com.simibubi.create:create-$minecraft_version:$create_version:slim") { transitive = false }
     modImplementation("com.tterrag.registrate:Registrate:$registrate_version")
 
+    //noinspection DifferentStdlibGradleVersion
     api "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10"
     api "org.jetbrains.kotlin:kotlin-reflect:1.9.10"
     include (modImplementation("net.createmod.ponder:Ponder-Forge-${minecraft_version}:${ponder_version}"))

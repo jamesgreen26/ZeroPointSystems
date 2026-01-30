@@ -51,7 +51,7 @@ public class CatwalkStairsBlock extends Block {
     }
 
     public VoxelShape getShape(BlockState arg, BlockGetter arg2, BlockPos arg3, CollisionContext arg4) {
-        return (VoxelShape)SHAPES.get(arg.getValue(FACING));
+        return SHAPES.get(arg.getValue(FACING));
     }
 
     static {

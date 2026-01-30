@@ -25,7 +25,7 @@ public abstract class RideableNetworkTerminal<T extends Entity> extends NetworkT
 
     protected final List<T> seats = new ArrayList<>();
 
-    public boolean startRiding(Player player, boolean force, BlockPos blockPos, BlockState state, ServerLevel level) {
+    public void startRiding(Player player, boolean force, BlockPos blockPos, BlockState state, ServerLevel level) {
         for (T seat : seats) {
             if (!seat.isVehicle()) {
                 seat.kill();
@@ -40,7 +40,6 @@ public abstract class RideableNetworkTerminal<T extends Entity> extends NetworkT
             seats.add(seat);
         }
 
-        return ride;
     }
 
     abstract EntityType<T> getSeatEntity();

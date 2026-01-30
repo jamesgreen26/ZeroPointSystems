@@ -175,7 +175,7 @@ public class RadioReceiverBlockEntity extends NetworkTerminalImpl implements Lig
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag) {
+    protected void saveAdditional(@NotNull CompoundTag tag) {
         super.saveAdditional(tag);
         tag.putString("DisplayText", currentDisplayText);
         tag.putInt("RadioFrequencyIndex", radioFrequencyIndex);
@@ -183,7 +183,7 @@ public class RadioReceiverBlockEntity extends NetworkTerminalImpl implements Lig
     }
 
     @Override
-    public void load(CompoundTag tag) {
+    public void load(@NotNull CompoundTag tag) {
         super.load(tag);
         currentDisplayText = tag.getString("DisplayText");
         radioFrequencyIndex = tag.getInt("RadioFrequencyIndex");

@@ -18,10 +18,10 @@ public class ZPSGamePackets {
     private static int packetId = 0;
 
     public static void register() {
-        INSTANCE.messageBuilder(OctovariantControlPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(OctovariantControlPacket::encode)
-                .decoder(OctovariantControlPacket::decode)
-                .consumerMainThread(OctovariantControlPacket::handle)
+        INSTANCE.messageBuilder(OctoControlPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(OctoControlPacket::encode)
+                .decoder(OctoControlPacket::decode)
+                .consumerMainThread(OctoControlPacket::handle)
                 .add();
     }
 }

@@ -114,7 +114,7 @@ public class StepUpTransformerBlockEntity extends NetworkTerminalImpl {
     }
 
     @Override
-    public void load(CompoundTag tag) {
+    public void load(@NotNull CompoundTag tag) {
         super.load(tag);
         try {
             energyHandler.deserializeNBT(tag.get("Energy"));
@@ -124,7 +124,7 @@ public class StepUpTransformerBlockEntity extends NetworkTerminalImpl {
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag) {
+    protected void saveAdditional(@NotNull CompoundTag tag) {
         super.saveAdditional(tag);
         tag.put("Energy", energyHandler.serializeNBT());
     }

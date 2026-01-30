@@ -17,6 +17,7 @@ public class Compat {
         return false;
     }
 
+    @SuppressWarnings("deprecation")
     public static boolean isCreateWrench(Item item) {
         return BuiltInRegistries.ITEM.getKey(item).equals(ResourceLocation.fromNamespaceAndPath("create", "wrench"));
     }

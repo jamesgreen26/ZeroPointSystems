@@ -10,7 +10,7 @@ import java.util.Map;
 
 public class BlockDataGenerator {
 
-    public static String FOLDER = "src/main/resources/";
+    public static final String FOLDER = "src/main/resources/";
     private static final Logger log = LoggerFactory.getLogger(BlockDataGenerator.class);
 
     public static final Map<String, List<BlockType>> blocksToDatagen = new LinkedHashMap<>();

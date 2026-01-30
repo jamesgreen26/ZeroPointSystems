@@ -11,6 +11,7 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.blockentity.EnchantTableRenderer;
 import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.NotNull;
 
 public class ScriptTransmitterBlockEntityRenderer implements BlockEntityRenderer<ScriptTransmitterBlockEntity> {
 
@@ -21,8 +22,8 @@ public class ScriptTransmitterBlockEntityRenderer implements BlockEntityRenderer
     }
 
     @Override
-    public void render(ScriptTransmitterBlockEntity blockEntity, float partialTick, com.mojang.blaze3d.vertex.PoseStack poseStack,
-                       net.minecraft.client.renderer.MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
+    public void render(ScriptTransmitterBlockEntity blockEntity, float partialTick, com.mojang.blaze3d.vertex.@NotNull PoseStack poseStack,
+                       net.minecraft.client.renderer.@NotNull MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
 
         BlockState blockState = blockEntity.getBlockState();
         if (blockState.getValue(ScriptTransmitterBlock.HAS_BOOK)) {

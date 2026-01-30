@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 @Mod(ZPSMod.MOD_ID)
 public final class ZPSMod {
     public static final String MOD_ID = "zps";
-    public static Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+    public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     public ZPSMod(FMLJavaModLoadingContext context) {
         IEventBus modEventBus = context.getModEventBus();

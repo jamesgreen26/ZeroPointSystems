@@ -26,11 +26,7 @@ public class RedstoneConverterBlock extends TransformerBlock {
 
     @Override
     public boolean canConnectRedstone(BlockState state, BlockGetter level, BlockPos pos, @Nullable Direction direction) {
-        if (state.is(ModBlocks.REDSTONE_CONVERTER.get()) && state.getValue(TransformerBlock.FACING).getOpposite() == direction) {
-            return true;
-        } else {
-            return false;
-        }
+        return state.is(ModBlocks.REDSTONE_CONVERTER.get()) && state.getValue(TransformerBlock.FACING).getOpposite() == direction;
     }
 
     @Override

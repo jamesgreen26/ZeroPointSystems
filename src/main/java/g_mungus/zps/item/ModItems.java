@@ -14,7 +14,7 @@ public class ModItems {
     public static final DeferredRegister<Item> ITEMS = 
         DeferredRegister.create(ForgeRegistries.ITEMS, ZPSMod.MOD_ID);
 
-    public static List<RegistryObject<Item>> DYNAMIC_ITEMS = new ArrayList<>();
+    public static final List<RegistryObject<Item>> DYNAMIC_ITEMS = new ArrayList<>();
 
     public static final RegistryObject<Item> OCTO_CONTROLLER = ITEMS.register("octo_controller",
             () -> new BlockItem(ModBlocks.OCTO_CONTROLLER.get(), new Item.Properties()));

@@ -34,10 +34,10 @@ import java.util.List;
 
 public class ScriptComparator extends CableComponentBlock implements EntityBlock {
 
-    public static EnumProperty<Direction.Axis> AXIS = BlockStateProperties.HORIZONTAL_AXIS;
-    public static IntegerProperty CONNECTIONS = IntegerProperty.create("connections", 0, 2);
-    public static BooleanProperty POWERED = BlockStateProperties.POWERED;
-    public static EnumProperty<ComparisonMode> MODE = EnumProperty.create("comparison_mode", ComparisonMode.class);
+    public static final EnumProperty<Direction.Axis> AXIS = BlockStateProperties.HORIZONTAL_AXIS;
+    public static final IntegerProperty CONNECTIONS = IntegerProperty.create("connections", 0, 2);
+    public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
+    public static final EnumProperty<ComparisonMode> MODE = EnumProperty.create("comparison_mode", ComparisonMode.class);
 
     public ScriptComparator(Properties arg) {
         super(arg);

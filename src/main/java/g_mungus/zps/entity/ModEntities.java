@@ -12,7 +12,7 @@ public class ModEntities {
         DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, ZPSMod.MOD_ID);
 
     public static final RegistryObject<EntityType<OctoMountingEntity>> OCTO_MOUNTING = ENTITIES.register("octo_mounting_seat",
-        () -> EntityType.Builder.<OctoMountingEntity>of((type, level) -> new OctoMountingEntity(type, level), MobCategory.MISC)
+        () -> EntityType.Builder.of(OctoMountingEntity::new, MobCategory.MISC)
             .sized(0.5f, 0.5f)
             .build("octo_mounting_seat"));
 } 

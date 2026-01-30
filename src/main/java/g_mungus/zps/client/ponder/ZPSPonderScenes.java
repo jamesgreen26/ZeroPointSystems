@@ -3,8 +3,6 @@ package g_mungus.zps.client.ponder;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.CableBlock;
 import g_mungus.zps.block.cableNetwork.RedstoneConverterBlock;
-import g_mungus.zps.entity.ModEntities;
-import g_mungus.zps.entity.OctoMountingEntity;
 import g_mungus.zps.item.ModItems;
 import net.createmod.ponder.api.PonderPalette;
 import net.createmod.ponder.api.element.ElementLink;
@@ -18,7 +16,6 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.piglin.AbstractPiglin;
 import net.minecraft.world.level.block.state.BlockState;
@@ -202,6 +199,7 @@ public class ZPSPonderScenes {
 
     }
 
+    @SuppressWarnings("deprecation")
     public static void octoControllerTutorial(SceneBuilder builder, SceneBuildingUtil util) {
         builder.configureBasePlate(0, 0, 7);
         builder.title("octo_controller", "Octo-Controller");

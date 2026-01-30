@@ -3,7 +3,7 @@ package g_mungus.zps.entity;
 import g_mungus.zps.block.cableNetwork.OctoControllerBlock;
 import g_mungus.zps.blockentity.OctoControllerBlockEntity;
 import g_mungus.zps.client.ModKeybinds;
-import g_mungus.zps.networking.OctovariantControlPacket;
+import g_mungus.zps.networking.OctoControlPacket;
 import g_mungus.zps.networking.ZPSGamePackets;
 import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
@@ -102,10 +102,10 @@ public class OctoMountingEntity extends Entity {
     }
 
     @Override
-    protected void readAdditionalSaveData(CompoundTag arg) {}
+    protected void readAdditionalSaveData(@NotNull CompoundTag arg) {}
 
     @Override
-    protected void addAdditionalSaveData(CompoundTag arg) {}
+    protected void addAdditionalSaveData(@NotNull CompoundTag arg) {}
 
     @Override
     protected void defineSynchedData() {}
@@ -122,7 +122,7 @@ public class OctoMountingEntity extends Entity {
         int g = ModKeybinds.KEY_G.isDown()? 15 : 0;
         int h = ModKeybinds.KEY_H.isDown()? 15 : 0;
 
-        ZPSGamePackets.INSTANCE.sendToServer(new OctovariantControlPacket(a, b, c, d, e, f, g, h));
+        ZPSGamePackets.INSTANCE.sendToServer(new OctoControlPacket(a, b, c, d, e, f, g, h));
     }
 
     @Override

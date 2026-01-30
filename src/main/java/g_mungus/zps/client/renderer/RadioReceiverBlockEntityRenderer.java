@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import g_mungus.zps.block.cableNetwork.light_pipe.TextDisplayBlock;
 import g_mungus.zps.blockentity.light_pipe.RadioReceiverBlockEntity;
-import g_mungus.zps.blockentity.light_pipe.RadioTransmitterBlockEntity;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
@@ -15,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
 
 public class RadioReceiverBlockEntityRenderer implements BlockEntityRenderer<RadioReceiverBlockEntity> {
 
-    Font font;
+    final Font font;
 
     public RadioReceiverBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
         this.font = context.getFont();

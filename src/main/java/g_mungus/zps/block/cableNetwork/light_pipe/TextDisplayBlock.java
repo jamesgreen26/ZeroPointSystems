@@ -32,9 +32,9 @@ import java.util.Set;
 
 public class TextDisplayBlock extends CableComponentBlock implements EntityBlock {
 
-    public static BooleanProperty CONNECTED = BooleanProperty.create("connected");
-    public static DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
-    public static EnumProperty<DisplayLayout> LAYOUT = EnumProperty.create("layout", DisplayLayout.class);
+    public static final BooleanProperty CONNECTED = BooleanProperty.create("connected");
+    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final EnumProperty<DisplayLayout> LAYOUT = EnumProperty.create("layout", DisplayLayout.class);
 
 
     public TextDisplayBlock(Properties arg) {

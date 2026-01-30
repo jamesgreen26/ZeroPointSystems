@@ -31,8 +31,8 @@ import java.util.List;
 
 public class OctoControllerBlock extends CableComponentBlock implements EntityBlock {
     public static final DirectionProperty FACING = DirectionProperty.create("facing", Direction.Plane.HORIZONTAL);
-    public static BooleanProperty BACK = BooleanProperty.create("back");
-    public static BooleanProperty DOWN = BooleanProperty.create("down");
+    public static final BooleanProperty BACK = BooleanProperty.create("back");
+    public static final BooleanProperty DOWN = BooleanProperty.create("down");
 
     public OctoControllerBlock(Properties properties) {
         super(properties);

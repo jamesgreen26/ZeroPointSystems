@@ -6,6 +6,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 
 public class ZPSPonders {
+    @SuppressWarnings("deprecation")
     public static void register(PonderSceneRegistrationHelper<ResourceLocation> helper) {
         PonderSceneRegistrationHelper<Block> HELPER =
                 helper.withKeyFunction(block -> block.builtInRegistryHolder().key().location());

@@ -1,5 +1,6 @@
 package g_mungus.zps.blockentity.light_pipe;
 
+import g_mungus.zps.block.cableNetwork.light_pipe.PrintingPressBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -24,6 +25,8 @@ public class PrintingPressBlockEntity extends AbstractTextDataReceiver {
 
     public void tick() {
         if (level == null) return;
+        BlockState state = getBlockState();
+        if (!state.hasProperty(PrintingPressBlock.POWERED) || !state.getValue(PrintingPressBlock.POWERED)) return;
         long time = level.getGameTime();
         if (lastPrintTime + 10 < time) {
             lastPrintTime = time;

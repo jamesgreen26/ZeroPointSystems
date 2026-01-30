@@ -9,6 +9,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.SignalGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -28,17 +29,45 @@ public class PrintingPressBlock  extends CableComponentBlock implements EntityBl
 
     public static BooleanProperty CONNECTED = BooleanProperty.create("connected");
     public static DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static BooleanProperty POWERED = BlockStateProperties.POWERED;
 
 
     public PrintingPressBlock(Properties arg) {
         super(arg);
-        this.registerDefaultState(this.stateDefinition.any().setValue(CONNECTED, false).setValue(FACING, Direction.NORTH));
+        this.registerDefaultState(this.stateDefinition.any().setValue(CONNECTED, false).setValue(FACING, Direction.NORTH).setValue(POWERED, false));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> arg) {
         super.createBlockStateDefinition(arg);
-        arg.add(CONNECTED, FACING);
+        arg.add(CONNECTED, FACING, POWERED);
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public void neighborChanged(@NotNull BlockState arg, @NotNull Level arg2, @NotNull BlockPos arg3, @NotNull Block arg4, @NotNull BlockPos arg5, boolean bl) {
+        super.neighborChanged(arg, arg2, arg3, arg4, arg5, bl);
+        if (!arg2.isClientSide) {
+            boolean powered = arg.getValue(POWERED);
+            if (powered != hasNeighborSignal(arg2, arg3)) {
+                arg2.setBlock(arg3, arg.cycle(POWERED), 2);
+            }
+        }
+    }
+
+    private static boolean hasNeighborSignal(Level level, BlockPos arg) {
+        // Ignore signals from below
+        if (level.getSignal(arg.above(), Direction.UP) > 0) {
+            return true;
+        } else if (level.getSignal(arg.north(), Direction.NORTH) > 0) {
+            return true;
+        } else if (level.getSignal(arg.south(), Direction.SOUTH) > 0) {
+            return true;
+        } else if (level.getSignal(arg.west(), Direction.WEST) > 0) {
+            return true;
+        } else {
+            return level.getSignal(arg.east(), Direction.EAST) > 0;
+        }
     }
 
     @Override

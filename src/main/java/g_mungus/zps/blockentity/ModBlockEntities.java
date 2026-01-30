@@ -42,6 +42,11 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(TextDisplayBlockEntity::new,
                             ModBlocks.TEXT_DISPLAY.get()).build(null));
 
+    public static final RegistryObject<BlockEntityType<PrintingPressBlockEntity>> PRINTING_PRESS =
+            BLOCK_ENTITIES.register("printing_press",
+                    () -> BlockEntityType.Builder.of(PrintingPressBlockEntity::new,
+                            ModBlocks.PRINTING_PRESS.get()).build(null));
+
     public static final RegistryObject<BlockEntityType<RadioTransmitterBlockEntity>> RADIO_TRANSMITTER =
             BLOCK_ENTITIES.register("radio_transmitter",
                     () -> BlockEntityType.Builder.of(RadioTransmitterBlockEntity::new,

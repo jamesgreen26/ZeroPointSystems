@@ -95,6 +95,12 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
 
+    public static final RegistryObject<Block> PRINTING_PRESS = BLOCKS.register("printing_press",
+            () -> new PrintingPressBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+
     public static final RegistryObject<Block> RADIO_TRANSMITTER = BLOCKS.register("radio_transmitter",
             () -> new RadioTransmitter(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(2.0f)

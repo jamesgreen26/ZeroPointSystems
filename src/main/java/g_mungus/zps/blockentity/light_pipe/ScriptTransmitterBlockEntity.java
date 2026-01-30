@@ -32,7 +32,7 @@ import org.joml.Vector3ic;
 import javax.annotation.Nullable;
 import java.util.List;
 
-public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements Clearable, MenuProvider, LightPipeDataSender {
+public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements Clearable, MenuProvider, LightPipeDataSender, BookHolder {
 
     private final Container bookAccess = new Container() {
         public int getContainerSize() {
@@ -153,6 +153,22 @@ public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements
         this.book = ItemStack.EMPTY;
     }
 
+
+    @Override
+    public ItemStack zps$getBook() {
+        return getBook();
+    }
+
+    @Override
+    public int zps$getCurrentPage() {
+        return page;
+    }
+
+    @Override
+    public void onPageWritten() {
+        BookHolder.super.onPageWritten();
+        if (level != null) updateSignal(level);
+    }
 
     public ItemStack getBook() {
         return this.book;

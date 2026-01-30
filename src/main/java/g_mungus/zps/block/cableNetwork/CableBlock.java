@@ -15,15 +15,20 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraftforge.event.level.BlockEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -109,11 +114,24 @@ public class CableBlock extends CableComponentBlock {
     }
 
     @Override
-    public boolean onDestroyedByPlayer(BlockState state, Level level, BlockPos pos, Player player, boolean willHarvest, FluidState fluid) {
-        if (player != null && !player.isCreative() && state.hasProperty(INSULATED) && state.getValue(INSULATED)) {
+    @SuppressWarnings("deprecation")
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
+        if (state.hasProperty(INSULATED) && state.getValue(INSULATED)) {
+            newState = state.setValue(INSULATED, false);
+            level.setBlock(pos, newState, 3);
             popResource(level, pos, new ItemStack(ModItems.CABLE_INSULATION.get(), 1));
         }
-        return super.onDestroyedByPlayer(state, level, pos, player, willHarvest, fluid);
+        super.onRemove(state, level, pos, newState, moved);
+    }
+
+    @Override
+    public ItemStack getCloneItemStack(BlockState state, HitResult target, BlockGetter level, BlockPos pos, Player player)
+    {
+        if (state.hasProperty(INSULATED) && state.getValue(INSULATED) && !player.isShiftKeyDown()) {
+            return new ItemStack(ModItems.CABLE_INSULATION.get(), 1);
+        } else {
+            return getCloneItemStack(level, pos, state);
+        }
     }
 
     @Override

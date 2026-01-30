@@ -5,13 +5,10 @@ import g_mungus.zps.block.cableNetwork.core.BuiltinCableStandards;
 import g_mungus.zps.block.cableNetwork.core.CableComponentBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
-import g_mungus.zps.blockentity.light_pipe.RadioBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.ScriptComparatorBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.InteractionHand;
@@ -77,6 +74,15 @@ public class ScriptComparator extends CableComponentBlock implements EntityBlock
         if (!state.equals(newState)) {
             level.setBlock(pos, newState, 3);
             updateNetwork(pos, level);
+        }
+    }
+
+    @Override
+    public void onPlace(BlockState newState, Level level, BlockPos pos, BlockState oldState, boolean moved) {
+        super.onPlace(newState, level, pos, oldState, moved);
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (level instanceof ServerLevel && blockEntity instanceof ScriptComparatorBlockEntity comparator) {
+            comparator.updateState();
         }
     }
 

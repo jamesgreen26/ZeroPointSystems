@@ -111,6 +111,11 @@ public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements
     };
     ItemStack book;
     int page;
+
+    public int getPageCount() {
+        return pageCount;
+    }
+
     private int pageCount;
 
     @Override
@@ -161,7 +166,7 @@ public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements
         this.setBook(arg, null);
     }
 
-    void onBookItemRemove() {
+    public void onBookItemRemove() {
         this.page = 0;
         this.pageCount = 0;
         LecternBlock.resetBookState(null, this.getLevel(), this.getBlockPos(), this.getBlockState(), false);
@@ -254,5 +259,15 @@ public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements
 
     public Component getDisplayName() {
         return Component.literal("Script Transmitter");
+    }
+
+    public boolean hasNextPage() {
+        return getPage() + 1 < getPageCount();
+    }
+
+    public void turnPage() {
+        if (hasNextPage()) {
+            setPage(getPage() + 1);
+        }
     }
 }

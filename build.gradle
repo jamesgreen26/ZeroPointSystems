@@ -28,6 +28,7 @@ repositories {
 
     maven { url = "https://maven.createmod.net" }
     maven {url = "https://api.modrinth.com/maven"}
+    maven { url = "https://maven.ithundxr.dev/mirror" }
     flatDir {
         dirs 'libs'
     }
@@ -47,6 +48,9 @@ dependencies {
 
     modImplementation("maven.modrinth:fusion-connected-textures:1.2.12-forge-mc1.20.1")
     include(modImplementation("ace.actually.radios:radios:1.0.2"))
+
+    modImplementation("com.simibubi.create:create-$minecraft_version:$create_version:slim") { transitive = false }
+    modImplementation("com.tterrag.registrate:Registrate:$registrate_version")
 
     api "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10"
     api "org.jetbrains.kotlin:kotlin-reflect:1.9.10"

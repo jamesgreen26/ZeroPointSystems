@@ -1,5 +1,7 @@
 package g_mungus.zps.block.cableNetwork.light_pipe;
 
+import g_mungus.zps.Compat;
+import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.cableNetwork.core.*;
 import g_mungus.zps.blockentity.light_pipe.LightPipeDataSender;
 import g_mungus.zps.blockentity.light_pipe.ScriptTransmitterBlockEntity;
@@ -178,6 +180,19 @@ public class ScriptTransmitterBlock extends LecternBlock implements EntityBlock,
     public InteractionResult use(BlockState arg, Level arg2, BlockPos arg3, Player arg4, InteractionHand arg5, BlockHitResult arg6) {
         if (arg.getValue(HAS_BOOK)) {
             if (!arg2.isClientSide) {
+                if (Compat.isCreateDeployer(arg4) && arg4.getItemInHand(arg5).isEmpty()) {
+                    BlockEntity blockEntity = arg2.getBlockEntity(arg3);
+                    if (blockEntity instanceof ScriptTransmitterBlockEntity transmitter) {
+                        if (transmitter.hasNextPage()) {
+                            transmitter.turnPage();
+                        } else {
+                            ItemStack itemStack = transmitter.getBook().copy();
+                            transmitter.clearContent();
+                            transmitter.onBookItemRemove();
+                            arg4.getInventory().add(itemStack);
+                        }
+                    }
+                }
                 this.openScreen(arg2, arg3, arg4);
             }
 

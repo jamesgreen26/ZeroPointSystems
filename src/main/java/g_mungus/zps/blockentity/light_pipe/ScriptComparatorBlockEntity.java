@@ -8,15 +8,11 @@ import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.NetworkTerminalImpl;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.Connection;
-import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -49,7 +45,7 @@ public class ScriptComparatorBlockEntity extends NetworkTerminalImpl implements 
             if (existingState.is(ModBlocks.SCRIPT_COMPARATOR.get())) {
                 boolean isPowered = existingState.getValue(ScriptComparator.POWERED);
                 ScriptComparator.ComparisonMode mode = existingState.getValue(ScriptComparator.MODE);
-                boolean shouldBePowered = !textA.isBlank() && !textB.isBlank() && mode.compare(textA.trim(), textB.trim());
+                boolean shouldBePowered = mode.compare(textA.trim(), textB.trim());
                 if (isPowered != shouldBePowered) {
                     serverLevel.setBlock(getBlockPos(), existingState.setValue(ScriptComparator.POWERED, shouldBePowered), Block.UPDATE_ALL);
                     serverLevel.updateNeighborsAt(getBlockPos(), existingState.getBlock());

@@ -66,7 +66,7 @@ public class PrintingPressBlockEntity extends AbstractTextDataReceiver {
                 }
 
                 if (!pages.getString(bookHolder.zps$getCurrentPage()).equals(this.currentDisplayText)) {
-                    pages.set(bookHolder.zps$getCurrentPage(), StringTag.valueOf(this.currentDisplayText));
+                    pages.set(bookHolder.zps$getCurrentPage(), StringTag.valueOf(truncateStringToDisplayableLength(this.currentDisplayText)));
                     bookHolder.onPageWritten();
                     return true;
                 }
@@ -74,4 +74,43 @@ public class PrintingPressBlockEntity extends AbstractTextDataReceiver {
         }
         return false;
     }
+
+    private static String truncateStringToDisplayableLength(String original) {
+        if (original == null || original.isEmpty()) {
+            return original;
+        }
+
+        final int MAX_LINES = 14;
+        final int MAX_CHARS_PER_LINE = 19;
+        final int MAX_TOTAL_CHARS = 1023;
+
+        int lineCount = 1;
+        int lineLength = 0;
+        int i = 0;
+
+        for (; i < original.length() && i < MAX_TOTAL_CHARS; i++) {
+            char c = original.charAt(i);
+
+            if (c == '\n') {
+                lineCount++;
+                if (lineCount > MAX_LINES) {
+                    break;
+                }
+                lineLength = 0;
+                continue;
+            }
+
+            lineLength++;
+            if (lineLength > MAX_CHARS_PER_LINE) {
+                lineCount++;
+                if (lineCount > MAX_LINES) {
+                    break;
+                }
+                lineLength = 1; // this char starts the new wrapped line
+            }
+        }
+
+        return original.substring(0, i);
+    }
+
 }

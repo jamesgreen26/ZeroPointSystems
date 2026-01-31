@@ -9,6 +9,8 @@ import net.minecraft.world.item.Item;
 
 public class Compat {
 
+    public static final String ZPL_MOD_ID = "zpl";
+
     public static boolean isCreateDeployer(Player player) {
         ComponentContents contents = player.getDisplayName().getContents();
         if (contents instanceof TranslatableContents translatableContents) {

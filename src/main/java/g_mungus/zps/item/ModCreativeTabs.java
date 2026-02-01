@@ -24,11 +24,13 @@ public class ModCreativeTabs {
                     ModItems.DENSE_CABLE_SEPARATOR,
                     ModItems.CABLE_INSULATION,
                     ModItems.SWITCH_PANEL,
+                    ModItems.GRADUATED_LEVER,
                     ModItems.STEPUP_TRANSFORMER,
                     ModItems.STEPDOWN_TRANSFORMER,
                     ModItems.REDSTONE_CONVERTER,
                     ModItems.DENSE_CABLES,
                     ModItems.CABLE,
+
                     ModItems.LIGHT_PIPE,
                     ModItems.SCRIPT_TRANSMITTER,
                     ModItems.DATA_TRANSCRIBER,

@@ -1,0 +1,2196 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "north",
+        "power": "0"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_0",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "north",
+        "power": "1"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_1",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "north",
+        "power": "2"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_2",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "north",
+        "power": "3"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_3",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "north",
+        "power": "4"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_4",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "north",
+        "power": "5"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_5",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "north",
+        "power": "6"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_6",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "north",
+        "power": "7"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_7",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "north",
+        "power": "8"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_8",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "north",
+        "power": "9"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_9",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "north",
+        "power": "10"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_10",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "north",
+        "power": "11"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_11",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "north",
+        "power": "12"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_12",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "north",
+        "power": "13"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_13",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "north",
+        "power": "14"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_14",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "north",
+        "power": "15"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_15",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "south",
+        "power": "0"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_0",
+        "x": 90,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "south",
+        "power": "1"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_1",
+        "x": 90,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "south",
+        "power": "2"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_2",
+        "x": 90,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "south",
+        "power": "3"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_3",
+        "x": 90,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "south",
+        "power": "4"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_4",
+        "x": 90,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "south",
+        "power": "5"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_5",
+        "x": 90,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "south",
+        "power": "6"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_6",
+        "x": 90,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "south",
+        "power": "7"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_7",
+        "x": 90,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "south",
+        "power": "8"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_8",
+        "x": 90,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "south",
+        "power": "9"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_9",
+        "x": 90,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "south",
+        "power": "10"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_10",
+        "x": 90,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "south",
+        "power": "11"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_11",
+        "x": 90,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "south",
+        "power": "12"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_12",
+        "x": 90,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "south",
+        "power": "13"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_13",
+        "x": 90,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "south",
+        "power": "14"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_14",
+        "x": 90,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "south",
+        "power": "15"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_15",
+        "x": 90,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "east",
+        "power": "0"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_0",
+        "x": 90,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "east",
+        "power": "1"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_1",
+        "x": 90,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "east",
+        "power": "2"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_2",
+        "x": 90,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "east",
+        "power": "3"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_3",
+        "x": 90,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "east",
+        "power": "4"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_4",
+        "x": 90,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "east",
+        "power": "5"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_5",
+        "x": 90,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "east",
+        "power": "6"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_6",
+        "x": 90,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "east",
+        "power": "7"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_7",
+        "x": 90,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "east",
+        "power": "8"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_8",
+        "x": 90,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "east",
+        "power": "9"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_9",
+        "x": 90,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "east",
+        "power": "10"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_10",
+        "x": 90,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "east",
+        "power": "11"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_11",
+        "x": 90,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "east",
+        "power": "12"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_12",
+        "x": 90,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "east",
+        "power": "13"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_13",
+        "x": 90,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "east",
+        "power": "14"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_14",
+        "x": 90,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "east",
+        "power": "15"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_15",
+        "x": 90,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "west",
+        "power": "0"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_0",
+        "x": 90,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "west",
+        "power": "1"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_1",
+        "x": 90,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "west",
+        "power": "2"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_2",
+        "x": 90,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "west",
+        "power": "3"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_3",
+        "x": 90,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "west",
+        "power": "4"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_4",
+        "x": 90,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "west",
+        "power": "5"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_5",
+        "x": 90,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "west",
+        "power": "6"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_6",
+        "x": 90,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "west",
+        "power": "7"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_7",
+        "x": 90,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "west",
+        "power": "8"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_8",
+        "x": 90,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "west",
+        "power": "9"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_9",
+        "x": 90,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "west",
+        "power": "10"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_10",
+        "x": 90,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "west",
+        "power": "11"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_11",
+        "x": 90,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "west",
+        "power": "12"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_12",
+        "x": 90,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "west",
+        "power": "13"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_13",
+        "x": 90,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "west",
+        "power": "14"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_14",
+        "x": 90,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "ceiling",
+        "facing": "west",
+        "power": "15"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_15",
+        "x": 90,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "north",
+        "power": "0"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_0",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "north",
+        "power": "1"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_1",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "north",
+        "power": "2"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_2",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "north",
+        "power": "3"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_3",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "north",
+        "power": "4"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_4",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "north",
+        "power": "5"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_5",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "north",
+        "power": "6"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_6",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "north",
+        "power": "7"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_7",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "north",
+        "power": "8"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_8",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "north",
+        "power": "9"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_9",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "north",
+        "power": "10"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_10",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "north",
+        "power": "11"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_11",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "north",
+        "power": "12"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_12",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "north",
+        "power": "13"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_13",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "north",
+        "power": "14"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_14",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "north",
+        "power": "15"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_15",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "south",
+        "power": "0"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_0",
+        "x": 270,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "south",
+        "power": "1"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_1",
+        "x": 270,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "south",
+        "power": "2"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_2",
+        "x": 270,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "south",
+        "power": "3"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_3",
+        "x": 270,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "south",
+        "power": "4"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_4",
+        "x": 270,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "south",
+        "power": "5"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_5",
+        "x": 270,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "south",
+        "power": "6"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_6",
+        "x": 270,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "south",
+        "power": "7"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_7",
+        "x": 270,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "south",
+        "power": "8"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_8",
+        "x": 270,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "south",
+        "power": "9"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_9",
+        "x": 270,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "south",
+        "power": "10"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_10",
+        "x": 270,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "south",
+        "power": "11"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_11",
+        "x": 270,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "south",
+        "power": "12"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_12",
+        "x": 270,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "south",
+        "power": "13"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_13",
+        "x": 270,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "south",
+        "power": "14"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_14",
+        "x": 270,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "south",
+        "power": "15"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_15",
+        "x": 270,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "east",
+        "power": "0"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_0",
+        "x": 270,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "east",
+        "power": "1"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_1",
+        "x": 270,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "east",
+        "power": "2"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_2",
+        "x": 270,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "east",
+        "power": "3"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_3",
+        "x": 270,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "east",
+        "power": "4"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_4",
+        "x": 270,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "east",
+        "power": "5"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_5",
+        "x": 270,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "east",
+        "power": "6"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_6",
+        "x": 270,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "east",
+        "power": "7"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_7",
+        "x": 270,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "east",
+        "power": "8"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_8",
+        "x": 270,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "east",
+        "power": "9"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_9",
+        "x": 270,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "east",
+        "power": "10"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_10",
+        "x": 270,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "east",
+        "power": "11"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_11",
+        "x": 270,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "east",
+        "power": "12"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_12",
+        "x": 270,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "east",
+        "power": "13"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_13",
+        "x": 270,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "east",
+        "power": "14"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_14",
+        "x": 270,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "east",
+        "power": "15"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_15",
+        "x": 270,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "west",
+        "power": "0"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_0",
+        "x": 270,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "west",
+        "power": "1"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_1",
+        "x": 270,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "west",
+        "power": "2"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_2",
+        "x": 270,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "west",
+        "power": "3"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_3",
+        "x": 270,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "west",
+        "power": "4"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_4",
+        "x": 270,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "west",
+        "power": "5"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_5",
+        "x": 270,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "west",
+        "power": "6"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_6",
+        "x": 270,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "west",
+        "power": "7"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_7",
+        "x": 270,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "west",
+        "power": "8"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_8",
+        "x": 270,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "west",
+        "power": "9"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_9",
+        "x": 270,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "west",
+        "power": "10"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_10",
+        "x": 270,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "west",
+        "power": "11"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_11",
+        "x": 270,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "west",
+        "power": "12"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_12",
+        "x": 270,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "west",
+        "power": "13"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_13",
+        "x": 270,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "west",
+        "power": "14"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_14",
+        "x": 270,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "floor",
+        "facing": "west",
+        "power": "15"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_15",
+        "x": 270,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "north",
+        "power": "0"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_0"
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "north",
+        "power": "1"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_1"
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "north",
+        "power": "2"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_2"
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "north",
+        "power": "3"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_3"
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "north",
+        "power": "4"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_4"
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "north",
+        "power": "5"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_5"
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "north",
+        "power": "6"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_6"
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "north",
+        "power": "7"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_7"
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "north",
+        "power": "8"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_8"
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "north",
+        "power": "9"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_9"
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "north",
+        "power": "10"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_10"
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "north",
+        "power": "11"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_11"
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "north",
+        "power": "12"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_12"
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "north",
+        "power": "13"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_13"
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "north",
+        "power": "14"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_14"
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "north",
+        "power": "15"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_15"
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "south",
+        "power": "0"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_0",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "south",
+        "power": "1"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_1",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "south",
+        "power": "2"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_2",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "south",
+        "power": "3"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_3",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "south",
+        "power": "4"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_4",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "south",
+        "power": "5"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_5",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "south",
+        "power": "6"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_6",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "south",
+        "power": "7"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_7",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "south",
+        "power": "8"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_8",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "south",
+        "power": "9"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_9",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "south",
+        "power": "10"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_10",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "south",
+        "power": "11"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_11",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "south",
+        "power": "12"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_12",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "south",
+        "power": "13"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_13",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "south",
+        "power": "14"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_14",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "south",
+        "power": "15"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_15",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "east",
+        "power": "0"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_0",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "east",
+        "power": "1"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_1",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "east",
+        "power": "2"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_2",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "east",
+        "power": "3"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_3",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "east",
+        "power": "4"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_4",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "east",
+        "power": "5"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_5",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "east",
+        "power": "6"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_6",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "east",
+        "power": "7"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_7",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "east",
+        "power": "8"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_8",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "east",
+        "power": "9"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_9",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "east",
+        "power": "10"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_10",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "east",
+        "power": "11"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_11",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "east",
+        "power": "12"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_12",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "east",
+        "power": "13"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_13",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "east",
+        "power": "14"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_14",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "east",
+        "power": "15"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_15",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "west",
+        "power": "0"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_0",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "west",
+        "power": "1"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_1",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "west",
+        "power": "2"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_2",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "west",
+        "power": "3"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_3",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "west",
+        "power": "4"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_4",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "west",
+        "power": "5"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_5",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "west",
+        "power": "6"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_6",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "west",
+        "power": "7"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_7",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "west",
+        "power": "8"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_8",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "west",
+        "power": "9"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_9",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "west",
+        "power": "10"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_10",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "west",
+        "power": "11"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_11",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "west",
+        "power": "12"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_12",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "west",
+        "power": "13"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_13",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "west",
+        "power": "14"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_14",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "face": "wall",
+        "facing": "west",
+        "power": "15"
+      },
+      "apply": {
+        "model": "zps:block/graduated_lever_15",
+        "y": 270
+      }
+    }
+  ]
+}

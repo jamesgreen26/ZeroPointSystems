@@ -40,6 +40,9 @@ public class ModItems {
     public static final RegistryObject<Item> SWITCH_PANEL = ITEMS.register("switch_panel",
             () -> new BlockItem(ModBlocks.SWITCH_PANEL.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> GRADUATED_LEVER = ITEMS.register("graduated_lever",
+            () -> new BlockItem(ModBlocks.GRADUATED_LEVER.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> CABLE = ITEMS.register("cable",
             () -> new BlockItem(ModBlocks.CABLE.get(), new Item.Properties()));
 

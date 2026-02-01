@@ -38,6 +38,11 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(SwitchPanelBlockEntity::new,
                             ModBlocks.SWITCH_PANEL.get()).build(null));
 
+    public static final RegistryObject<BlockEntityType<GraduatedLeverBlockEntity>> GRADUATED_LEVER =
+            BLOCK_ENTITIES.register("graduated_lever",
+                    () -> BlockEntityType.Builder.of(GraduatedLeverBlockEntity::new,
+                            ModBlocks.GRADUATED_LEVER.get()).build(null));
+
     public static final RegistryObject<BlockEntityType<ScriptTransmitterBlockEntity>> SCRIPT_TRANSMITTER =
         BLOCK_ENTITIES.register("script_transmitter",
             () -> BlockEntityType.Builder.of(ScriptTransmitterBlockEntity::new,

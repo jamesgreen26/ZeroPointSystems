@@ -78,6 +78,12 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
 
+    public static final RegistryObject<Block> GRADUATED_LEVER = BLOCKS.register("graduated_lever",
+            () -> new GraduatedLeverBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+
     public static final RegistryObject<Block> CABLE_INSULATION = BLOCKS.register("cable_insulation",
             () -> new CableInsulationBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(1.5f)

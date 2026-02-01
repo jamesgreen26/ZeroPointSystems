@@ -7,8 +7,12 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public interface RedstoneSendingTerminal {
+public interface RedstoneSendingTerminal extends NetworkTerminal {
     int getCurrentSuppliedSignal(int channel);
+
+    default void updateSignal(Level level, int channel) {
+        updateAllSignals(level, getTerminals(channel));
+    }
 
     default void updateAllSignals(Level level, List<NetworkNode> terminals) {
         AtomicInteger maxSuppliedSignal = new AtomicInteger();

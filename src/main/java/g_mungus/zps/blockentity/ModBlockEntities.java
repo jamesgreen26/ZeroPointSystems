@@ -33,6 +33,11 @@ public class ModBlockEntities {
             () -> BlockEntityType.Builder.of(OctoControllerBlockEntity::new,
                 ModBlocks.OCTO_CONTROLLER.get()).build(null));
 
+    public static final RegistryObject<BlockEntityType<SwitchPanelBlockEntity>> SWITCH_PANEL =
+            BLOCK_ENTITIES.register("switch_panel",
+                    () -> BlockEntityType.Builder.of(SwitchPanelBlockEntity::new,
+                            ModBlocks.SWITCH_PANEL.get()).build(null));
+
     public static final RegistryObject<BlockEntityType<ScriptTransmitterBlockEntity>> SCRIPT_TRANSMITTER =
         BLOCK_ENTITIES.register("script_transmitter",
             () -> BlockEntityType.Builder.of(ScriptTransmitterBlockEntity::new,

@@ -1,5 +1,10 @@
 package g_mungus.zps.block.cableNetwork;
 
+import g_mungus.zps.block.cableNetwork.core.BuiltinCableStandards;
+import g_mungus.zps.block.cableNetwork.core.CableComponentBlock;
+import g_mungus.zps.block.cableNetwork.core.Channels;
+import g_mungus.zps.block.cableNetwork.core.NetworkNode;
+import g_mungus.zps.blockentity.SwitchPanelBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvents;
@@ -12,6 +17,8 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.AttachFace;
@@ -22,9 +29,12 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class SwitchPanelBlock extends Block {
+import java.util.List;
+
+public class SwitchPanelBlock extends CableComponentBlock implements EntityBlock {
 
     public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final EnumProperty<AttachFace> FACE = BlockStateProperties.ATTACH_FACE;
@@ -32,6 +42,7 @@ public class SwitchPanelBlock extends Block {
     public static final BooleanProperty POWERED_1 = BooleanProperty.create("powered_1");
     public static final BooleanProperty POWERED_2 = BooleanProperty.create("powered_2");
     public static final BooleanProperty POWERED_3 = BooleanProperty.create("powered_3");
+    public static final BooleanProperty CONNECTED = BooleanProperty.create("connected");
 
     public static final VoxelShape NORTH_SHAPE;
     public static final VoxelShape EAST_SHAPE;
@@ -49,14 +60,78 @@ public class SwitchPanelBlock extends Block {
                 .setValue(POWERED_1, false)
                 .setValue(POWERED_2, false)
                 .setValue(POWERED_3, false)
+                .setValue(CONNECTED, false)
         );
     }
 
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> arg) {
-        arg.add(FACE, FACING, POWERED_0, POWERED_1, POWERED_2, POWERED_3);
+        arg.add(FACE, FACING, POWERED_0, POWERED_1, POWERED_2, POWERED_3, CONNECTED);
     }
 
-    public VoxelShape getShape(BlockState arg, BlockGetter arg2, BlockPos arg3, CollisionContext arg4) {
+    @Override
+    public String getCableStandard() {
+        return BuiltinCableStandards.DEFAULT;
+    }
+
+    @Override
+    public void updateConnections(BlockState state, Level level, BlockPos pos) {
+        BlockState newState = getNewBlockState(state, level, pos);
+
+        if (!state.equals(newState)) {
+            level.setBlock(pos, newState, 3);
+            updateNetwork(pos, level);
+        }
+    }
+
+    @Override
+    public boolean isTerminal() {
+        return true;
+    }
+
+    @Override
+    public int getTotalChannelCount() {
+        return 4;
+    }
+
+    @Override
+    public int getChannelCountForConnection(BlockPos self, BlockPos from, Level level) {
+        BlockState state = level.getBlockState(self);
+        return getConnectingPos(state, self).equals(from) ? 4 : 0;
+    }
+
+    @Override
+    public List<BlockPos> getConnectingNeighbors(NetworkNode self, Level level) {
+        BlockState state = level.getBlockState(self.pos());
+        return List.of(getConnectingPos(state, self.pos()));
+    }
+
+    @Override
+    public int getNewChannel(BlockPos self, NetworkNode input, Level level) {
+        return Channels.toQuad(input.channel());
+    }
+
+    private BlockPos getConnectingPos(BlockState state, BlockPos pos) {
+        Direction behind = switch (state.getValue(FACE)) {
+            case WALL    -> state.getValue(FACING).getOpposite();
+            case FLOOR   -> Direction.DOWN;
+            case CEILING -> Direction.UP;
+        };
+        return pos.relative(behind);
+    }
+
+    @NotNull
+    public BlockState getNewBlockState(BlockState state, Level level, BlockPos pos) {
+        boolean shouldConnect = canConnect(pos, getConnectingPos(state, pos), level);
+        return state.setValue(CONNECTED, shouldConnect);
+    }
+
+    @Override
+    public @Nullable BlockEntity newBlockEntity(@NotNull BlockPos arg, @NotNull BlockState arg2) {
+        return new SwitchPanelBlockEntity(arg, arg2);
+    }
+
+    @SuppressWarnings("deprecation")
+    public @NotNull VoxelShape getShape(BlockState arg, @NotNull BlockGetter arg2, @NotNull BlockPos arg3, @NotNull CollisionContext arg4) {
         return switch (arg.getValue(FACE)) {
             case FLOOR -> DOWN_SHAPE;
             case WALL -> switch (arg.getValue(FACING)) {
@@ -99,12 +174,13 @@ public class SwitchPanelBlock extends Block {
 
 
     @Override
-    public InteractionResult use(
-            BlockState state,
-            Level level,
-            BlockPos pos,
-            Player player,
-            InteractionHand hand,
+    @SuppressWarnings("deprecation")
+    public @NotNull InteractionResult use(
+            @NotNull BlockState state,
+            @NotNull Level level,
+            @NotNull BlockPos pos,
+            @NotNull Player player,
+            @NotNull InteractionHand hand,
             BlockHitResult hit
     ) {
         if (!isFrontFace(state, hit.getDirection())) {
@@ -151,8 +227,16 @@ public class SwitchPanelBlock extends Block {
         );
 
         level.updateNeighborsAt(pos, this);
+        updateSignal(level, pos, quadrant + 1); // Quad channels are 1 through 4
 
         return InteractionResult.CONSUME;
+    }
+
+    private static void updateSignal(@NotNull Level level, @NotNull BlockPos pos, int channel) {
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof SwitchPanelBlockEntity switchPanelBlockEntity) {
+            switchPanelBlockEntity.updateSignal(level, channel);
+        }
     }
 
     private static boolean isFrontFace(BlockState state, Direction clicked) {

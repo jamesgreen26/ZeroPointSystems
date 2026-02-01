@@ -33,13 +33,13 @@ public class RedstoneConverterBlockEntity extends NetworkTerminalImpl implements
     public void defineTerminals(List<NetworkNode> terminals, int channel) {
         super.defineTerminals(terminals, channel);
 
-        updateAllSignals(level, getTerminals(Channels.MAIN));
+        updateSignal(level, Channels.MAIN);
     }
 
     public void supplySignal(int strength) {
         if (currentSuppliedSignal == strength) return;
         currentSuppliedSignal = strength;
-        updateAllSignals(level, getTerminals(Channels.MAIN));
+        updateSignal(level, Channels.MAIN);
     }
 
     @Override

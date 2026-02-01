@@ -8,6 +8,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -22,6 +23,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import org.jetbrains.annotations.Nullable;
 
 public class SwitchPanelBlock extends Block {
 
@@ -67,6 +69,35 @@ public class SwitchPanelBlock extends Block {
             default -> UP_SHAPE;
         };
     }
+
+    @Override
+    @Nullable
+    public BlockState getStateForPlacement(BlockPlaceContext ctx) {
+        BlockState state = this.defaultBlockState();
+
+        Direction clickedFace = ctx.getClickedFace();
+        Direction horizontalFacing = ctx.getHorizontalDirection().getOpposite();
+
+        if (clickedFace == Direction.UP) {
+            // Placed on top of a block → panel faces up
+            return state
+                    .setValue(FACE, AttachFace.FLOOR)
+                    .setValue(FACING, horizontalFacing);
+        }
+
+        if (clickedFace == Direction.DOWN) {
+            // Placed under a block → panel faces down
+            return state
+                    .setValue(FACE, AttachFace.CEILING)
+                    .setValue(FACING, horizontalFacing);
+        }
+
+        // Otherwise it's a wall placement
+        return state
+                .setValue(FACE, AttachFace.WALL)
+                .setValue(FACING, clickedFace);
+    }
+
 
     @Override
     public InteractionResult use(

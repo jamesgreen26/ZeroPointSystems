@@ -23,6 +23,7 @@ public class ModCreativeTabs {
                     ModItems.OCTO_CONTROLLER,
                     ModItems.DENSE_CABLE_SEPARATOR,
                     ModItems.CABLE_INSULATION,
+                    ModItems.SWITCH_PANEL,
                     ModItems.STEPUP_TRANSFORMER,
                     ModItems.STEPDOWN_TRANSFORMER,
                     ModItems.REDSTONE_CONVERTER,

@@ -1,7 +1,7 @@
 package g_mungus.zps.blockentity.light_pipe;
 
-import ace.actually.radios.RadioSignal;
-import ace.actually.radios.RadioSpec;
+import ace.actually.radios.api.RadioSignal;
+import ace.actually.radios.api.RadioSpec;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.NetworkTerminalImpl;

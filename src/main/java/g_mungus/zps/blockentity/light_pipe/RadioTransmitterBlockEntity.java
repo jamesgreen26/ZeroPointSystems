@@ -1,6 +1,6 @@
 package g_mungus.zps.blockentity.light_pipe;
 
-import ace.actually.radios.RadioSpec;
+import ace.actually.radios.api.RadioSpec;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.blockentity.ModBlockEntities;

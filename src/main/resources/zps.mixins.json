@@ -8,6 +8,7 @@
     "SelectorDeserializerNotMixin"
   ],
   "mixins": [
+    "ArgumentTypeInfosMixin",
     "BlockBehaviourAccessor",
     "LecternBlockEntityMixin",
     "WritableBookMixin",

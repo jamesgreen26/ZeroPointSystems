@@ -18,7 +18,7 @@ public class SetRedstoneCommand {
     public static final CommandNode<CommandSourceStack> COMMAND = Commands.literal("SET_REDSTONE").then(
             Commands.argument("power", IntegerArgumentType.integer(0, 15))
                     .executes(context -> {
-                        BlockPos pos = BlockPosArgument.getBlockPos(context, "position");
+                        BlockPos pos = ZPSCommands.getPosition(context);
                         setRedstone(context.getSource().getLevel(), pos, IntegerArgumentType.getInteger(context, "power"));
                         return 1;
                     })).build();

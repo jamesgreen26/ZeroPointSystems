@@ -137,9 +137,10 @@ public class BlockPosListArgument implements ArgumentType<List<Coordinates>> {
 
         // Check if we just finished typing a complete coordinate
         if (isCompleteCoordinate(remaining)) {
-            builder.suggest(", ");
-            builder.suggest("]");
-            return builder.buildFuture();
+            return builder.createOffset(builder.getStart() + remaining.length())
+                    .suggest(", ")
+                    .suggest("]")
+                    .buildFuture();
         }
 
         int suggestionStart = findCoordinateSuggestionStart(builder.getInput());

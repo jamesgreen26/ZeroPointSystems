@@ -13,6 +13,7 @@ import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.commands.arguments.coordinates.Coordinates;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -83,20 +84,16 @@ public class BlockPosListArgument implements ArgumentType<List<Coordinates>> {
     }
 
     /**
-     * Convenience accessor
+     * Convenience accessor to get resolved BlockPos list from command context
      */
     public static List<BlockPos> getBlockPosList(
             CommandContext<CommandSourceStack> ctx,
             String name
     ) {
         List<Coordinates> coords = ctx.getArgument(name, List.class);
-        List<BlockPos> result = new ArrayList<>(coords.size());
-
-        for (Coordinates c : coords) {
-            result.add(c.getBlockPos(ctx.getSource()));
-        }
-
-        return result;
+        return coords.stream()
+                .map(c -> c.getBlockPos(ctx.getSource()))
+                .toList();
     }
 
     @Override
@@ -120,50 +117,69 @@ public class BlockPosListArgument implements ArgumentType<List<Coordinates>> {
             return Suggestions.empty();
         }
 
-        // Suggest coordinates
-        if (remaining.equals("[") || remaining.endsWith(",") || remaining.endsWith(", ")) {
-            // Find the index of the last comma in the *full input* (not remaining)
-            int lastComma = builder.getInput().lastIndexOf(',');
-            if (remaining.endsWith(", ")) lastComma++;
-
-            // Offset is just after the comma, or after the '[' if no comma yet
-            int offset = (lastComma != -1) ? lastComma + 1 : builder.getInput().indexOf('[') + 1;
-
-            SuggestionsBuilder coordBuilder = builder.createOffset(offset);
-
-            return BlockPosArgument.blockPos()
-                    .listSuggestions(context, coordBuilder);
-        }
-
-
-        // Inside brackets, but already closed → stop suggesting
+        // Already closed → no more suggestions
         if (remaining.contains("]")) {
             return Suggestions.empty();
         }
 
-        // Try to detect "just finished a coordinate"
-        try {
-            int index = remaining.lastIndexOf(",");
-            String inside = remaining.substring(Math.max(1, index)).trim();
-
-            if (!inside.isEmpty()) {
-                StringReader testReader = new StringReader(inside);
-                BlockPosArgument.blockPos().parse(testReader);
-
-                // If we consumed everything, we finished a coordinate
-                if (!testReader.canRead()) {
-                    builder.suggest(", ");
-                    builder.suggest("]");
-                    return builder.buildFuture();
-                }
-            }
-        } catch (CommandSyntaxException ignored) {
-            // Incomplete coordinate → no structural suggestions yet
+        // Check if we just finished typing a complete coordinate
+        if (isCompleteCoordinate(remaining)) {
+            builder.suggest(", ");
+            builder.suggest("]");
+            return builder.buildFuture();
         }
 
-        // Inside bracketed list → delegate to BlockPosArgument
-        return BlockPosArgument.blockPos()
-                .listSuggestions(context, builder);
+        int suggestionStart = findCoordinateSuggestionStart(builder.getInput());
+        SuggestionsBuilder coordBuilder = builder.createOffset(suggestionStart);
+        return BlockPosArgument.blockPos().listSuggestions(context, coordBuilder);
+    }
+
+    private int findCoordinateSuggestionStart(String fullInput) {
+        int lastComma = fullInput.lastIndexOf(',');
+        int start = (lastComma != -1) ? lastComma + 1 : fullInput.indexOf('[') + 1;
+
+        // Skip up to one space after the comma or bracket
+        if (start < fullInput.length() && fullInput.charAt(start) == ' ') {
+            start++;
+        }
+
+        return start;
+    }
+
+    private boolean isCompleteCoordinate(String remaining) {
+        try {
+            String toCheck = getCoordinateString(remaining);
+
+            if (toCheck.isEmpty()) {
+                return false;
+            }
+
+            StringReader testReader = new StringReader(toCheck);
+            BlockPosArgument.blockPos().parse(testReader);
+
+            // Complete coordinate if we consumed everything
+            return !testReader.canRead();
+        } catch (CommandSyntaxException e) {
+            return false;
+        }
+    }
+
+    private static @NotNull String getCoordinateString(String remaining) {
+        int lastCommaIndex = remaining.lastIndexOf(',');
+        int startIndex = lastCommaIndex == -1 ? 1 : lastCommaIndex + 1;
+        String afterLastComma = remaining.substring(startIndex);
+
+        // Skip up to one leading space
+        if (afterLastComma.startsWith(" ")) {
+            afterLastComma = afterLastComma.substring(1);
+        }
+
+        // Remove up to one trailing space for the check
+        String toCheck = afterLastComma;
+        if (toCheck.endsWith(" ")) {
+            toCheck = toCheck.substring(0, toCheck.length() - 1);
+        }
+        return toCheck;
     }
 
     @Override

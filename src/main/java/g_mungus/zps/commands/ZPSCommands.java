@@ -2,17 +2,16 @@ package g_mungus.zps.commands;
 
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.builder.ArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.blocks.BlockPredicateArgument;
-import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-
-import java.util.List;
 
 @Mod.EventBusSubscriber
 public class ZPSCommands {
@@ -22,27 +21,20 @@ public class ZPSCommands {
         CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
         CommandBuildContext buildContext = event.getBuildContext();
 
+        ArgumentBuilder<CommandSourceStack, RequiredArgumentBuilder<CommandSourceStack, BlockPredicateArgument.Result>> ROOT = Commands.argument("filter", BlockPredicateArgument.blockPredicate(buildContext));
+
+        MinecraftForge.EVENT_BUS.post(new ZPSRegisterScriptCommandEvent(ROOT));
+
         dispatcher.register(
                 Commands.literal("zps_script")
                         .requires(src -> src.hasPermission(2))
-                        .then(
-                                Commands.argument("positions", BlockPosListArgument.blockPosList())
-                                        .then(
-                                                Commands.argument("filter", BlockPredicateArgument.blockPredicate(buildContext))
-                                                        .executes(ctx -> {
-                                                            List<BlockPos> positions =
-                                                                    BlockPosListArgument.getBlockPosList(ctx, "positions");
+                        .then(Commands.argument("positions", BlockPosListArgument.blockPosList())
+                        .then(ROOT)));
+    }
 
-                                                            ctx.getSource().getPlayerOrException()
-                                                                    .sendSystemMessage(
-                                                                            Component.literal("Got " + positions.size() + " positions")
-                                                                    );
-
-                                                            return 1;
-                                                        })
-                                        )
-                        )
-        );
-
+    @SubscribeEvent
+    public static void onRegisterZPSScriptCommands(ZPSRegisterScriptCommandEvent event) {
+        event.addCommand(Commands.literal("TEST_0"));
+        event.addCommand(Commands.literal("TEST_1"));
     }
 }

@@ -47,7 +47,7 @@ public class SetRedstoneCommand {
         }
 
         String key = Long.toString(pos.asLong());
-        if (power == 0) {
+        if (power == 0 || level.getBlockState(pos).isAir()) {
             tag.remove(key);
         } else {
             tag.putInt(key, power);

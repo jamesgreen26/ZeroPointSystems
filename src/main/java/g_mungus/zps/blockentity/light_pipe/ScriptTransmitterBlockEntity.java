@@ -287,4 +287,18 @@ public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements
             setPage(getPage() + 1);
         }
     }
+
+    @Override
+    public void zps$cyclePages() {
+        if (hasNextPage()) {
+            setPage(getPage() + 1);
+        } else {
+            setPage(0);
+        }
+    }
+
+    @Override
+    public boolean zps$hasBook() {
+        return hasBook();
+    }
 }

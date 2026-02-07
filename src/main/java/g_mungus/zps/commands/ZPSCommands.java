@@ -6,6 +6,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.CommandNode;
 import g_mungus.zps.commands.actions.SetRedstoneCommand;
+import g_mungus.zps.commands.actions.TurnPageCommand;
 import g_mungus.zps.commands.predicates.BlockPosListPredicateCommand;
 import g_mungus.zps.commands.predicates.BlockPosPredicateCommand;
 import g_mungus.zps.commands.predicates.BlockStatePredicateCommand;
@@ -29,6 +30,7 @@ public class ZPSCommands {
         CommandBuildContext buildContext = event.getBuildContext();
 
         zpsScript(dispatcher, SetRedstoneCommand.COMMAND);
+        zpsScript(dispatcher, TurnPageCommand.COMMAND);
         zpsScript(dispatcher, BlockStatePredicateCommand.build(buildContext, dispatcher));
         zpsScript(dispatcher, BlockPosPredicateCommand.build(dispatcher));
         zpsScript(dispatcher, BlockPosListPredicateCommand.build(dispatcher));

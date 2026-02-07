@@ -35,7 +35,7 @@ public class SetRedstoneCommand {
         }
     }
 
-    private static void setRedstone(ServerLevel level, BlockPos pos, int power) {
+    public static void setRedstone(ServerLevel level, BlockPos pos, int power) {
         CompoundTag root = level.getServer().getCommandStorage().get(DATA_LOCATION);
         String dimension = getDimensionKey(level);
         CompoundTag tag;
@@ -47,7 +47,11 @@ public class SetRedstoneCommand {
         }
 
         String key = Long.toString(pos.asLong());
-        tag.putInt(key, power);
+        if (power == 0) {
+            tag.remove(key);
+        } else {
+            tag.putInt(key, power);
+        }
         level.getServer().getCommandStorage().set(DATA_LOCATION, root);
 
         for (var dir : NeighborUpdater.UPDATE_ORDER) {

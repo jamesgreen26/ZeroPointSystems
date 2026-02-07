@@ -12,6 +12,7 @@
     "BlockBehaviourAccessor",
     "BlockBehaviourMixin",
     "LecternBlockEntityMixin",
+    "ServerLevelMixin",
     "WritableBookMixin",
     "WrittenBookMixin"
   ],

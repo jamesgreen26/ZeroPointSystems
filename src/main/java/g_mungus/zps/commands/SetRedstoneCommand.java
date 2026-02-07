@@ -11,6 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.pattern.BlockInWorld;
+import net.minecraft.world.level.redstone.NeighborUpdater;
 
 import java.util.List;
 
@@ -54,10 +55,12 @@ public class SetRedstoneCommand {
 
         String key = Long.toString(pos.asLong());
         tag.putInt(key, power);
-        BlockState state = level.getBlockState(pos);
         level.getServer().getCommandStorage().set(DATA_LOCATION, root);
 
-        state.getBlock().onNeighborChange(state, level, pos, pos);
+        for (var dir : NeighborUpdater.UPDATE_ORDER) {
+            BlockPos neighbor = pos.offset(dir.getNormal());
+            level.neighborChanged(pos, level.getBlockState(neighbor).getBlock(), neighbor);
+        }
     }
 
     private static String getDimensionKey(ServerLevel level) {

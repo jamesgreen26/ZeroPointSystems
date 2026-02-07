@@ -18,7 +18,8 @@ public class BlockBehaviourMixin {
     private int getSignalWrap(BlockState arg, BlockGetter arg2, BlockPos arg3, Direction arg4, Operation<Integer> original) {
         int i = original.call(arg, arg2, arg3, arg4);
         if (arg2 instanceof ServerLevel serverLevel) {
-            i = Math.max(i, SetRedstoneCommand.getRedstonePowerAt(serverLevel, arg3.offset(arg4.getOpposite().getNormal())));
+            int commandResult = SetRedstoneCommand.getRedstonePowerAt(serverLevel, arg3.offset(arg4.getOpposite().getNormal()));
+            i = Math.max(i, commandResult);
         }
         return i;
     }

@@ -60,8 +60,21 @@ public class BlockPosListArgument implements ArgumentType<List<Coordinates>> {
                 break;
             }
 
-            Coordinates coords = single.parse(reader);
+            String string = reader.getString();
+            char[] chars = string.toCharArray();
+            for (int i = reader.getCursor(); i < chars.length; i++) {
+                char c = chars[i];
+                if (c == ',' || c == ']') {
+                    string = string.substring(0, i);
+                    break;
+                }
+            }
+
+            StringReader coordReader = new StringReader(string);
+            coordReader.setCursor(reader.getCursor());
+            Coordinates coords = single.parse(coordReader);
             result.add(coords);
+            reader.setCursor(coordReader.getCursor());
 
             reader.skipWhitespace();
 

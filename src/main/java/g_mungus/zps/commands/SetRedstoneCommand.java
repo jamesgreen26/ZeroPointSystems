@@ -1,34 +1,27 @@
 package g_mungus.zps.commands;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.tree.CommandNode;
 import g_mungus.zps.ZPSMod;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.pattern.BlockInWorld;
 import net.minecraft.world.level.redstone.NeighborUpdater;
-
-import java.util.List;
 
 public class SetRedstoneCommand {
     public static final ResourceLocation DATA_LOCATION = ZPSMod.resource("redstone");
 
-    public static LiteralArgumentBuilder<CommandSourceStack> build(ZPSRegisterScriptCommandEvent event) {
-        return Commands.literal("SET_REDSTONE").then(
-                Commands.argument("power", IntegerArgumentType.integer(0, 15))
-                        .executes(context -> {
-                            List<BlockInWorld> blocks = event.getBlocks(context);
-                            for (var block : blocks) {
-                                setRedstone(context.getSource().getLevel(), block.getPos(), IntegerArgumentType.getInteger(context, "power"));
-                            }
-                            return 1;
-                        }));
-    }
+    public static final CommandNode<CommandSourceStack> COMMAND = Commands.literal("SET_REDSTONE").then(
+            Commands.argument("power", IntegerArgumentType.integer(0, 15))
+                    .executes(context -> {
+                        BlockPos pos = BlockPosArgument.getBlockPos(context, "position");
+                        setRedstone(context.getSource().getLevel(), pos, IntegerArgumentType.getInteger(context, "power"));
+                        return 1;
+                    })).build();
 
     public static int getRedstonePowerAt(ServerLevel level, BlockPos pos) {
         CompoundTag root = level.getServer().getCommandStorage().get(DATA_LOCATION);

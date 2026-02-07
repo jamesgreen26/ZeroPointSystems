@@ -1,6 +1,5 @@
 package g_mungus.zps.commands;
 
-
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
@@ -34,7 +33,6 @@ public class ZPSCommands {
 
     @SubscribeEvent
     public static void onRegisterZPSScriptCommands(ZPSRegisterScriptCommandEvent event) {
-        event.addCommand(Commands.literal("TEST_0"));
-        event.addCommand(Commands.literal("TEST_1"));
+        event.addCommand(SetRedstoneCommand.build(event));
     }
 }

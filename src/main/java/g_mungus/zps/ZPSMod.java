@@ -8,6 +8,7 @@ import g_mungus.zps.item.ModCreativeTabs;
 import g_mungus.zps.item.ModItems;
 
 import g_mungus.zps.networking.ZPSGamePackets;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.DistExecutor;
@@ -36,6 +37,10 @@ public final class ZPSMod {
         modEventBus.addListener(this::commonSetup);
 
         DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> ZPSPonderPlugin::registerPlugin);
+    }
+
+    public static ResourceLocation resource(String path) {
+        return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {

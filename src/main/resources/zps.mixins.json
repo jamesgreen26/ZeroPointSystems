@@ -10,6 +10,7 @@
   "mixins": [
     "ArgumentTypeInfosMixin",
     "BlockBehaviourAccessor",
+    "BlockBehaviourMixin",
     "LecternBlockEntityMixin",
     "WritableBookMixin",
     "WrittenBookMixin"

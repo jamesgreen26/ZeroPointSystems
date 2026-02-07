@@ -2,7 +2,7 @@ package g_mungus.zps.mixin;
 
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import g_mungus.zps.commands.SetRedstoneCommand;
+import g_mungus.zps.commands.actions.SetRedstoneCommand;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;

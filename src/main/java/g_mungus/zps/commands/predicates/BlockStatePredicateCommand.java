@@ -1,9 +1,10 @@
-package g_mungus.zps.commands;
+package g_mungus.zps.commands.predicates;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.tree.CommandNode;
+import g_mungus.zps.commands.ZPSCommands;
+import g_mungus.zps.commands.exceptions.CancellationException;
 import net.minecraft.commands.CommandBuildContext;
-import net.minecraft.commands.CommandRuntimeException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.blocks.BlockPredicateArgument;
@@ -29,7 +30,7 @@ public class BlockStatePredicateCommand {
                     if (predicate.test(block)) {
                         return Collections.singleton(context.getSource());
                     } else {
-                        throw new CommandRuntimeException(Component.literal("Operation unsuccessful: blockstate predicate did not match"));
+                        throw new CancellationException(Component.literal("Operation unsuccessful: blockstate predicate did not match"));
                     }
                 }, false)
         ).build();

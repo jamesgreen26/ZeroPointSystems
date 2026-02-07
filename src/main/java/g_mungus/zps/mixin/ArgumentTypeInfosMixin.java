@@ -1,7 +1,7 @@
 package g_mungus.zps.mixin;
 
 import com.mojang.brigadier.arguments.ArgumentType;
-import g_mungus.zps.commands.BlockPosListArgument;
+import g_mungus.zps.commands.arguments.BlockPosListArgument;
 import net.minecraft.commands.synchronization.ArgumentTypeInfo;
 import net.minecraft.commands.synchronization.ArgumentTypeInfos;
 import net.minecraft.commands.synchronization.SingletonArgumentInfo;

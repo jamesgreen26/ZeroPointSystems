@@ -1,4 +1,4 @@
-package g_mungus.zps.commands;
+package g_mungus.zps.commands.arguments;
 
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.arguments.ArgumentType;

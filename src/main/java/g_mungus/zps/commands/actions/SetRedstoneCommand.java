@@ -1,11 +1,11 @@
-package g_mungus.zps.commands;
+package g_mungus.zps.commands.actions;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.tree.CommandNode;
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.commands.ZPSCommands;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;

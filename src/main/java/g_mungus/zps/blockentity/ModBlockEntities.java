@@ -72,4 +72,9 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("script_comparator",
                     () -> BlockEntityType.Builder.of(ScriptComparatorBlockEntity::new,
                             ModBlocks.SCRIPT_COMPARATOR.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<SerialBusBlockEntity>> SERIAL_BUS =
+            BLOCK_ENTITIES.register("serial_bus",
+                    () -> BlockEntityType.Builder.of(SerialBusBlockEntity::new,
+                            ModBlocks.SERIAL_BUS.get()).build(null));
 } 

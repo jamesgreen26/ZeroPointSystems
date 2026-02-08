@@ -38,6 +38,7 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 	private static final int BORDER_COLOR_FOCUSED = -1;
 	private static final int BORDER_COLOR = -6250336;
 	private static final int BACKGROUND_COLOR = -16777216;
+	private static final int LINE_HEIGHT = 9;
 	private final Font font;
 	private String value = "";
 	private int maxLength = 32;
@@ -379,7 +380,7 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 			boolean bl = l >= 0 && l <= string.length();
 			boolean bl2 = this.isFocused() && this.frame / 6 % 2 == 0 && bl;
 			int n = this.bordered ? this.getX() + 4 : this.getX();
-			int o = this.bordered ? this.getY() + (this.height - 8) / 2 : this.getY();
+			int o = this.bordered ? this.getY() + 4 : this.getY();
 			int p = n;
 			if (m > string.length()) {
 				m = string.length();

@@ -6,7 +6,7 @@
       "item": "zps:cable"
     },
     "I": {
-      "item": "minecraft:iron_ingot"
+      "item": "zps:space_metal_ingot"
     }
   },
   "pattern": [
@@ -15,7 +15,7 @@
   ],
   "result": {
     "item": "zps:stepup_transformer",
-    "count": 1
+    "count": 2
   },
   "show_notification": true
 }

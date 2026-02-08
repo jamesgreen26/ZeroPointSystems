@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "B": {
+      "item": "zps:space_metal_ingot"
+    }
+  },
+  "pattern": [
+    "B B",
+    " B ",
+    "B B"
+  ],
+  "result": {
+    "item": "zps:space_metal_mesh",
+    "count": 10
+  },
+  "show_notification": true
+}

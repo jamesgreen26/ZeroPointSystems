@@ -3,10 +3,10 @@
   "category": "functional",
   "key": {
     "A": {
-      "item": "minecraft:amethyst_shard"
+      "item": "zps:aluminum_ingot"
     },
     "B": {
-      "item": "minecraft:black_dye"
+      "item": "zps:space_metal_mesh"
     }
   },
   "pattern": [

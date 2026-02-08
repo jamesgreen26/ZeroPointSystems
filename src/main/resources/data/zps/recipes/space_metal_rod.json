@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "B": {
+      "item": "zps:space_metal_ingot"
+    }
+  },
+  "pattern": [
+    "B",
+    "B"
+  ],
+  "result": {
+    "item": "zps:space_metal_rod",
+    "count": 6
+  },
+  "show_notification": true
+}

@@ -3,15 +3,13 @@
   "category": "functional",
   "key": {
     "A": {
-      "item": "minecraft:iron_ingot"
-    },
-    "B": {
-      "item": "minecraft:polished_deepslate"
+      "item": "zps:space_metal_mesh"
     }
   },
   "pattern": [
-    "AB",
-    "BA"
+    "AAA",
+    "A A",
+    "AAA"
   ],
   "result": {
     "item": "zps:cable_insulation",

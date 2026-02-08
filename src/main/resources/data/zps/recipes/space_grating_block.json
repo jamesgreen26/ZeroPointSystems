@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "B": {
+      "item": "zps:space_metal_ingot"
+    },
+    "R": {
+      "item": "zps:space_metal_rod"
+    }
+  },
+  "pattern": [
+    "BRB",
+    "R R",
+    "BRB"
+  ],
+  "result": {
+    "item": "zps:space_grating_block",
+    "count": 6
+  },
+  "show_notification": true
+}

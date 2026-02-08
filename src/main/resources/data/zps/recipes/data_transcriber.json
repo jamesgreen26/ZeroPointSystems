@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "A": {
+      "item": "zps:space_metal_rod"
+    },
+    "B": {
+      "item": "zps:space_metal_ingot"
+    },
+    "C": {
+      "item": "zps:light_pipe_cable"
+    },
+    "D": {
+      "item": "minecraft:ink_sac"
+    }
+  },
+  "pattern": [
+    "BBA",
+    "CAD",
+    "BBA"
+  ],
+  "result": {
+    "item": "zps:data_transcriber",
+    "count": 1
+  },
+  "show_notification": true
+}

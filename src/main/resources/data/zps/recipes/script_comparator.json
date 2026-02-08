@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "A": {
+      "item": "minecraft:comparator"
+    },
+    "B": {
+      "item": "zps:space_metal_ingot"
+    },
+    "C": {
+      "item": "zps:light_pipe_cable"
+    }
+  },
+  "pattern": [
+    "BBB",
+    "CAC",
+    "BBB"
+  ],
+  "result": {
+    "item": "zps:script_comparator",
+    "count": 1
+  },
+  "show_notification": true
+}

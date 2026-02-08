@@ -3,20 +3,23 @@
   "category": "functional",
   "key": {
     "I": {
-      "item": "minecraft:iron_ingot"
+      "item": "zps:space_metal_ingot"
     },
     "C": {
       "item": "zps:cable"
+    },
+    "M": {
+      "item": "zps:space_metal_mesh"
     }
   },
   "pattern": [
     "ICI",
-    "ICI",
+    "MCM",
     "ICI"
   ],
   "result": {
     "item": "zps:dense_cables",
-    "count": 1
+    "count": 4
   },
   "show_notification": true
 }

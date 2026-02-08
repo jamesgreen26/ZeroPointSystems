@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "B": {
+      "item": "zps:space_metal_ingot"
+    },
+    "R": {
+      "item": "zps:space_metal_rod"
+    }
+  },
+  "pattern": [
+    "BRB"
+  ],
+  "result": {
+    "item": "zps:catwalk",
+    "count": 4
+  },
+  "show_notification": true
+}

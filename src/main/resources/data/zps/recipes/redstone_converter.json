@@ -6,7 +6,7 @@
       "item": "zps:cable"
     },
     "I": {
-      "item": "minecraft:iron_ingot"
+      "item": "zps:space_metal_ingot"
     },
     "R": {
       "item": "minecraft:redstone"
@@ -19,7 +19,7 @@
   ],
   "result": {
     "item": "zps:redstone_converter",
-    "count": 1
+    "count": 2
   },
   "show_notification": true
 }

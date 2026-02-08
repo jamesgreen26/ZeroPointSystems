@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "B": {
+      "item": "zps:space_metal_ingot"
+    },
+    "R": {
+      "item": "zps:space_metal_mesh"
+    }
+  },
+  "pattern": [
+    "BRB",
+    "RRR",
+    "BRB"
+  ],
+  "result": {
+    "item": "zps:space_mesh_block",
+    "count": 6
+  },
+  "show_notification": true
+}

@@ -1,4 +1,4 @@
-package g_mungus.zps.client.screens.widgets;
+package g_mungus.zps.client.screens.components;
 
 import java.util.Objects;
 import java.util.function.BiFunction;

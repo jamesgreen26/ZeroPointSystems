@@ -462,10 +462,12 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 			positionUpToLine += lines[i].length() + 1; // +1 for newline
 		}
 
-		// Find position within the clicked line
+		// Find position within the clicked line (accounting for horizontal scroll)
 		String clickedLine = lines[lineIndex];
-		String visiblePart = this.font.plainSubstrByWidth(clickedLine, this.getInnerWidth());
-		int posInLine = this.font.plainSubstrByWidth(visiblePart, clickX).length();
+		int scrollOffset = Math.min(this.displayPos, clickedLine.length());
+		String scrolledLine = clickedLine.substring(scrollOffset);
+		String visiblePart = this.font.plainSubstrByWidth(scrolledLine, this.getInnerWidth());
+		int posInLine = this.font.plainSubstrByWidth(visiblePart, clickX).length() + scrollOffset;
 
 		this.moveCursorTo(positionUpToLine + posInLine);
 	}
@@ -501,12 +503,12 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 
 				if (cursorLine == -1 && this.cursorPos >= charCount && this.cursorPos <= lineEnd) {
 					cursorLine = lineIdx;
-					cursorPosInLine = this.cursorPos - charCount;
+					cursorPosInLine = Math.min(this.cursorPos - charCount, lineLength);
 				}
 
 				if (highlightLine == -1 && this.highlightPos >= charCount && this.highlightPos <= lineEnd) {
 					highlightLine = lineIdx;
-					highlightPosInLine = this.highlightPos - charCount;
+					highlightPosInLine = Math.min(this.highlightPos - charCount, lineLength);
 				}
 
 				charCount += lineLength + 1; // +1 for newline
@@ -520,11 +522,15 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 				}
 
 				String line = lines[lineIdx];
-				String clipped = this.font.plainSubstrByWidth(line, maxWidth);
+
+				// Apply horizontal scrolling (displayPos)
+				int scrollOffset = Math.min(this.displayPos, line.length());
+				String scrolledLine = line.substring(scrollOffset);
+				String clipped = this.font.plainSubstrByWidth(scrolledLine, maxWidth);
 
 				arg.drawString(
 						this.font,
-						this.formatter.apply(clipped, 0),
+						this.formatter.apply(clipped, this.displayPos),
 						startX,
 						y,
 						textColor
@@ -532,20 +538,22 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 
 				// Render cursor if on this line
 				if (cursorLine == lineIdx && this.isFocused() && this.frame / 6 % 2 == 0) {
-					int cursorX = startX + this.font.width(clipped.substring(0, Math.min(cursorPosInLine, clipped.length())));
-					boolean atEnd = this.cursorPos < this.value.length() || this.value.length() >= this.getMaxLength();
+					// Cursor position relative to visible portion
+					int cursorPosVisible = cursorPosInLine - scrollOffset;
+					if (cursorPosVisible >= 0 && cursorPosVisible <= clipped.length()) {
+						int cursorX = startX + this.font.width(clipped.substring(0, Math.min(cursorPosVisible, clipped.length())));
+						boolean atEnd = this.cursorPos < this.value.length() || this.value.length() >= this.getMaxLength();
 
-					if (atEnd) {
-						arg.fill(RenderType.guiOverlay(), cursorX, y - 1, cursorX + 1, y + 10, CURSOR_INSERT_COLOR);
-					} else {
-						arg.drawString(this.font, CURSOR_APPEND_CHARACTER, cursorX, y, textColor);
+						if (atEnd) {
+							arg.fill(RenderType.guiOverlay(), cursorX, y - 1, cursorX + 1, y + 10, CURSOR_INSERT_COLOR);
+						} else {
+							arg.drawString(this.font, CURSOR_APPEND_CHARACTER, cursorX, y, textColor);
+						}
 					}
 				}
 
 				// Render highlight if it overlaps this line
 				if (this.cursorPos != this.highlightPos) {
-					int highlightStart = -1, highlightEnd = -1;
-
 					int minPos = Math.min(this.cursorPos, this.highlightPos);
 					int maxPos = Math.max(this.cursorPos, this.highlightPos);
 
@@ -558,16 +566,25 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 
 					// Check if highlight overlaps this line
 					if (maxPos > lineStartChar && minPos < lineEndChar) {
-						highlightStart = Math.max(0, minPos - lineStartChar);
-						highlightEnd = Math.min(lines[lineIdx].length(), maxPos - lineStartChar);
+						int highlightStart = Math.max(0, minPos - lineStartChar);
+						int highlightEnd = Math.min(lines[lineIdx].length(), maxPos - lineStartChar);
 
-						String beforeHighlight = clipped.substring(0, Math.min(highlightStart, clipped.length()));
-						String highlighted = clipped.substring(Math.min(highlightStart, clipped.length()), Math.min(highlightEnd, clipped.length()));
+						// Adjust for horizontal scroll
+						int highlightStartVisible = highlightStart - scrollOffset;
+						int highlightEndVisible = highlightEnd - scrollOffset;
 
-						int x1 = startX + this.font.width(beforeHighlight);
-						int x2 = x1 + this.font.width(highlighted);
+						if (highlightEndVisible > 0 && highlightStartVisible < clipped.length()) {
+							highlightStartVisible = Math.max(0, highlightStartVisible);
+							highlightEndVisible = Math.min(clipped.length(), highlightEndVisible);
 
-						this.renderHighlight(arg, x1, y - 1, x2, y + 10);
+							String beforeHighlight = clipped.substring(0, highlightStartVisible);
+							String highlighted = clipped.substring(highlightStartVisible, highlightEndVisible);
+
+							int x1 = startX + this.font.width(beforeHighlight);
+							int x2 = x1 + this.font.width(highlighted);
+
+							this.renderHighlight(arg, x1, y - 1, x2, y + 10);
+						}
 					}
 				}
 
@@ -583,7 +600,8 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 			if (this.suggestion != null && this.cursorPos == this.value.length()) {
 				int cursorX = startX;
 				if (cursorLine >= 0 && cursorLine < lines.length) {
-					cursorX += this.font.width(lines[cursorLine].substring(0, cursorPosInLine));
+					int safePos = Math.min(cursorPosInLine, lines[cursorLine].length());
+					cursorX += this.font.width(lines[cursorLine].substring(0, safePos));
 				}
 				int suggestY = startY + (cursorLine >= 0 ? cursorLine * LINE_HEIGHT : 0);
 				arg.drawString(this.font, this.suggestion, cursorX, suggestY, -8355712);
@@ -699,48 +717,46 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 
 			for (int lineIdx = 0; lineIdx < lines.length; lineIdx++) {
 				int lineLength = lines[lineIdx].length();
-				// +1 for the newline character (except on last line)
-				int lineWithNewline = lineLength + (lineIdx < lines.length - 1 ? 1 : 0);
 
-				if (charCount + lineWithNewline >= this.highlightPos) {
+				// Check if position is within this line (not including the newline)
+				if (this.highlightPos >= charCount && this.highlightPos <= charCount + lineLength) {
 					currentLine = lineIdx;
 					posInLine = this.highlightPos - charCount;
 					break;
 				}
-				charCount += lineWithNewline;
+
+				// Move to next line (add line length + 1 for newline, except on last line)
+				charCount += lineLength + (lineIdx < lines.length - 1 ? 1 : 0);
 			}
 
-			// Calculate displayPos relative to the current line
+			// Adjust horizontal scrolling to ensure the cursor is visible
 			if (currentLine < lines.length) {
 				String currentLineText = lines[currentLine];
-				int lineStart = charCount - (currentLine > 0 ? lines[currentLine].length() : 0);
+				int innerWidth = this.getInnerWidth();
 
-				// Adjust displayPos to ensure highlight is visible within the line
-				int k = this.getInnerWidth();
+				// Clamp posInLine to valid range for this line
+				posInLine = Math.min(posInLine, currentLineText.length());
 
-				// Clamp displayPos to the current line bounds
-				int lineEnd = lineStart + currentLineText.length();
-				if (this.displayPos < lineStart) {
-					this.displayPos = lineStart;
-				} else if (this.displayPos > lineEnd) {
-					this.displayPos = lineEnd;
+				// Calculate what portion of the line is visible
+				int scrollOffset = Math.min(this.displayPos, currentLineText.length());
+				String visiblePortion = this.font.plainSubstrByWidth(
+					currentLineText.substring(scrollOffset), innerWidth);
+				int visibleEndPos = scrollOffset + visiblePortion.length();
+
+				// If cursor is beyond visible area, scroll right
+				if (posInLine >= visibleEndPos) {
+					// Scroll so cursor is at the right edge
+					int safePosInLine = Math.min(posInLine, currentLineText.length());
+					this.displayPos = safePosInLine - this.font.plainSubstrByWidth(
+						currentLineText.substring(0, safePosInLine), innerWidth, true).length();
+				}
+				// If cursor is before visible area, scroll left
+				else if (posInLine < this.displayPos) {
+					this.displayPos = posInLine;
 				}
 
-				// Ensure the highlight position is visible
-				String visiblePart = this.font.plainSubstrByWidth(
-					currentLineText.substring(Math.max(0, this.displayPos - lineStart)), k);
-				int visibleEnd = this.displayPos + visiblePart.length();
-
-				if (this.highlightPos >= visibleEnd) {
-					// Scroll right to show the highlight
-					this.displayPos = this.displayPos + (this.highlightPos - visibleEnd + 1);
-				} else if (this.highlightPos < this.displayPos) {
-					// Scroll left to show the highlight
-					this.displayPos = this.highlightPos;
-				}
-
-				// Final clamp to valid range
-				this.displayPos = Mth.clamp(this.displayPos, lineStart, lineEnd);
+				// Clamp displayPos to valid range
+				this.displayPos = Mth.clamp(this.displayPos, 0, currentLineText.length());
 			}
 		}
 	}

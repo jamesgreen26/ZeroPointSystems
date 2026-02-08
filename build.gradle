@@ -32,6 +32,11 @@ repositories {
     flatDir {
         dirs 'libs'
     }
+    maven {
+        // location of the maven that hosts JEI files since January 2023
+        name = "Jared's maven"
+        url = "https://maven.blamejared.com/"
+    }
 }
 
 dependencies {
@@ -51,6 +56,8 @@ dependencies {
 
     modImplementation("com.simibubi.create:create-$minecraft_version:$create_version:slim") { transitive = false }
     modImplementation("com.tterrag.registrate:Registrate:$registrate_version")
+
+    modRuntimeOnly("mezz.jei:jei-1.20.1-forge:15.20.0.129")
 
     //noinspection DifferentStdlibGradleVersion
     api "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10"

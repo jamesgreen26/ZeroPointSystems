@@ -351,7 +351,25 @@ public class MultiLineCommandSuggestions {
     }
 
     private FormattedCharSequence formatChat(String string, int i) {
-        return this.currentParse != null ? formatText(this.currentParse, string, i) : FormattedCharSequence.forward(string, Style.EMPTY);
+        // Parse each line individually for formatting
+        if (this.commandsOnly || (string.length() > 0 && string.charAt(0) == '/')) {
+            StringReader stringReader = new StringReader(string);
+            boolean hasSlash = stringReader.canRead() && stringReader.peek() == '/';
+            if (hasSlash) {
+                stringReader.skip();
+            }
+
+            try {
+                assert this.minecraft.player != null;
+                CommandDispatcher<SharedSuggestionProvider> commandDispatcher = this.minecraft.player.connection.getCommands();
+                ParseResults<SharedSuggestionProvider> lineParseResults = commandDispatcher.parse(stringReader, this.minecraft.player.connection.getSuggestionsProvider());
+                return formatText(lineParseResults, string, 0); // Use 0 as offset since we're formatting the line itself
+            } catch (Exception e) {
+                // If parsing fails, return unformatted
+                return FormattedCharSequence.forward(string, Style.EMPTY);
+            }
+        }
+        return FormattedCharSequence.forward(string, Style.EMPTY);
     }
 
     @Nullable

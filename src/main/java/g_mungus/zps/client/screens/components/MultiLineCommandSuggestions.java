@@ -358,9 +358,27 @@ public class MultiLineCommandSuggestions {
     }
 
     private FormattedCharSequence formatChat(String string, int i) {
-        // Parse each line individually for formatting
-        if (this.commandsOnly || (string.length() > 0 && string.charAt(0) == '/')) {
-            StringReader stringReader = new StringReader(string);
+        // 'string' is the visible portion of a line (after horizontal scrolling)
+        // 'i' is the horizontal scroll offset within that line (displayPos)
+        // We need to find the full line to parse it correctly
+
+        String fullValue = this.input.getValue();
+        String[] lines = fullValue.split("\n", -1);
+
+        // Find which line this visible portion belongs to
+        // by checking if line.substring(i) starts with 'string'
+        String fullLine = string; // fallback to visible string if we can't find the line
+
+        for (String line : lines) {
+            if (i <= line.length() && line.substring(Math.min(i, line.length())).startsWith(string)) {
+                fullLine = line;
+                break;
+            }
+        }
+
+        // Parse the full line
+        if (this.commandsOnly || (!fullLine.isEmpty() && fullLine.charAt(0) == '/')) {
+            StringReader stringReader = new StringReader(fullLine);
             boolean hasSlash = stringReader.canRead() && stringReader.peek() == '/';
             if (hasSlash) {
                 stringReader.skip();
@@ -370,7 +388,9 @@ public class MultiLineCommandSuggestions {
                 assert this.minecraft.player != null;
                 CommandDispatcher<SharedSuggestionProvider> commandDispatcher = this.minecraft.player.connection.getCommands();
                 ParseResults<SharedSuggestionProvider> lineParseResults = commandDispatcher.parse(stringReader, this.minecraft.player.connection.getSuggestionsProvider());
-                return formatText(lineParseResults, string, 0); // Use 0 as offset since we're formatting the line itself
+                // Format the visible portion using the full line's parse results
+                // 'i' is the horizontal offset where the visible portion starts, adjust for skipped '/'
+                return formatText(lineParseResults, string, i + (hasSlash ? 1 : 0));
             } catch (Exception e) {
                 // If parsing fails, return unformatted
                 return FormattedCharSequence.forward(string, Style.EMPTY);
@@ -408,6 +428,7 @@ public class MultiLineCommandSuggestions {
             }
         }
 
+        // Mark any remaining unparsed text as invalid
         if (parseResults.getReader().canRead()) {
             int n = Math.max(parseResults.getReader().getCursor() - i, 0);
             if (n < string.length()) {

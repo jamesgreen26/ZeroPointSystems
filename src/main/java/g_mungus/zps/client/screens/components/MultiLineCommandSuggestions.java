@@ -131,7 +131,14 @@ public class MultiLineCommandSuggestions {
                 int absoluteStartPos = suggestions.getRange().getStart() + lineStartPos;
 
                 int j = Mth.clamp(this.input.getScreenX(absoluteStartPos), 0, this.input.getScreenX(0) + this.input.getInnerWidth() - i);
-                int k = this.anchorToBottom ? this.screen.height - 12 : 72;
+
+                // Calculate Y position based on current line
+                int currentLineNumber = getCurrentLineNumber();
+                int lineHeight = 10; // LINE_HEIGHT from MultiLineEditBox
+                int inputY = this.input.getY();
+                int lineY = inputY + 4 + (currentLineNumber * lineHeight); // +4 for border
+                int k = this.anchorToBottom ? lineY - 3 : lineY + lineHeight + 3;
+
                 this.suggestions = new MultiLineCommandSuggestions.SuggestionsList(j, k, i, this.sortSuggestions(suggestions), bl);
             }
         }

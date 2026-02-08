@@ -1,10 +1,10 @@
 package g_mungus.zps.client.screens;
 
+import g_mungus.zps.client.screens.widgets.MultiLineEditBox;
 import net.minecraft.client.GameNarrator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -17,7 +17,7 @@ public class ScriptComputerEditScreen extends Screen {
 
     protected Button doneButton;
     protected Button cancelButton;
-    protected EditBox commandEdit;
+    protected MultiLineEditBox commandEdit;
 
     public ScriptComputerEditScreen() {
         super(GameNarrator.NO_TITLE);
@@ -32,7 +32,7 @@ public class ScriptComputerEditScreen extends Screen {
                 Button.builder(CommonComponents.GUI_CANCEL, arg -> this.onClose()).bounds(this.width / 2 + 4, this.height / 4 + 120 + 12, 150, 20).build()
         );
 
-        this.commandEdit = new EditBox(this.font, this.width / 2 - 150, 50, 300, this.height / 4 + 70, Component.translatable("advMode.command"));
+        this.commandEdit = new MultiLineEditBox(this.font, this.width / 2 - 150, 50, 300, this.height / 4 + 70, Component.translatable("advMode.command"));
         this.commandEdit.setMaxLength(32500);
         this.commandEdit.setResponder(this::onEdited);
         this.addWidget(this.commandEdit);

@@ -5,6 +5,7 @@ import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.CommandNode;
+import com.mojang.brigadier.tree.RootCommandNode;
 import g_mungus.zps.commands.actions.SetRedstoneCommand;
 import g_mungus.zps.commands.actions.TurnPageCommand;
 import g_mungus.zps.commands.predicates.BlockPosListPredicateCommand;
@@ -60,4 +61,33 @@ public class ZPSCommands {
             }
         }
     }
+
+    public static <S> CommandDispatcher<S> getScriptDispatcher(CommandDispatcher<S> rootDispatcher) {
+        CommandDispatcher<S> output = new CommandDispatcher<>();
+
+        CommandNode<S> sourceParent =
+                rootDispatcher.getRoot()
+                        .getChild(PREFIX)
+                        .getChild("position");
+
+        if (sourceParent != null) {
+            for (CommandNode<S> child : sourceParent.getChildren()) {
+                output.getRoot().addChild(cloneNode(child));
+            }
+        }
+
+        return output;
+    }
+
+    private static <S> CommandNode<S> cloneNode(CommandNode<S> original) {
+        CommandNode<S> copy = original.createBuilder().build();
+
+        for (CommandNode<S> child : original.getChildren()) {
+            copy.addChild(cloneNode(child));
+        }
+
+        return copy;
+    }
+
+
 }

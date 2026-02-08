@@ -26,6 +26,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
+
+import g_mungus.zps.commands.ZPSCommands;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -198,7 +200,7 @@ public class MultiLineCommandSuggestions {
 
         boolean bl2 = this.commandsOnly || bl;
         if (bl2) {
-            CommandDispatcher<SharedSuggestionProvider> commandDispatcher = this.minecraft.player.connection.getCommands();
+            CommandDispatcher<SharedSuggestionProvider> commandDispatcher = getScriptDispatcher();
             if (this.currentParse == null) {
                 this.currentParse = commandDispatcher.parse(stringReader, this.minecraft.player.connection.getSuggestionsProvider());
             }
@@ -329,10 +331,10 @@ public class MultiLineCommandSuggestions {
         int lineCursorPos = this.input.getCursorPosition() - lineStartPos;
 
         SuggestionContext<SharedSuggestionProvider> suggestionContext = commandContextBuilder.findSuggestionContext(lineCursorPos);
-        Map<CommandNode<SharedSuggestionProvider>, String> map = this.minecraft
-                .player
-                .connection
-                .getCommands()
+        assert this.minecraft.player != null;
+
+        Map<CommandNode<SharedSuggestionProvider>, String> map =
+                getScriptDispatcher()
                 .getSmartUsage(suggestionContext.parent, this.minecraft.player.connection.getSuggestionsProvider());
         List<FormattedCharSequence> list = Lists.<FormattedCharSequence>newArrayList();
         int i = 0;
@@ -386,7 +388,7 @@ public class MultiLineCommandSuggestions {
 
             try {
                 assert this.minecraft.player != null;
-                CommandDispatcher<SharedSuggestionProvider> commandDispatcher = this.minecraft.player.connection.getCommands();
+                CommandDispatcher<SharedSuggestionProvider> commandDispatcher = getScriptDispatcher();
                 ParseResults<SharedSuggestionProvider> lineParseResults = commandDispatcher.parse(stringReader, this.minecraft.player.connection.getSuggestionsProvider());
 
                 return formatText(lineParseResults, string, i);
@@ -696,5 +698,16 @@ public class MultiLineCommandSuggestions {
                     ? Component.translatable("narration.suggestion.tooltip", this.current + 1, this.suggestionList.size(), suggestion.getText(), message)
                     : Component.translatable("narration.suggestion", this.current + 1, this.suggestionList.size(), suggestion.getText());
         }
+    }
+
+    private CommandDispatcher<SharedSuggestionProvider> scriptDispatcher = null;
+
+    private CommandDispatcher<SharedSuggestionProvider> getScriptDispatcher() {
+        if (scriptDispatcher == null) {
+            assert this.minecraft.player != null;
+            CommandDispatcher<SharedSuggestionProvider> rootDispatcher = this.minecraft.player.connection.getCommands();
+            scriptDispatcher = ZPSCommands.getScriptDispatcher(rootDispatcher);
+        }
+        return scriptDispatcher;
     }
 }

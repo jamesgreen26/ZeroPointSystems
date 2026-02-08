@@ -458,10 +458,16 @@ public class MultiLineCommandSuggestions {
     }
 
     public void renderUsage(GuiGraphics arg) {
-        int i = 0;
+        // Calculate Y position based on current line
+        int currentLineNumber = getCurrentLineNumber();
+        int lineHeight = 10; // LINE_HEIGHT from MultiLineEditBox
+        int inputY = this.input.getY();
+        int lineY = inputY + 4 + (currentLineNumber * lineHeight); // +4 for border
+        int baseY = this.anchorToBottom ? lineY - 14 - 13 : lineY + lineHeight + 3;
 
+        int i = 0;
         for (FormattedCharSequence formattedCharSequence : this.commandUsage) {
-            int j = this.anchorToBottom ? this.screen.height - 14 - 13 - 12 * i : 72 + 12 * i;
+            int j = baseY + (12 * i);
             arg.fill(this.commandUsagePosition - 1, j, this.commandUsagePosition + this.commandUsageWidth + 1, j + 12, this.fillColor);
             arg.drawString(this.font, formattedCharSequence, this.commandUsagePosition, j + 2, -1);
             i++;

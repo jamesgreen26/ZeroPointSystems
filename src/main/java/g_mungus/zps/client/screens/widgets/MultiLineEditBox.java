@@ -130,6 +130,34 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 			l = k;
 		}
 
+		// Check if adding newlines would exceed the maximum number of lines
+		if (string2.contains("\n")) {
+			String string3 = new StringBuilder(this.value).replace(i, j, string2).toString();
+			int newLineCount = string3.split("\n", -1).length;
+			int maxLines = this.getMaxLines();
+
+			if (newLineCount > maxLines) {
+				// Filter out newlines that would exceed capacity
+				StringBuilder filtered = new StringBuilder();
+				int currentLines = this.value.substring(0, i).split("\n", -1).length;
+
+				for (int idx = 0; idx < string2.length(); idx++) {
+					char c = string2.charAt(idx);
+					if (c == '\n') {
+						currentLines++;
+						if (currentLines > maxLines) {
+							// Skip this and all remaining newlines
+							continue;
+						}
+					}
+					filtered.append(c);
+				}
+
+				string2 = filtered.toString();
+				l = string2.length();
+			}
+		}
+
 		String string3 = new StringBuilder(this.value).replace(i, j, string2).toString();
 		if (this.filter.test(string3)) {
 			this.value = string3;
@@ -650,6 +678,11 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 
 	public int getInnerWidth() {
 		return this.isBordered() ? this.width - 8 : this.width;
+	}
+
+	public int getMaxLines() {
+		int availableHeight = this.height - (this.bordered ? 8 : 0);
+		return Math.max(1, availableHeight / LINE_HEIGHT);
 	}
 
 	public void setHighlightPos(int i) {

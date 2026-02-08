@@ -4,10 +4,10 @@ import net.minecraft.client.GameNarrator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.level.BaseCommandBlock;
 import org.jetbrains.annotations.NotNull;
 
 public class ScriptComputerEditScreen extends Screen {
@@ -17,6 +17,7 @@ public class ScriptComputerEditScreen extends Screen {
 
     protected Button doneButton;
     protected Button cancelButton;
+    protected EditBox commandEdit;
 
     public ScriptComputerEditScreen() {
         super(GameNarrator.NO_TITLE);
@@ -30,11 +31,21 @@ public class ScriptComputerEditScreen extends Screen {
         this.cancelButton = this.addRenderableWidget(
                 Button.builder(CommonComponents.GUI_CANCEL, arg -> this.onClose()).bounds(this.width / 2 + 4, this.height / 4 + 120 + 12, 150, 20).build()
         );
+
+        this.commandEdit = new EditBox(this.font, this.width / 2 - 150, 50, 300, this.height / 4 + 70, Component.translatable("advMode.command"));
+        this.commandEdit.setMaxLength(32500);
+        this.commandEdit.setResponder(this::onEdited);
+        this.addWidget(this.commandEdit);
+        this.setInitialFocus(this.commandEdit);
     }
 
     protected void onDone() {
         final Minecraft client = this.minecraft;
         if (client != null) client.setScreen(null);
+    }
+
+    private void onEdited(String string) {
+
     }
 
 
@@ -43,7 +54,7 @@ public class ScriptComputerEditScreen extends Screen {
         this.renderBackground(arg);
         arg.drawCenteredString(this.font, SET_COMMAND_LABEL, this.width / 2, 20, 16777215);
         arg.drawString(this.font, COMMAND_LABEL, this.width / 2 - 150, 40, 10526880);
-
+        this.commandEdit.render(arg, i, j, f);
 
         super.render(arg, i, j, f);
 

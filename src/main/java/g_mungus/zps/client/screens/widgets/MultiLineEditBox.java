@@ -197,21 +197,37 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 
 		for (int m = 0; m < l; m++) {
 			if (!bl2) {
+				// Moving forward
 				int n = this.value.length();
-				k = this.value.indexOf(32, k);
-				if (k == -1) {
+
+				// Find next space or newline
+				int nextSpace = this.value.indexOf(' ', k);
+				int nextNewline = this.value.indexOf('\n', k);
+
+				// Choose the nearest boundary
+				if (nextSpace == -1 && nextNewline == -1) {
 					k = n;
+				} else if (nextSpace == -1) {
+					k = nextNewline;
+				} else if (nextNewline == -1) {
+					k = nextSpace;
 				} else {
-					while (bl && k < n && this.value.charAt(k) == ' ') {
-						k++;
-					}
+					k = Math.min(nextSpace, nextNewline);
+				}
+
+				// Skip consecutive spaces (but stop at newlines)
+				while (bl && k < n && this.value.charAt(k) == ' ') {
+					k++;
 				}
 			} else {
+				// Moving backward
+				// Skip consecutive spaces (but stop at newlines)
 				while (bl && k > 0 && this.value.charAt(k - 1) == ' ') {
 					k--;
 				}
 
-				while (k > 0 && this.value.charAt(k - 1) != ' ') {
+				// Move to start of word (stop at space or newline)
+				while (k > 0 && this.value.charAt(k - 1) != ' ' && this.value.charAt(k - 1) != '\n') {
 					k--;
 				}
 			}
@@ -247,6 +263,44 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 
 	public void moveCursorToEnd() {
 		this.moveCursorTo(this.value.length());
+	}
+
+	public void moveCursorVertically(int direction) {
+		// Split into lines
+		String[] lines = this.value.split("\n", -1);
+
+		// Find current line and position within line
+		int charCount = 0;
+		int currentLine = 0;
+		int posInLine = 0;
+
+		for (int lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+			int lineLength = lines[lineIdx].length();
+			int lineWithNewline = lineLength + (lineIdx < lines.length - 1 ? 1 : 0);
+
+			if (charCount + lineWithNewline > this.cursorPos) {
+				currentLine = lineIdx;
+				posInLine = this.cursorPos - charCount;
+				break;
+			}
+			charCount += lineWithNewline;
+		}
+
+		// Move to target line
+		int targetLine = currentLine + direction;
+		if (targetLine < 0 || targetLine >= lines.length) {
+			return; // Can't move beyond first/last line
+		}
+
+		// Calculate position in target line
+		int targetCharCount = 0;
+		for (int i = 0; i < targetLine; i++) {
+			targetCharCount += lines[i].length() + 1; // +1 for newline
+		}
+
+		// Try to maintain horizontal position, but clamp to line length
+		int targetPosInLine = Math.min(posInLine, lines[targetLine].length());
+		this.moveCursorTo(targetCharCount + targetPosInLine);
 	}
 
 	@Override
@@ -286,12 +340,18 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 
 						return true;
 					case 260:
-					case 264:
-					case 265:
 					case 266:
 					case 267:
 					default:
 						return false;
+					case 264:
+						// Down arrow
+						this.moveCursorVertically(1);
+						return true;
+					case 265:
+						// Up arrow
+						this.moveCursorVertically(-1);
+						return true;
 					case 261:
 						if (this.isEditable) {
 							this.shiftPressed = false;
@@ -351,13 +411,35 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 
 	@Override
 	public void onClick(double d, double e) {
-		int i = Mth.floor(d) - this.getX();
+		int clickX = Mth.floor(d) - this.getX();
+		int clickY = Mth.floor(e) - this.getY();
 		if (this.bordered) {
-			i -= 4;
+			clickX -= 4;
+			clickY -= 4;
 		}
 
-		String string = this.font.plainSubstrByWidth(this.value.substring(this.displayPos), this.getInnerWidth());
-		this.moveCursorTo(this.font.plainSubstrByWidth(string, i).length() + this.displayPos);
+		// Determine which line was clicked
+		int lineIndex = clickY / LINE_HEIGHT;
+		String[] lines = this.value.split("\n", -1);
+
+		if (lineIndex >= lines.length) {
+			// Clicked below all lines, move to end
+			this.moveCursorTo(this.value.length());
+			return;
+		}
+
+		// Calculate position up to the clicked line
+		int positionUpToLine = 0;
+		for (int i = 0; i < lineIndex && i < lines.length; i++) {
+			positionUpToLine += lines[i].length() + 1; // +1 for newline
+		}
+
+		// Find position within the clicked line
+		String clickedLine = lines[lineIndex];
+		String visiblePart = this.font.plainSubstrByWidth(clickedLine, this.getInnerWidth());
+		int posInLine = this.font.plainSubstrByWidth(visiblePart, clickX).length();
+
+		this.moveCursorTo(positionUpToLine + posInLine);
 	}
 
 	@Override
@@ -373,84 +455,110 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 				arg.fill(this.getX(), this.getY(), this.getX() + this.width, this.getY() + this.height, -16777216);
 			}
 
-			int k = this.isEditable ? this.textColor : this.textColorUneditable;
-			int l = this.cursorPos - this.displayPos;
-			int m = this.highlightPos - this.displayPos;
-			String string = this.font.plainSubstrByWidth(this.value.substring(this.displayPos), this.getInnerWidth());
-			String visibleText = this.value.substring(this.displayPos);
-			String[] lines = visibleText.split("\n", -1);
-
-
-			boolean bl = l >= 0 && l <= string.length();
-			boolean bl2 = this.isFocused() && this.frame / 6 % 2 == 0 && bl;
-			int x = this.bordered ? this.getX() + 4 : this.getX();
-			int o = this.bordered ? this.getY() + 4 : this.getY();
-			int p = x;
-			if (m > string.length()) {
-				m = string.length();
-			}
-
-
-			int y = o;
+			int textColor = this.isEditable ? this.textColor : this.textColorUneditable;
+			int startX = this.bordered ? this.getX() + 4 : this.getX();
+			int startY = this.bordered ? this.getY() + 4 : this.getY();
 			int maxWidth = this.getInnerWidth();
 
+			String[] lines = this.value.split("\n", -1);
 
-			for (String line : lines) {
-				if (y + LINE_HEIGHT > this.getY() + this.height) {
-					break; // out of vertical space
+			// Calculate which line the cursor and highlight are on
+			int cursorLine = -1, cursorPosInLine = -1;
+			int highlightLine = -1, highlightPosInLine = -1;
+			int charCount = 0;
+
+			for (int lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+				int lineLength = lines[lineIdx].length();
+				int lineEnd = charCount + lineLength;
+
+				if (cursorLine == -1 && this.cursorPos >= charCount && this.cursorPos <= lineEnd) {
+					cursorLine = lineIdx;
+					cursorPosInLine = this.cursorPos - charCount;
 				}
 
-				// Clip line horizontally
+				if (highlightLine == -1 && this.highlightPos >= charCount && this.highlightPos <= lineEnd) {
+					highlightLine = lineIdx;
+					highlightPosInLine = this.highlightPos - charCount;
+				}
+
+				charCount += lineLength + 1; // +1 for newline
+			}
+
+			// Render lines
+			int y = startY;
+			for (int lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+				if (y + LINE_HEIGHT > this.getY() + this.height) {
+					break;
+				}
+
+				String line = lines[lineIdx];
 				String clipped = this.font.plainSubstrByWidth(line, maxWidth);
 
 				arg.drawString(
 						this.font,
-						this.formatter.apply(clipped, this.displayPos),
-						x,
+						this.formatter.apply(clipped, 0),
+						startX,
 						y,
-						this.isEditable ? this.textColor : this.textColorUneditable
+						textColor
 				);
+
+				// Render cursor if on this line
+				if (cursorLine == lineIdx && this.isFocused() && this.frame / 6 % 2 == 0) {
+					int cursorX = startX + this.font.width(clipped.substring(0, Math.min(cursorPosInLine, clipped.length())));
+					boolean atEnd = this.cursorPos < this.value.length() || this.value.length() >= this.getMaxLength();
+
+					if (atEnd) {
+						arg.fill(RenderType.guiOverlay(), cursorX, y - 1, cursorX + 1, y + 10, CURSOR_INSERT_COLOR);
+					} else {
+						arg.drawString(this.font, CURSOR_APPEND_CHARACTER, cursorX, y, textColor);
+					}
+				}
+
+				// Render highlight if it overlaps this line
+				if (this.cursorPos != this.highlightPos) {
+					int highlightStart = -1, highlightEnd = -1;
+
+					int minPos = Math.min(this.cursorPos, this.highlightPos);
+					int maxPos = Math.max(this.cursorPos, this.highlightPos);
+
+					// Calculate character range for this line
+					int lineStartChar = 0;
+					for (int k = 0; k < lineIdx; k++) {
+						lineStartChar += lines[k].length() + 1;
+					}
+					int lineEndChar = lineStartChar + lines[lineIdx].length();
+
+					// Check if highlight overlaps this line
+					if (maxPos > lineStartChar && minPos < lineEndChar) {
+						highlightStart = Math.max(0, minPos - lineStartChar);
+						highlightEnd = Math.min(lines[lineIdx].length(), maxPos - lineStartChar);
+
+						String beforeHighlight = clipped.substring(0, Math.min(highlightStart, clipped.length()));
+						String highlighted = clipped.substring(Math.min(highlightStart, clipped.length()), Math.min(highlightEnd, clipped.length()));
+
+						int x1 = startX + this.font.width(beforeHighlight);
+						int x2 = x1 + this.font.width(highlighted);
+
+						this.renderHighlight(arg, x1, y - 1, x2, y + 10);
+					}
+				}
 
 				y += LINE_HEIGHT;
 			}
 
-//			if (!string.isEmpty()) {
-//				String string2 = bl ? string.substring(0, l) : string;
-//				p = arg.drawString(this.font, this.formatter.apply(string2, this.displayPos), x, o, k);
-//			}
-
-			boolean bl3 = this.cursorPos < this.value.length() || this.value.length() >= this.getMaxLength();
-			int q = p;
-			if (!bl) {
-				q = l > 0 ? x + this.width : x;
-			} else if (bl3) {
-				q = p - 1;
-				p--;
+			// Render hint if empty and not focused
+			if (this.hint != null && this.value.isEmpty() && !this.isFocused()) {
+				arg.drawString(this.font, this.hint, startX, startY, textColor);
 			}
 
-			if (!string.isEmpty() && bl && l < string.length()) {
-				arg.drawString(this.font, (FormattedCharSequence)this.formatter.apply(string.substring(l), this.cursorPos), p, o, k);
-			}
-
-			if (this.hint != null && string.isEmpty() && !this.isFocused()) {
-				arg.drawString(this.font, this.hint, p, o, k);
-			}
-
-			if (!bl3 && this.suggestion != null) {
-				arg.drawString(this.font, this.suggestion, q - 1, o, -8355712);
-			}
-
-			if (bl2) {
-				if (bl3) {
-					arg.fill(RenderType.guiOverlay(), q, o - 1, q + 1, o + 1 + 9, -3092272);
-				} else {
-					arg.drawString(this.font, "_", q, o, k);
+			// Render suggestion (if any)
+			if (this.suggestion != null && this.cursorPos == this.value.length()) {
+				int cursorX = startX;
+				if (cursorLine >= 0 && cursorLine < lines.length) {
+					cursorX += this.font.width(lines[cursorLine].substring(0, cursorPosInLine));
 				}
-			}
-
-			if (m != l) {
-				int r = x + this.font.width(string.substring(0, m));
-				this.renderHighlight(arg, q, o - 1, r - 1, o + 1 + 9);
+				int suggestY = startY + (cursorLine >= 0 ? cursorLine * LINE_HEIGHT : 0);
+				arg.drawString(this.font, this.suggestion, cursorX, suggestY, -8355712);
 			}
 		}
 	}
@@ -548,24 +656,59 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 		int j = this.value.length();
 		this.highlightPos = Mth.clamp(i, 0, j);
 		if (this.font != null) {
-			if (this.displayPos > j) {
-				this.displayPos = j;
+			// Split text into lines to find which line contains the highlight position
+			String[] lines = this.value.split("\n", -1);
+
+			// Find which line the highlight position is on
+			int charCount = 0;
+			int currentLine = 0;
+			int posInLine = 0;
+
+			for (int lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+				int lineLength = lines[lineIdx].length();
+				// +1 for the newline character (except on last line)
+				int lineWithNewline = lineLength + (lineIdx < lines.length - 1 ? 1 : 0);
+
+				if (charCount + lineWithNewline >= this.highlightPos) {
+					currentLine = lineIdx;
+					posInLine = this.highlightPos - charCount;
+					break;
+				}
+				charCount += lineWithNewline;
 			}
 
-			int k = this.getInnerWidth();
-			String string = this.font.plainSubstrByWidth(this.value.substring(this.displayPos), k);
-			int l = string.length() + this.displayPos;
-			if (this.highlightPos == this.displayPos) {
-				this.displayPos = this.displayPos - this.font.plainSubstrByWidth(this.value, k, true).length();
-			}
+			// Calculate displayPos relative to the current line
+			if (currentLine < lines.length) {
+				String currentLineText = lines[currentLine];
+				int lineStart = charCount - (currentLine > 0 ? lines[currentLine].length() : 0);
 
-			if (this.highlightPos > l) {
-				this.displayPos = this.displayPos + (this.highlightPos - l);
-			} else if (this.highlightPos <= this.displayPos) {
-				this.displayPos = this.displayPos - (this.displayPos - this.highlightPos);
-			}
+				// Adjust displayPos to ensure highlight is visible within the line
+				int k = this.getInnerWidth();
 
-			this.displayPos = Mth.clamp(this.displayPos, 0, j);
+				// Clamp displayPos to the current line bounds
+				int lineEnd = lineStart + currentLineText.length();
+				if (this.displayPos < lineStart) {
+					this.displayPos = lineStart;
+				} else if (this.displayPos > lineEnd) {
+					this.displayPos = lineEnd;
+				}
+
+				// Ensure the highlight position is visible
+				String visiblePart = this.font.plainSubstrByWidth(
+					currentLineText.substring(Math.max(0, this.displayPos - lineStart)), k);
+				int visibleEnd = this.displayPos + visiblePart.length();
+
+				if (this.highlightPos >= visibleEnd) {
+					// Scroll right to show the highlight
+					this.displayPos = this.displayPos + (this.highlightPos - visibleEnd + 1);
+				} else if (this.highlightPos < this.displayPos) {
+					// Scroll left to show the highlight
+					this.displayPos = this.highlightPos;
+				}
+
+				// Final clamp to valid range
+				this.displayPos = Mth.clamp(this.displayPos, lineStart, lineEnd);
+			}
 		}
 	}
 
@@ -586,7 +729,29 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 	}
 
 	public int getScreenX(int i) {
-		return i > this.value.length() ? this.getX() : this.getX() + this.font.width(this.value.substring(0, i));
+		if (i > this.value.length()) {
+			return this.getX();
+		}
+
+		// Split into lines and find which line contains position i
+		String[] lines = this.value.split("\n", -1);
+		int charCount = 0;
+		int startX = this.bordered ? this.getX() + 4 : this.getX();
+
+		for (int lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+			int lineLength = lines[lineIdx].length();
+			int lineEnd = charCount + lineLength;
+
+			if (i >= charCount && i <= lineEnd) {
+				// Position is on this line
+				int posInLine = i - charCount;
+				return startX + this.font.width(lines[lineIdx].substring(0, posInLine));
+			}
+
+			charCount += lineLength + 1; // +1 for newline
+		}
+
+		return startX;
 	}
 
 	@Override

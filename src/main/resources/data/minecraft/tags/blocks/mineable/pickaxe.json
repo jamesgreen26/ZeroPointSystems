@@ -8,6 +8,11 @@
     "zps:stepdown_transformer",
     "zps:redstone_converter",
     "zps:octo_controller",
-    "zps:cable_insulation"
+    "zps:cable_insulation",
+    "zps:bauxite",
+    "zps:aluminum_block",
+    "zps:lithium_ore",
+    "zps:deepslate_lithium_ore",
+    "zps:lithium_block"
   ]
 }

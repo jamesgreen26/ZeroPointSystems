@@ -40,6 +40,17 @@ public class ModCreativeTabs {
                     ModItems.RADIO_RECEIVER,
                     ModItems.RADIO_ANTENNA,
 
+                    ModItems.BAUXITE,
+                    ModItems.LITHIUM_ORE,
+                    ModItems.DEEPSLATE_LITHIUM_ORE,
+                    ModItems.ALUMINUM_INGOT,
+                    ModItems.ALUMINUM_NUGGET,
+                    ModItems.ALUMINUM_BLOCK,
+                    ModItems.RAW_LITHIUM,
+                    ModItems.LITHIUM_INGOT,
+                    ModItems.LITHIUM_NUGGET,
+                    ModItems.LITHIUM_BLOCK,
+
                     ModItems.SPACE_METAL_INGOT,
                     ModItems.SPACE_METAL_PLATE,
                     ModItems.SPACE_METAL_MESH,

@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "zps:lithium_ingot"
+    }
+  ],
+  "result": {
+    "count": 9,
+    "item": "zps:lithium_nugget"
+  }
+}

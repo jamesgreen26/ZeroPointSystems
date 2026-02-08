@@ -1,0 +1,6 @@
+{
+  "type": "forge:add_features",
+  "features": "zps:ore_lithium",
+  "biomes": "#minecraft:is_overworld",
+  "step": "underground_ores"
+}

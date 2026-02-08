@@ -136,6 +136,33 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
 
+/// RESOURCE BLOCKS
+    public static final RegistryObject<Block> BAUXITE = BLOCKS.register("bauxite",
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.ANDESITE)
+                    .sound(SoundType.NETHERRACK)
+            )
+    );
+
+    public static final RegistryObject<DropExperienceBlock> LITHIUM_ORE = BLOCKS.register("lithium_ore",
+            () -> new DropExperienceBlock(BlockBehaviour.Properties.copy(Blocks.DIAMOND_ORE)
+
+            )
+    );
+
+    public static final RegistryObject<DropExperienceBlock> DEEPSLATE_LITHIUM_ORE = BLOCKS.register("deepslate_lithium_ore",
+            () -> new DropExperienceBlock(BlockBehaviour.Properties.copy(Blocks.DIAMOND_ORE)
+
+            )
+    );
+    public static final RegistryObject<Block> ALUMINUM_BLOCK = BLOCKS.register("aluminum_block",
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.COPPER_BLOCK)
+            )
+    );
+    public static final RegistryObject<Block> LITHIUM_BLOCK = BLOCKS.register("lithium_block",
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.GOLD_BLOCK)
+            )
+    );
+
 /// DECOR BLOCKS
 
     public static final RegistryObject<Block> SPACE_TRUSS = BLOCKS.register("space_truss",

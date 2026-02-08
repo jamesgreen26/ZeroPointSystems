@@ -87,6 +87,27 @@ public class ModItems {
     public static final RegistryObject<Item> SPACE_METAL_SPRING = ITEMS.register("space_metal_spring",
             () -> new Item(new Item.Properties()));
 
+    public static final RegistryObject<Item> BAUXITE = ITEMS.register("bauxite",
+            () -> new BlockItem(ModBlocks.BAUXITE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> LITHIUM_ORE = ITEMS.register("lithium_ore",
+            () -> new BlockItem(ModBlocks.LITHIUM_ORE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> DEEPSLATE_LITHIUM_ORE = ITEMS.register("deepslate_lithium_ore",
+            () -> new BlockItem(ModBlocks.DEEPSLATE_LITHIUM_ORE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> ALUMINUM_INGOT = ITEMS.register("aluminum_ingot",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> ALUMINUM_NUGGET = ITEMS.register("aluminum_nugget",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> ALUMINUM_BLOCK = ITEMS.register("aluminum_block",
+            () -> new BlockItem(ModBlocks.ALUMINUM_BLOCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> RAW_LITHIUM = ITEMS.register("raw_lithium",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> LITHIUM_INGOT = ITEMS.register("lithium_ingot",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> LITHIUM_NUGGET = ITEMS.register("lithium_nugget",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> LITHIUM_BLOCK = ITEMS.register("lithium_block",
+            () -> new BlockItem(ModBlocks.LITHIUM_BLOCK.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> CAPACITOR = ITEMS.register("capacitor",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> TRANSISTOR = ITEMS.register("transistor",

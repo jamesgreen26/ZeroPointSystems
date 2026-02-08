@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "lithium_ingot",
+  "key": {
+    "#": {
+      "item": "zps:lithium_nugget"
+    }
+  },
+  "pattern": [
+    "###",
+    "###",
+    "###"
+  ],
+  "result": {
+    "item": "zps:lithium_ingot"
+  },
+  "show_notification": true
+}

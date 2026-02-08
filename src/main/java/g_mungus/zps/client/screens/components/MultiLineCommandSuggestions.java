@@ -388,9 +388,8 @@ public class MultiLineCommandSuggestions {
                 assert this.minecraft.player != null;
                 CommandDispatcher<SharedSuggestionProvider> commandDispatcher = this.minecraft.player.connection.getCommands();
                 ParseResults<SharedSuggestionProvider> lineParseResults = commandDispatcher.parse(stringReader, this.minecraft.player.connection.getSuggestionsProvider());
-                // Format the visible portion using the full line's parse results
-                // 'i' is the horizontal offset where the visible portion starts, adjust for skipped '/'
-                return formatText(lineParseResults, string, i + (hasSlash ? 1 : 0));
+
+                return formatText(lineParseResults, string, i);
             } catch (Exception e) {
                 // If parsing fails, return unformatted
                 return FormattedCharSequence.forward(string, Style.EMPTY);

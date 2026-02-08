@@ -38,7 +38,7 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 	private static final int BORDER_COLOR_FOCUSED = -1;
 	private static final int BORDER_COLOR = -6250336;
 	private static final int BACKGROUND_COLOR = -16777216;
-	private static final int LINE_HEIGHT = 9;
+	private static final int LINE_HEIGHT = 10;
 	private final Font font;
 	private String value = "";
 	private int maxLength = 32;
@@ -377,24 +377,52 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 			int l = this.cursorPos - this.displayPos;
 			int m = this.highlightPos - this.displayPos;
 			String string = this.font.plainSubstrByWidth(this.value.substring(this.displayPos), this.getInnerWidth());
+			String visibleText = this.value.substring(this.displayPos);
+			String[] lines = visibleText.split("\n", -1);
+
+
 			boolean bl = l >= 0 && l <= string.length();
 			boolean bl2 = this.isFocused() && this.frame / 6 % 2 == 0 && bl;
-			int n = this.bordered ? this.getX() + 4 : this.getX();
+			int x = this.bordered ? this.getX() + 4 : this.getX();
 			int o = this.bordered ? this.getY() + 4 : this.getY();
-			int p = n;
+			int p = x;
 			if (m > string.length()) {
 				m = string.length();
 			}
 
-			if (!string.isEmpty()) {
-				String string2 = bl ? string.substring(0, l) : string;
-				p = arg.drawString(this.font, (FormattedCharSequence)this.formatter.apply(string2, this.displayPos), n, o, k);
+
+			int y = o;
+			int maxWidth = this.getInnerWidth();
+
+
+			for (String line : lines) {
+				if (y + LINE_HEIGHT > this.getY() + this.height) {
+					break; // out of vertical space
+				}
+
+				// Clip line horizontally
+				String clipped = this.font.plainSubstrByWidth(line, maxWidth);
+
+				arg.drawString(
+						this.font,
+						this.formatter.apply(clipped, this.displayPos),
+						x,
+						y,
+						this.isEditable ? this.textColor : this.textColorUneditable
+				);
+
+				y += LINE_HEIGHT;
 			}
+
+//			if (!string.isEmpty()) {
+//				String string2 = bl ? string.substring(0, l) : string;
+//				p = arg.drawString(this.font, this.formatter.apply(string2, this.displayPos), x, o, k);
+//			}
 
 			boolean bl3 = this.cursorPos < this.value.length() || this.value.length() >= this.getMaxLength();
 			int q = p;
 			if (!bl) {
-				q = l > 0 ? n + this.width : n;
+				q = l > 0 ? x + this.width : x;
 			} else if (bl3) {
 				q = p - 1;
 				p--;
@@ -421,7 +449,7 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 			}
 
 			if (m != l) {
-				int r = n + this.font.width(string.substring(0, m));
+				int r = x + this.font.width(string.substring(0, m));
 				this.renderHighlight(arg, q, o - 1, r - 1, o + 1 + 9);
 			}
 		}

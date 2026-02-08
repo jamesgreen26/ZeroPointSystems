@@ -2,6 +2,7 @@ package g_mungus.zps.client.screens;
 
 import g_mungus.zps.client.screens.components.MultiLineEditBox;
 import g_mungus.zps.client.screens.components.MultiLineCommandSuggestions;
+import g_mungus.zps.client.screens.components.ScriptDispatcherProvider;
 import net.minecraft.client.GameNarrator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -45,7 +46,7 @@ public class ScriptComputerEditScreen extends Screen {
         this.addWidget(this.commandEdit);
         this.setInitialFocus(this.commandEdit);
 
-        this.commandSuggestions = new MultiLineCommandSuggestions(this.minecraft, this, this.commandEdit, this.font, true, true, 0, 7, false, Integer.MIN_VALUE);
+        this.commandSuggestions = new MultiLineCommandSuggestions(this.minecraft, new ScriptDispatcherProvider(this.minecraft), this, this.commandEdit, this.font, true, true, 0, 7, false, Integer.MIN_VALUE);
         this.commandSuggestions.setAllowSuggestions(true);
         this.commandSuggestions.updateCommandInfo();
     }

@@ -10,21 +10,21 @@ import net.minecraftforge.registries.RegistryObject;
 
 @SuppressWarnings("ConstantConditions")
 public class ModBlockEntities {
-    public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES = 
+    public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
         DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, ZPSMod.MOD_ID);
 
     public static final RegistryObject<BlockEntityType<RedstoneConverterBlockEntity>> REDSTONE_CONVERTER = 
-        BLOCK_ENTITIES.register("redstone_converter", 
+        BLOCK_ENTITIES.register("redstone_converter",
             () -> BlockEntityType.Builder.of(RedstoneConverterBlockEntity::new, 
                 ModBlocks.REDSTONE_CONVERTER.get()).build(null));
 
     public static final RegistryObject<BlockEntityType<StepUpTransformerBlockEntity>> STEPUP_TRANSFORMER = 
-        BLOCK_ENTITIES.register("stepup_transformer", 
+        BLOCK_ENTITIES.register("stepup_transformer",
             () -> BlockEntityType.Builder.of(StepUpTransformerBlockEntity::new, 
                 ModBlocks.STEPUP_TRANSFORMER.get()).build(null));
 
     public static final RegistryObject<BlockEntityType<StepDownTransformerBlockEntity>> STEPDOWN_TRANSFORMER = 
-        BLOCK_ENTITIES.register("stepdown_transformer", 
+        BLOCK_ENTITIES.register("stepdown_transformer",
             () -> BlockEntityType.Builder.of(StepDownTransformerBlockEntity::new, 
                 ModBlocks.STEPDOWN_TRANSFORMER.get()).build(null));
 
@@ -78,9 +78,9 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(SerialBusBlockEntity::new,
                             ModBlocks.SERIAL_BUS.get()).build(null));
 
-    public static final RegistryObject<BlockEntityType<ScriptComputerBlockEntity>> SCRIPT_COMPUTER =
-            BLOCK_ENTITIES.register("script_computer",
-                    () -> BlockEntityType.Builder.of(ScriptComputerBlockEntity::new,
-                            ModBlocks.SCRIPT_COMPUTER.get()).build(null));
+    public static final RegistryObject<BlockEntityType<ScriptTerminalBlockEntity>> SCRIPT_TERMINAL =
+            BLOCK_ENTITIES.register("script_terminal",
+                    () -> BlockEntityType.Builder.of(ScriptTerminalBlockEntity::new,
+                            ModBlocks.SCRIPT_TERMINAL.get()).build(null));
 
 } 

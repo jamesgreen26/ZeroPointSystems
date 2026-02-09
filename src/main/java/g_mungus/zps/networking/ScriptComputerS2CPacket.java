@@ -1,6 +1,6 @@
 package g_mungus.zps.networking;
 
-import g_mungus.zps.client.screens.ScriptComputerEditScreen;
+import g_mungus.zps.client.screens.ScriptTerminalScreen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
@@ -27,7 +27,7 @@ public record ScriptComputerS2CPacket(BlockPos computerPos, boolean loop, String
         NetworkEvent.Context context = contextSupplier.get();
         context.enqueueWork(() -> {
             // This runs on the client side
-            ScriptComputerEditScreen.openWithData(packet.computerPos, packet.contents, packet.loop);
+            ScriptTerminalScreen.openWithData(packet.computerPos, packet.contents, packet.loop);
         });
         context.setPacketHandled(true);
     }

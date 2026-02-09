@@ -1,6 +1,6 @@
 package g_mungus.zps.blockentity.light_pipe;
 
-import g_mungus.zps.block.cableNetwork.light_pipe.ScriptComputerBlock;
+import g_mungus.zps.block.cableNetwork.light_pipe.ScriptTerminalBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.NetworkTerminalImpl;
 import g_mungus.zps.networking.ScriptComputerC2SPacket;
@@ -13,9 +13,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 import java.util.List;
 
-public class ScriptComputerBlockEntity extends NetworkTerminalImpl implements LightPipeDataSender, ScriptComputer {
-    public ScriptComputerBlockEntity(BlockPos arg2, BlockState arg3) {
-        super(ModBlockEntities.SCRIPT_COMPUTER.get(), arg2, arg3);
+public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements LightPipeDataSender, ScriptComputer {
+    public ScriptTerminalBlockEntity(BlockPos arg2, BlockState arg3) {
+        super(ModBlockEntities.SCRIPT_TERMINAL.get(), arg2, arg3);
     }
 
     private String allCommands = "";
@@ -27,8 +27,8 @@ public class ScriptComputerBlockEntity extends NetworkTerminalImpl implements Li
 
     public void tick() {
         BlockState blockState = getBlockState();
-        if (!(blockState.getBlock() instanceof ScriptComputerBlock) || level == null) return;
-        boolean powered = blockState.getValue(ScriptComputerBlock.POWERED);
+        if (!(blockState.getBlock() instanceof ScriptTerminalBlock) || level == null) return;
+        boolean powered = blockState.getValue(ScriptTerminalBlock.POWERED);
 
         List<String> commands = Arrays.stream(allCommands.split("\n")).filter(it -> !it.isBlank()).toList();
 

@@ -18,9 +18,9 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class ScriptComputerEditScreen extends Screen {
+public class ScriptTerminalScreen extends Screen {
 
-    private static final Component SET_COMMAND_LABEL = Component.literal("Script Computer");
+    private static final Component SET_COMMAND_LABEL = Component.literal("Script Terminal");
     private static final Component COMMAND_LABEL = Component.literal("ZPS Script Command");
     protected final @Nullable ScriptComputer computer;
     protected final boolean debug;
@@ -32,7 +32,7 @@ public class ScriptComputerEditScreen extends Screen {
     protected MultiLineEditBox commandEdit;
     MultiLineCommandSuggestions commandSuggestions;
 
-    public ScriptComputerEditScreen(@Nullable ScriptComputer computer, boolean debug) {
+    public ScriptTerminalScreen(@Nullable ScriptComputer computer, boolean debug) {
         super(GameNarrator.NO_TITLE);
 
         this.computer = computer;
@@ -139,7 +139,7 @@ public class ScriptComputerEditScreen extends Screen {
 
         BlockEntity blockEntity = minecraft.level.getBlockEntity(pos);
         if (blockEntity instanceof ScriptComputer scriptComputer) {
-            ScriptComputerEditScreen screen = new ScriptComputerEditScreen(scriptComputer, false);
+            ScriptTerminalScreen screen = new ScriptTerminalScreen(scriptComputer, false);
             screen.initialCommand = commandData;
             screen.initialLoop = loop;
             minecraft.setScreen(screen);

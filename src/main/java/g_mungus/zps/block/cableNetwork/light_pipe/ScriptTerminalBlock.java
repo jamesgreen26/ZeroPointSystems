@@ -5,7 +5,7 @@ import g_mungus.zps.block.cableNetwork.core.CableComponentBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.blockentity.light_pipe.ScriptComputer;
-import g_mungus.zps.blockentity.light_pipe.ScriptComputerBlockEntity;
+import g_mungus.zps.blockentity.light_pipe.ScriptTerminalBlockEntity;
 import g_mungus.zps.networking.ScriptComputerS2CPacket;
 import g_mungus.zps.networking.ZPSGamePackets;
 import net.minecraft.core.BlockPos;
@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class ScriptComputerBlock extends CableComponentBlock implements EntityBlock {
+public class ScriptTerminalBlock extends CableComponentBlock implements EntityBlock {
 
 
     public static final BooleanProperty CONNECTED = BooleanProperty.create("connected");
@@ -41,13 +41,13 @@ public class ScriptComputerBlock extends CableComponentBlock implements EntityBl
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
 
 
-    public ScriptComputerBlock(Properties arg) {
+    public ScriptTerminalBlock(Properties arg) {
         super(arg);
         this.registerDefaultState(this.stateDefinition.any().setValue(CONNECTED, false).setValue(FACING, Direction.NORTH).setValue(POWERED, false));
     }
 
     @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> arg) {
+    protected void createBlockStateDefinition(StateDefinition.@NotNull Builder<Block, BlockState> arg) {
         super.createBlockStateDefinition(arg);
         arg.add(CONNECTED, FACING, POWERED);
     }
@@ -132,14 +132,14 @@ public class ScriptComputerBlock extends CableComponentBlock implements EntityBl
 
     @Override
     public @Nullable BlockEntity newBlockEntity(@NotNull BlockPos arg, @NotNull BlockState arg2) {
-        return new ScriptComputerBlockEntity(arg, arg2);
+        return new ScriptTerminalBlockEntity(arg, arg2);
     }
 
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, @NotNull BlockState state, @NotNull BlockEntityType<T> type) {
         return level.isClientSide() ? null : (level1, pos, state1, blockEntity) -> {
-            if (blockEntity instanceof ScriptComputerBlockEntity it) {
+            if (blockEntity instanceof ScriptTerminalBlockEntity it) {
                 it.tick();
             }
         };

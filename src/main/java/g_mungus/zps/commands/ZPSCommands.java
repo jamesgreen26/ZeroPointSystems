@@ -2,6 +2,10 @@ package g_mungus.zps.commands;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.StringReader;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.builder.ArgumentBuilder;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.CommandNode;
@@ -75,6 +79,11 @@ public class ZPSCommands {
                 output.getRoot().addChild(cloneNode(child));
             }
         }
+
+        output.register(
+                LiteralArgumentBuilder.<S>literal("WAIT").then(
+                RequiredArgumentBuilder.<S, Integer>argument("cycles", IntegerArgumentType.integer(0, 15))
+                        .executes((a) -> 1)));
 
         return output;
     }

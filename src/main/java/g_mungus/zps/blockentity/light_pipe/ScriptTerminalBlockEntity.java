@@ -40,21 +40,46 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         boolean shouldRestart = powered && (!wasPowered || loop);
         if (shouldContinue || shouldRestart) {
             if (tickDelay <= 0) {
-                currentCommand = commands.get(head);
-                updateSignal(level);
+                String command = commands.get(head);
+                if (command.startsWith("/")) command = command.substring(1);
+                processCommand(command);
                 head++;
-                tickDelay = delay - 1; // delay value from GUI (2t, 4t, 8t, or 16t)
             } else {
                 tickDelay--;
             }
-        } else if (!currentCommand.isEmpty()) {
-            currentCommand = "";
-            updateSignal(level);
-        }
+        } else clearOutput();
 
         wasPowered = powered;
     }
 
+    private void processCommand(String command) {
+        if (command.startsWith("WAIT ")) {
+            executeWaitCommand(command);
+            clearOutput();
+        } else {
+            currentCommand = command;
+            updateSignal(level);
+            tickDelay = delay - 1; // delay value from GUI (2t, 4t, 8t, or 16t)
+        }
+    }
+
+    private void clearOutput() {
+        if (!currentCommand.isEmpty()) {
+            currentCommand = "";
+            updateSignal(level);
+        }
+    }
+
+    private void executeWaitCommand(String command) {
+        try {
+            int cycles = Integer.parseInt(command.substring(5));
+            if (cycles > 1) {
+                tickDelay = (delay * cycles) - 1;
+            }
+        } catch (Exception e) {
+            tickDelay = delay - 1;
+        }
+    }
 
 
     @Override

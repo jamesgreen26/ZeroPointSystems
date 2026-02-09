@@ -29,8 +29,15 @@ public class ScriptTerminalScreen extends Screen {
 
     protected Button doneButton;
     protected Button cancelButton;
+    protected Button modeButton;
+    protected Button delayButton;
     protected MultiLineEditBox commandEdit;
     MultiLineCommandSuggestions commandSuggestions;
+
+    private boolean isRepeatMode = false;
+    private int delayIndex = 1;
+    private static final String[] DELAY_KEYS = {"2t", "4t", "8t", "16t"};
+    private static final int[] DELAY_VALUES = {2, 4, 8, 16};
 
     public ScriptTerminalScreen(@Nullable ScriptComputer computer, boolean debug) {
         super(GameNarrator.NO_TITLE);
@@ -52,11 +59,34 @@ public class ScriptTerminalScreen extends Screen {
 
     @Override
     protected void init() {
+        // Initialize mode from computer or initialLoop
+        if (initialCommand != null) {
+            isRepeatMode = initialLoop;
+        } else if (computer != null) {
+            isRepeatMode = computer.getLoop();
+        }
+
         this.doneButton = this.addRenderableWidget(
                 Button.builder(CommonComponents.GUI_DONE, arg -> this.onDone()).bounds(this.width / 2 - 150 - 2, this.height / 4 + 120 + 12, 148, 20).build()
         );
         this.cancelButton = this.addRenderableWidget(
                 Button.builder(CommonComponents.GUI_CANCEL, arg -> this.onClose()).bounds(this.width / 2 + 4, this.height / 4 + 120 + 12, 148, 20).build()
+        );
+
+        // Delay button (cycles through 0t, 2t, 4t, 8t)
+        this.delayButton = this.addRenderableWidget(
+                Button.builder(Component.literal(DELAY_KEYS[delayIndex]), arg -> {
+                    delayIndex = (delayIndex + 1) % DELAY_KEYS.length;
+                    this.delayButton.setMessage(Component.literal(DELAY_KEYS[delayIndex]));
+                }).bounds(this.width / 2 + 62, 25, 24, 20).build()
+        );
+
+        // Mode button (toggles between IMPULSE and REPEAT)
+        this.modeButton = this.addRenderableWidget(
+                Button.builder(Component.literal(isRepeatMode ? "REPEAT" : "IMPULSE"), arg -> {
+                    isRepeatMode = !isRepeatMode;
+                    this.modeButton.setMessage(Component.literal(isRepeatMode ? "REPEAT" : "IMPULSE"));
+                }).bounds(this.width / 2 + 90, 25, 60, 20).build()
         );
 
         this.commandEdit = new MultiLineEditBox(this.font, this.width / 2 - 150, 50, 300, this.height / 4 + 70, Component.translatable("advMode.command"));
@@ -87,9 +117,8 @@ public class ScriptTerminalScreen extends Screen {
     protected void onDone() {
         final Minecraft client = this.minecraft;
         if (computer != null) {
-            // Use initialLoop if it was set from the packet, otherwise get from computer
-            boolean loopValue = initialCommand != null ? initialLoop : computer.getLoop();
-            ZPSGamePackets.INSTANCE.sendToServer(new ScriptComputerC2SPacket(computer.getPos(), loopValue, commandEdit.getValue()));
+            // Use the current isRepeatMode from the button
+            ZPSGamePackets.INSTANCE.sendToServer(new ScriptComputerC2SPacket(computer.getPos(), isRepeatMode, commandEdit.getValue()));
         }
         if (client != null) client.setScreen(null);
     }

@@ -73,8 +73,10 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
     private void executeWaitCommand(String command) {
         try {
             int cycles = Integer.parseInt(command.substring(5));
-            if (cycles > 1) {
+            if (cycles > 0) {
                 tickDelay = (delay * cycles) - 1;
+            } else {
+                tickDelay = delay - 1;
             }
         } catch (Exception e) {
             tickDelay = delay - 1;

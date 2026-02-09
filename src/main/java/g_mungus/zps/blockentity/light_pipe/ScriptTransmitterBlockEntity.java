@@ -120,11 +120,6 @@ public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements
     private int pageCount;
 
     @Override
-    public Vector3ic[][] provideNextVideoFrame(Vector2ic resolution) {
-        return new Vector3ic[resolution.x()][resolution.y()];
-    }
-
-    @Override
     public String provideNextDisplayText(int length) {
         String contents = getPageContents();
         return contents.substring(0, Math.min(length, contents.length()));

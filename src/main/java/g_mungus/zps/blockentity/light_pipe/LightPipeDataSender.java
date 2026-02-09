@@ -35,7 +35,9 @@ public interface LightPipeDataSender extends NetworkTerminal {
         }
     }
 
-    Vector3ic[][] provideNextVideoFrame(Vector2ic resolution);
+    default Vector3ic[][] provideNextVideoFrame(Vector2ic resolution) {
+        throw new RuntimeException("Method not implemented"); //todo
+    }
     String provideNextDisplayText(int length);
 
     private boolean isClearSignal(Level level) {

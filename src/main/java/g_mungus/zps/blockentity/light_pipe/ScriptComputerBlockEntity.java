@@ -1,15 +1,15 @@
 package g_mungus.zps.blockentity.light_pipe;
 
 import g_mungus.zps.blockentity.ModBlockEntities;
+import g_mungus.zps.blockentity.NetworkTerminalImpl;
 import g_mungus.zps.networking.ScriptComputerC2SPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 
-public class ScriptComputerBlockEntity extends BlockEntity implements ScriptComputer {
+public class ScriptComputerBlockEntity extends NetworkTerminalImpl implements LightPipeDataSender, ScriptComputer {
     public ScriptComputerBlockEntity(BlockPos arg2, BlockState arg3) {
         super(ModBlockEntities.SCRIPT_COMPUTER.get(), arg2, arg3);
     }
@@ -25,6 +25,7 @@ public class ScriptComputerBlockEntity extends BlockEntity implements ScriptComp
         setChanged();
 
         if (level != null && !level.isClientSide) {
+            updateSignal(level);
             level.sendBlockUpdated(
                     worldPosition,
                     getBlockState(),
@@ -80,5 +81,10 @@ public class ScriptComputerBlockEntity extends BlockEntity implements ScriptComp
     public void handleUpdateTag(net.minecraft.nbt.CompoundTag tag) {
         allCommands = tag.getString("AllCommands");
         loop = tag.getBoolean("Loop");
+    }
+
+    @Override
+    public String provideNextDisplayText(int length) {
+        return allCommands; //todo: should return current command
     }
 }

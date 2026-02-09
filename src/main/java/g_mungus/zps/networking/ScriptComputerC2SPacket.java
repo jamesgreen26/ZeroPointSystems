@@ -9,11 +9,12 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-public record ScriptComputerC2SPacket(BlockPos computerPos, boolean loop, String contents) {
+public record ScriptComputerC2SPacket(BlockPos computerPos, boolean loop, int delay, String contents) {
 
     public static void encode(ScriptComputerC2SPacket packet, FriendlyByteBuf buffer) {
         buffer.writeBlockPos(packet.computerPos);
         buffer.writeBoolean(packet.loop);
+        buffer.writeInt(packet.delay);
         buffer.writeUtf(packet.contents);
     }
 
@@ -21,6 +22,7 @@ public record ScriptComputerC2SPacket(BlockPos computerPos, boolean loop, String
         return new ScriptComputerC2SPacket(
                 buffer.readBlockPos(),
                 buffer.readBoolean(),
+                buffer.readInt(),
                 buffer.readUtf()
         );
     }

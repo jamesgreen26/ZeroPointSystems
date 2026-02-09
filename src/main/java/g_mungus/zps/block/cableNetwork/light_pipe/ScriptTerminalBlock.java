@@ -154,6 +154,7 @@ public class ScriptTerminalBlock extends CableComponentBlock implements EntityBl
                 ScriptComputerS2CPacket packet = new ScriptComputerS2CPacket(
                     arg3,
                     scriptComputer.getLoop(),
+                    scriptComputer.getDelay(),
                     scriptComputer.getValue()
                 );
                 ZPSGamePackets.INSTANCE.sendTo(packet, serverPlayer.connection.connection, NetworkDirection.PLAY_TO_CLIENT);

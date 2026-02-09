@@ -26,6 +26,7 @@ public class ScriptTerminalScreen extends Screen {
     protected final boolean debug;
     private String initialCommand = null;
     private boolean initialLoop = false;
+    private int initialDelay = 4;
 
     protected Button doneButton;
     protected Button cancelButton;
@@ -62,8 +63,23 @@ public class ScriptTerminalScreen extends Screen {
         // Initialize mode from computer or initialLoop
         if (initialCommand != null) {
             isRepeatMode = initialLoop;
+            // Find the index for initialDelay
+            for (int i = 0; i < DELAY_VALUES.length; i++) {
+                if (DELAY_VALUES[i] == initialDelay) {
+                    delayIndex = i;
+                    break;
+                }
+            }
         } else if (computer != null) {
             isRepeatMode = computer.getLoop();
+            // Find the index for computer's delay
+            int computerDelay = computer.getDelay();
+            for (int i = 0; i < DELAY_VALUES.length; i++) {
+                if (DELAY_VALUES[i] == computerDelay) {
+                    delayIndex = i;
+                    break;
+                }
+            }
         }
 
         this.doneButton = this.addRenderableWidget(
@@ -117,8 +133,9 @@ public class ScriptTerminalScreen extends Screen {
     protected void onDone() {
         final Minecraft client = this.minecraft;
         if (computer != null) {
-            // Use the current isRepeatMode from the button
-            ZPSGamePackets.INSTANCE.sendToServer(new ScriptComputerC2SPacket(computer.getPos(), isRepeatMode, commandEdit.getValue()));
+            // Use the current isRepeatMode and delay from the buttons
+            int currentDelay = DELAY_VALUES[delayIndex];
+            ZPSGamePackets.INSTANCE.sendToServer(new ScriptComputerC2SPacket(computer.getPos(), isRepeatMode, currentDelay, commandEdit.getValue()));
         }
         if (client != null) client.setScreen(null);
     }
@@ -162,7 +179,7 @@ public class ScriptTerminalScreen extends Screen {
         this.commandSuggestions.render(arg, i, j);
     }
 
-    public static void openWithData(BlockPos pos, String commandData, boolean loop) {
+    public static void openWithData(BlockPos pos, String commandData, boolean loop, int delay) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) return;
 
@@ -171,6 +188,7 @@ public class ScriptTerminalScreen extends Screen {
             ScriptTerminalScreen screen = new ScriptTerminalScreen(scriptComputer, false);
             screen.initialCommand = commandData;
             screen.initialLoop = loop;
+            screen.initialDelay = delay;
             minecraft.setScreen(screen);
         }
     }

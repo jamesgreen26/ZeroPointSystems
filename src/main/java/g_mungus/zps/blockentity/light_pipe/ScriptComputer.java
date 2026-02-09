@@ -14,4 +14,6 @@ public interface ScriptComputer {
     String getValue();
 
     boolean getLoop();
+
+    int getDelay();
 }

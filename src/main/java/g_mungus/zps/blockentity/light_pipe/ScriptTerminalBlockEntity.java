@@ -21,6 +21,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
     private String allCommands = "";
     private String currentCommand = "";
     private boolean loop = false;
+    private int delay = 4;
     private boolean wasPowered = false;
     private int head = 0;
     private int tickDelay = 0;
@@ -42,7 +43,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
                 currentCommand = commands.get(head);
                 updateSignal(level);
                 head++;
-                tickDelay = 3; // advance every fourth tick
+                tickDelay = delay - 1; // delay value from GUI (2t, 4t, 8t, or 16t)
             } else {
                 tickDelay--;
             }
@@ -60,6 +61,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
     public void acceptUpdatePacket(ScriptComputerC2SPacket packet) {
         allCommands = packet.contents();
         loop = packet.loop();
+        delay = packet.delay();
         head = 0;
         setChanged();
 
@@ -94,10 +96,16 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
     }
 
     @Override
+    public int getDelay() {
+        return delay;
+    }
+
+    @Override
     protected void saveAdditional(net.minecraft.nbt.@NotNull CompoundTag tag) {
         super.saveAdditional(tag);
         tag.putString("AllCommands", allCommands);
         tag.putBoolean("Loop", loop);
+        tag.putInt("Delay", delay);
     }
 
     @Override
@@ -105,6 +113,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         super.load(tag);
         allCommands = tag.getString("AllCommands");
         loop = tag.getBoolean("Loop");
+        delay = tag.getInt("Delay");
     }
 
     @Override
@@ -112,6 +121,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         net.minecraft.nbt.CompoundTag tag = super.getUpdateTag();
         tag.putString("AllCommands", allCommands);
         tag.putBoolean("Loop", loop);
+        tag.putInt("Delay", delay);
         return tag;
     }
 
@@ -119,6 +129,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
     public void handleUpdateTag(net.minecraft.nbt.CompoundTag tag) {
         allCommands = tag.getString("AllCommands");
         loop = tag.getBoolean("Loop");
+        delay = tag.getInt("Delay");
     }
 
     @Override

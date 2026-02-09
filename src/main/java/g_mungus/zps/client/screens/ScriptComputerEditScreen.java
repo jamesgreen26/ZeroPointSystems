@@ -11,9 +11,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,6 +24,8 @@ public class ScriptComputerEditScreen extends Screen {
     private static final Component COMMAND_LABEL = Component.literal("ZPS Script Command");
     protected final @Nullable ScriptComputer computer;
     protected final boolean debug;
+    private String initialCommand = null;
+    private boolean initialLoop = false;
 
     protected Button doneButton;
     protected Button cancelButton;
@@ -58,7 +61,12 @@ public class ScriptComputerEditScreen extends Screen {
 
         this.commandEdit = new MultiLineEditBox(this.font, this.width / 2 - 150, 50, 300, this.height / 4 + 70, Component.translatable("advMode.command"));
         this.commandEdit.setMaxLength(32500);
-        if (computer != null) this.commandEdit.setValue(computer.getValue());
+        // Use initialCommand if set (from S2C packet), otherwise get from computer
+        if (initialCommand != null) {
+            this.commandEdit.setValue(initialCommand);
+        } else if (computer != null) {
+            this.commandEdit.setValue(computer.getValue());
+        }
         this.commandEdit.setResponder(this::onEdited);
         this.addWidget(this.commandEdit);
         this.setInitialFocus(this.commandEdit);
@@ -79,7 +87,9 @@ public class ScriptComputerEditScreen extends Screen {
     protected void onDone() {
         final Minecraft client = this.minecraft;
         if (computer != null) {
-            ZPSGamePackets.INSTANCE.sendToServer(new ScriptComputerC2SPacket(computer.getPos(), false, commandEdit.getValue()));
+            // Use initialLoop if it was set from the packet, otherwise get from computer
+            boolean loopValue = initialCommand != null ? initialLoop : computer.getLoop();
+            ZPSGamePackets.INSTANCE.sendToServer(new ScriptComputerC2SPacket(computer.getPos(), loopValue, commandEdit.getValue()));
         }
         if (client != null) client.setScreen(null);
     }
@@ -123,8 +133,16 @@ public class ScriptComputerEditScreen extends Screen {
         this.commandSuggestions.render(arg, i, j);
     }
 
-    public static void open(ScriptComputer scriptComputer) {
+    public static void openWithData(BlockPos pos, String commandData, boolean loop) {
         Minecraft minecraft = Minecraft.getInstance();
-        minecraft.setScreen(new ScriptComputerEditScreen(scriptComputer, false));
+        if (minecraft.level == null) return;
+
+        BlockEntity blockEntity = minecraft.level.getBlockEntity(pos);
+        if (blockEntity instanceof ScriptComputer scriptComputer) {
+            ScriptComputerEditScreen screen = new ScriptComputerEditScreen(scriptComputer, false);
+            screen.initialCommand = commandData;
+            screen.initialLoop = loop;
+            minecraft.setScreen(screen);
+        }
     }
 }

@@ -50,6 +50,11 @@ public class ScriptComputerBlockEntity extends BlockEntity implements ScriptComp
     }
 
     @Override
+    public boolean getLoop() {
+        return loop;
+    }
+
+    @Override
     protected void saveAdditional(net.minecraft.nbt.@NotNull CompoundTag tag) {
         super.saveAdditional(tag);
         tag.putString("AllCommands", allCommands);

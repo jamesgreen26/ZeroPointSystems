@@ -12,4 +12,6 @@ public interface ScriptComputer {
     boolean canEdit(Vec3 eyePosition);
 
     String getValue();
+
+    boolean getLoop();
 }

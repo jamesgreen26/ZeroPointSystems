@@ -1,5 +1,6 @@
 package g_mungus.zps.blockentity.light_pipe;
 
+import g_mungus.zps.block.cableNetwork.light_pipe.ScriptComputerBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.NetworkTerminalImpl;
 import g_mungus.zps.networking.ScriptComputerC2SPacket;
@@ -9,23 +10,60 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class ScriptComputerBlockEntity extends NetworkTerminalImpl implements LightPipeDataSender, ScriptComputer {
     public ScriptComputerBlockEntity(BlockPos arg2, BlockState arg3) {
         super(ModBlockEntities.SCRIPT_COMPUTER.get(), arg2, arg3);
     }
 
     private String allCommands = "";
+    private String currentCommand = "";
     private boolean loop = false;
+    private boolean wasPowered = false;
+    private int head = 0;
+    private int tickDelay = 0;
+
+    public void tick() {
+        BlockState blockState = getBlockState();
+        if (!(blockState.getBlock() instanceof ScriptComputerBlock) || level == null) return;
+        boolean powered = blockState.getValue(ScriptComputerBlock.POWERED);
+
+        List<String> commands = Arrays.stream(allCommands.split("\n")).filter(it -> !it.isBlank()).toList();
+
+        if (head >= commands.size()) head = 0;
+        if (powered && !wasPowered) tickDelay = 0;
+
+        boolean shouldContinue = head > 0;
+        boolean shouldRestart = powered && (!wasPowered || loop);
+        if (shouldContinue || shouldRestart) {
+            if (tickDelay <= 0) {
+                currentCommand = commands.get(head);
+                updateSignal(level);
+                head++;
+                tickDelay = 3; // advance every fourth tick
+            } else {
+                tickDelay--;
+            }
+        } else if (!currentCommand.isEmpty()) {
+            currentCommand = "";
+            updateSignal(level);
+        }
+
+        wasPowered = powered;
+    }
+
+
 
     @Override
     public void acceptUpdatePacket(ScriptComputerC2SPacket packet) {
         allCommands = packet.contents();
         loop = packet.loop();
-
+        head = 0;
         setChanged();
 
         if (level != null && !level.isClientSide) {
-            updateSignal(level);
             level.sendBlockUpdated(
                     worldPosition,
                     getBlockState(),
@@ -85,6 +123,6 @@ public class ScriptComputerBlockEntity extends NetworkTerminalImpl implements Li
 
     @Override
     public String provideNextDisplayText(int length) {
-        return allCommands; //todo: should return current command
+        return currentCommand;
     }
 }

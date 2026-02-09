@@ -82,7 +82,7 @@ public class ZPSCommands {
 
         output.register(
                 LiteralArgumentBuilder.<S>literal("WAIT").then(
-                RequiredArgumentBuilder.<S, Integer>argument("cycles", IntegerArgumentType.integer(0, 15))
+                RequiredArgumentBuilder.<S, Integer>argument("cycles", IntegerArgumentType.integer(1, 64))
                         .executes((a) -> 1)));
 
         return output;

@@ -9,4 +9,8 @@ public interface BookHolder {
     int zps$getCurrentPage();
 
     default void onPageWritten() {}
+
+    void zps$cyclePages();
+
+    boolean zps$hasBook();
 }

@@ -120,11 +120,6 @@ public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements
     private int pageCount;
 
     @Override
-    public Vector3ic[][] provideNextVideoFrame(Vector2ic resolution) {
-        return new Vector3ic[resolution.x()][resolution.y()];
-    }
-
-    @Override
     public String provideNextDisplayText(int length) {
         String contents = getPageContents();
         return contents.substring(0, Math.min(length, contents.length()));
@@ -286,5 +281,19 @@ public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements
         if (hasNextPage()) {
             setPage(getPage() + 1);
         }
+    }
+
+    @Override
+    public void zps$cyclePages() {
+        if (hasNextPage()) {
+            setPage(getPage() + 1);
+        } else {
+            setPage(0);
+        }
+    }
+
+    @Override
+    public boolean zps$hasBook() {
+        return hasBook();
     }
 }

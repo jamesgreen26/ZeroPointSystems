@@ -49,6 +49,12 @@ public class ModItems {
     public static final RegistryObject<Item> LIGHT_PIPE = ITEMS.register("light_pipe_cable",
             () -> new BlockItem(ModBlocks.LIGHT_PIPE.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> SERIAL_BUS = ITEMS.register("serial_bus",
+            () -> new BlockItem(ModBlocks.SERIAL_BUS.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> SCRIPT_TERMINAL = ITEMS.register("script_terminal",
+            () -> new BlockItem(ModBlocks.SCRIPT_TERMINAL.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> SCRIPT_TRANSMITTER = ITEMS.register("script_transmitter",
             () -> new BlockItem(ModBlocks.SCRIPT_TRANSMITTER.get(), new Item.Properties()));
 

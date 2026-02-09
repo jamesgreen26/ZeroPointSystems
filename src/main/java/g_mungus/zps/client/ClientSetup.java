@@ -34,6 +34,7 @@ public class ClientSetup {
             BlockEntityRenderers.register(ModBlockEntities.RADIO_RECEIVER.get(), RadioReceiverBlockEntityRenderer::new);
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DENSE_CABLE_SEPARATOR.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.LIGHT_PIPE.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(ModBlocks.SERIAL_BUS.get(), RenderType.translucent());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.RADIO_ANTENNA.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DATA_TRANSCRIBER.get(), RenderType.cutout());
 

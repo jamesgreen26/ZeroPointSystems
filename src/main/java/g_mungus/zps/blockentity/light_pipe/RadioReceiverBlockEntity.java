@@ -107,11 +107,6 @@ public class RadioReceiverBlockEntity extends NetworkTerminalImpl implements Lig
     }
 
     @Override
-    public Vector3ic[][] provideNextVideoFrame(Vector2ic resolution) {
-        return new Vector3ic[resolution.x()][resolution.y()];
-    }
-
-    @Override
     public String provideNextDisplayText(int length) {
         return currentDisplayText;
     }

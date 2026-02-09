@@ -136,7 +136,20 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
 
-/// RESOURCE BLOCKS
+    public static final RegistryObject<Block> SERIAL_BUS = BLOCKS.register("serial_bus",
+            () -> new SerialBusBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+
+    public static final RegistryObject<Block> SCRIPT_TERMINAL = BLOCKS.register("script_terminal",
+            () -> new ScriptTerminalBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+
+
+    /// RESOURCE BLOCKS
     public static final RegistryObject<Block> BAUXITE = BLOCKS.register("bauxite",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.ANDESITE)
                     .sound(SoundType.NETHERRACK)
@@ -162,6 +175,7 @@ public class ModBlocks {
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.GOLD_BLOCK)
             )
     );
+
 
 /// DECOR BLOCKS
 

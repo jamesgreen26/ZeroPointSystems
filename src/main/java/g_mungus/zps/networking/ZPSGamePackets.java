@@ -23,5 +23,17 @@ public class ZPSGamePackets {
                 .decoder(OctoControlPacket::decode)
                 .consumerMainThread(OctoControlPacket::handle)
                 .add();
+
+        INSTANCE.messageBuilder(ScriptComputerC2SPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(ScriptComputerC2SPacket::encode)
+                .decoder(ScriptComputerC2SPacket::decode)
+                .consumerMainThread(ScriptComputerC2SPacket::handle)
+                .add();
+
+        INSTANCE.messageBuilder(ScriptComputerS2CPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ScriptComputerS2CPacket::encode)
+                .decoder(ScriptComputerS2CPacket::decode)
+                .consumerMainThread(ScriptComputerS2CPacket::handle)
+                .add();
     }
 }

@@ -28,6 +28,7 @@ public class ModCreativeTabs {
                     ModItems.STEPUP_TRANSFORMER,
                     ModItems.STEPDOWN_TRANSFORMER,
                     ModItems.REDSTONE_CONVERTER,
+                    ModItems.SERIAL_BUS,
                     ModItems.DENSE_CABLES,
                     ModItems.CABLE,
 

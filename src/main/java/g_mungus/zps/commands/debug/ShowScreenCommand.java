@@ -10,7 +10,7 @@ public class ShowScreenCommand {
     public static final LiteralArgumentBuilder<CommandSourceStack> COMMAND = Commands
             .literal("zps_debug").then(
                     Commands.literal("SHOW_SCREEN").then(Commands.literal("script_computer").executes(context -> {
-                        Minecraft.getInstance().setScreen(new ScriptComputerEditScreen());
+                        Minecraft.getInstance().setScreen(new ScriptComputerEditScreen(null, true));
                         return 1;
                     }))
             );

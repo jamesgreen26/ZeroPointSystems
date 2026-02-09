@@ -142,6 +142,12 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
 
+    public static final RegistryObject<Block> SCRIPT_COMPUTER = BLOCKS.register("script_computer",
+            () -> new ScriptComputerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+
 
     /// RESOURCE BLOCKS
     public static final RegistryObject<Block> BAUXITE = BLOCKS.register("bauxite",

@@ -77,4 +77,10 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("serial_bus",
                     () -> BlockEntityType.Builder.of(SerialBusBlockEntity::new,
                             ModBlocks.SERIAL_BUS.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<ScriptComputerBlockEntity>> SCRIPT_COMPUTER =
+            BLOCK_ENTITIES.register("script_computer",
+                    () -> BlockEntityType.Builder.of(ScriptComputerBlockEntity::new,
+                            ModBlocks.SCRIPT_COMPUTER.get()).build(null));
+
 } 

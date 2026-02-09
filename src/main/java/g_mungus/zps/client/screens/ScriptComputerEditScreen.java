@@ -1,8 +1,11 @@
 package g_mungus.zps.client.screens;
 
+import g_mungus.zps.blockentity.light_pipe.ScriptComputer;
 import g_mungus.zps.client.screens.components.MultiLineEditBox;
 import g_mungus.zps.client.screens.components.MultiLineCommandSuggestions;
 import g_mungus.zps.client.screens.components.ScriptDispatcherProvider;
+import g_mungus.zps.networking.ScriptComputerC2SPacket;
+import g_mungus.zps.networking.ZPSGamePackets;
 import net.minecraft.client.GameNarrator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -10,25 +13,38 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Player;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class ScriptComputerEditScreen extends Screen {
 
     private static final Component SET_COMMAND_LABEL = Component.literal("Script Computer");
     private static final Component COMMAND_LABEL = Component.literal("ZPS Script Command");
+    protected final @Nullable ScriptComputer computer;
+    protected final boolean debug;
 
     protected Button doneButton;
     protected Button cancelButton;
     protected MultiLineEditBox commandEdit;
     MultiLineCommandSuggestions commandSuggestions;
 
-    public ScriptComputerEditScreen() {
+    public ScriptComputerEditScreen(@Nullable ScriptComputer computer, boolean debug) {
         super(GameNarrator.NO_TITLE);
+
+        this.computer = computer;
+        this.debug = debug;
     }
 
     @Override
     public void tick() {
         this.commandEdit.tick();
+        if (!debug) {
+            Minecraft mc = minecraft;
+            if (computer == null || mc == null || mc.player == null || !computer.canEdit(mc.player.position())) {
+                this.onClose();
+            }
+        }
     }
 
     @Override
@@ -42,6 +58,7 @@ public class ScriptComputerEditScreen extends Screen {
 
         this.commandEdit = new MultiLineEditBox(this.font, this.width / 2 - 150, 50, 300, this.height / 4 + 70, Component.translatable("advMode.command"));
         this.commandEdit.setMaxLength(32500);
+        if (computer != null) this.commandEdit.setValue(computer.getValue());
         this.commandEdit.setResponder(this::onEdited);
         this.addWidget(this.commandEdit);
         this.setInitialFocus(this.commandEdit);
@@ -61,6 +78,9 @@ public class ScriptComputerEditScreen extends Screen {
 
     protected void onDone() {
         final Minecraft client = this.minecraft;
+        if (computer != null) {
+            ZPSGamePackets.INSTANCE.sendToServer(new ScriptComputerC2SPacket(computer.getPos(), false, commandEdit.getValue()));
+        }
         if (client != null) client.setScreen(null);
     }
 
@@ -101,5 +121,10 @@ public class ScriptComputerEditScreen extends Screen {
 
         super.render(arg, i, j, f);
         this.commandSuggestions.render(arg, i, j);
+    }
+
+    public static void open(ScriptComputer scriptComputer) {
+        Minecraft minecraft = Minecraft.getInstance();
+        minecraft.setScreen(new ScriptComputerEditScreen(scriptComputer, false));
     }
 }

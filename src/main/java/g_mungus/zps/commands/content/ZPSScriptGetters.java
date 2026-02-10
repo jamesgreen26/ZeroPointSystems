@@ -14,16 +14,16 @@ public class ZPSScriptGetters {
     @SubscribeEvent
     public static void onRegisterEvent(RegisterScriptCommandsEvent event) {
         event.register(new ScriptGetter<>(
+                "pos",
                 BlockPos.class,
-                ResourceLocation.parse("block_pos:pos"),
-                ResourceLocation.parse("block_pos:pos"),
+                ResourceLocation.parse("zps:block_pos"),
                 ScriptContext::pos
         ));
 
         event.register(new ScriptGetter<>(
+                "dimension",
                 String.class,
-                ResourceLocation.parse("string:dimension"),
-                ResourceLocation.parse("string:dimension"),
+                ResourceLocation.parse("zps:dimension"),
                 scriptContext -> scriptContext.level().dimension().location().toString()
         ));
     }

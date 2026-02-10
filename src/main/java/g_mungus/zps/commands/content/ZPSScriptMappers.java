@@ -13,26 +13,29 @@ public class ZPSScriptMappers {
     @SubscribeEvent
     public static void onRegisterEvent(RegisterScriptCommandsEvent event) {
         event.register(new ScriptMapper<>(
+                "x",
                 BlockPos.class,
                 int.class,
-                ResourceLocation.parse("block_pos:pos"),
-                ResourceLocation.parse("int:x"),
+                ResourceLocation.parse("zps:block_pos"),
+                ResourceLocation.parse("zps:int"),
                 (blockPos, scriptContext) -> blockPos.getX()
         ));
 
         event.register(new ScriptMapper<>(
+                "y",
                 BlockPos.class,
                 int.class,
-                ResourceLocation.parse("block_pos:pos"),
-                ResourceLocation.parse("int:y"),
+                ResourceLocation.parse("zps:block_pos"),
+                ResourceLocation.parse("zps:int"),
                 (blockPos, scriptContext) -> blockPos.getY()
         ));
 
         event.register(new ScriptMapper<>(
+                "z",
                 BlockPos.class,
                 int.class,
-                ResourceLocation.parse("block_pos:pos"),
-                ResourceLocation.parse("int:z"),
+                ResourceLocation.parse("zps:block_pos"),
+                ResourceLocation.parse("zps:int"),
                 (blockPos, scriptContext) -> blockPos.getZ()
         ));
     }

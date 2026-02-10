@@ -60,10 +60,11 @@ public class CommandTreeBuilder {
 
         for (var output: allOutputs.entrySet()) {
             Registry.register(new ScriptMapper<>(
+                    "equals",
                     output.getValue(),
                     Boolean.class,
                     output.getKey(),
-                    ResourceLocation.parse(output.getKey().getNamespace() + ":equals"),
+                    ResourceLocation.parse("zps:boolean"),
                     (in, context) -> {
                         if (context instanceof ScriptContextImpl ctx) {
                             return in.equals(ctx.context.getArgument("value", output.getValue()));
@@ -74,10 +75,11 @@ public class CommandTreeBuilder {
             ));
             if (Number.class.isAssignableFrom(output.getValue())) {
                 Registry.register(new ScriptMapper<>(
+                        ">",
                         output.getValue(),
                         Boolean.class,
                         output.getKey(),
-                        ResourceLocation.parse(output.getKey().getNamespace() + ":greater_than"),
+                        ResourceLocation.parse("zps:boolean"),
                         (in, context) -> {
                             if (context instanceof ScriptContextImpl ctx && in instanceof Number num) {
                                 Number other = (Number) ctx.context.getArgument("value", output.getValue());
@@ -102,7 +104,7 @@ public class CommandTreeBuilder {
                         boolean done = output.equals(getter.outputKey());
 
                         CommandNode<CommandSourceStack> destination = done ? executors : mappers.getChild("have_" + getter.outputKey() + "_need_" + output);
-                        getters.addChild(Commands.literal("need_" + output).then(Commands.literal(getter.key().getPath()).forward(destination, context -> {
+                        getters.addChild(Commands.literal("need_" + output).then(Commands.literal(getter.displayName()).forward(destination, context -> {
                             if (context.getSource().source instanceof ZPSScriptCommandSource source) {
                                 source.value = getter.function().apply(new ScriptContextImpl(context, source.getPos(), context.getSource().getLevel()));
 

@@ -1,7 +1,7 @@
 package g_mungus.zps.client.screens.components;
 
 import com.mojang.brigadier.CommandDispatcher;
-import g_mungus.zps.commands.ZPSCommands;
+import g_mungus.zps.commands.api_impl.ZPSCommands;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.SharedSuggestionProvider;
 

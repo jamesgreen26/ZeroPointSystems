@@ -2,7 +2,7 @@ package g_mungus.zps.blockentity.light_pipe;
 
 import g_mungus.zps.block.cableNetwork.TransformerBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
-import g_mungus.zps.commands.ZPSCommands;
+import g_mungus.zps.commands.api_impl.ZPSCommands;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
@@ -43,7 +43,7 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver {
     private void executeCommand(String message) {
         if (level instanceof ServerLevel serverLevel) {
             String command = message.startsWith("/") ? message.substring(1) : message;
-            command = ZPSCommands.PREFIX + getPosArgument() + command;
+            command = ZPSCommands.Paths.SCRIPT + getPosArgument() + command;
             serverLevel.getServer().getCommands().performPrefixedCommand(createCommandSourceStack(serverLevel), command);
         }
     }

@@ -27,7 +27,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
-import g_mungus.zps.commands.ZPSCommands;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;

@@ -10,3 +10,4 @@ logs/
 .project
 .classpath
 **/.DS_Store
+/local

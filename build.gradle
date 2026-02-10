@@ -37,6 +37,14 @@ repositories {
         name = "Jared's maven"
         url = "https://maven.blamejared.com/"
     }
+
+    maven {
+        name = "Valkyrien Skies Internal"
+        url = 'https://maven.valkyrienskies.org'
+        content {
+            includeGroupByRegex "org.valkyrien.*"
+        }
+    }
 }
 
 dependencies {
@@ -58,6 +66,10 @@ dependencies {
     modImplementation("com.tterrag.registrate:Registrate:$registrate_version")
 
     modRuntimeOnly("mezz.jei:jei-1.20.1-forge:15.20.0.129")
+
+    compileOnly ("org.valkyrienskies.core:api:1.1.0+b714ef303e") {transitive = false}
+    compileOnly ("org.joml:joml-primitives:1.10.0")
+    modCompileOnly("maven.modrinth:valkyrien-skies:1.20.1-forge-2.4.10")
 
     //noinspection DifferentStdlibGradleVersion
     api "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10"

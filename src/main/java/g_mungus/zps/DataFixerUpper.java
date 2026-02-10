@@ -1,5 +1,6 @@
 package g_mungus.zps;
 
+import g_mungus.zps.compat.Compat;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;

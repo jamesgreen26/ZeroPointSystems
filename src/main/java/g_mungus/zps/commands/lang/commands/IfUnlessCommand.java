@@ -5,7 +5,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import g_mungus.zps.commands.ZPSCommands;
 import g_mungus.zps.commands.exceptions.CancellationException;
 import g_mungus.zps.commands.lang.arguments.ArgumentTypeRegistry;
-import g_mungus.zps.commands.lang.arguments.MappedArgumentType;
+import g_mungus.zps.commands.lang.v2.MappedArgumentType;
 import g_mungus.zps.commands.lang.comparators.ComparisonRegistry;
 import g_mungus.zps.commands.lang.providers.ProviderRegistry;
 import net.minecraft.commands.CommandSourceStack;
@@ -62,7 +62,7 @@ public class IfUnlessCommand {
     ) {
         providerNode.then(
                 Commands.literal(comparisonName)
-                        .then(Commands.argument("value", argType.type())
+                        .then(Commands.argument("value", argType.delegate())
                                 .forward(
                                         ZPSCommands.getScriptRootNode(dispatcher),
                                         ctx -> {
@@ -126,7 +126,7 @@ public class IfUnlessCommand {
         providerNode.then(
                 Commands.literal(converterName)
                         .then(Commands.literal(comparisonName)
-                                .then(Commands.argument("value", argType.type())
+                                .then(Commands.argument("value", argType.delegate())
                                         .forward(
                                                 ZPSCommands.getScriptRootNode(dispatcher),
                                                 ctx -> {

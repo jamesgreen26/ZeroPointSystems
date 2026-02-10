@@ -1,6 +1,7 @@
 package g_mungus.zps.commands.lang.arguments;
 
 import com.mojang.brigadier.arguments.ArgumentType;
+import g_mungus.zps.commands.lang.v2.MappedArgumentType;
 import net.minecraft.commands.CommandSourceStack;
 
 import java.util.HashMap;

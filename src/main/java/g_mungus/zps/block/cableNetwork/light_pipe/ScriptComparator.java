@@ -1,6 +1,6 @@
 package g_mungus.zps.block.cableNetwork.light_pipe;
 
-import g_mungus.zps.Compat;
+import g_mungus.zps.compat.Compat;
 import g_mungus.zps.block.cableNetwork.core.BuiltinCableStandards;
 import g_mungus.zps.block.cableNetwork.core.CableComponentBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;

@@ -18,6 +18,7 @@ import g_mungus.zps.commands.lang.providers.BuiltinProviders;
 import g_mungus.zps.commands.lang.providers.RegisterScriptArgumentProvidersEvent;
 import g_mungus.zps.commands.lang.converters.BuiltinConverters;
 import g_mungus.zps.commands.lang.converters.RegisterScriptArgumentProviderConvertersEvent;
+import g_mungus.zps.commands.lang.v2.entrypoints.PosEntryPoint;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -48,6 +49,7 @@ public class ZPSCommands {
 
         zpsScript(dispatcher, SetRedstoneCommand.COMMAND);
         zpsScript(dispatcher, TurnPageCommand.COMMAND);
+        zpsScript(dispatcher, PosEntryPoint.getCommand(dispatcher).build());
 
         zpsScript(dispatcher, IfUnlessCommand.buildForType(dispatcher, BlockPos.class, IfUnlessCommand.PredicateType.IF).build());
         zpsScript(dispatcher, IfUnlessCommand.buildForType(dispatcher, BlockPos.class, IfUnlessCommand.PredicateType.UNLESS).build());

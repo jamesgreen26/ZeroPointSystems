@@ -1,7 +1,6 @@
 package g_mungus.zps.block.cableNetwork.light_pipe;
 
-import g_mungus.zps.Compat;
-import g_mungus.zps.ZPSMod;
+import g_mungus.zps.compat.Compat;
 import g_mungus.zps.block.cableNetwork.core.*;
 import g_mungus.zps.blockentity.light_pipe.LightPipeDataSender;
 import g_mungus.zps.blockentity.light_pipe.ScriptTransmitterBlockEntity;

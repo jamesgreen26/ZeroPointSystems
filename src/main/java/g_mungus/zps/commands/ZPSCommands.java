@@ -3,23 +3,29 @@ package g_mungus.zps.commands;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.CommandNode;
-import com.mojang.brigadier.tree.RootCommandNode;
 import g_mungus.zps.commands.actions.SetRedstoneCommand;
 import g_mungus.zps.commands.actions.TurnPageCommand;
+import g_mungus.zps.commands.lang.arguments.BuiltinArgumentTypes;
+import g_mungus.zps.commands.lang.commands.IfUnlessCommand;
+import g_mungus.zps.commands.lang.comparators.BuiltinComparisons;
 import g_mungus.zps.commands.predicates.BlockPosListPredicateCommand;
 import g_mungus.zps.commands.predicates.BlockPosPredicateCommand;
 import g_mungus.zps.commands.predicates.BlockStatePredicateCommand;
+import g_mungus.zps.commands.lang.providers.BuiltinProviders;
+import g_mungus.zps.commands.lang.providers.RegisterScriptArgumentProvidersEvent;
+import g_mungus.zps.commands.lang.converters.BuiltinConverters;
+import g_mungus.zps.commands.lang.converters.RegisterScriptArgumentProviderConvertersEvent;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -34,10 +40,24 @@ public class ZPSCommands {
         CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
         CommandBuildContext buildContext = event.getBuildContext();
 
+        BuiltinConverters.register();
+        MinecraftForge.EVENT_BUS.post(new RegisterScriptArgumentProviderConvertersEvent());
+        BuiltinProviders.register();
+        MinecraftForge.EVENT_BUS.post(new RegisterScriptArgumentProvidersEvent());
+
+        BuiltinComparisons.register();
+        BuiltinArgumentTypes.register();
+
         zpsScript(dispatcher, SetRedstoneCommand.COMMAND);
         zpsScript(dispatcher, TurnPageCommand.COMMAND);
-        zpsScript(dispatcher, BlockStatePredicateCommand.build(buildContext, dispatcher));
-        zpsScript(dispatcher, BlockPosPredicateCommand.build(dispatcher));
+
+        zpsScript(dispatcher, IfUnlessCommand.buildForType(dispatcher, BlockPos.class, IfUnlessCommand.PredicateType.IF).build());
+        zpsScript(dispatcher, IfUnlessCommand.buildForType(dispatcher, BlockPos.class, IfUnlessCommand.PredicateType.UNLESS).build());
+
+
+
+//        zpsScript(dispatcher, BlockStatePredicateCommand.build(buildContext, dispatcher));
+//        zpsScript(dispatcher, BlockPosPredicateCommand.build(dispatcher));
         zpsScript(dispatcher, BlockPosListPredicateCommand.build(dispatcher));
     }
 
@@ -64,6 +84,10 @@ public class ZPSCommands {
                 throw new RuntimeException(ex);
             }
         }
+    }
+
+    public static CommandNode<CommandSourceStack> getScriptRootNode(CommandDispatcher<CommandSourceStack> dispatcher) {
+        return dispatcher.getRoot().getChild(ZPSCommands.PREFIX).getChild("position");
     }
 
     public static <S> CommandDispatcher<S> getScriptDispatcher(CommandDispatcher<S> rootDispatcher) {

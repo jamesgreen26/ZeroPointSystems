@@ -19,9 +19,9 @@ import java.util.Collections;
 public class BlockPosPredicateCommand {
 
     public static CommandNode<CommandSourceStack> build(CommandDispatcher<CommandSourceStack> dispatcher) {
-        return Commands.literal("IF_POS").then(
+        return Commands.literal("IF").then(Commands.literal("POS").then(
                 Commands.argument("position_predicate", BlockPosArgument.blockPos()).forward(
-                        dispatcher.getRoot().getChild(ZPSCommands.PREFIX).getChild("position"), context -> {
+                        ZPSCommands.getScriptRootNode(dispatcher), context -> {
 
                     BlockPos pos = ZPSCommands.getPosition(context);
 
@@ -33,6 +33,6 @@ public class BlockPosPredicateCommand {
                         throw new CancellationException(Component.literal("Operation unsuccessful: position predicate did not match"));
                     }
                 }, false)
-        ).build();
+        )).build();
     }
 }

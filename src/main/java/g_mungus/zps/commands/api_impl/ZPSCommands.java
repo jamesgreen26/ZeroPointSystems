@@ -64,6 +64,8 @@ public class ZPSCommands {
 
         CommandTreeBuilder commandTreeBuilder = new CommandTreeBuilder(dispatcher);
 
+
+        commandTreeBuilder.buildMappers();
         commandTreeBuilder.buildGetters();
     }
 

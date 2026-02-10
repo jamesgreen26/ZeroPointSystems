@@ -103,21 +103,67 @@ public class CommandTreeBuilder {
                     if (getter.outputKey().equals(mapper.inputKey())) {
                         boolean done = output.equals(getter.outputKey());
 
-                        CommandNode<CommandSourceStack> destination = done ? executors : mappers.getChild("have_" + getter.outputKey() + "_need_" + output);
-                        getters.addChild(Commands.literal("need_" + output).then(Commands.literal(getter.displayName()).forward(destination, context -> {
+                        CommandNode<CommandSourceStack> destination = done ? executors : mappers.getChild("have-" + getter.outputKey() + "-need-" + output);
+                        getters.addChild(Commands.literal("need-" + output).then(Commands.literal(getter.displayName()).forward(destination, context -> {
                             if (context.getSource().source instanceof ZPSScriptCommandSource source) {
                                 source.value = getter.function().apply(new ScriptContextImpl(context, source.getPos(), context.getSource().getLevel()));
 
                                 if (source.execute != null && source.value.getClass().equals(source.desiredOutputType)) {
                                     source.execute.accept(source.value);
                                 }
-                                return List.of(context.getSource());
-                            } else {
-                                throw accessViolation();
                             }
+                            return List.of(context.getSource());
                         }, false)).build());
                     }
                 }
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public void buildMappers() {
+
+        Set<ResourceLocation> allOutputs = Registry.MAPPERS.stream().map(ScriptMapper::outputKey).collect(Collectors.toSet());
+
+        // First pass: Create all mapper nodes without forwarding
+        Map<String, CommandNode<CommandSourceStack>> createdNodes = new HashMap<>();
+
+        for (ResourceLocation output : allOutputs) {
+            for (ScriptMapper<?, ?> mapper: mapperGraph.findAllMappersLeadingTo(output)) {
+                ResourceLocation input = mapper.inputKey();
+                String nodeName = "have-" + input + "-need-" + output;
+
+                // Only create if it doesn't exist yet
+                if (!createdNodes.containsKey(nodeName)) {
+                    CommandNode<CommandSourceStack> node = Commands.literal(nodeName).build();
+                    mappers.addChild(node);
+                    createdNodes.put(nodeName, node);
+                }
+            }
+        }
+
+        // Second pass: Add mapper commands with forwarding
+        for (ResourceLocation output : allOutputs) {
+            for (ScriptMapper<?, ?> mapper: mapperGraph.findAllMappersLeadingTo(output)) {
+                ResourceLocation input = mapper.inputKey();
+                boolean done = output.equals(mapper.outputKey());
+                String nodeName = "have-" + input + "-need-" + output;
+
+                CommandNode<CommandSourceStack> parentNode = createdNodes.get(nodeName);
+                CommandNode<CommandSourceStack> destination = done ? executors : createdNodes.get("have-" + mapper.outputKey() + "-need-" + output);
+
+                parentNode.addChild(Commands.literal(mapper.displayName()).forward(destination, context -> {
+                    if (context.getSource().source instanceof ZPSScriptCommandSource source) {
+                        var mapperFunction = (java.util.function.BiFunction<Object, ScriptContext, Object>) mapper.function();
+                        source.value = mapperFunction.apply(source.value, new ScriptContextImpl(context, source.getPos(), context.getSource().getLevel()));
+
+                        if (source.execute != null && source.value.getClass().equals(source.desiredOutputType)) {
+                            source.execute.accept(source.value);
+                        }
+
+                    }
+                    return List.of(context.getSource());
+                }, false).build());
             }
         }
     }

@@ -9,7 +9,7 @@ import net.minecraft.core.BlockPos;
 
 import java.util.List;
 
-public record BlockPosClass(String name, BlockPos value) implements ScriptClass<BlockPos> {
+public record BlockPosClass(String name) implements ScriptClass<BlockPos> {
 
     @Override
     public Class<BlockPos> getType() {
@@ -42,18 +42,13 @@ public record BlockPosClass(String name, BlockPos value) implements ScriptClass<
     public List<ScriptFunction<BlockPos, ?>> getFunctions() {
         return List.of(
                 ScriptFunction.simple("X", blockPosScriptClass ->
-                        new IntegerClass("X", blockPosScriptClass.getValue().getX())),
+                        ScriptObject.withDefaultType("X", blockPosScriptClass.value().getX())),
                 ScriptFunction.simple("Y", blockPosScriptClass ->
-                        new IntegerClass("Y", blockPosScriptClass.getValue().getY())),
+                        ScriptObject.withDefaultType("Y", blockPosScriptClass.value().getY())),
                 ScriptFunction.simple("Z", blockPosScriptClass ->
-                        new IntegerClass("Z", blockPosScriptClass.getValue().getY())),
+                        ScriptObject.withDefaultType("Z", blockPosScriptClass.value().getY())),
                 new ScriptFunction<>("DISTANCE", (pos, context) ->
-                        new DoubleClass("DISTANCE", pos.getValue().getCenter().distanceTo(context.getVecPos())))
+                        ScriptObject.withDefaultType("DISTANCE", pos.value().getCenter().distanceTo(context.getVecPos())))
         );
-    }
-
-    @Override
-    public BlockPos getValue() {
-        return value;
     }
 }

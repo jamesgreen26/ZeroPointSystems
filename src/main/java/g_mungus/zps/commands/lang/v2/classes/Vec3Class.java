@@ -10,7 +10,7 @@ import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
 
-public record Vec3Class(String name, List<ScriptFunction<Vec3, ?>> functions, Vec3 value) implements ScriptClass<Vec3> {
+public record Vec3Class(String name, List<ScriptFunction<Vec3, ?>> functions) implements ScriptClass<Vec3> {
 
     @Override
     public Class<Vec3> getType() {
@@ -44,23 +44,18 @@ public record Vec3Class(String name, List<ScriptFunction<Vec3, ?>> functions, Ve
         return functions;
     }
 
-    @Override
-    public Vec3 getValue() {
-        return value;
-    }
-
     public static class Functions {
         public static ScriptFunction<Vec3, ?> X = ScriptFunction.simple("X", vec3Class ->
-                new DoubleClass("X", vec3Class.getValue().x()));
+                ScriptObject.withDefaultType("X", vec3Class.value().x()));
         public static ScriptFunction<Vec3, ?> Y = ScriptFunction.simple("Y", vec3Class ->
-                new DoubleClass("Y", vec3Class.getValue().y()));
+                ScriptObject.withDefaultType("Y", vec3Class.value().y()));
         public static ScriptFunction<Vec3, ?> Z = ScriptFunction.simple("Z", vec3Class ->
-                new DoubleClass("Z", vec3Class.getValue().z()));
+                ScriptObject.withDefaultType("Z", vec3Class.value().z()));
         public static ScriptFunction<Vec3, ?> VOLUME = ScriptFunction.simple("VOLUME", vec3Class ->
-                new DoubleClass("VOLUME", vec3Class.getValue().x() * vec3Class.getValue().y() * vec3Class.getValue().z()));
+                ScriptObject.withDefaultType("VOLUME", vec3Class.value().x() * vec3Class.value().y() * vec3Class.value().z()));
         public static ScriptFunction<Vec3, ?> DISTANCE = new ScriptFunction<>("DISTANCE", (vec3Class, context) ->
-                new DoubleClass("DISTANCE", vec3Class.getValue().distanceTo(context.getVecPos())));
+                ScriptObject.withDefaultType("DISTANCE", vec3Class.value().distanceTo(context.getVecPos())));
         public static ScriptFunction<Vec3, ?> LENGTH = ScriptFunction.simple("LENGTH", vec3Class ->
-                new DoubleClass("LENGTH", vec3Class.getValue().distanceTo(new Vec3(0, 0, 0))));
+                ScriptObject.withDefaultType("LENGTH", vec3Class.value().distanceTo(new Vec3(0, 0, 0))));
     }
 }

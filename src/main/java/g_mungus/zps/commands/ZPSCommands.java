@@ -18,6 +18,7 @@ import g_mungus.zps.commands.lang.providers.BuiltinProviders;
 import g_mungus.zps.commands.lang.providers.RegisterScriptArgumentProvidersEvent;
 import g_mungus.zps.commands.lang.converters.BuiltinConverters;
 import g_mungus.zps.commands.lang.converters.RegisterScriptArgumentProviderConvertersEvent;
+import g_mungus.zps.commands.lang.v2.classes.ScriptClassRegistry;
 import g_mungus.zps.commands.lang.v2.entrypoints.PosEntryPoint;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
@@ -39,23 +40,34 @@ public class ZPSCommands {
         CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
         CommandBuildContext buildContext = event.getBuildContext();
 
-        BuiltinConverters.register();
-        MinecraftForge.EVENT_BUS.post(new RegisterScriptArgumentProviderConvertersEvent());
-        BuiltinProviders.register();
-        MinecraftForge.EVENT_BUS.post(new RegisterScriptArgumentProvidersEvent());
+        dispatcher.register(
+                Commands.literal(PREFIX)
+                        .requires(src -> src.hasPermission(2))
+                        .then(Commands.argument("position", BlockPosArgument.blockPos())));
 
-        BuiltinComparisons.register();
-        BuiltinArgumentTypes.register();
+        ScriptClassRegistry.bootstrap();
 
-        zpsScript(dispatcher, SetRedstoneCommand.COMMAND);
-        zpsScript(dispatcher, TurnPageCommand.COMMAND);
+        ScriptClassRegistry
+
         zpsScript(dispatcher, PosEntryPoint.getCommand(dispatcher).build());
 
-        zpsScript(dispatcher, IfUnlessCommand.buildForType(dispatcher, BlockPos.class, IfUnlessCommand.PredicateType.IF).build());
-        zpsScript(dispatcher, IfUnlessCommand.buildForType(dispatcher, BlockPos.class, IfUnlessCommand.PredicateType.UNLESS).build());
-
-        zpsScript(dispatcher, IfUnlessBlockStateCommand.build(buildContext, dispatcher, IfUnlessCommand.PredicateType.IF));
-        zpsScript(dispatcher, IfUnlessBlockStateCommand.build(buildContext, dispatcher, IfUnlessCommand.PredicateType.UNLESS));
+//        BuiltinConverters.register();
+//        MinecraftForge.EVENT_BUS.post(new RegisterScriptArgumentProviderConvertersEvent());
+//        BuiltinProviders.register();
+//        MinecraftForge.EVENT_BUS.post(new RegisterScriptArgumentProvidersEvent());
+//
+//        BuiltinComparisons.register();
+//        BuiltinArgumentTypes.register();
+//
+//        zpsScript(dispatcher, SetRedstoneCommand.COMMAND);
+//        zpsScript(dispatcher, TurnPageCommand.COMMAND);
+//        zpsScript(dispatcher, PosEntryPoint.getCommand(dispatcher).build());
+//
+//        zpsScript(dispatcher, IfUnlessCommand.buildForType(dispatcher, BlockPos.class, IfUnlessCommand.PredicateType.IF).build());
+//        zpsScript(dispatcher, IfUnlessCommand.buildForType(dispatcher, BlockPos.class, IfUnlessCommand.PredicateType.UNLESS).build());
+//
+//        zpsScript(dispatcher, IfUnlessBlockStateCommand.build(buildContext, dispatcher, IfUnlessCommand.PredicateType.IF));
+//        zpsScript(dispatcher, IfUnlessBlockStateCommand.build(buildContext, dispatcher, IfUnlessCommand.PredicateType.UNLESS));
     }
 
     private static void zpsScript(CommandDispatcher<CommandSourceStack> dispatcher, CommandNode<CommandSourceStack> command) {

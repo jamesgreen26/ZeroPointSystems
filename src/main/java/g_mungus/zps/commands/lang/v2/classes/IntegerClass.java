@@ -7,7 +7,7 @@ import g_mungus.zps.commands.lang.v2.functions.ScriptFunction;
 
 import java.util.List;
 
-public record IntegerClass(String name, Integer value) implements ScriptClass<Integer> {
+public record IntegerClass(String name) implements ScriptClass<Integer> {
 
     @Override
     public Class<Integer> getType() {
@@ -61,10 +61,5 @@ public record IntegerClass(String name, Integer value) implements ScriptClass<In
     @Override
     public List<ScriptFunction<Integer, ?>> getFunctions() {
         return List.of();
-    }
-
-    @Override
-    public Integer getValue() {
-        return value;
     }
 }

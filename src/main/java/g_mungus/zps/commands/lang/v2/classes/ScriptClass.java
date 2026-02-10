@@ -16,6 +16,4 @@ public interface ScriptClass<T> {
     List<ScriptComparator<T>> getComparators();
 
     List<ScriptFunction<T, ?>> getFunctions();
-
-    T getValue();
 }

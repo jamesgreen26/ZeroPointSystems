@@ -13,9 +13,7 @@ import g_mungus.zps.commands.actions.TurnPageCommand;
 import g_mungus.zps.commands.lang.arguments.BuiltinArgumentTypes;
 import g_mungus.zps.commands.lang.commands.IfUnlessCommand;
 import g_mungus.zps.commands.lang.comparators.BuiltinComparisons;
-import g_mungus.zps.commands.predicates.BlockPosListPredicateCommand;
-import g_mungus.zps.commands.predicates.BlockPosPredicateCommand;
-import g_mungus.zps.commands.predicates.BlockStatePredicateCommand;
+import g_mungus.zps.commands.lang.commands.IfUnlessBlockStateCommand;
 import g_mungus.zps.commands.lang.providers.BuiltinProviders;
 import g_mungus.zps.commands.lang.providers.RegisterScriptArgumentProvidersEvent;
 import g_mungus.zps.commands.lang.converters.BuiltinConverters;
@@ -54,11 +52,8 @@ public class ZPSCommands {
         zpsScript(dispatcher, IfUnlessCommand.buildForType(dispatcher, BlockPos.class, IfUnlessCommand.PredicateType.IF).build());
         zpsScript(dispatcher, IfUnlessCommand.buildForType(dispatcher, BlockPos.class, IfUnlessCommand.PredicateType.UNLESS).build());
 
-
-
-//        zpsScript(dispatcher, BlockStatePredicateCommand.build(buildContext, dispatcher));
-//        zpsScript(dispatcher, BlockPosPredicateCommand.build(dispatcher));
-        zpsScript(dispatcher, BlockPosListPredicateCommand.build(dispatcher));
+        zpsScript(dispatcher, IfUnlessBlockStateCommand.build(buildContext, dispatcher, IfUnlessCommand.PredicateType.IF));
+        zpsScript(dispatcher, IfUnlessBlockStateCommand.build(buildContext, dispatcher, IfUnlessCommand.PredicateType.UNLESS));
     }
 
     private static void zpsScript(CommandDispatcher<CommandSourceStack> dispatcher, CommandNode<CommandSourceStack> command) {

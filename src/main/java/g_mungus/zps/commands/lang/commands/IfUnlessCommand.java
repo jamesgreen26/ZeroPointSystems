@@ -28,6 +28,12 @@ public class IfUnlessCommand {
             LiteralArgumentBuilder<CommandSourceStack> providerNode =
                     Commands.literal(providerName);
 
+            // For every converter from this provider's type
+            provider.getConverters().forEach(converter ->
+                buildConverterComparisonNodeHelper(providerNode, dispatcher, providerName,
+                                                  provider, converter, predicateType)
+            );
+
             // For every comparison of this type
             ComparisonRegistry.getAll(type).forEach((comparisonName, comparison) -> {
 
@@ -81,6 +87,71 @@ public class IfUnlessCommand {
                                         },
                                         false
                                 ))
+        );
+    }
+
+    private static <T, B> void buildConverterComparisonNodeHelper(
+            LiteralArgumentBuilder<CommandSourceStack> providerNode,
+            CommandDispatcher<CommandSourceStack> dispatcher,
+            String providerName,
+            g_mungus.zps.commands.lang.providers.Provider<T> provider,
+            g_mungus.zps.commands.lang.converters.Converter<T, B> converter,
+            PredicateType predicateType
+    ) {
+        Class<B> convertedType = converter.getReturnType();
+
+        // For every comparison of the converted type
+        ComparisonRegistry.getAll(convertedType).forEach((comparisonName, comparison) -> {
+            MappedArgumentType<?, B> argType = ArgumentTypeRegistry.get(convertedType);
+            assert argType != null;
+
+            buildConverterComparisonNode(providerNode, dispatcher, providerName, provider,
+                                        converter, comparisonName, comparison, argType, predicateType);
+        });
+    }
+
+    private static <T, B, I> void buildConverterComparisonNode(
+            LiteralArgumentBuilder<CommandSourceStack> providerNode,
+            CommandDispatcher<CommandSourceStack> dispatcher,
+            String providerName,
+            g_mungus.zps.commands.lang.providers.Provider<T> provider,
+            g_mungus.zps.commands.lang.converters.Converter<T, B> converter,
+            String comparisonName,
+            g_mungus.zps.commands.lang.comparators.Comparison<B> comparison,
+            MappedArgumentType<I, B> argType,
+            PredicateType predicateType
+    ) {
+        String converterName = converter.getName();
+
+        providerNode.then(
+                Commands.literal(converterName)
+                        .then(Commands.literal(comparisonName)
+                                .then(Commands.argument("value", argType.type())
+                                        .forward(
+                                                ZPSCommands.getScriptRootNode(dispatcher),
+                                                ctx -> {
+                                                    I rawArgument = ctx.getArgument("value", argType.argumentClass());
+
+                                                    T providerValue = provider.get(ctx);
+                                                    B left = converter.convert(providerValue);
+                                                    B right = argType.mapper().apply(rawArgument, ctx.getSource());
+
+                                                    if (comparison.test(left, right) == predicateType.desiredResult) {
+                                                        return Set.of(ctx.getSource());
+                                                    }
+
+                                                    throw new CancellationException(
+                                                            Component.literal(
+                                                                    "Condition failed: "
+                                                                            + providerName + " "
+                                                                            + converterName + " "
+                                                                            + comparisonName
+                                                            )
+                                                    );
+                                                },
+                                                false
+                                        ))
+                        )
         );
     }
 

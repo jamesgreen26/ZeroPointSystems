@@ -10,15 +10,4 @@ public class RegisterScriptArgumentProvidersEvent extends Event {
     ) {
         ProviderRegistry.register(type, name, provider);
     }
-
-
-    public <A, B> void registerWithDerivatives(
-            Class<A> baseType,
-            String name,
-            Provider<A> provider,
-            Class<B> derivativeType,
-            String... derivativeNames
-    ) {
-        ProviderRegistry.registerWithDerivatives(baseType, name, provider, derivativeType, derivativeNames);
-    }
 }

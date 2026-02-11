@@ -8,10 +8,18 @@ import g_mungus.zps.commands.api.ScriptMapper2;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.joml.primitives.AABBd;
 import org.joml.primitives.AABBdc;
+import org.joml.primitives.AABBi;
 import org.joml.primitives.AABBic;
+import org.valkyrienskies.core.api.bodies.properties.BodyKinematics;
 import org.valkyrienskies.core.api.ships.ServerShip;
 import org.valkyrienskies.core.api.ships.Ship;
+import org.valkyrienskies.core.api.ships.properties.ChunkClaim;
+import org.valkyrienskies.core.api.ships.properties.IShipActiveChunksSet;
+import org.valkyrienskies.core.api.ships.properties.ShipTransform;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 import org.valkyrienskies.mod.common.command.ShipArgument;
 import org.valkyrienskies.mod.common.command.ShipSelector;
@@ -32,7 +40,13 @@ public class VSCompat {
                 "ship",
                 Ship.class,
                 ZPSMod.resource("ship"),
-                context -> VSGameUtilsKt.getShipManagingPos(context.level(), context.pos())
+                context -> {
+                    Ship ship = VSGameUtilsKt.getShipManagingPos(context.level(), context.pos());
+                    if (ship == null) {
+                        ship = NO_SHIP;
+                    }
+                    return ship;
+                }
         ));
 
         event.register(new ScriptMapper2<>(
@@ -46,7 +60,7 @@ public class VSCompat {
                             value -> value.getTransform().getPosition().distanceSquared(VectorConversionsMCKt.toJOML(context.pos().getCenter()))
                     ));
 
-                    if (other.isEmpty() || ship == null) {
+                    if (other.isEmpty() || ship == NO_SHIP) {
                         return false;
                     } else {
                         return ship.equals(other.get());
@@ -63,7 +77,13 @@ public class VSCompat {
                 Vec3.class,
                 ZPSMod.resource("ship"),
                 ZPSMod.resource("vec_pos"),
-                (ship, context) -> VectorConversionsMCKt.toMinecraft(ship.getTransform().getPositionInWorld())
+                (ship, context) -> {
+                    if (ship == NO_SHIP) {
+                        return new Vec3(0, 0, 0);
+                    } else {
+                        return VectorConversionsMCKt.toMinecraft(ship.getTransform().getPositionInWorld());
+                    }
+                }
         ));
 
         // Ship velocity as Vec3
@@ -73,7 +93,13 @@ public class VSCompat {
                 Vec3.class,
                 ZPSMod.resource("ship"),
                 ZPSMod.resource("vec_dir"),
-                (ship, context) -> VectorConversionsMCKt.toMinecraft(ship.getVelocity())
+                (ship, context) -> {
+                    if (ship == NO_SHIP) {
+                        return new Vec3(0, 0, 0);
+                    } else {
+                        return VectorConversionsMCKt.toMinecraft(ship.getVelocity());
+                    }
+                }
         ));
 
         // Ship box dimensions as Vec3
@@ -84,6 +110,9 @@ public class VSCompat {
                 ZPSMod.resource("ship"),
                 ZPSMod.resource("vec_box"),
                 (ship, context) -> {
+                    if (ship == NO_SHIP) {
+                        return new Vec3(0, 0, 0);
+                    }
                     AABBic aabb = ship.getShipAABB();
                     assert aabb != null;
                     return new Vec3(
@@ -102,6 +131,9 @@ public class VSCompat {
                 ZPSMod.resource("ship"),
                 ZPSMod.resource("double"),
                 (ship, context) -> {
+                    if (ship == NO_SHIP) {
+                        return 0d;
+                    }
                     double mass = ((ServerShip)ship).getInertiaData().getMass();
                     org.joml.Vector3dc scaling = ship.getTransform().getShipToWorldScaling();
                     double scalingVolume = scaling.x() * scaling.y() * scaling.z();
@@ -109,4 +141,52 @@ public class VSCompat {
                 }
         ));
     }
+
+    @SuppressWarnings("ConstantConditions")
+    static Ship NO_SHIP = new Ship() {
+        @Override
+        public long getId() {
+            return -1;
+        }
+
+        @Override
+        public @NotNull String getSlug() {
+            return "NONE";
+        }
+
+        @Override
+        public @NotNull BodyKinematics getKinematics() {
+            return null;
+        }
+
+        @Override
+        public @NotNull ShipTransform getPrevTickTransform() {
+            return null;
+        }
+
+        @Override
+        public @NotNull ChunkClaim getChunkClaim() {
+            return null;
+        }
+
+        @Override
+        public @NotNull String getChunkClaimDimension() {
+            return "";
+        }
+
+        @Override
+        public @NotNull AABBdc getWorldAABB() {
+            return new AABBd();
+        }
+
+        @Override
+        public @NotNull AABBic getShipAABB() {
+            return new AABBi();
+        }
+
+        @Override
+        public @NotNull IShipActiveChunksSet getActiveChunksSet() {
+            return null;
+        }
+    };
 }

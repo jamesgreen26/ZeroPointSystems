@@ -10,6 +10,7 @@ import g_mungus.zps.commands.api_impl.arguments.ZPSArgument;
 import g_mungus.zps.commands.api_impl.arguments.ZPSLiteral;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 
@@ -203,6 +204,7 @@ public class CommandTreeBuilder {
                     if (commandSource.source instanceof ZPSScriptCommandSource source) {
                         // Test the predicate (IF/UNLESS/NONE)
                         if (!source.predicate.test(source.predicateValue)) {
+                            source.sendSystemMessage(Component.literal("Predicate failed"));
                             return 0; // Predicate failed, don't execute
                         }
 

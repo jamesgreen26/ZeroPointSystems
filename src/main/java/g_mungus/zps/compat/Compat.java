@@ -1,5 +1,6 @@
 package g_mungus.zps.compat;
 
+import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.ComponentContents;
@@ -9,8 +10,11 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.common.Mod;
 
+@Mod.EventBusSubscriber
 public class Compat {
 
     public static final String ZPL_MOD_ID = "zpl";
@@ -38,6 +42,13 @@ public class Compat {
             return new BlockPos((int) truePos.x, (int) truePos.y, (int) truePos.z);
         } else {
             return pos;
+        }
+    }
+
+    @SubscribeEvent
+    public static void onRegisterScriptCommandsEvent(RegisterScriptCommandsEvent event) {
+        if (isVSLoaded()) {
+            VSCompat.registerScriptCommands(event);
         }
     }
 }

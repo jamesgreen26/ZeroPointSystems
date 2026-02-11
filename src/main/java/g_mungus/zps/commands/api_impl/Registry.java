@@ -10,13 +10,13 @@ import java.util.Set;
 
 class Registry {
 
-    static Set<ScriptExecutor<?>> EXECUTORS = new HashSet<>();
+    static Set<ScriptExecutor<?, ?>> EXECUTORS = new HashSet<>();
     static Set<ScriptGetter<?>> GETTERS = new HashSet<>();
     static Set<ScriptMapper<?, ?>> MAPPERS = new HashSet<>();
 
 
     static void register(ScriptNode node) {
-        if (node instanceof ScriptExecutor<?> executor) {
+        if (node instanceof ScriptExecutor<?, ?> executor) {
             EXECUTORS.add(executor);
         } else if (node instanceof ScriptMapper<?,?> mapper) {
             MAPPERS.add(mapper);

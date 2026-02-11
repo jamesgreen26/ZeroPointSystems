@@ -8,4 +8,8 @@ public interface ScriptContext {
     BlockPos pos();
     ServerLevel level();
     CommandSourceStack commandSource();
+
+    interface WithArgument<A> extends ScriptContext {
+        A argumentValue();
+    }
 }

@@ -17,7 +17,7 @@ public final class ScriptMapper2<I, O, A> extends ScriptMapper<I, O> {
             Class<O> outputType,
             ResourceLocation inputKey,
             ResourceLocation outputKey,
-            BiFunction<I, Context<A>, O> function,
+            BiFunction<I, ScriptContext.WithArgument<A>, O> function,
             ArgumentType<A> argumentType,
             Class<A> argumentClass
     ) {
@@ -28,8 +28,8 @@ public final class ScriptMapper2<I, O, A> extends ScriptMapper<I, O> {
                 inputKey,
                 outputKey,
                 (a, b) -> {
-                    if (b instanceof Context<?> context) {
-                        return function.apply(a, (Context<A>) context);
+                    if (b instanceof ScriptContext.WithArgument<?> context) {
+                        return function.apply(a, (ScriptContext.WithArgument<A>) context);
                     } else {
                         throw new RuntimeException("Incorrect use of ScriptMapper2");
                     }
@@ -45,9 +45,5 @@ public final class ScriptMapper2<I, O, A> extends ScriptMapper<I, O> {
 
     public Class<A> argumentClass() {
         return argumentClass;
-    }
-
-    public interface Context<A> extends ScriptContext {
-        A argumentValue();
     }
 }

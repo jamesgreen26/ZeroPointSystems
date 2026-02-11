@@ -3,6 +3,7 @@ package g_mungus.zps.commands.api_impl;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,7 +51,22 @@ public class ZPSScriptCommandSource implements CommandSource {
         return this.blockPos;
     }
 
+    @ApiStatus.Internal
     public enum PredicateType {
-        NONE, IF, UNLESS
+        NONE, IF, UNLESS;
+
+        public boolean test(Object bool) {
+            return switch (this) {
+                case NONE -> true;
+                case IF -> {
+                    assert bool instanceof Boolean;
+                    yield (Boolean) bool;
+                }
+                case UNLESS -> {
+                    assert bool instanceof Boolean;
+                    yield !((Boolean) bool);
+                }
+            };
+        }
     }
 }

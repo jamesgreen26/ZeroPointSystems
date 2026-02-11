@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 public class CommandTreeBuilder {
@@ -28,9 +29,11 @@ public class CommandTreeBuilder {
     CommandNode<CommandSourceStack> getters;
 
     private final MapperGraph mapperGraph;
+    private final Map<String, CommandNode<CommandSourceStack>> mapperNodes;
 
     public CommandTreeBuilder(CommandDispatcher<CommandSourceStack> dispatcher) {
         this.dispatcher = dispatcher;
+        this.mapperNodes = new HashMap<>();
 
         getters = dispatcher.getRoot()
                 .getChild(ZPSCommands.Paths.INTERNAL)
@@ -48,6 +51,14 @@ public class CommandTreeBuilder {
         Registry.MAPPERS.forEach(mapperGraph::addMapper);
     }
 
+    private CommandNode<CommandSourceStack> getOrCreateMapperNode(String nodeName) {
+        return mapperNodes.computeIfAbsent(nodeName, name -> {
+            CommandNode<CommandSourceStack> node = new ZPSLiteral.Builder<CommandSourceStack>(name).build();
+            mappers.addChild(node);
+            return node;
+        });
+    }
+
     public void buildGetters() {
 
         Set<ResourceLocation> allOutputs = Registry.MAPPERS.stream().map(ScriptMapper::outputKey).collect(Collectors.toSet());
@@ -57,10 +68,10 @@ public class CommandTreeBuilder {
                 for (var getter : Registry.GETTERS) {
                     if (getter.outputKey().equals(mapper.inputKey())) {
 
-                        CommandNode<CommandSourceStack> destination = mappers.getChild("have-" + getter.outputKey() + "-need-" + output);
+                        CommandNode<CommandSourceStack> destination = getOrCreateMapperNode("have-" + getter.outputKey() + "-need-" + output);
                         getters.addChild(new ZPSLiteral.Builder<CommandSourceStack>("need-" + output).then(new ZPSLiteral.Builder<CommandSourceStack>(getter.displayName()).forward(destination, context -> {
                             if (context.getSource().source instanceof ZPSScriptCommandSource source) {
-                                source.predicateValue = getter.function().apply(new ScriptContextImpl(context, source.getPos(), context.getSource().getLevel()));
+                                source.predicateValue = getter.function().apply(new ScriptContextImpl(context.getSource(), source.getPos(), context.getSource().getLevel()));
 
                                 if (source.execute != null && source.predicateValue.getClass().equals(source.desiredOutputType)) {
                                     source.execute.accept(source.predicateValue);
@@ -79,37 +90,19 @@ public class CommandTreeBuilder {
 
         Set<ResourceLocation> allOutputs = Registry.MAPPERS.stream().map(ScriptMapper::outputKey).collect(Collectors.toSet());
 
-        // First pass: Create all mapper nodes without forwarding
-        Map<String, CommandNode<CommandSourceStack>> createdNodes = new HashMap<>();
-
         for (ResourceLocation output : allOutputs) {
             for (ScriptMapper<?, ?> mapper: mapperGraph.findAllMappersLeadingTo(output)) {
                 ResourceLocation input = mapper.inputKey();
                 String nodeName = "have-" + input + "-need-" + output;
 
-                // Only create if it doesn't exist yet
-                if (!createdNodes.containsKey(nodeName)) {
-                    CommandNode<CommandSourceStack> node = new ZPSLiteral.Builder<CommandSourceStack>(nodeName).build();
-                    mappers.addChild(node);
-                    createdNodes.put(nodeName, node);
-                }
-            }
-        }
-
-        // Second pass: Add mapper commands with forwarding
-        for (ResourceLocation output : allOutputs) {
-            for (ScriptMapper<?, ?> mapper: mapperGraph.findAllMappersLeadingTo(output)) {
-                ResourceLocation input = mapper.inputKey();
-                String nodeName = "have-" + input + "-need-" + output;
-
-                CommandNode<CommandSourceStack> parentNode = createdNodes.get(nodeName);
+                CommandNode<CommandSourceStack> parentNode = getOrCreateMapperNode(nodeName);
 
                 // Mappers never redirect to executors - they always redirect to the next "have-X-need-Y" node
-                CommandNode<CommandSourceStack> destination = createdNodes.get("have-" + mapper.outputKey() + "-need-" + output);
+                CommandNode<CommandSourceStack> destination = getOrCreateMapperNode("have-" + mapper.outputKey() + "-need-" + output);
 
                 if (mapper instanceof ScriptMapper2<?,?,?> scriptMapper2) {
                     // Include output to make argument keys unique per destination
-                    String argumentKey = mapper.displayName() + "_argument_" + mapper.inputKey() + "_to_" + output;
+                    String argumentKey = mapper.displayName() + "_argument_" + mapper.inputKey() + "_to_" + output + "_" + scriptMapper2.argumentType().hashCode();
 
                     @SuppressWarnings("rawtypes")
                     ZPSArgument.Builder argumentBuilder = ZPSArgument.Builder.argument(argumentKey, scriptMapper2.argumentType());
@@ -123,7 +116,7 @@ public class CommandTreeBuilder {
 
                             var mapperFunction = (java.util.function.BiFunction<Object, ScriptContext, Object>) mapper.function();
                             source.predicateValue = mapperFunction.apply(source.predicateValue,
-                                    new ScriptMapper2ContextImpl<>(rawArg, source.getPos(), commandSource.getLevel(), commandSource));
+                                    new ScriptContextWithArgumentImpl<>(rawArg, source.getPos(), commandSource.getLevel(), commandSource));
 
                             if (source.execute != null && source.predicateValue.getClass().equals(source.desiredOutputType)) {
                                 source.execute.accept(source.predicateValue);
@@ -138,7 +131,7 @@ public class CommandTreeBuilder {
                     parentNode.addChild(new ZPSLiteral.Builder<CommandSourceStack>(mapper.displayName()).forward(destination, context -> {
                         if (context.getSource().source instanceof ZPSScriptCommandSource source) {
                             var mapperFunction = (java.util.function.BiFunction<Object, ScriptContext, Object>) mapper.function();
-                            source.predicateValue = mapperFunction.apply(source.predicateValue, new ScriptContextImpl(context, source.getPos(), context.getSource().getLevel()));
+                            source.predicateValue = mapperFunction.apply(source.predicateValue, new ScriptContextImpl(context.getSource(), source.getPos(), context.getSource().getLevel()));
 
                             if (source.execute != null && source.predicateValue.getClass().equals(source.desiredOutputType)) {
                                 source.execute.accept(source.predicateValue);
@@ -183,13 +176,64 @@ public class CommandTreeBuilder {
         }
     }
 
-    private record ScriptContextImpl(CommandContext<CommandSourceStack> context, BlockPos pos, ServerLevel level) implements ScriptContext {
-        @Override
-        public net.minecraft.commands.CommandSourceStack commandSource() {
-            return context.getSource();
+    @SuppressWarnings("unchecked")
+    public void buildExecutors() {
+        CommandNode<CommandSourceStack> booleanMapperNode = getOrCreateMapperNode("have-" + ResourceLocation.parse("zps:boolean") + "-need-" + ResourceLocation.parse("zps:boolean"));
+
+        for (var executor : Registry.EXECUTORS) {
+            for (var parentNode : List.of(booleanMapperNode, executors)) {
+
+                String argumentKey = executor.displayName() + "_executor_argument_" + executor.inputKey();
+
+                @SuppressWarnings("rawtypes")
+                ZPSArgument.Builder argumentBuilder = ZPSArgument.Builder.argument(argumentKey, executor.argumentType());
+
+                @SuppressWarnings("unchecked")
+                var builtArgument = (ZPSArgument.Builder<CommandSourceStack, Object>) argumentBuilder
+                        .executes(context -> {
+                    CommandSourceStack commandSource = (CommandSourceStack) context.getSource();
+                    if (commandSource.source instanceof ZPSScriptCommandSource source) {
+                        // Test the predicate (IF/UNLESS/NONE)
+                        if (!source.predicate.test(source.predicateValue)) {
+                            return 0; // Predicate failed, don't execute
+                        }
+
+                        // Extract the raw argument
+                        Object rawArg = context.getArgument(argumentKey, executor.argumentClass());
+
+                        // Create context for argumentMapper
+                        ScriptContext plainContext = new ScriptContextImpl(
+                                commandSource, source.getPos(), commandSource.getLevel()
+                        );
+
+                        // Apply argumentMapper to convert A -> I
+                        @SuppressWarnings("rawtypes")
+                        BiFunction argumentMapper = executor.argumentMapper();
+                        @SuppressWarnings("unchecked")
+                        Object mappedValue = argumentMapper.apply(rawArg, plainContext);
+
+                        // Create context with the mapped value
+                        var argContext = new ScriptContextWithArgumentImpl<>(
+                                mappedValue, source.getPos(), commandSource.getLevel(), commandSource
+                        );
+
+                        // Execute the executor function
+                        @SuppressWarnings("rawtypes")
+                        BiFunction executorFunction = executor.function();
+                        @SuppressWarnings("unchecked")
+                        Integer result = (Integer) executorFunction.apply(mappedValue, argContext);
+                        return result;
+                    }
+                    return 0; // Not a ZPSScriptCommandSource
+                });
+
+                parentNode.addChild(new ZPSLiteral.Builder<CommandSourceStack>(executor.displayName()).then(builtArgument).build());
+            }
         }
     }
 
-    private record ScriptMapper2ContextImpl<T>(T argumentValue, BlockPos pos, ServerLevel level, net.minecraft.commands.CommandSourceStack commandSource) implements ScriptMapper2.Context<T> { }
+    private record ScriptContextImpl(CommandSourceStack commandSource, BlockPos pos, ServerLevel level) implements ScriptContext {}
+
+    private record ScriptContextWithArgumentImpl<T>(T argumentValue, BlockPos pos, ServerLevel level, CommandSourceStack commandSource) implements ScriptContext.WithArgument<T> { }
 
 }

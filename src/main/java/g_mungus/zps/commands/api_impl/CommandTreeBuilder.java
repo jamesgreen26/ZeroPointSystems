@@ -1,20 +1,23 @@
 package g_mungus.zps.commands.api_impl;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.CommandNode;
-import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
+import g_mungus.zps.commands.api.MappedArgumentType;
 import g_mungus.zps.commands.api.ScriptContext;
 import g_mungus.zps.commands.api.ScriptMapper;
-import g_mungus.zps.commands.api.ScriptNode;
+import g_mungus.zps.commands.api.ScriptMapper2;
+import g_mungus.zps.commands.api_impl.arguments.ZPSArgument;
 import g_mungus.zps.commands.api_impl.arguments.ZPSLiteral;
-import g_mungus.zps.commands.api_impl.exceptions.UnsupportedOperationException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class CommandTreeBuilder {
@@ -42,55 +45,8 @@ public class CommandTreeBuilder {
                 .getChild(ZPSCommands.Paths.INTERNAL)
                 .getChild(ZPSCommands.Paths.EXECUTORS);
 
-        registerPredicates();
         this.mapperGraph = new MapperGraph();
         Registry.MAPPERS.forEach(mapperGraph::addMapper);
-    }
-
-
-    public void registerPredicates() {
-        Map<ResourceLocation, Class<?>> allOutputs = new HashMap<>();
-        for (var existingMapper: Registry.MAPPERS) {
-            allOutputs.put(existingMapper.outputKey(), existingMapper.outputType());
-        }
-
-        for (var existingGetter: Registry.GETTERS) {
-            allOutputs.put(existingGetter.outputKey(), existingGetter.outputType());
-        }
-
-        for (var output: allOutputs.entrySet()) {
-            Registry.register(new ScriptMapper<>(
-                    "equals",
-                    output.getValue(),
-                    Boolean.class,
-                    output.getKey(),
-                    ResourceLocation.parse("zps:boolean"),
-                    (in, context) -> {
-                        if (context instanceof ScriptContextImpl ctx) {
-                            return in.equals(ctx.context.getArgument("value", output.getValue()));
-                        } else {
-                            throw new IllegalStateException();
-                        }
-                    }
-            ));
-            if (Number.class.isAssignableFrom(output.getValue())) {
-                Registry.register(new ScriptMapper<>(
-                        ">",
-                        output.getValue(),
-                        Boolean.class,
-                        output.getKey(),
-                        ResourceLocation.parse("zps:boolean"),
-                        (in, context) -> {
-                            if (context instanceof ScriptContextImpl ctx && in instanceof Number num) {
-                                Number other = (Number) ctx.context.getArgument("value", output.getValue());
-                                return num.doubleValue() > other.doubleValue();
-                            } else {
-                                throw new IllegalStateException();
-                            }
-                        }
-                ));
-            }
-        }
     }
 
     public void buildGetters() {
@@ -152,25 +108,57 @@ public class CommandTreeBuilder {
                 CommandNode<CommandSourceStack> parentNode = createdNodes.get(nodeName);
                 CommandNode<CommandSourceStack> destination = done ? executors : createdNodes.get("have-" + mapper.outputKey() + "-need-" + output);
 
-                parentNode.addChild(new ZPSLiteral.Builder<CommandSourceStack>(mapper.displayName()).forward(destination, context -> {
-                    if (context.getSource().source instanceof ZPSScriptCommandSource source) {
-                        var mapperFunction = (java.util.function.BiFunction<Object, ScriptContext, Object>) mapper.function();
-                        source.value = mapperFunction.apply(source.value, new ScriptContextImpl(context, source.getPos(), context.getSource().getLevel()));
+                if (mapper instanceof ScriptMapper2<?,?> scriptMapper2) {
+                    MappedArgumentType<?, ?> argumentType = scriptMapper2.argumentType();
+                    String argumentKey = mapper.displayName() + "_argument_" + mapper.inputKey();
 
-                        if (source.execute != null && source.value.getClass().equals(source.desiredOutputType)) {
-                            source.execute.accept(source.value);
+                    @SuppressWarnings("rawtypes")
+                    ZPSArgument.Builder argumentBuilder = ZPSArgument.Builder.argument(argumentKey, argumentType.delegate());
+
+                    @SuppressWarnings("unchecked")
+                    var builtArgument = (ZPSArgument.Builder<CommandSourceStack, Object>) argumentBuilder
+                            .forward(destination, context -> {
+                        CommandSourceStack commandSource = (CommandSourceStack) context.getSource();
+                        if (commandSource.source instanceof ZPSScriptCommandSource source) {
+                            var rawArg = context.getArgument(argumentKey, argumentType.argumentClass());
+
+                            @SuppressWarnings("unchecked")
+                            var otherValue = ((java.util.function.BiFunction<Object, CommandSourceStack, Object>) argumentType.mapper())
+                                    .apply(rawArg, commandSource);
+
+                            var mapperFunction = (java.util.function.BiFunction<Object, ScriptContext, Object>) mapper.function();
+                            source.value = mapperFunction.apply(source.value,
+                                    new ScriptMapper2ContextImpl<>(otherValue, source.getPos(), commandSource.getLevel()));
+
+                            if (source.execute != null && source.value.getClass().equals(source.desiredOutputType)) {
+                                source.execute.accept(source.value);
+                            }
                         }
+                        return List.of(context.getSource());
+                    }, false);
 
-                    }
-                    return List.of(context.getSource());
-                }, false).build());
+                    parentNode.addChild(
+                            new ZPSLiteral.Builder<CommandSourceStack>(mapper.displayName()).then(builtArgument).build());
+                } else {
+                    parentNode.addChild(new ZPSLiteral.Builder<CommandSourceStack>(mapper.displayName()).forward(destination, context -> {
+                        if (context.getSource().source instanceof ZPSScriptCommandSource source) {
+                            var mapperFunction = (java.util.function.BiFunction<Object, ScriptContext, Object>) mapper.function();
+                            source.value = mapperFunction.apply(source.value, new ScriptContextImpl(context, source.getPos(), context.getSource().getLevel()));
+
+                            if (source.execute != null && source.value.getClass().equals(source.desiredOutputType)) {
+                                source.execute.accept(source.value);
+                            }
+
+                        }
+                        return List.of(context.getSource());
+                    }, false).build());
+                }
             }
         }
     }
 
-    private static UnsupportedOperationException accessViolation() {
-        return new UnsupportedOperationException(Component.literal("Cannot invoke internal commands directly"));
-    }
+    private record ScriptContextImpl(CommandContext<CommandSourceStack> context, BlockPos pos, ServerLevel level) implements ScriptContext { }
 
-    private record ScriptContextImpl(com.mojang.brigadier.context.CommandContext<CommandSourceStack> context, BlockPos pos, ServerLevel level) implements ScriptContext { }
+    private record ScriptMapper2ContextImpl<T>(T otherValue, BlockPos pos, ServerLevel level) implements ScriptMapper2.Context<T> { }
+
 }

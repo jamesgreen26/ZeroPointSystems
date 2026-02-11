@@ -23,7 +23,8 @@ public class ZPSLiteral<S> extends LiteralCommandNode<S> {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), getRedirect());
+        // Use identityHashCode to avoid infinite recursion when redirect points to parent nodes
+        return Objects.hash(super.hashCode(), System.identityHashCode(getRedirect()));
     }
 
     public static class Builder<S> extends LiteralArgumentBuilder<S> {

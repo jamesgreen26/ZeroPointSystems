@@ -32,6 +32,7 @@ public class ZPSCommands {
 
         dispatcher.register(
                 Commands.literal(Paths.INTERNAL)
+                        .requires(commandSourceStack -> false)
                         .then(Commands.literal(Paths.EXECUTORS))
                         .then(Commands.literal(Paths.MAPPERS))
                         .then(Commands.literal(Paths.GETTERS))

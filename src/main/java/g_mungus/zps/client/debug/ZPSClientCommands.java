@@ -19,8 +19,8 @@ public class ZPSClientCommands {
     public static void registerClientCommands(RegisterClientCommandsEvent event) {
         CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
 
-        if (!FMLLoader.isProduction()) {
-            dispatcher.register(ShowScreenCommand.COMMAND);
-        }
+//        if (!FMLLoader.isProduction()) {
+//            dispatcher.register(ShowScreenCommand.COMMAND);
+//        }
     }
 }

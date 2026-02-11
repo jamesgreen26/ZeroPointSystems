@@ -11,6 +11,7 @@
     "ArgumentTypeInfosMixin",
     "BlockBehaviourAccessor",
     "BlockBehaviourMixin",
+    "BlockInWorldMixin",
     "ClientboundCommandsPacketMixin",
     "LecternBlockEntityMixin",
     "ServerLevelMixin",

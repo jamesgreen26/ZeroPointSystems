@@ -6,12 +6,15 @@ import g_mungus.zps.commands.api.ScriptMapper;
 import g_mungus.zps.commands.api.ScriptMapper2;
 import net.minecraft.commands.arguments.DimensionArgument;
 import net.minecraft.commands.arguments.blocks.BlockInput;
+import net.minecraft.commands.arguments.blocks.BlockPredicateArgument;
 import net.minecraft.commands.arguments.blocks.BlockStateArgument;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.commands.arguments.coordinates.Coordinates;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.pattern.BlockInWorld;
+import net.minecraft.world.level.block.state.predicate.BlockPredicate;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -66,9 +69,16 @@ public class ZPSScriptMappers {
                 Boolean.class,
                 ResourceLocation.parse("zps:block_state"),
                 ResourceLocation.parse("zps:boolean"),
-                (blockstate, context) -> blockstate.equals(context.argumentValue().getState()),
-                BlockStateArgument.block(event.buildContext()),
-                BlockInput.class
+                (blockstate, context) -> {
+                    @SuppressWarnings("ConstantConditions")
+                    BlockInWorld block = new BlockInWorld(null, null, false);
+                    BlockInWorldMutable blockInWorldMutable = ((BlockInWorldMutable) block);
+                    blockInWorldMutable.zps$setState(blockstate);
+                    blockInWorldMutable.zps$setCachedEntity(true);
+                    return context.argumentValue().test(block);
+                },
+                BlockPredicateArgument.blockPredicate(event.buildContext()),
+                BlockPredicateArgument.Result.class
         ));
 
         // Equality check for int
@@ -142,5 +152,10 @@ public class ZPSScriptMappers {
                 DimensionArgument.dimension(),
                 ResourceLocation.class
         ));
+    }
+
+    public interface BlockInWorldMutable {
+        void zps$setState(BlockState state);
+        void zps$setCachedEntity(boolean b);
     }
 }

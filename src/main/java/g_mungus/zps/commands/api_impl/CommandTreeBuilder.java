@@ -61,10 +61,10 @@ public class CommandTreeBuilder {
                         CommandNode<CommandSourceStack> destination = mappers.getChild("have-" + getter.outputKey() + "-need-" + output);
                         getters.addChild(new ZPSLiteral.Builder<CommandSourceStack>("need-" + output).then(new ZPSLiteral.Builder<CommandSourceStack>(getter.displayName()).forward(destination, context -> {
                             if (context.getSource().source instanceof ZPSScriptCommandSource source) {
-                                source.value = getter.function().apply(new ScriptContextImpl(context, source.getPos(), context.getSource().getLevel()));
+                                source.predicateValue = getter.function().apply(new ScriptContextImpl(context, source.getPos(), context.getSource().getLevel()));
 
-                                if (source.execute != null && source.value.getClass().equals(source.desiredOutputType)) {
-                                    source.execute.accept(source.value);
+                                if (source.execute != null && source.predicateValue.getClass().equals(source.desiredOutputType)) {
+                                    source.execute.accept(source.predicateValue);
                                 }
                             }
                             return List.of(context.getSource());
@@ -128,11 +128,11 @@ public class CommandTreeBuilder {
                                     .apply(rawArg, commandSource);
 
                             var mapperFunction = (java.util.function.BiFunction<Object, ScriptContext, Object>) mapper.function();
-                            source.value = mapperFunction.apply(source.value,
+                            source.predicateValue = mapperFunction.apply(source.predicateValue,
                                     new ScriptMapper2ContextImpl<>(otherValue, source.getPos(), commandSource.getLevel()));
 
-                            if (source.execute != null && source.value.getClass().equals(source.desiredOutputType)) {
-                                source.execute.accept(source.value);
+                            if (source.execute != null && source.predicateValue.getClass().equals(source.desiredOutputType)) {
+                                source.execute.accept(source.predicateValue);
                             }
                         }
                         return List.of(context.getSource());
@@ -144,10 +144,10 @@ public class CommandTreeBuilder {
                     parentNode.addChild(new ZPSLiteral.Builder<CommandSourceStack>(mapper.displayName()).forward(destination, context -> {
                         if (context.getSource().source instanceof ZPSScriptCommandSource source) {
                             var mapperFunction = (java.util.function.BiFunction<Object, ScriptContext, Object>) mapper.function();
-                            source.value = mapperFunction.apply(source.value, new ScriptContextImpl(context, source.getPos(), context.getSource().getLevel()));
+                            source.predicateValue = mapperFunction.apply(source.predicateValue, new ScriptContextImpl(context, source.getPos(), context.getSource().getLevel()));
 
-                            if (source.execute != null && source.value.getClass().equals(source.desiredOutputType)) {
-                                source.execute.accept(source.value);
+                            if (source.execute != null && source.predicateValue.getClass().equals(source.desiredOutputType)) {
+                                source.execute.accept(source.predicateValue);
                             }
 
                         }
@@ -155,6 +155,37 @@ public class CommandTreeBuilder {
                     }, false).build());
                 }
             }
+        }
+    }
+
+    public void buildConditionalExecutors() {
+        // Get the target node: getters -> "need-zps:boolean"
+        CommandNode<CommandSourceStack> booleanGetterNode = getters.getChild("need-" + ResourceLocation.parse("zps:boolean"));
+
+        if (booleanGetterNode != null) {
+            // Add "if" literal that redirects to boolean getter and sets predicate type
+            executors.addChild(
+                    new ZPSLiteral.Builder<CommandSourceStack>("if")
+                            .forward(booleanGetterNode, context -> {
+                                if (context.getSource().source instanceof ZPSScriptCommandSource source) {
+                                    source.predicate = ZPSScriptCommandSource.PredicateType.IF;
+                                }
+                                return List.of(context.getSource());
+                            }, false)
+                            .build()
+            );
+
+            // Add "unless" literal that redirects to boolean getter and sets predicate type
+            executors.addChild(
+                    new ZPSLiteral.Builder<CommandSourceStack>("unless")
+                            .forward(booleanGetterNode, context -> {
+                                if (context.getSource().source instanceof ZPSScriptCommandSource source) {
+                                    source.predicate = ZPSScriptCommandSource.PredicateType.UNLESS;
+                                }
+                                return List.of(context.getSource());
+                            }, false)
+                            .build()
+            );
         }
     }
 

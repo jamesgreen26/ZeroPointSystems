@@ -11,7 +11,8 @@ import java.util.function.Consumer;
 public class ZPSScriptCommandSource implements CommandSource {
     private final @Nullable CommandSource delegate;
     private BlockPos blockPos = new BlockPos(0, 0, 0);
-    public Object value = null;
+    public Object predicateValue = null;
+    public PredicateType predicate = PredicateType.NONE;
     public Class<?> desiredOutputType = null;
     public Consumer<Object> execute = null;
 
@@ -47,5 +48,9 @@ public class ZPSScriptCommandSource implements CommandSource {
 
     public BlockPos getPos() {
         return this.blockPos;
+    }
+
+    public enum PredicateType {
+        NONE, IF, UNLESS
     }
 }

@@ -6,9 +6,9 @@ import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptContext;
 import g_mungus.zps.commands.api.ScriptMapper;
 import g_mungus.zps.commands.api.ScriptNode;
+import g_mungus.zps.commands.api_impl.arguments.ZPSLiteral;
 import g_mungus.zps.commands.api_impl.exceptions.UnsupportedOperationException;
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -104,7 +104,7 @@ public class CommandTreeBuilder {
                         boolean done = output.equals(getter.outputKey());
 
                         CommandNode<CommandSourceStack> destination = done ? executors : mappers.getChild("have-" + getter.outputKey() + "-need-" + output);
-                        getters.addChild(Commands.literal("need-" + output).then(Commands.literal(getter.displayName()).forward(destination, context -> {
+                        getters.addChild(new ZPSLiteral.Builder<CommandSourceStack>("need-" + output).then(new ZPSLiteral.Builder<CommandSourceStack>(getter.displayName()).forward(destination, context -> {
                             if (context.getSource().source instanceof ZPSScriptCommandSource source) {
                                 source.value = getter.function().apply(new ScriptContextImpl(context, source.getPos(), context.getSource().getLevel()));
 
@@ -135,7 +135,7 @@ public class CommandTreeBuilder {
 
                 // Only create if it doesn't exist yet
                 if (!createdNodes.containsKey(nodeName)) {
-                    CommandNode<CommandSourceStack> node = Commands.literal(nodeName).build();
+                    CommandNode<CommandSourceStack> node = new ZPSLiteral.Builder<CommandSourceStack>(nodeName).build();
                     mappers.addChild(node);
                     createdNodes.put(nodeName, node);
                 }
@@ -152,7 +152,7 @@ public class CommandTreeBuilder {
                 CommandNode<CommandSourceStack> parentNode = createdNodes.get(nodeName);
                 CommandNode<CommandSourceStack> destination = done ? executors : createdNodes.get("have-" + mapper.outputKey() + "-need-" + output);
 
-                parentNode.addChild(Commands.literal(mapper.displayName()).forward(destination, context -> {
+                parentNode.addChild(new ZPSLiteral.Builder<CommandSourceStack>(mapper.displayName()).forward(destination, context -> {
                     if (context.getSource().source instanceof ZPSScriptCommandSource source) {
                         var mapperFunction = (java.util.function.BiFunction<Object, ScriptContext, Object>) mapper.function();
                         source.value = mapperFunction.apply(source.value, new ScriptContextImpl(context, source.getPos(), context.getSource().getLevel()));

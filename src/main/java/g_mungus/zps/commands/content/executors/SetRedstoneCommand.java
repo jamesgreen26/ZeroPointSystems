@@ -15,14 +15,6 @@ import net.minecraft.world.level.redstone.NeighborUpdater;
 public class SetRedstoneCommand {
     public static final ResourceLocation DATA_LOCATION = ZPSMod.resource("redstone");
 
-//    public static final CommandNode<CommandSourceStack> COMMAND = Commands.literal("SET_REDSTONE").then(
-//            Commands.argument("power", IntegerArgumentType.integer(0, 15))
-//                    .executes(context -> {
-//                        BlockPos pos = ZPSCommands.getPosition(context);
-//                        setRedstone(context.getSource().getLevel(), pos, IntegerArgumentType.getInteger(context, "power"));
-//                        return 1;
-//                    })).build();
-
     public static int getRedstonePowerAt(ServerLevel level, BlockPos pos) {
         CompoundTag root = level.getServer().getCommandStorage().get(DATA_LOCATION);
         String dimension = getDimensionKey(level);

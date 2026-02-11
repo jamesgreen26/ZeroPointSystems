@@ -110,35 +110,43 @@ public class CommandTreeBuilder {
                     @SuppressWarnings("unchecked")
                     var builtArgument = (ZPSArgument.Builder<CommandSourceStack, Object>) argumentBuilder
                             .forward(destination, context -> {
-                        CommandSourceStack commandSource = (CommandSourceStack) context.getSource();
-                        if (commandSource.source instanceof ZPSScriptCommandSource source) {
-                            var rawArg = context.getArgument(argumentKey, scriptMapper2.argumentClass());
+                                try {
+                                    CommandSourceStack commandSource = (CommandSourceStack) context.getSource();
+                                    if (commandSource.source instanceof ZPSScriptCommandSource source) {
+                                        var rawArg = context.getArgument(argumentKey, scriptMapper2.argumentClass());
 
-                            var mapperFunction = (java.util.function.BiFunction<Object, ScriptContext, Object>) mapper.function();
-                            source.predicateValue = mapperFunction.apply(source.predicateValue,
-                                    new ScriptContextWithArgumentImpl<>(rawArg, source.getPos(), commandSource.getLevel(), commandSource));
+                                        var mapperFunction = (java.util.function.BiFunction<Object, ScriptContext, Object>) mapper.function();
+                                        source.predicateValue = mapperFunction.apply(source.predicateValue,
+                                                new ScriptContextWithArgumentImpl<>(rawArg, source.getPos(), commandSource.getLevel(), commandSource));
 
-                            if (source.execute != null && source.predicateValue.getClass().equals(source.desiredOutputType)) {
-                                source.execute.accept(source.predicateValue);
-                            }
-                        }
-                        return List.of(context.getSource());
+                                        if (source.execute != null && source.predicateValue.getClass().equals(source.desiredOutputType)) {
+                                            source.execute.accept(source.predicateValue);
+                                        }
+                                    }
+                                    return List.of(context.getSource());
+                                } catch (Exception e) {
+                                    throw new RuntimeException(e);
+                                }
                     }, false);
 
                     parentNode.addChild(
                             new ZPSLiteral.Builder<CommandSourceStack>(mapper.displayName()).then(builtArgument).build());
                 } else {
                     parentNode.addChild(new ZPSLiteral.Builder<CommandSourceStack>(mapper.displayName()).forward(destination, context -> {
-                        if (context.getSource().source instanceof ZPSScriptCommandSource source) {
-                            var mapperFunction = (java.util.function.BiFunction<Object, ScriptContext, Object>) mapper.function();
-                            source.predicateValue = mapperFunction.apply(source.predicateValue, new ScriptContextImpl(context.getSource(), source.getPos(), context.getSource().getLevel()));
+                        try {
+                            if (context.getSource().source instanceof ZPSScriptCommandSource source) {
+                                var mapperFunction = (java.util.function.BiFunction<Object, ScriptContext, Object>) mapper.function();
+                                source.predicateValue = mapperFunction.apply(source.predicateValue, new ScriptContextImpl(context.getSource(), source.getPos(), context.getSource().getLevel()));
 
-                            if (source.execute != null && source.predicateValue.getClass().equals(source.desiredOutputType)) {
-                                source.execute.accept(source.predicateValue);
+                                if (source.execute != null && source.predicateValue.getClass().equals(source.desiredOutputType)) {
+                                    source.execute.accept(source.predicateValue);
+                                }
+
                             }
-
+                            return List.of(context.getSource());
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
                         }
-                        return List.of(context.getSource());
                     }, false).build());
                 }
             }

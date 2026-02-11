@@ -196,7 +196,7 @@ public class ZPSScriptMappers {
                 ResourceLocation.parse("zps:boolean"),
                 (blockstate, context) -> {
                     @SuppressWarnings("ConstantConditions")
-                    BlockInWorld block = new BlockInWorld(null, null, false);
+                    BlockInWorld block = new BlockInWorld(null, new BlockPos(0,0,0), false);
                     BlockInWorldMutable blockInWorldMutable = ((BlockInWorldMutable) block);
                     blockInWorldMutable.zps$setState(blockstate);
                     blockInWorldMutable.zps$setCachedEntity(true);
@@ -357,7 +357,7 @@ public class ZPSScriptMappers {
                 Boolean.class,
                 ResourceLocation.parse("zps:dimension"),
                 ResourceLocation.parse("zps:boolean"),
-                (dimension, context) -> dimension.equals(context.argumentValue().getPath()),
+                (dimension, context) -> dimension.equals(context.argumentValue().toString()),
                 DimensionArgument.dimension(),
                 ResourceLocation.class
         ));

@@ -3,7 +3,6 @@ package g_mungus.zps.commands.api_impl;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.CommandNode;
-import g_mungus.zps.commands.api.MappedArgumentType;
 import g_mungus.zps.commands.api.ScriptContext;
 import g_mungus.zps.commands.api.ScriptMapper;
 import g_mungus.zps.commands.api.ScriptMapper2;
@@ -108,28 +107,23 @@ public class CommandTreeBuilder {
                 // Mappers never redirect to executors - they always redirect to the next "have-X-need-Y" node
                 CommandNode<CommandSourceStack> destination = createdNodes.get("have-" + mapper.outputKey() + "-need-" + output);
 
-                if (mapper instanceof ScriptMapper2<?,?> scriptMapper2) {
-                    MappedArgumentType<?, ?> argumentType = scriptMapper2.argumentType();
+                if (mapper instanceof ScriptMapper2<?,?,?> scriptMapper2) {
                     // Include output to make argument keys unique per destination
                     String argumentKey = mapper.displayName() + "_argument_" + mapper.inputKey() + "_to_" + output;
 
                     @SuppressWarnings("rawtypes")
-                    ZPSArgument.Builder argumentBuilder = ZPSArgument.Builder.argument(argumentKey, argumentType.delegate());
+                    ZPSArgument.Builder argumentBuilder = ZPSArgument.Builder.argument(argumentKey, scriptMapper2.argumentType());
 
                     @SuppressWarnings("unchecked")
                     var builtArgument = (ZPSArgument.Builder<CommandSourceStack, Object>) argumentBuilder
                             .forward(destination, context -> {
                         CommandSourceStack commandSource = (CommandSourceStack) context.getSource();
                         if (commandSource.source instanceof ZPSScriptCommandSource source) {
-                            var rawArg = context.getArgument(argumentKey, argumentType.argumentClass());
-
-                            @SuppressWarnings("unchecked")
-                            var otherValue = ((java.util.function.BiFunction<Object, CommandSourceStack, Object>) argumentType.mapper())
-                                    .apply(rawArg, commandSource);
+                            var rawArg = context.getArgument(argumentKey, scriptMapper2.argumentClass());
 
                             var mapperFunction = (java.util.function.BiFunction<Object, ScriptContext, Object>) mapper.function();
                             source.predicateValue = mapperFunction.apply(source.predicateValue,
-                                    new ScriptMapper2ContextImpl<>(otherValue, source.getPos(), commandSource.getLevel()));
+                                    new ScriptMapper2ContextImpl<>(rawArg, source.getPos(), commandSource.getLevel(), commandSource));
 
                             if (source.execute != null && source.predicateValue.getClass().equals(source.desiredOutputType)) {
                                 source.execute.accept(source.predicateValue);
@@ -189,8 +183,13 @@ public class CommandTreeBuilder {
         }
     }
 
-    private record ScriptContextImpl(CommandContext<CommandSourceStack> context, BlockPos pos, ServerLevel level) implements ScriptContext { }
+    private record ScriptContextImpl(CommandContext<CommandSourceStack> context, BlockPos pos, ServerLevel level) implements ScriptContext {
+        @Override
+        public net.minecraft.commands.CommandSourceStack commandSource() {
+            return context.getSource();
+        }
+    }
 
-    private record ScriptMapper2ContextImpl<T>(T otherValue, BlockPos pos, ServerLevel level) implements ScriptMapper2.Context<T> { }
+    private record ScriptMapper2ContextImpl<T>(T argumentValue, BlockPos pos, ServerLevel level, net.minecraft.commands.CommandSourceStack commandSource) implements ScriptMapper2.Context<T> { }
 
 }

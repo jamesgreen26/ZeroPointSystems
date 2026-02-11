@@ -1,5 +1,6 @@
 package g_mungus.zps.commands.content;
 
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptMapper;
@@ -10,7 +11,9 @@ import net.minecraft.commands.arguments.blocks.BlockPredicateArgument;
 import net.minecraft.commands.arguments.blocks.BlockStateArgument;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.commands.arguments.coordinates.Coordinates;
+import net.minecraft.commands.arguments.coordinates.Vec3Argument;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.pattern.BlockInWorld;
@@ -48,6 +51,128 @@ public class ZPSScriptMappers {
                 ResourceLocation.parse("zps:block_pos"),
                 ResourceLocation.parse("zps:int"),
                 (blockPos, scriptContext) -> blockPos.getZ()
+        ));
+
+        // Vec3 Position - X coordinate
+        event.register(new ScriptMapper<>(
+                "x",
+                Vec3.class,
+                Double.class,
+                ResourceLocation.parse("zps:vec_pos"),
+                ResourceLocation.parse("zps:double"),
+                (vec3, scriptContext) -> vec3.x
+        ));
+
+        // Vec3 Position - Y coordinate
+        event.register(new ScriptMapper<>(
+                "y",
+                Vec3.class,
+                Double.class,
+                ResourceLocation.parse("zps:vec_pos"),
+                ResourceLocation.parse("zps:double"),
+                (vec3, scriptContext) -> vec3.y
+        ));
+
+        // Vec3 Position - Z coordinate
+        event.register(new ScriptMapper<>(
+                "z",
+                Vec3.class,
+                Double.class,
+                ResourceLocation.parse("zps:vec_pos"),
+                ResourceLocation.parse("zps:double"),
+                (vec3, scriptContext) -> vec3.z
+        ));
+
+        // Vec3 Position - Distance to another position
+        event.register(new ScriptMapper2<>(
+                "distance_to",
+                Vec3.class,
+                Double.class,
+                ResourceLocation.parse("zps:vec_pos"),
+                ResourceLocation.parse("zps:double"),
+                (vec3, context) -> vec3.distanceTo(context.argumentValue().getPosition(context.commandSource())),
+                Vec3Argument.vec3(),
+                Coordinates.class
+        ));
+
+        // Vec3 Box - X dimension
+        event.register(new ScriptMapper<>(
+                "x",
+                Vec3.class,
+                Double.class,
+                ResourceLocation.parse("zps:vec_box"),
+                ResourceLocation.parse("zps:double"),
+                (vec3, scriptContext) -> vec3.x
+        ));
+
+        // Vec3 Box - Y dimension
+        event.register(new ScriptMapper<>(
+                "y",
+                Vec3.class,
+                Double.class,
+                ResourceLocation.parse("zps:vec_box"),
+                ResourceLocation.parse("zps:double"),
+                (vec3, scriptContext) -> vec3.y
+        ));
+
+        // Vec3 Box - Z dimension
+        event.register(new ScriptMapper<>(
+                "z",
+                Vec3.class,
+                Double.class,
+                ResourceLocation.parse("zps:vec_box"),
+                ResourceLocation.parse("zps:double"),
+                (vec3, scriptContext) -> vec3.z
+        ));
+
+        // Vec3 Box - Volume
+        event.register(new ScriptMapper<>(
+                "volume",
+                Vec3.class,
+                Double.class,
+                ResourceLocation.parse("zps:vec_box"),
+                ResourceLocation.parse("zps:double"),
+                (vec3, scriptContext) -> vec3.x * vec3.y * vec3.z
+        ));
+
+        // Vec3 Direction - X component
+        event.register(new ScriptMapper<>(
+                "x",
+                Vec3.class,
+                Double.class,
+                ResourceLocation.parse("zps:vec_dir"),
+                ResourceLocation.parse("zps:double"),
+                (vec3, scriptContext) -> vec3.x
+        ));
+
+        // Vec3 Direction - Y component
+        event.register(new ScriptMapper<>(
+                "y",
+                Vec3.class,
+                Double.class,
+                ResourceLocation.parse("zps:vec_dir"),
+                ResourceLocation.parse("zps:double"),
+                (vec3, scriptContext) -> vec3.y
+        ));
+
+        // Vec3 Direction - Z component
+        event.register(new ScriptMapper<>(
+                "z",
+                Vec3.class,
+                Double.class,
+                ResourceLocation.parse("zps:vec_dir"),
+                ResourceLocation.parse("zps:double"),
+                (vec3, scriptContext) -> vec3.z
+        ));
+
+        // Vec3 Direction - Length (magnitude)
+        event.register(new ScriptMapper<>(
+                "length",
+                Vec3.class,
+                Double.class,
+                ResourceLocation.parse("zps:vec_dir"),
+                ResourceLocation.parse("zps:double"),
+                (vec3, scriptContext) -> vec3.length()
         ));
 
         // Equality check for BlockPos
@@ -139,6 +264,90 @@ public class ZPSScriptMappers {
                 (value, context) -> value - context.argumentValue(),
                 IntegerArgumentType.integer(),
                 Integer.class
+        ));
+
+        // Equality check for double
+        event.register(new ScriptMapper2<>(
+                "==",
+                Double.class,
+                Boolean.class,
+                ResourceLocation.parse("zps:double"),
+                ResourceLocation.parse("zps:boolean"),
+                (value, context) -> value.equals(context.argumentValue()),
+                DoubleArgumentType.doubleArg(),
+                Double.class
+        ));
+
+        // Greater than for double
+        event.register(new ScriptMapper2<>(
+                ">",
+                Double.class,
+                Boolean.class,
+                ResourceLocation.parse("zps:double"),
+                ResourceLocation.parse("zps:boolean"),
+                (value, context) -> value > context.argumentValue(),
+                DoubleArgumentType.doubleArg(),
+                Double.class
+        ));
+
+        // Less than for double
+        event.register(new ScriptMapper2<>(
+                "<",
+                Double.class,
+                Boolean.class,
+                ResourceLocation.parse("zps:double"),
+                ResourceLocation.parse("zps:boolean"),
+                (value, context) -> value < context.argumentValue(),
+                DoubleArgumentType.doubleArg(),
+                Double.class
+        ));
+
+        // Addition for double
+        event.register(new ScriptMapper2<>(
+                "+",
+                Double.class,
+                Double.class,
+                ResourceLocation.parse("zps:double"),
+                ResourceLocation.parse("zps:double"),
+                (value, context) -> value + context.argumentValue(),
+                DoubleArgumentType.doubleArg(),
+                Double.class
+        ));
+
+        // Subtraction for double
+        event.register(new ScriptMapper2<>(
+                "-",
+                Double.class,
+                Double.class,
+                ResourceLocation.parse("zps:double"),
+                ResourceLocation.parse("zps:double"),
+                (value, context) -> value - context.argumentValue(),
+                DoubleArgumentType.doubleArg(),
+                Double.class
+        ));
+
+        // Multiplication for double
+        event.register(new ScriptMapper2<>(
+                "*",
+                Double.class,
+                Double.class,
+                ResourceLocation.parse("zps:double"),
+                ResourceLocation.parse("zps:double"),
+                (value, context) -> value * context.argumentValue(),
+                DoubleArgumentType.doubleArg(),
+                Double.class
+        ));
+
+        // Division for double
+        event.register(new ScriptMapper2<>(
+                "/",
+                Double.class,
+                Double.class,
+                ResourceLocation.parse("zps:double"),
+                ResourceLocation.parse("zps:double"),
+                (value, context) -> value / context.argumentValue(),
+                DoubleArgumentType.doubleArg(),
+                Double.class
         ));
 
         // Equality check for dimension

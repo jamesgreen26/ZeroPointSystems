@@ -1,6 +1,6 @@
 package g_mungus.zps.mixin;
 
-import g_mungus.zps.commands.content.impl.actions.SetRedstoneCommand;
+import g_mungus.zps.commands.content.executors.SetRedstoneCommand;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;

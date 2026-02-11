@@ -1,4 +1,4 @@
-package g_mungus.zps.commands.content.impl.actions;
+package g_mungus.zps.commands.content.executors;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.tree.CommandNode;

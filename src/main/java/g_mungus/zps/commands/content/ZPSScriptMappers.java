@@ -266,6 +266,30 @@ public class ZPSScriptMappers {
                 Integer.class
         ));
 
+        // Multiplication for int -> double
+        event.register(new ScriptMapper2<>(
+                "*",
+                Integer.class,
+                Double.class,
+                ResourceLocation.parse("zps:int"),
+                ResourceLocation.parse("zps:double"),
+                (value, context) -> value * context.argumentValue(),
+                DoubleArgumentType.doubleArg(),
+                Double.class
+        ));
+
+        // Division for int -> double
+        event.register(new ScriptMapper2<>(
+                "/",
+                Integer.class,
+                Double.class,
+                ResourceLocation.parse("zps:int"),
+                ResourceLocation.parse("zps:double"),
+                (value, context) -> value / context.argumentValue(),
+                DoubleArgumentType.doubleArg(),
+                Double.class
+        ));
+
         // Equality check for double
         event.register(new ScriptMapper2<>(
                 "==",
@@ -348,6 +372,26 @@ public class ZPSScriptMappers {
                 (value, context) -> value / context.argumentValue(),
                 DoubleArgumentType.doubleArg(),
                 Double.class
+        ));
+
+        // Round down double to int
+        event.register(new ScriptMapper<>(
+                "rounded_down",
+                Double.class,
+                Integer.class,
+                ResourceLocation.parse("zps:double"),
+                ResourceLocation.parse("zps:int"),
+                (value, scriptContext) -> (int) Math.floor(value)
+        ));
+
+        // Round up double to int
+        event.register(new ScriptMapper<>(
+                "rounded_up",
+                Double.class,
+                Integer.class,
+                ResourceLocation.parse("zps:double"),
+                ResourceLocation.parse("zps:int"),
+                (value, scriptContext) -> (int) Math.ceil(value)
         ));
 
         // Equality check for dimension

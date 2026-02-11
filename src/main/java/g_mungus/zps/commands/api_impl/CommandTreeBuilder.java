@@ -57,9 +57,8 @@ public class CommandTreeBuilder {
             for (ScriptMapper<?, ?> mapper: mapperGraph.findAllMappersLeadingTo(output)) {
                 for (var getter : Registry.GETTERS) {
                     if (getter.outputKey().equals(mapper.inputKey())) {
-                        boolean done = output.equals(getter.outputKey());
 
-                        CommandNode<CommandSourceStack> destination = done ? executors : mappers.getChild("have-" + getter.outputKey() + "-need-" + output);
+                        CommandNode<CommandSourceStack> destination = mappers.getChild("have-" + getter.outputKey() + "-need-" + output);
                         getters.addChild(new ZPSLiteral.Builder<CommandSourceStack>("need-" + output).then(new ZPSLiteral.Builder<CommandSourceStack>(getter.displayName()).forward(destination, context -> {
                             if (context.getSource().source instanceof ZPSScriptCommandSource source) {
                                 source.value = getter.function().apply(new ScriptContextImpl(context, source.getPos(), context.getSource().getLevel()));
@@ -102,15 +101,17 @@ public class CommandTreeBuilder {
         for (ResourceLocation output : allOutputs) {
             for (ScriptMapper<?, ?> mapper: mapperGraph.findAllMappersLeadingTo(output)) {
                 ResourceLocation input = mapper.inputKey();
-                boolean done = output.equals(mapper.outputKey());
                 String nodeName = "have-" + input + "-need-" + output;
 
                 CommandNode<CommandSourceStack> parentNode = createdNodes.get(nodeName);
-                CommandNode<CommandSourceStack> destination = done ? executors : createdNodes.get("have-" + mapper.outputKey() + "-need-" + output);
+
+                // Mappers never redirect to executors - they always redirect to the next "have-X-need-Y" node
+                CommandNode<CommandSourceStack> destination = createdNodes.get("have-" + mapper.outputKey() + "-need-" + output);
 
                 if (mapper instanceof ScriptMapper2<?,?> scriptMapper2) {
                     MappedArgumentType<?, ?> argumentType = scriptMapper2.argumentType();
-                    String argumentKey = mapper.displayName() + "_argument_" + mapper.inputKey();
+                    // Include output to make argument keys unique per destination
+                    String argumentKey = mapper.displayName() + "_argument_" + mapper.inputKey() + "_to_" + output;
 
                     @SuppressWarnings("rawtypes")
                     ZPSArgument.Builder argumentBuilder = ZPSArgument.Builder.argument(argumentKey, argumentType.delegate());

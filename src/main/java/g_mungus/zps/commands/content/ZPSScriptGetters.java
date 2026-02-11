@@ -5,6 +5,7 @@ import g_mungus.zps.commands.api.ScriptContext;
 import g_mungus.zps.commands.api.ScriptGetter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -18,6 +19,13 @@ public class ZPSScriptGetters {
                 BlockPos.class,
                 ResourceLocation.parse("zps:block_pos"),
                 ScriptContext::pos
+        ));
+
+        event.register(new ScriptGetter<>(
+                "block",
+                BlockState.class,
+                ResourceLocation.parse("zps:block_state"),
+                scriptContext -> scriptContext.level().getBlockState(scriptContext.pos())
         ));
 
         event.register(new ScriptGetter<>(

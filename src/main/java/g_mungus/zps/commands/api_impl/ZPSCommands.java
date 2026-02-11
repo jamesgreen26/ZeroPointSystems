@@ -59,6 +59,11 @@ public class ZPSCommands {
             public void register(ScriptNode node) {
                 Registry.register(node);
             }
+
+            @Override
+            public CommandBuildContext buildContext() {
+                return buildContext;
+            }
         });
 
 

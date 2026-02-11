@@ -13,19 +13,42 @@ import java.util.Iterator;
 import java.util.Objects;
 
 
+/**
+ * A specialized Object2IntMap for CommandNode keys that uses redirect-aware equality.
+ *
+ * <p>Unlike the default HashMap behavior which only compares node names via {@link CommandNode#equals},
+ * this map considers both the node name AND its redirect target when determining equality.
+ * This prevents incorrect deduplication of nodes that have the same name but point to different
+ * redirect targets.
+ *
+ * <p>For example, two nodes both named "alias" but redirecting to different targets will be
+ * treated as distinct keys, whereas the default CommandNode.equals() would treat them as identical.
+ *
+ * <p><strong>Internal use only.</strong> This class is specifically designed to fix command tree
+ * serialization bugs and should not be used outside that context.
+ */
 @ApiStatus.Internal
-public class IdentityObject2IntMap extends AbstractObject2IntMap<CommandNode<SharedSuggestionProvider>> {
+public class RedirectAwareObject2IntMap extends AbstractObject2IntMap<CommandNode<SharedSuggestionProvider>> {
     /**
-         * Wrapper that provides identity-based equality and hashcode for CommandNode keys.
-         * This ensures nodes are compared by object identity (==) rather than equals().
-         */
-        private record IdentityWrapper(CommandNode<SharedSuggestionProvider> node) {
+     * Wrapper that provides redirect-aware equality and hashCode for CommandNode keys.
+     *
+     * <p>Two wrapped nodes are considered equal if and only if:
+     * <ul>
+     *   <li>Their node names match (via {@link CommandNode#equals})</li>
+     *   <li>AND their redirect targets are the same object (via {@link Objects#equals})</li>
+     * </ul>
+     *
+     * <p>This allows beneficial deduplication (nodes with same name and same redirect)
+     * while preventing incorrect deduplication (nodes with same name but different redirects).
+     */
+    private record RedirectAwareWrapper(CommandNode<SharedSuggestionProvider> node) {
 
         @Override
         public boolean equals(Object obj) {
-            if (!(obj instanceof IdentityWrapper other)) {
+            if (!(obj instanceof RedirectAwareWrapper other)) {
                 return false;
             }
+            // Check both node name (via CommandNode.equals) AND redirect target
             return this.node.equals(other.node)
                     && Objects.equals(this.node.getRedirect(), other.node.getRedirect());
         }
@@ -36,6 +59,7 @@ public class IdentityObject2IntMap extends AbstractObject2IntMap<CommandNode<Sha
             if (redirect == null) {
                 return this.node.hashCode();
             } else {
+                // Include redirect in hash to match equals() contract
                 return Objects.hash(
                         this.node, redirect
                 );
@@ -43,9 +67,9 @@ public class IdentityObject2IntMap extends AbstractObject2IntMap<CommandNode<Sha
         }
     }
 
-    private final java.util.HashMap<IdentityWrapper, Integer> map;
+    private final java.util.HashMap<RedirectAwareWrapper, Integer> map;
 
-    public IdentityObject2IntMap() {
+    public RedirectAwareObject2IntMap() {
         this.map = new java.util.HashMap<>();
     }
 
@@ -56,13 +80,13 @@ public class IdentityObject2IntMap extends AbstractObject2IntMap<CommandNode<Sha
         }
         @SuppressWarnings("unchecked")
         CommandNode<SharedSuggestionProvider> typedNode = (CommandNode<SharedSuggestionProvider>) node;
-        Integer value = map.get(new IdentityWrapper(typedNode));
+        Integer value = map.get(new RedirectAwareWrapper(typedNode));
         return value != null ? value : defaultReturnValue();
     }
 
     @Override
     public int put(CommandNode<SharedSuggestionProvider> key, int value) {
-        Integer oldValue = map.put(new IdentityWrapper(key), value);
+        Integer oldValue = map.put(new RedirectAwareWrapper(key), value);
         return oldValue != null ? oldValue : defaultReturnValue();
     }
 
@@ -73,7 +97,7 @@ public class IdentityObject2IntMap extends AbstractObject2IntMap<CommandNode<Sha
         }
         @SuppressWarnings("unchecked")
         CommandNode<SharedSuggestionProvider> typedNode = (CommandNode<SharedSuggestionProvider>) node;
-        return map.containsKey(new IdentityWrapper(typedNode));
+        return map.containsKey(new RedirectAwareWrapper(typedNode));
     }
 
     @Override
@@ -86,7 +110,7 @@ public class IdentityObject2IntMap extends AbstractObject2IntMap<CommandNode<Sha
         return new AbstractObjectSet<>() {
             @Override
             public @NotNull ObjectIterator<Entry<CommandNode<SharedSuggestionProvider>>> iterator() {
-                Iterator<java.util.Map.Entry<IdentityWrapper, Integer>> wrappedIterator = map.entrySet().iterator();
+                Iterator<java.util.Map.Entry<RedirectAwareWrapper, Integer>> wrappedIterator = map.entrySet().iterator();
 
                 return new ObjectIterator<>() {
                     @Override
@@ -96,8 +120,8 @@ public class IdentityObject2IntMap extends AbstractObject2IntMap<CommandNode<Sha
 
                     @Override
                     public Entry<CommandNode<SharedSuggestionProvider>> next() {
-                        java.util.Map.Entry<IdentityWrapper, Integer> wrappedEntry = wrappedIterator.next();
-                        // Unwrap the IdentityWrapper to get the original CommandNode
+                        java.util.Map.Entry<RedirectAwareWrapper, Integer> wrappedEntry = wrappedIterator.next();
+                        // Unwrap to get the original CommandNode
                         return new BasicEntry<>(wrappedEntry.getKey().node(), wrappedEntry.getValue());
                     }
 

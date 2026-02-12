@@ -90,6 +90,7 @@ public class ZPSScriptMappers {
                 Double.class,
                 ResourceLocation.parse("zps:vec_pos"),
                 ResourceLocation.parse("zps:double"),
+                "coordinates",
                 (vec3, context) -> vec3.distanceTo(context.argumentValue().getPosition(context.commandSource())),
                 Vec3Argument.vec3(),
                 Coordinates.class
@@ -182,6 +183,7 @@ public class ZPSScriptMappers {
                 Boolean.class,
                 ResourceLocation.parse("zps:block_pos"),
                 ResourceLocation.parse("zps:boolean"),
+                "coordinates",
                 (blockPos, context) -> blockPos.equals(context.argumentValue().getBlockPos(context.commandSource())),
                 BlockPosArgument.blockPos(),
                 Coordinates.class
@@ -194,6 +196,7 @@ public class ZPSScriptMappers {
                 Boolean.class,
                 ResourceLocation.parse("zps:block_state"),
                 ResourceLocation.parse("zps:boolean"),
+                "block",
                 (blockstate, context) -> {
                     @SuppressWarnings("ConstantConditions")
                     BlockInWorld block = new BlockInWorld(null, new BlockPos(0,0,0), false);
@@ -213,6 +216,7 @@ public class ZPSScriptMappers {
                 Boolean.class,
                 ResourceLocation.parse("zps:int"),
                 ResourceLocation.parse("zps:boolean"),
+                "int",
                 (value, context) -> value.equals(context.argumentValue()),
                 IntegerArgumentType.integer(),
                 Integer.class
@@ -225,6 +229,7 @@ public class ZPSScriptMappers {
                 Boolean.class,
                 ResourceLocation.parse("zps:int"),
                 ResourceLocation.parse("zps:boolean"),
+                "int",
                 (value, context) -> value > context.argumentValue(),
                 IntegerArgumentType.integer(),
                 Integer.class
@@ -237,6 +242,7 @@ public class ZPSScriptMappers {
                 Boolean.class,
                 ResourceLocation.parse("zps:int"),
                 ResourceLocation.parse("zps:boolean"),
+                "int",
                 (value, context) -> value < context.argumentValue(),
                 IntegerArgumentType.integer(),
                 Integer.class
@@ -249,6 +255,7 @@ public class ZPSScriptMappers {
                 Integer.class,
                 ResourceLocation.parse("zps:int"),
                 ResourceLocation.parse("zps:int"),
+                "int",
                 (value, context) -> value + context.argumentValue(),
                 IntegerArgumentType.integer(),
                 Integer.class
@@ -261,6 +268,7 @@ public class ZPSScriptMappers {
                 Integer.class,
                 ResourceLocation.parse("zps:int"),
                 ResourceLocation.parse("zps:int"),
+                "int",
                 (value, context) -> value - context.argumentValue(),
                 IntegerArgumentType.integer(),
                 Integer.class
@@ -273,6 +281,7 @@ public class ZPSScriptMappers {
                 Double.class,
                 ResourceLocation.parse("zps:int"),
                 ResourceLocation.parse("zps:double"),
+                "double",
                 (value, context) -> value * context.argumentValue(),
                 DoubleArgumentType.doubleArg(),
                 Double.class
@@ -285,6 +294,7 @@ public class ZPSScriptMappers {
                 Double.class,
                 ResourceLocation.parse("zps:int"),
                 ResourceLocation.parse("zps:double"),
+                "double",
                 (value, context) -> value / context.argumentValue(),
                 DoubleArgumentType.doubleArg(),
                 Double.class
@@ -297,6 +307,7 @@ public class ZPSScriptMappers {
                 Boolean.class,
                 ResourceLocation.parse("zps:double"),
                 ResourceLocation.parse("zps:boolean"),
+                "double",
                 (value, context) -> value.equals(context.argumentValue()),
                 DoubleArgumentType.doubleArg(),
                 Double.class
@@ -309,6 +320,7 @@ public class ZPSScriptMappers {
                 Boolean.class,
                 ResourceLocation.parse("zps:double"),
                 ResourceLocation.parse("zps:boolean"),
+                "double",
                 (value, context) -> value > context.argumentValue(),
                 DoubleArgumentType.doubleArg(),
                 Double.class
@@ -321,6 +333,7 @@ public class ZPSScriptMappers {
                 Boolean.class,
                 ResourceLocation.parse("zps:double"),
                 ResourceLocation.parse("zps:boolean"),
+                "double",
                 (value, context) -> value < context.argumentValue(),
                 DoubleArgumentType.doubleArg(),
                 Double.class
@@ -333,6 +346,7 @@ public class ZPSScriptMappers {
                 Double.class,
                 ResourceLocation.parse("zps:double"),
                 ResourceLocation.parse("zps:double"),
+                "double",
                 (value, context) -> value + context.argumentValue(),
                 DoubleArgumentType.doubleArg(),
                 Double.class
@@ -345,6 +359,7 @@ public class ZPSScriptMappers {
                 Double.class,
                 ResourceLocation.parse("zps:double"),
                 ResourceLocation.parse("zps:double"),
+                "double",
                 (value, context) -> value - context.argumentValue(),
                 DoubleArgumentType.doubleArg(),
                 Double.class
@@ -357,6 +372,7 @@ public class ZPSScriptMappers {
                 Double.class,
                 ResourceLocation.parse("zps:double"),
                 ResourceLocation.parse("zps:double"),
+                "double",
                 (value, context) -> value * context.argumentValue(),
                 DoubleArgumentType.doubleArg(),
                 Double.class
@@ -369,6 +385,7 @@ public class ZPSScriptMappers {
                 Double.class,
                 ResourceLocation.parse("zps:double"),
                 ResourceLocation.parse("zps:double"),
+                "double",
                 (value, context) -> value / context.argumentValue(),
                 DoubleArgumentType.doubleArg(),
                 Double.class
@@ -401,6 +418,7 @@ public class ZPSScriptMappers {
                 Boolean.class,
                 ResourceLocation.parse("zps:dimension"),
                 ResourceLocation.parse("zps:boolean"),
+                "dimension",
                 (dimension, context) -> dimension.equals(context.argumentValue().toString()),
                 DimensionArgument.dimension(),
                 ResourceLocation.class

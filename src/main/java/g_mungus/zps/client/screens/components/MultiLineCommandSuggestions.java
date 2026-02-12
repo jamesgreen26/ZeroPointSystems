@@ -343,10 +343,15 @@ public class MultiLineCommandSuggestions {
 
         for (Entry<CommandNode<SharedSuggestionProvider>, String> entry : map.entrySet()) {
             if (!(entry.getKey() instanceof LiteralCommandNode)) {
-                list.add(FormattedCharSequence.forward((String)entry.getValue(), style));
-                i = Math.max(i, this.font.width((String)entry.getValue()));
+                String usage = entry.getValue();
+
+                usage = simplifyUsage(usage);
+
+                list.add(FormattedCharSequence.forward(usage, style));
+                i = Math.max(i, this.font.width(usage));
             }
         }
+
 
         if (!list.isEmpty()) {
             this.commandUsage.addAll(list);
@@ -359,6 +364,30 @@ public class MultiLineCommandSuggestions {
             return false;
         }
     }
+
+    private static String simplifyUsage(String s) {
+        if (!s.startsWith("<zps:")) {
+            return s;
+        }
+
+        // remove any redirect hint
+        int arrowIndex = s.indexOf(" -> ");
+        if (arrowIndex != -1) {
+            s = s.substring(0, arrowIndex);
+        }
+
+        int lastColon = s.lastIndexOf(':');
+        int closingBracket = s.lastIndexOf('>');
+
+        if (lastColon != -1 && closingBracket != -1 && lastColon < closingBracket) {
+            String type = s.substring(lastColon + 1, closingBracket);
+            return "<" + type + ">";
+        }
+
+        return s;
+    }
+
+
 
     private FormattedCharSequence formatChat(String string, int i) {
         // 'string' is the visible portion of a line (after horizontal scrolling)

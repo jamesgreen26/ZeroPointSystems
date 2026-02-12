@@ -1,7 +1,6 @@
 package g_mungus.zps.commands.api_impl;
 
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.CommandNode;
 import g_mungus.zps.commands.api.ScriptContext;
 import g_mungus.zps.commands.api.ScriptMapper;
@@ -14,10 +13,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -103,7 +99,9 @@ public class CommandTreeBuilder {
 
                 if (mapper instanceof ScriptMapper2<?,?,?> scriptMapper2) {
                     // Include output to make argument keys unique per destination
-                    String argumentKey = mapper.displayName() + "_argument_" + mapper.inputKey() + "_to_" + output + "_" + scriptMapper2.argumentType().hashCode();
+                    String argumentKey = "zps:argument_" + Objects.hash(
+                            input, output, mapper.displayName(), mapper.outputKey()
+                    ) + ":" + scriptMapper2.argumentHint();
 
                     @SuppressWarnings("rawtypes")
                     ZPSArgument.Builder argumentBuilder = ZPSArgument.Builder.argument(argumentKey, scriptMapper2.argumentType());
@@ -192,7 +190,7 @@ public class CommandTreeBuilder {
         for (var executor : Registry.EXECUTORS) {
             for (var parentNode : List.of(booleanMapperNode, executors)) {
 
-                String argumentKey = executor.displayName() + "_executor_argument_" + executor.inputKey();
+                String argumentKey = "zps:" + executor.displayName() + ":" + executor.inputKey().getPath();
 
                 @SuppressWarnings("rawtypes")
                 ZPSArgument.Builder argumentBuilder = ZPSArgument.Builder.argument(argumentKey, executor.argumentType());

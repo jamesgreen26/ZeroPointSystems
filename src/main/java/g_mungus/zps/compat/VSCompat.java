@@ -6,10 +6,10 @@ import g_mungus.zps.commands.api.ScriptGetter;
 import g_mungus.zps.commands.api.ScriptMapper;
 import g_mungus.zps.commands.api.ScriptMapper2;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.joml.primitives.AABBd;
 import org.joml.primitives.AABBdc;
 import org.joml.primitives.AABBi;
@@ -55,6 +55,7 @@ public class VSCompat {
                 Boolean.class,
                 ZPSMod.resource("ship"),
                 ZPSMod.resource("boolean"),
+                "ship",
                 (ship, context) -> {
                     Optional<Ship> other = context.argumentValue().select(VSGameUtilsKt.getShipObjectWorld(context.level()).getAllShips()).stream().min(Comparator.comparingDouble(
                             value -> value.getTransform().getPosition().distanceSquared(VectorConversionsMCKt.toJOML(context.pos().getCenter()))

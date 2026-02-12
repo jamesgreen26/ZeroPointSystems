@@ -5,6 +5,7 @@
   "minVersion": "0.8",
   "client": [
     "BlockElementMixin",
+    "CommandSuggestionsMixin",
     "SelectorDeserializerNotMixin"
   ],
   "mixins": [

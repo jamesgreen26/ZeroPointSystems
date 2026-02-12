@@ -131,7 +131,7 @@ public class ZPSCommands {
 
     public static class Paths {
         public static final String SCRIPT = "zps_script";
-        public static final String INTERNAL = "zps_script_internal";
+        public static final String INTERNAL = "zps_hide";
         public static final String MAPPERS = "MAPPERS";
         public static final String GETTERS = "GETTERS";
         public static final String EXECUTORS = "EXECUTORS";

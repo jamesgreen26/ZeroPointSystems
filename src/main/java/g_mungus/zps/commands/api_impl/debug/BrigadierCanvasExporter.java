@@ -114,6 +114,8 @@ public class BrigadierCanvasExporter<S> {
         edge.put("toNode", toId);
         edge.put("toSide", "top");
 
+        edge.put("color", randomBrightColor());
+
         edges.add(edge);
     }
 
@@ -130,4 +132,19 @@ public class BrigadierCanvasExporter<S> {
         }
         return sb.toString();
     }
+
+    private String randomBrightColor() {
+        float hue = random.nextFloat(); // 0.0 - 1.0
+        float saturation = 1.0f;
+        float brightness = 1.0f;
+
+        int rgb = java.awt.Color.HSBtoRGB(hue, saturation, brightness);
+
+        int r = (rgb >> 16) & 0xFF;
+        int g = (rgb >> 8) & 0xFF;
+        int b = rgb & 0xFF;
+
+        return String.format("#%02x%02x%02x", r, g, b);
+    }
+
 }

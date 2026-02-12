@@ -12,15 +12,18 @@ public class BrigadierCanvasExporter<S> {
 
     private static final int NODE_WIDTH = 250;
     private static final int NODE_HEIGHT = 60;
+    private static final int HORIZONTAL_SPACING = 300;
+    private static final int VERTICAL_SPACING = 150;
 
     private final Map<CommandNode<S>, String> nodeIds = new IdentityHashMap<>();
     private final List<Map<String, Object>> nodes = new ArrayList<>();
     private final List<Map<String, Object>> edges = new ArrayList<>();
+    private final Map<Integer, Integer> depthCounters = new HashMap<>();
 
     private final SecureRandom random = new SecureRandom();
 
     public String export(CommandNode<S> root) {
-        layoutAndVisit(root, 0, new int[]{0});
+        layoutAndVisit(root, 0);
         exportEdges(root, new HashSet<>());
 
         Map<String, Object> canvas = new LinkedHashMap<>();
@@ -35,24 +38,27 @@ public class BrigadierCanvasExporter<S> {
     // Layout + Node Export
     // ------------------------------------------------------------
 
-    private void layoutAndVisit(CommandNode<S> node, int depth, int[] rowCounter) {
+    private void layoutAndVisit(CommandNode<S> node, int depth) {
         if (nodeIds.containsKey(node)) return;
 
         String id = generateId();
         nodeIds.put(node, id);
 
-        int x = depth * 400;
-        int y = rowCounter[0] * 150;
-        rowCounter[0]++;
+        // Distribute nodes horizontally within each depth level
+        int horizontalIndex = depthCounters.getOrDefault(depth, 0);
+        depthCounters.put(depth, horizontalIndex + 1);
+
+        int x = horizontalIndex * HORIZONTAL_SPACING;
+        int y = depth * VERTICAL_SPACING;
 
         nodes.add(createTextNode(id, x, y, formatNodeText(node)));
 
         for (CommandNode<S> child : node.getChildren()) {
-            layoutAndVisit(child, depth + 1, rowCounter);
+            layoutAndVisit(child, depth + 1);
         }
 
         if (node.getRedirect() != null) {
-            layoutAndVisit(node.getRedirect(), depth + 1, rowCounter);
+            layoutAndVisit(node.getRedirect(), depth + 1);
         }
     }
 

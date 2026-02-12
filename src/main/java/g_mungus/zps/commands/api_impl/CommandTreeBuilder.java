@@ -2,6 +2,8 @@ package g_mungus.zps.commands.api_impl;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.ArgumentType;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
+import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.tree.CommandNode;
 import g_mungus.zps.commands.api.ScriptContext;
 import g_mungus.zps.commands.api.ScriptExecutor;
@@ -14,8 +16,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraftforge.server.command.EnumArgument;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -218,10 +224,20 @@ public class CommandTreeBuilder {
         });
 
         parentNode.addChild(new ZPSLiteral.Builder<CommandSourceStack>(typed.displayName()).then(builtArgument).build());
+
+        String argumentKey2 = "zps:argument_" + String.format("%06d", argumentIndex++) + ":COMPUTE";
+
+        SuggestionProvider<CommandSourceStack> noSuggestionProvider = (context, builder) -> Suggestions.empty();
+
+        ZPSArgument.Builder<CommandSourceStack, ComputeKey> argumentBuilder2 = ZPSArgument.Builder.argument(argumentKey2, EnumArgument.enumArgument(ComputeKey.class));
+
+        parentNode.addChild(new ZPSLiteral.Builder<CommandSourceStack>(typed.displayName()).then(argumentBuilder2.suggests(noSuggestionProvider)).build());
     }
 
     private record ScriptContextImpl(CommandSourceStack commandSource, BlockPos pos, ServerLevel level) implements ScriptContext {}
 
     private record ScriptContextWithArgumentImpl<T>(T argumentValue, BlockPos pos, ServerLevel level, CommandSourceStack commandSource) implements ScriptContext.WithArgument<T> { }
 
+    @SuppressWarnings("unused")
+    public enum ComputeKey {COMPUTE}
 }

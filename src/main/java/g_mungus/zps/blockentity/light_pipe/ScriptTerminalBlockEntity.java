@@ -53,7 +53,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
     }
 
     private void processCommand(String command) {
-        if (command.startsWith("WAIT ")) {
+        if (command.startsWith("wait ")) {
             executeWaitCommand(command);
             clearOutput();
         } else {

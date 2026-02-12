@@ -32,7 +32,6 @@ public class ZPSCommands {
 
         dispatcher.register(
                 Commands.literal(Paths.INTERNAL)
-                        .requires(commandSourceStack -> false)
                         .then(Commands.literal(Paths.EXECUTORS))
                         .then(Commands.literal(Paths.MAPPERS))
                         .then(Commands.literal(Paths.GETTERS))
@@ -102,8 +101,8 @@ public class ZPSCommands {
 
         CommandNode<S> sourceParent =
                 rootDispatcher.getRoot()
-                        .getChild(Paths.SCRIPT)
-                        .getChild("position");
+                        .getChild(Paths.INTERNAL)
+                        .getChild(Paths.EXECUTORS);
 
         if (sourceParent != null) {
             for (CommandNode<S> child : sourceParent.getChildren()) {
@@ -112,7 +111,7 @@ public class ZPSCommands {
         }
 
         output.register(
-                LiteralArgumentBuilder.<S>literal("WAIT").then(
+                LiteralArgumentBuilder.<S>literal("wait").then(
                 RequiredArgumentBuilder.<S, Integer>argument("cycles", IntegerArgumentType.integer(1, 64))
                         .executes((a) -> 1)));
 

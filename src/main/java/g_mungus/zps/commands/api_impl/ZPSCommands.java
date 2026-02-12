@@ -8,8 +8,10 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.CommandNode;
+import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptNode;
+import g_mungus.zps.commands.api_impl.debug.BrigadierCanvasExporter;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -19,7 +21,10 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.loading.FMLLoader;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 @Mod.EventBusSubscriber
@@ -74,6 +79,15 @@ public class ZPSCommands {
         commandTreeBuilder.buildGetters();
         commandTreeBuilder.buildConditionalExecutors();
         commandTreeBuilder.buildExecutors();
+
+        if (!FMLLoader.isProduction()) {
+            try {
+                String output = new BrigadierCanvasExporter<CommandSourceStack>().export(dispatcher.getRoot().getChild(Paths.INTERNAL));
+                Files.writeString(Path.of("commands.canvas"), output);
+            } catch (Exception e) {
+                ZPSMod.LOGGER.warn("Command tree export failed", e);
+            }
+        }
     }
 
 

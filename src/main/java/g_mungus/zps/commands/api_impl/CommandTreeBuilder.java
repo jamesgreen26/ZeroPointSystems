@@ -27,6 +27,7 @@ public class CommandTreeBuilder {
 
     private final MapperGraph mapperGraph;
     private final Map<String, CommandNode<CommandSourceStack>> mapperNodes;
+    private int argumentIndex = 0;
 
     public CommandTreeBuilder(CommandDispatcher<CommandSourceStack> dispatcher) {
         this.dispatcher = dispatcher;
@@ -99,9 +100,7 @@ public class CommandTreeBuilder {
 
                 if (mapper instanceof ScriptMapper2<?,?,?> scriptMapper2) {
                     // Include output to make argument keys unique per destination
-                    String argumentKey = "zps:argument_" + Objects.hash(
-                            input, output, mapper.displayName(), mapper.outputKey()
-                    ) + ":" + scriptMapper2.argumentHint();
+                    String argumentKey = "zps:argument_" + String.format("%06d", argumentIndex++) + ":" + scriptMapper2.argumentHint();
 
                     @SuppressWarnings("rawtypes")
                     ZPSArgument.Builder argumentBuilder = ZPSArgument.Builder.argument(argumentKey, scriptMapper2.argumentType());
@@ -190,7 +189,7 @@ public class CommandTreeBuilder {
         for (var executor : Registry.EXECUTORS) {
             for (var parentNode : List.of(booleanMapperNode, executors)) {
 
-                String argumentKey = "zps:" + executor.displayName() + ":" + executor.inputKey().getPath();
+                String argumentKey = "zps:argument_" + String.format("%06d", argumentIndex++) + ":" + executor.inputKey().getPath();
 
                 @SuppressWarnings("rawtypes")
                 ZPSArgument.Builder argumentBuilder = ZPSArgument.Builder.argument(argumentKey, executor.argumentType());

@@ -1,5 +1,6 @@
 package g_mungus.zps.commands.api_impl;
 
+import g_mungus.zps.commands.api.ScriptContext;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -7,15 +8,15 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.function.Consumer;
+import java.util.function.BiFunction;
 
 public class ZPSScriptCommandSource implements CommandSource {
     private final @Nullable CommandSource delegate;
     private BlockPos blockPos = new BlockPos(0, 0, 0);
     public Object predicateValue = null;
     public PredicateType predicate = PredicateType.NONE;
-    public Class<?> desiredOutputType = null;
-    public Consumer<Object> execute = null;
+    public BiFunction<?, ? extends ScriptContext.WithArgument<?>, Integer> execute = null;
+    public Class<?> executeType = null;
 
     public ZPSScriptCommandSource(@Nullable CommandSource delegate) {
         this.delegate = delegate;

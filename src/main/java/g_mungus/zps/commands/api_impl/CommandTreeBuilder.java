@@ -214,7 +214,7 @@ public class CommandTreeBuilder {
 
         parentNode.addChild(new ZPSLiteral.Builder<CommandSourceStack>(typed.displayName()).then(builtArgument).build());
 
-        String argumentKey2 = "zps:argument_" + String.format("%06d", argumentIndex++) + ":COMPUTE";
+        String argumentKey2 = "zps:argument_" + String.format("%06d", argumentIndex++) + ":compute";
 
         SuggestionProvider<CommandSourceStack> noSuggestionProvider = (context, builder) -> Suggestions.empty();
 
@@ -241,5 +241,5 @@ public class CommandTreeBuilder {
     private record ScriptContextWithArgumentImpl<T>(T argumentValue, BlockPos pos, ServerLevel level, CommandSourceStack commandSource) implements ScriptContext.WithArgument<T> { }
 
     @SuppressWarnings("unused")
-    public enum ComputeKey {COMPUTE}
+    public enum ComputeKey {compute}
 }

@@ -381,7 +381,12 @@ public class MultiLineCommandSuggestions {
 
         if (lastColon != -1 && closingBracket != -1 && lastColon < closingBracket) {
             String type = s.substring(lastColon + 1, closingBracket);
-            return "<" + type + ">";
+            String result = "<" + type + ">";
+            if (result.equals("<compute>")) {
+                return "compute";
+            } else {
+                return result;
+            }
         }
 
         return s;

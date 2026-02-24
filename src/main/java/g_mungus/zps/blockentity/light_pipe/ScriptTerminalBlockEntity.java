@@ -38,7 +38,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
 
         boolean shouldContinue = head > 0;
         boolean shouldRestart = powered && (!wasPowered || loop);
-        if (shouldContinue || shouldRestart) {
+        if ((shouldContinue || shouldRestart) && !commands.isEmpty()) {
             if (tickDelay <= 0) {
                 String command = commands.get(head);
                 if (command.startsWith("/")) command = command.substring(1);

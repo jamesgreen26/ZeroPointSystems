@@ -20,6 +20,7 @@ import net.minecraftforge.server.command.EnumArgument;
 
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class CommandTreeBuilder {
@@ -197,24 +198,35 @@ public class CommandTreeBuilder {
         var builtArgument = argumentBuilder.executes(context -> {
             CommandSourceStack commandSource = context.getSource();
             if (commandSource.source instanceof ZPSScriptCommandSource source) {
-                if (!source.predicate.test(source.predicateValue)) {
-                    source.sendSystemMessage(Component.literal("Predicate failed"));
-                    return 0;
-                }
+                if (source.predicate.test(source.predicateValue)) {
+                    A rawArg = context.getArgument(argumentKey, typed.argumentClass());
+                    ScriptContext plainContext = new ScriptContextImpl(commandSource, source.getPos(), commandSource.getLevel());
+                    I mappedValue = typed.argumentMapper().apply(rawArg, plainContext);
+                    var argContext = new ScriptContextWithArgumentImpl<>(mappedValue, source.getPos(), commandSource.getLevel(), commandSource);
+                    return typed.function().apply(mappedValue, argContext);
 
-                A rawArg = context.getArgument(argumentKey, typed.argumentClass());
-                ScriptContext plainContext = new ScriptContextImpl(commandSource, source.getPos(), commandSource.getLevel());
-                I mappedValue = typed.argumentMapper().apply(rawArg, plainContext);
-                var argContext = new ScriptContextWithArgumentImpl<>(mappedValue, source.getPos(), commandSource.getLevel(), commandSource);
-                return typed.function().apply(mappedValue, argContext);
+                } else if (source.execute != null) {
+                    return source.execute.get();
+                }
             }
             return 0;
         });
 
         if (isConditional) {
-            CommandNode<CommandSourceStack> booleanMapperNode = getOrCreateMapperNode("have-" + ResourceLocation.parse("zps:boolean") + "-need-" + ResourceLocation.parse("zps:boolean"));
+            builtArgument.then((new ZPSLiteral.Builder<CommandSourceStack>("else")).forward(executors, context -> {
+                if (context.getSource().source instanceof ZPSScriptCommandSource source) {
+                    source.predicate = source.predicate.cycle();
 
-            builtArgument.then((new ZPSLiteral.Builder<CommandSourceStack>("else")).redirect(booleanMapperNode));
+                    source.execute = () -> {
+                        A rawArg = context.getArgument(argumentKey, typed.argumentClass());
+                        ScriptContext plainContext = new ScriptContextImpl(context.getSource(), source.getPos(), context.getSource().getLevel());
+                        I mappedValue = typed.argumentMapper().apply(rawArg, plainContext);
+                        var argContext = new ScriptContextWithArgumentImpl<>(mappedValue, source.getPos(), context.getSource().getLevel(), context.getSource());
+                        return typed.function().apply(mappedValue, argContext);
+                    };
+                }
+                return List.of(context.getSource());
+            }, false));
         }
 
         parentNode.addChild(new ZPSLiteral.Builder<CommandSourceStack>(typed.displayName()).then(builtArgument).build());

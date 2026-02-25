@@ -9,13 +9,14 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 public class ZPSScriptCommandSource implements CommandSource {
     private final @Nullable CommandSource delegate;
     private BlockPos blockPos = new BlockPos(0, 0, 0);
     public Object predicateValue = null;
     public PredicateType predicate = PredicateType.NONE;
-    public BiFunction<?, ? extends ScriptContext.WithArgument<?>, Integer> execute = null;
+    public Supplier<Integer> execute = null;
     public Class<?> executeType = null;
 
     public ZPSScriptCommandSource(@Nullable CommandSource delegate) {
@@ -67,6 +68,14 @@ public class ZPSScriptCommandSource implements CommandSource {
                     assert bool instanceof Boolean;
                     yield !((Boolean) bool);
                 }
+            };
+        }
+
+        public PredicateType cycle() {
+            return switch (this) {
+                case NONE -> NONE;
+                case IF -> UNLESS;
+                case UNLESS -> IF;
             };
         }
     }

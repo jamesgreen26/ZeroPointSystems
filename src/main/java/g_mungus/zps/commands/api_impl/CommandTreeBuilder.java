@@ -213,27 +213,6 @@ public class CommandTreeBuilder {
         });
 
         parentNode.addChild(new ZPSLiteral.Builder<CommandSourceStack>(typed.displayName()).then(builtArgument).build());
-
-        String argumentKey2 = "zps:argument_" + String.format("%06d", argumentIndex++) + ":compute";
-
-        SuggestionProvider<CommandSourceStack> noSuggestionProvider = (context, builder) -> Suggestions.empty();
-
-        ZPSArgument.Builder<CommandSourceStack, ComputeKey> argumentBuilder2 = ZPSArgument.Builder.argument(argumentKey2, EnumArgument.enumArgument(ComputeKey.class));
-
-        CommandNode<CommandSourceStack> getterDestination = getters.getChild("need-" + executor.inputKey());
-
-
-        parentNode.addChild(new ZPSLiteral.Builder<CommandSourceStack>(typed.displayName()).then(
-                argumentBuilder2
-                        .suggests(noSuggestionProvider)
-                        .forward(getterDestination, (commandContext) -> {
-                            if (commandContext.getSource().source instanceof ZPSScriptCommandSource source) {
-                                source.execute = executor.function();
-                                source.executeType = executor.inputType();
-                            }
-                            return Collections.singleton(commandContext.getSource());
-                        }, false)
-        ).build());
     }
 
     private record ScriptContextImpl(CommandSourceStack commandSource, BlockPos pos, ServerLevel level) implements ScriptContext {}

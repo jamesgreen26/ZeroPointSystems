@@ -182,14 +182,13 @@ public class CommandTreeBuilder {
         CommandNode<CommandSourceStack> booleanMapperNode = getOrCreateMapperNode("have-" + ResourceLocation.parse("zps:boolean") + "-need-" + ResourceLocation.parse("zps:boolean"));
 
         for (var executor : Registry.EXECUTORS) {
-            for (var parentNode : List.of(booleanMapperNode, executors)) {
-                addExecutorBranch(executor, parentNode);
-            }
+            addExecutorBranch(executor, executors, false);
+            addExecutorBranch(executor, booleanMapperNode, true);
         }
     }
 
     @SuppressWarnings("unchecked")
-    private <I, A> void addExecutorBranch(ScriptExecutor<?, ?> executor, CommandNode<CommandSourceStack> parentNode) {
+    private <I, A> void addExecutorBranch(ScriptExecutor<?, ?> executor, CommandNode<CommandSourceStack> parentNode, boolean isConditional) {
         ScriptExecutor<I, A> typed = (ScriptExecutor<I, A>) executor;
         String argumentKey = "zps:argument_" + String.format("%06d", argumentIndex++) + ":" + typed.inputKey().getPath();
 
@@ -211,6 +210,12 @@ public class CommandTreeBuilder {
             }
             return 0;
         });
+
+        if (isConditional) {
+            CommandNode<CommandSourceStack> booleanMapperNode = getOrCreateMapperNode("have-" + ResourceLocation.parse("zps:boolean") + "-need-" + ResourceLocation.parse("zps:boolean"));
+
+            builtArgument.then((new ZPSLiteral.Builder<CommandSourceStack>("else")).redirect(booleanMapperNode));
+        }
 
         parentNode.addChild(new ZPSLiteral.Builder<CommandSourceStack>(typed.displayName()).then(builtArgument).build());
     }

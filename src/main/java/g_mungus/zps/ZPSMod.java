@@ -8,6 +8,7 @@ import g_mungus.zps.item.ModCreativeTabs;
 import g_mungus.zps.item.ModItems;
 
 import g_mungus.zps.networking.ZPSGamePackets;
+import g_mungus.zps.painting.ZPSPaintings;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -32,6 +33,7 @@ public final class ZPSMod {
         ModItems.ITEMS.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
         ModEntities.ENTITIES.register(modEventBus);
+        ZPSPaintings.PAINTING_VARIANTS.register(modEventBus);
 
         // Register common setup event
         modEventBus.addListener(this::commonSetup);

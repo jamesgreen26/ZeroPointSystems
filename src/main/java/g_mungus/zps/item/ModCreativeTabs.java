@@ -1,14 +1,24 @@
 package g_mungus.zps.item;
 
 import g_mungus.zps.ZPSMod;
+import net.minecraft.core.Holder;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.tags.PaintingVariantTags;
+import net.minecraft.world.entity.decoration.Painting;
+import net.minecraft.world.entity.decoration.PaintingVariant;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
+
+import java.util.Comparator;
+import java.util.function.Predicate;
 
 import static g_mungus.zps.item.ModItems.*;
 
@@ -21,61 +31,64 @@ public class ModCreativeTabs {
         () -> CreativeModeTab.builder()
             .title(Component.translatable("creativetab.zps_tab"))
             .icon(() -> new ItemStack(DENSE_CABLE_SEPARATOR.get()))
-            .displayItems((parameters, output) -> addAll(output,
-                    OCTO_CONTROLLER,
-                    DENSE_CABLE_SEPARATOR,
-                    CABLE_INSULATION,
-                    SWITCH_PANEL,
-                    GRADUATED_LEVER,
-                    STEPUP_TRANSFORMER,
-                    STEPDOWN_TRANSFORMER,
-                    REDSTONE_CONVERTER,
-                    SERIAL_BUS,
-                    DENSE_CABLES,
-                    CABLE,
+            .displayItems((parameters, output) -> {
+                addAll(output,
+                        OCTO_CONTROLLER,
+                        DENSE_CABLE_SEPARATOR,
+                        CABLE_INSULATION,
+                        SWITCH_PANEL,
+                        GRADUATED_LEVER,
+                        STEPUP_TRANSFORMER,
+                        STEPDOWN_TRANSFORMER,
+                        REDSTONE_CONVERTER,
+                        SERIAL_BUS,
+                        DENSE_CABLES,
+                        CABLE,
 
-                    LIGHT_PIPE,
-                    SCRIPT_TERMINAL,
-                    SCRIPT_TRANSMITTER,
-                    DATA_TRANSCRIBER,
-                    SCRIPT_COMPARATOR,
-                    TEXT_DISPLAY,
-                    RADIO_TRANSMITTER,
-                    RADIO_RECEIVER,
-                    RADIO_ANTENNA,
+                        LIGHT_PIPE,
+                        SCRIPT_TERMINAL,
+                        SCRIPT_TRANSMITTER,
+                        DATA_TRANSCRIBER,
+                        SCRIPT_COMPARATOR,
+                        TEXT_DISPLAY,
+                        RADIO_TRANSMITTER,
+                        RADIO_RECEIVER,
+                        RADIO_ANTENNA,
 
-                    BAUXITE,
-                    LITHIUM_ORE,
-                    DEEPSLATE_LITHIUM_ORE,
-                    ALUMINUM_INGOT,
-                    ALUMINUM_NUGGET,
-                    ALUMINUM_BLOCK,
-                    RAW_LITHIUM,
-                    LITHIUM_INGOT,
-                    LITHIUM_NUGGET,
-                    LITHIUM_BLOCK,
+                        BAUXITE,
+                        LITHIUM_ORE,
+                        DEEPSLATE_LITHIUM_ORE,
+                        ALUMINUM_INGOT,
+                        ALUMINUM_NUGGET,
+                        ALUMINUM_BLOCK,
+                        RAW_LITHIUM,
+                        LITHIUM_INGOT,
+                        LITHIUM_NUGGET,
+                        LITHIUM_BLOCK,
 
-                    SPACE_METAL_INGOT,
-                    SPACE_METAL_PLATE,
-                    SPACE_METAL_MESH,
-                    SPACE_METAL_ROD,
-                    SPACE_METAL_PIPE,
-                    SPACE_METAL_SCREW,
-                    SPACE_METAL_BOLT,
-                    SPACE_METAL_SPRING,
-                    CAPACITOR,
-                    TRANSISTOR,
-                    MODULATOR,
-                    COPPER_MAGNETRON,
-                    GOLD_MAGNETRON,
-                    COPPER_WIRE,
-                    GOLD_WIRE,
-                    VERDITE_WIRE,
-                    EMPTY_SPOOL,
-                    COPPER_SPOOL,
-                    GOLD_SPOOL,
-                    VERDITE_SPOOL
-            )).build());
+                        SPACE_METAL_INGOT,
+                        SPACE_METAL_PLATE,
+                        SPACE_METAL_MESH,
+                        SPACE_METAL_ROD,
+                        SPACE_METAL_PIPE,
+                        SPACE_METAL_SCREW,
+                        SPACE_METAL_BOLT,
+                        SPACE_METAL_SPRING,
+                        CAPACITOR,
+                        TRANSISTOR,
+                        MODULATOR,
+                        COPPER_MAGNETRON,
+                        GOLD_MAGNETRON,
+                        COPPER_WIRE,
+                        GOLD_WIRE,
+                        VERDITE_WIRE,
+                        EMPTY_SPOOL,
+                        COPPER_SPOOL,
+                        GOLD_SPOOL,
+                        VERDITE_SPOOL
+                );
+                addPaintings(parameters, output);
+            }).build());
 
     public static final RegistryObject<CreativeModeTab> ZPS_DECO_TAB = CREATIVE_MODE_TABS.register("zps_tab_deco",
         () -> CreativeModeTab.builder()
@@ -108,4 +121,21 @@ public class ModCreativeTabs {
             }
         }
     }
+
+    private static void addPaintings(CreativeModeTab.ItemDisplayParameters parameters, CreativeModeTab.Output output) {
+        parameters.holders().lookup(Registries.PAINTING_VARIANT).ifPresent((arg2x) -> generatePresetPaintings(output, arg2x, (arg) -> arg.is(PaintingVariantTags.PLACEABLE)));
+    }
+
+    private static void generatePresetPaintings(CreativeModeTab.Output arg, HolderLookup.RegistryLookup<PaintingVariant> arg2, Predicate<Holder<PaintingVariant>> predicate) {
+        arg2.listElements().filter(predicate).sorted(PAINTING_COMPARATOR).forEach((arg3x) -> {
+            if (arg3x.key().location().getNamespace().equals(ZPSMod.MOD_ID)) {
+                ItemStack itemstack = new ItemStack(Items.PAINTING);
+                CompoundTag compoundtag = itemstack.getOrCreateTagElement("EntityTag");
+                Painting.storeVariant(compoundtag, arg3x);
+                arg.accept(itemstack, CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+            }
+        });
+    }
+
+    private static final Comparator<Holder<PaintingVariant>> PAINTING_COMPARATOR = Comparator.comparing(Holder::value, Comparator.comparingInt((PaintingVariant arg) -> arg.getHeight() * arg.getWidth()).thenComparing(PaintingVariant::getWidth));
 } 

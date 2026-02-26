@@ -44,7 +44,8 @@ public interface LightPipeDataSender extends NetworkTerminal {
         int senders = 0;
         for (NetworkNode terminal : getTerminals(Channels.MAIN)) {
             BlockEntity be = level.getBlockEntity(terminal.pos());
-            if (be instanceof LightPipeDataSender) {
+            if (be instanceof LightPipeDataSender sender) {
+                if (sender.provideNextDisplayText(1000).isBlank()) continue;
                 senders++;
                 if (senders > 1) {
                     return false;

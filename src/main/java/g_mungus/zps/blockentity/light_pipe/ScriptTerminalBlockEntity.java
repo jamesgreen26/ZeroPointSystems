@@ -149,6 +149,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         tag.putString("AllCommands", allCommands);
         tag.putBoolean("Loop", loop);
         tag.putInt("Delay", delay);
+        tag.putBoolean("WasPowered", wasPowered);
         return tag;
     }
 
@@ -157,6 +158,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         allCommands = tag.getString("AllCommands");
         loop = tag.getBoolean("Loop");
         delay = tag.getInt("Delay");
+        wasPowered = tag.getBoolean("WasPowered");
     }
 
     @Override

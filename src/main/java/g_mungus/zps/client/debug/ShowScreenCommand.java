@@ -9,7 +9,7 @@ import net.minecraft.commands.Commands;
 public class ShowScreenCommand {
     public static final LiteralArgumentBuilder<CommandSourceStack> COMMAND = Commands
             .literal("zps_debug").then(
-                    Commands.literal("SHOW_SCREEN").then(Commands.literal("script_computer").executes(context -> {
+                    Commands.literal("show_screen").then(Commands.literal("script_computer").executes(context -> {
                         Minecraft.getInstance().setScreen(new ScriptTerminalScreen(null, true));
                         return 1;
                     }))

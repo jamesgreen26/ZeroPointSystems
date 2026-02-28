@@ -1,6 +1,7 @@
 plugins {
     id 'dev.architectury.loom' version '1.10-SNAPSHOT'
     id 'maven-publish'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
 group = project.maven_group
@@ -25,6 +26,7 @@ repositories {
     // See https://docs.gradle.org/current/userguide/declaring_repositories.html
     // for more information about repositories.
     mavenLocal()
+    mavenCentral()
 
     maven { url = "https://maven.createmod.net" }
     maven {url = "https://api.modrinth.com/maven"}
@@ -47,6 +49,11 @@ repositories {
     }
 }
 
+configurations {
+    shadow
+    implementation.extendsFrom(shadow)
+}
+
 dependencies {
     minecraft "net.minecraft:minecraft:$project.minecraft_version"
     mappings loom.officialMojangMappings()
@@ -61,6 +68,25 @@ dependencies {
 
     modImplementation("maven.modrinth:fusion-connected-textures:1.2.12-forge-mc1.20.1")
     include(modImplementation("ace.actually.radios:radios:1.2.0"))
+
+
+    // TTS
+    shadow("javax.speech:jsapi:1.0")
+    shadow("com.sun.speech.freetts:freetts:1.2")
+    shadow("com.sun.speech.freetts:cmu_us_kal:1.0")
+    shadow("com.sun.speech.freetts:en_us:1.0")
+    shadow("com.sun.speech.freetts:cmudict04:1.0")
+    shadow("com.sun.speech.freetts:cmulex:1.0")
+    shadow("com.sun.speech.freetts:cmutimelex:1.0")
+
+    forgeRuntimeLibrary("javax.speech:jsapi:1.0")
+    forgeRuntimeLibrary("com.sun.speech.freetts:freetts:1.2")
+    forgeRuntimeLibrary("com.sun.speech.freetts:cmu_us_kal:1.0")
+    forgeRuntimeLibrary("com.sun.speech.freetts:en_us:1.0")
+    forgeRuntimeLibrary("com.sun.speech.freetts:cmudict04:1.0")
+    forgeRuntimeLibrary("com.sun.speech.freetts:cmulex:1.0")
+    forgeRuntimeLibrary("com.sun.speech.freetts:cmutimelex:1.0")
+
 
     modImplementation("com.simibubi.create:create-$minecraft_version:$create_version:slim") { transitive = false }
     modImplementation("com.tterrag.registrate:Registrate:$registrate_version")
@@ -112,19 +138,26 @@ test {
     // for explanation of our testing approach.
 }
 
-// Configure Maven publishing.
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-        }
-    }
+shadowJar {
+    // Merge FreeTTS jar contents into the root of the output jar
+    configurations = [project.configurations.shadow]
 
-    // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-    repositories {
-        // Add repositories to publish to here.
-        // Notice: This block does NOT have the same function as the block in the top level.
-        // The repositories here will be used for publishing your artifact, not for
-        // retrieving dependencies.
-    }
+    // Merge service files so FreeTTS voice registration works
+    mergeServiceFiles()
+
+    // Don't relocate - FreeTTS needs its original package paths
+    // Exclude duplicate META-INF signatures that would break jar validation
+    exclude 'META-INF/*.SF'
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.RSA'
+    exclude 'META-INF/*.MF'
+
+    archiveClassifier.set('shadow-dev')
+}
+
+// Make the remapJar task use the shadow jar as its input
+remapJar {
+    dependsOn shadowJar
+    inputFile = shadowJar.archiveFile
+    archiveClassifier.set('')
 }

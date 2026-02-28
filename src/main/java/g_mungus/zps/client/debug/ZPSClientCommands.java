@@ -20,7 +20,8 @@ public class ZPSClientCommands {
         CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
 
 //        if (!FMLLoader.isProduction()) {
-//            dispatcher.register(ShowScreenCommand.COMMAND);
+            dispatcher.register(ShowScreenCommand.COMMAND);
+            dispatcher.register(TtsDebugCommand.COMMAND);
 //        }
     }
 }

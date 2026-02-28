@@ -72,20 +72,10 @@ dependencies {
 
     // TTS
     shadow("javax.speech:jsapi:1.0")
-    shadow("com.sun.speech.freetts:freetts:1.2")
-    shadow("com.sun.speech.freetts:cmu_us_kal:1.0")
-    shadow("com.sun.speech.freetts:en_us:1.0")
-    shadow("com.sun.speech.freetts:cmudict04:1.0")
-    shadow("com.sun.speech.freetts:cmulex:1.0")
-    shadow("com.sun.speech.freetts:cmutimelex:1.0")
-
     forgeRuntimeLibrary("javax.speech:jsapi:1.0")
+
+    shadow("com.sun.speech.freetts:freetts:1.2")
     forgeRuntimeLibrary("com.sun.speech.freetts:freetts:1.2")
-    forgeRuntimeLibrary("com.sun.speech.freetts:cmu_us_kal:1.0")
-    forgeRuntimeLibrary("com.sun.speech.freetts:en_us:1.0")
-    forgeRuntimeLibrary("com.sun.speech.freetts:cmudict04:1.0")
-    forgeRuntimeLibrary("com.sun.speech.freetts:cmulex:1.0")
-    forgeRuntimeLibrary("com.sun.speech.freetts:cmutimelex:1.0")
 
 
     modImplementation("com.simibubi.create:create-$minecraft_version:$create_version:slim") { transitive = false }
@@ -108,8 +98,21 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.0'
 }
 
+sourceSets {
+    main {
+        resources {
+            srcDir 'src/main/resources_extra'
+        }
+    }
+}
+
 processResources {
     inputs.property 'version', project.version
+
+    from('resources_extra') {
+        into ''
+        include '**/*'
+    }
 
     filesMatching('META-INF/mods.toml') {
         expand version: project.version

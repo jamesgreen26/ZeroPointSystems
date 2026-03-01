@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "B": { "item": "zps:light_pipe_cable" },
+    "D": { "item": "zps:space_metal_ingot" },
+    "E": { "item": "zps:space_metal_ingot" },
+    "F": { "item": "zps:space_metal_ingot" },
+    "G": { "item": "minecraft:quartz" },
+    "H": { "item": "minecraft:quartz" },
+    "I": { "item": "minecraft:quartz" }
+  },
+  "pattern": [
+    " B ",
+    "DEF",
+    "GHI"
+  ],
+  "result": {
+    "item": "zps:serial_bus",
+    "count": 2
+  },
+  "show_notification": true
+}

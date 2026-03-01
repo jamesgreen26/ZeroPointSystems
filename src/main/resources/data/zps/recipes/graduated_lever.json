@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "A": { "item": "zps:space_metal_ingot" },
+    "B": { "item": "zps:space_metal_ingot" },
+    "D": { "item": "zps:cable" },
+    "E": { "item": "minecraft:lever" },
+    "G": { "item": "zps:space_metal_ingot" },
+    "H": { "item": "zps:space_metal_ingot" }
+  },
+  "pattern": [
+    "AB ",
+    "DE ",
+    "GH "
+  ],
+  "result": {
+    "item": "zps:graduated_lever",
+    "count": 2
+  },
+  "show_notification": true
+}

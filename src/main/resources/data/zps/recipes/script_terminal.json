@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "A": { "item": "zps:space_metal_ingot" },
+    "B": { "item": "zps:space_metal_ingot" },
+    "C": { "item": "zps:space_metal_ingot" },
+    "D": { "item": "zps:light_pipe_cable" },
+    "E": { "item": "minecraft:observer" },
+    "F": { "item": "minecraft:observer" },
+    "G": { "item": "zps:space_metal_ingot" },
+    "H": { "item": "zps:space_metal_ingot" },
+    "I": { "item": "zps:space_metal_ingot" }
+  },
+  "pattern": [
+    "ABC",
+    "DEF",
+    "GHI"
+  ],
+  "result": {
+    "item": "zps:script_terminal",
+    "count": 1
+  },
+  "show_notification": true
+}

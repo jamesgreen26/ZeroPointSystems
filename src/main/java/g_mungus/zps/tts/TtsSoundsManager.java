@@ -14,7 +14,7 @@ import javax.sound.sampled.AudioFormat;
 public class TtsSoundsManager {
 
     private static final long SOUND_TIMEOUT_MS = 60_000; // 1 minute
-    private static final AudioFormat DEFAULT_FORMAT = new AudioFormat(8000.0F, 16, 1, true, false);
+    private static final AudioFormat DEFAULT_FORMAT = new AudioFormat(44100.0F, 16, 1, true, false);
 
     /** Maps block positions to active sounds and their creation time */
     private static final Long2ObjectMap<TrackedSound> activeSoundsByPos = new Long2ObjectArrayMap<>();
@@ -33,8 +33,9 @@ public class TtsSoundsManager {
         voice.allocate();
         voice.setAudioPlayer(player);
         voice.speak(text);
+        voice.deallocate();
 
-        TtsSoundInstance newSoundInstance = new TtsSoundInstance(player.getAudioData(), DEFAULT_FORMAT, center.x, center.y, center.z);
+        TtsSoundInstance newSoundInstance = new TtsSoundInstance(player.getAudioData(), player.getAudioFormat(), center.x, center.y, center.z);
         TrackedSound trackedSound = new TrackedSound(newSoundInstance, System.currentTimeMillis());
 
         // Replace old sound if any

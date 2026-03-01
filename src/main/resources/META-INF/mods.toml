@@ -1,13 +1,12 @@
 modLoader = "javafml"
 loaderVersion = "[47,)"
-#issueTrackerURL = ""
 license = "MIT"
 
 [[mods]]
 modId = "zps"
 version = "${version}"
 displayName = "Zero Point Systems"
-authors = "G_Mungus"
+authors = "G_Mungus, Quoissant, Cosmos, PacificCyan"
 description = '''
 Advanced solutions delivering unmatched efficiency and flexibility.
 '''

@@ -35,5 +35,11 @@ public class ZPSGamePackets {
                 .decoder(ScriptComputerS2CPacket::decode)
                 .consumerMainThread(ScriptComputerS2CPacket::handle)
                 .add();
+
+        INSTANCE.messageBuilder(LoudspeakerTtsPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(LoudspeakerTtsPacket::encode)
+                .decoder(LoudspeakerTtsPacket::decode)
+                .consumerMainThread(LoudspeakerTtsPacket::handle)
+                .add();
     }
 }

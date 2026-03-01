@@ -1,0 +1,57 @@
+{
+	"multipart": [
+		{
+			"when": {
+				"facing": "north"
+			},
+			"apply": {
+				"model": "zps:block/loudspeaker"
+			}
+		},
+		{
+			"when": {
+				"facing": "east"
+			},
+			"apply": {
+				"model": "zps:block/loudspeaker",
+				"y": 90
+			}
+		},
+		{
+			"when": {
+				"facing": "south"
+			},
+			"apply": {
+				"model": "zps:block/loudspeaker",
+				"y": 180
+			}
+		},
+		{
+			"when": {
+				"facing": "west"
+			},
+			"apply": {
+				"model": "zps:block/loudspeaker",
+				"y": 270
+			}
+		},
+		{
+			"when": {
+				"facing": "up"
+			},
+			"apply": {
+				"model": "zps:block/loudspeaker",
+				"x": 270
+			}
+		},
+		{
+			"when": {
+				"facing": "down"
+			},
+			"apply": {
+				"model": "zps:block/loudspeaker",
+				"x": 90
+			}
+		}
+	]
+}

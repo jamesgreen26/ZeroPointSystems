@@ -148,6 +148,12 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
 
+    public static final RegistryObject<Block> LOUDSPEAKER = BLOCKS.register("loudspeaker",
+            () -> new LoudspeakerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+
 
     /// RESOURCE BLOCKS
     public static final RegistryObject<Block> BAUXITE = BLOCKS.register("bauxite",

@@ -51,6 +51,7 @@ public class ModCreativeTabs {
                         DATA_TRANSCRIBER,
                         SCRIPT_COMPARATOR,
                         TEXT_DISPLAY,
+                        LOUDSPEAKER,
                         RADIO_TRANSMITTER,
                         RADIO_RECEIVER,
                         RADIO_ANTENNA,

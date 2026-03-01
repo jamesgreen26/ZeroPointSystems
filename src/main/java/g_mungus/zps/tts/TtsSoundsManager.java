@@ -47,7 +47,6 @@ public class TtsSoundsManager {
 
         // Play new sound
         soundManager.play(newSoundInstance);
-        return;
     }
 
     private static void cleanupOldSounds() {

@@ -32,7 +32,7 @@ public class DataTranscriberBlockEntity extends AbstractTextDataReceiver {
             lastPrintTime = time;
             boolean shouldPlayEffects = writeText();
             if (shouldPlayEffects) {
-                level.playSound(null, getBlockPos(), SoundEvents.SLIME_BLOCK_PLACE, SoundSource.BLOCKS, 1f, 1f);
+                level.playSound(null, getBlockPos(), SoundEvents.VILLAGER_WORK_CARTOGRAPHER, SoundSource.BLOCKS, 1f, 1f);
             }
         }
     }

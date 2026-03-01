@@ -19,6 +19,13 @@ public class TtsSoundsManager {
     /** Maps block positions to active sounds and their creation time */
     private static final Long2ObjectMap<TrackedSound> activeSoundsByPos = new Long2ObjectArrayMap<>();
 
+    private static final Voice voice;
+
+    static {
+        voice = new KevinVoiceDirectory().getVoices()[1]; // directly access voice because voice manager is annoying
+        voice.allocate();
+    }
+
     public static void speakTextAt(BlockPos pos, String text) {
         long key = pos.asLong();
         Vec3 center = pos.getCenter();
@@ -29,11 +36,11 @@ public class TtsSoundsManager {
         // Generate TTS
         MemoryAudioPlayer player = new MemoryAudioPlayer();
         player.setAudioFormat(DEFAULT_FORMAT);
-        Voice voice = new KevinVoiceDirectory().getVoices()[1]; // directly access voice because voice manager is annoying
-        voice.allocate();
-        voice.setAudioPlayer(player);
-        voice.speak(text);
-        voice.deallocate();
+
+        synchronized (voice) {
+            voice.setAudioPlayer(player);
+            voice.speak(text);
+        }
 
         AudioFormat actualFormat = player.getAudioFormat();
         byte[] audioData = player.getAudioData();

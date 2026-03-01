@@ -1,4 +1,4 @@
-package g_mungus.zps.tts;
+package g_mungus.zps.client.tts;
 
 import g_mungus.zps.ZPSMod;
 import net.minecraft.client.resources.sounds.Sound;
@@ -10,12 +10,9 @@ import net.minecraft.client.sounds.WeighedSoundEvents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.valueproviders.ConstantFloat;
-import net.minecraft.util.valueproviders.SampledFloat;
 import org.jetbrains.annotations.NotNull;
 
 import javax.sound.sampled.AudioFormat;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 

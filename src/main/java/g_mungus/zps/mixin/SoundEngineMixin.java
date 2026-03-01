@@ -1,7 +1,7 @@
 package g_mungus.zps.mixin;
 
 import com.mojang.blaze3d.audio.SoundBuffer;
-import g_mungus.zps.tts.TtsSoundInstance;
+import g_mungus.zps.client.tts.TtsSoundInstance;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.client.sounds.SoundBufferLibrary;
 import net.minecraft.client.sounds.SoundEngine;

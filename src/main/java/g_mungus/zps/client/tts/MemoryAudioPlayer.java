@@ -1,4 +1,4 @@
-package g_mungus.zps.tts;
+package g_mungus.zps.client.tts;
 
 import com.sun.speech.freetts.audio.AudioPlayer;
 import javax.sound.sampled.AudioFormat;

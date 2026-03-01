@@ -6,7 +6,8 @@
   "client": [
     "BlockElementMixin",
     "CommandSuggestionsMixin",
-    "SelectorDeserializerNotMixin"
+    "SelectorDeserializerNotMixin",
+    "SoundEngineMixin"
   ],
   "mixins": [
     "ArgumentTypeInfosMixin",

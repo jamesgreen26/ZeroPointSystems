@@ -63,6 +63,9 @@ public class TtsSoundInstance implements SoundInstance {
     @Override public double getZ() { return z; }
     @Override public @NotNull Attenuation getAttenuation() { return Attenuation.LINEAR; }
 
+    public AudioFormat getFormat() { return format; }
+    public byte[] getAudioData() { return audioData; }
+
     @Override
     public @NotNull CompletableFuture<AudioStream> getStream(@NotNull SoundBufferLibrary soundBuffers, @NotNull Sound sound, boolean looping) {
         return CompletableFuture.completedFuture(new AudioStream() {
@@ -74,12 +77,18 @@ public class TtsSoundInstance implements SoundInstance {
             @Override
             public @NotNull ByteBuffer read(int maxBytes) {
                 if (position >= audioData.length) {
-                    return ByteBuffer.allocate(0);
+                    // return an empty direct buffer instead of null
+                    return ByteBuffer.allocateDirect(0);
                 }
 
                 int end = Math.min(position + maxBytes, audioData.length);
-                ByteBuffer buffer = ByteBuffer.wrap(audioData, position, end - position);
+
+                // Use a direct buffer for OpenAL
+                ByteBuffer buffer = ByteBuffer.allocateDirect(end - position);
+                buffer.put(audioData, position, end - position);
+                buffer.flip(); // important!
                 position = end;
+
                 return buffer;
             }
 

@@ -54,7 +54,7 @@ public class TtsSoundInstance implements SoundInstance {
 
     @Override public @NotNull SoundSource getSource() { return SoundSource.MASTER; }
     @Override public boolean isLooping() { return false; }
-    @Override public boolean isRelative() { return true; }
+    @Override public boolean isRelative() { return false; }
     @Override public int getDelay() { return 0; }
     @Override public float getVolume() { return 1.0f; }
     @Override public float getPitch() { return 1.0f; }

@@ -1,8 +1,7 @@
-package g_mungus.zps.tts;
+package g_mungus.zps.client.tts;
 
 import com.sun.speech.freetts.Voice;
 import com.sun.speech.freetts.en.us.cmu_us_kal.KevinVoiceDirectory;
-import g_mungus.zps.ZPSMod;
 import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import net.minecraft.client.Minecraft;

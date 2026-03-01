@@ -3,7 +3,7 @@ package g_mungus.zps.client.debug;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
-import g_mungus.zps.tts.TtsSoundsManager;
+import g_mungus.zps.client.tts.TtsSoundsManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;

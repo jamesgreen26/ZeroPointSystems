@@ -2,12 +2,9 @@ package g_mungus.zps.mixin;
 
 import com.mojang.blaze3d.audio.SoundBuffer;
 import g_mungus.zps.tts.TtsSoundInstance;
-import net.minecraft.client.resources.sounds.Sound;
 import net.minecraft.client.resources.sounds.SoundInstance;
-import net.minecraft.client.sounds.*;
-import net.minecraft.sounds.SoundSource;
-import net.minecraftforge.client.event.sound.PlaySoundSourceEvent;
-import net.minecraftforge.common.MinecraftForge;
+import net.minecraft.client.sounds.SoundBufferLibrary;
+import net.minecraft.client.sounds.SoundEngine;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -31,8 +28,9 @@ public class SoundEngineMixin {
     )
     private CompletableFuture<SoundBuffer> redirectGetCompleteBuffer(SoundBufferLibrary library, net.minecraft.resources.ResourceLocation path, SoundInstance instance) {
         if (instance instanceof TtsSoundInstance tts) {
-            // Convert the TTS byte array into a SoundBuffer
-            ByteBuffer buffer = ByteBuffer.wrap(tts.getAudioData());
+            // Convert the TTS byte array into a direct SoundBuffer (required by OpenAL)
+            byte[] audioData = tts.getAudioData();
+            ByteBuffer buffer = ByteBuffer.allocateDirect(audioData.length).put(audioData).flip();
             SoundBuffer soundBuffer = new SoundBuffer(buffer, tts.getFormat());
             return CompletableFuture.completedFuture(soundBuffer);
         }

@@ -1,14 +1,16 @@
 package g_mungus.zps.client.tts;
 
 import g_mungus.zps.ZPSMod;
+import net.minecraft.client.resources.sounds.AbstractTickableSoundInstance;
 import net.minecraft.client.resources.sounds.Sound;
-import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.client.sounds.AudioStream;
 import net.minecraft.client.sounds.SoundBufferLibrary;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.client.sounds.WeighedSoundEvents;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.util.valueproviders.ConstantFloat;
 import org.jetbrains.annotations.NotNull;
 
@@ -16,10 +18,9 @@ import javax.sound.sampled.AudioFormat;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
-public class TtsSoundInstance implements SoundInstance {
+public class TtsSoundInstance extends AbstractTickableSoundInstance {
     private final byte[] audioData;
     private final AudioFormat format;
-    private final double x, y, z;
 
     public static final Sound SOUND = new Sound(
             "zps:tts_sound",
@@ -31,6 +32,7 @@ public class TtsSoundInstance implements SoundInstance {
     );
 
     public TtsSoundInstance(byte[] audioData, AudioFormat format, double x, double y, double z) {
+        super(SoundEvent.createFixedRangeEvent(ZPSMod.resource("tts_sound"), 32f), SoundSource.MASTER, RandomSource.create());
         this.audioData = audioData;
         this.format = format;
         this.x = x; this.y = y; this.z = z;
@@ -40,7 +42,7 @@ public class TtsSoundInstance implements SoundInstance {
     public @NotNull ResourceLocation getLocation() { return ZPSMod.resource("tts_sound"); }
 
     @Override
-    public WeighedSoundEvents resolve(@NotNull SoundManager manager) {
+    public @NotNull WeighedSoundEvents resolve(@NotNull SoundManager manager) {
         var weightedSound = new WeighedSoundEvents(ZPSMod.resource("tts_sound"), "tts_sound");
         weightedSound.addSound(SOUND);
         return weightedSound;
@@ -55,9 +57,6 @@ public class TtsSoundInstance implements SoundInstance {
     @Override public int getDelay() { return 0; }
     @Override public float getVolume() { return 1.0f; }
     @Override public float getPitch() { return 1.0f; }
-    @Override public double getX() { return x; }
-    @Override public double getY() { return y; }
-    @Override public double getZ() { return z; }
     @Override public @NotNull Attenuation getAttenuation() { return Attenuation.LINEAR; }
 
     public AudioFormat getFormat() { return format; }
@@ -92,5 +91,10 @@ public class TtsSoundInstance implements SoundInstance {
             @Override
             public void close() {}
         });
+    }
+
+    @Override
+    public void tick() {
+        // do nothing - we use AbstractTickableSoundInstance for VS compat
     }
 }

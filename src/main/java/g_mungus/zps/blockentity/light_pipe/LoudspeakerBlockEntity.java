@@ -32,6 +32,12 @@ public class LoudspeakerBlockEntity extends AbstractTextDataReceiver {
         }
     }
 
+    @Override
+    public void setRemoved() {
+        super.setRemoved();
+        sendTtsPacket("", getWorldPos());
+    }
+
     private void sendTtsPacket(String message, BlockPos worldPos) {
         if (level == null || level.isClientSide) return;
         ZPSGamePackets.INSTANCE.send(

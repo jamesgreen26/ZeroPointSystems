@@ -2,6 +2,7 @@ package g_mungus.zps.tts;
 
 import com.sun.speech.freetts.Voice;
 import com.sun.speech.freetts.en.us.cmu_us_kal.KevinVoiceDirectory;
+import g_mungus.zps.ZPSMod;
 import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import net.minecraft.client.Minecraft;
@@ -35,7 +36,21 @@ public class TtsSoundsManager {
         voice.speak(text);
         voice.deallocate();
 
-        TtsSoundInstance newSoundInstance = new TtsSoundInstance(player.getAudioData(), player.getAudioFormat(), center.x, center.y, center.z);
+        AudioFormat actualFormat = player.getAudioFormat();
+        byte[] audioData = player.getAudioData();
+
+        // OpenAL requires little-endian PCM; FreeTTS produces big-endian by default
+        if (actualFormat.isBigEndian() && actualFormat.getSampleSizeInBits() == 16) {
+            for (int i = 0; i + 1 < audioData.length; i += 2) {
+                byte tmp = audioData[i];
+                audioData[i] = audioData[i + 1];
+                audioData[i + 1] = tmp;
+            }
+            actualFormat = new AudioFormat(
+                    actualFormat.getSampleRate(), 16, actualFormat.getChannels(), true, false);
+        }
+
+        TtsSoundInstance newSoundInstance = new TtsSoundInstance(audioData, actualFormat, center.x, center.y, center.z);
         TrackedSound trackedSound = new TrackedSound(newSoundInstance, System.currentTimeMillis());
 
         // Replace old sound if any

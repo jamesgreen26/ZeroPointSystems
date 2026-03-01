@@ -30,7 +30,7 @@ public class TtsSoundInstance implements SoundInstance {
             ConstantFloat.of(1f),
             1,
             Sound.Type.FILE,
-            false, false, 64
+            false, false, 32
     );
 
     public TtsSoundInstance(byte[] audioData, AudioFormat format, double x, double y, double z) {

@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "A": {
+      "item": "minecraft:comparator"
+    },
+    "B": {
+      "item": "zps:space_metal_ingot"
+    },
+    "C": {
+      "item": "zps:light_pipe_cable"
+    },
+    "G": {
+      "item": "minecraft:tinted_glass"
+    }
+  },
+  "pattern": [
+    "BBB",
+    "CAG",
+    "BBB"
+  ],
+  "result": {
+    "item": "zps:radio_receiver",
+    "count": 1
+  },
+  "show_notification": true
+}

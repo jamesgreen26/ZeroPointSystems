@@ -3,7 +3,7 @@
 	"textures": {
 		"0": "zps:block/video_display_back",
 		"1": "zps:block/radio_transmitter_front",
-		"2": "zps:block/radio_transmitter_side",
+		"2": "zps:block/radio_receiver_side",
 		"3": "zps:block/radio_transmitter_top",
 		"particle": "zps:block/video_display_back"
 	},

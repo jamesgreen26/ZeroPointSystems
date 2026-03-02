@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "A": {
+      "item": "minecraft:purple_concrete"
+    },
+    "B": {
+      "item": "minecraft:black_concrete"
+    }
+  },
+  "pattern": [
+    "AB",
+    "BA"
+  ],
+  "result": {
+    "item": "zps:void_caution_block",
+    "count": 4
+  },
+  "show_notification": true
+}

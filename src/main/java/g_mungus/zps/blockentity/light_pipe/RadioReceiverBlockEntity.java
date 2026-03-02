@@ -31,7 +31,7 @@ public class RadioReceiverBlockEntity extends NetworkTerminalImpl implements Lig
 
     public void tick() {
         if (level instanceof ServerLevel serverLevel && (serverLevel.getGameTime() + tickOffset) % tickFrequency == 0) {
-            if (antennas >= getRequiredAntennaStrength()) {
+            if (hasEnoughAntennas()) {
                 List<RadioSignal> signals = RadioSpec.receive(serverLevel, getWorldPos(), getRadioFrequency(), false, List.of());
                 String displayText = computeDisplayText(signals);
                 if (Objects.equals(currentDisplayText, displayText)) return;
@@ -42,6 +42,11 @@ public class RadioReceiverBlockEntity extends NetworkTerminalImpl implements Lig
             updateClient();
             updateSignal(serverLevel);
         }
+    }
+
+    @Override
+    public boolean hasEnoughAntennas() {
+        return antennas >= getRequiredAntennaStrength();
     }
 
     private String computeDisplayText(List<RadioSignal> signals) {
@@ -135,6 +140,7 @@ public class RadioReceiverBlockEntity extends NetworkTerminalImpl implements Lig
         } while (up == result);
         if (result != antennas) {
             antennas = result;
+            updateClient();
         }
     }
 

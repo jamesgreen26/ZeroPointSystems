@@ -72,6 +72,8 @@ public class RadioReceiverBlockEntityRenderer implements BlockEntityRenderer<Rad
         int originX = -24;
         int originY = -24;
 
+        int color = blockEntity.hasEnoughAntennas() ? 0xFFFFFF : 0xFF0000;
+
         for (int i = 0; i < text.length() && i < maxCols * maxRows; i++) {
             char c = text.charAt(i);
 
@@ -85,7 +87,7 @@ public class RadioReceiverBlockEntityRenderer implements BlockEntityRenderer<Rad
                     String.valueOf(c),
                     x,
                     y,
-                    0xFFFFFF,
+                    color,
                     false,
                     poseStack.last().pose(),
                     bufferSource,

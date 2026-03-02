@@ -36,14 +36,7 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
         setChanged();
         updateTransmission();
 
-        if (level != null && !level.isClientSide) {
-            level.sendBlockUpdated(
-                    worldPosition,
-                    getBlockState(),
-                    getBlockState(),
-                    Block.UPDATE_CLIENTS
-            );
-        }
+        updateClient();
     }
 
     @Override
@@ -53,12 +46,17 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
 
     public void updateTransmission() {
         if (level instanceof ServerLevel serverLevel) {
-            if (antennas >= getRequiredAntennaStrength()) {
+            if (hasEnoughAntennas()) {
                 RadioSpec.transmit(serverLevel, getBlockPos(), getRadioFrequency(), currentDisplayText, "");
             } else {
                 clearTransmission();
             }
         }
+    }
+
+    @Override
+    public boolean hasEnoughAntennas() {
+        return antennas >= getRequiredAntennaStrength();
     }
 
     public void clearTransmission() {
@@ -74,14 +72,20 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
             setChanged();
             updateTransmission();
 
-            if (level != null && !level.isClientSide) {
-                level.sendBlockUpdated(
-                        worldPosition,
-                        getBlockState(),
-                        getBlockState(),
-                        Block.UPDATE_CLIENTS
-                );
-            }
+            updateClient();
+        }
+    }
+
+    private void updateClient() {
+        setChanged();
+
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(
+                    worldPosition,
+                    getBlockState(),
+                    getBlockState(),
+                    Block.UPDATE_CLIENTS
+            );
         }
     }
 
@@ -98,6 +102,7 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
         if (result != antennas) {
             antennas = result;
             updateTransmission();
+            updateClient();
         }
     }
 

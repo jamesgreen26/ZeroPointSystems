@@ -96,7 +96,7 @@ public class ModBlocks {
                     .noOcclusion()));
 
     public static final RegistryObject<Block> SCRIPT_TRANSMITTER = BLOCKS.register("script_transmitter",
-            () -> new ScriptTransmitterBlock(BlockBehaviour.Properties.copy(Blocks.LECTERN)
+            () -> new ScriptTransmitterBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(2.5f)
                     .requiresCorrectToolForDrops()));
 

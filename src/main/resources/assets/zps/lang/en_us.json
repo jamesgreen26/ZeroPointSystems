@@ -295,5 +295,6 @@
     "zps.ponder.octo_controller.text_2": "Use arrow keys and WASD to control the 8 redstone outputs.",
     "creativetab.zps_tab_deco": "Zero Point Systems Blocks",
 
-    "block.zps.switch_panel.zps_tooltip": "4 levers in 1!\n\nEach switch controls one of the four outputs. Connects with [Dense Cables]."
+    "block.zps.switch_panel.zps_tooltip": "4 levers in 1!\n\nEach switch controls one of the four outputs. Connects with [Dense Cables].",
+    "block.zps.graduated_lever.zps_tooltip": "Allows precise control of a redstone signal.\n\nInteract with the upper or lower half of the block to increase or decrease the signal strength. Connects with [Cable]."
 }

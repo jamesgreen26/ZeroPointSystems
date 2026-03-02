@@ -9,6 +9,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -61,7 +62,17 @@ public abstract class TransformerBlock extends CableBlock implements EntityBlock
             case WEST -> WEST_SHAPE;
             case EAST -> EAST_SHAPE;
         };
-        VoxelShape cableShape = super.getShape(state, level, pos, context);
+
+        BooleanProperty facingConnectionProperty = switch (state.getValue(FACING)) {
+            case DOWN -> CableBlock.DOWN;
+            case UP -> CableBlock.UP;
+            case NORTH -> CableBlock.NORTH;
+            case SOUTH -> CableBlock.SOUTH;
+            case WEST -> CableBlock.WEST;
+            case EAST -> CableBlock.EAST;
+        };
+
+        VoxelShape cableShape = super.getShape(state.setValue(facingConnectionProperty, true), level, pos, context);
         return Shapes.or(transformerShape, cableShape);
     }
 

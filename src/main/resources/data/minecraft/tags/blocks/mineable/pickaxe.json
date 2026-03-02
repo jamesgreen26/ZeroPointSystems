@@ -13,6 +13,7 @@
     "zps:aluminum_block",
     "zps:lithium_ore",
     "zps:deepslate_lithium_ore",
-    "zps:lithium_block"
+    "zps:lithium_block",
+    "#zps:space_plating"
   ]
 }

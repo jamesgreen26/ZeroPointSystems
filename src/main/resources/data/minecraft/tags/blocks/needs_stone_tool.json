@@ -8,6 +8,7 @@
     "zps:stepdown_transformer",
     "zps:redstone_converter",
     "zps:octo_controller",
-    "zps:cable_insulation"
+    "zps:cable_insulation",
+    "#zps:space_plating"
   ]
 }

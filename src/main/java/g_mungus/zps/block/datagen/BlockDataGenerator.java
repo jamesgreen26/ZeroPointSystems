@@ -45,6 +45,7 @@ public class BlockDataGenerator {
         blocksToDatagen.forEach(BlockDataGenerator::generate);
 
         generateWallTag();
+        generateSpacePlatingTag();
     }
 
 
@@ -74,5 +75,23 @@ public class BlockDataGenerator {
         });
         String path = FOLDER + "data/minecraft/tags/blocks/walls.json";
         FileWriter.writeFile(path, new TagJsonModel(walls, false).toJsonString());
+    }
+
+    private static void generateSpacePlatingTag() {
+        List<String> entries = new ArrayList<>();
+        blocksToDatagen.forEach((name, types) -> {
+            for (BlockType type : types) {
+                entries.add("zps:" + switch (type) {
+                    case simple -> name;
+                    case stairs -> name + "_stairs";
+                    case slab -> name + "_slab";
+                    case wall -> name + "_wall";
+                    case pillar -> name + "_pillar";
+                    case fence -> name + "_fence";
+                });
+            }
+        });
+        String path = FOLDER + "data/zps/tags/blocks/space_plating.json";
+        FileWriter.writeFile(path, new TagJsonModel(entries, false).toJsonString());
     }
 }

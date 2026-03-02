@@ -98,8 +98,12 @@ public abstract class PanelBlock extends CableComponentBlock {
     public BlockState getStateForPlacement(BlockPlaceContext ctx) {
         BlockState state = this.defaultBlockState();
 
-        Direction clickedFace = ctx.getClickedFace();
+        Direction clickedFace = ctx.getNearestLookingDirection().getOpposite();
         Direction horizontalFacing = ctx.getHorizontalDirection().getOpposite();
+
+        if (ctx.getPlayer() != null && ctx.getPlayer().isShiftKeyDown()) {
+            clickedFace = clickedFace.getOpposite();
+        }
 
         if (clickedFace == Direction.UP) {
             // Placed on top of a block → panel faces up

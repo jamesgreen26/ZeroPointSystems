@@ -4,6 +4,7 @@ public class StairGenerator {
     public static void generateStair(String name) {
         generateBlockState(name);
         generateModels(name);
+        generateLootTable(name);
         BlockItemGenerator.generate(name + "_stairs");
     }
 
@@ -274,6 +275,34 @@ public class StairGenerator {
               }
               """.formatted(name);
         String path = BlockDataGenerator.FOLDER + "assets/zps/models/block/decor/" + name + "_stairs_inner.json";
+
+        FileWriter.writeFile(path, json);
+    }
+
+    private static void generateLootTable(String name) {
+        String json = """
+                        {
+                          "type": "minecraft:block",
+                          "pools": [
+                            {
+                              "bonus_rolls": 0.0,
+                              "rolls": 1.0,
+                              "entries": [
+                                {
+                                  "type": "minecraft:item",
+                                  "name": "zps:%1$s_stairs"
+                                }
+                              ],
+                              "conditions": [
+                                {
+                                  "condition": "minecraft:survives_explosion"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+              """.formatted(name);
+        String path = BlockDataGenerator.FOLDER + "data/zps/loot_tables/blocks/" + name + "_stairs.json";
 
         FileWriter.writeFile(path, json);
     }

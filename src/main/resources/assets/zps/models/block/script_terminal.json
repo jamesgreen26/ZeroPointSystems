@@ -3,8 +3,8 @@
 	"textures": {
 		"0": "zps:block/video_display_back",
 		"1": "zps:block/radio_transmitter_front",
-		"2": "zps:block/radio_transmitter_side",
-		"3": "zps:block/radio_transmitter_side",
+		"2": "zps:block/radio_transmitter_bottom",
+		"3": "zps:block/radio_transmitter_bottom",
 		"particle": "zps:block/video_display_back"
 	},
 	"elements": [

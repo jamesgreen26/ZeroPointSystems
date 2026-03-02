@@ -4,7 +4,7 @@
 	"parent": "block/cube",
 	"textures": {
 		"0": "zps:block/video_display_back",
-		"2": "zps:block/radio_transmitter_side",
+		"2": "zps:block/radio_transmitter_bottom",
 		"3": "zps:block/loudspeaker",
 		"particle": "zps:block/video_display_back"
 	},

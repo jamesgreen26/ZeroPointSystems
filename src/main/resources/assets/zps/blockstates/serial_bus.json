@@ -2,11 +2,19 @@
   "multipart": [
     {
       "when": {
+        "insulated": "false"
+      },
+      "apply": {
+        "model": "zps:block/light_pipe_core"
+      }
+    },
+    {
+      "when": {
         "facing": "down",
         "insulated": "false"
       },
       "apply": {
-        "model": "zps:block/serial_bus"
+        "model": "zps:block/serial_bus_base"
       }
     },
     {
@@ -15,7 +23,7 @@
         "insulated": "false"
       },
       "apply": {
-        "model": "zps:block/serial_bus",
+        "model": "zps:block/serial_bus_base",
         "x": 180
       }
     },
@@ -25,7 +33,7 @@
         "insulated": "false"
       },
       "apply": {
-        "model": "zps:block/serial_bus",
+        "model": "zps:block/serial_bus_base",
         "x": 270
       }
     },
@@ -35,7 +43,7 @@
         "insulated": "false"
       },
       "apply": {
-        "model": "zps:block/serial_bus",
+        "model": "zps:block/serial_bus_base",
         "x": 270,
         "y": 90
       }
@@ -46,7 +54,7 @@
         "insulated": "false"
       },
       "apply": {
-        "model": "zps:block/serial_bus",
+        "model": "zps:block/serial_bus_base",
         "x": 270,
         "y": 180
       }
@@ -57,7 +65,69 @@
         "insulated": "false"
       },
       "apply": {
-        "model": "zps:block/serial_bus",
+        "model": "zps:block/serial_bus_base",
+        "x": 270,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "down",
+        "insulated": "false"
+      },
+      "apply": {
+        "model": "zps:block/serial_bus_stem"
+      }
+    },
+    {
+      "when": {
+        "facing": "up",
+        "insulated": "false"
+      },
+      "apply": {
+        "model": "zps:block/serial_bus_stem",
+        "x": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "insulated": "false"
+      },
+      "apply": {
+        "model": "zps:block/serial_bus_stem",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "insulated": "false"
+      },
+      "apply": {
+        "model": "zps:block/serial_bus_stem",
+        "x": 270,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "insulated": "false"
+      },
+      "apply": {
+        "model": "zps:block/serial_bus_stem",
+        "x": 270,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "insulated": "false"
+      },
+      "apply": {
+        "model": "zps:block/serial_bus_stem",
         "x": 270,
         "y": 270
       }

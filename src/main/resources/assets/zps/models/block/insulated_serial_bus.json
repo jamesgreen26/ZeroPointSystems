@@ -1,6 +1,6 @@
 {
-	"format_version": "1.9.0",
-	"credit": "Made with Blockbench",
+	"loader": "fusion:model",
+	"type": "base",
 	"textures": {
 		"0": "zps:block/insulated_serial_bus",
 		"particle": "zps:block/insulated_serial_bus"

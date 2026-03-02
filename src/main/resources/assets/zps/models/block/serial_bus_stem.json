@@ -1,0 +1,20 @@
+{
+	"parent": "block/cube",
+	"texture_size": [32, 32],
+	"textures": {
+		"2": "zps:block/compound_data_cable",
+		"particle": "zps:block/serial_bus"
+	},
+	"elements": [
+		{
+			"from": [6, 4, 6],
+			"to": [10, 6, 10],
+			"faces": {
+				"north": {"uv": [4, 0, 6, 4], "rotation": 90, "texture": "#2"},
+				"east": {"uv": [4, 0, 6, 4], "rotation": 90, "texture": "#2"},
+				"south": {"uv": [4, 0, 6, 4], "rotation": 90, "texture": "#2"},
+				"west": {"uv": [4, 0, 6, 4], "rotation": 90, "texture": "#2"}
+			}
+		}
+	]
+}

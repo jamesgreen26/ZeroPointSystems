@@ -1,0 +1,26 @@
+{
+  "loader": "fusion:model",
+  "type": "base",
+  "format_version": "1.21.6",
+  "credit": "Made with Blockbench",
+  "parent": "block/cube",
+  "texture_size": [32, 32],
+  "textures": {
+    "1": "zps:block/serial_bus",
+    "particle": "zps:block/serial_bus"
+  },
+  "elements": [
+    {
+      "from": [1, 0, 1],
+      "to": [15, 4, 15],
+      "faces": {
+        "north": {"uv": [8.5, 0.5, 15.5, 2.5], "texture": "#1"},
+        "east": {"uv": [8.5, 0.5, 15.5, 2.5], "texture": "#1"},
+        "south": {"uv": [8.5, 0.5, 15.5, 2.5], "texture": "#1"},
+        "west": {"uv": [8.5, 0.5, 15.5, 2.5], "texture": "#1"},
+        "up": {"uv": [8.5, 8.5, 15.5, 15.5], "texture": "#1"},
+        "down": {"uv": [0.5, 0.5, 7.5, 7.5], "texture": "#1"}
+      }
+    }
+  ]
+}

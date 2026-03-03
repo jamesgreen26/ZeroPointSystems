@@ -52,6 +52,11 @@ public abstract class LecternBlockEntityMixin implements BookHolder {
         return hasBook();
     }
 
+    @Override
+    public void zps$onPageAdded() {
+        pageCount++;
+    }
+
     @Shadow
     public boolean hasBook() {
         return false;

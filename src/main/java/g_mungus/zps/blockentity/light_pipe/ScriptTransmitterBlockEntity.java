@@ -161,9 +161,13 @@ public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements
     }
 
     @Override
-    public void onPageWritten() {
-        BookHolder.super.onPageWritten();
+    public void zps$onPageWritten() {
         if (level != null) updateSignal(level);
+    }
+
+    @Override
+    public void zps$onPageAdded() {
+        pageCount++;
     }
 
     public ItemStack getBook() {

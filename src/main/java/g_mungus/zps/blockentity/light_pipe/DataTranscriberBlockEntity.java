@@ -15,6 +15,7 @@ import net.minecraft.world.item.WritableBookItem;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.LecternBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.NotNull;
 
 public class DataTranscriberBlockEntity extends AbstractTextDataReceiver {
     public DataTranscriberBlockEntity(BlockPos pos, BlockState state) {
@@ -26,11 +27,14 @@ public class DataTranscriberBlockEntity extends AbstractTextDataReceiver {
     public void tick() {
         if (level == null) return;
         BlockState state = getBlockState();
-        if (!state.hasProperty(DataTranscriberBlock.POWERED) || !state.getValue(DataTranscriberBlock.POWERED)) return;
+        if (!state.hasProperty(DataTranscriberBlock.POWERED) || !state.getValue(DataTranscriberBlock.POWERED)) {
+            lastPrintTime = -20L;
+            return;
+        }
         long time = level.getGameTime();
         if (lastPrintTime + 10 < time) {
-            lastPrintTime = time;
             boolean shouldPlayEffects = writeText();
+            lastPrintTime = time;
             if (shouldPlayEffects) {
                 level.playSound(null, getBlockPos(), SoundEvents.VILLAGER_WORK_CARTOGRAPHER, SoundSource.BLOCKS, 1f, 1f);
             }
@@ -62,12 +66,23 @@ public class DataTranscriberBlockEntity extends AbstractTextDataReceiver {
 
                 ListTag pages = tag.getList("pages", 8);
                 while (pages.size() <= page) {
+                    // fix book having no pages or unexpected desynchronization
                     pages.add(StringTag.valueOf(""));
+                    bookHolder.zps$onPageAdded();
                 }
 
-                if (!pages.getString(bookHolder.zps$getCurrentPage()).equals(this.currentDisplayText)) {
+                boolean currentPageEquals = pages.getString(bookHolder.zps$getCurrentPage()).equals(this.currentDisplayText);
+
+                if (!currentPageEquals || lastPrintTime < 0) {
+                    if (lastPrintTime >= 0) {
+                        if (pages.size() < 100 && bookHolder.zps$getCurrentPage() + 1 >= pages.size()) {
+                            pages.add(StringTag.valueOf(""));
+                            bookHolder.zps$onPageAdded();
+                        }
+                        bookHolder.zps$cyclePages();
+                    }
                     pages.set(bookHolder.zps$getCurrentPage(), StringTag.valueOf(truncateStringToDisplayableLength(this.currentDisplayText)));
-                    bookHolder.onPageWritten();
+                    bookHolder.zps$onPageWritten();
                     return true;
                 }
             }
@@ -118,4 +133,15 @@ public class DataTranscriberBlockEntity extends AbstractTextDataReceiver {
         return original.substring(0, i);
     }
 
+    @Override
+    protected void saveAdditional(@NotNull CompoundTag tag) {
+        super.saveAdditional(tag);
+        tag.putLong("LastPrintTime", lastPrintTime);
+    }
+
+    @Override
+    public void load(@NotNull CompoundTag tag) {
+        super.load(tag);
+        lastPrintTime = tag.contains("LastPrintTime") ? tag.getLong("LastPrintTime") : -20L;
+    }
 }

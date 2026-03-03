@@ -121,7 +121,7 @@ public class ScriptTerminalScreen extends Screen {
         this.addWidget(this.commandEdit);
         this.setInitialFocus(this.commandEdit);
 
-        this.commandSuggestions = new MultiLineCommandSuggestions(this.minecraft, new ScriptDispatcherProvider(this.minecraft), this, this.commandEdit, this.font, true, true, 0, 7, false, Integer.MIN_VALUE, connectedBlocks);
+        this.commandSuggestions = new MultiLineCommandSuggestions(this.minecraft, new ScriptDispatcherProvider(this.minecraft, connectedBlocks.contains(ResourceLocation.parse("create:display_link"))), this, this.commandEdit, this.font, true, true, 0, 7, false, Integer.MIN_VALUE, connectedBlocks);
         this.commandSuggestions.setAllowSuggestions(true);
         this.commandSuggestions.updateCommandInfo();
     }

@@ -299,5 +299,7 @@
     "block.zps.graduated_lever.zps_tooltip": "Allows precise control of a redstone signal.\n\nInteract with the upper or lower half of the block to increase or decrease signal strength. Connects with [Cable].",
 
     "block.zps.radio_transmitter.zps_tooltip": "Transmits a radio signal with data from a [Light-Pipe Data Cable].\n\nTune the radio frequency with [Shift + Right Click]. Higher frequencies have a longer range and require a taller [Radio Antenna] on top.",
-    "block.zps.radio_receiver.zps_tooltip": "Receives a radio signal and sends the data over a [Light-Pipe Data Cable].\n\nTune the radio frequency with [Shift + Right Click]. Higher frequencies have a longer range and require a taller [Radio Antenna] on top."
+    "block.zps.radio_receiver.zps_tooltip": "Receives a radio signal and sends the data over a [Light-Pipe Data Cable].\n\nTune the radio frequency with [Shift + Right Click]. Higher frequencies have a longer range and require a taller [Radio Antenna] on top.",
+
+    "block.zps.loudspeaker.zps_tooltip": "Reads messages aloud.\n\nConverts data from a [Light-Pipe Data Cable] into spoken audio."
 }

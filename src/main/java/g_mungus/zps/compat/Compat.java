@@ -1,6 +1,7 @@
 package g_mungus.zps.compat;
 
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
+import g_mungus.zps.compat.create.CreateCompat;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.ComponentContents;
@@ -10,6 +11,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
@@ -36,6 +38,10 @@ public class Compat {
         return ModList.get().isLoaded("valkyrienskies");
     }
 
+    public static boolean isCreateLoaded() {
+        return ModList.get().isLoaded("create");
+    }
+
     public static BlockPos toWorldPos(ServerLevel level, BlockPos pos) {
         if (isVSLoaded()) {
             Vec3 truePos = VSCompat.shipToWorld(level, pos);
@@ -49,6 +55,12 @@ public class Compat {
     public static void onRegisterScriptCommandsEvent(RegisterScriptCommandsEvent event) {
         if (isVSLoaded()) {
             VSCompat.registerScriptCommands(event);
+        }
+    }
+
+    public static void onModInit(IEventBus modEventBus) {
+        if (isCreateLoaded()) {
+            CreateCompat.init(modEventBus);
         }
     }
 }

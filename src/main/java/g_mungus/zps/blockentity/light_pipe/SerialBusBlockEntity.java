@@ -3,6 +3,7 @@ package g_mungus.zps.blockentity.light_pipe;
 import g_mungus.zps.block.cableNetwork.TransformerBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.commands.api_impl.ZPSCommands;
+import g_mungus.zps.compat.create.CreateCompat;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
@@ -24,7 +25,10 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver {
 
     @Override
     public void acceptText(int channel, String message) {
-        executeCommand(message);
+        boolean isFacingDisplayLink = isFacingDisplayLink();
+        if (!isFacingDisplayLink) {
+            executeCommand(message);
+        }
         if (!message.equals(currentDisplayText)) {
             currentDisplayText = message;
             setChanged();
@@ -38,6 +42,9 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver {
                 );
             }
         }
+        if (isFacingDisplayLink && level instanceof ServerLevel) {
+            CreateCompat.tickDisplayLinkSource(level, getAffectedBlockPos());
+        }
     }
 
     private void executeCommand(String message) {
@@ -48,9 +55,22 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver {
         }
     }
 
+    @SuppressWarnings("deprecation")
+    private boolean isFacingDisplayLink() {
+        return level != null && level.getBlockState(getAffectedBlockPos()).getBlock().builtInRegistryHolder().key().location().toString().equals("create:display_link");
+    }
+
+    public String getCurrentText() {
+        return currentDisplayText;
+    }
+
     private String getPosArgument() {
-        BlockPos pos = getBlockPos().offset(getBlockState().getValue(TransformerBlock.FACING).getNormal());
+        BlockPos pos = getAffectedBlockPos();
         return " " + pos.getX() + " " + pos.getY() + " " + pos.getZ() + " ";
+    }
+
+    private @NotNull BlockPos getAffectedBlockPos() {
+        return getBlockPos().offset(getBlockState().getValue(TransformerBlock.FACING).getNormal());
     }
 
     public CommandSourceStack createCommandSourceStack(ServerLevel serverLevel) {

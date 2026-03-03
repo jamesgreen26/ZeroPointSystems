@@ -3,8 +3,8 @@
   "category": "functional",
   "key": {
     "A": { "item": "zps:space_metal_ingot" },
-    "B": { "item": "zps:space_metal_ingot" },
-    "C": { "item": "zps:space_metal_ingot" },
+    "B": { "item": "minecraft:tinted_glass" },
+    "C": { "item": "minecraft:tinted_glass" },
     "D": { "item": "zps:light_pipe_cable" },
     "E": { "item": "minecraft:observer" },
     "F": { "item": "minecraft:observer" },

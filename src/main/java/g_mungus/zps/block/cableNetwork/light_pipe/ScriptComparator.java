@@ -25,7 +25,6 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
-import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -34,27 +33,27 @@ import java.util.List;
 
 public class ScriptComparator extends CableComponentBlock implements EntityBlock {
 
-    public static final EnumProperty<Direction.Axis> AXIS = BlockStateProperties.HORIZONTAL_AXIS;
-    public static final IntegerProperty CONNECTIONS = IntegerProperty.create("connections", 0, 2);
+    public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final BooleanProperty CONNECTED_A = BooleanProperty.create("connected_a");
+    public static final BooleanProperty CONNECTED_B = BooleanProperty.create("connected_b");
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
     public static final EnumProperty<ComparisonMode> MODE = EnumProperty.create("comparison_mode", ComparisonMode.class);
 
     public ScriptComparator(Properties arg) {
         super(arg);
-        this.registerDefaultState(this.stateDefinition.any().setValue(AXIS, Direction.Axis.X).setValue(CONNECTIONS, 0).setValue(POWERED, false).setValue(MODE, ComparisonMode.equals));
+        this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.SOUTH).setValue(CONNECTED_A, false).setValue(CONNECTED_B, false).setValue(POWERED, false).setValue(MODE, ComparisonMode.equals));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> arg) {
         super.createBlockStateDefinition(arg);
-        arg.add(AXIS, CONNECTIONS, POWERED, MODE);
+        arg.add(FACING, CONNECTED_A, CONNECTED_B, POWERED, MODE);
     }
 
     @Nullable
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        Direction facing = context.getHorizontalDirection();
-        return this.defaultBlockState().setValue(AXIS, facing.getAxis());
+        return this.defaultBlockState().setValue(FACING, context.getHorizontalDirection());
     }
 
     @Override
@@ -104,16 +103,10 @@ public class ScriptComparator extends CableComponentBlock implements EntityBlock
     }
 
     private BlockState getNewBlockState(BlockState state, Level level, BlockPos pos) {
-        Direction.Axis currentAxis = state.getValue(AXIS);
-        Direction positiveDir = Direction.fromAxisAndDirection(currentAxis, Direction.AxisDirection.POSITIVE);
-        Direction negativeDir = Direction.fromAxisAndDirection(currentAxis, Direction.AxisDirection.NEGATIVE);
-
-        boolean posConnection = canConnect(pos, pos.offset(positiveDir.getNormal()), level);
-        boolean negConnection = canConnect(pos, pos.offset(negativeDir.getNormal()), level);
-
-        int connectionCount = (posConnection ? 1 : 0) + (negConnection ? 1 : 0);
-
-        return state.setValue(CONNECTIONS, connectionCount);
+        Direction facing = state.getValue(FACING);
+        boolean aConnection = canConnect(pos, pos.relative(facing), level);
+        boolean bConnection = canConnect(pos, pos.relative(facing.getOpposite()), level);
+        return state.setValue(CONNECTED_A, aConnection).setValue(CONNECTED_B, bConnection);
     }
 
     @Override
@@ -130,8 +123,12 @@ public class ScriptComparator extends CableComponentBlock implements EntityBlock
     public int getChannelCountForConnection(BlockPos self, BlockPos from, Level level) {
         Vec3i normal = self.subtract(from);
         BlockState state = level.getBlockState(self);
-        if (state.hasProperty(AXIS) && state.getValue(AXIS).test(Direction.fromDelta(normal.getX(), normal.getY(), normal.getZ()))) {
-            return 1;
+        if (state.hasProperty(FACING)) {
+            Direction facing = state.getValue(FACING);
+            Direction connectionDir = Direction.fromDelta(normal.getX(), normal.getY(), normal.getZ());
+            if (connectionDir == facing || connectionDir == facing.getOpposite()) {
+                return 1;
+            }
         }
         return 0;
     }
@@ -139,14 +136,12 @@ public class ScriptComparator extends CableComponentBlock implements EntityBlock
     @Override
     public List<BlockPos> getConnectingNeighbors(NetworkNode self, Level level) {
         BlockState state = level.getBlockState(self.pos());
-        Direction.Axis currentAxis = state.getValue(AXIS);
+        Direction facing = state.getValue(FACING);
 
         if (self.channel() == Channels.PAIR_A) {
-            Direction positiveDir = Direction.fromAxisAndDirection(currentAxis, Direction.AxisDirection.POSITIVE);
-            return List.of(self.pos().offset(positiveDir.getNormal()));
+            return List.of(self.pos().relative(facing));
         } else if (self.channel() == Channels.PAIR_B) {
-            Direction negativeDir = Direction.fromAxisAndDirection(currentAxis, Direction.AxisDirection.NEGATIVE);
-            return List.of(self.pos().offset(negativeDir.getNormal()));
+            return List.of(self.pos().relative(facing.getOpposite()));
         }
 
         return List.of();
@@ -154,8 +149,11 @@ public class ScriptComparator extends CableComponentBlock implements EntityBlock
 
     @Override
     public int getNewChannel(BlockPos self, NetworkNode input, Level level) {
+        BlockState state = level.getBlockState(self);
+        Direction facing = state.getValue(FACING);
         Vec3i normal = self.subtract(input.pos());
-        if (normal.getX() + normal.getY() + normal.getZ() < 0) {
+        Direction inputDir = Direction.fromDelta(normal.getX(), normal.getY(), normal.getZ());
+        if (inputDir == facing.getOpposite()) {
             return Channels.PAIR_A;
         } else {
             return Channels.PAIR_B;
@@ -198,7 +196,7 @@ public class ScriptComparator extends CableComponentBlock implements EntityBlock
         public boolean compare(String a, String b) {
             return switch (this) {
                 case equals -> a.equals(b);
-                case contains -> a.contains(b) || b.contains(a);
+                case contains -> a.contains(b);
             };
         }
     }

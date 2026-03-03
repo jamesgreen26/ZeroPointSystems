@@ -4,6 +4,8 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptExecutor;
+import g_mungus.zps.commands.content.arguments.RadioFrequencyArgument;
+import g_mungus.zps.commands.content.executors.SetFrequencyCommand;
 import g_mungus.zps.commands.content.executors.SetRedstoneCommand;
 import g_mungus.zps.commands.content.executors.SetPageCommand;
 import net.minecraft.resources.ResourceLocation;
@@ -43,6 +45,19 @@ public class ZPSScriptExecutors {
                         page
                 ),
                 Set.of(ZPSMod.resource("script_transmitter"), ResourceLocation.withDefaultNamespace("lectern"))
+        ));
+
+        event.register(ScriptExecutor.simpleWithBlocks(
+                "set_frequency",
+                Integer.class,
+                ResourceLocation.parse("zps:int"),
+                RadioFrequencyArgument.radioFrequency(),
+                (frequencyIndex, context) -> SetFrequencyCommand.setFrequency(
+                        context.commandSource().getLevel(),
+                        context.pos(),
+                        frequencyIndex
+                ),
+                Set.of(ZPSMod.resource("radio_transmitter"), ZPSMod.resource("radio_receiver"))
         ));
     }
 }

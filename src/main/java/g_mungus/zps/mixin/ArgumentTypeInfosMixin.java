@@ -2,6 +2,7 @@ package g_mungus.zps.mixin;
 
 import com.mojang.brigadier.arguments.ArgumentType;
 import g_mungus.zps.commands.content.arguments.BlockPosListArgument;
+import g_mungus.zps.commands.content.arguments.RadioFrequencyArgument;
 import net.minecraft.commands.synchronization.ArgumentTypeInfo;
 import net.minecraft.commands.synchronization.ArgumentTypeInfos;
 import net.minecraft.commands.synchronization.SingletonArgumentInfo;
@@ -28,6 +29,13 @@ public class ArgumentTypeInfosMixin {
                 "zps:block_pos_list",
                 BlockPosListArgument.class,
                 SingletonArgumentInfo.contextFree(BlockPosListArgument::blockPosList)
+        );
+
+        register(
+                arg,
+                "zps:radio_frequency",
+                RadioFrequencyArgument.class,
+                RadioFrequencyArgument.INFO
         );
     }
 }

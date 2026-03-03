@@ -40,6 +40,17 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
     }
 
     @Override
+    public void setFrequencyIndex(int frequencyIndex) {
+        assert frequencyIndex > -1 && frequencyIndex < 16;
+        clearTransmission();
+        radioFrequencyIndex = frequencyIndex;
+        setChanged();
+        updateTransmission();
+
+        updateClient();
+    }
+
+    @Override
     public int getRadioFrequency() {
         return FREQUENCIES.get(radioFrequencyIndex);
     }

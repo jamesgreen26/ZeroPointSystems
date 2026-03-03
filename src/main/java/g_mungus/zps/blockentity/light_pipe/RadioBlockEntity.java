@@ -31,6 +31,8 @@ public interface RadioBlockEntity {
         return (int)((getRadioFrequency() / 20.0) + 1.5);
     }
 
+    void setFrequencyIndex(int frequencyIndex);
+
     @Mod.EventBusSubscriber
     class Subscriber {
         @SubscribeEvent

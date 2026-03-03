@@ -129,6 +129,13 @@ public class RadioReceiverBlockEntity extends NetworkTerminalImpl implements Lig
     }
 
     @Override
+    public void setFrequencyIndex(int frequencyIndex) {
+        assert frequencyIndex > -1 && frequencyIndex < 16;
+        radioFrequencyIndex = frequencyIndex;
+        updateClient();
+    }
+
+    @Override
     public void updateAntennaStrength(LevelAccessor level) {
         int up = 0;
         int result = 0;

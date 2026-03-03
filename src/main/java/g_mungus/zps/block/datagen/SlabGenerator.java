@@ -5,7 +5,33 @@ public class SlabGenerator {
         generateBlockState(name);
         generateBlockModel(name);
         generateLootTable(name);
+        generateRecipe(name);
         BlockItemGenerator.generate(name + "_slab");
+    }
+
+    private static void generateRecipe(String name) {
+        String json = """
+                {
+                  "type": "minecraft:crafting_shaped",
+                  "category": "building",
+                  "key": {
+                    "#": {
+                      "item": "zps:%1$s"
+                    }
+                  },
+                  "pattern": [
+                    "###"
+                  ],
+                  "result": {
+                    "count": 6,
+                    "item": "zps:%1$s_slab"
+                  },
+                  "show_notification": true
+                }
+                """.formatted(name);
+        String path = BlockDataGenerator.FOLDER + "data/zps/recipes/" + name + "_slab.json";
+
+        FileWriter.writeFile(path, json);
     }
 
     private static void generateBlockModel(String name) {

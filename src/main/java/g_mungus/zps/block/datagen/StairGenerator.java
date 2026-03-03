@@ -5,7 +5,35 @@ public class StairGenerator {
         generateBlockState(name);
         generateModels(name);
         generateLootTable(name);
+        generateRecipe(name);
         BlockItemGenerator.generate(name + "_stairs");
+    }
+
+    private static void generateRecipe(String name) {
+        String json = """
+                {
+                  "type": "minecraft:crafting_shaped",
+                  "category": "building",
+                  "key": {
+                    "#": {
+                      "item": "zps:%1$s"
+                    }
+                  },
+                  "pattern": [
+                    "#  ",
+                    "## ",
+                    "###"
+                  ],
+                  "result": {
+                    "count": 4,
+                    "item": "zps:%1$s_stairs"
+                  },
+                  "show_notification": true
+                }
+                """.formatted(name);
+        String path = BlockDataGenerator.FOLDER + "data/zps/recipes/" + name + "_stairs.json";
+
+        FileWriter.writeFile(path, json);
     }
 
     private static void generateBlockState(String name) {

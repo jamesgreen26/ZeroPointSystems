@@ -4,9 +4,35 @@ public class WallGenerator {
     public static void generateWall(String name) {
         generateBlockState(name);
         generateBlockModel(name);
-        generateBlockModel(name);
         generateLootTable(name);
+        generateRecipe(name);
         generateItemModel(name);
+    }
+
+    private static void generateRecipe(String name) {
+        String json = """
+                {
+                  "type": "minecraft:crafting_shaped",
+                  "category": "misc",
+                  "key": {
+                    "#": {
+                      "item": "zps:%1$s"
+                    }
+                  },
+                  "pattern": [
+                    "###",
+                    "###"
+                  ],
+                  "result": {
+                    "count": 6,
+                    "item": "zps:%1$s_wall"
+                  },
+                  "show_notification": true
+                }
+                """.formatted(name);
+        String path = BlockDataGenerator.FOLDER + "data/zps/recipes/" + name + "_wall.json";
+
+        FileWriter.writeFile(path, json);
     }
 
     private static void generateBlockModel(String name) {

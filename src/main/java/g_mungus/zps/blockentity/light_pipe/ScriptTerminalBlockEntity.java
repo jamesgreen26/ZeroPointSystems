@@ -1,17 +1,24 @@
 package g_mungus.zps.blockentity.light_pipe;
 
+import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.light_pipe.ScriptTerminalBlock;
+import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.NetworkTerminalImpl;
 import g_mungus.zps.networking.ScriptComputerC2SPacket;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements LightPipeDataSender, ScriptComputer {
     public ScriptTerminalBlockEntity(BlockPos arg2, BlockState arg3) {
@@ -50,6 +57,23 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         } else clearOutput();
 
         wasPowered = powered;
+    }
+
+    @SuppressWarnings("deprecation")
+    public Set<ResourceLocation> collectBlocks() {
+        Set<ResourceLocation> out = new HashSet<>();
+        if (level instanceof ServerLevel serverLevel) {
+            for (var terminal : getTerminals(Channels.MAIN)) {
+                BlockState blockState = serverLevel.getBlockState(terminal.pos());
+                if (blockState.is(ModBlocks.SERIAL_BUS.get())) {
+                    Block block = serverLevel.getBlockState(
+                            terminal.pos().offset(blockState.getValue(SerialBusBlock.FACING).getNormal())
+                    ).getBlock();
+                    out.add(block.builtInRegistryHolder().key().location());
+                }
+            }
+        }
+        return out;
     }
 
     private void processCommand(String command) {

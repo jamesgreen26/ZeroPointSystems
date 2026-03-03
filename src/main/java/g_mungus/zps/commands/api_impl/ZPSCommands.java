@@ -10,6 +10,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.CommandNode;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
+import g_mungus.zps.commands.api.ScriptExecutor;
 import g_mungus.zps.commands.api.ScriptNode;
 import g_mungus.zps.commands.api_impl.debug.BrigadierCanvasExporter;
 import net.minecraft.commands.CommandBuildContext;
@@ -23,6 +24,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLLoader;
 
+import javax.annotation.Nullable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -140,6 +142,16 @@ public class ZPSCommands {
         }
 
         return copy;
+    }
+
+    @Nullable
+    public static ScriptExecutor<?, ?> getExecutor(String key) {
+        for (var executor : Registry.EXECUTORS) {
+            if (executor.displayName().equals(key)) {
+                return executor;
+            }
+        }
+        return null;
     }
 
 

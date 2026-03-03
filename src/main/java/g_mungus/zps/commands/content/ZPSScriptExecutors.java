@@ -1,6 +1,7 @@
 package g_mungus.zps.commands.content;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptExecutor;
 import g_mungus.zps.commands.content.executors.SetRedstoneCommand;
@@ -8,6 +9,8 @@ import g_mungus.zps.commands.content.executors.SetPageCommand;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+
+import java.util.Set;
 
 @Mod.EventBusSubscriber
 public class ZPSScriptExecutors {
@@ -29,7 +32,7 @@ public class ZPSScriptExecutors {
                 }
         ));
 
-        event.register(ScriptExecutor.simple(
+        event.register(ScriptExecutor.simpleWithBlocks(
                 "set_page",
                 Integer.class,
                 ResourceLocation.parse("zps:int"),
@@ -38,7 +41,8 @@ public class ZPSScriptExecutors {
                         context.commandSource().getLevel(),
                         context.pos(),
                         page
-                )
+                ),
+                Set.of(ZPSMod.resource("script_transmitter"), ResourceLocation.withDefaultNamespace("lectern"))
         ));
     }
 }

@@ -158,13 +158,14 @@ public class ScriptTerminalBlock extends CableComponentBlock implements EntityBl
     @Override
     public @NotNull InteractionResult use(@NotNull BlockState arg, Level arg2, @NotNull BlockPos arg3, @NotNull Player arg4, @NotNull InteractionHand arg5, @NotNull BlockHitResult arg6) {
         BlockEntity blockEntity = arg2.getBlockEntity(arg3);
-        if (blockEntity instanceof ScriptComputer scriptComputer) {
+        if (blockEntity instanceof ScriptTerminalBlockEntity scriptComputer) {
             if (arg4 instanceof ServerPlayer serverPlayer) {
                 ScriptComputerS2CPacket packet = new ScriptComputerS2CPacket(
                     arg3,
                     scriptComputer.getLoop(),
                     scriptComputer.getDelay(),
-                    scriptComputer.getValue()
+                    scriptComputer.getValue(),
+                    scriptComputer.collectBlocks()
                 );
                 ZPSGamePackets.INSTANCE.sendTo(packet, serverPlayer.connection.connection, NetworkDirection.PLAY_TO_CLIENT);
             }

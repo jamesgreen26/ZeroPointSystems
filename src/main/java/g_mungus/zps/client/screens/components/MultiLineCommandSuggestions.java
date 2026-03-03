@@ -16,10 +16,8 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.LiteralCommandNode;
-import java.util.Collection;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
@@ -27,6 +25,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
+import g_mungus.zps.commands.api.ScriptExecutor;
+import g_mungus.zps.commands.api_impl.ZPSCommands;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -39,6 +39,7 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentUtils;
 import net.minecraft.network.chat.Style;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec2;
@@ -67,6 +68,8 @@ public class MultiLineCommandSuggestions {
     final boolean anchorToBottom;
     final int fillColor;
     private final List<FormattedCharSequence> commandUsage = Lists.<FormattedCharSequence>newArrayList();
+    @Nullable
+    private final Set<ResourceLocation> connectedBlocks;
     private int commandUsagePosition;
     private int commandUsageWidth;
     @Nullable
@@ -78,7 +81,8 @@ public class MultiLineCommandSuggestions {
     private boolean allowSuggestions;
     boolean keepSuggestions;
 
-    public MultiLineCommandSuggestions(Minecraft arg, CommandDispatcherProvider dispatcherProvider, Screen arg2, MultiLineEditBox arg3, Font arg4, boolean bl, boolean bl2, int i, int j, boolean bl3, int k) {
+    public MultiLineCommandSuggestions(Minecraft arg, CommandDispatcherProvider dispatcherProvider, Screen arg2, MultiLineEditBox arg3, Font arg4, boolean bl, boolean bl2, int i, int j, boolean bl3, int k, Set<ResourceLocation> connectedBlocks) {
+        this.connectedBlocks = connectedBlocks;
         this.minecraft = arg;
         this.dispatcherProvider = dispatcherProvider;
         this.screen = arg2;
@@ -125,7 +129,7 @@ public class MultiLineCommandSuggestions {
             if (!suggestions.isEmpty()) {
                 int i = 0;
 
-                for (Suggestion suggestion : suggestions.getList()) {
+                for (Suggestion suggestion : filterByConnectedBlocks(suggestions.getList())) {
                     i = Math.max(i, this.font.width(suggestion.getText()));
                 }
 
@@ -173,7 +177,28 @@ public class MultiLineCommandSuggestions {
         }
 
         list.addAll(list2);
-        return list;
+        return filterByConnectedBlocks(list);
+    }
+
+    private List<Suggestion> filterByConnectedBlocks(List<Suggestion> list) {
+        if (connectedBlocks == null) return list;
+        List<Suggestion> output = new ArrayList<>();
+
+        for (var suggestion : list) {
+            String command = suggestion.getText();
+
+            ScriptExecutor<?,?> executor = ZPSCommands.getExecutor(command);
+
+            if (
+                executor == null ||
+                executor.associatedBlocks() == null ||
+                executor.associatedBlocks().stream().anyMatch(connectedBlocks::contains)
+            ) {
+                output.add(suggestion);
+            }
+        }
+
+        return output;
     }
 
     public void updateCommandInfo() {

@@ -14,9 +14,12 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Set;
 
 public class ScriptTerminalScreen extends Screen {
 
@@ -39,6 +42,7 @@ public class ScriptTerminalScreen extends Screen {
     private int delayIndex = 1;
     private static final String[] DELAY_KEYS = {"2t", "4t", "8t", "16t"};
     private static final int[] DELAY_VALUES = {2, 4, 8, 16};
+    private Set<ResourceLocation> connectedBlocks = null;
 
     public ScriptTerminalScreen(@Nullable ScriptComputer computer, boolean debug) {
         super(GameNarrator.NO_TITLE);
@@ -117,7 +121,7 @@ public class ScriptTerminalScreen extends Screen {
         this.addWidget(this.commandEdit);
         this.setInitialFocus(this.commandEdit);
 
-        this.commandSuggestions = new MultiLineCommandSuggestions(this.minecraft, new ScriptDispatcherProvider(this.minecraft), this, this.commandEdit, this.font, true, true, 0, 7, false, Integer.MIN_VALUE);
+        this.commandSuggestions = new MultiLineCommandSuggestions(this.minecraft, new ScriptDispatcherProvider(this.minecraft), this, this.commandEdit, this.font, true, true, 0, 7, false, Integer.MIN_VALUE, connectedBlocks);
         this.commandSuggestions.setAllowSuggestions(true);
         this.commandSuggestions.updateCommandInfo();
     }
@@ -179,7 +183,7 @@ public class ScriptTerminalScreen extends Screen {
         this.commandSuggestions.render(arg, i, j);
     }
 
-    public static void openWithData(BlockPos pos, String commandData, boolean loop, int delay) {
+    public static void openWithData(BlockPos pos, String commandData, boolean loop, int delay, Set<ResourceLocation> connectedBlocks) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) return;
 
@@ -189,6 +193,7 @@ public class ScriptTerminalScreen extends Screen {
             screen.initialCommand = commandData;
             screen.initialLoop = loop;
             screen.initialDelay = delay;
+            screen.connectedBlocks = connectedBlocks;
             minecraft.setScreen(screen);
         }
     }

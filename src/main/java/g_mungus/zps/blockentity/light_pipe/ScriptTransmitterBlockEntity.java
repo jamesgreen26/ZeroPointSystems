@@ -27,8 +27,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
-import org.joml.Vector2ic;
-import org.joml.Vector3ic;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -101,7 +99,7 @@ public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements
 
         public void set(int i, int j) {
             if (i == 0) {
-                ScriptTransmitterBlockEntity.this.setPage(j);
+                ScriptTransmitterBlockEntity.this.zps$setPage(j);
             }
 
         }
@@ -197,13 +195,16 @@ public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements
         if (level != null) updateSignal(level);
     }
 
-    void setPage(int i) {
+    @Override
+    public void zps$setPage(int i) {
         int j = Mth.clamp(i, 0, this.pageCount - 1);
         if (j != this.page) {
             this.page = j;
             this.setChanged();
-            LecternBlock.signalPageChange(this.getLevel(), this.getBlockPos(), this.getBlockState());
-            if (level != null) updateSignal(level);
+            if (level != null) {
+                LecternBlock.signalPageChange(level, this.getBlockPos(), this.getBlockState());
+                updateSignal(level);
+            }
         }
 
     }
@@ -283,16 +284,16 @@ public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements
 
     public void turnPage() {
         if (hasNextPage()) {
-            setPage(getPage() + 1);
+            zps$setPage(getPage() + 1);
         }
     }
 
     @Override
     public void zps$cyclePages() {
         if (hasNextPage()) {
-            setPage(getPage() + 1);
+            zps$setPage(getPage() + 1);
         } else {
-            setPage(0);
+            zps$setPage(0);
         }
     }
 

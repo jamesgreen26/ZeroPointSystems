@@ -200,10 +200,9 @@ public class CommandTreeBuilder {
             if (commandSource.source instanceof ZPSScriptCommandSource source) {
                 if (source.predicate.test(source.predicateValue)) {
                     A rawArg = context.getArgument(argumentKey, typed.argumentClass());
-                    ScriptContext plainContext = new ScriptContextImpl(commandSource, source.getPos(), commandSource.getLevel());
-                    I mappedValue = typed.argumentMapper().apply(rawArg, plainContext);
-                    var argContext = new ScriptContextWithArgumentImpl<>(mappedValue, source.getPos(), commandSource.getLevel(), commandSource);
-                    return typed.function().apply(mappedValue, argContext);
+                    ScriptContext executorContext = new ScriptContextImpl(commandSource, source.getPos(), commandSource.getLevel());
+                    I mappedValue = typed.argumentMapper().apply(rawArg, executorContext);
+                    return typed.function().apply(mappedValue, executorContext);
 
                 } else if (source.execute != null) {
                     return source.execute.get();
@@ -219,10 +218,9 @@ public class CommandTreeBuilder {
 
                     source.execute = () -> {
                         A rawArg = context.getArgument(argumentKey, typed.argumentClass());
-                        ScriptContext plainContext = new ScriptContextImpl(context.getSource(), source.getPos(), context.getSource().getLevel());
-                        I mappedValue = typed.argumentMapper().apply(rawArg, plainContext);
-                        var argContext = new ScriptContextWithArgumentImpl<>(mappedValue, source.getPos(), context.getSource().getLevel(), context.getSource());
-                        return typed.function().apply(mappedValue, argContext);
+                        ScriptContext executorContext = new ScriptContextImpl(context.getSource(), source.getPos(), context.getSource().getLevel());
+                        I mappedValue = typed.argumentMapper().apply(rawArg, executorContext);
+                        return typed.function().apply(mappedValue, executorContext);
                     };
                 }
                 return List.of(context.getSource());

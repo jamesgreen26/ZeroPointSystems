@@ -12,14 +12,14 @@ public record ScriptExecutor<I, A>(
         ArgumentType<A> argumentType,
         Class<A> argumentClass, // new
         BiFunction<A, ScriptContext, I> argumentMapper,
-        BiFunction<I, ScriptContext.WithArgument<I>, Integer> function
+        BiFunction<I, ScriptContext, Integer> function
 ) implements ScriptNode {
     public static <I> ScriptExecutor<I, I> simple(
             String displayName,
             Class<I> inputType,
             ResourceLocation inputKey,
             ArgumentType<I> argumentType,
-            BiFunction<I, ScriptContext.WithArgument<I>, Integer> function
+            BiFunction<I, ScriptContext, Integer> function
     ) {
         return new ScriptExecutor<>(
                 displayName,

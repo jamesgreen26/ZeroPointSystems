@@ -41,6 +41,10 @@ public abstract class LecternBlockEntityMixin implements BookHolder {
     void setPage(int i) {
     }
 
+    @Override
+    public void zps$setPage(int i) {
+        setPage(i);
+    }
 
     @Unique
     boolean zps$hasNextPage() {

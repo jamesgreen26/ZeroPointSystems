@@ -12,6 +12,8 @@ public interface BookHolder {
 
     void zps$cyclePages();
 
+    void zps$setPage(int i);
+
     boolean zps$hasBook();
 
     default void zps$onPageWritten() {}

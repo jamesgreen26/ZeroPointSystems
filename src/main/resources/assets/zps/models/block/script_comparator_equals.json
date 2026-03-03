@@ -4,6 +4,7 @@
 		"0": "zps:block/video_display_back",
 		"1": "zps:block/script_comparator",
 		"2": "zps:block/script_comparator_equals",
+		"3": "zps:block/octo_controller_side",
 		"particle": "zps:block/video_display_back"
 	},
 	"elements": [
@@ -16,7 +17,7 @@
 				"south": {"uv": [0, 0, 16, 16], "texture": "#0"},
 				"west": {"uv": [0, 0, 16, 16], "texture": "#1"},
 				"up": {"uv": [0, 0, 16, 16], "texture": "#2"},
-				"down": {"uv": [0, 0, 16, 16], "texture": "#2"}
+				"down": {"uv": [0, 0, 16, 16], "texture": "#3"}
 			}
 		}
 	]

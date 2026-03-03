@@ -8,6 +8,7 @@ import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.blockentity.light_pipe.RadioBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -122,6 +123,15 @@ public abstract class AbstractRadioBlock extends CableComponentBlock implements 
         Direction backDirection = state.getValue(FACING).getOpposite();
         boolean connected = canConnect(pos, pos.offset(backDirection.getNormal()), level);
         return state.setValue(CONNECTED, connected);
+    }
+
+    @Override
+    public void onPlace(BlockState newState, Level level, BlockPos pos, BlockState oldState, boolean moved) {
+        if (level instanceof ServerLevel && level.getBlockEntity(pos) instanceof RadioBlockEntity radioBlockEntity) {
+            radioBlockEntity.updateAntennaStrength(level);
+        }
+
+        super.onPlace(newState, level, pos, oldState, moved);
     }
 }
 

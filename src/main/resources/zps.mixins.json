@@ -15,11 +15,12 @@
     "BlockBehaviourMixin",
     "BlockInWorldMixin",
     "ClientboundCommandsPacketMixin",
+    "ConfigBaseMixin",
     "LecternBlockEntityMixin",
     "ServerLevelMixin",
     "WritableBookMixin",
     "WrittenBookMixin",
-    "ConfigBaseMixin"
+    "create.ScrollValueBehaviourAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

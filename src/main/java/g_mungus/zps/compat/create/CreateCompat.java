@@ -1,11 +1,13 @@
 package g_mungus.zps.compat.create;
 
 import com.mojang.brigadier.arguments.ArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.simibubi.create.api.behaviour.display.DisplaySource;
 import com.simibubi.create.content.contraptions.IControlContraption;
 import com.simibubi.create.content.redstone.displayLink.DisplayLinkBlockEntity;
 import com.simibubi.create.foundation.blockEntity.SmartBlockEntity;
 import com.simibubi.create.foundation.blockEntity.behaviour.scrollValue.ScrollOptionBehaviour;
+import com.simibubi.create.foundation.blockEntity.behaviour.scrollValue.ScrollValueBehaviour;
 import com.simibubi.create.foundation.data.CreateRegistrate;
 import com.simibubi.create.infrastructure.ponder.AllCreatePonderTags;
 import com.tterrag.registrate.util.entry.RegistryEntry;
@@ -20,6 +22,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import g_mungus.zps.mixin.create.ScrollValueBehaviourAccessor;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -62,8 +65,10 @@ public class CreateCompat {
     }
 
     public static void registerScriptCommands(RegisterScriptCommandsEvent event) {
-        Map<ScrollBehaviorKey, Set<ResourceLocation>> groups = new HashMap<>();
-        Map<ScrollBehaviorKey, ScrollOptionBehaviour<?>> samples = new HashMap<>();
+        Map<ScrollBehaviorKey, Set<ResourceLocation>> enumGroups = new HashMap<>();
+        Map<ScrollBehaviorKey, ScrollOptionBehaviour<?>> enumSamples = new HashMap<>();
+        Map<String, Set<ResourceLocation>> intGroups = new HashMap<>();
+        Map<String, ScrollValueBehaviour> intSamples = new HashMap<>();
 
         for (var entry : ForgeRegistries.BLOCKS.getEntries()) {
             try {
@@ -74,8 +79,12 @@ public class CreateCompat {
                         for (var behavior : smartBlockEntity.getAllBehaviours()) {
                             if (behavior instanceof ScrollOptionBehaviour<?> scrollOptionBehaviour) {
                                 ScrollBehaviorKey key = new ScrollBehaviorKey(scrollOptionBehaviour.label.getString(), scrollOptionBehaviour.get().getDeclaringClass());
-                                groups.computeIfAbsent(key, k -> new HashSet<>()).add(entry.getKey().location());
-                                samples.putIfAbsent(key, scrollOptionBehaviour);
+                                enumGroups.computeIfAbsent(key, k -> new HashSet<>()).add(entry.getKey().location());
+                                enumSamples.putIfAbsent(key, scrollOptionBehaviour);
+                            } else if (behavior instanceof ScrollValueBehaviour scrollValueBehaviour) {
+                                String label = scrollValueBehaviour.label.getString();
+                                intGroups.computeIfAbsent(label, k -> new HashSet<>()).add(entry.getKey().location());
+                                intSamples.putIfAbsent(label, scrollValueBehaviour);
                             }
                         }
                     }
@@ -85,14 +94,41 @@ public class CreateCompat {
             }
         }
 
-        for (var groupEntry : groups.entrySet()) {
+        for (var groupEntry : enumGroups.entrySet()) {
             ScrollBehaviorKey key = groupEntry.getKey();
-            event.register(getExecutor(samples.get(key), key.enumClass(), groupEntry.getValue()));
+            event.register(getEnumExecutor(enumSamples.get(key), key.enumClass(), groupEntry.getValue()));
+        }
+        for (var groupEntry : intGroups.entrySet()) {
+            event.register(getIntExecutor(intSamples.get(groupEntry.getKey()), groupEntry.getValue()));
         }
     }
 
+    private static @NotNull ScriptExecutor<Integer, Integer> getIntExecutor(ScrollValueBehaviour scrollValueBehaviour, Set<ResourceLocation> associatedBlocks) {
+        String optionLabel = scrollValueBehaviour.label.getString();
+        ScrollValueBehaviourAccessor accessor = (ScrollValueBehaviourAccessor) scrollValueBehaviour;
+        return ScriptExecutor.simpleWithBlocks(
+                "set_" + optionLabel.toLowerCase().replace(" ", "_"),
+                Integer.class,
+                ZPSMod.resource("int"),
+                IntegerArgumentType.integer(accessor.getMin(), accessor.getMax()),
+                (in, context) -> {
+                    BlockEntity blockEntity = context.level().getBlockEntity(context.pos());
+                    if (blockEntity instanceof SmartBlockEntity smartBlockEntity) {
+                        for (var behavior : smartBlockEntity.getAllBehaviours()) {
+                            if (behavior instanceof ScrollValueBehaviour b && optionLabel.equals(b.label.getString())) {
+                                b.setValue(in);
+                                return 1;
+                            }
+                        }
+                    }
+                    return 0;
+                },
+                associatedBlocks
+        );
+    }
+
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private static @NotNull <T> ScriptExecutor<Integer, T> getExecutor(ScrollOptionBehaviour<?> scrollOptionBehaviour, Class<T> enumClass, Set<ResourceLocation> associatedBlocks) {
+    private static @NotNull <T> ScriptExecutor<Integer, T> getEnumExecutor(ScrollOptionBehaviour<?> scrollOptionBehaviour, Class<T> enumClass, Set<ResourceLocation> associatedBlocks) {
         String optionLabel = scrollOptionBehaviour.label.getString();
         return new ScriptExecutor<>(
                 enumClass.equals(IControlContraption.RotationMode.class) ? "set_rotation_mode" : "set_" + optionLabel.toLowerCase().replace(" ", "_"),

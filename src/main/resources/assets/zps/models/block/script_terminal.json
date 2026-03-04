@@ -1,6 +1,7 @@
 {
 	"parent": "block/block",
 	"texture_size": [48, 48],
+	"ambientocclusion": false,
 	"textures": {
 		"0": "zps:block/script_terminal",
 		"particle": "zps:block/script_terminal"

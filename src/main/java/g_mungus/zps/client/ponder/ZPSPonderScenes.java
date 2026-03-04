@@ -136,22 +136,16 @@ public class ZPSPonderScenes {
         builder.idle(30);
         builder.overlay().showText(80).text("Apply Cable Insulation to cable blocks to prevent them from making new connections.");
 
-        builder.idle(30);
-        ElementLink<EntityElement> entityA = builder.world().createItemEntity(new BlockPos(3, 1, 1).getCenter(), new Vec3(0,0,0), ModItems.CABLE_INSULATION.get().getDefaultInstance());
-        builder.idle(5);
-        ElementLink<EntityElement> entityB = builder.world().createItemEntity(new BlockPos(3, 1, 3).getCenter(), new Vec3(0,0,0), ModItems.CABLE_INSULATION.get().getDefaultInstance());
-        builder.idle(5);
-        ElementLink<EntityElement> entityC = builder.world().createItemEntity(new BlockPos(3, 1, 5).getCenter(), new Vec3(0,0,0), ModItems.CABLE_INSULATION.get().getDefaultInstance());
-
-        builder.world().modifyEntity(entityA, Entity::discard);
+        builder.idle(10);
+        builder.overlay().showControls(util.vector().topOf(3, 1, 1), Pointing.DOWN, 10).rightClick().withItem(ModItems.CABLE_INSULATION.get().getDefaultInstance());
         builder.world().setBlock(new BlockPos(3, 1, 1), eastWestInsulatedCable, true);
-        builder.idle(5);
-        builder.world().modifyEntity(entityB, Entity::discard);
+        builder.idle(15);
+        builder.overlay().showControls(util.vector().topOf(3, 1, 3), Pointing.DOWN, 10).rightClick().withItem(ModItems.CABLE_INSULATION.get().getDefaultInstance());
         builder.world().setBlock(new BlockPos(3, 1, 3), eastWestInsulatedCable, true);
-        builder.idle(5);
-        builder.world().modifyEntity(entityC, Entity::discard);
+        builder.idle(15);
+        builder.overlay().showControls(util.vector().topOf(3, 1, 5), Pointing.DOWN, 10).rightClick().withItem(ModItems.CABLE_INSULATION.get().getDefaultInstance());
         builder.world().setBlock(new BlockPos(3, 1, 5), eastWestInsulatedCable, true);
-        builder.idle(20);
+        builder.idle(30);
         builder.world().showSection(util.select().fromTo(3, 2, 0, 3, 2, 7), Direction.DOWN);
         builder.idle(30);
     }

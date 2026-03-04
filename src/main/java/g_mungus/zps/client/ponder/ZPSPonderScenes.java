@@ -3,12 +3,18 @@ package g_mungus.zps.client.ponder;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.CableBlock;
 import g_mungus.zps.block.cableNetwork.RedstoneConverterBlock;
+import g_mungus.zps.block.cableNetwork.core.Channels;
+import g_mungus.zps.block.cableNetwork.light_pipe.ScriptTransmitterBlock;
+import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
+import g_mungus.zps.client.ponder.api.PonderExtras;
 import g_mungus.zps.item.ModItems;
+import net.createmod.catnip.math.Pointing;
 import net.createmod.ponder.api.PonderPalette;
 import net.createmod.ponder.api.element.ElementLink;
 import net.createmod.ponder.api.element.EntityElement;
 import net.createmod.ponder.api.scene.SceneBuilder;
 import net.createmod.ponder.api.scene.SceneBuildingUtil;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
@@ -18,8 +24,11 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.piglin.AbstractPiglin;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.NotNull;
 
 public class ZPSPonderScenes {
     public static void cableTutorial(SceneBuilder builder, SceneBuildingUtil util) {
@@ -249,5 +258,92 @@ public class ZPSPonderScenes {
         builder.idle(8);
         builder.world().toggleRedstonePower(util.select().position(5, 3, 5));
         builder.idle(20);
+    }
+
+
+    public static void dataCableTutorial(SceneBuilder builder, SceneBuildingUtil util) {
+        builder.configureBasePlate(0, 0, 7);
+        builder.title("data_cable", "Data Cables");
+        builder.showBasePlate();
+
+        PonderExtras.modifyBlockStates(builder, util, state -> {
+            if (state.is(ModBlocks.LIGHT_PIPE.get()) && (
+                    state.getValue(CableBlock.EAST) ||
+                    state.getValue(CableBlock.SOUTH)||
+                    state.getValue(CableBlock.DOWN))
+            ) {
+                return state.setValue(CableBlock.NORTH, false);
+            } else {
+                return state;
+            }
+        });
+
+        builder.world().showSection(
+                PonderExtras.selectBlocks(builder, util, ModBlocks.LIGHT_PIPE.get()),
+                Direction.UP
+        );
+
+        builder.idle(5);
+        builder.overlay().showText(60).text("Data Cables send information as text between compatible blocks.");
+        builder.idle(60);
+        builder.overlay().showText(60).text("A minimum setup has an input and output.");
+        builder.idle(20);
+        builder.world().showSection(util.select().position(4, 1, 2), Direction.DOWN);
+        builder.world().setBlock(new BlockPos(4, 1, 3), ModBlocks.LIGHT_PIPE.get().defaultBlockState().setValue(CableBlock.NORTH, true).setValue(CableBlock.SOUTH, true), false);
+
+        builder.idle(20);
+        builder.world().showSection(
+                PonderExtras.selectBlocks(builder, util, ModBlocks.TEXT_DISPLAY.get()),
+                Direction.DOWN
+        );
+        builder.idle(30);
+        builder.overlay().showText(70).text("Data provided to the input is sent to all connected outputs.");
+        builder.idle(20);
+        builder.overlay().showControls(util.vector().topOf(4, 1, 2), Pointing.DOWN, 20).rightClick().withItem(Items.WRITABLE_BOOK.getDefaultInstance());
+        builder.idle(10);
+        builder.world().setBlock(new BlockPos(4, 1, 2), ModBlocks.SCRIPT_TRANSMITTER.get().defaultBlockState().setValue(ScriptTransmitterBlock.HAS_BOOK, true), false);
+
+        String poem = getEndPoem();
+
+        builder.world().modifyBlockEntity(new BlockPos(1, 1, 3), TextDisplayBlockEntity.class, it -> it.acceptText(Channels.MAIN, poem));
+        builder.world().modifyBlockEntity(new BlockPos(2, 1, 3), TextDisplayBlockEntity.class, it -> it.acceptText(Channels.MAIN, poem));
+        builder.world().modifyBlockEntity(new BlockPos(1, 2, 3), TextDisplayBlockEntity.class, it -> it.acceptText(Channels.MAIN, poem));
+        builder.world().modifyBlockEntity(new BlockPos(2, 2, 3), TextDisplayBlockEntity.class, it -> it.acceptText(Channels.MAIN, poem));
+        builder.idle(45);
+    }
+
+    private static @NotNull String getEndPoem() {
+        Player player = Minecraft.getInstance().player;
+        String playerName = "Player";
+        if (player != null) {
+            playerName = player.getName().getString();
+        }
+
+        return """
+                I see the player you mean.
+                
+                %1$s?
+                
+                Yes. Take care. It has reached a higher level now. It can read our thoughts.
+                
+                That doesn’t matter. It thinks we are part of the game.
+                
+                I like this player. It played well. It did not give up.
+                
+                It is reading our thoughts as though they were words on a screen.
+                
+                That is how it chooses to imagine many things, when it is deep in the dream of a game.
+                
+                Words make a wonderful interface. Very flexible. And less terrifying than staring at the reality behind the screen.
+                
+                They used to hear voices. Before players could read. Back in the days when those who did not play called the players witches, and warlocks. And players dreamed they flew through the air, on sticks powered by demons.
+                
+                What did this player dream?
+                
+                This player dreamed of sunlight and trees. Of fire and water. It dreamed it created. And it dreamed it destroyed. It dreamed it hunted, and was hunted. It dreamed of shelter.
+                
+                Hah, the original interface. A million years old, and it still works.
+                
+                But what true structure did this player create, in the reality behind the screen?""".formatted(playerName);
     }
 }

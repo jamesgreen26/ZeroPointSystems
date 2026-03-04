@@ -294,6 +294,11 @@
     "zps.ponder.octo_controller.text_1": "Interact with an Octo-Controller to control it.",
     "zps.ponder.octo_controller.text_2": "Use arrow keys and WASD to control the 8 redstone outputs.",
 
+    "zps.ponder.data_cable.header": "Data Cables",
+    "zps.ponder.data_cable.text_1": "Data Cables send information as text between compatible blocks.",
+    "zps.ponder.data_cable.text_2": "A minimum setup has an input and output.",
+    "zps.ponder.data_cable.text_3": "Data provided to the input is sent to all connected outputs.",
+
     "zps.ponder.tag.can_insulate": "Blocks that can be Insulated",
     "zps.ponder.tag.can_insulate.description": "Components or Blocks which can have Cable Insulation applied to them, which prevents the block from connecting in new directions.",
 

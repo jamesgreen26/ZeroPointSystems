@@ -1,44 +1,52 @@
 package g_mungus.zps.client.ponder;
 
-import g_mungus.zps.block.ModBlocks;
 import net.createmod.ponder.api.registration.PonderSceneRegistrationHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
+import net.minecraftforge.registries.RegistryObject;
+
+import static g_mungus.zps.block.ModBlocks.*;
 
 public class ZPSPonders {
-    @SuppressWarnings("deprecation")
+
+    @SuppressWarnings({"deprecation", "unchecked"})
     public static void register(PonderSceneRegistrationHelper<ResourceLocation> helper) {
-        PonderSceneRegistrationHelper<Block> HELPER =
-                helper.withKeyFunction(block -> block.builtInRegistryHolder().key().location());
+        PonderSceneRegistrationHelper<RegistryObject<Block>> HELPER =
+                helper.withKeyFunction(block -> block.get().builtInRegistryHolder().key().location());
 
         HELPER.forComponents(
-                ModBlocks.CABLE.get(),
-                ModBlocks.REDSTONE_CONVERTER.get()
+                CABLE,
+                REDSTONE_CONVERTER
         ).addStoryBoard("cable", ZPSPonderScenes::cableTutorial);
 
         HELPER.forComponents(
-                ModBlocks.CABLE.get(),
-                ModBlocks.STEPUP_TRANSFORMER.get(),
-                ModBlocks.STEPDOWN_TRANSFORMER.get()
+                CABLE,
+                STEPUP_TRANSFORMER,
+                STEPDOWN_TRANSFORMER
         ).addStoryBoard("energy", ZPSPonderScenes::energyTutorial);
 
         HELPER.forComponents(
-                ModBlocks.STEPUP_TRANSFORMER.get(),
-                ModBlocks.REDSTONE_CONVERTER.get()
+                STEPUP_TRANSFORMER,
+                REDSTONE_CONVERTER
         ).addStoryBoard("energy_explode", ZPSPonderScenes::energyExplodeTutorial);
 
         HELPER.forComponents(
-                ModBlocks.CABLE_INSULATION.get()
+                CABLE_INSULATION
         ).addStoryBoard("insulation", ZPSPonderScenes::insulationTutorial, ZPSPonderTags.CAN_INSULATE);
 
         HELPER.forComponents(
-                ModBlocks.DENSE_CABLES.get(),
-                ModBlocks.DENSE_CABLE_SEPARATOR.get()
+                DENSE_CABLES,
+                DENSE_CABLE_SEPARATOR
         ).addStoryBoard("dense_cables", ZPSPonderScenes::denseCablesTutorial);
 
         HELPER.forComponents(
-                ModBlocks.OCTO_CONTROLLER.get()
+                OCTO_CONTROLLER
         ).addStoryBoard("octo_controller", ZPSPonderScenes::octoControllerTutorial);
 
+        HELPER.forComponents(
+                LIGHT_PIPE,
+                SCRIPT_TRANSMITTER,
+                TEXT_DISPLAY
+        ).addStoryBoard("data_cable", ZPSPonderScenes::dataCableTutorial);
     }
 }

@@ -1,0 +1,14 @@
+{
+  "keystroke": {
+    "subtitle": "sounds.zps.keystroke",
+    "sounds": [
+      "zps:keystroke",
+      "zps:keystroke2",
+      "zps:keystroke3",
+      "zps:keystroke4",
+      "zps:keystroke5",
+      "zps:keystroke6",
+      "zps:keystroke7"
+    ]
+  }
+}

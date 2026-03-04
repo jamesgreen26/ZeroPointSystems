@@ -4,6 +4,7 @@ import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.client.ponder.ZPSPonderPlugin;
 import g_mungus.zps.compat.Compat;
+import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.entity.ModEntities;
 import g_mungus.zps.item.ModCreativeTabs;
 import g_mungus.zps.item.ModItems;
@@ -15,6 +16,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
@@ -28,12 +30,15 @@ public final class ZPSMod {
     public ZPSMod(FMLJavaModLoadingContext context) {
         IEventBus modEventBus = context.getModEventBus();
 
+        context.registerConfig(ModConfig.Type.CLIENT, ZPSConfig.CONFIG_SPEC);
+
         // Register blocks and block entities
         ModBlocks.BLOCKS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
         ModEntities.ENTITIES.register(modEventBus);
+        ModSounds.SOUNDS.register(modEventBus);
         ZPSPaintings.PAINTING_VARIANTS.register(modEventBus);
 
         // Register common setup event

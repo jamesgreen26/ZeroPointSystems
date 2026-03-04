@@ -1,9 +1,11 @@
 package g_mungus.zps.client.screens;
 
+import g_mungus.zps.ModSounds;
 import g_mungus.zps.blockentity.light_pipe.ScriptComputer;
 import g_mungus.zps.client.screens.components.MultiLineEditBox;
 import g_mungus.zps.client.screens.components.MultiLineCommandSuggestions;
 import g_mungus.zps.client.screens.components.ScriptDispatcherProvider;
+import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.networking.ScriptComputerC2SPacket;
 import g_mungus.zps.networking.ZPSGamePackets;
 import net.minecraft.client.GameNarrator;
@@ -15,6 +17,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -150,6 +153,9 @@ public class ScriptTerminalScreen extends Screen {
 
     @Override
     public boolean keyPressed(int i, int j, int k) {
+        if (ZPSConfig.useKeyboardSounds()) {
+            Minecraft.getInstance().player.playSound(ModSounds.KEYSTROKE.get());
+        }
         if (this.commandSuggestions.keyPressed(i, j, k)) {
             return true;
         } else if (super.keyPressed(i, j, k)) {

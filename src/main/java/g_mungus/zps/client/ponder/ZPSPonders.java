@@ -24,15 +24,12 @@ public class ZPSPonders {
 
         HELPER.forComponents(
                 ModBlocks.STEPUP_TRANSFORMER.get(),
-                ModBlocks.STEPDOWN_TRANSFORMER.get(),
-                ModBlocks.REDSTONE_CONVERTER.get(),
-                ModBlocks.CABLE_INSULATION.get()
+                ModBlocks.REDSTONE_CONVERTER.get()
         ).addStoryBoard("energy_explode", ZPSPonderScenes::energyExplodeTutorial);
 
         HELPER.forComponents(
-                ModBlocks.CABLE.get(),
                 ModBlocks.CABLE_INSULATION.get()
-        ).addStoryBoard("insulation", ZPSPonderScenes::insulationTutorial);
+        ).addStoryBoard("insulation", ZPSPonderScenes::insulationTutorial, ZPSPonderTags.CAN_INSULATE);
 
         HELPER.forComponents(
                 ModBlocks.DENSE_CABLES.get(),

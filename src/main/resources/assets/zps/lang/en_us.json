@@ -293,6 +293,10 @@
     "zps.ponder.octo_controller.header": "Octo-Controller",
     "zps.ponder.octo_controller.text_1": "Interact with an Octo-Controller to control it.",
     "zps.ponder.octo_controller.text_2": "Use arrow keys and WASD to control the 8 redstone outputs.",
+
+    "zps.ponder.tag.can_insulate": "Blocks that can be Insulated",
+    "zps.ponder.tag.can_insulate.description": "Components or Blocks which can have Cable Insulation applied to them, which prevents the block from connecting in new directions.",
+
     "creativetab.zps_tab_deco": "Zero Point Systems Blocks",
 
     "block.zps.switch_panel.zps_tooltip": "4 levers in 1!\n\nEach switch controls one of the four outputs. Connects with [Dense Cables].",

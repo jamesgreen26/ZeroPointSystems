@@ -6,7 +6,6 @@ import com.simibubi.create.foundation.data.CreateRegistrate;
 import com.simibubi.create.infrastructure.ponder.AllCreatePonderTags;
 import com.tterrag.registrate.util.entry.RegistryEntry;
 import g_mungus.zps.ZPSMod;
-import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import net.createmod.ponder.api.registration.PonderTagRegistrationHelper;
 import net.minecraft.core.BlockPos;
@@ -41,9 +40,6 @@ public class CreateCompat {
     }
 
     public static void registerPonderTagEntries(@NotNull PonderTagRegistrationHelper<ResourceLocation> helper) {
-        PonderTagRegistrationHelper<RegistryEntry<?>> createHelper = helper.withKeyFunction(RegistryEntry::getId);
-
-        // Extremely sus but seems to work
-        createHelper.addToTag(AllCreatePonderTags.DISPLAY_SOURCES).add(new RegistryEntry<>(REG, ModBlocks.SERIAL_BUS));
+        helper.addToTag(AllCreatePonderTags.DISPLAY_SOURCES).add(ZPSMod.resource("serial_bus"));
     }
 }

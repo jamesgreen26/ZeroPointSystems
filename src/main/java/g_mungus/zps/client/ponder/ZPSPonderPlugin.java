@@ -24,6 +24,7 @@ public class ZPSPonderPlugin implements PonderPlugin {
 
     @Override
     public void registerTags(@NotNull PonderTagRegistrationHelper<ResourceLocation> helper) {
+        ZPSPonderTags.register(helper);
         if (Compat.isCreateLoaded()) {
             CreateCompat.registerPonderTagEntries(helper);
         }

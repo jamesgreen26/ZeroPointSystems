@@ -4,7 +4,6 @@ import g_mungus.zps.block.cableNetwork.core.BuiltinCableStandards;
 import g_mungus.zps.block.cableNetwork.core.CableComponentBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
-import g_mungus.zps.blockentity.light_pipe.ScriptComputer;
 import g_mungus.zps.blockentity.light_pipe.ScriptTerminalBlockEntity;
 import g_mungus.zps.networking.ScriptComputerS2CPacket;
 import g_mungus.zps.networking.ZPSGamePackets;
@@ -28,7 +27,9 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.network.NetworkDirection;
 import org.jetbrains.annotations.NotNull;
@@ -42,6 +43,8 @@ public class ScriptTerminalBlock extends CableComponentBlock implements EntityBl
     public static final BooleanProperty CONNECTED = BooleanProperty.create("connected");
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+
+    public static final VoxelShape SUPPORT_SHAPE = Shapes.join(Shapes.block(), Block.box(2.0, Math.max(2, 1), 2.0, 14.0, 16.0, 14.0), BooleanOp.ONLY_FIRST);
 
 
     public ScriptTerminalBlock(Properties arg) {
@@ -80,6 +83,12 @@ public class ScriptTerminalBlock extends CableComponentBlock implements EntityBl
     @Override
     public @NotNull VoxelShape getShape(@NotNull BlockState arg, @NotNull BlockGetter arg2, @NotNull BlockPos arg3, @NotNull CollisionContext arg4) {
         return Block.box(0,0,0,16,10,16);
+    }
+
+    @SuppressWarnings("deprecation")
+    @Override
+    public @NotNull VoxelShape getBlockSupportShape(@NotNull BlockState state, @NotNull BlockGetter level, @NotNull BlockPos pos) {
+        return SUPPORT_SHAPE;
     }
 
     @Override

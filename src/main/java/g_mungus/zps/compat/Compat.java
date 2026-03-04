@@ -56,6 +56,9 @@ public class Compat {
         if (isVSLoaded()) {
             VSCompat.registerScriptCommands(event);
         }
+        if (isCreateLoaded()) {
+            CreateCompat.registerScriptCommands(event);
+        }
     }
 
     public static void onModInit(IEventBus modEventBus) {

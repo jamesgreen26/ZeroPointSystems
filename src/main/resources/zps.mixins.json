@@ -18,7 +18,8 @@
     "LecternBlockEntityMixin",
     "ServerLevelMixin",
     "WritableBookMixin",
-    "WrittenBookMixin"
+    "WrittenBookMixin",
+    "ConfigBaseMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -19,11 +19,13 @@ import net.createmod.ponder.api.element.EntityElement;
 import net.createmod.ponder.api.scene.SceneBuilder;
 import net.createmod.ponder.api.scene.SceneBuildingUtil;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.decoration.ArmorStand;
@@ -318,17 +320,19 @@ public class ZPSPonderScenes {
         builder.removeShadow();
         builder.idle(10);
         ScreenPonderElement screenElement = new ScreenPonderElement(() -> new ScriptTerminalScreen(null, true));
-        builder.addInstruction(new ShowScreenInstruction(screenElement, 180));
+        builder.addInstruction(new ShowScreenInstruction(screenElement, 120));
         builder.idle(20);
         for (char c : "if block == minecraft:piston[facing=up] set_redstone 15".toCharArray()) {
             typeChar(builder, screenElement, c);
         }
-        builder.idle(20);
+        builder.idle(30);
 
         ScreenSpaceInputWindowElement element = new ScreenSpaceInputWindowElement(screenElement, (w, h) -> new Vec2(w / 2f - 78, h / 4f + 132), Pointing.DOWN);
         element.builder().leftClick();
         builder.addInstruction(new ShowScreenRelativeInputInstruction(screenElement, element, 20));
-        builder.idle(20);
+        builder.idle(12);
+
+        builder.addInstruction(ponderScene -> Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F)));
     }
 
     private static void typeChar(SceneBuilder builder, ScreenPonderElement screenElement, char c) {

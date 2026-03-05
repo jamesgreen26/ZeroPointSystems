@@ -16,6 +16,9 @@ public class ScreenElement implements PonderOverlayElement {
     private int mouseX = 0;
     private int mouseY = 0;
 
+    private int lastVirtualWidth = -1;
+    private int lastVirtualHeight = -1;
+
     public ScreenElement(PonderCompatibleScreen screen) {
         this.screen = screen;
         screen.setShouldRenderBackground(false);
@@ -43,6 +46,15 @@ public class ScreenElement implements PonderOverlayElement {
 
         int maxScale = window.calculateScale(Integer.MAX_VALUE, mc.isEnforceUnicode());
         int targetScale = Math.max(1, maxScale / 2);
+
+        int virtualWidth  = window.getWidth()  / targetScale;
+        int virtualHeight = window.getHeight() / targetScale;
+
+        if (virtualWidth != lastVirtualWidth || virtualHeight != lastVirtualHeight) {
+            screen.init(mc, virtualWidth, virtualHeight);
+            lastVirtualWidth = virtualWidth;
+            lastVirtualHeight = virtualHeight;
+        }
 
         double currentScale = window.getGuiScale();
 

@@ -1,4 +1,4 @@
-package g_mungus.zps.client.ponder.api;
+package g_mungus.zps.client.ponder.api.custom_screen_in_ponder_scene;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;

@@ -1,4 +1,4 @@
-package g_mungus.zps.client.ponder.api;
+package g_mungus.zps.client.ponder.api.custom_screen_in_ponder_scene;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.createmod.catnip.gui.element.GuiGameElement;
@@ -29,18 +29,18 @@ import java.util.function.BiFunction;
 public class ScreenSpaceInputWindowElement extends InputWindowElement {
 
 	private final Pointing direction;
-	private final g_mungus.zps.client.ponder.api.ScreenElement screenElement;
+	private final ScreenPonderElement screenElement;
 	private final BiFunction<Integer, Integer, Vec2> positionFn;
 	@Nullable ResourceLocation key;
 	@Nullable ScreenElement icon;
 	ItemStack item = ItemStack.EMPTY;
 
 	/**
-	 * Creates an input element rendered as an overlay on top of a {@link g_mungus.zps.client.ponder.api.ScreenElement}.
+	 * Creates an input element rendered as an overlay on top of a {@link ScreenPonderElement}.
 	 * {@code positionFn} receives the screen's current virtual width and height and returns the
 	 * position in virtual screen coordinates, ensuring layout-relative positioning at any resolution.
 	 */
-	public ScreenSpaceInputWindowElement(g_mungus.zps.client.ponder.api.ScreenElement screenElement, BiFunction<Integer, Integer, Vec2> positionFn, Pointing direction) {
+	public ScreenSpaceInputWindowElement(ScreenPonderElement screenElement, BiFunction<Integer, Integer, Vec2> positionFn, Pointing direction) {
 		super(new Vec3(0, 0, 0), direction);
 		this.screenElement = screenElement;
 		this.positionFn = positionFn;

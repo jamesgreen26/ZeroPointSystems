@@ -1,4 +1,4 @@
-package g_mungus.zps.client.ponder.api;
+package g_mungus.zps.client.ponder.api.custom_screen_in_ponder_scene;
 
 import com.mojang.blaze3d.platform.Window;
 import net.createmod.ponder.api.element.PonderOverlayElement;
@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-public class ScreenElement implements PonderOverlayElement {
+public class ScreenPonderElement implements PonderOverlayElement {
 
     private boolean visible = false;
     public PonderCompatibleScreen screen;
@@ -25,7 +25,7 @@ public class ScreenElement implements PonderOverlayElement {
     private int lastVirtualWidth = -1;
     private int lastVirtualHeight = -1;
 
-    public ScreenElement(Supplier<PonderCompatibleScreen> screenSupplier) {
+    public ScreenPonderElement(Supplier<PonderCompatibleScreen> screenSupplier) {
         this.screenSupplier = screenSupplier;
         reset();
     }

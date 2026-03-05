@@ -1,16 +1,16 @@
-package g_mungus.zps.client.ponder.api;
+package g_mungus.zps.client.ponder.api.custom_screen_in_ponder_scene;
 
 import net.createmod.ponder.foundation.PonderScene;
 import net.createmod.ponder.foundation.instruction.FadeInOutInstruction;
 
 public class ShowScreenRelativeInputInstruction extends FadeInOutInstruction {
 
-    private final ScreenElement screenElement;
+    private final ScreenPonderElement screenElement;
     private final ScreenSpaceInputWindowElement inputElement;
     private float currentFade = 0f;
     private PonderCompatibleScreen.ScreenOverlay overlay;
 
-    public ShowScreenRelativeInputInstruction(ScreenElement screenElement, ScreenSpaceInputWindowElement inputElement, int ticks) {
+    public ShowScreenRelativeInputInstruction(ScreenPonderElement screenElement, ScreenSpaceInputWindowElement inputElement, int ticks) {
         super(ticks);
         this.screenElement = screenElement;
         this.inputElement = inputElement;

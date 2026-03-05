@@ -8,6 +8,7 @@ import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.light_pipe.ScriptTransmitterBlock;
 import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
 import g_mungus.zps.client.ponder.api.*;
+import g_mungus.zps.client.ponder.api.custom_screen_in_ponder_scene.*;
 import g_mungus.zps.client.screens.ScriptTerminalScreen;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.item.ModItems;
@@ -316,7 +317,7 @@ public class ZPSPonderScenes {
 
         builder.removeShadow();
         builder.idle(10);
-        ScreenElement screenElement = new ScreenElement(() -> new ScriptTerminalScreen(null, true));
+        ScreenPonderElement screenElement = new ScreenPonderElement(() -> new ScriptTerminalScreen(null, true));
         builder.addInstruction(new ShowScreenInstruction(screenElement, 180));
         builder.idle(20);
         for (char c : "if block == minecraft:piston[facing=up] set_redstone 15".toCharArray()) {
@@ -330,7 +331,7 @@ public class ZPSPonderScenes {
         builder.idle(20);
     }
 
-    private static void typeChar(SceneBuilder builder, ScreenElement screenElement, char c) {
+    private static void typeChar(SceneBuilder builder, ScreenPonderElement screenElement, char c) {
         builder.addInstruction(new ModifyScreenInstruction(screenElement, it -> {
             it.charTyped(c, 0);
 

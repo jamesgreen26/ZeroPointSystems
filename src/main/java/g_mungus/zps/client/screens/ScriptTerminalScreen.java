@@ -2,7 +2,7 @@ package g_mungus.zps.client.screens;
 
 import g_mungus.zps.ModSounds;
 import g_mungus.zps.blockentity.light_pipe.ScriptComputer;
-import g_mungus.zps.client.ponder.api.PonderCompatibleScreen;
+import g_mungus.zps.client.ponder.api.custom_screen_in_ponder_scene.PonderCompatibleScreen;
 import g_mungus.zps.client.screens.components.MultiLineEditBox;
 import g_mungus.zps.client.screens.components.MultiLineCommandSuggestions;
 import g_mungus.zps.client.screens.components.ScriptDispatcherProvider;

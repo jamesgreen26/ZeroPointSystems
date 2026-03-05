@@ -1,12 +1,12 @@
-package g_mungus.zps.client.ponder.api;
+package g_mungus.zps.client.ponder.api.custom_screen_in_ponder_scene;
 
 import net.createmod.ponder.foundation.PonderScene;
 import net.createmod.ponder.foundation.instruction.FadeInOutInstruction;
 
 public class ShowScreenInstruction extends FadeInOutInstruction {
-    private final ScreenElement element;
+    private final ScreenPonderElement element;
 
-    public ShowScreenInstruction(ScreenElement element, int ticks) {
+    public ShowScreenInstruction(ScreenPonderElement element, int ticks) {
         super(ticks);
         this.element = element;
     }

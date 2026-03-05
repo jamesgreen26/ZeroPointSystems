@@ -1,4 +1,4 @@
-package g_mungus.zps.client.ponder.api;
+package g_mungus.zps.client.ponder.api.custom_screen_in_ponder_scene;
 
 import net.createmod.ponder.foundation.PonderScene;
 import net.createmod.ponder.foundation.instruction.PonderInstruction;
@@ -9,7 +9,7 @@ public class ModifyScreenInstruction extends PonderInstruction {
 
     private final Runnable runnable;
 
-    public ModifyScreenInstruction(ScreenElement element, Consumer<PonderCompatibleScreen> consumer) {
+    public ModifyScreenInstruction(ScreenPonderElement element, Consumer<PonderCompatibleScreen> consumer) {
         runnable = () -> {
             consumer.accept(element.screen);
         };

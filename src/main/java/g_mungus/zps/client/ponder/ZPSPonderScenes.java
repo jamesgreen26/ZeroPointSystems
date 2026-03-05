@@ -327,7 +327,7 @@ public class ZPSPonderScenes {
         }
         builder.idle(30);
 
-        ScreenSpaceInputWindowElement element = new ScreenSpaceInputWindowElement(screenElement, (w, h) -> new Vec2(w / 2f - 78, h / 4f + 132), Pointing.DOWN);
+        ScreenSpaceInputWindowElement element = new ScreenSpaceInputWindowElement(screenElement, (w, h) -> new Vec2(w / 2f - 78, h / 4f + 144), Pointing.UP);
         element.builder().leftClick();
         builder.addInstruction(new ShowScreenRelativeInputInstruction(screenElement, element, 20));
         builder.idle(12);

@@ -1,4 +1,4 @@
-package g_mungus.zps.mixin;
+package g_mungus.zps.mixin.ponder;
 
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;

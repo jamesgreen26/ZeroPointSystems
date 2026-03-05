@@ -340,7 +340,13 @@ public class ZPSPonderScenes {
                 if (player != null) player.playSound(ModSounds.KEYSTROKE.get());
             }
         }));
-        builder.idle(1);
+        if (c == ' ') {
+            builder.idle(3);
+        } else if (c == '_') {
+            builder.idle(2);
+        } else {
+            builder.idle(1);
+        }
     }
 
     private static @NotNull String getEndPoem() {

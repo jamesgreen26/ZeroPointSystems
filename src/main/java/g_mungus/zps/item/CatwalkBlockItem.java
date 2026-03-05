@@ -1,13 +1,12 @@
 package g_mungus.zps.item;
 
-import g_mungus.zps.block.CatwalkStairsBlock;
+import g_mungus.zps.block.CatwalkBlock;
 import net.createmod.catnip.placement.IPlacementHelper;
 import net.createmod.catnip.placement.PlacementHelpers;
 import net.createmod.catnip.placement.PlacementOffset;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.Vec3i;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
@@ -16,19 +15,18 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.function.Predicate;
 
-public class CatwalkStairBlockItem extends BlockItem {
+public class CatwalkBlockItem extends BlockItem {
   private final int placementHelperID;
 
-  public CatwalkStairBlockItem (Block block, Properties props) {
+  public CatwalkBlockItem(Block block, Properties props) {
     super(block, props);
-    placementHelperID = PlacementHelpers.register(new CatwalkStairBlockItem.CatwalkHelper());
+    placementHelperID = PlacementHelpers.register(new CatwalkBlockItem.CatwalkHelper());
   }
 
   @Override
@@ -56,38 +54,22 @@ public class CatwalkStairBlockItem extends BlockItem {
   public static class CatwalkHelper implements IPlacementHelper {
     @Override
     public Predicate<ItemStack> getItemPredicate () {
-      return itemStack -> itemStack.getItem() instanceof CatwalkStairBlockItem;
+      return itemStack -> itemStack.getItem() instanceof CatwalkBlockItem;
     }
 
     @Override
     public Predicate<BlockState> getStatePredicate () {
-      return state -> state.getBlock() instanceof CatwalkStairsBlock;
+      return state -> state.getBlock() instanceof CatwalkBlock;
     }
 
     @Override
     public PlacementOffset getOffset(Player player, Level level, BlockState state, BlockPos pos, BlockHitResult ray) {
-      Direction playerDir = player.getDirection();
-      Direction blockDir = state.getValue(BlockStateProperties.HORIZONTAL_FACING);
-
-      Vec3i offset = playerDir.getNormal();
-
-      if (playerDir.equals(blockDir)) {
-        offset = offset.below();
-      } else if (playerDir.getOpposite().equals(blockDir)) {
-        offset = offset.above();
-      }
-
-      BlockPos newPos = pos.offset(offset);
+      BlockPos newPos = pos.offset(player.getDirection().getNormal());
 
       if (!level.getBlockState(newPos).canBeReplaced())
         return PlacementOffset.fail();
 
-      return PlacementOffset.success(newPos, offsetState -> {
-        if (offsetState.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
-          offsetState = offsetState.setValue(BlockStateProperties.HORIZONTAL_FACING, blockDir);
-        }
-        return offsetState;
-      });
+      return PlacementOffset.success(newPos, offsetState -> offsetState);
     }
   }
 }

@@ -160,7 +160,7 @@ public class ModItems {
             () -> new BlockItem(ModBlocks.SPACE_MESH_BLOCK.get(), new Item.Properties()));
 
     public static final RegistryObject<Item> CATWALK = ITEMS.register("catwalk",
-            () -> new BlockItem(ModBlocks.CATWALK.get(), new Item.Properties()));
+            () -> new CatwalkBlockItem(ModBlocks.CATWALK.get(), new Item.Properties()));
 
     public static final RegistryObject<Item> CATWALK_STAIRS = ITEMS.register("catwalk_stairs",
             () -> new CatwalkStairBlockItem(ModBlocks.CATWALK_STAIRS.get(), new Item.Properties()));

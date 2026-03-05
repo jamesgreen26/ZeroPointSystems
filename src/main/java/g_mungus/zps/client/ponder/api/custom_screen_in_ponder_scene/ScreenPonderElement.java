@@ -1,6 +1,7 @@
 package g_mungus.zps.client.ponder.api.custom_screen_in_ponder_scene;
 
 import com.mojang.blaze3d.platform.Window;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.createmod.ponder.api.element.PonderOverlayElement;
 import net.createmod.ponder.foundation.PonderScene;
 import net.createmod.ponder.foundation.ui.PonderUI;
@@ -102,15 +103,22 @@ public class ScreenPonderElement implements PonderOverlayElement {
         // Apply our custom scale
         graphics.pose().scale(targetScale, targetScale, 1f);
 
-//        this.screen.forceRenderBackground(graphics);
+        graphics.pose().translate(0f, 0f, 300f);
 
-        graphics.pose().translate(0f, ((float) window.getHeight() / targetScale) / 5.5f, 0f);
+        this.screen.forceRenderBackground(graphics);
+
+        graphics.pose().translate(0f, ((float) window.getHeight() / targetScale) / 5.5f, 100f);
+
+        RenderSystem.disableDepthTest();
+
         this.screen.renderPonder(
                 graphics,
                 (int)(rawMouseX / targetScale),
                 (int)(rawMouseY / targetScale),
                 partialTicks
         );
+
+        RenderSystem.enableDepthTest();
 
         graphics.pose().popPose();
     }

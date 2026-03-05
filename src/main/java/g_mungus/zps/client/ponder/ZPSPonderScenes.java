@@ -316,8 +316,8 @@ public class ZPSPonderScenes {
     public static void scriptTerminalTutorial(SceneBuilder builder, SceneBuildingUtil util) {
         builder.configureBasePlate(0, 0, 7);
         builder.title("script_terminal", "Script Terminal");
+        builder.showBasePlate();
 
-        builder.removeShadow();
         builder.idle(10);
         ScreenPonderElement screenElement = new ScreenPonderElement(() -> new ScriptTerminalScreen(null, true));
         builder.addInstruction(new ShowScreenInstruction(screenElement, 120));

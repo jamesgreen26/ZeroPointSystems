@@ -8,10 +8,13 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.Supplier;
+
 public class ScreenElement implements PonderOverlayElement {
 
     private boolean visible = false;
-    public final PonderCompatibleScreen screen;
+    public PonderCompatibleScreen screen;
+    private final Supplier<PonderCompatibleScreen> screenSupplier;
 
     private int mouseX = 0;
     private int mouseY = 0;
@@ -19,8 +22,18 @@ public class ScreenElement implements PonderOverlayElement {
     private int lastVirtualWidth = -1;
     private int lastVirtualHeight = -1;
 
-    public ScreenElement(PonderCompatibleScreen screen) {
-        this.screen = screen;
+    public ScreenElement(Supplier<PonderCompatibleScreen> screenSupplier) {
+        this.screenSupplier = screenSupplier;
+        reset();
+    }
+
+    @Override
+    public void reset(@NotNull PonderScene scene) {
+        reset();
+    }
+
+    public void reset() {
+        this.screen = screenSupplier.get();
         screen.setShouldRenderBackground(false);
         screen.setInPonder(true);
         Minecraft mc = Minecraft.getInstance();

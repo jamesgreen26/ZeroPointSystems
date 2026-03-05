@@ -318,7 +318,7 @@ public class ZPSPonderScenes {
 
         builder.removeShadow();
         builder.idle(10);
-        ScreenElement screenElement = new ScreenElement(new ScriptTerminalScreen(null, true));
+        ScreenElement screenElement = new ScreenElement(() -> new ScriptTerminalScreen(null, true));
         builder.addInstruction(new ShowScreenInstruction(screenElement, 180));
         builder.idle(20);
         for (char c : "if block == minecraft:piston[facing=up] set_redstone 15".toCharArray()) {

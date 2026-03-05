@@ -156,10 +156,15 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
 
     @Override
     public boolean keyPressed(int i, int j, int k) {
-        if (ZPSConfig.useKeyboardSounds()) {
+        boolean soundPlayed = false;
+        if (ZPSConfig.useKeyboardSounds() && i != 256) {
             Minecraft.getInstance().player.playSound(ModSounds.KEYSTROKE.get());
+            soundPlayed = true;
         }
         if (this.commandSuggestions.keyPressed(i, j, k)) {
+            if (!soundPlayed && ZPSConfig.useKeyboardSounds()) {
+                Minecraft.getInstance().player.playSound(ModSounds.KEYSTROKE.get());
+            }
             return true;
         } else if (super.keyPressed(i, j, k)) {
             return true;

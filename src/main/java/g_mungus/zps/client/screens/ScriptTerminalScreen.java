@@ -2,6 +2,7 @@ package g_mungus.zps.client.screens;
 
 import g_mungus.zps.ModSounds;
 import g_mungus.zps.blockentity.light_pipe.ScriptComputer;
+import g_mungus.zps.client.ponder.api.PonderCompatibleScreen;
 import g_mungus.zps.client.screens.components.MultiLineEditBox;
 import g_mungus.zps.client.screens.components.MultiLineCommandSuggestions;
 import g_mungus.zps.client.screens.components.ScriptDispatcherProvider;
@@ -12,19 +13,17 @@ import net.minecraft.client.GameNarrator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Set;
 
-public class ScriptTerminalScreen extends Screen {
+public class ScriptTerminalScreen extends PonderCompatibleScreen {
 
     private static final Component SET_COMMAND_LABEL = Component.literal("Script Terminal");
     private static final Component COMMAND_LABEL = Component.literal("ZPS Script Command");
@@ -67,6 +66,10 @@ public class ScriptTerminalScreen extends Screen {
 
     @Override
     protected void init() {
+        if (isInPonder()) {
+            this.connectedBlocks = Set.of();
+        }
+
         // Initialize mode from computer or initialLoop
         if (initialCommand != null) {
             isRepeatMode = initialLoop;

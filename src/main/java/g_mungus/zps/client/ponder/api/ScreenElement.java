@@ -1,0 +1,87 @@
+package g_mungus.zps.client.ponder.api;
+
+import com.mojang.blaze3d.platform.Window;
+import net.createmod.ponder.api.element.PonderOverlayElement;
+import net.createmod.ponder.foundation.PonderScene;
+import net.createmod.ponder.foundation.ui.PonderUI;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import org.jetbrains.annotations.NotNull;
+
+public class ScreenElement implements PonderOverlayElement {
+
+    private boolean visible = false;
+    public final PonderCompatibleScreen screen;
+
+    private int mouseX = 0;
+    private int mouseY = 0;
+
+    public ScreenElement(PonderCompatibleScreen screen) {
+        this.screen = screen;
+        screen.setShouldRenderBackground(false);
+        screen.setInPonder(true);
+        Minecraft mc = Minecraft.getInstance();
+        Window window = mc.getWindow();
+
+        int maxScale = window.calculateScale(0, mc.isEnforceUnicode());
+        int targetScale = Math.max(1, maxScale / 2);
+
+        int virtualWidth  = window.getWidth()  / targetScale;
+        int virtualHeight = window.getHeight() / targetScale;
+
+        screen.init(mc, virtualWidth, virtualHeight);
+    }
+
+    @Override
+    public void render(@NotNull PonderScene scene,
+                       @NotNull PonderUI ui,
+                       @NotNull GuiGraphics graphics,
+                       float partialTicks) {
+
+        Minecraft mc = Minecraft.getInstance();
+        Window window = mc.getWindow();
+
+        int maxScale = window.calculateScale(Integer.MAX_VALUE, mc.isEnforceUnicode());
+        int targetScale = Math.max(1, maxScale / 2);
+
+        double currentScale = window.getGuiScale();
+
+        double rawMouseX = mouseX * currentScale;
+        double rawMouseY = mouseY * currentScale;
+
+        graphics.pose().pushPose();
+
+        // Remove current GUI scaling
+        graphics.pose().scale((float)(1f / currentScale), (float)(1f / currentScale), 1f);
+
+        // Apply our custom scale
+        graphics.pose().scale(targetScale, targetScale, 1f);
+
+//        this.screen.forceRenderBackground(graphics);
+
+        graphics.pose().translate(0f, ((float) window.getHeight() / targetScale) / 5.5f, 0f);
+        this.screen.render(
+                graphics,
+                (int)(rawMouseX / targetScale),
+                (int)(rawMouseY / targetScale),
+                partialTicks
+        );
+
+        graphics.pose().popPose();
+    }
+
+    @Override
+    public boolean isVisible() {
+        return visible;
+    }
+
+    @Override
+    public void setVisible(boolean visible) {
+        this.visible = visible;
+    }
+
+    public void setMouse(int mouseX, int mouseY) {
+        this.mouseX = mouseX;
+        this.mouseY = mouseY;
+    }
+}

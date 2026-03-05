@@ -7,6 +7,9 @@ import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.light_pipe.ScriptTransmitterBlock;
 import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
 import g_mungus.zps.client.ponder.api.PonderExtras;
+import g_mungus.zps.client.ponder.api.ScreenElement;
+import g_mungus.zps.client.ponder.api.ShowScreenInstruction;
+import g_mungus.zps.client.screens.ScriptTerminalScreen;
 import g_mungus.zps.item.ModItems;
 import net.createmod.catnip.math.Pointing;
 import net.createmod.ponder.api.PonderPalette;
@@ -304,6 +307,16 @@ public class ZPSPonderScenes {
         builder.world().modifyBlockEntity(new BlockPos(1, 2, 3), TextDisplayBlockEntity.class, it -> it.acceptText(Channels.MAIN, poem));
         builder.world().modifyBlockEntity(new BlockPos(2, 2, 3), TextDisplayBlockEntity.class, it -> it.acceptText(Channels.MAIN, poem));
         builder.idle(45);
+    }
+
+    public static void scriptTerminalTutorial(SceneBuilder builder, SceneBuildingUtil util) {
+        builder.configureBasePlate(0, 0, 7);
+        builder.title("script_terminal", "Script Terminal");
+
+        builder.removeShadow();
+        builder.idle(10);
+        builder.addInstruction(new ShowScreenInstruction(new ScreenElement(new ScriptTerminalScreen(null, true)), 80));
+        builder.idle(80);
     }
 
     private static @NotNull String getEndPoem() {

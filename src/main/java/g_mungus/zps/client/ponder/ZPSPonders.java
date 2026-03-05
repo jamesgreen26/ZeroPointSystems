@@ -48,5 +48,9 @@ public class ZPSPonders {
                 SCRIPT_TRANSMITTER,
                 TEXT_DISPLAY
         ).addStoryBoard("data_cable", ZPSPonderScenes::dataCableTutorial);
+
+        HELPER.forComponents(
+                SCRIPT_TERMINAL
+        ).addStoryBoard("script_terminal", ZPSPonderScenes::scriptTerminalTutorial);
     }
 }

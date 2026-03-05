@@ -1,15 +1,18 @@
 package g_mungus.zps.client.ponder;
 
+import g_mungus.zps.ModSounds;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.CableBlock;
 import g_mungus.zps.block.cableNetwork.RedstoneConverterBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.light_pipe.ScriptTransmitterBlock;
 import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
+import g_mungus.zps.client.ponder.api.ModifyScreenInstruction;
 import g_mungus.zps.client.ponder.api.PonderExtras;
 import g_mungus.zps.client.ponder.api.ScreenElement;
 import g_mungus.zps.client.ponder.api.ShowScreenInstruction;
 import g_mungus.zps.client.screens.ScriptTerminalScreen;
+import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.item.ModItems;
 import net.createmod.catnip.math.Pointing;
 import net.createmod.ponder.api.PonderPalette;
@@ -315,8 +318,24 @@ public class ZPSPonderScenes {
 
         builder.removeShadow();
         builder.idle(10);
-        builder.addInstruction(new ShowScreenInstruction(new ScreenElement(new ScriptTerminalScreen(null, true)), 80));
-        builder.idle(80);
+        ScreenElement screenElement = new ScreenElement(new ScriptTerminalScreen(null, true));
+        builder.addInstruction(new ShowScreenInstruction(screenElement, 180));
+        builder.idle(20);
+        for (char c : "if block == minecraft:piston[facing=up] set_redstone 15".toCharArray()) {
+            typeChar(builder, screenElement, c);
+        }
+    }
+
+    private static void typeChar(SceneBuilder builder, ScreenElement screenElement, char c) {
+        builder.addInstruction(new ModifyScreenInstruction(screenElement, it -> {
+            it.charTyped(c, 0);
+
+            if (ZPSConfig.useKeyboardSounds()) {
+                Player player = Minecraft.getInstance().player;
+                if (player != null) player.playSound(ModSounds.KEYSTROKE.get());
+            }
+        }));
+        builder.idle(1);
     }
 
     private static @NotNull String getEndPoem() {

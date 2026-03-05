@@ -9,8 +9,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Supplier;
 
 public class ScreenPonderElement implements PonderOverlayElement {
@@ -18,7 +16,6 @@ public class ScreenPonderElement implements PonderOverlayElement {
     private boolean visible = false;
     public PonderCompatibleScreen screen;
     private final Supplier<PonderCompatibleScreen> screenSupplier;
-    private final List<PonderCompatibleScreen.ScreenOverlay> overlays = new ArrayList<>();
 
     private int mouseX = 0;
     private int mouseY = 0;
@@ -53,19 +50,13 @@ public class ScreenPonderElement implements PonderOverlayElement {
         int virtualHeight = window.getHeight() / targetScale;
 
         screen.init(mc, virtualWidth, virtualHeight);
-
-        for (PonderCompatibleScreen.ScreenOverlay overlay : overlays) {
-            screen.addPonderOverlay(overlay);
-        }
     }
 
     public void addOverlay(PonderCompatibleScreen.ScreenOverlay overlay) {
-        overlays.add(overlay);
         screen.addPonderOverlay(overlay);
     }
 
     public void removeOverlay(PonderCompatibleScreen.ScreenOverlay overlay) {
-        overlays.remove(overlay);
         screen.removePonderOverlay(overlay);
     }
 

@@ -1,0 +1,97 @@
+package g_mungus.zps.item;
+
+import g_mungus.zps.block.CatwalkStairsBlock;
+import net.createmod.catnip.placement.IPlacementHelper;
+import net.createmod.catnip.placement.PlacementHelpers;
+import net.createmod.catnip.placement.PlacementOffset;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Vec3i;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.phys.BlockHitResult;
+import org.jetbrains.annotations.NotNull;
+
+import javax.annotation.ParametersAreNonnullByDefault;
+import java.util.function.Predicate;
+
+public class CatwalkStairBlockItem extends BlockItem {
+  private final int placementHelperID;
+
+  public CatwalkStairBlockItem (Block block, Properties props) {
+    super(block, props);
+    placementHelperID = PlacementHelpers.register(new CatwalkStairBlockItem.CatwalkHelper());
+  }
+
+  @Override
+  public @NotNull InteractionResult useOn(UseOnContext ctx) {
+    BlockPos pos = ctx.getClickedPos();
+    Direction face = ctx.getClickedFace();
+    Level world = ctx.getLevel();
+    Player player = ctx.getPlayer();
+
+    BlockState state = world.getBlockState(pos);
+    IPlacementHelper helper = PlacementHelpers.get(placementHelperID);
+    BlockHitResult ray = new BlockHitResult(ctx.getClickLocation(), face, pos, true);
+    if (helper.matchesState(state) && player != null && !player.isShiftKeyDown()) {
+      PlacementOffset result = helper.getOffset(player, world, state, pos, ray);
+
+      if (result.isSuccessful()) {
+        return result.placeInWorld(world, this, player, ctx.getHand(), ray);
+      }
+    }
+    return super.useOn(ctx);
+  }
+
+  @MethodsReturnNonnullByDefault
+  @ParametersAreNonnullByDefault
+  public static class CatwalkHelper implements IPlacementHelper {
+    @Override
+    public Predicate<ItemStack> getItemPredicate () {
+      return itemStack -> itemStack.getItem() instanceof CatwalkStairBlockItem;
+    }
+
+    @Override
+    public Predicate<BlockState> getStatePredicate () {
+      return state -> state.getBlock() instanceof CatwalkStairsBlock;
+    }
+
+    @Override
+    public PlacementOffset getOffset(Player player, Level level, BlockState state, BlockPos pos, BlockHitResult ray) {
+      BlockPlaceContext blockPlaceContext = new BlockPlaceContext(player, InteractionHand.MAIN_HAND, ModItems.CATWALK_STAIRS.get().getDefaultInstance(), ray);
+
+      Direction playerDir = blockPlaceContext.getHorizontalDirection();
+      Direction blockDir = state.getValue(BlockStateProperties.HORIZONTAL_FACING);
+
+      Vec3i offset = playerDir.getNormal();
+
+      if (playerDir.equals(blockDir)) {
+        offset = offset.below();
+      } else if (playerDir.getOpposite().equals(blockDir)) {
+        offset = offset.above();
+      }
+
+      BlockPos newPos = pos.offset(offset);
+
+      if (!level.getBlockState(newPos).canBeReplaced())
+        return PlacementOffset.fail();
+
+      return PlacementOffset.success(newPos, offsetState -> {
+        if (offsetState.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
+          offsetState = offsetState.setValue(BlockStateProperties.HORIZONTAL_FACING, blockDir);
+        }
+        return offsetState;
+      });
+    }
+  }
+}

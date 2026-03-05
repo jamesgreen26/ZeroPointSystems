@@ -130,8 +130,8 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
 
-    public static final RegistryObject<Block> SCRIPT_COMPARATOR = BLOCKS.register("script_comparator",
-            () -> new ScriptComparator(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+    public static final RegistryObject<Block> DATA_COMPARATOR = BLOCKS.register("data_comparator",
+            () -> new DataComparator(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(2.0f)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));

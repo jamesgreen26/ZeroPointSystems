@@ -2,8 +2,8 @@
 	"parent": "block/cube",
 	"textures": {
 		"0": "zps:block/video_display_back",
-		"1": "zps:block/script_comparator_powered",
-		"2": "zps:block/script_comparator_contains",
+		"1": "zps:block/data_comparator_powered",
+		"2": "zps:block/data_comparator_equals",
 		"3": "zps:block/octo_controller_side",
 		"particle": "zps:block/video_display_back"
 	},

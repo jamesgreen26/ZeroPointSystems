@@ -18,7 +18,7 @@
     "BBB"
   ],
   "result": {
-    "item": "zps:script_comparator",
+    "item": "zps:data_comparator",
     "count": 1
   },
   "show_notification": true

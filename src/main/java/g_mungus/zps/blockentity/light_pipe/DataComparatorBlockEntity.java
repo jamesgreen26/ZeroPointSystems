@@ -3,7 +3,7 @@ package g_mungus.zps.blockentity.light_pipe;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
-import g_mungus.zps.block.cableNetwork.light_pipe.ScriptComparator;
+import g_mungus.zps.block.cableNetwork.light_pipe.DataComparator;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.NetworkTerminalImpl;
 import net.minecraft.core.BlockPos;
@@ -17,9 +17,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public class ScriptComparatorBlockEntity extends NetworkTerminalImpl implements LightPipeDataReceiver.Text {
-    public ScriptComparatorBlockEntity(BlockPos pos, BlockState state) {
-        super(ModBlockEntities.SCRIPT_COMPARATOR.get(), pos, state);
+public class DataComparatorBlockEntity extends NetworkTerminalImpl implements LightPipeDataReceiver.Text {
+    public DataComparatorBlockEntity(BlockPos pos, BlockState state) {
+        super(ModBlockEntities.DATA_COMPARATOR.get(), pos, state);
     }
 
     private String textA = "";
@@ -43,12 +43,12 @@ public class ScriptComparatorBlockEntity extends NetworkTerminalImpl implements 
     public void updateState() {
         if (level instanceof ServerLevel serverLevel) {
             BlockState existingState = serverLevel.getBlockState(getBlockPos());
-            if (existingState.is(ModBlocks.SCRIPT_COMPARATOR.get())) {
-                boolean isPowered = existingState.getValue(ScriptComparator.POWERED);
-                ScriptComparator.ComparisonMode mode = existingState.getValue(ScriptComparator.MODE);
+            if (existingState.is(ModBlocks.DATA_COMPARATOR.get())) {
+                boolean isPowered = existingState.getValue(DataComparator.POWERED);
+                DataComparator.ComparisonMode mode = existingState.getValue(DataComparator.MODE);
                 boolean shouldBePowered = mode.compare(textA.trim(), textB.trim());
                 if (isPowered != shouldBePowered) {
-                    serverLevel.setBlock(getBlockPos(), existingState.setValue(ScriptComparator.POWERED, shouldBePowered), Block.UPDATE_ALL);
+                    serverLevel.setBlock(getBlockPos(), existingState.setValue(DataComparator.POWERED, shouldBePowered), Block.UPDATE_ALL);
                     serverLevel.updateNeighborsAt(getBlockPos(), existingState.getBlock());
                 }
             }

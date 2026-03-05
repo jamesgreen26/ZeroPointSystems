@@ -6,7 +6,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "zps:script_comparator"
+          "name": "zps:data_comparator"
         }
       ],
       "conditions": [

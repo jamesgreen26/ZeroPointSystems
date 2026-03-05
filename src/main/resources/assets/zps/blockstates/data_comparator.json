@@ -2,67 +2,67 @@
   "multipart": [
     {
       "when": { "facing": "south", "comparison_mode": "equals", "powered": "false" },
-      "apply": { "model": "zps:block/script_comparator_equals" }
+      "apply": { "model": "zps:block/data_comparator_equals" }
     },
     {
       "when": { "facing": "west", "comparison_mode": "equals", "powered": "false" },
-      "apply": { "model": "zps:block/script_comparator_equals", "y": 90 }
+      "apply": { "model": "zps:block/data_comparator_equals", "y": 90 }
     },
     {
       "when": { "facing": "north", "comparison_mode": "equals", "powered": "false" },
-      "apply": { "model": "zps:block/script_comparator_equals", "y": 180 }
+      "apply": { "model": "zps:block/data_comparator_equals", "y": 180 }
     },
     {
       "when": { "facing": "east", "comparison_mode": "equals", "powered": "false" },
-      "apply": { "model": "zps:block/script_comparator_equals", "y": 270 }
+      "apply": { "model": "zps:block/data_comparator_equals", "y": 270 }
     },
     {
       "when": { "facing": "south", "comparison_mode": "equals", "powered": "true" },
-      "apply": { "model": "zps:block/script_comparator_equals_powered" }
+      "apply": { "model": "zps:block/data_comparator_equals_powered" }
     },
     {
       "when": { "facing": "west", "comparison_mode": "equals", "powered": "true" },
-      "apply": { "model": "zps:block/script_comparator_equals_powered", "y": 90 }
+      "apply": { "model": "zps:block/data_comparator_equals_powered", "y": 90 }
     },
     {
       "when": { "facing": "north", "comparison_mode": "equals", "powered": "true" },
-      "apply": { "model": "zps:block/script_comparator_equals_powered", "y": 180 }
+      "apply": { "model": "zps:block/data_comparator_equals_powered", "y": 180 }
     },
     {
       "when": { "facing": "east", "comparison_mode": "equals", "powered": "true" },
-      "apply": { "model": "zps:block/script_comparator_equals_powered", "y": 270 }
+      "apply": { "model": "zps:block/data_comparator_equals_powered", "y": 270 }
     },
     {
       "when": { "facing": "south", "comparison_mode": "contains", "powered": "false" },
-      "apply": { "model": "zps:block/script_comparator_contains" }
+      "apply": { "model": "zps:block/data_comparator_contains" }
     },
     {
       "when": { "facing": "west", "comparison_mode": "contains", "powered": "false" },
-      "apply": { "model": "zps:block/script_comparator_contains", "y": 90 }
+      "apply": { "model": "zps:block/data_comparator_contains", "y": 90 }
     },
     {
       "when": { "facing": "north", "comparison_mode": "contains", "powered": "false" },
-      "apply": { "model": "zps:block/script_comparator_contains", "y": 180 }
+      "apply": { "model": "zps:block/data_comparator_contains", "y": 180 }
     },
     {
       "when": { "facing": "east", "comparison_mode": "contains", "powered": "false" },
-      "apply": { "model": "zps:block/script_comparator_contains", "y": 270 }
+      "apply": { "model": "zps:block/data_comparator_contains", "y": 270 }
     },
     {
       "when": { "facing": "south", "comparison_mode": "contains", "powered": "true" },
-      "apply": { "model": "zps:block/script_comparator_contains_powered" }
+      "apply": { "model": "zps:block/data_comparator_contains_powered" }
     },
     {
       "when": { "facing": "west", "comparison_mode": "contains", "powered": "true" },
-      "apply": { "model": "zps:block/script_comparator_contains_powered", "y": 90 }
+      "apply": { "model": "zps:block/data_comparator_contains_powered", "y": 90 }
     },
     {
       "when": { "facing": "north", "comparison_mode": "contains", "powered": "true" },
-      "apply": { "model": "zps:block/script_comparator_contains_powered", "y": 180 }
+      "apply": { "model": "zps:block/data_comparator_contains_powered", "y": 180 }
     },
     {
       "when": { "facing": "east", "comparison_mode": "contains", "powered": "true" },
-      "apply": { "model": "zps:block/script_comparator_contains_powered", "y": 270 }
+      "apply": { "model": "zps:block/data_comparator_contains_powered", "y": 270 }
     }
   ]
 }

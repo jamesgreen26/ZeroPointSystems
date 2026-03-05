@@ -61,8 +61,8 @@ public class ModItems {
     public static final RegistryObject<Item> DATA_TRANSCRIBER = ITEMS.register("data_transcriber",
             () -> new BlockItem(ModBlocks.DATA_TRANSCRIBER.get(), new Item.Properties()));
 
-    public static final RegistryObject<Item> SCRIPT_COMPARATOR = ITEMS.register("script_comparator",
-            () -> new BlockItem(ModBlocks.SCRIPT_COMPARATOR.get(), new Item.Properties()));
+    public static final RegistryObject<Item> DATA_COMPARATOR = ITEMS.register("data_comparator",
+            () -> new BlockItem(ModBlocks.DATA_COMPARATOR.get(), new Item.Properties()));
 
     public static final RegistryObject<Item> TEXT_DISPLAY = ITEMS.register("text_display",
             () -> new BlockItem(ModBlocks.TEXT_DISPLAY.get(), new Item.Properties()));

@@ -68,10 +68,10 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(RadioReceiverBlockEntity::new,
                             ModBlocks.RADIO_RECEIVER.get()).build(null));
 
-    public static final RegistryObject<BlockEntityType<ScriptComparatorBlockEntity>> SCRIPT_COMPARATOR =
-            BLOCK_ENTITIES.register("script_comparator",
-                    () -> BlockEntityType.Builder.of(ScriptComparatorBlockEntity::new,
-                            ModBlocks.SCRIPT_COMPARATOR.get()).build(null));
+    public static final RegistryObject<BlockEntityType<DataComparatorBlockEntity>> DATA_COMPARATOR =
+            BLOCK_ENTITIES.register("data_comparator",
+                    () -> BlockEntityType.Builder.of(DataComparatorBlockEntity::new,
+                            ModBlocks.DATA_COMPARATOR.get()).build(null));
 
     public static final RegistryObject<BlockEntityType<SerialBusBlockEntity>> SERIAL_BUS =
             BLOCK_ENTITIES.register("serial_bus",

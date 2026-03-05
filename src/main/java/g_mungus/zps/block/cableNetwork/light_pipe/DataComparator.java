@@ -5,7 +5,7 @@ import g_mungus.zps.block.cableNetwork.core.BuiltinCableStandards;
 import g_mungus.zps.block.cableNetwork.core.CableComponentBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
-import g_mungus.zps.blockentity.light_pipe.ScriptComparatorBlockEntity;
+import g_mungus.zps.blockentity.light_pipe.DataComparatorBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class ScriptComparator extends CableComponentBlock implements EntityBlock {
+public class DataComparator extends CableComponentBlock implements EntityBlock {
 
     public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final BooleanProperty CONNECTED_A = BooleanProperty.create("connected_a");
@@ -39,7 +39,7 @@ public class ScriptComparator extends CableComponentBlock implements EntityBlock
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
     public static final EnumProperty<ComparisonMode> MODE = EnumProperty.create("comparison_mode", ComparisonMode.class);
 
-    public ScriptComparator(Properties arg) {
+    public DataComparator(Properties arg) {
         super(arg);
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.SOUTH).setValue(CONNECTED_A, false).setValue(CONNECTED_B, false).setValue(POWERED, false).setValue(MODE, ComparisonMode.equals));
     }
@@ -80,7 +80,7 @@ public class ScriptComparator extends CableComponentBlock implements EntityBlock
     public void onPlace(BlockState newState, Level level, BlockPos pos, BlockState oldState, boolean moved) {
         super.onPlace(newState, level, pos, oldState, moved);
         BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (level instanceof ServerLevel && blockEntity instanceof ScriptComparatorBlockEntity comparator) {
+        if (level instanceof ServerLevel && blockEntity instanceof DataComparatorBlockEntity comparator) {
             comparator.updateState();
         }
     }
@@ -93,7 +93,7 @@ public class ScriptComparator extends CableComponentBlock implements EntityBlock
 
                 ComparisonMode next = state.getValue(MODE).next();
                 level.setBlock(pos, state.setValue(MODE, next), Block.UPDATE_ALL);
-                if (level instanceof ServerLevel && blockEntity instanceof ScriptComparatorBlockEntity comparator) {
+                if (level instanceof ServerLevel && blockEntity instanceof DataComparatorBlockEntity comparator) {
                     comparator.updateState();
                 }
             }
@@ -172,7 +172,7 @@ public class ScriptComparator extends CableComponentBlock implements EntityBlock
 
     @Override
     public @Nullable BlockEntity newBlockEntity(BlockPos arg, BlockState arg2) {
-        return new ScriptComparatorBlockEntity(arg, arg2);
+        return new DataComparatorBlockEntity(arg, arg2);
     }
 
     public enum ComparisonMode implements StringRepresentable {

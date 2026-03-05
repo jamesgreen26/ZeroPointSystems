@@ -49,7 +49,7 @@ public class ModCreativeTabs {
                         SCRIPT_TERMINAL,
                         DATA_LECTERN,
                         DATA_TRANSCRIBER,
-                        SCRIPT_COMPARATOR,
+                        DATA_COMPARATOR,
                         TEXT_DISPLAY,
                         LOUDSPEAKER,
                         RADIO_TRANSMITTER,

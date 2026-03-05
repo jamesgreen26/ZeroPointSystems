@@ -44,7 +44,7 @@ public class ZPSScriptExecutors {
                         context.pos(),
                         page
                 ),
-                Set.of(ZPSMod.resource("script_transmitter"), ResourceLocation.withDefaultNamespace("lectern"))
+                Set.of(ZPSMod.resource("data_lectern"), ResourceLocation.withDefaultNamespace("lectern"))
         ));
 
         event.register(ScriptExecutor.simpleWithBlocks(

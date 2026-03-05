@@ -2,7 +2,7 @@
   "replace": false,
   "values": [
     "zps:script_terminal",
-    "zps:script_transmitter",
+    "zps:data_lectern",
     "zps:radio_transmitter",
     "zps:radio_receiver"
   ]

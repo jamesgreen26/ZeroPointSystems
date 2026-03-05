@@ -5,7 +5,7 @@ import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.CableBlock;
 import g_mungus.zps.block.cableNetwork.RedstoneConverterBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
-import g_mungus.zps.block.cableNetwork.light_pipe.ScriptTransmitterBlock;
+import g_mungus.zps.block.cableNetwork.light_pipe.DataLecternBlock;
 import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
 import g_mungus.zps.client.ponder.api.*;
 import g_mungus.zps.client.ponder.api.custom_screen_in_ponder_scene.*;
@@ -302,7 +302,7 @@ public class ZPSPonderScenes {
         builder.idle(20);
         builder.overlay().showControls(util.vector().topOf(4, 1, 2), Pointing.DOWN, 20).rightClick().withItem(Items.WRITABLE_BOOK.getDefaultInstance());
         builder.idle(10);
-        builder.world().setBlock(new BlockPos(4, 1, 2), ModBlocks.SCRIPT_TRANSMITTER.get().defaultBlockState().setValue(ScriptTransmitterBlock.HAS_BOOK, true), false);
+        builder.world().setBlock(new BlockPos(4, 1, 2), ModBlocks.DATA_LECTERN.get().defaultBlockState().setValue(DataLecternBlock.HAS_BOOK, true), false);
 
         String poem = getEndPoem();
 

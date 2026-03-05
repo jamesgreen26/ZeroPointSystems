@@ -95,8 +95,8 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
 
-    public static final RegistryObject<Block> SCRIPT_TRANSMITTER = BLOCKS.register("script_transmitter",
-            () -> new ScriptTransmitterBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+    public static final RegistryObject<Block> DATA_LECTERN = BLOCKS.register("data_lectern",
+            () -> new DataLecternBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(2.5f)
                     .requiresCorrectToolForDrops()));
 

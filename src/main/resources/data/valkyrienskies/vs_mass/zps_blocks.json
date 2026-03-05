@@ -36,7 +36,7 @@
     "mass": 15.0
   },
   {
-    "block": "zps:script_transmitter",
+    "block": "zps:data_lectern",
     "mass": 450.0
   }
 ]

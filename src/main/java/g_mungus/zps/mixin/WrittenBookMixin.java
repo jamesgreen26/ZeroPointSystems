@@ -1,7 +1,7 @@
 package g_mungus.zps.mixin;
 
 import g_mungus.zps.block.ModBlocks;
-import g_mungus.zps.block.cableNetwork.light_pipe.ScriptTransmitterBlock;
+import g_mungus.zps.block.cableNetwork.light_pipe.DataLecternBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.WrittenBookItem;
@@ -21,8 +21,8 @@ public class WrittenBookMixin {
         Level level = arg.getLevel();
         BlockPos blockPos = arg.getClickedPos();
         BlockState blockState = level.getBlockState(blockPos);
-        if (blockState.is(ModBlocks.SCRIPT_TRANSMITTER.get())) {
-            cir.setReturnValue(ScriptTransmitterBlock.tryPlaceBook(arg.getPlayer(), level, blockPos, blockState, arg.getItemInHand()) ? InteractionResult.sidedSuccess(level.isClientSide) : InteractionResult.PASS);
+        if (blockState.is(ModBlocks.DATA_LECTERN.get())) {
+            cir.setReturnValue(DataLecternBlock.tryPlaceBook(arg.getPlayer(), level, blockPos, blockState, arg.getItemInHand()) ? InteractionResult.sidedSuccess(level.isClientSide) : InteractionResult.PASS);
         }
     }
 }

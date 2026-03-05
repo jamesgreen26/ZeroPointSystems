@@ -47,7 +47,7 @@ public class ModCreativeTabs {
 
                         LIGHT_PIPE,
                         SCRIPT_TERMINAL,
-                        SCRIPT_TRANSMITTER,
+                        DATA_LECTERN,
                         DATA_TRANSCRIBER,
                         SCRIPT_COMPARATOR,
                         TEXT_DISPLAY,

@@ -43,10 +43,10 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(GraduatedLeverBlockEntity::new,
                             ModBlocks.GRADUATED_LEVER.get()).build(null));
 
-    public static final RegistryObject<BlockEntityType<ScriptTransmitterBlockEntity>> SCRIPT_TRANSMITTER =
-        BLOCK_ENTITIES.register("script_transmitter",
-            () -> BlockEntityType.Builder.of(ScriptTransmitterBlockEntity::new,
-                ModBlocks.SCRIPT_TRANSMITTER.get()).build(null));
+    public static final RegistryObject<BlockEntityType<DataLecternBlockEntity>> DATA_LECTERN =
+        BLOCK_ENTITIES.register("data_lectern",
+            () -> BlockEntityType.Builder.of(DataLecternBlockEntity::new,
+                ModBlocks.DATA_LECTERN.get()).build(null));
 
     public static final RegistryObject<BlockEntityType<TextDisplayBlockEntity>> TEXT_DISPLAY =
             BLOCK_ENTITIES.register("text_display",

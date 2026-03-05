@@ -31,7 +31,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nullable;
 import java.util.List;
 
-public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements Clearable, MenuProvider, LightPipeDataSender, BookHolder {
+public class DataLecternBlockEntity extends NetworkTerminalImpl implements Clearable, MenuProvider, LightPipeDataSender, BookHolder {
 
     private final Container bookAccess = new Container() {
         public int getContainerSize() {
@@ -39,18 +39,18 @@ public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements
         }
 
         public boolean isEmpty() {
-            return ScriptTransmitterBlockEntity.this.book.isEmpty();
+            return DataLecternBlockEntity.this.book.isEmpty();
         }
 
         public ItemStack getItem(int i) {
-            return i == 0 ? ScriptTransmitterBlockEntity.this.book : ItemStack.EMPTY;
+            return i == 0 ? DataLecternBlockEntity.this.book : ItemStack.EMPTY;
         }
 
         public ItemStack removeItem(int i, int j) {
             if (i == 0) {
-                ItemStack itemStack = ScriptTransmitterBlockEntity.this.book.split(j);
-                if (ScriptTransmitterBlockEntity.this.book.isEmpty()) {
-                    ScriptTransmitterBlockEntity.this.onBookItemRemove();
+                ItemStack itemStack = DataLecternBlockEntity.this.book.split(j);
+                if (DataLecternBlockEntity.this.book.isEmpty()) {
+                    DataLecternBlockEntity.this.onBookItemRemove();
                 }
 
                 return itemStack;
@@ -61,9 +61,9 @@ public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements
 
         public ItemStack removeItemNoUpdate(int i) {
             if (i == 0) {
-                ItemStack itemStack = ScriptTransmitterBlockEntity.this.book;
-                ScriptTransmitterBlockEntity.this.book = ItemStack.EMPTY;
-                ScriptTransmitterBlockEntity.this.onBookItemRemove();
+                ItemStack itemStack = DataLecternBlockEntity.this.book;
+                DataLecternBlockEntity.this.book = ItemStack.EMPTY;
+                DataLecternBlockEntity.this.onBookItemRemove();
                 return itemStack;
             } else {
                 return ItemStack.EMPTY;
@@ -78,11 +78,11 @@ public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements
         }
 
         public void setChanged() {
-            ScriptTransmitterBlockEntity.this.setChanged();
+            DataLecternBlockEntity.this.setChanged();
         }
 
         public boolean stillValid(Player arg) {
-            return Container.stillValidBlockEntity(ScriptTransmitterBlockEntity.this, arg) && ScriptTransmitterBlockEntity.this.hasBook();
+            return Container.stillValidBlockEntity(DataLecternBlockEntity.this, arg) && DataLecternBlockEntity.this.hasBook();
         }
 
         public boolean canPlaceItem(int i, ItemStack arg) {
@@ -94,12 +94,12 @@ public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements
     };
     private final ContainerData dataAccess = new ContainerData() {
         public int get(int i) {
-            return i == 0 ? ScriptTransmitterBlockEntity.this.page : 0;
+            return i == 0 ? DataLecternBlockEntity.this.page : 0;
         }
 
         public void set(int i, int j) {
             if (i == 0) {
-                ScriptTransmitterBlockEntity.this.zps$setPage(j);
+                DataLecternBlockEntity.this.zps$setPage(j);
             }
 
         }
@@ -142,8 +142,8 @@ public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements
         if (level != null) updateSignal(level);
     }
 
-    public ScriptTransmitterBlockEntity(BlockPos pos, BlockState state) {
-        super(ModBlockEntities.SCRIPT_TRANSMITTER.get(), pos, state);
+    public DataLecternBlockEntity(BlockPos pos, BlockState state) {
+        super(ModBlockEntities.DATA_LECTERN.get(), pos, state);
         this.book = ItemStack.EMPTY;
     }
 
@@ -275,7 +275,7 @@ public class ScriptTransmitterBlockEntity extends NetworkTerminalImpl implements
     }
 
     public Component getDisplayName() {
-        return Component.literal("Script Transmitter");
+        return Component.literal("Data Lectern");
     }
 
     public boolean hasNextPage() {

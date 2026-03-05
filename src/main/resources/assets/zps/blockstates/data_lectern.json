@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "zps:block/data_lectern"
+    },
+    "facing=east": {
+      "model": "zps:block/data_lectern",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "zps:block/data_lectern",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "zps:block/data_lectern",
+      "y": 270
+    }
+  }
+}

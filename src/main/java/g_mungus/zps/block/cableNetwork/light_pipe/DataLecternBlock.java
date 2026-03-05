@@ -3,7 +3,7 @@ package g_mungus.zps.block.cableNetwork.light_pipe;
 import g_mungus.zps.compat.Compat;
 import g_mungus.zps.block.cableNetwork.core.*;
 import g_mungus.zps.blockentity.light_pipe.LightPipeDataSender;
-import g_mungus.zps.blockentity.light_pipe.ScriptTransmitterBlockEntity;
+import g_mungus.zps.blockentity.light_pipe.DataLecternBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvents;
@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class ScriptTransmitterBlock extends LecternBlock implements EntityBlock, CableNetworkComponent {
+public class DataLecternBlock extends LecternBlock implements EntityBlock, CableNetworkComponent {
     public static final BooleanProperty CONNECTED = BooleanProperty.create("connected");
     public static final BooleanProperty POWERED = LecternBlock.POWERED;
     public static final BooleanProperty HAS_BOOK = BlockStateProperties.HAS_BOOK;
@@ -48,7 +48,7 @@ public class ScriptTransmitterBlock extends LecternBlock implements EntityBlock,
     public static final VoxelShape SHAPE_EAST;
     public static final VoxelShape SHAPE_WEST;
 
-    public ScriptTransmitterBlock(Properties properties) {
+    public DataLecternBlock(Properties properties) {
         super(properties);
         this.registerDefaultState(this.stateDefinition.any()
                 .setValue(HAS_BOOK, false)
@@ -162,7 +162,7 @@ public class ScriptTransmitterBlock extends LecternBlock implements EntityBlock,
 
     @Override
     public @Nullable BlockEntity newBlockEntity(@NotNull BlockPos pos, @NotNull BlockState state) {
-        return new ScriptTransmitterBlockEntity(pos, state);
+        return new DataLecternBlockEntity(pos, state);
     }
 
     @Override
@@ -181,7 +181,7 @@ public class ScriptTransmitterBlock extends LecternBlock implements EntityBlock,
             if (!arg2.isClientSide) {
                 if (Compat.isCreateDeployer(arg4) && arg4.getItemInHand(arg5).isEmpty()) {
                     BlockEntity blockEntity = arg2.getBlockEntity(arg3);
-                    if (blockEntity instanceof ScriptTransmitterBlockEntity transmitter) {
+                    if (blockEntity instanceof DataLecternBlockEntity transmitter) {
                         if (transmitter.hasNextPage()) {
                             transmitter.turnPage();
                         } else {
@@ -204,7 +204,7 @@ public class ScriptTransmitterBlock extends LecternBlock implements EntityBlock,
 
     private void openScreen(Level arg, BlockPos arg2, Player arg3) {
         BlockEntity blockEntity = arg.getBlockEntity(arg2);
-        if (blockEntity instanceof ScriptTransmitterBlockEntity transmitterBlockEntity) {
+        if (blockEntity instanceof DataLecternBlockEntity transmitterBlockEntity) {
             arg3.openMenu(transmitterBlockEntity);
             arg3.awardStat(Stats.INTERACT_WITH_LECTERN);
         }
@@ -212,7 +212,7 @@ public class ScriptTransmitterBlock extends LecternBlock implements EntityBlock,
 
     private void popBook(BlockState arg, Level arg2, BlockPos arg3) {
         BlockEntity blockEntity = arg2.getBlockEntity(arg3);
-        if (blockEntity instanceof ScriptTransmitterBlockEntity transmitterBlockEntity) {
+        if (blockEntity instanceof DataLecternBlockEntity transmitterBlockEntity) {
             Direction direction = arg.getValue(FACING);
             ItemStack itemStack = transmitterBlockEntity.getBook().copy();
             float f = 0.25F * (float)direction.getStepX();
@@ -228,8 +228,8 @@ public class ScriptTransmitterBlock extends LecternBlock implements EntityBlock,
     public int getAnalogOutputSignal(BlockState arg, Level arg2, BlockPos arg3) {
         if (arg.getValue(HAS_BOOK)) {
             BlockEntity blockEntity = arg2.getBlockEntity(arg3);
-            if (blockEntity instanceof ScriptTransmitterBlockEntity) {
-                return ((ScriptTransmitterBlockEntity)blockEntity).getRedstoneSignal();
+            if (blockEntity instanceof DataLecternBlockEntity) {
+                return ((DataLecternBlockEntity)blockEntity).getRedstoneSignal();
             }
         }
 
@@ -251,7 +251,7 @@ public class ScriptTransmitterBlock extends LecternBlock implements EntityBlock,
 
     private static void placeBook(Entity arg, Level arg2, BlockPos arg3, BlockState arg4, ItemStack arg5) {
         BlockEntity blockEntity = arg2.getBlockEntity(arg3);
-        if (blockEntity instanceof ScriptTransmitterBlockEntity be) {
+        if (blockEntity instanceof DataLecternBlockEntity be) {
             be.setBook(arg5.split(1));
             resetBookState(arg, arg2, arg3, arg4, true);
             arg2.playSound(null, arg3, SoundEvents.BOOK_PUT, SoundSource.BLOCKS, 1.0F, 1.0F);

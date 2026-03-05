@@ -55,8 +55,8 @@ public class ModItems {
     public static final RegistryObject<Item> SCRIPT_TERMINAL = ITEMS.register("script_terminal",
             () -> new BlockItem(ModBlocks.SCRIPT_TERMINAL.get(), new Item.Properties()));
 
-    public static final RegistryObject<Item> SCRIPT_TRANSMITTER = ITEMS.register("script_transmitter",
-            () -> new BlockItem(ModBlocks.SCRIPT_TRANSMITTER.get(), new Item.Properties()));
+    public static final RegistryObject<Item> DATA_LECTERN = ITEMS.register("data_lectern",
+            () -> new BlockItem(ModBlocks.DATA_LECTERN.get(), new Item.Properties()));
 
     public static final RegistryObject<Item> DATA_TRANSCRIBER = ITEMS.register("data_transcriber",
             () -> new BlockItem(ModBlocks.DATA_TRANSCRIBER.get(), new Item.Properties()));

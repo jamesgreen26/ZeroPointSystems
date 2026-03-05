@@ -2,8 +2,8 @@
 	"parent": "block/block",
 	"texture_size": [64, 64],
 	"textures": {
-		"0": "zps:block/script_transmitter",
-		"particle": "zps:block/script_transmitter"
+		"0": "zps:block/data_lectern",
+		"particle": "zps:block/data_lectern"
 	},
 	"elements": [
 		{

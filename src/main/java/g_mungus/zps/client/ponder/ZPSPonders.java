@@ -45,7 +45,7 @@ public class ZPSPonders {
 
         HELPER.forComponents(
                 LIGHT_PIPE,
-                SCRIPT_TRANSMITTER,
+                DATA_LECTERN,
                 TEXT_DISPLAY
         ).addStoryBoard("data_cable", ZPSPonderScenes::dataCableTutorial);
 

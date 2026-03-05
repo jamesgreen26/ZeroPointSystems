@@ -6,7 +6,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "zps:script_transmitter"
+          "name": "zps:data_lectern"
         }
       ],
       "conditions": [

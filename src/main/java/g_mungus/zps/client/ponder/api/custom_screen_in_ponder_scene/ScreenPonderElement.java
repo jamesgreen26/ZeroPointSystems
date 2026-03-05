@@ -39,6 +39,9 @@ public class ScreenPonderElement implements PonderOverlayElement {
         this.screen = screenSupplier.get();
         screen.setShouldRenderBackground(false);
         screen.setInPonder(true);
+
+        setMouse(0, 0);
+
         Minecraft mc = Minecraft.getInstance();
         Window window = mc.getWindow();
 

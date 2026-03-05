@@ -330,8 +330,9 @@ public class ZPSPonderScenes {
         ScreenSpaceInputWindowElement element = new ScreenSpaceInputWindowElement(screenElement, (w, h) -> new Vec2(w / 2f - 78, h / 4f + 144), Pointing.UP);
         element.builder().leftClick();
         builder.addInstruction(new ShowScreenRelativeInputInstruction(screenElement, element, 20));
-        builder.idle(12);
-
+        builder.idle(4);
+        builder.addInstruction(new SetScreenMouseInstruction(screenElement, (w, h) -> new Vec2(w / 2f - 78, h / 4f + 142)));
+        builder.idle(8);
         builder.addInstruction(ponderScene -> Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F)));
     }
 

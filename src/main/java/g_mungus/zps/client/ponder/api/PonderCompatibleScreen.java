@@ -4,7 +4,25 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public abstract class PonderCompatibleScreen extends Screen {
+
+    @FunctionalInterface
+    public interface ScreenOverlay {
+        void render(GuiGraphics graphics, float partialTicks);
+    }
+
+    private final List<ScreenOverlay> ponderOverlays = new ArrayList<>();
+
+    public void addPonderOverlay(ScreenOverlay overlay) {
+        ponderOverlays.add(overlay);
+    }
+
+    public void removePonderOverlay(ScreenOverlay overlay) {
+        ponderOverlays.remove(overlay);
+    }
 
     public void setShouldRenderBackground(boolean shouldRenderBackground) {
         this.shouldRenderBackground = shouldRenderBackground;
@@ -40,5 +58,13 @@ public abstract class PonderCompatibleScreen extends Screen {
 
     public void setInPonder(boolean inPonder) {
         isInPonder = inPonder;
+    }
+
+
+    public void renderPonder(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        render(graphics, mouseX, mouseY, partialTicks);
+        for (ScreenOverlay overlay : ponderOverlays) {
+            overlay.render(graphics, partialTicks);
+        }
     }
 }

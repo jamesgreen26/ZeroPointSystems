@@ -7,10 +7,7 @@ import g_mungus.zps.block.cableNetwork.RedstoneConverterBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.light_pipe.ScriptTransmitterBlock;
 import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
-import g_mungus.zps.client.ponder.api.ModifyScreenInstruction;
-import g_mungus.zps.client.ponder.api.PonderExtras;
-import g_mungus.zps.client.ponder.api.ScreenElement;
-import g_mungus.zps.client.ponder.api.ShowScreenInstruction;
+import g_mungus.zps.client.ponder.api.*;
 import g_mungus.zps.client.screens.ScriptTerminalScreen;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.item.ModItems;
@@ -33,6 +30,7 @@ import net.minecraft.world.entity.monster.piglin.AbstractPiglin;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 
@@ -324,6 +322,12 @@ public class ZPSPonderScenes {
         for (char c : "if block == minecraft:piston[facing=up] set_redstone 15".toCharArray()) {
             typeChar(builder, screenElement, c);
         }
+        builder.idle(20);
+
+        ScreenSpaceInputWindowElement element = new ScreenSpaceInputWindowElement(screenElement, (w, h) -> new Vec2(w / 2f - 78, h / 4f + 132), Pointing.DOWN);
+        element.builder().leftClick();
+        builder.addInstruction(new ShowScreenRelativeInputInstruction(screenElement, element, 20));
+        builder.idle(20);
     }
 
     private static void typeChar(SceneBuilder builder, ScreenElement screenElement, char c) {

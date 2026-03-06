@@ -22,6 +22,7 @@ import net.createmod.ponder.api.scene.SceneBuildingUtil;
 import net.createmod.ponder.api.scene.Selection;
 import net.createmod.ponder.foundation.element.InputWindowElement;
 import net.createmod.ponder.foundation.instruction.DisplayWorldSectionInstruction;
+import net.createmod.ponder.foundation.instruction.FadeOutOfSceneInstruction;
 import net.createmod.ponder.foundation.instruction.ShowInputInstruction;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
@@ -358,9 +359,9 @@ public class ZPSPonderScenes {
         builder.idle(12);
         builder.addInstruction(ponderScene -> inputWindowElement.setVisible(false));
         ScreenPonderElement screenElement = new ScreenPonderElement(() -> new ScriptTerminalScreen(null, true));
-        builder.addInstruction(new ShowScreenInstruction(screenElement, 123));
+        builder.addInstruction(new ShowScreenInstruction(screenElement, 144));
         builder.idle(20);
-        for (char c : "if block == minecraft:piston[facing=up] set_redstone 15".toCharArray()) {
+        for (char c : "if block == minecraft:piston[facing=up] set_redstone 15\nset_redstone 0".toCharArray()) {
             typeChar(builder, screenElement, c);
         }
         builder.idle(30);
@@ -371,7 +372,6 @@ public class ZPSPonderScenes {
         builder.idle(4);
         builder.addInstruction(new SetScreenMouseInstruction(screenElement, (w, h) -> new Vec2(w / 2f - 78, h / 4f + 142)));
         builder.idle(8);
-        builder.addInstruction(ponderScene -> Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F)));
 
         builder.idle(5);
 
@@ -398,29 +398,66 @@ public class ZPSPonderScenes {
 
             BlockPos headPos = piston.relative(dir);
 
-            // show piston head
             scene.getWorld().setBlock(headPos, Blocks.PISTON_HEAD.defaultBlockState()
                     .setValue(BlockStateProperties.FACING, dir), 0);
         });
 
         builder.addInstruction(new DisplayWorldSectionInstruction(2, Direction.UP, util.select().position(3,3,3), builder.getScene()::getBaseWorldSection));
 
-        builder.addInstruction(ponderScene -> Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.PISTON_EXTEND, 1f)));
+        builder.idle(4);
 
-        builder.idle(15);
+        builder.addInstruction(new FadeOutOfSceneInstruction<>(2, Direction.DOWN, builder.world().makeSectionIndependent(util.select().position(3,3,3))));
+        builder.idle(1);
+        builder.world().cycleBlockProperty(new BlockPos(3,2,3), PistonBaseBlock.EXTENDED);
 
+        builder.idle(10);
+
+        builder.addKeyframe();
+
+        builder.idle(5);
+
+        builder.overlay().showText(70).text("Each command is executed once for each connected Serial Bus, positioned in front of the Serial Bus interface.");
+
+        builder.idle(80);
+
+        builder.world().toggleRedstonePower(util.select().position(2,1,1));
+
+        builder.idle(10);
+        builder.world().toggleRedstonePower(util.select().position(2,1,1));
+        builder.idle(10);
+
+        builder.overlay().showText(40).text("if block == minecraft:piston[facing=up] set_redstone 15").colored(PonderPalette.INPUT);;
+
+
+        builder.overlay().showOutline(PonderPalette.GREEN, "a", util.select().position(3 ,2, 3), 35);
+
+        builder.overlay().showOutline(PonderPalette.RED, "b", util.select().position(1 ,2, 3), 35);
+
+        builder.idle(40);
+
+        builder.world().cycleBlockProperty(new BlockPos(3,2,3), PistonBaseBlock.EXTENDED);
+
+        builder.addInstruction(new DisplayWorldSectionInstruction(2, Direction.UP, util.select().position(3,3,3), builder.getScene()::getBaseWorldSection));
+
+        builder.idle(4);
+
+        builder.overlay().showText(40).text("set_redstone 0").colored(PonderPalette.INPUT);
+
+        builder.overlay().showOutline(PonderPalette.GREEN, "a", util.select().position(3 ,2, 3), 35);
+
+        builder.overlay().showOutline(PonderPalette.GREEN, "b", util.select().position(1 ,2, 3), 35);
+
+        builder.idle(40);
+
+        builder.addInstruction(new FadeOutOfSceneInstruction<>(2, Direction.DOWN, builder.world().makeSectionIndependent(util.select().position(3,3,3))));
+        builder.idle(1);
+        builder.world().cycleBlockProperty(new BlockPos(3,2,3), PistonBaseBlock.EXTENDED);
     }
 
     private static void typeChar(SceneBuilder builder, ScreenPonderElement screenElement, char c) {
-        builder.addInstruction(new ModifyScreenInstruction(screenElement, it -> {
-            it.charTyped(c, 0);
+        builder.addInstruction(new ModifyScreenInstruction(screenElement, it -> it.charTyped(c, 0)));
 
-            if (ZPSConfig.useKeyboardSounds()) {
-                Player player = Minecraft.getInstance().player;
-                if (player != null) player.playSound(ModSounds.KEYSTROKE.get());
-            }
-        }));
-        if (c == ']') {
+        if (c == ']' || c == '\n') {
             builder.idle(4);
         } else if (c == ' ') {
             builder.idle(3);

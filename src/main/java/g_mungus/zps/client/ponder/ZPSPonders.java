@@ -50,7 +50,8 @@ public class ZPSPonders {
         ).addStoryBoard("data_cable", ZPSPonderScenes::dataCableTutorial);
 
         HELPER.forComponents(
-                SCRIPT_TERMINAL
+                SCRIPT_TERMINAL,
+                SERIAL_BUS
         ).addStoryBoard("script_terminal", ZPSPonderScenes::scriptTerminalTutorial);
     }
 }

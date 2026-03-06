@@ -299,6 +299,14 @@
     "zps.ponder.data_cable.text_2": "A minimum setup has an input and output.",
     "zps.ponder.data_cable.text_3": "Data provided to the input is sent to all connected outputs.",
 
+    "zps.ponder.script_terminal.header": "Script Terminal",
+    "zps.ponder.script_terminal.text_1": "The Script Terminal sends commands to interact with other blocks, through connected Serial Busses.",
+    "zps.ponder.script_terminal.text_2": "To input commands, interact with the Script terminal to open a GUI.",
+    "zps.ponder.script_terminal.text_3": "When given a Redstone signal, the Script Terminal will dispatch each of its commands, in sequence.",
+    "zps.ponder.script_terminal.text_4": "Each command is executed once for each connected Serial Bus, positioned in front of the Serial Bus interface.",
+    "zps.ponder.script_terminal.text_5": "if block == minecraft:piston[facing=up] set_redstone 15",
+    "zps.ponder.script_terminal.text_6": "set_redstone 0",
+
     "zps.ponder.tag.can_insulate": "Blocks that can be Insulated",
     "zps.ponder.tag.can_insulate.description": "Components or Blocks which can have Cable Insulation applied to them, which prevents the block from connecting in new directions.",
 

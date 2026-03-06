@@ -139,11 +139,17 @@ public class DataTranscriberBlockEntity extends AbstractTextDataReceiver {
     protected void saveAdditional(@NotNull CompoundTag tag) {
         super.saveAdditional(tag);
         tag.putLong("LastPrintTime", lastPrintTime);
+        if (lastWrittenText != null) {
+            tag.putString("LastWrittenText", lastWrittenText);
+        }
     }
 
     @Override
     public void load(@NotNull CompoundTag tag) {
         super.load(tag);
         lastPrintTime = tag.contains("LastPrintTime") ? tag.getLong("LastPrintTime") : -20L;
+        if (tag.contains("LastWrittenText")) {
+            lastWrittenText = tag.getString("LastWrittenText");
+        }
     }
 }

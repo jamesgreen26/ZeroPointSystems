@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "zps:aluminum_ingot",
+    "zps:lithium_ingot",
+    "zps:space_metal_ingot"
+  ]
+}

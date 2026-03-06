@@ -11,6 +11,7 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
@@ -236,6 +237,30 @@ public class ModBlocks {
                     .sound(SoundType.NETHERITE_BLOCK)
                     .noOcclusion()
             )
+    );
+
+    public static final RegistryObject<Block> SMALL_INDUSTRIAL_LIGHT = BLOCKS.register("small_industrial_light",
+            () -> new IndustrialLightBlock(BlockBehaviour.Properties.copy(Blocks.REDSTONE_LAMP)
+                    .requiresCorrectToolForDrops()
+                    .lightLevel(state -> state.getValue(BlockStateProperties.LIT) ? 15 : 0)
+                    .noOcclusion(),
+                    new double[][]{{5.5, 0.0, 5.5, 10.5, 2.0, 10.5}})
+    );
+
+    public static final RegistryObject<Block> INDUSTRIAL_LIGHT = BLOCKS.register("industrial_light",
+            () -> new IndustrialLightBlock(BlockBehaviour.Properties.copy(Blocks.REDSTONE_LAMP)
+                    .requiresCorrectToolForDrops()
+                    .lightLevel(state -> state.getValue(BlockStateProperties.LIT) ? 15 : 0)
+                    .noOcclusion(),
+                    new double[][]{{4.0, 0.0, 4.0, 12.0, 4.0, 12.0}})
+    );
+
+    public static final RegistryObject<Block> LARGE_INDUSTRIAL_LIGHT = BLOCKS.register("large_industrial_light",
+            () -> new IndustrialLightBlock(BlockBehaviour.Properties.copy(Blocks.REDSTONE_LAMP)
+                    .requiresCorrectToolForDrops()
+                    .lightLevel(state -> state.getValue(BlockStateProperties.LIT) ? 15 : 0)
+                    .noOcclusion(),
+                    new double[][]{{3.0, 0.0, 3.0, 13.0, 6.0, 13.0}})
     );
 
 

@@ -106,6 +106,9 @@ public class ModCreativeTabs {
                         SPACE_MESH_BLOCK,
                         CATWALK,
                         CATWALK_STAIRS,
+                        SMALL_INDUSTRIAL_LIGHT,
+                        INDUSTRIAL_LIGHT,
+                        LARGE_INDUSTRIAL_LIGHT,
                         CAUTION_BLOCK,
                         RADIATION_CAUTION_BLOCK,
                         VOID_CAUTION_BLOCK

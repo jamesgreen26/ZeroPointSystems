@@ -1,0 +1,17 @@
+{
+  "variants": {
+    "lit=false,facing=up": { "model": "zps:block/small_industrial_light_off" },
+    "lit=false,facing=down": { "model": "zps:block/small_industrial_light_off", "x": 180 },
+    "lit=false,facing=north": { "model": "zps:block/small_industrial_light_off", "x": 90 },
+    "lit=false,facing=east": { "model": "zps:block/small_industrial_light_off", "x": 90, "y": 90 },
+    "lit=false,facing=south": { "model": "zps:block/small_industrial_light_off", "x": 90, "y": 180 },
+    "lit=false,facing=west": { "model": "zps:block/small_industrial_light_off", "x": 90, "y": 270 },
+
+    "lit=true,facing=up": { "model": "zps:block/small_industrial_light" },
+    "lit=true,facing=down": { "model": "zps:block/small_industrial_light", "x": 180 },
+    "lit=true,facing=north": { "model": "zps:block/small_industrial_light", "x": 90 },
+    "lit=true,facing=east": { "model": "zps:block/small_industrial_light", "x": 90, "y": 90 },
+    "lit=true,facing=south": { "model": "zps:block/small_industrial_light", "x": 90, "y": 180 },
+    "lit=true,facing=west": { "model": "zps:block/small_industrial_light", "x": 90, "y": 270 }
+  }
+}

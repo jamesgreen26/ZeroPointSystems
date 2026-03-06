@@ -165,6 +165,15 @@ public class ModItems {
     public static final RegistryObject<Item> CATWALK_STAIRS = ITEMS.register("catwalk_stairs",
             () -> new CatwalkStairBlockItem(ModBlocks.CATWALK_STAIRS.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> SMALL_INDUSTRIAL_LIGHT = ITEMS.register("small_industrial_light",
+            () -> new BlockItem(ModBlocks.SMALL_INDUSTRIAL_LIGHT.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> INDUSTRIAL_LIGHT = ITEMS.register("industrial_light",
+            () -> new BlockItem(ModBlocks.INDUSTRIAL_LIGHT.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> LARGE_INDUSTRIAL_LIGHT = ITEMS.register("large_industrial_light",
+            () -> new BlockItem(ModBlocks.LARGE_INDUSTRIAL_LIGHT.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> CAUTION_BLOCK = ITEMS.register("caution_block",
             () -> new BlockItem(ModBlocks.CAUTION_BLOCK.get(), new Item.Properties()));
 

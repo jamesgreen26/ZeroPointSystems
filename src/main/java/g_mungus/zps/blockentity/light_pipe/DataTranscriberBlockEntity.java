@@ -23,6 +23,7 @@ public class DataTranscriberBlockEntity extends AbstractTextDataReceiver {
     }
 
     private long lastPrintTime = -20L;
+    private String lastWrittenText = null;
 
     public void tick() {
         if (level == null) return;
@@ -71,9 +72,9 @@ public class DataTranscriberBlockEntity extends AbstractTextDataReceiver {
                     bookHolder.zps$onPageAdded();
                 }
 
-                boolean currentPageEquals = pages.getString(bookHolder.zps$getCurrentPage()).equals(this.currentDisplayText);
+                boolean newText = !currentDisplayText.equals(lastWrittenText);
 
-                if (!currentPageEquals || lastPrintTime < 0) {
+                if (newText || lastPrintTime < 0) {
                     if (lastPrintTime >= 0) {
                         if (pages.size() < 100 && bookHolder.zps$getCurrentPage() + 1 >= pages.size()) {
                             pages.add(StringTag.valueOf(""));
@@ -81,6 +82,7 @@ public class DataTranscriberBlockEntity extends AbstractTextDataReceiver {
                         }
                         bookHolder.zps$cyclePages();
                     }
+                    lastWrittenText = this.currentDisplayText;
                     pages.set(bookHolder.zps$getCurrentPage(), StringTag.valueOf(truncateStringToDisplayableLength(this.currentDisplayText)));
                     bookHolder.zps$onPageWritten();
                     return true;

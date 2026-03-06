@@ -22,6 +22,7 @@ import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.BlockItem;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -29,11 +30,14 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.network.PacketDistributor;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import javax.annotation.Nullable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 @Mod.EventBusSubscriber
 public class ZPSCommands {
@@ -165,9 +169,17 @@ public class ZPSCommands {
     public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
 
+        Set<ResourceLocation> blocksWithItems = ForgeRegistries.ITEMS.getValues().stream()
+                .filter(item -> item instanceof BlockItem)
+                .map(item -> ((BlockItem) item).getBlock())
+                .map(ForgeRegistries.BLOCKS::getKey)
+                .filter(Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+
         List<ResourceLocation> allAssociatedBlocks = Registry.EXECUTORS.stream()
                 .filter(e -> e.associatedBlocks() != null)
                 .flatMap(e -> e.associatedBlocks().stream())
+                .filter(blocksWithItems::contains)
                 .toList();
 
         ZPSGamePackets.INSTANCE.send(

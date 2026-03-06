@@ -2,9 +2,12 @@ package g_mungus.zps.compat.create.commands;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.simibubi.create.foundation.blockEntity.SmartBlockEntity;
+import com.simibubi.create.foundation.blockEntity.behaviour.filtering.FilteringBehaviour;
+import com.simibubi.create.foundation.blockEntity.behaviour.filtering.SidedFilteringBehaviour;
 import com.simibubi.create.foundation.blockEntity.behaviour.scrollValue.ScrollOptionBehaviour;
 import com.simibubi.create.foundation.blockEntity.behaviour.scrollValue.ScrollValueBehaviour;
 import g_mungus.zps.ZPSMod;
@@ -12,8 +15,11 @@ import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptContext;
 import g_mungus.zps.commands.api.ScriptExecutor;
 import g_mungus.zps.mixin.create.ScrollValueBehaviourAccessor;
+import net.minecraft.commands.arguments.item.ItemArgument;
+import net.minecraft.commands.arguments.item.ItemInput;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.common.MinecraftForge;
@@ -22,6 +28,7 @@ import net.minecraftforge.server.command.EnumArgument;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -37,6 +44,7 @@ public class CreateScriptCommands {
         Map<ScrollBehaviorKey, ScrollOptionBehaviour<?>> enumSamples = new HashMap<>();
         Multimap<String, ResourceLocation> intGroups = HashMultimap.create();
         Map<String, ScrollValueBehaviour> intSamples = new HashMap<>();
+        Set<ResourceLocation> filterBlocks = new HashSet<>();
 
         for (var entry : ForgeRegistries.BLOCKS.getEntries()) {
             try {
@@ -57,6 +65,8 @@ public class CreateScriptCommands {
                                 String execName = mappingsEvent.resolve(entry.getKey().location(), defaultName);
                                 intGroups.put(execName, entry.getKey().location());
                                 intSamples.putIfAbsent(execName, scrollValueBehaviour);
+                            } else if (behavior instanceof FilteringBehaviour && !(behavior instanceof SidedFilteringBehaviour)) {
+                                filterBlocks.add(entry.getKey().location());
                             }
                         }
                     }
@@ -71,6 +81,9 @@ public class CreateScriptCommands {
         }
         for (var execName : intGroups.keySet()) {
             event.register(getIntExecutor(execName, intSamples.get(execName), Set.copyOf(intGroups.get(execName))));
+        }
+        if (!filterBlocks.isEmpty()) {
+            event.register(getFilterExecutor("set_filter", Set.copyOf(filterBlocks), event));
         }
     }
 
@@ -112,6 +125,36 @@ public class CreateScriptCommands {
                         for (var behavior : smartBlockEntity.getAllBehaviours()) {
                             if (behavior instanceof ScrollOptionBehaviour<?> b && enumClass.isInstance(b.get())) {
                                 b.setValue(in);
+                                return 1;
+                            }
+                        }
+                    }
+                    return 0;
+                },
+                associatedBlocks
+        );
+    }
+
+    private static @NotNull ScriptExecutor<ItemStack, ItemInput> getFilterExecutor(String displayName, Set<ResourceLocation> associatedBlocks, RegisterScriptCommandsEvent event) {
+        return new ScriptExecutor<>(
+                displayName,
+                ItemStack.class,
+                ZPSMod.resource("item"),
+                ItemArgument.item(event.buildContext()),
+                ItemInput.class,
+                (in, context) -> {
+                    try {
+                        return in.createItemStack(1, false);
+                    } catch (CommandSyntaxException e) {
+                        return ItemStack.EMPTY;
+                    }
+                },
+                (in, context) -> {
+                    BlockEntity blockEntity = context.level().getBlockEntity(context.pos());
+                    if (blockEntity instanceof SmartBlockEntity smartBlockEntity) {
+                        for (var behavior : smartBlockEntity.getAllBehaviours()) {
+                            if (behavior instanceof FilteringBehaviour filteringBehaviour && !(behavior instanceof SidedFilteringBehaviour)) {
+                                filteringBehaviour.setFilter(in);
                                 return 1;
                             }
                         }

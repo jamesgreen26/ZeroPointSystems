@@ -5,6 +5,7 @@ import com.google.common.collect.Multimap;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.simibubi.create.Create;
 import com.simibubi.create.foundation.blockEntity.SmartBlockEntity;
 import com.simibubi.create.foundation.blockEntity.behaviour.filtering.FilteringBehaviour;
 import com.simibubi.create.foundation.blockEntity.behaviour.filtering.SidedFilteringBehaviour;
@@ -36,6 +37,20 @@ import java.util.function.BiFunction;
 public class CreateScriptCommands {
     private record ScrollBehaviorKey(String execName, Class<?> enumClass) {}
 
+    public static final Set<ResourceLocation> filter_allow_list = new HashSet<>(Set.of(
+            Create.asResource("mechanical_saw"),
+            Create.asResource("deployer"),
+            Create.asResource("track_observer"),
+            Create.asResource("stockpile_switch"),
+            Create.asResource("item_hatch"),
+            Create.asResource("brass_funnel"),
+            Create.asResource("smart_fluid_pipe"),
+            Create.asResource("smart_observer"),
+            Create.asResource("smart_chute"),
+            Create.asResource("mechanical_roller"),
+            Create.asResource("basin")
+    ));
+
     public static void registerScriptCommands(RegisterScriptCommandsEvent event) {
         var mappingsEvent = new OnRegisterCreateCompatExecutorMappingsEvent();
         MinecraftForge.EVENT_BUS.post(mappingsEvent);
@@ -66,7 +81,9 @@ public class CreateScriptCommands {
                                 intGroups.put(execName, entry.getKey().location());
                                 intSamples.putIfAbsent(execName, scrollValueBehaviour);
                             } else if (behavior instanceof FilteringBehaviour && !(behavior instanceof SidedFilteringBehaviour)) {
-                                filterBlocks.add(entry.getKey().location());
+                                if(filter_allow_list.contains(entry.getKey().location())) {
+                                    filterBlocks.add(entry.getKey().location());
+                                }
                             }
                         }
                     }

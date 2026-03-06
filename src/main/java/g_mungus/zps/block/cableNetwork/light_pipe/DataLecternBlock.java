@@ -225,7 +225,17 @@ public class DataLecternBlock extends LecternBlock implements EntityBlock, Cable
 
     }
 
-    public int getAnalogOutputSignal(BlockState arg, Level arg2, BlockPos arg3) {
+    @Override
+    public boolean isSignalSource(@NotNull BlockState arg) {
+        return false;
+    }
+
+    @Override
+    public int getSignal(@NotNull BlockState arg, @NotNull BlockGetter arg2, @NotNull BlockPos arg3, @NotNull Direction arg4) {
+        return 0;
+    }
+
+    public int getAnalogOutputSignal(BlockState arg, @NotNull Level arg2, @NotNull BlockPos arg3) {
         if (arg.getValue(HAS_BOOK)) {
             BlockEntity blockEntity = arg2.getBlockEntity(arg3);
             if (blockEntity instanceof DataLecternBlockEntity) {

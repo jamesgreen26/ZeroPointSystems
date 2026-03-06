@@ -16,9 +16,12 @@ import net.createmod.catnip.math.Pointing;
 import net.createmod.ponder.api.PonderPalette;
 import net.createmod.ponder.api.element.ElementLink;
 import net.createmod.ponder.api.element.EntityElement;
+import net.createmod.ponder.api.level.PonderLevel;
 import net.createmod.ponder.api.scene.SceneBuilder;
 import net.createmod.ponder.api.scene.SceneBuildingUtil;
+import net.createmod.ponder.api.scene.Selection;
 import net.createmod.ponder.foundation.element.InputWindowElement;
+import net.createmod.ponder.foundation.instruction.DisplayWorldSectionInstruction;
 import net.createmod.ponder.foundation.instruction.ShowInputInstruction;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
@@ -36,7 +39,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LeverBlock;
+import net.minecraft.world.level.block.piston.PistonBaseBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
@@ -325,10 +331,13 @@ public class ZPSPonderScenes {
                 ModBlocks.SCRIPT_TERMINAL.get(),
                 ModBlocks.LIGHT_PIPE.get(),
                 ModBlocks.SERIAL_BUS.get(),
-                Blocks.PISTON,
                 Blocks.WHITE_CONCRETE,
                 Blocks.SNOW_BLOCK
         ), Direction.UP);
+
+        builder.idle(10);
+
+        builder.world().showSection(util.select().fromTo(1,2,3,3,2,3), Direction.DOWN);
 
         builder.idle(10);
 
@@ -339,6 +348,8 @@ public class ZPSPonderScenes {
         builder.overlay().showText(65).text("To input commands, interact with the Script terminal to open a GUI.");
 
         builder.idle(75);
+
+        builder.addKeyframe();
 
         InputWindowElement inputWindowElement = new InputWindowElement(util.vector().topOf(3, 1, 1), Pointing.DOWN);
         builder.addInstruction(new ShowInputInstruction(inputWindowElement, 20));
@@ -361,6 +372,43 @@ public class ZPSPonderScenes {
         builder.addInstruction(new SetScreenMouseInstruction(screenElement, (w, h) -> new Vec2(w / 2f - 78, h / 4f + 142)));
         builder.idle(8);
         builder.addInstruction(ponderScene -> Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F)));
+
+        builder.idle(5);
+
+        builder.addKeyframe();
+
+        builder.idle(5);
+
+        builder.overlay().showText(70).text("When given a Redstone signal, the Script Terminal will dispatch each of its commands, in sequence.");
+
+        builder.idle(80);
+
+        builder.world().showSection(util.select().position(2,1,1), Direction.DOWN);
+
+        builder.idle(15);
+
+        builder.world().toggleRedstonePower(util.select().position(2,1,1));
+
+        builder.addInstruction(scene -> {
+            BlockPos piston = new BlockPos(3,2,3);
+            BlockState state = scene.getWorld().getBlockState(piston);
+            Direction dir = state.getValue(BlockStateProperties.FACING);
+
+            scene.getWorld().setBlock(piston, state.cycle(PistonBaseBlock.EXTENDED), 0);
+
+            BlockPos headPos = piston.relative(dir);
+
+            // show piston head
+            scene.getWorld().setBlock(headPos, Blocks.PISTON_HEAD.defaultBlockState()
+                    .setValue(BlockStateProperties.FACING, dir), 0);
+        });
+
+        builder.addInstruction(new DisplayWorldSectionInstruction(2, Direction.UP, util.select().position(3,3,3), builder.getScene()::getBaseWorldSection));
+
+        builder.addInstruction(ponderScene -> Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.PISTON_EXTEND, 1f)));
+
+        builder.idle(15);
+
     }
 
     private static void typeChar(SceneBuilder builder, ScreenPonderElement screenElement, char c) {

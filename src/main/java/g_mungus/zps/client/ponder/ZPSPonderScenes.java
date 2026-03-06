@@ -18,6 +18,8 @@ import net.createmod.ponder.api.element.ElementLink;
 import net.createmod.ponder.api.element.EntityElement;
 import net.createmod.ponder.api.scene.SceneBuilder;
 import net.createmod.ponder.api.scene.SceneBuildingUtil;
+import net.createmod.ponder.foundation.element.InputWindowElement;
+import net.createmod.ponder.foundation.instruction.ShowInputInstruction;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
@@ -32,6 +34,8 @@ import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.piglin.AbstractPiglin;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
@@ -314,13 +318,36 @@ public class ZPSPonderScenes {
     }
 
     public static void scriptTerminalTutorial(SceneBuilder builder, SceneBuildingUtil util) {
-        builder.configureBasePlate(0, 0, 7);
+        builder.configureBasePlate(0, 0, 5);
         builder.title("script_terminal", "Script Terminal");
-        builder.showBasePlate();
+
+        builder.world().showSection(PonderExtras.selectBlocks(builder, util,
+                ModBlocks.SCRIPT_TERMINAL.get(),
+                ModBlocks.LIGHT_PIPE.get(),
+                ModBlocks.SERIAL_BUS.get(),
+                Blocks.PISTON,
+                Blocks.WHITE_CONCRETE,
+                Blocks.SNOW_BLOCK
+        ), Direction.UP);
 
         builder.idle(10);
+
+        builder.overlay().showText(85).text("The Script Terminal sends commands to interact with other blocks, through connected Serial Busses.");
+
+        builder.idle(95);
+
+        builder.overlay().showText(65).text("To input commands, interact with the Script terminal to open a GUI.");
+
+        builder.idle(75);
+
+        InputWindowElement inputWindowElement = new InputWindowElement(util.vector().topOf(3, 1, 1), Pointing.DOWN);
+        builder.addInstruction(new ShowInputInstruction(inputWindowElement, 20));
+        inputWindowElement.builder().rightClick();
+
+        builder.idle(12);
+        builder.addInstruction(ponderScene -> inputWindowElement.setVisible(false));
         ScreenPonderElement screenElement = new ScreenPonderElement(() -> new ScriptTerminalScreen(null, true));
-        builder.addInstruction(new ShowScreenInstruction(screenElement, 120));
+        builder.addInstruction(new ShowScreenInstruction(screenElement, 123));
         builder.idle(20);
         for (char c : "if block == minecraft:piston[facing=up] set_redstone 15".toCharArray()) {
             typeChar(builder, screenElement, c);
@@ -345,7 +372,9 @@ public class ZPSPonderScenes {
                 if (player != null) player.playSound(ModSounds.KEYSTROKE.get());
             }
         }));
-        if (c == ' ') {
+        if (c == ']') {
+            builder.idle(4);
+        } else if (c == ' ') {
             builder.idle(3);
         } else if (c == '_') {
             builder.idle(2);

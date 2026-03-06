@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "A": {
+      "item": "minecraft:glass"
+    },
+    "B": {
+      "item": "minecraft:redstone_lamp"
+    },
+    "C": {
+      "item": "zps:space_metal_ingot"
+    }
+  },
+  "pattern": [
+    "AA",
+    "BB",
+    "CC"
+  ],
+  "result": {
+    "item": "zps:industrial_light",
+    "count": 4
+  },
+  "show_notification": true
+}

@@ -40,11 +40,7 @@ public class IndustrialLightBlock extends RedstoneLampBlock {
 
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        Direction facing = context.getNearestLookingDirection().getOpposite();
-        if (context.getPlayer() != null && context.getPlayer().isShiftKeyDown()) {
-            facing = facing.getOpposite();
-        }
-        return this.defaultBlockState().setValue(FACING, facing);
+        return this.defaultBlockState().setValue(FACING, context.getClickedFace());
     }
 
     @Override

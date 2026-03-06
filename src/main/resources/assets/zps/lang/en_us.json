@@ -323,5 +323,7 @@
 
     "block.zps.loudspeaker.zps_tooltip": "Converts messages from a [Light-Pipe Data Cable] into spoken audio.",
 
+    "block.zps.data_comparator.zps_tooltip": "Compares signals from two connected [Light-Pipe Data Cables] according to the current mode.\n\n[Equals]: provides Redstone power when data from the two inputs match exactly.\n\n[Contains]: provides Redstone power when data from the first input contains the full data from the second.\n\n[Shift + R-Click] to switch Modes.",
+
     "zps.display_source.serial_bus": "Serial Bus Data"
 }

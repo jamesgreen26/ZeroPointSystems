@@ -310,6 +310,9 @@
     "zps.ponder.tag.can_insulate": "Blocks that can be Insulated",
     "zps.ponder.tag.can_insulate.description": "Components or Blocks which can have Cable Insulation applied to them, which prevents the block from connecting in new directions.",
 
+    "zps.ponder.tag.has_script_caps": "Blocks with Script Capabilities",
+    "zps.ponder.tag.has_script_caps.description": "Blocks which have extra Script Capabilities beyond the default 'set_redstone' command.",
+
     "creativetab.zps_tab_deco": "Zero Point Systems Blocks",
 
     "block.zps.switch_panel.zps_tooltip": "4 levers in 1!\n\nEach switch controls one of the four outputs. Connects with [Dense Cables].",

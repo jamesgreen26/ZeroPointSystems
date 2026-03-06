@@ -13,16 +13,22 @@ import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptExecutor;
 import g_mungus.zps.commands.api.ScriptNode;
 import g_mungus.zps.commands.api_impl.debug.BrigadierCanvasExporter;
+import g_mungus.zps.networking.ExecutorBlocksS2CPacket;
+import g_mungus.zps.networking.ZPSGamePackets;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLLoader;
+import net.minecraftforge.network.PacketDistributor;
 
 import javax.annotation.Nullable;
 import java.nio.file.Files;
@@ -152,6 +158,22 @@ public class ZPSCommands {
             }
         }
         return null;
+    }
+
+
+    @SubscribeEvent
+    public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+
+        List<ResourceLocation> allAssociatedBlocks = Registry.EXECUTORS.stream()
+                .filter(e -> e.associatedBlocks() != null)
+                .flatMap(e -> e.associatedBlocks().stream())
+                .toList();
+
+        ZPSGamePackets.INSTANCE.send(
+                PacketDistributor.PLAYER.with(() -> player),
+                new ExecutorBlocksS2CPacket(allAssociatedBlocks)
+        );
     }
 
 

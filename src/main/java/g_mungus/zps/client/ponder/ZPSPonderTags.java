@@ -11,6 +11,8 @@ public class ZPSPonderTags {
 
     public static final ResourceLocation CAN_INSULATE = ZPSMod.resource("can_insulate");
 
+    public static final ResourceLocation HAS_SCRIPT_CAPS = ZPSMod.resource("has_script_caps");
+
     @SuppressWarnings("ConstantConditions")
     public static void register(@NotNull PonderTagRegistrationHelper<ResourceLocation> helper) {
         helper.registerTag(CAN_INSULATE)
@@ -28,5 +30,17 @@ public class ZPSPonderTags {
                 .add(REDSTONE_CONVERTER.getId())
                 .add(SERIAL_BUS.getId())
                 .add(CABLE_INSULATION.getId());
+
+        helper.registerTag(HAS_SCRIPT_CAPS)
+                .item(SCRIPT_TERMINAL.get())
+                .title("Blocks with Script Capabilities")
+                .description("Blocks which have extra Script Capabilities beyond the default 'set_redstone' command.")
+                .register();
+
+        helper.addToTag(HAS_SCRIPT_CAPS)
+                .add(SCRIPT_TERMINAL.getId());
+                ///  other items are added via a mixin
+
+
     }
 }

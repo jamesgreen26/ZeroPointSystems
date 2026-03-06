@@ -307,6 +307,11 @@
     "zps.ponder.script_terminal.text_5": "if block == minecraft:piston[facing=up] set_redstone 15",
     "zps.ponder.script_terminal.text_6": "set_redstone 0",
 
+    "zps.ponder.data_transcriber.header": "Data Transcriber",
+    "zps.ponder.data_transcriber.text_1": "The Data Transcriber can write Data to a Book and Quill held in a Lectern or Data Lectern underneath.",
+    "zps.ponder.data_transcriber.text_2": "When powered, it will copy the input Data to the current page of the book below.",
+    "zps.ponder.data_transcriber.text_3": "If the input Data changes while the Data Transcriber is powered, it will turn to the next page and then write the new Data.",
+
     "zps.ponder.tag.can_insulate": "Blocks that can be Insulated",
     "zps.ponder.tag.can_insulate.description": "Components or Blocks which can have Cable Insulation applied to them, which prevents the block from connecting in new directions.",
 

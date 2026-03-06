@@ -1,46 +1,38 @@
 package g_mungus.zps.client.ponder;
 
-import g_mungus.zps.ModSounds;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.CableBlock;
 import g_mungus.zps.block.cableNetwork.RedstoneConverterBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.light_pipe.DataLecternBlock;
 import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
-import g_mungus.zps.client.ponder.api.*;
+import g_mungus.zps.client.ponder.api.PonderExtras;
 import g_mungus.zps.client.ponder.api.custom_screen_in_ponder_scene.*;
 import g_mungus.zps.client.screens.ScriptTerminalScreen;
-import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.item.ModItems;
 import net.createmod.catnip.math.Pointing;
 import net.createmod.ponder.api.PonderPalette;
 import net.createmod.ponder.api.element.ElementLink;
 import net.createmod.ponder.api.element.EntityElement;
-import net.createmod.ponder.api.level.PonderLevel;
 import net.createmod.ponder.api.scene.SceneBuilder;
 import net.createmod.ponder.api.scene.SceneBuildingUtil;
-import net.createmod.ponder.api.scene.Selection;
 import net.createmod.ponder.foundation.element.InputWindowElement;
 import net.createmod.ponder.foundation.instruction.DisplayWorldSectionInstruction;
 import net.createmod.ponder.foundation.instruction.FadeOutOfSceneInstruction;
 import net.createmod.ponder.foundation.instruction.ShowInputInstruction;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.piglin.AbstractPiglin;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.LeverBlock;
 import net.minecraft.world.level.block.piston.PistonBaseBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -426,7 +418,7 @@ public class ZPSPonderScenes {
         builder.world().toggleRedstonePower(util.select().position(2,1,1));
         builder.idle(10);
 
-        builder.overlay().showText(40).text("if block == minecraft:piston[facing=up] set_redstone 15").colored(PonderPalette.INPUT);;
+        builder.overlay().showText(40).text("if block == minecraft:piston[facing=up] set_redstone 15").colored(PonderPalette.INPUT);
 
 
         builder.overlay().showOutline(PonderPalette.GREEN, "a", util.select().position(3 ,2, 3), 35);
@@ -515,5 +507,25 @@ public class ZPSPonderScenes {
                 Blocks.WHITE_CONCRETE,
                 Blocks.SNOW_BLOCK
         ), Direction.UP);
+
+        builder.idle(10);
+
+        builder.overlay().showText(80).text("The Data Transcriber can write Data to a Book and Quill held in a Lectern or Data Lectern underneath.");
+
+        builder.idle(90);
+
+        builder.overlay().showText(60).text("When powered, it will copy the input Data to the current page of the book below.");
+
+        builder.idle(70);
+
+        builder.world().showSection(util.select().position(2,2,1), Direction.DOWN);
+        builder.idle(10);
+        builder.world().toggleRedstonePower(util.select().position(2,2,1));
+
+        builder.idle(10);
+
+        builder.overlay().showText(95).text("If the input Data changes while the Data Transcriber is powered, it will turn to the next page and then write the new Data.");
+
+        builder.idle(105);
     }
 }

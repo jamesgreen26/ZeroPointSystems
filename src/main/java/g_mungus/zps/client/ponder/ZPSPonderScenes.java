@@ -502,4 +502,18 @@ public class ZPSPonderScenes {
                 
                 But what true structure did this player create, in the reality behind the screen?""".formatted(playerName);
     }
+
+    public static void dataTranscriberTutorial(SceneBuilder builder, SceneBuildingUtil util) {
+        builder.configureBasePlate(0, 0, 5);
+        builder.title("data_transcriber", "Data Transcriber");
+
+        builder.world().showSection(PonderExtras.selectBlocks(builder, util,
+                ModBlocks.LIGHT_PIPE.get(),
+                ModBlocks.DATA_LECTERN.get(),
+                ModBlocks.DATA_TRANSCRIBER.get(),
+                Blocks.LECTERN,
+                Blocks.WHITE_CONCRETE,
+                Blocks.SNOW_BLOCK
+        ), Direction.UP);
+    }
 }

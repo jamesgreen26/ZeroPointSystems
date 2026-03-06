@@ -53,5 +53,9 @@ public class ZPSPonders {
                 SCRIPT_TERMINAL,
                 SERIAL_BUS
         ).addStoryBoard("script_terminal", ZPSPonderScenes::scriptTerminalTutorial);
+
+        HELPER.forComponents(
+                DATA_TRANSCRIBER
+        ).addStoryBoard("data_transcriber", ZPSPonderScenes::dataTranscriberTutorial);
     }
 }

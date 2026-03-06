@@ -6,7 +6,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RedstoneLampBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -40,13 +43,32 @@ public class IndustrialLightBlock extends RedstoneLampBlock {
 
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        return this.defaultBlockState().setValue(FACING, context.getClickedFace());
+        BlockState state = this.defaultBlockState().setValue(FACING, context.getClickedFace());
+        return state.canSurvive(context.getLevel(), context.getClickedPos()) ? state : null;
     }
 
     @Override
     public @NotNull VoxelShape getShape(@NotNull BlockState state, @NotNull BlockGetter level,
                                         @NotNull BlockPos pos, @NotNull CollisionContext context) {
         return shapes.get(state.getValue(FACING));
+    }
+
+    @Override
+    public boolean canSurvive(@NotNull BlockState state, @NotNull LevelReader level, @NotNull BlockPos pos) {
+        Direction facing = state.getValue(FACING);
+        BlockPos supportPos = pos.relative(facing.getOpposite());
+        return Block.canSupportCenter(level, supportPos, facing);
+    }
+
+    @Override
+    public @NotNull BlockState updateShape(@NotNull BlockState state, @NotNull Direction direction,
+                                           @NotNull BlockState neighborState, @NotNull LevelAccessor level,
+                                           @NotNull BlockPos pos, @NotNull BlockPos neighborPos) {
+        Direction supportDirection = state.getValue(FACING).getOpposite();
+        if (direction == supportDirection && !state.canSurvive(level, pos)) {
+            return Blocks.AIR.defaultBlockState();
+        }
+        return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
     }
 
     private static Map<Direction, VoxelShape> buildShapes(double[][] upFacingBoxes) {

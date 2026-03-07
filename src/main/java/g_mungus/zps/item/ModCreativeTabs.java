@@ -36,7 +36,6 @@ public class ModCreativeTabs {
                         OCTO_CONTROLLER,
                         DODECA_CONTROLLER,
                         DENSE_CABLE_SEPARATOR,
-                        CABLE_INSULATION,
                         SWITCH_PANEL,
                         GRADUATED_LEVER,
                         STEPUP_TRANSFORMER,
@@ -45,8 +44,9 @@ public class ModCreativeTabs {
                         SERIAL_BUS,
                         DENSE_CABLES,
                         CABLE,
-
                         LIGHT_PIPE,
+                        CABLE_INSULATION,
+
                         SCRIPT_TERMINAL,
                         DATA_LECTERN,
                         DATA_TRANSCRIBER,

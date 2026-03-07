@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "zps:block/raw_lithium_top",
+    "side": "zps:block/raw_lithium_block_side"
+  }
+}

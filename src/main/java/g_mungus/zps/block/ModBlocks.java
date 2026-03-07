@@ -188,6 +188,10 @@ public class ModBlocks {
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.GOLD_BLOCK)
             )
     );
+    public static final RegistryObject<Block> RAW_LITHIUM_BLOCK = BLOCKS.register("raw_lithium_block",
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.RAW_IRON_BLOCK)
+            )
+    );
 
 
 /// DECOR BLOCKS

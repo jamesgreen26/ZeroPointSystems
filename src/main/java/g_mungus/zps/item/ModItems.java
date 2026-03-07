@@ -119,6 +119,8 @@ public class ModItems {
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> LITHIUM_BLOCK = ITEMS.register("lithium_block",
             () -> new BlockItem(ModBlocks.LITHIUM_BLOCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> RAW_LITHIUM_BLOCK = ITEMS.register("raw_lithium_block",
+            () -> new BlockItem(ModBlocks.RAW_LITHIUM_BLOCK.get(), new Item.Properties()));
 
     public static final RegistryObject<Item> CAPACITOR = ITEMS.register("capacitor",
             () -> new Item(new Item.Properties()));

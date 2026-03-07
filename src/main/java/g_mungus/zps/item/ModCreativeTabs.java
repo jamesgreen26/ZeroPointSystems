@@ -61,6 +61,7 @@ public class ModCreativeTabs {
                         LITHIUM_ORE,
                         DEEPSLATE_LITHIUM_ORE,
 
+                        RAW_LITHIUM_BLOCK,
                         ALUMINUM_BLOCK,
                         LITHIUM_BLOCK,
 

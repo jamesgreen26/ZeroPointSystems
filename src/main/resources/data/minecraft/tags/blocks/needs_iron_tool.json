@@ -3,6 +3,7 @@
   "values": [
     "zps:lithium_ore",
     "zps:deepslate_lithium_ore",
-    "zps:lithium_block"
+    "zps:lithium_block",
+    "zps:raw_lithium_block"
   ]
 }

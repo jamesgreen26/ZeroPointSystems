@@ -53,6 +53,30 @@ public class ModKeybinds {
             "key.categories.zps"
     );
 
+    public static final KeyMapping KEY_I = new KeyMapping(
+            "key.zps.i",
+            GLFW.GLFW_KEY_Z,
+            "key.categories.zps"
+    );
+
+    public static final KeyMapping KEY_J = new KeyMapping(
+            "key.zps.j",
+            GLFW.GLFW_KEY_X,
+            "key.categories.zps"
+    );
+
+    public static final KeyMapping KEY_K = new KeyMapping(
+            "key.zps.k",
+            GLFW.GLFW_KEY_C,
+            "key.categories.zps"
+    );
+
+    public static final KeyMapping KEY_L = new KeyMapping(
+            "key.zps.l",
+            GLFW.GLFW_KEY_V,
+            "key.categories.zps"
+    );
+
     public static void register(RegisterKeyMappingsEvent event) {
         event.register(ModKeybinds.KEY_A);
         event.register(ModKeybinds.KEY_B);
@@ -62,5 +86,9 @@ public class ModKeybinds {
         event.register(ModKeybinds.KEY_F);
         event.register(ModKeybinds.KEY_G);
         event.register(ModKeybinds.KEY_H);
+        event.register(ModKeybinds.KEY_I);
+        event.register(ModKeybinds.KEY_J);
+        event.register(ModKeybinds.KEY_K);
+        event.register(ModKeybinds.KEY_L);
     }
 } 

@@ -33,6 +33,11 @@ public class ModBlockEntities {
             () -> BlockEntityType.Builder.of(OctoControllerBlockEntity::new,
                 ModBlocks.OCTO_CONTROLLER.get()).build(null));
 
+    public static final RegistryObject<BlockEntityType<DodecaControllerBlockEntity>> DODECA_CONTROLLER =
+        BLOCK_ENTITIES.register("dodeca_controller",
+            () -> BlockEntityType.Builder.of(DodecaControllerBlockEntity::new,
+                ModBlocks.DODECA_CONTROLLER.get()).build(null));
+
     public static final RegistryObject<BlockEntityType<SwitchPanelBlockEntity>> SWITCH_PANEL =
             BLOCK_ENTITIES.register("switch_panel",
                     () -> BlockEntityType.Builder.of(SwitchPanelBlockEntity::new,

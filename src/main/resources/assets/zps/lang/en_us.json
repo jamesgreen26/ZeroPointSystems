@@ -7,6 +7,7 @@
     "block.zps.stepdown_transformer": "Step-Down Transformer",
     "block.zps.redstone_converter": "Redstone Converter",
     "block.zps.octo_controller": "Octo-Controller",
+    "block.zps.dodeca_controller": "Dodeca-Controller",
     "block.zps.switch_panel": "Switch Panel",
     "block.zps.graduated_lever": "Graduated Lever",
     "block.zps.cable_insulation": "Cable Insulation",
@@ -123,6 +124,7 @@
     "item.zps.stepdown_transformer": "Step-Down Transformer",
     "item.zps.redstone_converter": "Redstone Converter",
     "item.zps.octo_controller": "Octo-Controller",
+    "item.zps.dodeca_controller": "Dodeca-Controller",
     "item.zps.switch_panel": "Switch Panel",
     "item.zps.graduated_lever": "Graduated Lever",
     "item.zps.cable_insulation": "Cable Insulation",
@@ -272,6 +274,10 @@
     "key.zps.f": "Channel F",
     "key.zps.g": "Channel G",
     "key.zps.h": "Channel H",
+    "key.zps.i": "Channel I",
+    "key.zps.j": "Channel J",
+    "key.zps.k": "Channel K",
+    "key.zps.l": "Channel L",
     "key.categories.zps": "Zero Point Systems",
 
 
@@ -335,6 +341,9 @@
     "block.zps.loudspeaker.zps_tooltip": "Converts messages from a [Light-Pipe Data Cable] into spoken audio.",
 
     "block.zps.data_comparator.zps_tooltip": "Compares signals from two connected [Light-Pipe Data Cables] according to the current mode.\n\n[Equals]: provides Redstone power when data from the two inputs match exactly.\n\n[Contains]: provides Redstone power when data from the first input contains the full data from the second.\n\n[Shift + R-Click] to switch Modes.",
+
+    "block.zps.dodeca_controller.zps_tooltip": "More... MORE!!",
+
 
     "zps.display_source.serial_bus": "Serial Bus Data"
 }

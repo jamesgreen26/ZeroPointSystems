@@ -7,6 +7,7 @@
     "block.zps.stepdown_transformer": "StromEingang",
     "block.zps.redstone_converter": "Redstone Konvektor",
     "block.zps.octo_controller": "Octo Controller",
+    "block.zps.dodeca_controller": "Dodeca Controller",
     "block.zps.light_pipe_cable": "Lichtwellen-Kabel",
     "block.zps.data_lectern": "Skript-Sender",
 
@@ -18,6 +19,7 @@
     "item.zps.stepdown_transformer": "StromEingang",
     "item.zps.redstone_converter": "Redstone Konvektor",
     "item.zps.octo_controller": "Octo Controller",
+    "item.zps.dodeca_controller": "Dodeca Controller",
     "item.zps.light_pipe_cable": "Lichtwellen-Kabel",
     "item.zps.data_lectern": "Skript-Sender",
 
@@ -31,5 +33,9 @@
     "key.zps.f": "kanal F",
     "key.zps.g": "kanal G",
     "key.zps.h": "kanal H",
+    "key.zps.i": "kanal I",
+    "key.zps.j": "kanal J",
+    "key.zps.k": "kanal K",
+    "key.zps.l": "kanal L",
     "key.categories.zps": "Zero Point Systems"
 }

@@ -8,6 +8,7 @@
     "zps:stepdown_transformer",
     "zps:redstone_converter",
     "zps:octo_controller",
+    "zps:dodeca_controller",
     "zps:cable_insulation",
     "zps:switch_panel",
     "zps:graduated_lever",

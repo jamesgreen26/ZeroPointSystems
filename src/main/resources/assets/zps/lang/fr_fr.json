@@ -7,6 +7,7 @@
     "block.zps.stepdown_transformer": "Interface de réception",
     "block.zps.redstone_converter": "Convertisseur à redstone",
     "block.zps.octo_controller": "Controlleur Octo",
+    "block.zps.dodeca_controller": "Controlleur Dodeca",
     "block.zps.light_pipe_cable": "Câble optique",
     "block.zps.data_lectern": "Émetteur de Script",
 
@@ -18,6 +19,7 @@
     "item.zps.stepdown_transformer": "Interface de réception",
     "item.zps.redstone_converter": "Convertisseur à redstone",
     "item.zps.octo_controller": "Controlleur Octo",
+    "item.zps.dodeca_controller": "Controlleur Dodeca",
     "item.zps.light_pipe_cable": "Câble optique",
     "item.zps.data_lectern": "Émetteur de Script",
 
@@ -31,5 +33,9 @@
     "key.zps.f": "Canal F",
     "key.zps.g": "Canal G",
     "key.zps.h": "Canal H",
+    "key.zps.i": "Canal I",
+    "key.zps.j": "Canal J",
+    "key.zps.k": "Canal K",
+    "key.zps.l": "Canal L",
     "key.categories.zps": "Zero Point Systems"
 }

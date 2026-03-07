@@ -24,6 +24,12 @@ public class ZPSGamePackets {
                 .consumerMainThread(OctoControlPacket::handle)
                 .add();
 
+        INSTANCE.messageBuilder(DodecaControlPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(DodecaControlPacket::encode)
+                .decoder(DodecaControlPacket::decode)
+                .consumerMainThread(DodecaControlPacket::handle)
+                .add();
+
         INSTANCE.messageBuilder(ScriptComputerC2SPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(ScriptComputerC2SPacket::encode)
                 .decoder(ScriptComputerC2SPacket::decode)

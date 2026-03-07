@@ -73,6 +73,12 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
 
+    public static final RegistryObject<Block> DODECA_CONTROLLER = BLOCKS.register("dodeca_controller",
+            () -> new DodecaControllerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+
     public static final RegistryObject<Block> SWITCH_PANEL = BLOCKS.register("switch_panel",
             () -> new SwitchPanelBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(2.0f)

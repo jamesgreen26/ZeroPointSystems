@@ -28,6 +28,10 @@
     "mass": 1000.0
   },
   {
+    "block": "zps:dodeca_controller",
+    "mass": 1000.0
+  },
+  {
     "block": "zps:cable_insulation",
     "mass": 1000.0
   },

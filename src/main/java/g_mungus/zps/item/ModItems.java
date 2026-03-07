@@ -19,6 +19,9 @@ public class ModItems {
     public static final RegistryObject<Item> OCTO_CONTROLLER = ITEMS.register("octo_controller",
             () -> new BlockItem(ModBlocks.OCTO_CONTROLLER.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> DODECA_CONTROLLER = ITEMS.register("dodeca_controller",
+            () -> new BlockItem(ModBlocks.DODECA_CONTROLLER.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> DENSE_CABLE_SEPARATOR = ITEMS.register("dense_cable_separator",
             () -> new BlockItem(ModBlocks.DENSE_CABLE_SEPARATOR.get(), new Item.Properties()));
 

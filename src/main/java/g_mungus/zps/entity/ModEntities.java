@@ -15,4 +15,9 @@ public class ModEntities {
         () -> EntityType.Builder.of(OctoMountingEntity::new, MobCategory.MISC)
             .sized(0.5f, 0.5f)
             .build("octo_mounting_seat"));
+
+    public static final RegistryObject<EntityType<DodecaMountingEntity>> DODECA_MOUNTING = ENTITIES.register("dodeca_mounting_seat",
+        () -> EntityType.Builder.of(DodecaMountingEntity::new, MobCategory.MISC)
+            .sized(0.5f, 0.5f)
+            .build("dodeca_mounting_seat"));
 } 

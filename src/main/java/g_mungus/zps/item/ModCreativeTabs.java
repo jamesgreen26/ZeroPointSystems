@@ -34,6 +34,7 @@ public class ModCreativeTabs {
             .displayItems((parameters, output) -> {
                 addAll(output,
                         OCTO_CONTROLLER,
+                        DODECA_CONTROLLER,
                         DENSE_CABLE_SEPARATOR,
                         CABLE_INSULATION,
                         SWITCH_PANEL,

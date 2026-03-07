@@ -19,8 +19,6 @@ public class RedstoneConverterBlockEntity extends NetworkTerminalImpl implements
     private int currentSignal = 0;
     private int currentSuppliedSignal = 0;
 
-    private long lastUpdate = 0L;
-
     public int getCurrentSignal() {
         return currentSignal;
     }
@@ -46,24 +44,15 @@ public class RedstoneConverterBlockEntity extends NetworkTerminalImpl implements
     public void receiveSignal(int strength, int channel) {
         if (level == null) return;
         BlockPos pos = getBlockPos();
-        int oldSignal = level.getBestNeighborSignal(pos);
 
         currentSignal = strength;
-
         BlockState state = level.getBlockState(pos);
 
-        long now = level.getGameTime();
-
-        if (currentSignal != oldSignal || now > lastUpdate) {
-            lastUpdate = now;
-            if (state.is(ModBlocks.REDSTONE_CONVERTER.get())) {
-
-                level.updateNeighborsAt(pos, state.getBlock());
-                BlockPos neighborPos = TransformerBlock.getFacingPos(pos, state);
-                level.updateNeighborsAt(neighborPos, level.getBlockState(neighborPos).getBlock());
-            }
+        if (state.is(ModBlocks.REDSTONE_CONVERTER.get())) {
+            level.updateNeighborsAt(pos, state.getBlock());
+            BlockPos neighborPos = TransformerBlock.getFacingPos(pos, state);
+            level.updateNeighborsAt(neighborPos, level.getBlockState(neighborPos).getBlock());
         }
-
     }
 
     @Override

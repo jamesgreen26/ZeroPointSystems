@@ -2,11 +2,16 @@ package g_mungus.zps.client.tts;
 
 import com.sun.speech.freetts.Voice;
 import com.sun.speech.freetts.en.us.cmu_us_kal.KevinVoiceDirectory;
+import g_mungus.zps.ZPSMod;
 import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.core.BlockPos;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
 
 import javax.sound.sampled.AudioFormat;
@@ -14,6 +19,8 @@ import javax.sound.sampled.AudioFormat;
 public class TtsSoundsManager {
 
     private static final long SOUND_TIMEOUT_MS = 60_000; // 1 minute
+    private static final int MAX_TTS_LENGTH = 800;
+    private static final net.minecraft.resources.ResourceLocation STATIC_SOUND_ID = ZPSMod.resource("static");
     private static final AudioFormat DEFAULT_FORMAT = new AudioFormat(44100.0F, 16, 1, true, false);
 
     /** Maps block positions to active sounds and their creation time */
@@ -41,6 +48,33 @@ public class TtsSoundsManager {
 
         // Clean up old sounds
         cleanupOldSounds();
+
+        if (text.length() > MAX_TTS_LENGTH) {
+            SoundInstance staticSound = new SimpleSoundInstance(
+                    STATIC_SOUND_ID,
+                    SoundSource.BLOCKS,
+                    1.0f,
+                    1.0f,
+                    RandomSource.create(),
+                    false,
+                    0,
+                    SoundInstance.Attenuation.LINEAR,
+                    center.x,
+                    center.y,
+                    center.z,
+                    false
+            );
+            TrackedSound trackedSound = new TrackedSound(staticSound, System.currentTimeMillis());
+            TrackedSound oldTracked = activeSoundsByPos.put(
+                    key,
+                    trackedSound
+            );
+            if (oldTracked != null) {
+                soundManager.stop(oldTracked.soundInstance);
+            }
+            soundManager.play(staticSound);
+            return;
+        }
 
         // Generate TTS
         MemoryAudioPlayer player = new MemoryAudioPlayer();
@@ -90,5 +124,5 @@ public class TtsSoundsManager {
         });
     }
 
-    private record TrackedSound(TtsSoundInstance soundInstance, long timestamp) { }
+    private record TrackedSound(SoundInstance soundInstance, long timestamp) { }
 }

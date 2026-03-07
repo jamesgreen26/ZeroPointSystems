@@ -10,5 +10,14 @@
       "zps:keystroke6",
       "zps:keystroke7"
     ]
+  },
+  "static": {
+    "subtitle": "sounds.zps.static",
+    "sounds": [
+      {
+        "name": "zps:static",
+        "preload": true
+      }
+    ]
   }
 }

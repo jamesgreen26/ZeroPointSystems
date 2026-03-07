@@ -1,0 +1,24 @@
+{
+  "values": [
+    "zps:space_plating_stairs",
+    "zps:riveted_space_plating_stairs",
+    "zps:red_space_plating_stairs",
+    "zps:orange_space_plating_stairs",
+    "zps:yellow_space_plating_stairs",
+    "zps:green_space_plating_stairs",
+    "zps:lime_space_plating_stairs",
+    "zps:cyan_space_plating_stairs",
+    "zps:blue_space_plating_stairs",
+    "zps:light_blue_space_plating_stairs",
+    "zps:purple_space_plating_stairs",
+    "zps:magenta_space_plating_stairs",
+    "zps:pink_space_plating_stairs",
+    "zps:black_space_plating_stairs",
+    "zps:brown_space_plating_stairs",
+    "zps:gray_space_plating_stairs",
+    "zps:light_gray_space_plating_stairs",
+    "zps:chrome_space_plating_stairs",
+    "zps:agate_space_plating_stairs"
+  ],
+  "replace": false
+}

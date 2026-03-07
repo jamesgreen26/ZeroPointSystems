@@ -45,7 +45,13 @@ public class BlockDataGenerator {
         blocksToDatagen.forEach(BlockDataGenerator::generate);
 
         generateWallTag();
+        generateStairTag();
+        generateSlabTag();
         generateSpacePlatingTag();
+
+        BlockItemGenerator.generateWallTag();
+        BlockItemGenerator.generateStairTag();
+        BlockItemGenerator.generateSlabTag();
     }
 
 
@@ -75,6 +81,28 @@ public class BlockDataGenerator {
         });
         String path = FOLDER + "data/minecraft/tags/blocks/walls.json";
         FileWriter.writeFile(path, new TagJsonModel(walls, false).toJsonString());
+    }
+
+    private static void generateStairTag() {
+        List<String> stairs = new ArrayList<>();
+        blocksToDatagen.forEach((name, types) -> {
+            if (types.contains(BlockType.stairs)) {
+                stairs.add("zps:" + name + "_stairs");
+            }
+        });
+        String path = FOLDER + "data/minecraft/tags/blocks/stairs.json";
+        FileWriter.writeFile(path, new TagJsonModel(stairs, false).toJsonString());
+    }
+
+    private static void generateSlabTag() {
+        List<String> slabs = new ArrayList<>();
+        blocksToDatagen.forEach((name, types) -> {
+            if (types.contains(BlockType.slab)) {
+                slabs.add("zps:" + name + "_slab");
+            }
+        });
+        String path = FOLDER + "data/minecraft/tags/blocks/slabs.json";
+        FileWriter.writeFile(path, new TagJsonModel(slabs, false).toJsonString());
     }
 
     private static void generateSpacePlatingTag() {

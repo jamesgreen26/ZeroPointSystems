@@ -29,6 +29,15 @@ public class TtsSoundsManager {
     public static void speakTextAt(BlockPos pos, String text) {
         long key = pos.asLong();
         Vec3 center = pos.getCenter();
+        SoundManager soundManager = Minecraft.getInstance().getSoundManager();
+
+        if (text.isEmpty()) {
+            TrackedSound oldTracked = activeSoundsByPos.remove(key);
+            if (oldTracked != null) {
+                soundManager.stop(oldTracked.soundInstance);
+            }
+            return;
+        }
 
         // Clean up old sounds
         cleanupOldSounds();
@@ -62,7 +71,6 @@ public class TtsSoundsManager {
         // Replace old sound if any
         TrackedSound oldTracked = activeSoundsByPos.put(key, trackedSound);
 
-        SoundManager soundManager = Minecraft.getInstance().getSoundManager();
         if (oldTracked != null) {
             soundManager.stop(oldTracked.soundInstance);
         }

@@ -16,8 +16,8 @@ public class LoudspeakerBlockEntity extends AbstractTextDataReceiver {
 
     @Override
     public void acceptText(int channel, String message) {
-        sendTtsPacket(message, getWorldPos());
         if (!message.equals(currentDisplayText)) {
+            sendTtsPacket(message, getWorldPos());
             currentDisplayText = message;
             setChanged();
 

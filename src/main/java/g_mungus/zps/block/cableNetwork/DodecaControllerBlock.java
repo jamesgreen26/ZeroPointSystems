@@ -120,11 +120,11 @@ public class DodecaControllerBlock extends CableComponentBlock implements Entity
         Direction facing = state.getValue(FACING);
 
         if (self.channel() >= Channels.DOD_I) {
-            return List.of(self.pos().offset(facing.getClockWise().getNormal()));
+            return List.of(self.pos().offset(facing.getOpposite().getNormal()));
         } else if (self.channel() >= Channels.DOD_E) {
             return List.of(self.pos().offset(facing.getCounterClockWise().getNormal()));
         } else if (self.channel() >= Channels.DOD_A) {
-            return List.of(self.pos().offset(facing.getOpposite().getNormal()));
+            return List.of(self.pos().offset(facing.getClockWise().getNormal()));
         }
 
         return List.of();
@@ -135,11 +135,11 @@ public class DodecaControllerBlock extends CableComponentBlock implements Entity
         BlockState state = level.getBlockState(self);
         Direction facing = state.getValue(FACING);
 
-        if (input.pos().equals(self.offset(facing.getOpposite().getNormal()))) {
+        if (input.pos().equals(self.offset(facing.getClockWise().getNormal()))) {
             return input.channel() + 15;
         } else if (input.pos().equals(self.offset(facing.getCounterClockWise().getNormal()))) {
             return input.channel() + 19;
-        } else if (input.pos().equals(self.offset(facing.getClockWise().getNormal()))) {
+        } else if (input.pos().equals(self.offset(facing.getOpposite().getNormal()))) {
             return input.channel() + 23;
         }
 

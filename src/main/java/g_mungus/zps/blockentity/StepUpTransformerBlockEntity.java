@@ -1,6 +1,7 @@
 package g_mungus.zps.blockentity;
 
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.StepdownTransformerBlock;
 import g_mungus.zps.block.cableNetwork.TransformerBlock;
@@ -9,6 +10,8 @@ import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -76,9 +79,10 @@ public class StepUpTransformerBlockEntity extends NetworkTerminalImpl {
                     });
                 }
             } else if (state1.is(ModBlocks.REDSTONE_CONVERTER.get()) && blockEntity.energyHandler.getEnergyStored() > 0) {
-                level.destroyBlock(node.pos(), false);
-                Vec3 center = node.pos().getCenter();
-                level.explode(null, center.x, center.y, center.z, 2f, Level.ExplosionInteraction.BLOCK);
+                switch (ZPSConfig.getConverterOverpowerBehavior()) {
+                    case EXPLODE -> explodeTerminal(level, node);
+                    case DESTROY -> destroyTerminal((ServerLevel) level, node);
+                }
             }
         });
 
@@ -111,6 +115,18 @@ public class StepUpTransformerBlockEntity extends NetworkTerminalImpl {
                 }
             });
         }
+    }
+
+    private static void explodeTerminal(Level level, NetworkNode node) {
+        level.destroyBlock(node.pos(), false);
+        Vec3 center = node.pos().getCenter();
+        level.explode(null, center.x, center.y, center.z, 2f, Level.ExplosionInteraction.BLOCK);
+    }
+
+    private static void destroyTerminal(ServerLevel level, NetworkNode node) {
+        Vec3 center = node.pos().getCenter();
+        level.destroyBlock(node.pos(), true);
+        level.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, center.x, center.y, center.z, 12, 0.2, 0.5, 0.2, 0.02);
     }
 
     @Override

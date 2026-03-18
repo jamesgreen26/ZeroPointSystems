@@ -31,6 +31,7 @@ public final class ZPSMod {
         IEventBus modEventBus = context.getModEventBus();
 
         context.registerConfig(ModConfig.Type.CLIENT, ZPSConfig.CONFIG_SPEC);
+        context.registerConfig(ModConfig.Type.SERVER, ZPSConfig.SERVER_CONFIG_SPEC);
 
         // Register blocks and block entities
         ModBlocks.BLOCKS.register(modEventBus);

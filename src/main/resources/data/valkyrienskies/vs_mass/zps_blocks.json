@@ -5,11 +5,11 @@
   },
   {
     "block": "zps:dense_cables",
-    "mass": 450.0
+    "mass": 350.0
   },
   {
     "block": "zps:dense_cable_separator",
-    "mass": 1000.0
+    "mass": 500.0
   },
   {
     "block": "zps:stepup_transformer",
@@ -24,16 +24,20 @@
     "mass": 170.0
   },
   {
+    "block": "zps:serial_bus",
+    "mass": 170
+  },
+  {
     "block": "zps:octo_controller",
-    "mass": 1000.0
+    "mass": 500.0
   },
   {
     "block": "zps:dodeca_controller",
-    "mass": 1000.0
+    "mass": 500.0
   },
   {
     "block": "zps:cable_insulation",
-    "mass": 1000.0
+    "mass": 300.0
   },
   {
     "block": "zps:light_pipe_cable",
@@ -41,6 +45,102 @@
   },
   {
     "block": "zps:data_lectern",
-    "mass": 450.0
+    "mass": 350.0
+  },
+  {
+    "tag": "zps:space_plating",
+    "mass": 500
+  },
+  {
+    "block": "zps:aluminum_block",
+    "mass": 2700
+  },
+  {
+    "block": "zps:lithium_block",
+    "mass": 500
+  },
+  {
+    "block": "zps:raw_lithium_block",
+    "mass": 500
+  },
+  {
+    "block": "zps:radio_antenna",
+    "mass": 100
+  },
+  {
+    "block": "zps:light_pipe_cable",
+    "mass": 15
+  },
+  {
+    "block": "zps:script_terminal",
+    "mass": 500
+  },
+  {
+    "block": "zps:switch_panel",
+    "mass": 250
+  },
+  {
+    "block": "zps:graduated_lever",
+    "mass": 250
+  },
+  {
+    "block": "zps:data_transcriber",
+    "mass": 200
+  },
+  {
+    "block": "zps:text_display",
+    "mass": 500
+  },
+  {
+    "block": "zps:radio_transmitter",
+    "mass": 500
+  },
+  {
+    "block": "zps:radio_receiver",
+    "mass": 500
+  },
+  {
+    "block": "zps:data_comparator",
+    "mass": 500
+  },
+  {
+    "block": "zps:loudspeaker",
+    "mass": 500
+  },
+  {
+    "block": "zps:space_truss",
+    "mass": 200
+  },
+  {
+    "block": "zps:space_scaffold",
+    "mass": 200
+  },
+  {
+    "block": "zps:space_mesh_block",
+    "mass": 200
+  },
+  {
+    "block": "zps:space_grating_block",
+    "mass": 200
+  },
+  {
+    "block": "zps:catwalk",
+    "mass": 50
+  },
+  {
+    "block": "zps:catwalk_stairs",
+    "mass": 75
+  },
+  {
+    "block": "zps:small_industrial_light",
+    "mass": 25
+  },
+  {
+    "block": "zps:industrial_light",
+    "mass": 50
+  },
+  {
+    "block": "zps:large_industrial_light",
+    "mass": 75
   }
 ]

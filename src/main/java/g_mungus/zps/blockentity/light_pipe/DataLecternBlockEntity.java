@@ -129,7 +129,13 @@ public class DataLecternBlockEntity extends NetworkTerminalImpl implements Clear
             if (tag != null) {
                 ListTag pages = tag.getList("pages", 8);
                 if (pages.size() > page) {
-                    return pages.getString(page);
+                    String raw = pages.getString(page);
+                    try {
+                        Component parsed = Component.Serializer.fromJson(raw);
+                        return parsed != null ? parsed.getString() : raw;
+                    } catch (Exception e) {
+                        return raw;
+                    }
                 }
             }
         }

@@ -184,12 +184,12 @@ public class ModBlocks {
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.COPPER_BLOCK)
             )
     );
-    public static final RegistryObject<Block> LITHIUM_BLOCK = BLOCKS.register("lithium_block",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.GOLD_BLOCK)
+    public static final RegistryObject<WaterExplodingBlock> LITHIUM_BLOCK = BLOCKS.register("lithium_block",
+            () -> new WaterExplodingBlock(BlockBehaviour.Properties.copy(Blocks.GOLD_BLOCK)
             )
     );
-    public static final RegistryObject<Block> RAW_LITHIUM_BLOCK = BLOCKS.register("raw_lithium_block",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.RAW_IRON_BLOCK)
+    public static final RegistryObject<WaterExplodingBlock> RAW_LITHIUM_BLOCK = BLOCKS.register("raw_lithium_block",
+            () -> new WaterExplodingBlock(BlockBehaviour.Properties.copy(Blocks.RAW_IRON_BLOCK)
             )
     );
     public static final RegistryObject<Block> ALUMINUM_PLATING = BLOCKS.register("aluminum_plating",

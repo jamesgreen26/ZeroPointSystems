@@ -18,7 +18,8 @@
     "zps:gray_space_plating_wall",
     "zps:light_gray_space_plating_wall",
     "zps:chrome_space_plating_wall",
-    "zps:agate_space_plating_wall"
+    "zps:agate_space_plating_wall",
+    "zps:aluminum_plating_wall"
   ],
   "replace": false
 }

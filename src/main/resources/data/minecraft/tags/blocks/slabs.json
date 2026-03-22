@@ -18,7 +18,8 @@
     "zps:gray_space_plating_slab",
     "zps:light_gray_space_plating_slab",
     "zps:chrome_space_plating_slab",
-    "zps:agate_space_plating_slab"
+    "zps:agate_space_plating_slab",
+    "zps:aluminum_plating_slab"
   ],
   "replace": false
 }

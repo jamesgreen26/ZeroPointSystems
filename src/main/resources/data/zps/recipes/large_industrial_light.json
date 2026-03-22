@@ -9,7 +9,7 @@
       "item": "minecraft:redstone_lamp"
     },
     "C": {
-      "item": "zps:space_metal_ingot"
+      "tag": "forge:ingots/space_metal"
     }
   },
   "pattern": [

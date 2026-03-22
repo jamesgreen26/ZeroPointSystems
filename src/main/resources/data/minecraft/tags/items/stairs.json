@@ -18,7 +18,8 @@
     "zps:gray_space_plating_stairs",
     "zps:light_gray_space_plating_stairs",
     "zps:chrome_space_plating_stairs",
-    "zps:agate_space_plating_stairs"
+    "zps:agate_space_plating_stairs",
+    "zps:aluminum_plating_stairs"
   ],
   "replace": false
 }

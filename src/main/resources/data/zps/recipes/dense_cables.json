@@ -3,7 +3,7 @@
   "category": "functional",
   "key": {
     "I": {
-      "item": "zps:space_metal_ingot"
+      "tag": "forge:ingots/space_metal"
     },
     "C": {
       "item": "zps:cable"

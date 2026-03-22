@@ -2,15 +2,15 @@
   "type": "minecraft:crafting_shaped",
   "category": "functional",
   "key": {
-    "A": { "item": "zps:space_metal_ingot" },
-    "B": { "item": "zps:space_metal_ingot" },
-    "C": { "item": "zps:space_metal_ingot" },
+    "A": { "tag": "forge:ingots/space_metal" },
+    "B": { "tag": "forge:ingots/space_metal" },
+    "C": { "tag": "forge:ingots/space_metal" },
     "D": { "item": "zps:light_pipe_cable" },
     "E": { "item": "minecraft:repeater" },
     "F": { "item": "minecraft:note_block" },
-    "G": { "item": "zps:space_metal_ingot" },
-    "H": { "item": "zps:space_metal_ingot" },
-    "I": { "item": "zps:space_metal_ingot" }
+    "G": { "tag": "forge:ingots/space_metal" },
+    "H": { "tag": "forge:ingots/space_metal" },
+    "I": { "tag": "forge:ingots/space_metal" }
   },
   "pattern": [
     "ABC",

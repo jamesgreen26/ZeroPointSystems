@@ -3,10 +3,10 @@
   "category": "functional",
   "key": {
     "A": {
-      "item": "zps:space_metal_rod"
+      "tag": "forge:rods/space_metal"
     },
     "B": {
-      "item": "zps:space_metal_ingot"
+      "tag": "forge:ingots/space_metal"
     },
     "C": {
       "item": "zps:light_pipe_cable"

@@ -3,9 +3,9 @@
   "category": "functional",
   "key": {
     "B": { "item": "zps:light_pipe_cable" },
-    "D": { "item": "zps:space_metal_ingot" },
-    "E": { "item": "zps:space_metal_ingot" },
-    "F": { "item": "zps:space_metal_ingot" },
+    "D": { "tag": "forge:ingots/space_metal" },
+    "E": { "tag": "forge:ingots/space_metal" },
+    "F": { "tag": "forge:ingots/space_metal" },
     "G": { "item": "minecraft:quartz" },
     "H": { "item": "minecraft:quartz" },
     "I": { "item": "minecraft:quartz" }

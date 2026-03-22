@@ -6,7 +6,7 @@
       "item": "minecraft:quartz"
     },
     "B": {
-      "item": "zps:space_metal_ingot"
+      "tag": "forge:ingots/space_metal"
     },
     "C": {
       "item": "zps:light_pipe_cable"

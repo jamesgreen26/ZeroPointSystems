@@ -3,7 +3,7 @@
   "category": "building",
   "key": {
     "R": {
-      "item": "zps:space_metal_rod"
+      "tag": "forge:rods/space_metal"
     }
   },
   "pattern": [

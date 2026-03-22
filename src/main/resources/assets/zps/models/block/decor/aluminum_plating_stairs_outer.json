@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/outer_stairs",
+  "textures": {
+    "bottom": "zps:block/decor/aluminum_plating",
+    "top": "zps:block/decor/aluminum_plating",
+    "side": "zps:block/decor/aluminum_plating"
+  }
+}

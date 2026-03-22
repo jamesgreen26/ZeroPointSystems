@@ -2,12 +2,12 @@
   "type": "minecraft:crafting_shaped",
   "category": "functional",
   "key": {
-    "A": { "item": "zps:space_metal_ingot" },
-    "B": { "item": "zps:space_metal_ingot" },
+    "A": { "tag": "forge:ingots/space_metal" },
+    "B": { "tag": "forge:ingots/space_metal" },
     "D": { "item": "zps:cable" },
     "E": { "item": "minecraft:lever" },
-    "G": { "item": "zps:space_metal_ingot" },
-    "H": { "item": "zps:space_metal_ingot" }
+    "G": { "tag": "forge:ingots/space_metal" },
+    "H": { "tag": "forge:ingots/space_metal" }
   },
   "pattern": [
     "AB ",

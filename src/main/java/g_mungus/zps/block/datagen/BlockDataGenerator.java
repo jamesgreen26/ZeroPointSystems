@@ -17,6 +17,8 @@ public class BlockDataGenerator {
     static {
         blocksToDatagen.put("space_plating", List.of(BlockType.simple, BlockType.stairs, BlockType.slab, BlockType.wall));
         blocksToDatagen.put("riveted_space_plating", List.of(BlockType.simple, BlockType.stairs, BlockType.slab, BlockType.wall));
+        blocksToDatagen.put("aluminum_plating", List.of(BlockType.simple, BlockType.stairs, BlockType.slab, BlockType.wall));
+
         blocksToDatagen.put("red_space_plating", List.of(BlockType.simple, BlockType.stairs, BlockType.slab, BlockType.wall));
         blocksToDatagen.put("orange_space_plating", List.of(BlockType.simple, BlockType.stairs, BlockType.slab, BlockType.wall));
         blocksToDatagen.put("yellow_space_plating", List.of(BlockType.simple, BlockType.stairs, BlockType.slab, BlockType.wall));
@@ -38,6 +40,7 @@ public class BlockDataGenerator {
         blocksToDatagen.put("light_gray_space_plating", List.of(BlockType.simple, BlockType.stairs, BlockType.slab, BlockType.wall));
         blocksToDatagen.put("chrome_space_plating", List.of(BlockType.simple, BlockType.stairs, BlockType.slab, BlockType.wall));
         blocksToDatagen.put("agate_space_plating", List.of(BlockType.simple, BlockType.stairs, BlockType.slab, BlockType.wall));
+
     }
 
 

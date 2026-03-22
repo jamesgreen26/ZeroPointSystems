@@ -192,6 +192,10 @@ public class ModBlocks {
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.RAW_IRON_BLOCK)
             )
     );
+    public static final RegistryObject<Block> ALUMINUM_PLATING = BLOCKS.register("aluminum_plating",
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.COPPER_BLOCK)
+            )
+    );
 
 
 /// DECOR BLOCKS
@@ -310,7 +314,8 @@ public class ModBlocks {
 
     public static final RegistryObject<Block> RIVETED_SPACE_PLATING = BLOCKS.register("riveted_space_plating",
             () -> new Block(BlockBehaviour.Properties.of()
-                    .strength(3.0f)
+                    .strength(4.0f)
+                    .explosionResistance(6.0f)
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.METAL)
             )

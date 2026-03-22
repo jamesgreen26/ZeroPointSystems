@@ -3,7 +3,7 @@
   "category": "building",
   "key": {
     "B": {
-      "item": "zps:space_metal_ingot"
+      "tag": "forge:ingots/space_metal"
     },
     "R": {
       "item": "zps:space_metal_mesh"

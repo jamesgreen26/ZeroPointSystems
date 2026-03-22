@@ -75,7 +75,11 @@
     "zps:agate_space_plating",
     "zps:agate_space_plating_stairs",
     "zps:agate_space_plating_slab",
-    "zps:agate_space_plating_wall"
+    "zps:agate_space_plating_wall",
+    "zps:aluminum_plating",
+    "zps:aluminum_plating_stairs",
+    "zps:aluminum_plating_slab",
+    "zps:aluminum_plating_wall"
   ],
   "replace": false
 }

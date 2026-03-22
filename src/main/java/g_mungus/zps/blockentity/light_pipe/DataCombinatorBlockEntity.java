@@ -101,6 +101,7 @@ public class DataCombinatorBlockEntity extends NetworkTerminalImpl implements Li
 
     private boolean hasSender(Level level, int channel) {
         for (NetworkNode terminal : getTerminals(channel)) {
+            if (terminal.pos().equals(getBlockPos())) continue;
             BlockEntity be = level.getBlockEntity(terminal.pos());
             if (be instanceof LightPipeDataSender) {
                 return true;

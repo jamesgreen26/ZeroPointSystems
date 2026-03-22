@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "A": {
+      "item": "minecraft:piston"
+    },
+    "B": {
+      "tag": "forge:ingots/space_metal"
+    },
+    "C": {
+      "item": "zps:light_pipe_cable"
+    }
+  },
+  "pattern": [
+    "BBB",
+    "CAC",
+    "BBB"
+  ],
+  "result": {
+    "item": "zps:data_combinator",
+    "count": 1
+  },
+  "show_notification": true
+}

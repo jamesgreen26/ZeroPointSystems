@@ -9,6 +9,7 @@ import g_mungus.zps.entity.ModEntities;
 import g_mungus.zps.item.ModCreativeTabs;
 import g_mungus.zps.item.ModItems;
 
+import g_mungus.zps.gametest.TextDisplayGameTests;
 import g_mungus.zps.networking.ZPSGamePackets;
 import g_mungus.zps.painting.ZPSPaintings;
 import net.minecraft.resources.ResourceLocation;
@@ -19,6 +20,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.event.RegisterGameTestsEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +46,7 @@ public final class ZPSMod {
 
         // Register common setup event
         modEventBus.addListener(this::commonSetup);
+        modEventBus.addListener(ZPSMod::registerGameTests);
 
         DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> ZPSPonderPlugin::registerPlugin);
 
@@ -56,5 +59,9 @@ public final class ZPSMod {
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         ZPSGamePackets.register();
+    }
+
+    private static void registerGameTests(RegisterGameTestsEvent event) {
+        event.register(TextDisplayGameTests.class);
     }
 }

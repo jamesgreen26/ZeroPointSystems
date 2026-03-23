@@ -1,7 +1,19 @@
 plugins {
-    id 'dev.architectury.loom' version '1.10-SNAPSHOT'
     id 'maven-publish'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'net.neoforged.moddev.legacyforge' version '2.0.137'
+}
+
+configurations {
+    // Client-only mods: gets the Mojang-mapped attribute so ModDevGradle's
+    // remapping transform is applied, matching what modRuntimeOnly receives.
+    clientOnlyMods {
+        attributes {
+            attribute(
+                Attribute.of("net.neoforged.moddevgradle.legacy.minecraft_mappings.v2", Named),
+                objects.named(Named, "named")
+            )
+        }
+    }
 }
 
 group = project.maven_group
@@ -11,35 +23,73 @@ base {
     archivesName = project.archives_name
 }
 
-loom {
-    silentMojangMappingsLicense()
+legacyForge {
+    version = forge_version
 
-    forge {
-        mixinConfig 'zps.mixins.json'
+    runs {
+        client {
+            client()
+        }
+        server {
+            server()
+        }
+        data {
+            data()
+        }
+        gameTestServer {
+            type = "gameTestServer"
+            systemProperty 'forge.enabledGameTestNamespaces', 'zps'
+        }
+    }
+
+    mods {
+        zps {
+            sourceSet sourceSets.main
+        }
     }
 }
 
+mixin {
+    add sourceSets.main, "zps.mixins.refmap.json"
+    config 'zps.mixins.json'
+}
+
+jar {
+    // Merge FreeTTS and jsapi contents directly into the jar root so that
+    // ServiceLoader-based voice registration works (replicates shadow mergeServiceFiles).
+    from(zipTree('libs/jsapi.jar')) {
+        exclude 'META-INF/MANIFEST.MF'
+        exclude 'META-INF/*.SF'
+        exclude 'META-INF/*.DSA'
+        exclude 'META-INF/*.RSA'
+    }
+    from(zipTree('libs/freetts.jar')) {
+        exclude 'META-INF/MANIFEST.MF'
+        exclude 'META-INF/*.SF'
+        exclude 'META-INF/*.DSA'
+        exclude 'META-INF/*.RSA'
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    manifest.attributes([
+        "MixinConfigs": "zps.mixins.json"
+    ])
+}
+
 repositories {
-    // Add repositories to retrieve artifacts from in here.
-    // You should only use this when depending on other mods because
-    // Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-    // See https://docs.gradle.org/current/userguide/declaring_repositories.html
-    // for more information about repositories.
     mavenLocal()
     mavenCentral()
 
     maven { url = "https://maven.createmod.net" }
-    maven {url = "https://api.modrinth.com/maven"}
+    maven { url = "https://api.modrinth.com/maven" }
     maven { url = "https://maven.ithundxr.dev/mirror" }
     flatDir {
         dirs 'libs'
     }
     maven {
-        // location of the maven that hosts JEI files since January 2023
         name = "Jared's maven"
         url = "https://maven.blamejared.com/"
     }
-
     maven {
         name = "Valkyrien Skies Internal"
         url = 'https://maven.valkyrienskies.org'
@@ -49,53 +99,75 @@ repositories {
     }
 }
 
-configurations {
-    shadow
-    implementation.extendsFrom(shadow)
-}
-
 dependencies {
-    minecraft "net.minecraft:minecraft:$project.minecraft_version"
-    mappings loom.officialMojangMappings()
-    forge "net.minecraftforge:forge:$project.forge_version"
+    annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
 
-    implementation("io.github.llamalad7:mixinextras-common:0.5.0")
-    implementation("io.github.llamalad7:mixinextras-forge:0.5.0")
+    implementation(annotationProcessor("io.github.llamalad7:mixinextras-common:0.5.0"))
+    jarJar(implementation("io.github.llamalad7:mixinextras-forge:0.5.0")) {
+        version {
+            strictly "[0.5.0,)"
+            prefer "0.5.0"
+        }
+    }
 
-    annotationProcessor("io.github.llamalad7:mixinextras-common:0.5.0")
+    // Fusion is a client-only visual mod — not needed on server or gameTestServer
+    clientOnlyMods("maven.modrinth:fusion-connected-textures:1.2.12-forge-mc1.20.1")
 
-    include("io.github.llamalad7:mixinextras-forge:0.5.0")
+    jarJar(modImplementation("ace.actually.radios:radios:1.2.0")) {
+        version {
+            strictly "[1.2.0,)"
+            prefer "1.2.0"
+        }
+    }
 
-    modImplementation("maven.modrinth:fusion-connected-textures:1.2.12-forge-mc1.20.1")
-    include(modImplementation("ace.actually.radios:radios:1.2.0"))
-
-
-    // TTS
-    shadow("javax.speech:jsapi:1.0")
-    forgeRuntimeLibrary("javax.speech:jsapi:1.0")
-
-    shadow("com.sun.speech.freetts:freetts:1.2")
-    forgeRuntimeLibrary("com.sun.speech.freetts:freetts:1.2")
-
+    // TTS — local jars; contents are merged directly into the mod jar via the jar task below
+    implementation(files('libs/jsapi.jar', 'libs/freetts.jar'))
 
     modImplementation("com.simibubi.create:create-$minecraft_version:$create_version:slim") { transitive = false }
-    modImplementation("com.tterrag.registrate:Registrate:$registrate_version")
+
+    jarJar(modImplementation("com.tterrag.registrate:Registrate:$registrate_version")) {
+        version {
+            strictly "[$registrate_version,)"
+            prefer "$registrate_version"
+        }
+    }
 
     modRuntimeOnly("mezz.jei:jei-1.20.1-forge:15.20.0.129")
     modRuntimeOnly("maven.modrinth:spark:1.10.53-forge")
 
-    compileOnly ("org.valkyrienskies.core:api:1.1.0+b714ef303e") {transitive = false}
-    compileOnly ("org.joml:joml-primitives:1.10.0")
+    compileOnly("org.valkyrienskies.core:api:1.1.0+b714ef303e") { transitive = false }
+    compileOnly("org.joml:joml-primitives:1.10.0")
     modCompileOnly("maven.modrinth:valkyrien-skies:1.20.1-forge-2.4.10")
 
     //noinspection DifferentStdlibGradleVersion
-    api "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10"
-    api "org.jetbrains.kotlin:kotlin-reflect:1.9.10"
-    include (modImplementation("net.createmod.ponder:Ponder-Forge-${minecraft_version}:${ponder_version}"))
-    include (modImplementation("dev.engine-room.flywheel:flywheel-forge-${minecraft_version}:${flywheel_version}"))
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:1.9.10")
 
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.0'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.0'
+    jarJar(modImplementation("net.createmod.ponder:Ponder-Forge-${minecraft_version}:${ponder_version}")) {
+        version {
+            strictly "[${ponder_version},)"
+            prefer "${ponder_version}"
+        }
+    }
+    jarJar(modImplementation("dev.engine-room.flywheel:flywheel-forge-${minecraft_version}:${flywheel_version}")) {
+        version {
+            strictly "[${flywheel_version},)"
+            prefer "${flywheel_version}"
+        }
+    }
+
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.0")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.0")
+}
+
+afterEvaluate {
+    tasks.named('runClient') {
+        classpath += configurations.clientOnlyMods.incoming.files
+    }
+}
+
+test {
+    useJUnitPlatform()
 }
 
 sourceSets {
@@ -104,15 +176,14 @@ sourceSets {
             srcDir 'src/main/resources_extra'
         }
     }
+    test {
+        compileClasspath += sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.runtimeClasspath
+    }
 }
 
 processResources {
     inputs.property 'version', project.version
-
-    from('resources_extra') {
-        into ''
-        include '**/*'
-    }
 
     filesMatching('META-INF/mods.toml') {
         expand version: project.version
@@ -120,9 +191,6 @@ processResources {
 }
 
 java {
-    // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-    // if it is present.
-    // If you remove this line, sources will not be generated.
     withSourcesJar()
 
     sourceCompatibility = JavaVersion.VERSION_17
@@ -131,36 +199,4 @@ java {
 
 tasks.withType(JavaCompile).configureEach {
     it.options.release = 17
-}
-
-test {
-    useJUnitPlatform()
-
-    // NOTE: Mixin agent cannot be used here because Forge mixins require ModLauncher
-    // infrastructure that isn't available in plain JUnit tests. See MIXIN_TESTING_STRATEGY.md
-    // for explanation of our testing approach.
-}
-
-shadowJar {
-    // Merge FreeTTS jar contents into the root of the output jar
-    configurations = [project.configurations.shadow]
-
-    // Merge service files so FreeTTS voice registration works
-    mergeServiceFiles()
-
-    // Don't relocate - FreeTTS needs its original package paths
-    // Exclude duplicate META-INF signatures that would break jar validation
-    exclude 'META-INF/*.SF'
-    exclude 'META-INF/*.DSA'
-    exclude 'META-INF/*.RSA'
-    exclude 'META-INF/*.MF'
-
-    archiveClassifier.set('shadow-dev')
-}
-
-// Make the remapJar task use the shadow jar as its input
-remapJar {
-    dependsOn shadowJar
-    inputFile = shadowJar.archiveFile
-    archiveClassifier.set('')
 }

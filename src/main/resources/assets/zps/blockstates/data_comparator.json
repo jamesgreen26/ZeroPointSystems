@@ -63,6 +63,38 @@
     {
       "when": { "facing": "east", "comparison_mode": "contains", "powered": "true" },
       "apply": { "model": "zps:block/data_comparator_contains_powered", "y": 270 }
+    },
+    {
+      "when": { "facing": "south", "comparison_mode": "greater_than", "powered": "false" },
+      "apply": { "model": "zps:block/data_comparator_greater_than" }
+    },
+    {
+      "when": { "facing": "west", "comparison_mode": "greater_than", "powered": "false" },
+      "apply": { "model": "zps:block/data_comparator_greater_than", "y": 90 }
+    },
+    {
+      "when": { "facing": "north", "comparison_mode": "greater_than", "powered": "false" },
+      "apply": { "model": "zps:block/data_comparator_greater_than", "y": 180 }
+    },
+    {
+      "when": { "facing": "east", "comparison_mode": "greater_than", "powered": "false" },
+      "apply": { "model": "zps:block/data_comparator_greater_than", "y": 270 }
+    },
+    {
+      "when": { "facing": "south", "comparison_mode": "greater_than", "powered": "true" },
+      "apply": { "model": "zps:block/data_comparator_greater_than_powered" }
+    },
+    {
+      "when": { "facing": "west", "comparison_mode": "greater_than", "powered": "true" },
+      "apply": { "model": "zps:block/data_comparator_greater_than_powered", "y": 90 }
+    },
+    {
+      "when": { "facing": "north", "comparison_mode": "greater_than", "powered": "true" },
+      "apply": { "model": "zps:block/data_comparator_greater_than_powered", "y": 180 }
+    },
+    {
+      "when": { "facing": "east", "comparison_mode": "greater_than", "powered": "true" },
+      "apply": { "model": "zps:block/data_comparator_greater_than_powered", "y": 270 }
     }
   ]
 }

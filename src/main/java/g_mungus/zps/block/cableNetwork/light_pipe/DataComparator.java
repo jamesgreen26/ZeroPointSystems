@@ -176,7 +176,7 @@ public class DataComparator extends CableComponentBlock implements EntityBlock {
     }
 
     public enum ComparisonMode implements StringRepresentable {
-        equals("equals"), contains("contains");
+        equals("equals"), contains("contains"), greater_than("greater_than");
 
         private final String name;
 
@@ -197,7 +197,21 @@ public class DataComparator extends CableComponentBlock implements EntityBlock {
             return switch (this) {
                 case equals -> a.equals(b);
                 case contains -> a.contains(b);
+                case greater_than -> {
+                    try {
+                        yield parseValue(a) > parseValue(b);
+                    } catch (NumberFormatException e) {
+                        yield false;
+                    }
+                }
             };
+        }
+
+        private static double parseValue(String s) {
+            String[] parts = s.split(" ");
+            if (parts.length == 0 || parts.length > 2) throw new NumberFormatException();
+            String num = parts.length == 1 ? parts[0].replaceAll("[^0-9.\\-eE]+$", "") : parts[0];
+            return Double.parseDouble(num);
         }
     }
 }

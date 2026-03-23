@@ -10,9 +10,11 @@ import net.minecraft.tags.PaintingVariantTags;
 import net.minecraft.world.entity.decoration.Painting;
 import net.minecraft.world.entity.decoration.PaintingVariant;
 import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
@@ -120,6 +122,13 @@ public class ModCreativeTabs {
 
     public static void register(IEventBus eventBus) {
         CREATIVE_MODE_TABS.register(eventBus);
+        eventBus.addListener(ModCreativeTabs::addToVanillaTabs);
+    }
+
+    public static void addToVanillaTabs(BuildCreativeModeTabContentsEvent event) {
+        if (event.getTabKey() == CreativeModeTabs.OP_BLOCKS) {
+            event.accept(ModItems.REDSTONE_WAND.get());
+        }
     }
 
     private static void addAll(CreativeModeTab.Output output, RegistryObject<?>... items) {

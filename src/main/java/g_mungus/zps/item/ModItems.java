@@ -4,6 +4,7 @@ import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Rarity;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
@@ -149,6 +150,9 @@ public class ModItems {
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> VERDITE_SPOOL = ITEMS.register("verdite_spool",
             () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<RedstoneWandItem> REDSTONE_WAND = ITEMS.register("redstone_wand",
+            () -> new RedstoneWandItem(new Item.Properties().rarity(Rarity.EPIC).stacksTo(1)));
 
 /// DECOR ITEMS
 

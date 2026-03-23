@@ -33,14 +33,9 @@ public class Channels {
     public static final int PAIR_A = 14;
     public static final int PAIR_B = 15;
 
-    public static final int TRIPLE_A = 28;
-    public static final int TRIPLE_B = 29;
-    public static final int TRIPLE_C = 30;
-
     public static int getInitialChannel(int channelCount) {
         switch (channelCount) {
             case 2 -> { return PAIR_A; }
-            case 3 -> { return TRIPLE_A; }
             case 4 -> { return QUAD_1; }
             case 8 -> { return OCT_A; }
             case 12 -> { return DOD_A; }
@@ -51,7 +46,6 @@ public class Channels {
     public static int getFinalChannel(int channelCount) {
         switch (channelCount) {
             case 2 -> { return PAIR_B; }
-            case 3 -> { return TRIPLE_C; }
             case 4 -> { return QUAD_4; }
             case 8 -> { return OCT_H; }
             case 12 -> { return DOD_L; }

@@ -67,9 +67,6 @@ public class ModItems {
     public static final RegistryObject<Item> DATA_COMPARATOR = ITEMS.register("data_comparator",
             () -> new BlockItem(ModBlocks.DATA_COMPARATOR.get(), new Item.Properties()));
 
-    public static final RegistryObject<Item> DATA_COMBINATOR = ITEMS.register("data_combinator",
-            () -> new BlockItem(ModBlocks.DATA_COMBINATOR.get(), new Item.Properties()));
-
     public static final RegistryObject<Item> TEXT_DISPLAY = ITEMS.register("text_display",
             () -> new BlockItem(ModBlocks.TEXT_DISPLAY.get(), new Item.Properties()));
 

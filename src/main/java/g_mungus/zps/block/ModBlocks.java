@@ -143,12 +143,6 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
 
-    public static final RegistryObject<Block> DATA_COMBINATOR = BLOCKS.register("data_combinator",
-            () -> new DataCombinator(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
-                    .strength(2.0f)
-                    .requiresCorrectToolForDrops()
-                    .noOcclusion()));
-
     public static final RegistryObject<Block> SERIAL_BUS = BLOCKS.register("serial_bus",
             () -> new SerialBusBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(2.0f)

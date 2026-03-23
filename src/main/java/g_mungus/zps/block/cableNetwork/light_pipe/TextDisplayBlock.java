@@ -194,7 +194,7 @@ public class TextDisplayBlock extends CableComponentBlock implements EntityBlock
 
         do {
             needsRecalculation = false;
-            layoutResult = resolveLayoutFromPositions(pos, merged, left);
+            layoutResult = resolveLayoutFromPositions(pos, merged, left, layout);
             for(BlockPos block : layoutResult.blocks) {
                 if (block.equals(pos)) continue;
                 BlockState blockState = level.getBlockState(block);
@@ -252,7 +252,7 @@ public class TextDisplayBlock extends CableComponentBlock implements EntityBlock
         }
     }
 
-    private LayoutResult resolveLayoutFromPositions(BlockPos origin, Set<BlockPos> positions, Vec3i left) {
+    private LayoutResult resolveLayoutFromPositions(BlockPos origin, Set<BlockPos> positions, Vec3i left, DisplayLayout currentLayout) {
         BlockPos leftPos = origin.offset(left);
         BlockPos rightPos = origin.subtract(left);
 
@@ -278,16 +278,28 @@ public class TextDisplayBlock extends CableComponentBlock implements EntityBlock
             }
         }
 
-        // Fallback to 2x1 / 1x2 / single (unchanged logic)
-        boolean hasLeft = positions.contains(origin.subtract(left));
+        // Fallback to 2x1 / 1x2 / single.
+        // If this block is already part of a vertical 1x2, prefer keeping the
+        // vertical merge over switching to a horizontal one when a side neighbour
+        // arrives (and vice-versa for a horizontal 2x1).
+        boolean hasLeft  = positions.contains(origin.subtract(left));
         boolean hasRight = positions.contains(origin.offset(left));
-        boolean hasUp = positions.contains(origin.below());
-        boolean hasDown = positions.contains(origin.above());
+        boolean hasUp    = positions.contains(origin.below());
+        boolean hasDown  = positions.contains(origin.above());
 
-        if (hasLeft) return new LayoutResult(DisplayLayout.LEFT_2x1, Set.of(origin, origin.subtract(left)));
-        if (hasRight) return new LayoutResult(DisplayLayout.RIGHT_2x1, Set.of(origin, origin.offset(left)));
-        if (hasUp) return new LayoutResult(DisplayLayout.TOP_1x2, Set.of(origin, origin.below()));
-        if (hasDown) return new LayoutResult(DisplayLayout.BOTTOM_1x2, Set.of(origin, origin.above()));
+        boolean preferVertical = currentLayout == DisplayLayout.TOP_1x2 || currentLayout == DisplayLayout.BOTTOM_1x2;
+
+        if (preferVertical) {
+            if (hasUp)    return new LayoutResult(DisplayLayout.TOP_1x2,    Set.of(origin, origin.below()));
+            if (hasDown)  return new LayoutResult(DisplayLayout.BOTTOM_1x2, Set.of(origin, origin.above()));
+            if (hasLeft)  return new LayoutResult(DisplayLayout.LEFT_2x1,   Set.of(origin, origin.subtract(left)));
+            if (hasRight) return new LayoutResult(DisplayLayout.RIGHT_2x1,  Set.of(origin, origin.offset(left)));
+        } else {
+            if (hasLeft)  return new LayoutResult(DisplayLayout.LEFT_2x1,   Set.of(origin, origin.subtract(left)));
+            if (hasRight) return new LayoutResult(DisplayLayout.RIGHT_2x1,  Set.of(origin, origin.offset(left)));
+            if (hasUp)    return new LayoutResult(DisplayLayout.TOP_1x2,    Set.of(origin, origin.below()));
+            if (hasDown)  return new LayoutResult(DisplayLayout.BOTTOM_1x2, Set.of(origin, origin.above()));
+        }
 
         return new LayoutResult(DisplayLayout.SINGLE_1x1, Set.of(origin));
     }

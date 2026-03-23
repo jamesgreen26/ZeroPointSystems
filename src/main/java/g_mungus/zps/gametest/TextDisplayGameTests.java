@@ -179,6 +179,148 @@ public class TextDisplayGameTests {
     }
 
     // -------------------------------------------------------------------------
+    // 2×3 grid — two stacked 2×1 rows joined by a middle row
+    // -------------------------------------------------------------------------
+
+    /**
+     * Build a 2×3 grid by:
+     *   1. Placing a 2×1 at y=1  (A, B)
+     *   2. Placing another 2×1 at y=3  (C, D) — one block of air between them
+     *   3. Filling the gap at y=2  (E, F)
+     *
+     * Grid layout (FACING=NORTH, left=east):
+     *   C  D   y=3  (top)
+     *   E  F   y=2  (middle)
+     *   A  B   y=1  (bottom)
+     *
+     * The algorithm cannot form a single 2×3 display, so it must split into a
+     * 2×2 + 2×1.  Either split is acceptable:
+     *   • Config 1 — bottom 2×2 {A,B,E,F} + top 2×1 {C,D}
+     *   • Config 2 — top 2×2 {C,D,E,F}    + bottom 2×1 {A,B}
+     *
+     * The test fails if neither valid configuration is present (e.g. any block
+     * ends up SINGLE_1x1, or the two 2×2 blocks disagree on membership).
+     */
+    @GameTest(template = TEMPLATE)
+    public static void twoByThreeGrid_isConsistent(GameTestHelper helper) {
+        BlockPos posA = new BlockPos(3, 1, 3); // bottom-right
+        BlockPos posB = new BlockPos(4, 1, 3); // bottom-left  (posA.east())
+        BlockPos posE = new BlockPos(3, 2, 3); // middle-right (posA.above())
+        BlockPos posF = new BlockPos(4, 2, 3); // middle-left  (posB.above())
+        BlockPos posC = new BlockPos(3, 3, 3); // top-right    (posE.above())
+        BlockPos posD = new BlockPos(4, 3, 3); // top-left     (posF.above())
+
+        // Place bottom 2×1, then top 2×1, then fill the gap
+        helper.setBlock(posA, display(Direction.NORTH));
+        helper.setBlock(posB, display(Direction.NORTH));
+        helper.setBlock(posC, display(Direction.NORTH));
+        helper.setBlock(posD, display(Direction.NORTH));
+        helper.setBlock(posE, display(Direction.NORTH));
+        helper.setBlock(posF, display(Direction.NORTH));
+
+        DisplayLayout layoutA = helper.getBlockState(posA).getValue(TextDisplayBlock.LAYOUT);
+        DisplayLayout layoutB = helper.getBlockState(posB).getValue(TextDisplayBlock.LAYOUT);
+        DisplayLayout layoutE = helper.getBlockState(posE).getValue(TextDisplayBlock.LAYOUT);
+        DisplayLayout layoutF = helper.getBlockState(posF).getValue(TextDisplayBlock.LAYOUT);
+        DisplayLayout layoutC = helper.getBlockState(posC).getValue(TextDisplayBlock.LAYOUT);
+        DisplayLayout layoutD = helper.getBlockState(posD).getValue(TextDisplayBlock.LAYOUT);
+
+        // Config 1: bottom 2×2 (A,B,E,F) + top 2×1 (C,D)
+        boolean config1 = layoutA == DisplayLayout.BOTTOM_RIGHT_2x2
+                       && layoutB == DisplayLayout.BOTTOM_LEFT_2x2
+                       && layoutE == DisplayLayout.TOP_RIGHT_2x2
+                       && layoutF == DisplayLayout.TOP_LEFT_2x2
+                       && layoutC == DisplayLayout.RIGHT_2x1
+                       && layoutD == DisplayLayout.LEFT_2x1;
+
+        // Config 2: top 2×2 (C,D,E,F) + bottom 2×1 (A,B)
+        boolean config2 = layoutA == DisplayLayout.RIGHT_2x1
+                       && layoutB == DisplayLayout.LEFT_2x1
+                       && layoutE == DisplayLayout.BOTTOM_RIGHT_2x2
+                       && layoutF == DisplayLayout.BOTTOM_LEFT_2x2
+                       && layoutC == DisplayLayout.TOP_RIGHT_2x2
+                       && layoutD == DisplayLayout.TOP_LEFT_2x2;
+
+        if (!config1 && !config2) {
+            helper.fail(String.format(
+                "2x3 grid ended up in an invalid state. Layouts: A=%s B=%s E=%s F=%s C=%s D=%s",
+                layoutA, layoutB, layoutE, layoutF, layoutC, layoutD));
+            return;
+        }
+        helper.succeed();
+    }
+
+    // -------------------------------------------------------------------------
+    // 3×2 grid — two stacked 1×2 pillars joined by a middle column
+    // -------------------------------------------------------------------------
+
+    /**
+     * Build a 3×2 grid by:
+     *   1. Placing a 1×2 pillar at x=3  (A bottom, B top)
+     *   2. Placing another 1×2 pillar at x=5  (C bottom, D top) — one column gap
+     *   3. Filling the gap at x=4  (E bottom, F top)
+     *
+     * Grid layout (FACING=NORTH, left=east/+X, viewed from front):
+     *   B  F  D   y=2  (top)
+     *   A  E  C   y=1  (bottom)
+     *
+     * The algorithm cannot form a single 3×2 display, so it must split into a
+     * 2×2 + 1×2.  Either split is acceptable:
+     *   • Config 1 — left  2×2 {A,B,E,F} + right 1×2 {C,D}
+     *   • Config 2 — right 2×2 {E,F,C,D} + left  1×2 {A,B}
+     *
+     * The test fails if neither valid configuration is present.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void threeByTwoGrid_isConsistent(GameTestHelper helper) {
+        BlockPos posA = new BlockPos(3, 1, 3); // left-bottom
+        BlockPos posB = new BlockPos(3, 2, 3); // left-top    (posA.above())
+        BlockPos posC = new BlockPos(5, 1, 3); // right-bottom
+        BlockPos posD = new BlockPos(5, 2, 3); // right-top   (posC.above())
+        BlockPos posE = new BlockPos(4, 1, 3); // mid-bottom  (posA.east())
+        BlockPos posF = new BlockPos(4, 2, 3); // mid-top     (posB.east())
+
+        // Place left 1×2, then right 1×2, then fill the gap
+        helper.setBlock(posA, display(Direction.NORTH));
+        helper.setBlock(posB, display(Direction.NORTH));
+        helper.setBlock(posC, display(Direction.NORTH));
+        helper.setBlock(posD, display(Direction.NORTH));
+        helper.setBlock(posE, display(Direction.NORTH));
+        helper.setBlock(posF, display(Direction.NORTH));
+
+        DisplayLayout layoutA = helper.getBlockState(posA).getValue(TextDisplayBlock.LAYOUT);
+        DisplayLayout layoutB = helper.getBlockState(posB).getValue(TextDisplayBlock.LAYOUT);
+        DisplayLayout layoutC = helper.getBlockState(posC).getValue(TextDisplayBlock.LAYOUT);
+        DisplayLayout layoutD = helper.getBlockState(posD).getValue(TextDisplayBlock.LAYOUT);
+        DisplayLayout layoutE = helper.getBlockState(posE).getValue(TextDisplayBlock.LAYOUT);
+        DisplayLayout layoutF = helper.getBlockState(posF).getValue(TextDisplayBlock.LAYOUT);
+
+        // Config 1: left 2×2 {A,B,E,F} + right 1×2 {C,D}
+        boolean config1 = layoutA == DisplayLayout.BOTTOM_RIGHT_2x2
+                       && layoutB == DisplayLayout.TOP_RIGHT_2x2
+                       && layoutE == DisplayLayout.BOTTOM_LEFT_2x2
+                       && layoutF == DisplayLayout.TOP_LEFT_2x2
+                       && layoutC == DisplayLayout.BOTTOM_1x2
+                       && layoutD == DisplayLayout.TOP_1x2;
+
+        // Config 2: right 2×2 {E,F,C,D} + left 1×2 {A,B}
+        boolean config2 = layoutA == DisplayLayout.BOTTOM_1x2
+                       && layoutB == DisplayLayout.TOP_1x2
+                       && layoutE == DisplayLayout.BOTTOM_RIGHT_2x2
+                       && layoutF == DisplayLayout.TOP_RIGHT_2x2
+                       && layoutC == DisplayLayout.BOTTOM_LEFT_2x2
+                       && layoutD == DisplayLayout.TOP_LEFT_2x2;
+
+        if (!config1 && !config2) {
+            helper.fail(String.format(
+                "3x2 grid ended up in an invalid state. Layouts: A=%s B=%s E=%s F=%s C=%s D=%s",
+                layoutA, layoutB, layoutE, layoutF, layoutC, layoutD));
+            return;
+        }
+        helper.succeed();
+    }
+
+    // -------------------------------------------------------------------------
     // 1×2 pillar — side neighbours must not break the merge
     // -------------------------------------------------------------------------
 

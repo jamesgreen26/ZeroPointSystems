@@ -199,9 +199,21 @@ public class TextDisplayBlock extends CableComponentBlock implements EntityBlock
                 if (block.equals(pos)) continue;
                 BlockState blockState = level.getBlockState(block);
                 DisplayLayout displayLayout = blockState.getValue(LAYOUT);
-                List<BlockPos> positions = getExistingDisplayPositions(block, displayLayout, left);
-                if (!layoutResult.blocks.containsAll(positions)) {
-                    positions.forEach(merged::remove);
+                List<BlockPos> blockExisting = getExistingDisplayPositions(block, displayLayout, left);
+                if (!layoutResult.blocks.containsAll(blockExisting)) {
+                    // If pos is already a member of block's existing group, adopt
+                    // that group rather than discarding it.  This handles the case
+                    // where a freshly-placed boundary block (e.g. the centre column
+                    // of a 3×2 grid) finds a competing 2×2 first, but another block
+                    // has already claimed it in a different 2×2.
+                    if (blockExisting.contains(pos)) {
+                        Set<BlockPos> adoptSet = new HashSet<>(blockExisting);
+                        LayoutResult adopted = resolveLayoutFromPositions(pos, adoptSet, left, layout);
+                        if (isGroupValid(adopted.blocks, pos, level, left)) {
+                            return state.setValue(LAYOUT, adopted.layout);
+                        }
+                    }
+                    blockExisting.forEach(merged::remove);
                     merged.add(pos);
                     needsRecalculation = true;
                 }
@@ -209,6 +221,22 @@ public class TextDisplayBlock extends CableComponentBlock implements EntityBlock
         } while (needsRecalculation);
 
         return state.setValue(LAYOUT, layoutResult.layout);
+    }
+
+    /**
+     * Returns true if every member of {@code group} (other than {@code origin})
+     * has existing display positions that are fully contained within the group.
+     * Used to validate a candidate adoption group before committing to it.
+     */
+    private boolean isGroupValid(Set<BlockPos> group, BlockPos origin, LevelAccessor level, Vec3i left) {
+        for (BlockPos member : group) {
+            if (member.equals(origin)) continue;
+            BlockState memberState = level.getBlockState(member);
+            if (!memberState.is(this) || !memberState.hasProperty(LAYOUT)) return false;
+            List<BlockPos> memberExisting = getExistingDisplayPositions(member, memberState.getValue(LAYOUT), left);
+            if (!group.containsAll(memberExisting)) return false;
+        }
+        return true;
     }
 
 
@@ -256,9 +284,12 @@ public class TextDisplayBlock extends CableComponentBlock implements EntityBlock
         BlockPos leftPos = origin.offset(left);
         BlockPos rightPos = origin.subtract(left);
 
-        // All possible 2x2 corners relative to this block
+        // All possible 2x2 corners relative to this block.
+        // "below" halves are checked before "above" halves so that when two
+        // competing 2×2 groups share a block (e.g. a 2×3 grid), both sides of
+        // the boundary prefer the lower group and agree on the same layout.
         BlockPos[] corners = new BlockPos[] {
-                origin, leftPos, leftPos.above(), origin.above(), rightPos.above(), rightPos, rightPos.below(), origin.below(), leftPos.below()
+                origin, leftPos, leftPos.below(), origin.below(), rightPos.below(), rightPos, rightPos.above(), origin.above(), leftPos.above()
         };
 
         for (BlockPos corner : corners) {

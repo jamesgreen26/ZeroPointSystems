@@ -42,8 +42,8 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver {
                 );
             }
         }
-        if (isFacingDisplayLink && level instanceof ServerLevel) {
-            CreateCompat.tickDisplayLinkSource(level, getAffectedBlockPos());
+        if (isFacingDisplayLink && level instanceof ServerLevel serverLevel) {
+            CreateCompat.tickDisplayLinkSource(serverLevel, getAffectedBlockPos());
         }
     }
 

@@ -14,7 +14,8 @@ import g_mungus.zps.compat.create.commands.CreateScriptExecutorMappers;
 import net.createmod.ponder.api.registration.PonderTagRegistrationHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.server.TickTask;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -41,10 +42,12 @@ public class CreateCompat {
         });
     }
 
-    public static void tickDisplayLinkSource(LevelAccessor level, BlockPos pos) {
-        if (level.getBlockEntity(pos) instanceof DisplayLinkBlockEntity displayLink) {
-            displayLink.updateGatheredData();
-        }
+    public static void tickDisplayLinkSource(ServerLevel level, BlockPos pos) {
+        level.getServer().tell(new TickTask(level.getServer().getTickCount() + 1, () -> {
+            if (level.getBlockEntity(pos) instanceof DisplayLinkBlockEntity displayLink) {
+                displayLink.updateGatheredData();
+            }
+        }));
     }
 
     public static void registerPonderTagEntries(@NotNull PonderTagRegistrationHelper<ResourceLocation> helper) {

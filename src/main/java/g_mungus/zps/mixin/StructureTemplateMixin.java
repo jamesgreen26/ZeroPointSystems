@@ -2,11 +2,9 @@ package g_mungus.zps.mixin;
 
 import com.llamalad7.mixinextras.sugar.Local;
 import g_mungus.zps.block.cableNetwork.core.CableNetworkComponent;
-import g_mungus.zps.blockentity.NetworkTerminal;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ServerLevelAccessor;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
@@ -39,7 +37,7 @@ public class StructureTemplateMixin {
     ) {
         BlockState state = p_230329_.getBlockState(blockEntity.getBlockPos());
         if (state.getBlock() instanceof CableNetworkComponent cableComponent && cableComponent.isTerminal()) {
-            cableComponent.updateSelfAndNeighbors(state, p_230329_.getLevel(), blockEntity.getBlockPos(), Blocks.AIR.defaultBlockState());
+            cableComponent.updateNetwork(blockEntity.getBlockPos(), p_230329_.getLevel());
         }
     }
 }

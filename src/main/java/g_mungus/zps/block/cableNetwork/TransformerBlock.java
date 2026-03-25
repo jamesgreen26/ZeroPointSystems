@@ -7,6 +7,8 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
@@ -115,6 +117,16 @@ public abstract class TransformerBlock extends CableBlock implements EntityBlock
             facing = facing.getOpposite();
         }
         return getNewBlockState(defaultBlockState().setValue(FACING, facing), context.getLevel(), context.getClickedPos());
+    }
+
+    @Override
+    public BlockState rotate(BlockState state, Rotation rotation) {
+        return super.rotate(state, rotation).setValue(FACING, rotation.rotate(state.getValue(FACING)));
+    }
+
+    @Override
+    public BlockState mirror(BlockState state, Mirror mirror) {
+        return state.rotate(mirror.getRotation(state.getValue(FACING)));
     }
 
     public static BlockPos getFacingPos(BlockPos pos, BlockState state) {

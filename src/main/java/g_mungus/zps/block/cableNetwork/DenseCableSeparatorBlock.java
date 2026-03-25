@@ -15,6 +15,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
@@ -87,6 +89,55 @@ public class DenseCableSeparatorBlock extends CableComponentBlock {
                 context.getLevel(),
                 context.getClickedPos()
         );
+    }
+
+    @Override
+    public BlockState rotate(BlockState state, Rotation rotation) {
+        // Rotate the six connection booleans
+        BlockState rotated = switch (rotation) {
+            case CLOCKWISE_90 -> state
+                    .setValue(NORTH, state.getValue(WEST))
+                    .setValue(EAST,  state.getValue(NORTH))
+                    .setValue(SOUTH, state.getValue(EAST))
+                    .setValue(WEST,  state.getValue(SOUTH));
+            case CLOCKWISE_180 -> state
+                    .setValue(NORTH, state.getValue(SOUTH))
+                    .setValue(EAST,  state.getValue(WEST))
+                    .setValue(SOUTH, state.getValue(NORTH))
+                    .setValue(WEST,  state.getValue(EAST));
+            case COUNTERCLOCKWISE_90 -> state
+                    .setValue(NORTH, state.getValue(EAST))
+                    .setValue(EAST,  state.getValue(SOUTH))
+                    .setValue(SOUTH, state.getValue(WEST))
+                    .setValue(WEST,  state.getValue(NORTH));
+            default -> state;
+        };
+        // Rotate FACING
+        Direction facing = state.getValue(FACING);
+        Direction newFacing = rotation.rotate(facing);
+        rotated = rotated.setValue(FACING, newFacing);
+        // For vertical FACING, adjust ROTATION to compensate for the world rotation
+        if (facing.getAxis() == Direction.Axis.Y) {
+            int steps = switch (rotation) {
+                case CLOCKWISE_90 -> 1;
+                case CLOCKWISE_180 -> 2;
+                case COUNTERCLOCKWISE_90 -> 3;
+                default -> 0;
+            };
+            // UP and DOWN have opposite handedness due to opposite cross-product orientation
+            if (facing == Direction.UP) steps = (4 - steps) % 4;
+            rotated = rotated.setValue(ROTATION, (state.getValue(ROTATION) + steps) % 4);
+        }
+        return rotated;
+    }
+
+    @Override
+    public BlockState mirror(BlockState state, Mirror mirror) {
+        if (mirror == Mirror.NONE) return state;
+        Direction facing = state.getValue(FACING);
+        // For vertical facing, chirality inversion cannot be expressed with ROTATION alone
+        if (facing.getAxis() == Direction.Axis.Y) return state;
+        return state.rotate(mirror.getRotation(facing));
     }
 
     @Override

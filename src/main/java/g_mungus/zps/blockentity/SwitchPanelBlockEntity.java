@@ -3,8 +3,11 @@ package g_mungus.zps.blockentity;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.SwitchPanelBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
+import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
+
+import java.util.List;
 
 public class SwitchPanelBlockEntity extends NetworkTerminalImpl implements RedstoneSendingTerminal{
     public SwitchPanelBlockEntity(BlockPos pos, BlockState state) {
@@ -25,5 +28,13 @@ public class SwitchPanelBlockEntity extends NetworkTerminalImpl implements Redst
         }
 
         return powered ? 15 : 0;
+    }
+
+
+    @Override
+    public void defineTerminals(List<NetworkNode> terminals, int channel) {
+        super.defineTerminals(terminals, channel);
+
+        updateSignal(level, channel);
     }
 }

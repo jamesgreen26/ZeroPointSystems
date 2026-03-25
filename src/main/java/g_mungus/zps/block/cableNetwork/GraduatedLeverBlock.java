@@ -27,7 +27,6 @@ import org.jetbrains.annotations.Nullable;
 public class GraduatedLeverBlock extends PanelBlock implements EntityBlock {
     public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final IntegerProperty POWER = BlockStateProperties.POWER;
-    public static final BooleanProperty CONNECTED = BooleanProperty.create("connected");
 
     public static final VoxelShape NORTH_SHAPE;
     public static final VoxelShape EAST_SHAPE;

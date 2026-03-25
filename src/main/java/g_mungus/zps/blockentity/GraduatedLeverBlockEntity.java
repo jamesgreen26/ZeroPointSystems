@@ -4,8 +4,11 @@ import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.GraduatedLeverBlock;
 import g_mungus.zps.block.cableNetwork.SwitchPanelBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
+import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
+
+import java.util.List;
 
 public class GraduatedLeverBlockEntity extends NetworkTerminalImpl implements RedstoneSendingTerminal{
     public GraduatedLeverBlockEntity(BlockPos pos, BlockState state) {
@@ -21,5 +24,12 @@ public class GraduatedLeverBlockEntity extends NetworkTerminalImpl implements Re
         }
 
         return power;
+    }
+
+    @Override
+    public void defineTerminals(List<NetworkNode> terminals, int channel) {
+        super.defineTerminals(terminals, channel);
+
+        updateSignal(level, channel);
     }
 }

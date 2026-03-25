@@ -28,9 +28,9 @@ public class JigsawStructureMixin {
             at = @At(
                     value = "INVOKE",
                     target = "Lcom/mojang/serialization/Codec;intRange(II)Lcom/mojang/serialization/Codec;",
-                    ordinal = 1 // first call = intRange(0, 128)
+                    ordinal = 1 // second call = intRange(0, 128)
             ),
-            index = 1 // second argument (the 7)
+            index = 1 // second argument (the 128)
     )
     private static int zps$increaseMaxDistanceLimit(int originalMax) {
         return 256;

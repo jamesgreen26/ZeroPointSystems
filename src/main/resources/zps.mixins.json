@@ -22,10 +22,12 @@
     "ClientboundCommandsPacketMixin",
     "LecternBlockEntityMixin",
     "ServerLevelMixin",
+    "StructureTemplateMixin",
     "WritableBookMixin",
     "WrittenBookMixin",
     "create.ScrollValueBehaviourAccessor",
-    "ponder.ConfigBaseMixin"  ],
+    "ponder.ConfigBaseMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }

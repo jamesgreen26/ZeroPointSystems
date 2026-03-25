@@ -37,7 +37,7 @@ public class StructureTemplateMixin {
             CallbackInfoReturnable<Boolean> cir,
             @Local(name = "blockentity1") BlockEntity blockEntity
     ) {
-        BlockState state = blockEntity.getBlockState();
+        BlockState state = p_230329_.getBlockState(blockEntity.getBlockPos());
         if (state.getBlock() instanceof CableNetworkComponent cableComponent && cableComponent.isTerminal()) {
             cableComponent.updateSelfAndNeighbors(state, p_230329_.getLevel(), blockEntity.getBlockPos(), Blocks.AIR.defaultBlockState());
         }

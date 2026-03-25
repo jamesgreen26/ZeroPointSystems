@@ -9,6 +9,7 @@ import g_mungus.zps.entity.ModEntities;
 import g_mungus.zps.item.ModCreativeTabs;
 import g_mungus.zps.item.ModItems;
 
+import g_mungus.zps.gametest.CableNetworkGameTests;
 import g_mungus.zps.gametest.TextDisplayGameTests;
 import g_mungus.zps.networking.ZPSGamePackets;
 import g_mungus.zps.painting.ZPSPaintings;
@@ -63,5 +64,6 @@ public final class ZPSMod {
 
     private static void registerGameTests(RegisterGameTestsEvent event) {
         event.register(TextDisplayGameTests.class);
+        event.register(CableNetworkGameTests.class);
     }
 }

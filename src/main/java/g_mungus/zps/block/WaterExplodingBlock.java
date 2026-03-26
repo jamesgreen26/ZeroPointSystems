@@ -2,6 +2,10 @@ package g_mungus.zps.block;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.*;
@@ -58,6 +62,12 @@ public class WaterExplodingBlock extends Block {
     }
 
     private static void explode(Level level, BlockPos center) {
+        for (int i = 0; i < 10; i++) {
+            level.addParticle(ParticleTypes.LAVA, center.getX(), center.getY(), center.getZ(), 0, 0, 0);
+        }
+        if (level instanceof ServerLevel serverLevel) {
+            serverLevel.playSound(null, center, SoundEvents.FIREWORK_ROCKET_TWINKLE, SoundSource.BLOCKS, 1.0f, 1.0f);
+        }
         level.explode(null, center.getX(), center.getY(), center.getZ(), 8f, Level.ExplosionInteraction.BLOCK);
     }
 

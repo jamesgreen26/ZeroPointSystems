@@ -39,7 +39,7 @@ public interface CableNetworkComponent {
     default void updateNetwork(BlockPos pos, Level level) {
         for (int initialChannel = Channels.getInitialChannel(getTotalChannelCount()); initialChannel <= Channels.getFinalChannel(getTotalChannelCount()); initialChannel++) {
             Queue<NetworkNode> toCheck = new ArrayDeque<>();
-            List<NetworkNode> checked = new ArrayList<>();
+            Set<NetworkNode> checked = new HashSet<>();
             List<NetworkNode> terminals = new ArrayList<>();
 
             toCheck.add(new NetworkNode(pos, initialChannel, this.isTerminal()));
@@ -49,6 +49,8 @@ public interface CableNetworkComponent {
 
                 if (checked.contains(current)) continue;
                 checked.add(current);
+
+                if (!level.isLoaded(current.pos())) continue;
 
                 if (current.terminal()) {
                     terminals.add(current);
@@ -78,7 +80,7 @@ public interface CableNetworkComponent {
 
     int getChannelCountForConnection(BlockPos self, BlockPos from, Level level);
 
-    default List<NetworkNode> getConnectedNodes(NetworkNode self, Level level, List<NetworkNode> exclude) {
+    default List<NetworkNode> getConnectedNodes(NetworkNode self, Level level, Set<NetworkNode> exclude) {
         List<NetworkNode> output = new ArrayList<>();
         List<BlockPos> neighbors = getConnectingNeighbors(self, level);
         neighbors.forEach(neighbor -> {

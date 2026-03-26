@@ -21,7 +21,6 @@
     "BlockInWorldMixin",
     "ClientboundCommandsPacketMixin",
     "ItemEntityMixin",
-    "JigsawStructureMixin",
     "LecternBlockEntityMixin",
     "ServerLevelMixin",
     "WritableBookMixin",

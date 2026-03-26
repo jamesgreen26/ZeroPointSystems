@@ -44,7 +44,7 @@ public class CreateCompat {
 
     public static void tickDisplayLinkSource(ServerLevel level, BlockPos pos) {
         level.getServer().tell(new TickTask(level.getServer().getTickCount() + 1, () -> {
-            if (level.getBlockEntity(pos) instanceof DisplayLinkBlockEntity displayLink) {
+            if (level.getBlockEntity(pos) instanceof DisplayLinkBlockEntity displayLink && !displayLink.isRemoved()) {
                 displayLink.updateGatheredData();
             }
         }));

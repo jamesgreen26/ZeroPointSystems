@@ -5,10 +5,10 @@
   "spawn_overrides": {},
   "start_pool": "zps:moon_base_start",
   "start_jigsaw_name": "zps:moon_base",
-  "size": 20,
+  "size": 7,
   "project_start_to_heightmap": "WORLD_SURFACE_WG",
   "start_height": { "absolute": -4 },
   "use_expansion_hack": false,
-  "max_distance_from_center": 160,
+  "max_distance_from_center": 80,
   "terrain_adaptation": "beard_thin"
 }

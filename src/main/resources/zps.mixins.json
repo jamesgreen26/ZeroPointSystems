@@ -20,7 +20,6 @@
     "BlockBehaviourMixin",
     "BlockInWorldMixin",
     "ClientboundCommandsPacketMixin",
-    "JigsawStructureMixin",
     "LecternBlockEntityMixin",
     "ServerLevelMixin",
     "StructureTemplateMixin",

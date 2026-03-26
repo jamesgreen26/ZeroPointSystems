@@ -1,8 +1,10 @@
 package g_mungus.zps.blockentity;
 
+import g_mungus.zps.block.cableNetwork.core.CableNetworkComponent;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -40,5 +42,17 @@ public abstract class NetworkTerminalImpl extends BlockEntity implements Network
     protected void saveAdditional(@NotNull CompoundTag tag) {
         super.saveAdditional(tag);
         saveNetwork(tag);
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+
+        if (level instanceof ServerLevel serverLevel) {
+            BlockState state = serverLevel.getBlockState(getBlockPos());
+            if (state.getBlock() instanceof CableNetworkComponent cableComponent && cableComponent.isTerminal()) {
+                cableComponent.updateNetwork(getBlockPos(), serverLevel);
+            }
+        }
     }
 }

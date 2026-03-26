@@ -23,6 +23,7 @@
     "ItemEntityMixin",
     "LecternBlockEntityMixin",
     "ServerLevelMixin",
+    "StructureTemplateMixin",
     "WritableBookMixin",
     "WrittenBookMixin",
     "create.ScrollValueBehaviourAccessor",

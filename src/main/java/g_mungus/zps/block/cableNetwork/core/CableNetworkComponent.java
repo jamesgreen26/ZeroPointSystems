@@ -50,8 +50,6 @@ public interface CableNetworkComponent {
                 if (checked.contains(current)) continue;
                 checked.add(current);
 
-                if (!level.isLoaded(current.pos())) continue;
-
                 if (current.terminal()) {
                     terminals.add(current);
                 }

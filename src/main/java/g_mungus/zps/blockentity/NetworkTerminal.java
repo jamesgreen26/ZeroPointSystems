@@ -5,6 +5,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Map;
@@ -90,5 +94,42 @@ public interface NetworkTerminal {
         });
         
         tag.put("Terminals", terminalsList);
+    }
+
+    static @NotNull CompoundTag transformTag(CompoundTag tag, Mirror mirror, Rotation rotation) {
+        CompoundTag modifiedTag = tag.copy();
+
+        if (modifiedTag.contains("Terminals", Tag.TAG_LIST)) {
+            ListTag terminalsList = modifiedTag.getList("Terminals", Tag.TAG_COMPOUND);
+
+            for (int i = 0; i < terminalsList.size(); i++) {
+                CompoundTag terminalTag = terminalsList.getCompound(i);
+                ListTag nodesList = terminalTag.getList("Nodes", Tag.TAG_COMPOUND);
+
+                for (int j = 0; j < nodesList.size(); j++) {
+                    CompoundTag nodeTag = nodesList.getCompound(j);
+
+                    BlockPos originalPos = new BlockPos(
+                            nodeTag.getInt("X"),
+                            nodeTag.getInt("Y"),
+                            nodeTag.getInt("Z")
+                    );
+
+                    // Apply mirror then rotation (same order as structure placement)
+                    BlockPos transformed = StructureTemplate.transform(
+                            originalPos,
+                            mirror,
+                            rotation,
+                            BlockPos.ZERO
+                    );
+
+                    nodeTag.putInt("X", transformed.getX());
+                    nodeTag.putInt("Y", transformed.getY());
+                    nodeTag.putInt("Z", transformed.getZ());
+                }
+            }
+        }
+
+        return modifiedTag;
     }
 }

@@ -70,6 +70,11 @@ public class CableBlock extends CableComponentBlock {
         builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN, INSULATED);
     }
 
+    @SuppressWarnings("deprecation")
+    public boolean useShapeForLightOcclusion(@NotNull BlockState state) {
+        return !state.getValue(INSULATED);
+    }
+
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         if (state.getValue(INSULATED)) {

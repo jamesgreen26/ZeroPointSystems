@@ -272,6 +272,32 @@ public class ZPSScriptMappers {
                 Integer.class
         ));
 
+        // Bitwise AND for int
+        event.register(new ScriptMapper2<>(
+                "&",
+                Integer.class,
+                Integer.class,
+                ResourceLocation.parse("zps:int"),
+                ResourceLocation.parse("zps:int"),
+                "int",
+                (value, context) -> value & context.argumentValue(),
+                IntegerArgumentType.integer(),
+                Integer.class
+        ));
+
+        // Bitwise OR for int
+        event.register(new ScriptMapper2<>(
+                "|",
+                Integer.class,
+                Integer.class,
+                ResourceLocation.parse("zps:int"),
+                ResourceLocation.parse("zps:int"),
+                "int",
+                (value, context) -> value | context.argumentValue(),
+                IntegerArgumentType.integer(),
+                Integer.class
+        ));
+
         // Multiplication for int -> double
         event.register(new ScriptMapper2<>(
                 "*",

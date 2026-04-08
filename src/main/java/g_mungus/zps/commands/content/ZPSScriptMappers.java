@@ -2,22 +2,20 @@ package g_mungus.zps.commands.content;
 
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptMapper;
 import g_mungus.zps.commands.api.ScriptMapper2;
 import net.minecraft.commands.arguments.DimensionArgument;
-import net.minecraft.commands.arguments.blocks.BlockInput;
 import net.minecraft.commands.arguments.blocks.BlockPredicateArgument;
-import net.minecraft.commands.arguments.blocks.BlockStateArgument;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.commands.arguments.coordinates.Coordinates;
 import net.minecraft.commands.arguments.coordinates.Vec3Argument;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.phys.Vec3;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.pattern.BlockInWorld;
-import net.minecraft.world.level.block.state.predicate.BlockPredicate;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -409,6 +407,19 @@ public class ZPSScriptMappers {
                 ResourceLocation.parse("zps:double"),
                 ResourceLocation.parse("zps:int"),
                 (value, scriptContext) -> (int) Math.ceil(value)
+        ));
+
+        // Equality check for string
+        event.register(new ScriptMapper2<>(
+                "==",
+                String.class,
+                Boolean.class,
+                ResourceLocation.parse("zps:string"),
+                ResourceLocation.parse("zps:boolean"),
+                "string",
+                (str, context) -> str.equals(context.argumentValue()),
+                StringArgumentType.string(),
+                String.class
         ));
 
         // Equality check for dimension

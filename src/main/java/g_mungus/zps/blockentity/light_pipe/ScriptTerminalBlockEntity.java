@@ -1,5 +1,7 @@
 package g_mungus.zps.blockentity.light_pipe;
 
+import com.mojang.brigadier.StringReader;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.light_pipe.ScriptTerminalBlock;
@@ -7,11 +9,17 @@ import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.NetworkTerminalImpl;
 import g_mungus.zps.networking.ScriptComputerC2SPacket;
+import net.minecraft.commands.CommandSource;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 
@@ -81,10 +89,61 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
             executeWaitCommand(command);
             clearOutput();
         } else {
-            currentCommand = command;
+            currentCommand = resolveCoordinates(command);
             updateSignal(level);
             tickDelay = delay - 1; // delay value from GUI (2t, 4t, 8t, or 16t)
         }
+    }
+
+    private String resolveCoordinates(String command) {
+        if (!(level instanceof ServerLevel serverLevel)) return command;
+        Direction direction = this.getBlockState().getValue(ScriptTerminalBlock.FACING);
+        CommandSourceStack sourceStack = new CommandSourceStack(
+                new CommandSource() {
+                    @Override public void sendSystemMessage(@NotNull Component arg) {}
+                    @Override public boolean acceptsSuccess() { return false; }
+                    @Override public boolean acceptsFailure() { return false; }
+                    @Override public boolean shouldInformAdmins() { return false; }
+                },
+                Vec3.atCenterOf(worldPosition),
+                new Vec2(0.0F, direction.getOpposite().toYRot()),
+                serverLevel,
+                2,
+                "zps:script_terminal",
+                Component.literal("zps:script_terminal"),
+                serverLevel.getServer(),
+                null
+        );
+
+        String[] words = command.split(" ");
+        StringBuilder result = new StringBuilder();
+        int i = 0;
+        while (i < words.length) {
+            boolean replaced = false;
+            if (i + 2 < words.length) {
+                String w0 = words[i], w1 = words[i + 1], w2 = words[i + 2];
+                boolean allRelative = w0.startsWith("~") && w1.startsWith("~") && w2.startsWith("~");
+                boolean allLocal = w0.startsWith("^") && w1.startsWith("^") && w2.startsWith("^");
+                if (allRelative || allLocal) {
+                    String triplet = w0 + " " + w1 + " " + w2;
+                    try {
+                        BlockPos pos = BlockPosArgument.blockPos()
+                                .parse(new StringReader(triplet))
+                                .getBlockPos(sourceStack);
+                        if (!result.isEmpty()) result.append(" ");
+                        result.append(pos.getX()).append(" ").append(pos.getY()).append(" ").append(pos.getZ());
+                        i += 3;
+                        replaced = true;
+                    } catch (CommandSyntaxException ignored) {}
+                }
+            }
+            if (!replaced) {
+                if (!result.isEmpty()) result.append(" ");
+                result.append(words[i]);
+                i++;
+            }
+        }
+        return result.toString();
     }
 
     private void clearOutput() {

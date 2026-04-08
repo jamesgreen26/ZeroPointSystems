@@ -9,7 +9,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.Clearable;
@@ -133,20 +132,6 @@ public class DataLecternBlockEntity extends NetworkTerminalImpl implements Clear
                     String raw = pages.getString(page);
                     try {
                         Component parsed = Component.Serializer.fromJson(raw);
-                        if (parsed != null) {
-                            parsed.getSiblings().replaceAll(it -> {
-                                if (it.getContents() instanceof TranslatableContents contents) {
-                                    String[] sections = contents.getKey().split("\\.");
-
-                                    if (sections.length >= 2) {
-                                        String namespace = sections[sections.length - 2];
-                                        String path = sections[sections.length - 1];
-                                        return Component.literal(namespace + ":" + path);
-                                    }
-                                }
-                                return it;
-                            });
-                        }
 
                         return parsed != null ? parsed.getString() : raw;
                     } catch (Exception e) {

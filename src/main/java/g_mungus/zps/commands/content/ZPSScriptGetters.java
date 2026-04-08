@@ -34,5 +34,12 @@ public class ZPSScriptGetters {
                 ResourceLocation.parse("zps:dimension"),
                 scriptContext -> scriptContext.level().dimension().location().toString()
         ));
+
+        event.register(new ScriptGetter<>(
+                "redstone",
+                Integer.class,
+                ResourceLocation.parse("zps:int"),
+                scriptContext -> scriptContext.level().getBestNeighborSignal(scriptContext.pos())
+        ));
     }
 }

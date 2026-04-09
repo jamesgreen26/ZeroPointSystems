@@ -66,7 +66,7 @@ public class VSCompat {
 
         // Ship position as Vec3
         event.register(new ScriptMapper<>(
-                "position",
+                "pos",
                 Ship.class,
                 Vec3.class,
                 ZPSMod.resource("ship"),
@@ -82,7 +82,7 @@ public class VSCompat {
 
         // Ship velocity as Vec3
         event.register(new ScriptMapper<>(
-                "world_velocity",
+                "world_vel",
                 Ship.class,
                 Vec3.class,
                 ZPSMod.resource("ship"),
@@ -98,7 +98,7 @@ public class VSCompat {
 
         // Ship local velocity (ship-space)
         event.register(new ScriptMapper<>(
-                "local_velocity",
+                "local_vel",
                 Ship.class,
                 Vec3.class,
                 ZPSMod.resource("ship"),
@@ -140,7 +140,7 @@ public class VSCompat {
 
         // Ship direction vector in world space
         event.register(new ScriptMapper2<>(
-                "direction",
+                "dir",
                 Ship.class,
                 Vec3.class,
                 ZPSMod.resource("ship"),

@@ -52,6 +52,15 @@ public class VSCompat {
                 (ship, context) -> ship == NO_SHIP ? "" : ship.getSlug()
         ));
 
+        event.register(new ScriptMapper<>(
+                "id",
+                Ship.class,
+                Integer.class,
+                ZPSMod.resource("ship"),
+                ZPSMod.resource("int"),
+                (ship, context) -> ship == NO_SHIP ? -1 : (int) ship.getId()
+        ));
+
         // Ship position as Vec3
         event.register(new ScriptMapper<>(
                 "position",

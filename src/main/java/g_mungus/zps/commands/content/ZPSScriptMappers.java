@@ -6,6 +6,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptMapper;
 import g_mungus.zps.commands.api.ScriptMapper2;
+import g_mungus.zps.commands.content.executors.DimensionIndexCommand;
 import net.minecraft.commands.arguments.DimensionArgument;
 import net.minecraft.commands.arguments.blocks.BlockPredicateArgument;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
@@ -318,6 +319,48 @@ public class ZPSScriptMappers {
                 ResourceLocation.parse("zps:int")
         ));
 
+        // Left shift for int
+        event.register(new ScriptMapper2<>(
+                "<<",
+                Integer.class,
+                Integer.class,
+                ResourceLocation.parse("zps:int"),
+                ResourceLocation.parse("zps:int"),
+                "int",
+                (value, context) -> value << context.argumentValue(),
+                IntegerArgumentType.integer(),
+                Integer.class,
+                ResourceLocation.parse("zps:int")
+        ));
+
+        // Right shift for int
+        event.register(new ScriptMapper2<>(
+                ">>",
+                Integer.class,
+                Integer.class,
+                ResourceLocation.parse("zps:int"),
+                ResourceLocation.parse("zps:int"),
+                "int",
+                (value, context) -> value >> context.argumentValue(),
+                IntegerArgumentType.integer(),
+                Integer.class,
+                ResourceLocation.parse("zps:int")
+        ));
+
+        // Modulo for int
+        event.register(new ScriptMapper2<>(
+                "%",
+                Integer.class,
+                Integer.class,
+                ResourceLocation.parse("zps:int"),
+                ResourceLocation.parse("zps:int"),
+                "int",
+                (value, context) -> value % context.argumentValue(),
+                IntegerArgumentType.integer(),
+                Integer.class,
+                ResourceLocation.parse("zps:int")
+        ));
+
         // Multiplication for int -> double
         event.register(new ScriptMapper2<>(
                 "*",
@@ -490,6 +533,19 @@ public class ZPSScriptMappers {
                 DimensionArgument.dimension(),
                 ResourceLocation.class,
                 null
+        ));
+
+        // Stable integer index for each dimension
+        event.register(new ScriptMapper<>(
+                "index",
+                String.class,
+                Integer.class,
+                ResourceLocation.parse("zps:dimension"),
+                ResourceLocation.parse("zps:int"),
+                (dim, ctx) -> DimensionIndexCommand.getIndex(
+                        ctx.level().getServer(),
+                        ResourceLocation.parse(dim)
+                )
         ));
     }
 

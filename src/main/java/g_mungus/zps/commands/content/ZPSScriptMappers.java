@@ -573,6 +573,20 @@ public class ZPSScriptMappers {
                 ResourceLocation.parse("zps:string")
         ));
 
+        // Concatenation for string
+        event.register(new ScriptMapper2<>(
+                "+",
+                String.class,
+                String.class,
+                ResourceLocation.parse("zps:string"),
+                ResourceLocation.parse("zps:string"),
+                "string",
+                (str, context) -> str + context.argumentValue(),
+                StringArgumentType.string(),
+                String.class,
+                ResourceLocation.parse("zps:string")
+        ));
+
         // Equality check for dimension
         event.register(new ScriptMapper2<>(
                 "==",
@@ -598,6 +612,93 @@ public class ZPSScriptMappers {
                         ctx.level().getServer(),
                         ResourceLocation.parse(dim)
                 )
+        ));
+
+        // to_string for int
+        event.register(new ScriptMapper<>(
+                "to_string",
+                Integer.class,
+                String.class,
+                ResourceLocation.parse("zps:int"),
+                ResourceLocation.parse("zps:string"),
+                (value, ctx) -> value.toString()
+        ));
+
+        // to_string for double
+        event.register(new ScriptMapper<>(
+                "to_string",
+                Double.class,
+                String.class,
+                ResourceLocation.parse("zps:double"),
+                ResourceLocation.parse("zps:string"),
+                (value, ctx) -> value.toString()
+        ));
+
+        // to_string for block_pos ("x y z")
+        event.register(new ScriptMapper<>(
+                "to_string",
+                BlockPos.class,
+                String.class,
+                ResourceLocation.parse("zps:block_pos"),
+                ResourceLocation.parse("zps:string"),
+                (pos, ctx) -> pos.getX() + " " + pos.getY() + " " + pos.getZ()
+        ));
+
+        // to_string for dimension (identity - dimension is already a string key)
+        event.register(new ScriptMapper<>(
+                "to_string",
+                String.class,
+                String.class,
+                ResourceLocation.parse("zps:dimension"),
+                ResourceLocation.parse("zps:string"),
+                (dim, ctx) -> dim
+        ));
+
+        // string as_int
+        event.register(new ScriptMapper<>(
+                "as_int",
+                String.class,
+                Integer.class,
+                ResourceLocation.parse("zps:string"),
+                ResourceLocation.parse("zps:int"),
+                (value, ctx) -> Integer.parseInt(value)
+        ));
+
+        // string as_double
+        event.register(new ScriptMapper<>(
+                "as_double",
+                String.class,
+                Double.class,
+                ResourceLocation.parse("zps:string"),
+                ResourceLocation.parse("zps:double"),
+                (value, ctx) -> Double.parseDouble(value)
+        ));
+
+        // string as_block_pos (expects "x y z" format)
+        event.register(new ScriptMapper<>(
+                "as_block_pos",
+                String.class,
+                BlockPos.class,
+                ResourceLocation.parse("zps:string"),
+                ResourceLocation.parse("zps:block_pos"),
+                (value, ctx) -> {
+                    String[] parts = value.split(" ");
+                    return new BlockPos(
+                            Integer.parseInt(parts[0]),
+                            Integer.parseInt(parts[1]),
+                            Integer.parseInt(parts[2])
+                    );
+                }
+        ));
+
+        // string as_dimension (identity - treats the string as a dimension key)
+        event.register(new ScriptMapper<>(
+                "as_dimension",
+                String.class,
+                String.class,
+                ResourceLocation.parse("zps:string"),
+                ResourceLocation.parse("zps:dimension"),
+                (value, ctx) -> value
         ));
     }
 

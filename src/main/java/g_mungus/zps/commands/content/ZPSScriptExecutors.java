@@ -1,6 +1,7 @@
 package g_mungus.zps.commands.content;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptExecutor;
@@ -43,6 +44,19 @@ public class ZPSScriptExecutors {
                         context.commandSource().getLevel(),
                         context.pos(),
                         page
+                ),
+                Set.of(ZPSMod.resource("data_lectern"), ResourceLocation.withDefaultNamespace("lectern"))
+        ));
+
+        event.register(ScriptExecutor.simpleWithBlocks(
+                "write_page",
+                String.class,
+                ResourceLocation.parse("zps:string"),
+                StringArgumentType.string(),
+                (text, context) -> SetPageCommand.writeToCurrentPage(
+                        context.commandSource().getLevel(),
+                        context.pos(),
+                        text
                 ),
                 Set.of(ZPSMod.resource("data_lectern"), ResourceLocation.withDefaultNamespace("lectern"))
         ));

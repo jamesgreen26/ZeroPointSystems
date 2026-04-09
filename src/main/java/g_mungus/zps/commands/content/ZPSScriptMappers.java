@@ -93,7 +93,21 @@ public class ZPSScriptMappers {
                 (vec3, context) -> vec3.distanceTo(context.argumentValue().getPosition(context.commandSource())),
                 Vec3Argument.vec3(),
                 Coordinates.class,
-                null
+                ResourceLocation.parse("zps:vec_pos")
+        ));
+
+        // Vec3 Position - Direction to another position
+        event.register(new ScriptMapper2<>(
+                "direction_to",
+                Vec3.class,
+                Vec3.class,
+                ResourceLocation.parse("zps:vec_pos"),
+                ResourceLocation.parse("zps:vec_dir"),
+                "coordinates",
+                (vec3, context) -> context.argumentValue().getPosition(context.commandSource()).subtract(vec3).normalize(),
+                Vec3Argument.vec3(),
+                Coordinates.class,
+                ResourceLocation.parse("zps:vec_pos")
         ));
 
         // Vec3 Box - X dimension
@@ -174,6 +188,30 @@ public class ZPSScriptMappers {
                 ResourceLocation.parse("zps:vec_dir"),
                 ResourceLocation.parse("zps:double"),
                 (vec3, scriptContext) -> vec3.length()
+        ));
+
+        // Vec3 Direction - Normalize
+        event.register(new ScriptMapper<>(
+                "normalize",
+                Vec3.class,
+                Vec3.class,
+                ResourceLocation.parse("zps:vec_dir"),
+                ResourceLocation.parse("zps:vec_dir"),
+                (vec3, scriptContext) -> vec3.normalize()
+        ));
+
+        // Vec3 Direction - Dot product with another direction
+        event.register(new ScriptMapper2<>(
+                "dot",
+                Vec3.class,
+                Double.class,
+                ResourceLocation.parse("zps:vec_dir"),
+                ResourceLocation.parse("zps:double"),
+                "direction",
+                (vec3, context) -> vec3.dot(context.argumentValue().getPosition(context.commandSource())),
+                Vec3Argument.vec3(),
+                Coordinates.class,
+                ResourceLocation.parse("zps:vec_dir")
         ));
 
         // Equality check for BlockPos

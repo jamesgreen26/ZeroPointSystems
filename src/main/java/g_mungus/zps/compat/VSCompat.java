@@ -4,6 +4,8 @@ import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptGetter;
 import g_mungus.zps.commands.api.ScriptMapper;
+import g_mungus.zps.commands.api.ScriptMapper2;
+import net.minecraftforge.server.command.EnumArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -136,17 +138,19 @@ public class VSCompat {
                 }
         ));
 
-        // Ship direction vectors in world space
-        for (Direction dir : Direction.values()) {
-            event.register(new ScriptMapper<>(
-                    dir.getName(),
-                    Ship.class,
-                    Vec3.class,
-                    ZPSMod.resource("ship"),
-                    ZPSMod.resource("vec_dir"),
-                    (ship, context) -> shipDirection(ship, dir)
-            ));
-        }
+        // Ship direction vector in world space
+        event.register(new ScriptMapper2<>(
+                "direction",
+                Ship.class,
+                Vec3.class,
+                ZPSMod.resource("ship"),
+                ZPSMod.resource("vec_dir"),
+                "direction",
+                (ship, context) -> shipDirection(ship, context.argumentValue()),
+                EnumArgument.enumArgument(Direction.class),
+                Direction.class,
+                ZPSMod.resource("direction")
+        ));
 
         // Ship mass scaled by shipToWorldScaling volume
         event.register(new ScriptMapper<>(

@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import g_mungus.zps.client.ponder.ZPSPonderTags;
 import g_mungus.zps.networking.ExecutorBlocksS2CPacket;
+import g_mungus.zps.networking.GetterBlocksS2CPacket;
 import net.createmod.ponder.foundation.registration.PonderTagRegistry;
 import net.minecraft.resources.ResourceLocation;
 import org.spongepowered.asm.mixin.Mixin;
@@ -20,6 +21,7 @@ public class PonderTagRegistryMixin {
 
         if (tag.equals(ZPSPonderTags.HAS_SCRIPT_CAPS)) {
             out.addAll(ExecutorBlocksS2CPacket.command_capable_blocks);
+            out.addAll(GetterBlocksS2CPacket.getter_capable_blocks);
         }
 
         return out;

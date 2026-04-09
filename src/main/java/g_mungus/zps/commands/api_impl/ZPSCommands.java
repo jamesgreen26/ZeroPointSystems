@@ -11,9 +11,11 @@ import com.mojang.brigadier.tree.CommandNode;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptExecutor;
+import g_mungus.zps.commands.api.ScriptGetter;
 import g_mungus.zps.commands.api.ScriptNode;
 import g_mungus.zps.commands.api_impl.debug.BrigadierCanvasExporter;
 import g_mungus.zps.networking.ExecutorBlocksS2CPacket;
+import g_mungus.zps.networking.GetterBlocksS2CPacket;
 import g_mungus.zps.networking.ZPSGamePackets;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
@@ -165,6 +167,16 @@ public class ZPSCommands {
         return null;
     }
 
+    @Nullable
+    public static ScriptGetter<?> getGetter(String key) {
+        for (var getter : Registry.GETTERS) {
+            if (getter.displayName().equals(key)) {
+                return getter;
+            }
+        }
+        return null;
+    }
+
 
     @SubscribeEvent
     public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
@@ -186,6 +198,17 @@ public class ZPSCommands {
         ZPSGamePackets.INSTANCE.send(
                 PacketDistributor.PLAYER.with(() -> player),
                 new ExecutorBlocksS2CPacket(allAssociatedBlocks)
+        );
+
+        List<ResourceLocation> allAssociatedGetterBlocks = Registry.GETTERS.stream()
+                .filter(g -> g.associatedBlocks() != null)
+                .flatMap(g -> g.associatedBlocks().stream())
+                .filter(blocksWithItems::contains)
+                .toList();
+
+        ZPSGamePackets.INSTANCE.send(
+                PacketDistributor.PLAYER.with(() -> player),
+                new GetterBlocksS2CPacket(allAssociatedGetterBlocks)
         );
     }
 

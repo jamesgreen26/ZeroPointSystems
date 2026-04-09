@@ -43,7 +43,8 @@ public class VSCompat {
                         ship = NO_SHIP;
                     }
                     return ship;
-                }
+                },
+                null
         ));
 
         event.register(new ScriptMapper<>(

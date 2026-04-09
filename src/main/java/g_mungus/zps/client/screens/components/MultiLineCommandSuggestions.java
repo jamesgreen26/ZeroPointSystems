@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import g_mungus.zps.commands.api.ScriptExecutor;
+import g_mungus.zps.commands.api.ScriptGetter;
 import g_mungus.zps.commands.api_impl.ValueOfDispatchers;
 import g_mungus.zps.commands.api_impl.ZPSCommands;
 import g_mungus.zps.commands.api_impl.arguments.ValueOfExpression;
@@ -189,12 +190,21 @@ public class MultiLineCommandSuggestions {
         for (var suggestion : list) {
             String command = suggestion.getText();
 
+            Set<ResourceLocation> associatedBlocks = null;
+
             ScriptExecutor<?,?> executor = ZPSCommands.getExecutor(command);
+            if (executor != null) {
+                associatedBlocks = executor.associatedBlocks();
+            }
+
+            ScriptGetter<?> getter = ZPSCommands.getGetter(command);
+            if (getter != null) {
+                associatedBlocks = getter.associatedBlocks();
+            }
 
             if (
-                executor == null ||
-                executor.associatedBlocks() == null ||
-                executor.associatedBlocks().stream().anyMatch(connectedBlocks::contains)
+                associatedBlocks == null ||
+                associatedBlocks.stream().anyMatch(connectedBlocks::contains)
             ) {
                 output.add(suggestion);
             }

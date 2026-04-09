@@ -34,7 +34,8 @@ public class GenesisCompat {
                 "celestial",
                 celestialsClass(),
                 ResourceLocation.parse("genesis:celestials"),
-                context -> GenesisMod.getCelestialRegistry(context.level())
+                context -> GenesisMod.getCelestialRegistry(context.level()),
+                null
         ));
 
         event.register(new ScriptMapper<>(

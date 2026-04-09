@@ -53,5 +53,11 @@ public class ZPSGamePackets {
                 .decoder(ExecutorBlocksS2CPacket::decode)
                 .consumerMainThread(ExecutorBlocksS2CPacket::handle)
                 .add();
+
+        INSTANCE.messageBuilder(GetterBlocksS2CPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(GetterBlocksS2CPacket::encode)
+                .decoder(GetterBlocksS2CPacket::decode)
+                .consumerMainThread(GetterBlocksS2CPacket::handle)
+                .add();
     }
 }

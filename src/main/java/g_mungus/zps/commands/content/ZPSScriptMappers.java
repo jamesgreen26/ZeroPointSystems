@@ -186,7 +186,17 @@ public class ZPSScriptMappers {
                 (blockPos, context) -> blockPos.equals(context.argumentValue().getBlockPos(context.commandSource())),
                 BlockPosArgument.blockPos(),
                 Coordinates.class,
-                null
+                ResourceLocation.parse("zps:block_pos")
+        ));
+
+        // Vec3 Position - Rounded down to BlockPos
+        event.register(new ScriptMapper<>(
+                "rounded_down",
+                Vec3.class,
+                BlockPos.class,
+                ResourceLocation.parse("zps:vec_pos"),
+                ResourceLocation.parse("zps:block_pos"),
+                (vec3, scriptContext) -> BlockPos.containing(vec3)
         ));
 
         // Equality check for BlockState

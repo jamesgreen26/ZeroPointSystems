@@ -8,6 +8,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
+import org.joml.Vector3d;
 import org.joml.primitives.AABBd;
 import org.joml.primitives.AABBdc;
 import org.joml.primitives.AABBi;
@@ -60,7 +61,7 @@ public class VSCompat {
                 ZPSMod.resource("vec_pos"),
                 (ship, context) -> {
                     if (ship == NO_SHIP) {
-                        return new Vec3(0, 0, 0);
+                        return context.pos().getCenter();
                     } else {
                         return VectorConversionsMCKt.toMinecraft(ship.getTransform().getPositionInWorld());
                     }
@@ -69,7 +70,7 @@ public class VSCompat {
 
         // Ship velocity as Vec3
         event.register(new ScriptMapper<>(
-                "velocity",
+                "world_velocity",
                 Ship.class,
                 Vec3.class,
                 ZPSMod.resource("ship"),
@@ -80,6 +81,27 @@ public class VSCompat {
                     } else {
                         return VectorConversionsMCKt.toMinecraft(ship.getVelocity());
                     }
+                }
+        ));
+
+        // Ship local velocity (ship-space)
+        event.register(new ScriptMapper<>(
+                "local_velocity",
+                Ship.class,
+                Vec3.class,
+                ZPSMod.resource("ship"),
+                ZPSMod.resource("vec_dir"),
+                (ship, context) -> {
+                    if (ship == NO_SHIP) {
+                        return new Vec3(0, 0, 0);
+                    }
+
+                    var vel = ship.getVelocity();
+
+                    var local = new Vector3d(vel.x(), vel.y(), vel.z());
+                    ship.getTransform().getWorldToShip().transformDirection(local);
+
+                    return new Vec3(local.x, local.y, local.z);
                 }
         ));
 

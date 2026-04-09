@@ -200,6 +200,20 @@ public class ZPSScriptMappers {
                 (vec3, scriptContext) -> vec3.normalize()
         ));
 
+        // Vec3 Direction - Cross product with another direction
+        event.register(new ScriptMapper2<>(
+                "cross",
+                Vec3.class,
+                Vec3.class,
+                ResourceLocation.parse("zps:vec_dir"),
+                ResourceLocation.parse("zps:vec_dir"),
+                "direction",
+                (vec3, context) -> vec3.cross(context.argumentValue().getPosition(context.commandSource())),
+                Vec3Argument.vec3(),
+                Coordinates.class,
+                ResourceLocation.parse("zps:vec_dir")
+        ));
+
         // Vec3 Direction - Dot product with another direction
         event.register(new ScriptMapper2<>(
                 "dot",

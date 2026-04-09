@@ -614,9 +614,9 @@ public class ZPSScriptMappers {
                 )
         ));
 
-        // to_string for int
+        // as_string for int
         event.register(new ScriptMapper<>(
-                "to_string",
+                "as_string",
                 Integer.class,
                 String.class,
                 ResourceLocation.parse("zps:int"),
@@ -624,9 +624,9 @@ public class ZPSScriptMappers {
                 (value, ctx) -> value.toString()
         ));
 
-        // to_string for double
+        // as_string for double
         event.register(new ScriptMapper<>(
-                "to_string",
+                "as_string",
                 Double.class,
                 String.class,
                 ResourceLocation.parse("zps:double"),
@@ -634,9 +634,9 @@ public class ZPSScriptMappers {
                 (value, ctx) -> value.toString()
         ));
 
-        // to_string for block_pos ("x y z")
+        // as_string for block_pos ("x y z")
         event.register(new ScriptMapper<>(
-                "to_string",
+                "as_string",
                 BlockPos.class,
                 String.class,
                 ResourceLocation.parse("zps:block_pos"),
@@ -644,9 +644,9 @@ public class ZPSScriptMappers {
                 (pos, ctx) -> pos.getX() + " " + pos.getY() + " " + pos.getZ()
         ));
 
-        // to_string for dimension (identity - dimension is already a string key)
+        // as_string for dimension (identity - dimension is already a string key)
         event.register(new ScriptMapper<>(
-                "to_string",
+                "as_string",
                 String.class,
                 String.class,
                 ResourceLocation.parse("zps:dimension"),

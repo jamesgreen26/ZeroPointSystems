@@ -128,6 +128,19 @@ public class GenesisCompat {
                 }
         ));
 
+        event.register(new ScriptMapper<>(
+                "as_string",
+                Celestial.class,
+                String.class,
+                ResourceLocation.parse("genesis:celestial"),
+                ResourceLocation.parse("zps:string"),
+                (cel, ctx) -> {
+                    if (cel == null) return "";
+                    ResourceLocation key = GenesisMod.getCelestialRegistry(ctx.level()).getKey(cel);
+                    return key != null ? key.toString() : "";
+                }
+        ));
+
         event.register(new ScriptMapper2<>(
                 "==",
                 Celestial.class,

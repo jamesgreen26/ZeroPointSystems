@@ -5,6 +5,7 @@ import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptGetter;
 import g_mungus.zps.commands.api.ScriptMapper;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
@@ -135,6 +136,18 @@ public class VSCompat {
                 }
         ));
 
+        // Ship direction vectors in world space
+        for (Direction dir : Direction.values()) {
+            event.register(new ScriptMapper<>(
+                    dir.getName(),
+                    Ship.class,
+                    Vec3.class,
+                    ZPSMod.resource("ship"),
+                    ZPSMod.resource("vec_dir"),
+                    (ship, context) -> shipDirection(ship, dir)
+            ));
+        }
+
         // Ship mass scaled by shipToWorldScaling volume
         event.register(new ScriptMapper<>(
                 "mass",
@@ -152,6 +165,14 @@ public class VSCompat {
                     return mass / scalingVolume;
                 }
         ));
+    }
+
+    private static Vec3 shipDirection(Ship ship, Direction dir) {
+        var n = dir.getNormal();
+        if (ship == NO_SHIP) return new Vec3(n.getX(), n.getY(), n.getZ());
+        var v = new Vector3d(n.getX(), n.getY(), n.getZ());
+        ship.getTransform().getShipToWorld().transformDirection(v);
+        return new Vec3(v.x, v.y, v.z);
     }
 
     @SuppressWarnings("ConstantConditions")

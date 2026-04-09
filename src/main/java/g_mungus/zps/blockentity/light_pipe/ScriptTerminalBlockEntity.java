@@ -17,16 +17,20 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements LightPipeDataSender, ScriptComputer {
     public ScriptTerminalBlockEntity(BlockPos arg2, BlockState arg3) {
@@ -89,15 +93,16 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
             executeWaitCommand(command);
             clearOutput();
         } else {
-            currentCommand = resolveCoordinates(command);
+            currentCommand = resolveCoordinates(command, level, worldPosition, getBlockState());
             updateSignal(level);
             tickDelay = delay - 1; // delay value from GUI (2t, 4t, 8t, or 16t)
         }
     }
 
-    private String resolveCoordinates(String command) {
+    /// mostly just visible for testing
+    public static String resolveCoordinates(String command, Level level, BlockPos worldPosition, BlockState blockState) {
         if (!(level instanceof ServerLevel serverLevel)) return command;
-        Direction direction = this.getBlockState().getValue(ScriptTerminalBlock.FACING);
+        Direction direction = blockState.getValue(ScriptTerminalBlock.FACING);
         CommandSourceStack sourceStack = new CommandSourceStack(
                 new CommandSource() {
                     @Override public void sendSystemMessage(@NotNull Component arg) {}
@@ -115,13 +120,25 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
                 null
         );
 
-        String[] words = command.split(" ");
+        // Tokenize by splitting on ( ) and spaces, preserving separators so they
+        // can be reconstructed around any resolved coordinate triplets.
+        List<String> tokens = new ArrayList<>();
+        List<String> separators = new ArrayList<>();
+        Matcher m = Pattern.compile("[^() ]+").matcher(command);
+        int lastEnd = 0;
+        while (m.find()) {
+            separators.add(command.substring(lastEnd, m.start()));
+            tokens.add(m.group());
+            lastEnd = m.end();
+        }
+        String trailingSep = command.substring(lastEnd);
+
         StringBuilder result = new StringBuilder();
         int i = 0;
-        while (i < words.length) {
+        while (i < tokens.size()) {
             boolean replaced = false;
-            if (i + 2 < words.length) {
-                String w0 = words[i], w1 = words[i + 1], w2 = words[i + 2];
+            if (i + 2 < tokens.size()) {
+                String w0 = tokens.get(i), w1 = tokens.get(i + 1), w2 = tokens.get(i + 2);
                 boolean allRelative = w0.startsWith("~") && w1.startsWith("~") && w2.startsWith("~");
                 boolean allLocal = w0.startsWith("^") && w1.startsWith("^") && w2.startsWith("^");
                 if (allRelative || allLocal) {
@@ -130,19 +147,22 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
                         BlockPos pos = BlockPosArgument.blockPos()
                                 .parse(new StringReader(triplet))
                                 .getBlockPos(sourceStack);
-                        if (!result.isEmpty()) result.append(" ");
-                        result.append(pos.getX()).append(" ").append(pos.getY()).append(" ").append(pos.getZ());
+                        result.append(separators.get(i));
+                        result.append(pos.getX()).append(separators.get(i + 1))
+                              .append(pos.getY()).append(separators.get(i + 2))
+                              .append(pos.getZ());
                         i += 3;
                         replaced = true;
                     } catch (CommandSyntaxException ignored) {}
                 }
             }
             if (!replaced) {
-                if (!result.isEmpty()) result.append(" ");
-                result.append(words[i]);
+                result.append(separators.get(i));
+                result.append(tokens.get(i));
                 i++;
             }
         }
+        result.append(trailingSep);
         return result.toString();
     }
 

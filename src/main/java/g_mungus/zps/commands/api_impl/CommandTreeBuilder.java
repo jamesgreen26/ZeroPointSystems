@@ -1,22 +1,22 @@
 package g_mungus.zps.commands.api_impl;
 
+import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.ArgumentType;
-import com.mojang.brigadier.suggestion.SuggestionProvider;
-import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.tree.CommandNode;
 import g_mungus.zps.commands.api.ScriptContext;
 import g_mungus.zps.commands.api.ScriptExecutor;
+import g_mungus.zps.commands.api.ScriptGetter;
 import g_mungus.zps.commands.api.ScriptMapper;
 import g_mungus.zps.commands.api.ScriptMapper2;
+import g_mungus.zps.commands.api_impl.arguments.ValueOfExpression;
+import g_mungus.zps.commands.api_impl.arguments.ValueOfOrLiteralArgumentType;
 import g_mungus.zps.commands.api_impl.arguments.ZPSArgument;
 import g_mungus.zps.commands.api_impl.arguments.ZPSLiteral;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraftforge.server.command.EnumArgument;
 
 import java.util.*;
 import java.util.function.BiFunction;
@@ -110,7 +110,12 @@ public class CommandTreeBuilder {
     private void addMapper2Branch(ScriptMapper2<?, ?, ?> scriptMapper2, ScriptMapper<?, ?> mapper,
                                   CommandNode<CommandSourceStack> parentNode, CommandNode<CommandSourceStack> destination) {
         String argumentKey = "zps:argument_" + String.format("%06d", argumentIndex++) + ":" + scriptMapper2.argumentHint();
-        ZPSArgument.Builder<CommandSourceStack, Object> argumentBuilder = ZPSArgument.Builder.argument(argumentKey, (ArgumentType<Object>) scriptMapper2.argumentType());
+
+        ResourceLocation argTypeKey = scriptMapper2.argumentTypeKey();
+        ArgumentType<Object> argType = argTypeKey != null
+                ? ValueOfOrLiteralArgumentType.of((ArgumentType<Object>) scriptMapper2.argumentType(), argTypeKey)
+                : (ArgumentType<Object>) scriptMapper2.argumentType();
+        ZPSArgument.Builder<CommandSourceStack, Object> argumentBuilder = ZPSArgument.Builder.argument(argumentKey, argType);
 
         BiFunction<Object, ScriptContext, Object> mapperFunction = (BiFunction<Object, ScriptContext, Object>) mapper.function();
 
@@ -118,7 +123,10 @@ public class CommandTreeBuilder {
             try {
                 CommandSourceStack commandSource = context.getSource();
                 if (commandSource.source instanceof ZPSScriptCommandSource source) {
-                    Object rawArg = context.getArgument(argumentKey, scriptMapper2.argumentClass());
+                    Object rawArg = context.getArgument(argumentKey, Object.class);
+                    if (rawArg instanceof ValueOfExpression<?> expr) {
+                        rawArg = expr.evaluate(commandSource, source.getPos());
+                    }
                     source.predicateValue = mapperFunction.apply(source.predicateValue,
                             new ScriptContextWithArgumentImpl<>(rawArg, source.getPos(), commandSource.getLevel(), commandSource));
                 }
@@ -193,15 +201,19 @@ public class CommandTreeBuilder {
         ScriptExecutor<I, A> typed = (ScriptExecutor<I, A>) executor;
         String argumentKey = "zps:argument_" + String.format("%06d", argumentIndex++) + ":" + typed.inputKey().getPath();
 
-        ZPSArgument.Builder<CommandSourceStack, A> argumentBuilder = ZPSArgument.Builder.argument(argumentKey, typed.argumentType());
+        ArgumentType<Object> argumentType = ValueOfOrLiteralArgumentType.of((ArgumentType<Object>) typed.argumentType(), typed.inputKey());
+        ZPSArgument.Builder<CommandSourceStack, Object> argumentBuilder = ZPSArgument.Builder.argument(argumentKey, argumentType);
 
         var builtArgument = argumentBuilder.executes(context -> {
             CommandSourceStack commandSource = context.getSource();
             if (commandSource.source instanceof ZPSScriptCommandSource source) {
                 if (source.predicate.test(source.predicateValue)) {
-                    A rawArg = context.getArgument(argumentKey, typed.argumentClass());
+                    Object rawArg = context.getArgument(argumentKey, Object.class);
+                    if (rawArg instanceof ValueOfExpression<?> expr) {
+                        rawArg = expr.evaluate(commandSource, source.getPos());
+                    }
                     ScriptContext executorContext = new ScriptContextImpl(commandSource, source.getPos(), commandSource.getLevel());
-                    I mappedValue = typed.argumentMapper().apply(rawArg, executorContext);
+                    I mappedValue = typed.argumentMapper().apply((A) rawArg, executorContext);
                     return typed.function().apply(mappedValue, executorContext);
 
                 } else if (source.execute != null) {
@@ -217,9 +229,12 @@ public class CommandTreeBuilder {
                     source.predicate = source.predicate.cycle();
 
                     source.execute = () -> {
-                        A rawArg = context.getArgument(argumentKey, typed.argumentClass());
+                        Object rawArg = context.getArgument(argumentKey, Object.class);
+                        if (rawArg instanceof ValueOfExpression<?> expr) {
+                            rawArg = expr.evaluate(context.getSource(), source.getPos());
+                        }
                         ScriptContext executorContext = new ScriptContextImpl(context.getSource(), source.getPos(), context.getSource().getLevel());
-                        I mappedValue = typed.argumentMapper().apply(rawArg, executorContext);
+                        I mappedValue = typed.argumentMapper().apply((A) rawArg, executorContext);
                         return typed.function().apply(mappedValue, executorContext);
                     };
                 }
@@ -228,6 +243,136 @@ public class CommandTreeBuilder {
         }
 
         parentNode.addChild(new ZPSLiteral.Builder<CommandSourceStack>(typed.displayName()).then(builtArgument).build());
+    }
+
+    public void buildValueOfDispatchers() {
+        for (ResourceLocation targetType : TypeKeys.TYPE_KEY_TO_CLASS.keySet()) {
+            CommandDispatcher<CommandSourceStack> inner = new CommandDispatcher<>();
+            Map<String, CommandNode<CommandSourceStack>> innerNodes = new HashMap<>();
+
+            Command<CommandSourceStack> terminal = context -> {
+                if (context.getSource().source instanceof ZPSScriptCommandSource source) {
+                    source.pendingResult = source.predicateValue;
+                }
+                return 1;
+            };
+
+            // Pre-create target node so all branches converge on the same instance.
+            String terminalName = "have-" + targetType;
+            CommandNode<CommandSourceStack> terminalNode = new ZPSLiteral.Builder<CommandSourceStack>(terminalName)
+                    .then(new ZPSLiteral.Builder<CommandSourceStack>(ValueOfDispatchers.TERMINAL_LITERAL)
+                            .executes(terminal))
+                    .build();
+            innerNodes.put(terminalName, terminalNode);
+
+            Set<ScriptMapper<?, ?>> allMappers = mapperGraph.findAllMappersLeadingTo(targetType);
+
+            // Build inner mapper nodes
+            for (ScriptMapper<?, ?> mapper : allMappers) {
+                String inputName = "have-" + mapper.inputKey();
+                String outputName = "have-" + mapper.outputKey();
+                CommandNode<CommandSourceStack> inputNode = getOrCreateInnerNode(innerNodes, inputName, targetType, terminal);
+                CommandNode<CommandSourceStack> outputNode = getOrCreateInnerNode(innerNodes, outputName, targetType, terminal);
+
+                if (mapper instanceof ScriptMapper2<?, ?, ?> scriptMapper2) {
+                    addInnerMapper2Branch(scriptMapper2, mapper, inputNode, outputNode);
+                } else {
+                    addInnerMapper1Branch(mapper, inputNode, outputNode);
+                }
+            }
+
+            // Add getter nodes at the inner dispatcher root
+            for (ScriptGetter<?> getter : Registry.GETTERS) {
+                boolean canReach = getter.outputKey().equals(targetType) ||
+                        allMappers.stream().anyMatch(m -> m.inputKey().equals(getter.outputKey()));
+                if (!canReach) continue;
+
+                String outputName = "have-" + getter.outputKey();
+                CommandNode<CommandSourceStack> outputNode = getOrCreateInnerNode(innerNodes, outputName, targetType, terminal);
+
+                ZPSLiteral.Builder<CommandSourceStack> getterBuilder =
+                        new ZPSLiteral.Builder<>(getter.displayName());
+                getterBuilder.forward(outputNode, context -> {
+                    if (context.getSource().source instanceof ZPSScriptCommandSource source) {
+                        source.predicateValue = getter.function().apply(
+                                new ScriptContextImpl(context.getSource(), source.getPos(), context.getSource().getLevel())
+                        );
+                    }
+                    return List.of(context.getSource());
+                }, false);
+                inner.getRoot().addChild(getterBuilder.build());
+            }
+
+            ValueOfDispatchers.register(targetType, inner);
+        }
+    }
+
+    private CommandNode<CommandSourceStack> getOrCreateInnerNode(
+            Map<String, CommandNode<CommandSourceStack>> innerNodes,
+            String name,
+            ResourceLocation targetType,
+            Command<CommandSourceStack> terminal
+    ) {
+        return innerNodes.computeIfAbsent(name, n -> {
+            ZPSLiteral.Builder<CommandSourceStack> builder = new ZPSLiteral.Builder<>(n);
+            if (("have-" + targetType).equals(n)) {
+                builder.then(new ZPSLiteral.Builder<CommandSourceStack>(ValueOfDispatchers.TERMINAL_LITERAL)
+                        .executes(terminal));
+            }
+            return builder.build();
+        });
+    }
+
+    @SuppressWarnings("unchecked")
+    private void addInnerMapper2Branch(ScriptMapper2<?, ?, ?> scriptMapper2, ScriptMapper<?, ?> mapper,
+                                       CommandNode<CommandSourceStack> inputNode, CommandNode<CommandSourceStack> outputNode) {
+        String argumentKey = "zps:argument_" + String.format("%06d", argumentIndex++) + ":" + scriptMapper2.argumentHint();
+
+        ResourceLocation argTypeKey = scriptMapper2.argumentTypeKey();
+        ArgumentType<Object> argType = argTypeKey != null
+                ? ValueOfOrLiteralArgumentType.of((ArgumentType<Object>) scriptMapper2.argumentType(), argTypeKey)
+                : (ArgumentType<Object>) scriptMapper2.argumentType();
+        ZPSArgument.Builder<CommandSourceStack, Object> argumentBuilder = ZPSArgument.Builder.argument(argumentKey, argType);
+
+        BiFunction<Object, ScriptContext, Object> mapperFunction = (BiFunction<Object, ScriptContext, Object>) mapper.function();
+
+        var builtArgument = argumentBuilder.forward(outputNode, context -> {
+            try {
+                CommandSourceStack commandSource = context.getSource();
+                if (commandSource.source instanceof ZPSScriptCommandSource source) {
+                    Object rawArg = context.getArgument(argumentKey, Object.class);
+                    if (rawArg instanceof ValueOfExpression<?> expr) {
+                        rawArg = expr.evaluate(commandSource, source.getPos());
+                    }
+                    source.predicateValue = mapperFunction.apply(source.predicateValue,
+                            new ScriptContextWithArgumentImpl<>(rawArg, source.getPos(), commandSource.getLevel(), commandSource));
+                }
+                return List.of(context.getSource());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }, false);
+        inputNode.addChild(new ZPSLiteral.Builder<CommandSourceStack>(mapper.displayName()).then(builtArgument).build());
+    }
+
+    @SuppressWarnings("unchecked")
+    private void addInnerMapper1Branch(ScriptMapper<?, ?> mapper,
+                                       CommandNode<CommandSourceStack> inputNode, CommandNode<CommandSourceStack> outputNode) {
+        BiFunction<Object, ScriptContext, Object> mapperFunction = (BiFunction<Object, ScriptContext, Object>) mapper.function();
+        ZPSLiteral.Builder<CommandSourceStack> mapperBuilder =
+                new ZPSLiteral.Builder<>(mapper.displayName());
+        mapperBuilder.forward(outputNode, context -> {
+                    try {
+                        if (context.getSource().source instanceof ZPSScriptCommandSource source) {
+                            source.predicateValue = mapperFunction.apply(source.predicateValue,
+                                    new ScriptContextImpl(context.getSource(), source.getPos(), context.getSource().getLevel()));
+                        }
+                        return List.of(context.getSource());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }, false);
+        inputNode.addChild(mapperBuilder.build());
     }
 
     private record ScriptContextImpl(CommandSourceStack commandSource, BlockPos pos, ServerLevel level) implements ScriptContext {}

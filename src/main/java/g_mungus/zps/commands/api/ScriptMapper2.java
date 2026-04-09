@@ -11,6 +11,7 @@ public final class ScriptMapper2<I, O, A> extends ScriptMapper<I, O> {
     private final ArgumentType<A> argumentType;
     private final Class<A> argumentClass;
     private final String argumentHint;
+    private final ResourceLocation argumentTypeKey;
 
     public ScriptMapper2(
             String displayName,
@@ -21,7 +22,8 @@ public final class ScriptMapper2<I, O, A> extends ScriptMapper<I, O> {
             String argumentHint,
             BiFunction<I, ScriptContext.WithArgument<A>, O> function,
             ArgumentType<A> argumentType,
-            Class<A> argumentClass
+            Class<A> argumentClass,
+            ResourceLocation argumentTypeKey
     ) {
         super(
                 displayName,
@@ -40,6 +42,7 @@ public final class ScriptMapper2<I, O, A> extends ScriptMapper<I, O> {
         this.argumentType = argumentType;
         this.argumentClass = argumentClass;
         this.argumentHint = argumentHint;
+        this.argumentTypeKey = argumentTypeKey;
     }
 
     public ArgumentType<A> argumentType() {
@@ -52,5 +55,9 @@ public final class ScriptMapper2<I, O, A> extends ScriptMapper<I, O> {
 
     public String argumentHint() {
         return this.argumentHint;
+    }
+
+    public ResourceLocation argumentTypeKey() {
+        return argumentTypeKey;
     }
 }

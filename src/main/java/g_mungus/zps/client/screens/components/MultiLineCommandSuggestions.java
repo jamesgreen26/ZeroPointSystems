@@ -26,7 +26,9 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import g_mungus.zps.commands.api.ScriptExecutor;
+import g_mungus.zps.commands.api_impl.ValueOfDispatchers;
 import g_mungus.zps.commands.api_impl.ZPSCommands;
+import g_mungus.zps.commands.api_impl.arguments.ValueOfExpression;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -451,7 +453,7 @@ public class MultiLineCommandSuggestions {
                 CommandDispatcher<SharedSuggestionProvider> commandDispatcher = dispatcherProvider.get();
                 ParseResults<SharedSuggestionProvider> lineParseResults = commandDispatcher.parse(stringReader, this.minecraft.player.connection.getSuggestionsProvider());
 
-                return formatText(lineParseResults, string, i);
+                return formatText(lineParseResults, string, i, 0);
             } catch (Exception e) {
                 // If parsing fails, return unformatted
                 return FormattedCharSequence.forward(string, Style.EMPTY);
@@ -465,10 +467,10 @@ public class MultiLineCommandSuggestions {
         return string2.startsWith(string) ? string2.substring(string.length()) : null;
     }
 
-    private static FormattedCharSequence formatText(ParseResults<SharedSuggestionProvider> parseResults, String string, int i) {
+    private static FormattedCharSequence formatText(ParseResults<SharedSuggestionProvider> parseResults, String string, int i, int styleOffset) {
         List<FormattedCharSequence> list = Lists.<FormattedCharSequence>newArrayList();
         int j = 0;
-        int k = -1;
+        int k = styleOffset - 1;
         CommandContextBuilder<SharedSuggestionProvider> commandContextBuilder = parseResults.getContext().getLastChild();
 
         for (ParsedArgument<SharedSuggestionProvider, ?> parsedArgument : commandContextBuilder.getArguments().values()) {
@@ -484,7 +486,12 @@ public class MultiLineCommandSuggestions {
             int m = Math.min(parsedArgument.getRange().getEnd() - i, string.length());
             if (m > 0) {
                 list.add(FormattedCharSequence.forward(string.substring(j, l), LITERAL_STYLE));
-                list.add(FormattedCharSequence.forward(string.substring(l, m), (Style)ARGUMENT_STYLES.get(k)));
+                String argumentText = string.substring(l, m);
+                if (parsedArgument.getResult() instanceof ValueOfExpression<?> expr && argumentText.startsWith("value_of(") && argumentText.endsWith(")")) {
+                    list.add(formatValueOfExpression(expr, argumentText, parseResults.getContext().getSource(), k + 1));
+                } else {
+                    list.add(FormattedCharSequence.forward(argumentText, (Style)ARGUMENT_STYLES.get(k)));
+                }
                 j = m;
             }
         }
@@ -502,6 +509,36 @@ public class MultiLineCommandSuggestions {
 
         list.add(FormattedCharSequence.forward(string.substring(j), LITERAL_STYLE));
         return FormattedCharSequence.composite(list);
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static FormattedCharSequence formatValueOfExpression(
+            ValueOfExpression<?> expression,
+            String text,
+            SharedSuggestionProvider source,
+            int styleOffset
+    ) {
+        List<FormattedCharSequence> parts = Lists.newArrayList();
+        Style wrapperStyle = ARGUMENT_STYLES.get(0);
+        parts.add(FormattedCharSequence.forward("value_of(", wrapperStyle));
+
+        var innerDispatcher = ValueOfDispatchers.get(expression.targetTypeKey());
+        if (innerDispatcher != null) {
+            try {
+                var rawDispatcher = (CommandDispatcher) innerDispatcher;
+                ParseResults<SharedSuggestionProvider> innerParse = rawDispatcher.parse(expression.innerExpression(), source);
+                parts.add(formatText(innerParse, expression.innerExpression(), 0, styleOffset));
+            } catch (Exception ignored) {
+                parts.add(FormattedCharSequence.forward(expression.innerExpression(), ARGUMENT_STYLES.get(styleOffset % ARGUMENT_STYLES.size())));
+            }
+        } else {
+            parts.add(FormattedCharSequence.forward(expression.innerExpression(), ARGUMENT_STYLES.get(styleOffset % ARGUMENT_STYLES.size())));
+        }
+
+        if (text.endsWith(")")) {
+            parts.add(FormattedCharSequence.forward(")", wrapperStyle));
+        }
+        return FormattedCharSequence.composite(parts);
     }
 
     public void render(GuiGraphics arg, int i, int j) {
@@ -723,6 +760,7 @@ public class MultiLineCommandSuggestions {
 
         public void useSuggestion() {
             Suggestion suggestion = (Suggestion)this.suggestionList.get(this.current);
+            boolean reopenSuggestions = "value_of(".equals(suggestion.getText());
             MultiLineCommandSuggestions.this.keepSuggestions = true;
 
             // Apply suggestion to current line only
@@ -748,6 +786,10 @@ public class MultiLineCommandSuggestions {
             this.select(this.current);
             MultiLineCommandSuggestions.this.keepSuggestions = false;
             this.tabCycles = true;
+            if (reopenSuggestions) {
+                MultiLineCommandSuggestions.this.hide();
+                MultiLineCommandSuggestions.this.updateCommandInfo();
+            }
         }
 
         Component getNarrationMessage() {
@@ -759,4 +801,5 @@ public class MultiLineCommandSuggestions {
                     : Component.translatable("narration.suggestion", this.current + 1, this.suggestionList.size(), suggestion.getText());
         }
     }
+
 }

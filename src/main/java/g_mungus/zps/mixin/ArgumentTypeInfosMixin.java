@@ -1,6 +1,8 @@
 package g_mungus.zps.mixin;
 
 import com.mojang.brigadier.arguments.ArgumentType;
+import g_mungus.zps.commands.api_impl.arguments.ValueOfOrLiteralArgumentType;
+import g_mungus.zps.commands.api_impl.arguments.ValueOfOrLiteralArgumentTypeInfo;
 import g_mungus.zps.commands.content.arguments.BlockPosListArgument;
 import g_mungus.zps.commands.content.arguments.RadioFrequencyArgument;
 import net.minecraft.commands.synchronization.ArgumentTypeInfo;
@@ -36,6 +38,13 @@ public class ArgumentTypeInfosMixin {
                 "zps:radio_frequency",
                 RadioFrequencyArgument.class,
                 RadioFrequencyArgument.INFO
+        );
+
+        register(
+                arg,
+                "zps:value_of_or_literal",
+                (Class<? extends ValueOfOrLiteralArgumentType<?>>) (Class<?>) ValueOfOrLiteralArgumentType.class,
+                ValueOfOrLiteralArgumentTypeInfo.INSTANCE
         );
     }
 }

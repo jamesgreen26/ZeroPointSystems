@@ -11,3 +11,4 @@ logs/
 .classpath
 **/.DS_Store
 /local
+/gametest_run.log

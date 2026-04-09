@@ -15,6 +15,7 @@ public class ZPSScriptCommandSource implements CommandSource {
     private final @Nullable CommandSource delegate;
     private BlockPos blockPos = new BlockPos(0, 0, 0);
     public Object predicateValue = null;
+    public Object pendingResult = null;
     public PredicateType predicate = PredicateType.NONE;
     public Supplier<Integer> execute = null;
     public Class<?> executeType = null;

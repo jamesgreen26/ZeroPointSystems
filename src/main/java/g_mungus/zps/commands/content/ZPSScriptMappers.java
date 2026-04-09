@@ -91,7 +91,8 @@ public class ZPSScriptMappers {
                 "coordinates",
                 (vec3, context) -> vec3.distanceTo(context.argumentValue().getPosition(context.commandSource())),
                 Vec3Argument.vec3(),
-                Coordinates.class
+                Coordinates.class,
+                null
         ));
 
         // Vec3 Box - X dimension
@@ -184,7 +185,8 @@ public class ZPSScriptMappers {
                 "coordinates",
                 (blockPos, context) -> blockPos.equals(context.argumentValue().getBlockPos(context.commandSource())),
                 BlockPosArgument.blockPos(),
-                Coordinates.class
+                Coordinates.class,
+                null
         ));
 
         // Equality check for BlockState
@@ -204,7 +206,8 @@ public class ZPSScriptMappers {
                     return context.argumentValue().test(block);
                 },
                 BlockPredicateArgument.blockPredicate(event.buildContext()),
-                BlockPredicateArgument.Result.class
+                BlockPredicateArgument.Result.class,
+                null
         ));
 
         // Equality check for int
@@ -217,7 +220,8 @@ public class ZPSScriptMappers {
                 "int",
                 (value, context) -> value.equals(context.argumentValue()),
                 IntegerArgumentType.integer(),
-                Integer.class
+                Integer.class,
+                ResourceLocation.parse("zps:int")
         ));
 
         // Greater than for int
@@ -230,7 +234,8 @@ public class ZPSScriptMappers {
                 "int",
                 (value, context) -> value > context.argumentValue(),
                 IntegerArgumentType.integer(),
-                Integer.class
+                Integer.class,
+                ResourceLocation.parse("zps:int")
         ));
 
         // Less than for int
@@ -243,7 +248,8 @@ public class ZPSScriptMappers {
                 "int",
                 (value, context) -> value < context.argumentValue(),
                 IntegerArgumentType.integer(),
-                Integer.class
+                Integer.class,
+                ResourceLocation.parse("zps:int")
         ));
 
         // Addition for int
@@ -256,7 +262,8 @@ public class ZPSScriptMappers {
                 "int",
                 (value, context) -> value + context.argumentValue(),
                 IntegerArgumentType.integer(),
-                Integer.class
+                Integer.class,
+                ResourceLocation.parse("zps:int")
         ));
 
         // Subtraction for int
@@ -269,7 +276,8 @@ public class ZPSScriptMappers {
                 "int",
                 (value, context) -> value - context.argumentValue(),
                 IntegerArgumentType.integer(),
-                Integer.class
+                Integer.class,
+                ResourceLocation.parse("zps:int")
         ));
 
         // Bitwise AND for int
@@ -282,7 +290,8 @@ public class ZPSScriptMappers {
                 "int",
                 (value, context) -> value & context.argumentValue(),
                 IntegerArgumentType.integer(),
-                Integer.class
+                Integer.class,
+                ResourceLocation.parse("zps:int")
         ));
 
         // Bitwise OR for int
@@ -295,7 +304,8 @@ public class ZPSScriptMappers {
                 "int",
                 (value, context) -> value | context.argumentValue(),
                 IntegerArgumentType.integer(),
-                Integer.class
+                Integer.class,
+                ResourceLocation.parse("zps:int")
         ));
 
         // Multiplication for int -> double
@@ -308,7 +318,8 @@ public class ZPSScriptMappers {
                 "double",
                 (value, context) -> value * context.argumentValue(),
                 DoubleArgumentType.doubleArg(),
-                Double.class
+                Double.class,
+                ResourceLocation.parse("zps:double")
         ));
 
         // Division for int -> double
@@ -321,7 +332,8 @@ public class ZPSScriptMappers {
                 "double",
                 (value, context) -> value / context.argumentValue(),
                 DoubleArgumentType.doubleArg(),
-                Double.class
+                Double.class,
+                ResourceLocation.parse("zps:double")
         ));
 
         // Equality check for double
@@ -334,7 +346,8 @@ public class ZPSScriptMappers {
                 "double",
                 (value, context) -> value.equals(context.argumentValue()),
                 DoubleArgumentType.doubleArg(),
-                Double.class
+                Double.class,
+                ResourceLocation.parse("zps:double")
         ));
 
         // Greater than for double
@@ -347,7 +360,8 @@ public class ZPSScriptMappers {
                 "double",
                 (value, context) -> value > context.argumentValue(),
                 DoubleArgumentType.doubleArg(),
-                Double.class
+                Double.class,
+                ResourceLocation.parse("zps:double")
         ));
 
         // Less than for double
@@ -360,7 +374,8 @@ public class ZPSScriptMappers {
                 "double",
                 (value, context) -> value < context.argumentValue(),
                 DoubleArgumentType.doubleArg(),
-                Double.class
+                Double.class,
+                ResourceLocation.parse("zps:double")
         ));
 
         // Addition for double
@@ -373,7 +388,8 @@ public class ZPSScriptMappers {
                 "double",
                 (value, context) -> value + context.argumentValue(),
                 DoubleArgumentType.doubleArg(),
-                Double.class
+                Double.class,
+                ResourceLocation.parse("zps:double")
         ));
 
         // Subtraction for double
@@ -386,7 +402,8 @@ public class ZPSScriptMappers {
                 "double",
                 (value, context) -> value - context.argumentValue(),
                 DoubleArgumentType.doubleArg(),
-                Double.class
+                Double.class,
+                ResourceLocation.parse("zps:double")
         ));
 
         // Multiplication for double
@@ -399,7 +416,8 @@ public class ZPSScriptMappers {
                 "double",
                 (value, context) -> value * context.argumentValue(),
                 DoubleArgumentType.doubleArg(),
-                Double.class
+                Double.class,
+                ResourceLocation.parse("zps:double")
         ));
 
         // Division for double
@@ -412,7 +430,8 @@ public class ZPSScriptMappers {
                 "double",
                 (value, context) -> value / context.argumentValue(),
                 DoubleArgumentType.doubleArg(),
-                Double.class
+                Double.class,
+                ResourceLocation.parse("zps:double")
         ));
 
         // Round down double to int
@@ -445,7 +464,8 @@ public class ZPSScriptMappers {
                 "string",
                 (str, context) -> str.equals(context.argumentValue()),
                 StringArgumentType.string(),
-                String.class
+                String.class,
+                ResourceLocation.parse("zps:string")
         ));
 
         // Equality check for dimension
@@ -458,7 +478,8 @@ public class ZPSScriptMappers {
                 "dimension",
                 (dimension, context) -> dimension.equals(context.argumentValue().toString()),
                 DimensionArgument.dimension(),
-                ResourceLocation.class
+                ResourceLocation.class,
+                null
         ));
     }
 

@@ -89,6 +89,7 @@ public class ZPSCommands {
 
         commandTreeBuilder.buildMappers();
         commandTreeBuilder.buildGetters();
+        commandTreeBuilder.buildValueOfDispatchers();
         commandTreeBuilder.buildConditionalExecutors();
         commandTreeBuilder.buildExecutors();
 

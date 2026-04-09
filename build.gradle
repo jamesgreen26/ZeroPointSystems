@@ -139,6 +139,8 @@ dependencies {
     compileOnly("org.joml:joml-primitives:1.10.0")
     modCompileOnly("maven.modrinth:valkyrien-skies:1.20.1-forge-2.4.10")
 
+    modCompileOnly("maven.modrinth:vs-genesis:1.20.1-0.7.2")
+
     //noinspection DifferentStdlibGradleVersion
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10")
     implementation("org.jetbrains.kotlin:kotlin-reflect:1.9.10")

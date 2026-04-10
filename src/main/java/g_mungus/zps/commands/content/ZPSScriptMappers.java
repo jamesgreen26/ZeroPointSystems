@@ -587,6 +587,20 @@ public class ZPSScriptMappers {
                 ResourceLocation.parse("zps:string")
         ));
 
+        // Prepend for string
+        event.register(new ScriptMapper2<>(
+                "<+",
+                String.class,
+                String.class,
+                ResourceLocation.parse("zps:string"),
+                ResourceLocation.parse("zps:string"),
+                "string",
+                (str, context) -> context.argumentValue() + str,
+                StringArgumentType.string(),
+                String.class,
+                ResourceLocation.parse("zps:string")
+        ));
+
         // Equality check for dimension
         event.register(new ScriptMapper2<>(
                 "==",

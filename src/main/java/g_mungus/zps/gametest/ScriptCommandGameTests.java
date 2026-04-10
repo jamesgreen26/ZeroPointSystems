@@ -35,6 +35,7 @@ public class ScriptCommandGameTests {
     private static final ResourceLocation INT_KEY = ResourceLocation.parse("zps:int");
     private static final ResourceLocation DOUBLE_KEY = ResourceLocation.parse("zps:double");
     private static final ResourceLocation BOOLEAN_KEY = ResourceLocation.parse("zps:boolean");
+    private static final ResourceLocation STRING_KEY = ResourceLocation.parse("zps:string");
 
     // -------------------------------------------------------------------------
     // Helper
@@ -255,6 +256,24 @@ public class ScriptCommandGameTests {
         double expected = expectedX * 2.5;
         if (result == null || Math.abs(result - expected) > 1e-9) {
             helper.fail("value_of(pos x * 2.5): expected " + expected + ", got " + result);
+            return;
+        }
+        helper.succeed();
+    }
+
+    /**
+     * {@code value_of(pos as_string <+ "Pos: ")} should prepend the literal to
+     * the computed string form of the position.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void valueOf_stringPrepend_returnsPrependedString(GameTestHelper helper) {
+        BlockPos absPos = helper.absolutePos(new BlockPos(4, 1, 3));
+
+        String result = evalValueOf(helper, absPos, "pos as_string <+ \"Pos: \"", STRING_KEY);
+        String expected = "Pos: " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ();
+
+        if (!expected.equals(result)) {
+            helper.fail("value_of(pos as_string <+ \"Pos: \"): expected " + expected + ", got " + result);
             return;
         }
         helper.succeed();

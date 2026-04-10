@@ -12,3 +12,4 @@ logs/
 **/.DS_Store
 /local
 /gametest_run.log
+/src/main/resources/assets/zps/doc/en_us/.obsidian/*

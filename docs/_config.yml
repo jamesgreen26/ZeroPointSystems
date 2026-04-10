@@ -2,6 +2,8 @@ remote_theme: sharadcodes/jekyll-theme-dark-reader
 plugins:
   - jekyll-remote-theme
 title: Zero Point Systems Docs
+url: https://jamesgreen26.github.io
+baseurl: /ZeroPointSystems
 markdown: kramdown
 kramdown:
   input: GFM

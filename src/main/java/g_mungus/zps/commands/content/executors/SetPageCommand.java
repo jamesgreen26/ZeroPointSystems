@@ -44,7 +44,7 @@ public class SetPageCommand {
                         pages.add(StringTag.valueOf(""));
                         holder.zps$onPageAdded();
                     }
-                    pages.set(page, StringTag.valueOf(text));
+                    pages.set(page, StringTag.valueOf(text.replace("\\n", "\n")));
                     holder.zps$onPageWritten();
                 }
             }));

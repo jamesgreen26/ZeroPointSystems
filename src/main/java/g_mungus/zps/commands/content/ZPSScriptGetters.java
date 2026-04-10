@@ -88,7 +88,7 @@ public class ZPSScriptGetters {
                         if (tag == null) return "";
                         ListTag pages = tag.getList("pages", Tag.TAG_STRING);
                         if (page < 0 || page >= pages.size()) return "";
-                        return pages.getString(page);
+                        return pages.getString(page).replace("\n", "\\n");
                     }
                     return "";
                 },

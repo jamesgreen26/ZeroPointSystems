@@ -29,7 +29,7 @@ if celestial current == genesis:moon set_redstone 15
 ```
 
 ```
-unless celestial nearest == genesis:moon set_redstone 15
+if celestial nearest size > 0 set_redstone 15
 ```
 
 ```
@@ -55,8 +55,7 @@ Examples:
 
 ```
 if celestial current gravity < 5 set_redstone 15
-set_redstone value_of(celestial current gravity rounded_down)
-if celestial current is_visitable set_redstone 15 else set_redstone 0
+if celestial current is_visitable set_redstone 15
 ```
 
 ---

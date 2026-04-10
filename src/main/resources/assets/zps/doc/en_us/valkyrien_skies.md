@@ -40,13 +40,7 @@ if ship id > -1 set_redstone 15 else set_redstone 0
 Set redstone based on whether the ship is moving upward:
 
 ```
-if ship world_vel y > 0.1 set_redstone 15 else set_redstone 0
-```
-
-Output a redstone signal proportional to ship speed (clamped to 15):
-
-```
-set_redstone value_of(ship world_vel length rounded_down)
+if ship world_vel y > 0 set_redstone 15
 ```
 
 Check which way the ship's front is pointing:

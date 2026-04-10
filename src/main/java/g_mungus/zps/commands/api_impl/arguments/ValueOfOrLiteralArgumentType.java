@@ -66,28 +66,30 @@ public class ValueOfOrLiteralArgumentType<A> implements ArgumentType<Object> {
     public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> context, SuggestionsBuilder builder) {
         String remaining = builder.getRemaining();
 
-        if (remaining.isBlank()) return Suggestions.empty();
+        if (!remaining.isBlank()) {
 
-        if (remaining.startsWith(VALUE_OF_PREFIX)) {
-            String innerRemaining = remaining.substring(VALUE_OF_PREFIX.length());
-            var innerDispatcher = ValueOfDispatchers.get(targetTypeKey);
-            if (innerDispatcher != null) {
-                try {
-                    @SuppressWarnings("rawtypes")
-                    var rawDispatcher = (com.mojang.brigadier.CommandDispatcher) innerDispatcher;
-                    var parseResults = rawDispatcher.parse(innerRemaining, context.getSource());
-                    return rawDispatcher.getCompletionSuggestions(parseResults, innerRemaining.length())
-                            .thenApply(suggestions -> translateInnerSuggestions(builder, innerRemaining, (Suggestions) suggestions, context.getSource()));
-                } catch (Exception ignored) {
+            if (remaining.startsWith(VALUE_OF_PREFIX)) {
+                String innerRemaining = remaining.substring(VALUE_OF_PREFIX.length());
+                var innerDispatcher = ValueOfDispatchers.get(targetTypeKey);
+                if (innerDispatcher != null) {
+                    try {
+                        @SuppressWarnings("rawtypes")
+                        var rawDispatcher = (com.mojang.brigadier.CommandDispatcher) innerDispatcher;
+                        var parseResults = rawDispatcher.parse(innerRemaining, context.getSource());
+                        return rawDispatcher.getCompletionSuggestions(parseResults, innerRemaining.length())
+                                .thenApply(suggestions -> translateInnerSuggestions(builder, innerRemaining, (Suggestions) suggestions, context.getSource()));
+                    } catch (Exception ignored) {
+                    }
                 }
+                return Suggestions.empty();
             }
-            return Suggestions.empty();
         }
 
         SuggestionsBuilder withValueOf = builder.createOffset(builder.getStart());
-        if (VALUE_OF_PREFIX.startsWith(remaining)) {
+        if (VALUE_OF_PREFIX.startsWith(remaining) && !remaining.isBlank()) {
             withValueOf.suggest(VALUE_OF_PREFIX);
         }
+
 
         return wrappedType.listSuggestions(context, builder).thenCombine(
                 CompletableFuture.completedFuture(withValueOf.buildFuture().join()),

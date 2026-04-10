@@ -279,6 +279,58 @@ public class ScriptCommandGameTests {
         helper.succeed();
     }
 
+    /**
+     * {@code value_of(pos as_string + "\\nalpha\\n" lines)} should count escaped
+     * newline separators and preserve the trailing empty line.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void valueOf_stringLines_countsEscapedNewlines(GameTestHelper helper) {
+        BlockPos absPos = helper.absolutePos(new BlockPos(4, 1, 3));
+
+        Integer result = evalValueOf(helper, absPos, "pos as_string + \"\\\\nalpha\\\\n\" lines", INT_KEY);
+
+        if (result == null || result != 3) {
+            helper.fail("value_of(pos as_string + \"\\\\nalpha\\\\n\" lines): expected 3, got " + result);
+            return;
+        }
+        helper.succeed();
+    }
+
+    /**
+     * {@code value_of(pos as_string + "\\nalpha\\nbeta" get_line 3)} should
+     * return the requested escaped-newline-delimited segment using 1-based
+     * indexing.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void valueOf_stringGetLine_returnsIndexedLine(GameTestHelper helper) {
+        BlockPos absPos = helper.absolutePos(new BlockPos(4, 1, 3));
+
+        String result = evalValueOf(helper, absPos, "pos as_string + \"\\\\nalpha\\\\nbeta\" get_line 3", STRING_KEY);
+
+        if (!"beta".equals(result)) {
+            helper.fail("value_of(pos as_string + \"\\\\nalpha\\\\nbeta\" get_line 3): expected beta, got " + result);
+            return;
+        }
+        helper.succeed();
+    }
+
+    /**
+     * {@code value_of(pos as_string + "\\nalpha" get_line 5)} should return an
+     * empty string when the requested index is out of bounds.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void valueOf_stringGetLine_outOfBoundsReturnsEmptyString(GameTestHelper helper) {
+        BlockPos absPos = helper.absolutePos(new BlockPos(4, 1, 3));
+
+        String result = evalValueOf(helper, absPos, "pos as_string + \"\\\\nalpha\" get_line 5", STRING_KEY);
+
+        if (!"".equals(result)) {
+            helper.fail("value_of(pos as_string + \"\\\\nalpha\" get_line 5): expected empty string, got " + result);
+            return;
+        }
+        helper.succeed();
+    }
+
     // -------------------------------------------------------------------------
     // Bitwise operators (regression for & and |)
     // -------------------------------------------------------------------------

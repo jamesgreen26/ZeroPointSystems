@@ -20,8 +20,12 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import java.util.regex.Pattern;
+
 @Mod.EventBusSubscriber
 public class ZPSScriptMappers {
+    private static final String ESCAPED_NEWLINE = "\\n";
+    private static final Pattern ESCAPED_NEWLINE_PATTERN = Pattern.compile(Pattern.quote(ESCAPED_NEWLINE));
 
     @SubscribeEvent
     public static void onRegisterEvent(RegisterScriptCommandsEvent event) {
@@ -601,6 +605,34 @@ public class ZPSScriptMappers {
                 ResourceLocation.parse("zps:string")
         ));
 
+        // Count escaped "\n"-delimited lines in a string
+        event.register(new ScriptMapper<>(
+                "lines",
+                String.class,
+                Integer.class,
+                ResourceLocation.parse("zps:string"),
+                ResourceLocation.parse("zps:int"),
+                (str, ctx) -> splitEscapedNewlines(str).length
+        ));
+
+        // Get the escaped "\n"-delimited line at the given index
+        event.register(new ScriptMapper2<>(
+                "get_line",
+                String.class,
+                String.class,
+                ResourceLocation.parse("zps:string"),
+                ResourceLocation.parse("zps:string"),
+                "index",
+                (str, context) -> {
+                    String[] lines = splitEscapedNewlines(str);
+                    int index = context.argumentValue() - 1; // 1-based indexing
+                    return index >= 0 && index < lines.length ? lines[index] : "";
+                },
+                IntegerArgumentType.integer(),
+                Integer.class,
+                ResourceLocation.parse("zps:int")
+        ));
+
         // Equality check for dimension
         event.register(new ScriptMapper2<>(
                 "==",
@@ -719,5 +751,9 @@ public class ZPSScriptMappers {
     public interface BlockInWorldMutable {
         void zps$setState(BlockState state);
         void zps$setCachedEntity(boolean b);
+    }
+
+    private static String[] splitEscapedNewlines(String value) {
+        return ESCAPED_NEWLINE_PATTERN.split(value, -1);
     }
 }

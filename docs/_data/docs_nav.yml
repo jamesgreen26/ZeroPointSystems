@@ -1,0 +1,21 @@
+- key: index
+  title: Script Commands
+  url: /
+- key: executors
+  title: Executors
+  url: /executors.html
+- key: getters
+  title: Getters
+  url: /getters.html
+- key: mappers
+  title: Mappers
+  url: /mappers.html
+- key: create
+  title: Create Integration
+  url: /create.html
+- key: genesis
+  title: Genesis Integration
+  url: /genesis.html
+- key: valkyrien_skies
+  title: Valkyrien Skies Integration
+  url: /valkyrien_skies.html

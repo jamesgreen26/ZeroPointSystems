@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% if page.title %}{{ page.title }} | {% endif %}{{ site.title }}</title>
+    <link rel="stylesheet" href="{{ '/assets/docs.css' | relative_url }}">
+    <script defer src="{{ '/assets/docs-toc.js' | relative_url }}"></script>
+  </head>
+  <body>
+    <div class="docs-shell">
+      <aside class="docs-sidebar">
+        <a class="docs-home" href="{{ '/' | relative_url }}">Zero Point Systems</a>
+        <nav aria-label="Documentation pages">
+          <ul class="docs-nav">
+            {% for item in site.data.docs_nav %}
+            <li>
+              <a href="{{ item.url | relative_url }}"{% if item.key == page.doc_key %} aria-current="page"{% endif %}>
+                {{ item.title }}
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+        </nav>
+      </aside>
+
+      <main class="docs-main">
+        <article class="doc-content" data-toc-root>
+          {{ content }}
+        </article>
+      </main>
+
+      <aside class="docs-toc-pane" aria-label="On this page">
+        <div class="docs-toc-card" data-toc-container hidden>
+          <p class="docs-toc-heading">On this page</p>
+          <nav data-toc></nav>
+        </div>
+      </aside>
+    </div>
+  </body>
+</html>

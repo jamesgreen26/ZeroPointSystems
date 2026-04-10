@@ -1,0 +1,7 @@
+remote_theme: sharadcodes/jekyll-theme-dark-reader
+plugins:
+  - jekyll-remote-theme
+title: Zero Point Systems Docs
+markdown: kramdown
+kramdown:
+  input: GFM

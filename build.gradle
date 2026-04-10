@@ -190,6 +190,11 @@ processResources {
     filesMatching('META-INF/mods.toml') {
         expand version: project.version
     }
+
+    from('docs') {
+        include '**/*.md'
+        into 'assets/zps/doc/en_us'
+    }
 }
 
 java {

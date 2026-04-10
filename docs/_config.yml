@@ -1,9 +1,16 @@
 remote_theme: sharadcodes/jekyll-theme-dark-reader
 plugins:
   - jekyll-remote-theme
+  - jekyll-toc
 title: Zero Point Systems Docs
 url: https://jamesgreen26.github.io
 baseurl: /ZeroPointSystems
 markdown: kramdown
 kramdown:
   input: GFM
+toc:
+  min_level: 2
+  max_level: 3
+  list_class: docs-toc-list
+  item_class: docs-toc-item
+  item_prefix: docs-toc-

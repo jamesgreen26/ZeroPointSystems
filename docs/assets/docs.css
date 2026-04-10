@@ -145,7 +145,8 @@ body {
   color: var(--accent);
 }
 
-.docs-toc-list .toc-level-3 a {
+.docs-toc-list .docs-toc-h3 > a,
+.docs-toc-list .docs-toc-list .docs-toc-item > a {
   padding-left: 1.25rem;
 }
 

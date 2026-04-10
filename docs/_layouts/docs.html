@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% if page.title %}{{ page.title }} | {% endif %}{{ site.title }}</title>
     <link rel="stylesheet" href="{{ '/assets/docs.css' | relative_url }}">
-    <script defer src="{{ '/assets/docs-toc.js' | relative_url }}"></script>
   </head>
   <body>
     <div class="docs-shell">
@@ -25,15 +24,17 @@
       </aside>
 
       <main class="docs-main">
-        <article class="doc-content" data-toc-root>
-          {{ content }}
+        <article class="doc-content">
+          {{ content | inject_anchors }}
         </article>
       </main>
 
       <aside class="docs-toc-pane" aria-label="On this page">
-        <div class="docs-toc-card" data-toc-container hidden>
+        <div class="docs-toc-card">
           <p class="docs-toc-heading">On this page</p>
-          <nav data-toc></nav>
+          <nav>
+            {{ content | toc_only }}
+          </nav>
         </div>
       </aside>
     </div>

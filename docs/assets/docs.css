@@ -151,22 +151,21 @@ body {
 
 @media (max-width: 1100px) {
   .docs-shell {
-    grid-template-columns: minmax(13rem, 16rem) minmax(0, 1fr);
-  }
-
-  .docs-toc-pane {
-    display: none;
-  }
-}
-
-@media (max-width: 760px) {
-  .docs-shell {
-    padding: 1rem;
     grid-template-columns: 1fr;
   }
 
   .docs-sidebar,
   .docs-toc-card {
     position: static;
+  }
+}
+
+@media (max-width: 760px) {
+  .docs-shell {
+    padding: 1rem;
+  }
+
+  .doc-content {
+    padding: 1rem;
   }
 }

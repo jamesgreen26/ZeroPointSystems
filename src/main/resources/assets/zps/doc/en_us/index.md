@@ -1,0 +1,138 @@
+# Script Commands
+
+The Script Terminal lets you automate blocks using a simple, line-based scripting language.
+
+Each line is a command. When the terminal receives a redstone signal, it dispatches each command in order.
+
+---
+
+## How It Works
+
+Commands are built up of chainable parts:
+
+| Part       | Purpose                                                                       |
+| ---------- | ----------------------------------------------------------------------------- |
+| `Executor` | Performs an action on the target block. Always takes an argument.             |
+| `Getter`   | Reads a value from the world or target block. Never takes an argument.        |
+| `Mapper`   | Transforms the current value into another value. Sometimes takes an argument. |
+
+The simplest valid command is an executor with its associated argument:
+
+```
+set_redstone 15
+```
+
+Here `set_redstone` is the executor and `15` is its argument.
+
+---
+
+## Conditionals
+
+Use `if` or `unless` before an executor to make it conditional:
+
+```
+if <condition> <executor>
+unless <condition> <executor>
+```
+
+The `condition` is a getter → mapper chain that produces a Boolean value (`true` or `false`).
+
+- `if` runs the executor when the condition is `true`
+- `unless` runs the executor when the condition is `false`
+
+Example:
+
+```
+if redstone > 7 set_redstone 0
+```
+
+Here, `redstone > 7` is the condition.  
+If it evaluates to `true`, the executor `set_redstone` runs with argument `0`.
+
+I.e. this command sets redstone to 0 only if the target block is receiving a signal strength of 8 or higher.
+
+---
+
+## Conditionals with alternatives
+
+Add `else` to provide an alternative if the condition fails:
+
+```
+if <condition> <executor> else <executor>
+unless <condition> <executor> else <executor>
+```
+
+- For `if`:
+    - If the condition is `true`, the first executor runs
+    - If the condition is `false`, the second executor runs
+
+- For `unless`:
+    - If the condition is `false`, the first executor runs
+    - If the condition is `true`, the second executor runs
+
+Example:
+
+```
+if redstone > 7 set_redstone 0 else set_redstone 15
+```
+
+Here, `redstone > 7` is the condition.
+
+- If it evaluates to `true`, `set_redstone 0` runs
+- If it evaluates to `false`, `set_redstone 15` runs
+
+This command sets redstone to 0 when the signal strength is 8 or higher, and 15 otherwise.
+
+---
+
+## Wait
+
+Use `wait <cycles>` to pause execution for a number of cycles:
+
+Example:
+
+```
+set_redstone 15
+wait 2
+set_redstone 0
+```
+
+`wait` behaves like an executor, but cannot be used with `if`, `unless`, or `else`.
+
+It always runs when reached, and delays the dispatch of following commands.
+
+---
+
+> The remaining concepts are more advanced and are not required to get started. It is recommended to become familiar 
+> with the above material before continuing, and return to these topics as needed.
+
+---
+
+## Coordinates
+
+Arguments support Minecraft's relative (`~`) and local (`^`) coordinate syntax, resolved relative to the terminal's position.
+
+Examples
+
+```
+if pos == ~ ~1 ~ set_redstone 15
+if pos == ^3 ^ ^-12 set_redstone 0
+```
+
+The coordinates are resolved when the command is dispatched, not when it's executed.
+
+---
+
+## value_of()
+
+Use `value_of(...)` in place of a literal argument to compute a value at runtime:
+
+Example:
+
+```
+set_redstone value_of(pos y - 50)
+```
+
+The expression inside can be any getter → mapper chain, so long as it returns the required argument type.
+
+---

@@ -7,6 +7,7 @@ import g_mungus.zps.client.screens.components.MultiLineEditBox;
 import g_mungus.zps.client.screens.components.MultiLineCommandSuggestions;
 import g_mungus.zps.client.screens.components.ScriptDispatcherProvider;
 import g_mungus.zps.config.ZPSConfig;
+import g_mungus.zps.manual.ModManuals;
 import g_mungus.zps.networking.ScriptComputerC2SPacket;
 import g_mungus.zps.networking.ZPSGamePackets;
 import net.minecraft.client.GameNarrator;
@@ -17,6 +18,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -24,6 +27,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Set;
 
 public class ScriptTerminalScreen extends PonderCompatibleScreen {
+    private static final ItemStack MANUAL_BUTTON_ICON = new ItemStack(Items.BOOK);
 
     private static final Component SET_COMMAND_LABEL = Component.literal("Script Terminal");
     private static final Component COMMAND_LABEL = Component.literal("ZPS Script Command");
@@ -37,6 +41,7 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
     protected Button cancelButton;
     protected Button modeButton;
     protected Button delayButton;
+    protected Button manualButton;
     protected MultiLineEditBox commandEdit;
     MultiLineCommandSuggestions commandSuggestions;
 
@@ -44,6 +49,7 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
     private int delayIndex = 1;
     private static final String[] DELAY_KEYS = {"2t", "4t", "8t", "16t"};
     private static final int[] DELAY_VALUES = {2, 4, 8, 16};
+    private static final Component OPEN_MANUAL_LABEL = Component.translatable("zps.screen.open_manual");
     private Set<ResourceLocation> connectedBlocks = null;
 
     public ScriptTerminalScreen(@Nullable ScriptComputer computer, boolean debug) {
@@ -114,6 +120,12 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
                     this.modeButton.setMessage(Component.literal(isRepeatMode ? "REPEAT" : "IMPULSE"));
                 }).bounds(this.width / 2 + 90, 25, 60, 20).build()
         );
+
+        if (!isInPonder()) {
+            this.manualButton = this.addRenderableWidget(new ManualButton(4, this.height - 24));
+        } else {
+            this.manualButton = null;
+        }
 
         this.commandEdit = new MultiLineEditBox(this.font, this.width / 2 - 150, 50, 300, this.height / 4 + 70, Component.translatable("advMode.command"));
         this.commandEdit.setMaxLength(32500);
@@ -194,6 +206,9 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
         this.commandEdit.render(arg, i, j, f);
 
         super.render(arg, i, j, f);
+        if (this.manualButton != null && this.manualButton.isHoveredOrFocused()) {
+            arg.renderTooltip(this.font, OPEN_MANUAL_LABEL, i, j);
+        }
         this.commandSuggestions.render(arg, i, j);
     }
 
@@ -209,6 +224,22 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
             screen.initialDelay = delay;
             screen.connectedBlocks = connectedBlocks;
             minecraft.setScreen(screen);
+        }
+    }
+
+    private final class ManualButton extends Button {
+        private ManualButton(final int x, final int y) {
+            super(x, y, 20, 20, CommonComponents.EMPTY, arg -> {
+                if (ScriptTerminalScreen.this.minecraft != null && ScriptTerminalScreen.this.minecraft.level != null) {
+                    ModManuals.openScriptCommandsManual(ScriptTerminalScreen.this.minecraft.level);
+                }
+            }, DEFAULT_NARRATION);
+        }
+
+        @Override
+        public void renderWidget(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+            super.renderWidget(graphics, mouseX, mouseY, partialTick);
+            graphics.renderItem(MANUAL_BUTTON_ICON, this.getX() + 2, this.getY() + 2);
         }
     }
 }

@@ -2,24 +2,17 @@
   "type": "minecraft:crafting_shaped",
   "category": "functional",
   "key": {
-    "I": {
-      "tag": "forge:ingots/space_metal"
-    },
     "C": {
       "item": "zps:cable"
-    },
-    "M": {
-      "item": "zps:space_metal_mesh"
     }
   },
   "pattern": [
-    "ICI",
-    "MCM",
-    "ICI"
+    "CC",
+    "CC"
   ],
   "result": {
     "item": "zps:dense_cables",
-    "count": 4
+    "count": 1
   },
   "show_notification": true
 }

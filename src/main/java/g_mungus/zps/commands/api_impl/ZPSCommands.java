@@ -12,6 +12,7 @@ import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptExecutor;
 import g_mungus.zps.commands.api.ScriptGetter;
+import g_mungus.zps.commands.api.ScriptMapper;
 import g_mungus.zps.commands.api.ScriptNode;
 import g_mungus.zps.commands.api_impl.debug.BrigadierCanvasExporter;
 import g_mungus.zps.networking.ExecutorBlocksS2CPacket;
@@ -172,6 +173,16 @@ public class ZPSCommands {
         for (var getter : Registry.GETTERS) {
             if (getter.displayName().equals(key)) {
                 return getter;
+            }
+        }
+        return null;
+    }
+
+    @Nullable
+    public static ScriptMapper<?, ?> getMapper(String key) {
+        for (var mapper : Registry.MAPPERS) {
+            if (mapper.displayName().equals(key)) {
+                return mapper;
             }
         }
         return null;

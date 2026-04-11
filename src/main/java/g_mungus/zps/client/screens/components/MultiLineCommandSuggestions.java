@@ -1,14 +1,15 @@
 package g_mungus.zps.client.screens.components;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.Message;
 import com.mojang.brigadier.ParseResults;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.context.CommandContextBuilder;
+import com.mojang.brigadier.context.ParsedCommandNode;
 import com.mojang.brigadier.context.ParsedArgument;
+import com.mojang.brigadier.context.StringRange;
 import com.mojang.brigadier.context.SuggestionContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestion;
@@ -22,11 +23,11 @@ import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import g_mungus.zps.commands.api.ScriptExecutor;
 import g_mungus.zps.commands.api.ScriptGetter;
+import g_mungus.zps.commands.api.ScriptMapper;
 import g_mungus.zps.commands.api_impl.ValueOfDispatchers;
 import g_mungus.zps.commands.api_impl.ZPSCommands;
 import g_mungus.zps.commands.api_impl.arguments.ValueOfExpression;
@@ -54,12 +55,11 @@ public class MultiLineCommandSuggestions {
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("(\\s+)");
     private static final String ARGUMENT_PLACEHOLDER = "%s";
     private static final Style UNPARSED_STYLE = Style.EMPTY.withColor(ChatFormatting.RED);
-    private static final Style LITERAL_STYLE = Style.EMPTY.withColor(ChatFormatting.GRAY);
-    private static final List<Style> ARGUMENT_STYLES = (List<Style>)Stream.of(
-                    ChatFormatting.AQUA, ChatFormatting.YELLOW, ChatFormatting.GREEN, ChatFormatting.LIGHT_PURPLE, ChatFormatting.GOLD
-            )
-            .map(Style.EMPTY::withColor)
-            .collect(ImmutableList.toImmutableList());
+    private static final Style EXECUTOR_STYLE = Style.EMPTY.withColor(ChatFormatting.LIGHT_PURPLE);
+    private static final Style GETTER_STYLE = Style.EMPTY.withColor(ChatFormatting.AQUA);
+    private static final Style MAPPER_STYLE = Style.EMPTY.withColor(ChatFormatting.YELLOW);
+    private static final Style ARGUMENT_STYLE = Style.EMPTY.withColor(ChatFormatting.GREEN);
+    private static final Style DEFAULT_STYLE = Style.EMPTY.withColor(ChatFormatting.GRAY);
     final Minecraft minecraft;
     private final CommandDispatcherProvider dispatcherProvider;
     private final Screen screen;
@@ -465,7 +465,7 @@ public class MultiLineCommandSuggestions {
                 CommandDispatcher<SharedSuggestionProvider> commandDispatcher = dispatcherProvider.get();
                 ParseResults<SharedSuggestionProvider> lineParseResults = commandDispatcher.parse(stringReader, this.minecraft.player.connection.getSuggestionsProvider());
 
-                return formatText(lineParseResults, string, i, 0);
+                return formatText(lineParseResults, string, i);
             } catch (Exception e) {
                 // If parsing fails, return unformatted
                 return FormattedCharSequence.forward(string, Style.EMPTY);
@@ -479,83 +479,83 @@ public class MultiLineCommandSuggestions {
         return string2.startsWith(string) ? string2.substring(string.length()) : null;
     }
 
-    private static FormattedCharSequence formatText(ParseResults<SharedSuggestionProvider> parseResults, String string, int i, int styleOffset) {
+    private static FormattedCharSequence formatText(ParseResults<SharedSuggestionProvider> parseResults, String string, int i) {
         List<FormattedCharSequence> list = Lists.<FormattedCharSequence>newArrayList();
-        int j = 0;
-        int k = styleOffset - 1;
-        CommandContextBuilder<SharedSuggestionProvider> commandContextBuilder = parseResults.getContext().getLastChild();
+        List<HighlightSpan> spans = new ArrayList<>();
+        collectLiteralSpans(parseResults.getContext(), spans);
+        collectArgumentSpans(parseResults.getContext(), spans);
+        spans.sort(Comparator.comparingInt(span -> span.range().getStart()));
 
-        for (ParsedArgument<SharedSuggestionProvider, ?> parsedArgument : commandContextBuilder.getArguments().values()) {
-            if (++k >= ARGUMENT_STYLES.size()) {
-                k = 0;
-            }
-
-            int l = Math.max(parsedArgument.getRange().getStart() - i, 0);
-            if (l >= string.length()) {
+        int cursor = 0;
+        for (HighlightSpan span : spans) {
+            int start = Math.max(span.range().getStart() - i, 0);
+            if (start >= string.length()) {
                 break;
             }
 
-            int m = Math.min(parsedArgument.getRange().getEnd() - i, string.length());
-            if (m > 0) {
-                list.add(FormattedCharSequence.forward(string.substring(j, l), LITERAL_STYLE));
-                String argumentText = string.substring(l, m);
-                if (parsedArgument.getResult() instanceof ValueOfExpression<?> expr && argumentText.startsWith("value_of(") && argumentText.endsWith(")")) {
-                    list.add(formatValueOfExpression(expr, argumentText, parseResults.getContext().getSource(), k + 1));
-                } else {
-                    list.add(FormattedCharSequence.forward(argumentText, (Style)ARGUMENT_STYLES.get(k)));
-                }
-                j = m;
+            int end = Math.min(span.range().getEnd() - i, string.length());
+            if (end <= start) {
+                continue;
             }
+
+            if (start > cursor) {
+                list.add(FormattedCharSequence.forward(string.substring(cursor, start), DEFAULT_STYLE));
+            }
+
+            String spanText = string.substring(start, end);
+            if (span.value() instanceof ValueOfExpression<?> expr && spanText.startsWith("value_of(") && spanText.endsWith(")")) {
+                list.add(formatValueOfExpression(expr, spanText, parseResults.getContext().getSource()));
+            } else {
+                list.add(FormattedCharSequence.forward(spanText, span.style()));
+            }
+            cursor = end;
         }
 
         // Mark any remaining unparsed text as invalid
         if (parseResults.getReader().canRead()) {
             int n = Math.max(parseResults.getReader().getCursor() - i, 0);
             if (n < string.length()) {
-                list.add(FormattedCharSequence.forward(string.substring(j, n), LITERAL_STYLE));
+                list.add(FormattedCharSequence.forward(string.substring(cursor, n), DEFAULT_STYLE));
                 if (isArgumentPlaceholderAt(string, n)) {
                     int o = Math.min(n + ARGUMENT_PLACEHOLDER.length(), string.length());
-                    Style placeholderStyle = ARGUMENT_STYLES.get((k + 1) % ARGUMENT_STYLES.size());
-                    list.add(FormattedCharSequence.forward(string.substring(n, o), placeholderStyle));
-                    j = o;
+                    list.add(FormattedCharSequence.forward(string.substring(n, o), ARGUMENT_STYLE));
+                    cursor = o;
                 } else {
                     int o = Math.min(n + parseResults.getReader().getRemainingLength(), string.length());
                     list.add(FormattedCharSequence.forward(string.substring(n, o), UNPARSED_STYLE));
-                    j = o;
+                    cursor = o;
                 }
             }
         }
 
-        list.add(FormattedCharSequence.forward(string.substring(j), LITERAL_STYLE));
+        list.add(FormattedCharSequence.forward(string.substring(cursor), DEFAULT_STYLE));
         return FormattedCharSequence.composite(list);
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     private static FormattedCharSequence formatValueOfExpression(
             ValueOfExpression<?> expression,
             String text,
-            SharedSuggestionProvider source,
-            int styleOffset
+            SharedSuggestionProvider source
     ) {
         List<FormattedCharSequence> parts = Lists.newArrayList();
-        Style wrapperStyle = ARGUMENT_STYLES.get(0);
-        parts.add(FormattedCharSequence.forward("value_of(", wrapperStyle));
+        parts.add(FormattedCharSequence.forward("value_of(", ARGUMENT_STYLE));
 
         var innerDispatcher = ValueOfDispatchers.get(expression.targetTypeKey());
         if (innerDispatcher != null) {
             try {
+                @SuppressWarnings({"rawtypes", "unchecked"})
                 var rawDispatcher = (CommandDispatcher) innerDispatcher;
                 ParseResults<SharedSuggestionProvider> innerParse = rawDispatcher.parse(expression.innerExpression(), source);
-                parts.add(formatText(innerParse, expression.innerExpression(), 0, styleOffset));
+                parts.add(formatText(innerParse, expression.innerExpression(), 0));
             } catch (Exception ignored) {
-                parts.add(FormattedCharSequence.forward(expression.innerExpression(), ARGUMENT_STYLES.get(styleOffset % ARGUMENT_STYLES.size())));
+                parts.add(FormattedCharSequence.forward(expression.innerExpression(), ARGUMENT_STYLE));
             }
         } else {
-            parts.add(FormattedCharSequence.forward(expression.innerExpression(), ARGUMENT_STYLES.get(styleOffset % ARGUMENT_STYLES.size())));
+            parts.add(FormattedCharSequence.forward(expression.innerExpression(), ARGUMENT_STYLE));
         }
 
         if (text.endsWith(")")) {
-            parts.add(FormattedCharSequence.forward(")", wrapperStyle));
+            parts.add(FormattedCharSequence.forward(")", ARGUMENT_STYLE));
         }
         return FormattedCharSequence.composite(parts);
     }
@@ -579,6 +579,50 @@ public class MultiLineCommandSuggestions {
         boolean startsAtBoundary = start == 0 || Character.isWhitespace(input.charAt(start - 1));
         boolean endsAtBoundary = end == input.length() || Character.isWhitespace(input.charAt(end));
         return startsAtBoundary && endsAtBoundary;
+    }
+
+    private static void collectLiteralSpans(CommandContextBuilder<SharedSuggestionProvider> context, List<HighlightSpan> spans) {
+        for (ParsedCommandNode<SharedSuggestionProvider> node : context.getNodes()) {
+            if (node.getNode() instanceof LiteralCommandNode<?> literalNode) {
+                spans.add(new HighlightSpan(node.getRange(), styleForLiteral(literalNode.getLiteral()), null));
+            }
+        }
+
+        if (context.getChild() != null) {
+            collectLiteralSpans(context.getChild(), spans);
+        }
+    }
+
+    private static void collectArgumentSpans(CommandContextBuilder<SharedSuggestionProvider> context, List<HighlightSpan> spans) {
+        for (ParsedArgument<SharedSuggestionProvider, ?> parsedArgument : context.getArguments().values()) {
+            spans.add(new HighlightSpan(parsedArgument.getRange(), ARGUMENT_STYLE, parsedArgument.getResult()));
+        }
+
+        if (context.getChild() != null) {
+            collectArgumentSpans(context.getChild(), spans);
+        }
+    }
+
+    private static Style styleForLiteral(String literal) {
+        ScriptExecutor<?, ?> executor = ZPSCommands.getExecutor(literal);
+        if (executor != null) {
+            return EXECUTOR_STYLE;
+        }
+
+        ScriptGetter<?> getter = ZPSCommands.getGetter(literal);
+        if (getter != null) {
+            return GETTER_STYLE;
+        }
+
+        ScriptMapper<?, ?> mapper = ZPSCommands.getMapper(literal);
+        if (mapper != null) {
+            return MAPPER_STYLE;
+        }
+
+        return DEFAULT_STYLE;
+    }
+
+    private record HighlightSpan(StringRange range, Style style, @Nullable Object value) {
     }
 
     public void render(GuiGraphics arg, int i, int j) {

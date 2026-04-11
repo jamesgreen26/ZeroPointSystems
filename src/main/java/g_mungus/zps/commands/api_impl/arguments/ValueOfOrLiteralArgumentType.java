@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class ValueOfOrLiteralArgumentType<A> implements ArgumentType<Object> {
+    private static final String ARGUMENT_PLACEHOLDER = "%s";
     private static final String VALUE_OF_PREFIX = "value_of(";
 
     private final ArgumentType<A> wrappedType;
@@ -43,6 +44,10 @@ public class ValueOfOrLiteralArgumentType<A> implements ArgumentType<Object> {
     public Object parse(StringReader reader) throws CommandSyntaxException {
         int cursor = reader.getCursor();
         String remaining = reader.getRemaining();
+        if (remaining.startsWith(ARGUMENT_PLACEHOLDER) && isPlaceholderBoundary(reader, cursor + ARGUMENT_PLACEHOLDER.length())) {
+            reader.setCursor(cursor + ARGUMENT_PLACEHOLDER.length());
+            return new ArgumentPlaceholder(targetTypeKey);
+        }
         if (remaining.startsWith(VALUE_OF_PREFIX)) {
             reader.setCursor(cursor + VALUE_OF_PREFIX.length());
             int depth = 1;
@@ -191,5 +196,13 @@ public class ValueOfOrLiteralArgumentType<A> implements ArgumentType<Object> {
         String completedExpression = innerRemaining.stripTrailing();
         var parseResults = rawDispatcher.parse(completedExpression + " " + ValueOfDispatchers.TERMINAL_LITERAL, source);
         return !parseResults.getReader().canRead() && parseResults.getExceptions().isEmpty();
+    }
+
+    private static boolean isPlaceholderBoundary(StringReader reader, int endCursor) {
+        if (endCursor >= reader.getTotalLength()) {
+            return true;
+        }
+
+        return Character.isWhitespace(reader.getString().charAt(endCursor));
     }
 }

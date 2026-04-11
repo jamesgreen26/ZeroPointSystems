@@ -12,6 +12,7 @@ import g_mungus.zps.commands.api.ScriptMapper2;
 import g_mungus.zps.commands.api_impl.arguments.ValueOfExpression;
 import g_mungus.zps.commands.api_impl.arguments.ValueOfOrLiteralArgumentType;
 import g_mungus.zps.commands.api_impl.arguments.ZPSArgument;
+import g_mungus.zps.commands.api_impl.arguments.ArgumentPlaceholder;
 import g_mungus.zps.commands.api_impl.arguments.ZPSLiteral;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
@@ -124,6 +125,9 @@ public class CommandTreeBuilder {
                 CommandSourceStack commandSource = context.getSource();
                 if (commandSource.source instanceof ZPSScriptCommandSource source) {
                     Object rawArg = context.getArgument(argumentKey, Object.class);
+                    if (rawArg instanceof ArgumentPlaceholder) {
+                        throw new IllegalArgumentException("Argument placeholder %s must be replaced before execution");
+                    }
                     if (rawArg instanceof ValueOfExpression<?> expr) {
                         rawArg = expr.evaluate(commandSource, source.getPos());
                     }
@@ -209,6 +213,9 @@ public class CommandTreeBuilder {
             if (commandSource.source instanceof ZPSScriptCommandSource source) {
                 if (source.predicate.test(source.predicateValue)) {
                     Object rawArg = context.getArgument(argumentKey, Object.class);
+                    if (rawArg instanceof ArgumentPlaceholder) {
+                        throw new IllegalArgumentException("Argument placeholder %s must be replaced before execution");
+                    }
                     if (rawArg instanceof ValueOfExpression<?> expr) {
                         rawArg = expr.evaluate(commandSource, source.getPos());
                     }
@@ -230,6 +237,9 @@ public class CommandTreeBuilder {
 
                     source.execute = () -> {
                         Object rawArg = context.getArgument(argumentKey, Object.class);
+                        if (rawArg instanceof ArgumentPlaceholder) {
+                            throw new IllegalArgumentException("Argument placeholder %s must be replaced before execution");
+                        }
                         if (rawArg instanceof ValueOfExpression<?> expr) {
                             rawArg = expr.evaluate(context.getSource(), source.getPos());
                         }
@@ -341,6 +351,9 @@ public class CommandTreeBuilder {
                 CommandSourceStack commandSource = context.getSource();
                 if (commandSource.source instanceof ZPSScriptCommandSource source) {
                     Object rawArg = context.getArgument(argumentKey, Object.class);
+                    if (rawArg instanceof ArgumentPlaceholder) {
+                        throw new IllegalArgumentException("Argument placeholder %s must be replaced before execution");
+                    }
                     if (rawArg instanceof ValueOfExpression<?> expr) {
                         rawArg = expr.evaluate(commandSource, source.getPos());
                     }

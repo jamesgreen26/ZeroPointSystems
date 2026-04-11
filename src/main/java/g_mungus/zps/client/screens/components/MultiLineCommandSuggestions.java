@@ -52,6 +52,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 @OnlyIn(Dist.CLIENT)
 public class MultiLineCommandSuggestions {
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("(\\s+)");
+    private static final String ARGUMENT_PLACEHOLDER = "%s";
     private static final Style UNPARSED_STYLE = Style.EMPTY.withColor(ChatFormatting.RED);
     private static final Style LITERAL_STYLE = Style.EMPTY.withColor(ChatFormatting.GRAY);
     private static final List<Style> ARGUMENT_STYLES = (List<Style>)Stream.of(
@@ -328,9 +329,10 @@ public class MultiLineCommandSuggestions {
         String currentLine = getCurrentLine();
         int lineStartPos = getLineStartPosition(getCurrentLineNumber());
         int lineCursorPos = this.input.getCursorPosition() - lineStartPos;
+        boolean hasArgumentPlaceholder = hasArgumentPlaceholder(this.currentParse);
 
         if (lineCursorPos == currentLine.length()) {
-            if (((Suggestions)this.pendingSuggestions.join()).isEmpty() && !this.currentParse.getExceptions().isEmpty()) {
+            if (((Suggestions)this.pendingSuggestions.join()).isEmpty() && !this.currentParse.getExceptions().isEmpty() && !hasArgumentPlaceholder) {
                 int i = 0;
 
                 for (Entry<CommandNode<SharedSuggestionProvider>, CommandSyntaxException> entry : this.currentParse.getExceptions().entrySet()) {
@@ -345,14 +347,14 @@ public class MultiLineCommandSuggestions {
                 if (i > 0) {
                     this.commandUsage.add(getExceptionMessage(CommandSyntaxException.BUILT_IN_EXCEPTIONS.dispatcherUnknownCommand().create()));
                 }
-            } else if (this.currentParse.getReader().canRead()) {
+            } else if (this.currentParse.getReader().canRead() && !hasArgumentPlaceholder) {
                 bl = true;
             }
         }
 
         this.commandUsagePosition = 0;
         this.commandUsageWidth = this.screen.width;
-        if (this.commandUsage.isEmpty() && !this.fillNodeUsage(ChatFormatting.GRAY) && bl) {
+        if (this.commandUsage.isEmpty() && !this.fillNodeUsage(ChatFormatting.GRAY) && bl && !hasArgumentPlaceholder) {
             this.commandUsage.add(getExceptionMessage(Commands.getParseException(this.currentParse)));
         }
 
@@ -510,10 +512,17 @@ public class MultiLineCommandSuggestions {
         if (parseResults.getReader().canRead()) {
             int n = Math.max(parseResults.getReader().getCursor() - i, 0);
             if (n < string.length()) {
-                int o = Math.min(n + parseResults.getReader().getRemainingLength(), string.length());
                 list.add(FormattedCharSequence.forward(string.substring(j, n), LITERAL_STYLE));
-                list.add(FormattedCharSequence.forward(string.substring(n, o), UNPARSED_STYLE));
-                j = o;
+                if (isArgumentPlaceholderAt(string, n)) {
+                    int o = Math.min(n + ARGUMENT_PLACEHOLDER.length(), string.length());
+                    Style placeholderStyle = ARGUMENT_STYLES.get((k + 1) % ARGUMENT_STYLES.size());
+                    list.add(FormattedCharSequence.forward(string.substring(n, o), placeholderStyle));
+                    j = o;
+                } else {
+                    int o = Math.min(n + parseResults.getReader().getRemainingLength(), string.length());
+                    list.add(FormattedCharSequence.forward(string.substring(n, o), UNPARSED_STYLE));
+                    j = o;
+                }
             }
         }
 
@@ -549,6 +558,27 @@ public class MultiLineCommandSuggestions {
             parts.add(FormattedCharSequence.forward(")", wrapperStyle));
         }
         return FormattedCharSequence.composite(parts);
+    }
+
+    private static boolean hasArgumentPlaceholder(@Nullable ParseResults<SharedSuggestionProvider> parseResults) {
+        if (parseResults == null || !parseResults.getReader().canRead()) {
+            return false;
+        }
+
+        String input = parseResults.getReader().getString();
+        int cursor = parseResults.getReader().getCursor();
+        return isArgumentPlaceholderAt(input, cursor);
+    }
+
+    private static boolean isArgumentPlaceholderAt(String input, int start) {
+        int end = start + ARGUMENT_PLACEHOLDER.length();
+        if (start < 0 || end > input.length() || !input.startsWith(ARGUMENT_PLACEHOLDER, start)) {
+            return false;
+        }
+
+        boolean startsAtBoundary = start == 0 || Character.isWhitespace(input.charAt(start - 1));
+        boolean endsAtBoundary = end == input.length() || Character.isWhitespace(input.charAt(end));
+        return startsAtBoundary && endsAtBoundary;
     }
 
     public void render(GuiGraphics arg, int i, int j) {

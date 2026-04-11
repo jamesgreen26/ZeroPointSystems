@@ -40,6 +40,26 @@ public class ValueOfOrLiteralArgumentTypeTest {
         assertEquals(-7, result);
     }
 
+    @Test
+    public void parse_placeholder_returnsArgumentPlaceholder() throws CommandSyntaxException {
+        StringReader reader = new StringReader("%s");
+        Object result = intType().parse(reader);
+
+        assertInstanceOf(ArgumentPlaceholder.class, result);
+        assertEquals(INT_KEY, ((ArgumentPlaceholder) result).targetTypeKey());
+        assertFalse(reader.canRead(), "Reader should be fully consumed");
+    }
+
+    @Test
+    public void parse_placeholderWithTrailingText_onlyConsumesPlaceholder() throws CommandSyntaxException {
+        StringReader reader = new StringReader("%s else");
+        Object result = intType().parse(reader);
+
+        assertInstanceOf(ArgumentPlaceholder.class, result);
+        assertTrue(reader.canRead());
+        assertEquals(' ', reader.peek());
+    }
+
     // -------------------------------------------------------------------------
     // value_of detection
     // -------------------------------------------------------------------------

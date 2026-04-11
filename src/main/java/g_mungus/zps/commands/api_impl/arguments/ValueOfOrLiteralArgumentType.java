@@ -47,12 +47,34 @@ public class ValueOfOrLiteralArgumentType<A> implements ArgumentType<Object> {
             reader.setCursor(cursor + VALUE_OF_PREFIX.length());
             int depth = 1;
             int start = reader.getCursor();
+            boolean inQuotedString = false;
+            boolean escaping = false;
             while (reader.canRead() && depth > 0) {
                 char c = reader.read();
-                if (c == '(') depth++;
-                else if (c == ')') depth--;
+                if (inQuotedString) {
+                    if (escaping) {
+                        escaping = false;
+                        continue;
+                    }
+                    if (c == '\\') {
+                        escaping = true;
+                        continue;
+                    }
+                    if (c == '"') {
+                        inQuotedString = false;
+                    }
+                    continue;
+                }
+
+                if (c == '"') {
+                    inQuotedString = true;
+                } else if (c == '(') {
+                    depth++;
+                } else if (c == ')') {
+                    depth--;
+                }
             }
-            if (depth != 0) {
+            if (depth != 0 || inQuotedString || escaping) {
                 reader.setCursor(cursor);
                 throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.dispatcherUnknownArgument().createWithContext(reader);
             }

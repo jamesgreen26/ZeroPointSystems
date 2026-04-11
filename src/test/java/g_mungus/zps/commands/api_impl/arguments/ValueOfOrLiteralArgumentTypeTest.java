@@ -78,6 +78,26 @@ public class ValueOfOrLiteralArgumentTypeTest {
     }
 
     @Test
+    public void parse_valueOfWithQuotedParen_capturesInnerExpression() throws CommandSyntaxException {
+        StringReader reader = new StringReader("value_of(dimension as_string + \"(\")");
+        Object result = intType().parse(reader);
+
+        assertInstanceOf(ValueOfExpression.class, result);
+        assertEquals("dimension as_string + \"(\"", ((ValueOfExpression<?>) result).innerExpression());
+        assertFalse(reader.canRead(), "Reader should stop at the outer closing parenthesis");
+    }
+
+    @Test
+    public void parse_valueOfWithEscapedQuoteAndParen_capturesInnerExpression() throws CommandSyntaxException {
+        StringReader reader = new StringReader("value_of(read_page + \"\\\\\\\")\" )");
+        Object result = intType().parse(reader);
+
+        assertInstanceOf(ValueOfExpression.class, result);
+        assertEquals("read_page + \"\\\\\\\")\" ", ((ValueOfExpression<?>) result).innerExpression());
+        assertFalse(reader.canRead(), "Reader should ignore parentheses inside escaped quoted text");
+    }
+
+    @Test
     public void parse_valueOfEmpty_returnsExpressionWithEmptyInner() throws CommandSyntaxException {
         StringReader reader = new StringReader("value_of()");
         Object result = intType().parse(reader);

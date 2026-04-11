@@ -1,6 +1,8 @@
 package g_mungus.zps.gametest;
 
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.blockentity.light_pipe.BookHolder;
 import g_mungus.zps.commands.api_impl.ZPSCommands;
 import g_mungus.zps.commands.api_impl.ZPSScriptCommandSource;
 import g_mungus.zps.commands.api_impl.arguments.ValueOfExpression;
@@ -8,10 +10,16 @@ import g_mungus.zps.commands.content.executors.SetRedstoneCommand;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
@@ -90,6 +98,47 @@ public class ScriptCommandGameTests {
         BlockPos relPos = new BlockPos(3, 1, 3);
         helper.setBlock(relPos, Blocks.STONE);
         return helper.absolutePos(relPos);
+    }
+
+    private static BlockPos prepareLecternCommandTarget(GameTestHelper helper) {
+        BlockPos relPos = new BlockPos(3, 1, 3);
+        helper.setBlock(relPos, ModBlocks.DATA_LECTERN.get());
+
+        BlockPos absPos = helper.absolutePos(relPos);
+        BlockEntity blockEntity = helper.getLevel().getBlockEntity(absPos);
+        if (!(blockEntity instanceof g_mungus.zps.blockentity.light_pipe.DataLecternBlockEntity lectern)) {
+            helper.fail("Expected data lectern block entity at " + absPos + ", got " + blockEntity);
+            return absPos;
+        }
+
+        lectern.setBook(new ItemStack(Items.WRITABLE_BOOK));
+        return absPos;
+    }
+
+    private static String getCurrentPageContents(GameTestHelper helper, BlockPos absPos) {
+        BlockEntity blockEntity = helper.getLevel().getBlockEntity(absPos);
+        if (!(blockEntity instanceof BookHolder holder) || !holder.zps$hasBook()) {
+            helper.fail("Expected book holder with a book at " + absPos + ", got " + blockEntity);
+            return "";
+        }
+
+        ItemStack book = holder.zps$getBook();
+        if (book == null) {
+            helper.fail("Expected non-null book at " + absPos);
+            return "";
+        }
+
+        int page = holder.zps$getCurrentPage();
+        CompoundTag tag = book.getTag();
+        if (tag == null) {
+            return "";
+        }
+
+        ListTag pages = tag.getList("pages", Tag.TAG_STRING);
+        if (page < 0 || page >= pages.size()) {
+            return "";
+        }
+        return pages.getString(page);
     }
 
     // -------------------------------------------------------------------------
@@ -479,5 +528,33 @@ public class ScriptCommandGameTests {
 
         assertStoredRedstone(helper, absPos, expected, "zps_script multiple value_of");
         helper.succeed();
+    }
+
+    /**
+     * {@code write_page value_of(dimension as_string + "(")} should evaluate the
+     * string expression through the public command path and write the result to
+     * the current data lectern page.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_writePageWithValueOfDimensionString_writesComputedPage(GameTestHelper helper) {
+        BlockPos absPos = prepareLecternCommandTarget(helper);
+        String expected = helper.getLevel().dimension().location() + "(";
+
+        int result = runScriptCommand(
+                helper,
+                absPos,
+                "write_page value_of(dimension as_string + \"(\")"
+        );
+        if (result != 1) {
+            helper.fail("zps_script write_page value_of returned " + result + " instead of 1");
+            return;
+        }
+
+        helper.succeedWhen(() -> {
+            String actual = getCurrentPageContents(helper, absPos);
+            if (!expected.equals(actual)) {
+                helper.fail("zps_script write_page value_of: expected page \"" + expected + "\", got \"" + actual + "\"");
+            }
+        });
     }
 }

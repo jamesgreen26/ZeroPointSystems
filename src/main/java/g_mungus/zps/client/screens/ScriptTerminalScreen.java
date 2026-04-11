@@ -18,6 +18,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -44,6 +45,7 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
     protected Button manualButton;
     protected MultiLineEditBox commandEdit;
     MultiLineCommandSuggestions commandSuggestions;
+    private @Nullable TerminalDraft localDraft;
 
     private boolean isRepeatMode = false;
     private int delayIndex = 1;
@@ -76,27 +78,7 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
             this.connectedBlocks = Set.of();
         }
 
-        // Initialize mode from computer or initialLoop
-        if (initialCommand != null) {
-            isRepeatMode = initialLoop;
-            // Find the index for initialDelay
-            for (int i = 0; i < DELAY_VALUES.length; i++) {
-                if (DELAY_VALUES[i] == initialDelay) {
-                    delayIndex = i;
-                    break;
-                }
-            }
-        } else if (computer != null) {
-            isRepeatMode = computer.getLoop();
-            // Find the index for computer's delay
-            int computerDelay = computer.getDelay();
-            for (int i = 0; i < DELAY_VALUES.length; i++) {
-                if (DELAY_VALUES[i] == computerDelay) {
-                    delayIndex = i;
-                    break;
-                }
-            }
-        }
+        this.restoreExecutionControls();
 
         this.doneButton = this.addRenderableWidget(
                 Button.builder(CommonComponents.GUI_DONE, arg -> this.onDone()).bounds(this.width / 2 - 150 - 2, this.height / 4 + 120 + 12, 148, 20).build()
@@ -129,12 +111,7 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
 
         this.commandEdit = new MultiLineEditBox(this.font, this.width / 2 - 150, 50, 300, this.height / 4 + 70, Component.translatable("advMode.command"));
         this.commandEdit.setMaxLength(32500);
-        // Use initialCommand if set (from S2C packet), otherwise get from computer
-        if (initialCommand != null) {
-            this.commandEdit.setValue(initialCommand);
-        } else if (computer != null) {
-            this.commandEdit.setValue(computer.getValue());
-        }
+        this.restoreEditorState();
         this.commandEdit.setResponder(this::onEdited);
         this.addWidget(this.commandEdit);
         this.setInitialFocus(this.commandEdit);
@@ -146,9 +123,8 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
 
     @Override
     public void resize(@NotNull Minecraft arg, int i, int j) {
-        String string = this.commandEdit.getValue();
+        this.captureDraft();
         this.init(arg, i, j);
-        this.commandEdit.setValue(string);
         this.commandSuggestions.updateCommandInfo();
     }
 
@@ -163,6 +139,7 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
     }
 
     private void onEdited(String string) {
+        this.captureDraft();
         this.commandSuggestions.updateCommandInfo();
     }
 
@@ -230,6 +207,7 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
     private final class ManualButton extends Button {
         private ManualButton(final int x, final int y) {
             super(x, y, 20, 20, CommonComponents.EMPTY, arg -> {
+                ScriptTerminalScreen.this.captureDraft();
                 if (ScriptTerminalScreen.this.minecraft != null && ScriptTerminalScreen.this.minecraft.level != null) {
                     ModManuals.openScriptCommandsManual(ScriptTerminalScreen.this.minecraft.level);
                 }
@@ -241,5 +219,70 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
             super.renderWidget(graphics, mouseX, mouseY, partialTick);
             graphics.renderItem(MANUAL_BUTTON_ICON, this.getX() + 2, this.getY() + 2);
         }
+    }
+
+    private void restoreExecutionControls() {
+        if (this.localDraft != null) {
+            this.isRepeatMode = this.localDraft.repeatMode();
+            this.delayIndex = Mth.clamp(this.localDraft.delayIndex(), 0, DELAY_KEYS.length - 1);
+            return;
+        }
+
+        if (this.initialCommand != null) {
+            this.isRepeatMode = this.initialLoop;
+            this.delayIndex = this.findDelayIndex(this.initialDelay);
+            return;
+        }
+
+        if (this.computer != null) {
+            this.isRepeatMode = this.computer.getLoop();
+            this.delayIndex = this.findDelayIndex(this.computer.getDelay());
+            return;
+        }
+
+        this.isRepeatMode = false;
+        this.delayIndex = 1;
+    }
+
+    private void restoreEditorState() {
+        if (this.localDraft != null) {
+            this.commandEdit.setValue(this.localDraft.command());
+            this.commandEdit.setCursorPosition(this.localDraft.cursorPosition());
+            this.commandEdit.setHighlightPos(this.localDraft.cursorPosition());
+            return;
+        }
+
+        if (this.initialCommand != null) {
+            this.commandEdit.setValue(this.initialCommand);
+            return;
+        }
+
+        if (this.computer != null) {
+            this.commandEdit.setValue(this.computer.getValue());
+        }
+    }
+
+    private void captureDraft() {
+        if (this.commandEdit == null) {
+            return;
+        }
+        this.localDraft = new TerminalDraft(
+            this.commandEdit.getValue(),
+            this.commandEdit.getCursorPosition(),
+            this.isRepeatMode,
+            this.delayIndex
+        );
+    }
+
+    private int findDelayIndex(final int delay) {
+        for (int i = 0; i < DELAY_VALUES.length; i++) {
+            if (DELAY_VALUES[i] == delay) {
+                return i;
+            }
+        }
+        return 1;
+    }
+
+    private record TerminalDraft(String command, int cursorPosition, boolean repeatMode, int delayIndex) {
     }
 }

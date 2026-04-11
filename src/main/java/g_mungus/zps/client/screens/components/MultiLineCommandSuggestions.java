@@ -465,7 +465,7 @@ public class MultiLineCommandSuggestions {
                 CommandDispatcher<SharedSuggestionProvider> commandDispatcher = dispatcherProvider.get();
                 ParseResults<SharedSuggestionProvider> lineParseResults = commandDispatcher.parse(stringReader, this.minecraft.player.connection.getSuggestionsProvider());
 
-                return formatText(lineParseResults, string, i);
+                return formatText(lineParseResults, fullLine, i, string.length());
             } catch (Exception e) {
                 // If parsing fails, return unformatted
                 return FormattedCharSequence.forward(string, Style.EMPTY);
@@ -479,85 +479,58 @@ public class MultiLineCommandSuggestions {
         return string2.startsWith(string) ? string2.substring(string.length()) : null;
     }
 
-    private static FormattedCharSequence formatText(ParseResults<SharedSuggestionProvider> parseResults, String string, int i) {
+    private static FormattedCharSequence formatText(
+            ParseResults<SharedSuggestionProvider> parseResults,
+            String fullText,
+            int visibleStart,
+            int visibleLength
+    ) {
         List<FormattedCharSequence> list = Lists.<FormattedCharSequence>newArrayList();
         List<HighlightSpan> spans = new ArrayList<>();
         collectLiteralSpans(parseResults.getContext(), spans);
-        collectArgumentSpans(parseResults.getContext(), spans);
+        collectArgumentSpans(parseResults.getContext(), spans, parseResults.getContext().getSource());
         spans.sort(Comparator.comparingInt(span -> span.range().getStart()));
 
         int cursor = 0;
         for (HighlightSpan span : spans) {
-            int start = Math.max(span.range().getStart() - i, 0);
-            if (start >= string.length()) {
+            int start = Math.max(span.range().getStart() - visibleStart, 0);
+            if (start >= visibleLength) {
                 break;
             }
 
-            int end = Math.min(span.range().getEnd() - i, string.length());
+            int end = Math.min(span.range().getEnd() - visibleStart, visibleLength);
             if (end <= start) {
                 continue;
             }
 
             if (start > cursor) {
-                list.add(FormattedCharSequence.forward(string.substring(cursor, start), DEFAULT_STYLE));
+                list.add(FormattedCharSequence.forward(fullText.substring(visibleStart + cursor, visibleStart + start), DEFAULT_STYLE));
             }
 
-            String spanText = string.substring(start, end);
-            if (span.value() instanceof ValueOfExpression<?> expr && spanText.startsWith("value_of(") && spanText.endsWith(")")) {
-                list.add(formatValueOfExpression(expr, spanText, parseResults.getContext().getSource()));
-            } else {
-                list.add(FormattedCharSequence.forward(spanText, span.style()));
-            }
+            String spanText = fullText.substring(visibleStart + start, visibleStart + end);
+            list.add(FormattedCharSequence.forward(spanText, span.style()));
             cursor = end;
         }
 
         // Mark any remaining unparsed text as invalid
         if (parseResults.getReader().canRead()) {
-            int n = Math.max(parseResults.getReader().getCursor() - i, 0);
-            if (n < string.length()) {
-                list.add(FormattedCharSequence.forward(string.substring(cursor, n), DEFAULT_STYLE));
-                if (isArgumentPlaceholderAt(string, n)) {
-                    int o = Math.min(n + ARGUMENT_PLACEHOLDER.length(), string.length());
-                    list.add(FormattedCharSequence.forward(string.substring(n, o), ARGUMENT_STYLE));
+            int n = Math.max(parseResults.getReader().getCursor() - visibleStart, 0);
+            if (n < visibleLength) {
+                list.add(FormattedCharSequence.forward(fullText.substring(visibleStart + cursor, visibleStart + n), DEFAULT_STYLE));
+                if (isArgumentPlaceholderAt(fullText, parseResults.getReader().getCursor())) {
+                    int o = Math.min(n + ARGUMENT_PLACEHOLDER.length(), visibleLength);
+                    list.add(FormattedCharSequence.forward(fullText.substring(visibleStart + n, visibleStart + o), ARGUMENT_STYLE));
                     cursor = o;
                 } else {
-                    int o = Math.min(n + parseResults.getReader().getRemainingLength(), string.length());
-                    list.add(FormattedCharSequence.forward(string.substring(n, o), UNPARSED_STYLE));
+                    int o = Math.min(n + parseResults.getReader().getRemainingLength(), visibleLength);
+                    list.add(FormattedCharSequence.forward(fullText.substring(visibleStart + n, visibleStart + o), UNPARSED_STYLE));
                     cursor = o;
                 }
             }
         }
 
-        list.add(FormattedCharSequence.forward(string.substring(cursor), DEFAULT_STYLE));
+        list.add(FormattedCharSequence.forward(fullText.substring(visibleStart + cursor, visibleStart + visibleLength), DEFAULT_STYLE));
         return FormattedCharSequence.composite(list);
-    }
-
-    private static FormattedCharSequence formatValueOfExpression(
-            ValueOfExpression<?> expression,
-            String text,
-            SharedSuggestionProvider source
-    ) {
-        List<FormattedCharSequence> parts = Lists.newArrayList();
-        parts.add(FormattedCharSequence.forward("value_of(", ARGUMENT_STYLE));
-
-        var innerDispatcher = ValueOfDispatchers.get(expression.targetTypeKey());
-        if (innerDispatcher != null) {
-            try {
-                @SuppressWarnings({"rawtypes", "unchecked"})
-                var rawDispatcher = (CommandDispatcher) innerDispatcher;
-                ParseResults<SharedSuggestionProvider> innerParse = rawDispatcher.parse(expression.innerExpression(), source);
-                parts.add(formatText(innerParse, expression.innerExpression(), 0));
-            } catch (Exception ignored) {
-                parts.add(FormattedCharSequence.forward(expression.innerExpression(), ARGUMENT_STYLE));
-            }
-        } else {
-            parts.add(FormattedCharSequence.forward(expression.innerExpression(), ARGUMENT_STYLE));
-        }
-
-        if (text.endsWith(")")) {
-            parts.add(FormattedCharSequence.forward(")", ARGUMENT_STYLE));
-        }
-        return FormattedCharSequence.composite(parts);
     }
 
     private static boolean hasArgumentPlaceholder(@Nullable ParseResults<SharedSuggestionProvider> parseResults) {
@@ -584,7 +557,7 @@ public class MultiLineCommandSuggestions {
     private static void collectLiteralSpans(CommandContextBuilder<SharedSuggestionProvider> context, List<HighlightSpan> spans) {
         for (ParsedCommandNode<SharedSuggestionProvider> node : context.getNodes()) {
             if (node.getNode() instanceof LiteralCommandNode<?> literalNode) {
-                spans.add(new HighlightSpan(node.getRange(), styleForLiteral(literalNode.getLiteral()), null));
+                spans.add(new HighlightSpan(node.getRange(), styleForLiteral(literalNode.getLiteral())));
             }
         }
 
@@ -593,13 +566,92 @@ public class MultiLineCommandSuggestions {
         }
     }
 
-    private static void collectArgumentSpans(CommandContextBuilder<SharedSuggestionProvider> context, List<HighlightSpan> spans) {
+    private static void collectArgumentSpans(
+            CommandContextBuilder<SharedSuggestionProvider> context,
+            List<HighlightSpan> spans,
+            SharedSuggestionProvider source
+    ) {
         for (ParsedArgument<SharedSuggestionProvider, ?> parsedArgument : context.getArguments().values()) {
-            spans.add(new HighlightSpan(parsedArgument.getRange(), ARGUMENT_STYLE, parsedArgument.getResult()));
+            Object result = parsedArgument.getResult();
+            if (result instanceof ValueOfExpression<?> expr) {
+                collectValueOfSpans(expr, parsedArgument.getRange(), spans, source);
+            } else {
+                spans.add(new HighlightSpan(parsedArgument.getRange(), ARGUMENT_STYLE));
+            }
         }
 
         if (context.getChild() != null) {
-            collectArgumentSpans(context.getChild(), spans);
+            collectArgumentSpans(context.getChild(), spans, source);
+        }
+    }
+
+    private static void collectValueOfSpans(
+            ValueOfExpression<?> expression,
+            StringRange range,
+            List<HighlightSpan> spans,
+            SharedSuggestionProvider source
+    ) {
+        int start = range.getStart();
+        int prefixEnd = Math.min(start + "value_of(".length(), range.getEnd());
+        spans.add(new HighlightSpan(StringRange.between(start, prefixEnd), ARGUMENT_STYLE));
+
+        var innerDispatcher = ValueOfDispatchers.get(expression.targetTypeKey());
+        if (innerDispatcher != null) {
+            try {
+                @SuppressWarnings({"rawtypes", "unchecked"})
+                var rawDispatcher = (CommandDispatcher) innerDispatcher;
+                ParseResults<SharedSuggestionProvider> innerParse = rawDispatcher.parse(expression.innerExpression(), source);
+                collectLiteralSpansWithOffset(innerParse.getContext(), spans, prefixEnd);
+                collectArgumentSpansWithOffset(innerParse.getContext(), spans, source, prefixEnd);
+            } catch (Exception ignored) {
+                spans.add(new HighlightSpan(StringRange.between(prefixEnd, range.getEnd() - 1), ARGUMENT_STYLE));
+            }
+        } else if (prefixEnd < range.getEnd() - 1) {
+            spans.add(new HighlightSpan(StringRange.between(prefixEnd, range.getEnd() - 1), ARGUMENT_STYLE));
+        }
+
+        if (range.getEnd() > prefixEnd) {
+            spans.add(new HighlightSpan(StringRange.between(range.getEnd() - 1, range.getEnd()), ARGUMENT_STYLE));
+        }
+    }
+
+    private static void collectLiteralSpansWithOffset(
+            CommandContextBuilder<SharedSuggestionProvider> context,
+            List<HighlightSpan> spans,
+            int offset
+    ) {
+        for (ParsedCommandNode<SharedSuggestionProvider> node : context.getNodes()) {
+            if (node.getNode() instanceof LiteralCommandNode<?> literalNode) {
+                spans.add(new HighlightSpan(
+                        StringRange.between(node.getRange().getStart() + offset, node.getRange().getEnd() + offset),
+                        styleForLiteral(literalNode.getLiteral())
+                ));
+            }
+        }
+
+        if (context.getChild() != null) {
+            collectLiteralSpansWithOffset(context.getChild(), spans, offset);
+        }
+    }
+
+    private static void collectArgumentSpansWithOffset(
+            CommandContextBuilder<SharedSuggestionProvider> context,
+            List<HighlightSpan> spans,
+            SharedSuggestionProvider source,
+            int offset
+    ) {
+        for (ParsedArgument<SharedSuggestionProvider, ?> parsedArgument : context.getArguments().values()) {
+            Object result = parsedArgument.getResult();
+            StringRange shiftedRange = StringRange.between(parsedArgument.getRange().getStart() + offset, parsedArgument.getRange().getEnd() + offset);
+            if (result instanceof ValueOfExpression<?> expr) {
+                collectValueOfSpans(expr, shiftedRange, spans, source);
+            } else {
+                spans.add(new HighlightSpan(shiftedRange, ARGUMENT_STYLE));
+            }
+        }
+
+        if (context.getChild() != null) {
+            collectArgumentSpansWithOffset(context.getChild(), spans, source, offset);
         }
     }
 
@@ -622,7 +674,7 @@ public class MultiLineCommandSuggestions {
         return DEFAULT_STYLE;
     }
 
-    private record HighlightSpan(StringRange range, Style style, @Nullable Object value) {
+    private record HighlightSpan(StringRange range, Style style) {
     }
 
     public void render(GuiGraphics arg, int i, int j) {

@@ -3,7 +3,7 @@
   "category": "functional",
   "key": {
     "A": {
-      "item": "minecraft:piston"
+      "item": "minecraft:quartz"
     },
     "B": {
       "tag": "forge:ingots/space_metal"
@@ -13,7 +13,7 @@
     }
   },
   "pattern": [
-    "BBB",
+    "BCB",
     "CAC",
     "BBB"
   ],

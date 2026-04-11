@@ -78,6 +78,11 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(DataComparatorBlockEntity::new,
                             ModBlocks.DATA_COMPARATOR.get()).build(null));
 
+    public static final RegistryObject<BlockEntityType<DataCombinatorBlockEntity>> DATA_COMBINATOR =
+            BLOCK_ENTITIES.register("data_combinator",
+                    () -> BlockEntityType.Builder.of(DataCombinatorBlockEntity::new,
+                            ModBlocks.DATA_COMBINATOR.get()).build(null));
+
     public static final RegistryObject<BlockEntityType<SerialBusBlockEntity>> SERIAL_BUS =
             BLOCK_ENTITIES.register("serial_bus",
                     () -> BlockEntityType.Builder.of(SerialBusBlockEntity::new,

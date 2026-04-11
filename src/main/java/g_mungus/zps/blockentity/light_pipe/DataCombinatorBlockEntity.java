@@ -52,7 +52,7 @@ public class DataCombinatorBlockEntity extends NetworkTerminalImpl implements Li
         if (textA.isEmpty() && textB.isEmpty()) return "";
         if (textA.isEmpty()) return textB;
         if (textB.isEmpty()) return textA;
-        int idx = textA.indexOf("{}");
+        int idx = textA.indexOf("%s");
         if (idx >= 0) {
             return textA.substring(0, idx) + textB + textA.substring(idx + 2);
         }

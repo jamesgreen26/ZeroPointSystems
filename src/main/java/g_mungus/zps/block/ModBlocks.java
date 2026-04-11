@@ -47,6 +47,7 @@ public class ModBlocks {
             () -> new DenseCableSeparatorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(2.5f)
                     .requiresCorrectToolForDrops()
+                    .noOcclusion()
             ));
 
     public static final RegistryObject<Block> STEPUP_TRANSFORMER = BLOCKS.register("stepup_transformer",

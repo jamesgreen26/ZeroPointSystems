@@ -13,6 +13,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Mirror;
@@ -60,6 +61,12 @@ public class DenseCableSeparatorBlock extends CableComponentBlock {
         builder.add(FACING);
         builder.add(ROTATION);
         builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN);
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public int getLightBlock(@NotNull BlockState state, @NotNull BlockGetter level, @NotNull BlockPos pos) {
+        return level.getMaxLightLevel();
     }
 
     @Override

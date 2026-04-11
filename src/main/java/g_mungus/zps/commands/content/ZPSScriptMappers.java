@@ -27,6 +27,16 @@ public class ZPSScriptMappers {
     private static final String ESCAPED_NEWLINE = "\\n";
     private static final Pattern ESCAPED_NEWLINE_PATTERN = Pattern.compile(Pattern.quote(ESCAPED_NEWLINE));
 
+    private static Vec3 resolveVec3Argument(Object argumentValue, net.minecraft.commands.CommandSourceStack commandSource) {
+        if (argumentValue instanceof Coordinates coordinates) {
+            return coordinates.getPosition(commandSource);
+        }
+        if (argumentValue instanceof Vec3 vec3) {
+            return vec3;
+        }
+        throw new IllegalArgumentException("Expected coordinates or Vec3 argument, got: " + argumentValue);
+    }
+
     @SubscribeEvent
     public static void onRegisterEvent(RegisterScriptCommandsEvent event) {
         event.register(new ScriptMapper<>(
@@ -54,6 +64,15 @@ public class ZPSScriptMappers {
                 ResourceLocation.parse("zps:block_pos"),
                 ResourceLocation.parse("zps:int"),
                 (blockPos, scriptContext) -> blockPos.getZ()
+        ));
+
+        event.register(new ScriptMapper<>(
+                "center",
+                BlockPos.class,
+                Vec3.class,
+                ResourceLocation.parse("zps:block_pos"),
+                ResourceLocation.parse("zps:vec_pos"),
+                (blockPos, scriptContext) -> blockPos.getCenter()
         ));
 
         // Vec3 Position - X coordinate
@@ -94,7 +113,7 @@ public class ZPSScriptMappers {
                 ResourceLocation.parse("zps:vec_pos"),
                 ResourceLocation.parse("zps:double"),
                 "coordinates",
-                (vec3, context) -> vec3.distanceTo(context.argumentValue().getPosition(context.commandSource())),
+                (vec3, context) -> vec3.distanceTo(resolveVec3Argument(context.argumentValue(), context.commandSource())),
                 Vec3Argument.vec3(),
                 Coordinates.class,
                 ResourceLocation.parse("zps:vec_pos")
@@ -108,7 +127,7 @@ public class ZPSScriptMappers {
                 ResourceLocation.parse("zps:vec_pos"),
                 ResourceLocation.parse("zps:vec_dir"),
                 "coordinates",
-                (vec3, context) -> context.argumentValue().getPosition(context.commandSource()).subtract(vec3).normalize(),
+                (vec3, context) -> resolveVec3Argument(context.argumentValue(), context.commandSource()).subtract(vec3).normalize(),
                 Vec3Argument.vec3(),
                 Coordinates.class,
                 ResourceLocation.parse("zps:vec_pos")
@@ -212,7 +231,7 @@ public class ZPSScriptMappers {
                 ResourceLocation.parse("zps:vec_dir"),
                 ResourceLocation.parse("zps:vec_dir"),
                 "direction",
-                (vec3, context) -> vec3.cross(context.argumentValue().getPosition(context.commandSource())),
+                (vec3, context) -> vec3.cross(resolveVec3Argument(context.argumentValue(), context.commandSource())),
                 Vec3Argument.vec3(),
                 Coordinates.class,
                 ResourceLocation.parse("zps:vec_dir")
@@ -226,7 +245,7 @@ public class ZPSScriptMappers {
                 ResourceLocation.parse("zps:vec_dir"),
                 ResourceLocation.parse("zps:double"),
                 "direction",
-                (vec3, context) -> vec3.dot(context.argumentValue().getPosition(context.commandSource())),
+                (vec3, context) -> vec3.dot(resolveVec3Argument(context.argumentValue(), context.commandSource())),
                 Vec3Argument.vec3(),
                 Coordinates.class,
                 ResourceLocation.parse("zps:vec_dir")

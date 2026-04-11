@@ -16,6 +16,7 @@ Produced by: `pos`, `string as_block_pos`, `vec_pos rounded_down`
 | `x` | Int | X coordinate |
 | `y` | Int | Y coordinate |
 | `z` | Int | Z coordinate |
+| `center` | Vec Pos | The centered floating-point position (`x + 0.5`, `y + 0.5`, `z + 0.5`) |
 | `== <coords>` | Boolean | True if equal to the given position |
 | `as_string` | String | Formats as `"x y z"` |
 
@@ -47,7 +48,7 @@ if block == minecraft:piston[facing=up] set_redstone 15
 
 ## Vec Pos
 
-A floating-point position. Produced by: `ship pos`, `celestial pos`
+A floating-point position. Produced by: `pos center`, `ship pos`, `celestial pos`
 
 | Mapper | Output | Description |
 |--------|--------|-------------|

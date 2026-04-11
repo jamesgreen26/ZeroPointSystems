@@ -531,6 +531,57 @@ public class ScriptCommandGameTests {
     }
 
     /**
+     * {@code direction_to value_of(...)} should accept an evaluated Vec3
+     * argument, not just literal coordinates.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_directionToWithValueOfVecPosArgument_setsComputedRedstone(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+
+        int result = runScriptCommand(
+                helper,
+                absPos,
+                "set_redstone value_of(pos center direction_to value_of(pos center) length * 15 rounded_down)"
+        );
+        if (result != 1) {
+            helper.fail("zps_script direction_to value_of returned " + result + " instead of 1");
+            return;
+        }
+
+        assertStoredRedstone(helper, absPos, 0, "zps_script direction_to value_of");
+        helper.succeed();
+    }
+
+    /**
+     * {@code dot value_of(...)} should accept an evaluated Vec3 direction
+     * argument, not just literal coordinates.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_dotWithValueOfVecDirArgument_setsComputedRedstone(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+        double targetX = absPos.getX() + 10.5;
+        double targetY = absPos.getY() + 0.5;
+        double targetZ = absPos.getZ() + 0.5;
+
+        int result = runScriptCommand(
+                helper,
+                absPos,
+                "set_redstone value_of(pos center direction_to "
+                        + targetX + " " + targetY + " " + targetZ
+                        + " dot value_of(pos center direction_to "
+                        + targetX + " " + targetY + " " + targetZ
+                        + ") * 15 rounded_down)"
+        );
+        if (result != 1) {
+            helper.fail("zps_script dot value_of returned " + result + " instead of 1");
+            return;
+        }
+
+        assertStoredRedstone(helper, absPos, 15, "zps_script dot value_of");
+        helper.succeed();
+    }
+
+    /**
      * {@code write_page value_of(dimension as_string + "(")} should evaluate the
      * string expression through the public command path and write the result to
      * the current data lectern page.

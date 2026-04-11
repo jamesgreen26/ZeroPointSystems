@@ -177,7 +177,7 @@ public class VSCompat {
         if (ship == NO_SHIP) return new Vec3(n.getX(), n.getY(), n.getZ());
         var v = new Vector3d(n.getX(), n.getY(), n.getZ());
         ship.getTransform().getShipToWorld().transformDirection(v);
-        return new Vec3(v.x, v.y, v.z);
+        return new Vec3(v.x, v.y, v.z).normalize();
     }
 
     @SuppressWarnings("ConstantConditions")

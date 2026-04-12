@@ -487,7 +487,8 @@ public class MultiLineCommandSuggestions {
     ) {
         List<FormattedCharSequence> list = Lists.<FormattedCharSequence>newArrayList();
         List<HighlightSpan> spans = new ArrayList<>();
-        collectLiteralSpans(parseResults.getContext(), spans);
+        Map<CommandNode<SharedSuggestionProvider>, Style> literalStyles = buildLiteralStyleIndex(parseResults.getContext().getRootNode());
+        collectLiteralSpans(parseResults.getContext(), spans, literalStyles);
         collectArgumentSpans(parseResults.getContext(), spans, parseResults.getContext().getSource());
         spans.sort(Comparator.comparingInt(span -> span.range().getStart()));
 
@@ -554,15 +555,20 @@ public class MultiLineCommandSuggestions {
         return startsAtBoundary && endsAtBoundary;
     }
 
-    private static void collectLiteralSpans(CommandContextBuilder<SharedSuggestionProvider> context, List<HighlightSpan> spans) {
+    private static void collectLiteralSpans(
+            CommandContextBuilder<SharedSuggestionProvider> context,
+            List<HighlightSpan> spans,
+            Map<CommandNode<SharedSuggestionProvider>, Style> literalStyles
+    ) {
         for (ParsedCommandNode<SharedSuggestionProvider> node : context.getNodes()) {
             if (node.getNode() instanceof LiteralCommandNode<?> literalNode) {
-                spans.add(new HighlightSpan(node.getRange(), styleForLiteral(literalNode.getLiteral())));
+                Style style = literalStyles.getOrDefault(node.getNode(), styleForLiteralFallback(literalNode.getLiteral()));
+                spans.add(new HighlightSpan(node.getRange(), style));
             }
         }
 
         if (context.getChild() != null) {
-            collectLiteralSpans(context.getChild(), spans);
+            collectLiteralSpans(context.getChild(), spans, literalStyles);
         }
     }
 
@@ -601,7 +607,8 @@ public class MultiLineCommandSuggestions {
                 @SuppressWarnings({"rawtypes", "unchecked"})
                 var rawDispatcher = (CommandDispatcher) innerDispatcher;
                 ParseResults<SharedSuggestionProvider> innerParse = rawDispatcher.parse(expression.innerExpression(), source);
-                collectLiteralSpansWithOffset(innerParse.getContext(), spans, prefixEnd);
+                Map<CommandNode<SharedSuggestionProvider>, Style> innerLiteralStyles = buildLiteralStyleIndex(innerParse.getContext().getRootNode());
+                collectLiteralSpansWithOffset(innerParse.getContext(), spans, prefixEnd, innerLiteralStyles);
                 collectArgumentSpansWithOffset(innerParse.getContext(), spans, source, prefixEnd);
             } catch (Exception ignored) {
                 spans.add(new HighlightSpan(StringRange.between(prefixEnd, range.getEnd() - 1), ARGUMENT_STYLE));
@@ -618,19 +625,20 @@ public class MultiLineCommandSuggestions {
     private static void collectLiteralSpansWithOffset(
             CommandContextBuilder<SharedSuggestionProvider> context,
             List<HighlightSpan> spans,
-            int offset
+            int offset,
+            Map<CommandNode<SharedSuggestionProvider>, Style> literalStyles
     ) {
         for (ParsedCommandNode<SharedSuggestionProvider> node : context.getNodes()) {
             if (node.getNode() instanceof LiteralCommandNode<?> literalNode) {
                 spans.add(new HighlightSpan(
                         StringRange.between(node.getRange().getStart() + offset, node.getRange().getEnd() + offset),
-                        styleForLiteral(literalNode.getLiteral())
+                        literalStyles.getOrDefault(node.getNode(), styleForLiteralFallback(literalNode.getLiteral()))
                 ));
             }
         }
 
         if (context.getChild() != null) {
-            collectLiteralSpansWithOffset(context.getChild(), spans, offset);
+            collectLiteralSpansWithOffset(context.getChild(), spans, offset, literalStyles);
         }
     }
 
@@ -655,7 +663,55 @@ public class MultiLineCommandSuggestions {
         }
     }
 
-    private static Style styleForLiteral(String literal) {
+    private static Map<CommandNode<SharedSuggestionProvider>, Style> buildLiteralStyleIndex(CommandNode<SharedSuggestionProvider> root) {
+        Map<CommandNode<SharedSuggestionProvider>, Style> literalStyles = new IdentityHashMap<>();
+        Set<CommandNode<SharedSuggestionProvider>> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        indexLiteralStyles(root, null, literalStyles, visited);
+        return literalStyles;
+    }
+
+    private static void indexLiteralStyles(
+            CommandNode<SharedSuggestionProvider> node,
+            @Nullable String parentLiteral,
+            Map<CommandNode<SharedSuggestionProvider>, Style> literalStyles,
+            Set<CommandNode<SharedSuggestionProvider>> visited
+    ) {
+        if (!visited.add(node)) {
+            return;
+        }
+
+        String currentLiteral = parentLiteral;
+        if (node instanceof LiteralCommandNode<?> literalNode) {
+            currentLiteral = literalNode.getLiteral();
+            literalStyles.put(node, styleForLiteralNode(currentLiteral, parentLiteral));
+        }
+
+        for (CommandNode<SharedSuggestionProvider> child : node.getChildren()) {
+            indexLiteralStyles(child, currentLiteral, literalStyles, visited);
+        }
+
+        if (node.getRedirect() != null) {
+            indexLiteralStyles(node.getRedirect(), currentLiteral, literalStyles, visited);
+        }
+    }
+
+    private static Style styleForLiteralNode(String literal, @Nullable String parentLiteral) {
+        if (ZPSCommands.getGetter(literal) != null && (parentLiteral == null || parentLiteral.startsWith("need-"))) {
+            return GETTER_STYLE;
+        }
+
+        if (ZPSCommands.getMapper(literal) != null && parentLiteral != null && parentLiteral.startsWith("have-")) {
+            return MAPPER_STYLE;
+        }
+
+        if (ZPSCommands.getExecutor(literal) != null && (parentLiteral == null || parentLiteral.startsWith("have-") || "else".equals(parentLiteral))) {
+            return EXECUTOR_STYLE;
+        }
+
+        return DEFAULT_STYLE;
+    }
+
+    private static Style styleForLiteralFallback(String literal) {
         ScriptExecutor<?, ?> executor = ZPSCommands.getExecutor(literal);
         if (executor != null) {
             return EXECUTOR_STYLE;

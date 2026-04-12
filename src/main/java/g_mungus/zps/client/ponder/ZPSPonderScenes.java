@@ -2,6 +2,7 @@ package g_mungus.zps.client.ponder;
 
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.CableBlock;
+import g_mungus.zps.block.cableNetwork.DenseCableSeparatorBlock;
 import g_mungus.zps.block.cableNetwork.RedstoneConverterBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.light_pipe.DataLecternBlock;
@@ -209,7 +210,51 @@ public class ZPSPonderScenes {
         builder.world().toggleRedstonePower(util.select().fromTo(4,1,0,4,1,7));
         builder.idle(20);
 
+        builder.addKeyframe();
 
+        builder.idle(10);
+
+        builder.overlay().showText(60).text("Dense Cable Separators can be rotated with Shift + R-Click");
+
+        builder.idle(60);
+
+        InputWindowElement inputWindowElement = new InputWindowElement(util.vector().topOf(3, 1, 1), Pointing.DOWN);
+        builder.addInstruction(new ShowInputInstruction(inputWindowElement, 10));
+        inputWindowElement.builder().rightClick().whileSneaking();
+
+        builder.idle(8);
+
+        builder.world().cycleBlockProperty(new BlockPos(3, 1, 1), DenseCableSeparatorBlock.ROTATION);
+
+        builder.idle(12);
+
+        InputWindowElement secondInputWindowElement = new InputWindowElement(util.vector().topOf(3, 1, 1), Pointing.DOWN);
+        builder.addInstruction(new ShowInputInstruction(secondInputWindowElement, 10));
+        secondInputWindowElement.builder().rightClick().whileSneaking();
+
+        builder.idle(8);
+
+        builder.world().cycleBlockProperty(new BlockPos(3, 1, 1), DenseCableSeparatorBlock.ROTATION);
+
+        builder.idle(12);
+
+        builder.overlay().showText(50).text("This changes the signal routing.");
+
+        builder.idle(50);
+
+        var firstDiagonalPair = util.select().position(4, 1, 0)
+                .add(util.select().position(2, 1, 6));
+        var secondDiagonalPair = util.select().position(2, 1, 0)
+                .add(util.select().position(4, 1, 6));
+
+        builder.world().toggleRedstonePower(firstDiagonalPair);
+        builder.idle(10);
+        builder.world().toggleRedstonePower(firstDiagonalPair);
+        builder.idle(10);
+        builder.world().toggleRedstonePower(secondDiagonalPair);
+        builder.idle(10);
+        builder.world().toggleRedstonePower(secondDiagonalPair);
+        builder.idle(20);
     }
 
     @SuppressWarnings("deprecation")

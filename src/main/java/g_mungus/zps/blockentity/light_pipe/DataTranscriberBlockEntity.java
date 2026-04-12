@@ -2,6 +2,7 @@ package g_mungus.zps.blockentity.light_pipe;
 
 import g_mungus.zps.block.cableNetwork.light_pipe.DataTranscriberBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
+import g_mungus.zps.util.BookPageTextLimiter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -83,56 +84,13 @@ public class DataTranscriberBlockEntity extends AbstractTextDataReceiver {
                         bookHolder.zps$cyclePages();
                     }
                     lastWrittenText = this.currentDisplayText;
-                    pages.set(bookHolder.zps$getCurrentPage(), StringTag.valueOf(truncateStringToDisplayableLength(this.currentDisplayText)));
+                    pages.set(bookHolder.zps$getCurrentPage(), StringTag.valueOf(BookPageTextLimiter.truncateToDisplayableLength(this.currentDisplayText)));
                     bookHolder.zps$onPageWritten();
                     return true;
                 }
             }
         }
         return false;
-    }
-
-    private static String truncateStringToDisplayableLength(String original) {
-        if (original == null || original.isEmpty()) {
-            return original;
-        }
-
-        // If the length is less than 512, probably this text was handwritten and is safe to use
-        if (original.length() < 512) {
-            return original;
-        }
-
-        final int MAX_LINES = 14;
-        final int MAX_CHARS_PER_LINE = 19;
-        final int MAX_TOTAL_CHARS = 1023;
-
-        int lineCount = 1;
-        int lineLength = 0;
-        int i = 0;
-
-        for (; i < original.length() && i < MAX_TOTAL_CHARS; i++) {
-            char c = original.charAt(i);
-
-            if (c == '\n') {
-                lineCount++;
-                if (lineCount > MAX_LINES) {
-                    break;
-                }
-                lineLength = 0;
-                continue;
-            }
-
-            lineLength++;
-            if (lineLength > MAX_CHARS_PER_LINE) {
-                lineCount++;
-                if (lineCount > MAX_LINES) {
-                    break;
-                }
-                lineLength = 1; // this char starts the new wrapped line
-            }
-        }
-
-        return original.substring(0, i);
     }
 
     @Override

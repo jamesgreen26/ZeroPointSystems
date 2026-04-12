@@ -22,6 +22,7 @@ public class ZPSClientCommands {
         if (!FMLLoader.isProduction()) {
             dispatcher.register(ShowScreenCommand.COMMAND);
             dispatcher.register(TtsDebugCommand.COMMAND);
+            dispatcher.register(ExportBookCharWidthsCommand.COMMAND);
         }
     }
 }

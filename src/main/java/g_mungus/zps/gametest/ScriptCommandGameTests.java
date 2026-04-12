@@ -7,6 +7,7 @@ import g_mungus.zps.commands.api_impl.ZPSCommands;
 import g_mungus.zps.commands.api_impl.ZPSScriptCommandSource;
 import g_mungus.zps.commands.api_impl.arguments.ValueOfExpression;
 import g_mungus.zps.commands.content.executors.SetRedstoneCommand;
+import g_mungus.zps.util.BookPageTextLimiter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -605,6 +606,36 @@ public class ScriptCommandGameTests {
             String actual = getCurrentPageContents(helper, absPos);
             if (!expected.equals(actual)) {
                 helper.fail("zps_script write_page value_of: expected page \"" + expected + "\", got \"" + actual + "\"");
+            }
+        });
+    }
+
+    /**
+     * {@code write_page} should enforce the same visible-page limit used by the
+     * data transcriber when the input text is longer than a writable page can
+     * display.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_writePage_truncatesOverlongTextToBookDisplayLimit(GameTestHelper helper) {
+        BlockPos absPos = prepareLecternCommandTarget(helper);
+        String longText = "a".repeat(600);
+        String expected = BookPageTextLimiter.truncateToDisplayableLength(longText);
+
+        int result = runScriptCommand(
+                helper,
+                absPos,
+                "write_page " + longText
+        );
+        if (result != 1) {
+            helper.fail("zps_script write_page overlong returned " + result + " instead of 1");
+            return;
+        }
+
+        helper.succeedWhen(() -> {
+            String actual = getCurrentPageContents(helper, absPos);
+            if (!expected.equals(actual)) {
+                helper.fail("zps_script write_page overlong: expected length "
+                        + expected.length() + ", got length " + actual.length());
             }
         });
     }

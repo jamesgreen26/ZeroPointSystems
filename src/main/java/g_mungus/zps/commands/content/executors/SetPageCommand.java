@@ -1,6 +1,7 @@
 package g_mungus.zps.commands.content.executors;
 
 import g_mungus.zps.blockentity.light_pipe.BookHolder;
+import g_mungus.zps.util.BookPageTextLimiter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -44,7 +45,8 @@ public class SetPageCommand {
                         pages.add(StringTag.valueOf(""));
                         holder.zps$onPageAdded();
                     }
-                    pages.set(page, StringTag.valueOf(text.replace("\\n", "\n")));
+                    String normalizedText = text.replace("\\n", "\n");
+                    pages.set(page, StringTag.valueOf(BookPageTextLimiter.truncateToDisplayableLength(normalizedText)));
                     holder.zps$onPageWritten();
                 }
             }));

@@ -1,6 +1,7 @@
 package g_mungus.zps.block.cableNetwork;
 
 import g_mungus.zps.block.CableInsulationBlock;
+import g_mungus.zps.block.CatwalkBlock;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.core.BuiltinCableStandards;
 import g_mungus.zps.block.cableNetwork.core.CableComponentBlock;
@@ -155,6 +156,8 @@ public class CableBlock extends CableComponentBlock {
             if (!level.isClientSide() && !player.isCreative()) {
                 popResource(level, pos, new ItemStack(ModItems.CATWALK.get(), 1));
             }
+            CatwalkBlock catwalkBlock = (CatwalkBlock) ModBlocks.CATWALK.get();
+            catwalkBlock.spawnDestroyParticlesPublic(level, player, pos, catwalkBlock.defaultBlockState());
             return false;
         }
         super.onDestroyedByPlayer(state, level, pos, player, willHarvest, fluid);

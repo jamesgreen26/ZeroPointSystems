@@ -1,6 +1,8 @@
 package g_mungus.zps.block;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -12,6 +14,10 @@ public class CatwalkBlock extends Block {
     private static final VoxelShape BOX_COLLIDER;
     public CatwalkBlock(Properties arg) {
         super(arg);
+    }
+
+    public void spawnDestroyParticlesPublic(Level level, Player player, BlockPos pos, BlockState state) {
+        super.spawnDestroyParticles(level, player, pos, state);
     }
 
     @SuppressWarnings("deprecation")

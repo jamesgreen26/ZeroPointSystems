@@ -43,6 +43,7 @@ public class CableBlock extends CableComponentBlock {
     public static final BooleanProperty UP = BooleanProperty.create("up");
     public static final BooleanProperty DOWN = BooleanProperty.create("down");
     public static final BooleanProperty INSULATED = BooleanProperty.create("insulated");
+    public static final BooleanProperty CATWALKED = BooleanProperty.create("catwalked");
 
     private static final VoxelShape CORE = Block.box(6, 6, 6, 10, 10, 10);
     private static final VoxelShape NORTH_SHAPE = Block.box(6, 6, 0, 10, 10, 6);
@@ -51,23 +52,30 @@ public class CableBlock extends CableComponentBlock {
     private static final VoxelShape WEST_SHAPE = Block.box(0, 6, 6, 6, 10, 10);
     private static final VoxelShape UP_SHAPE = Block.box(6, 10, 6, 10, 16, 10);
     private static final VoxelShape DOWN_SHAPE = Block.box(6, 0, 6, 10, 6, 10);
+    protected static final VoxelShape CATWALK_SHAPE = Block.box(0, 12, 0, 16, 16, 16);
 
     public CableBlock(Properties properties) {
         super(properties);
-        this.registerDefaultState(this.stateDefinition.any()
+        BlockState defaultState = this.stateDefinition.any()
                 .setValue(NORTH, false)
                 .setValue(SOUTH, false)
                 .setValue(EAST, false)
                 .setValue(WEST, false)
                 .setValue(UP, false)
                 .setValue(DOWN, false)
-                .setValue(INSULATED, false)
-        );
+                .setValue(INSULATED, false);
+        if (defaultState.hasProperty(CATWALKED)) {
+            defaultState = defaultState.setValue(CATWALKED, false);
+        }
+        this.registerDefaultState(defaultState);
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN, INSULATED);
+        if (usesCatwalkProperty()) {
+            builder.add(CATWALKED);
+        }
     }
 
     @SuppressWarnings("deprecation")
@@ -89,17 +97,31 @@ public class CableBlock extends CableComponentBlock {
         if (state.getValue(WEST)) shape = Shapes.or(shape, WEST_SHAPE);
         if (state.getValue(UP)) shape = Shapes.or(shape, UP_SHAPE);
         if (state.getValue(DOWN)) shape = Shapes.or(shape, DOWN_SHAPE);
+        if (state.hasProperty(CATWALKED) && state.getValue(CATWALKED)) shape = Shapes.or(shape, CATWALK_SHAPE);
 
         return shape;
     }
 
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos blockPos, Player arg4, InteractionHand arg5, BlockHitResult arg6) {
-        if (!state.getValue(INSULATED) && arg4.getItemInHand(arg5).is(ModItems.CABLE_INSULATION.get())) {
+        if ((!state.hasProperty(CATWALKED) || !state.getValue(CATWALKED))
+                && !state.getValue(INSULATED) && arg4.getItemInHand(arg5).is(ModItems.CABLE_INSULATION.get())) {
             if (!level.isClientSide()) {
                 level.setBlock(blockPos, state.setValue(INSULATED, true), 3);
             } else {
                 net.minecraft.world.level.block.SoundType soundType = state.getSoundType();
+                level.playSound(arg4, blockPos, soundType.getPlaceSound(), net.minecraft.sounds.SoundSource.BLOCKS, 1f, 1f);
+            }
+            if (!arg4.isCreative()) {
+                arg4.getItemInHand(arg5).shrink(1);
+            }
+            return InteractionResult.SUCCESS;
+        } else if (state.hasProperty(CATWALKED) && !state.getValue(INSULATED) && !state.getValue(CATWALKED)
+                && arg4.getItemInHand(arg5).is(ModItems.CATWALK.get()) && canBeCatwalked(state)) {
+            if (!level.isClientSide()) {
+                level.setBlock(blockPos, state.setValue(CATWALKED, true).setValue(UP, false), 3);
+            } else {
+                net.minecraft.world.level.block.SoundType soundType = ModBlocks.CATWALK.get().defaultBlockState().getSoundType();
                 level.playSound(arg4, blockPos, soundType.getPlaceSound(), net.minecraft.sounds.SoundSource.BLOCKS, 1f, 1f);
             }
             if (!arg4.isCreative()) {
@@ -128,6 +150,12 @@ public class CableBlock extends CableComponentBlock {
             CableInsulationBlock insulationBlock = (CableInsulationBlock) ModBlocks.CABLE_INSULATION.get();
             insulationBlock.spawnDestroyParticlesPublic(level, player, pos, insulationBlock.defaultBlockState());
             return false;
+        } else if (state.hasProperty(CATWALKED) && state.getValue(CATWALKED)) {
+            level.setBlock(pos, state.setValue(CATWALKED, false), level.isClientSide ? 11 : 3);
+            if (!level.isClientSide() && !player.isCreative()) {
+                popResource(level, pos, new ItemStack(ModItems.CATWALK.get(), 1));
+            }
+            return false;
         }
         super.onDestroyedByPlayer(state, level, pos, player, willHarvest, fluid);
         return true;
@@ -138,6 +166,8 @@ public class CableBlock extends CableComponentBlock {
     {
         if (state.hasProperty(INSULATED) && state.getValue(INSULATED) && !player.isShiftKeyDown()) {
             return new ItemStack(ModItems.CABLE_INSULATION.get(), 1);
+        } else if (state.hasProperty(CATWALKED) && state.getValue(CATWALKED) && !player.isShiftKeyDown()) {
+            return new ItemStack(ModItems.CATWALK.get(), 1);
         } else {
             return getCloneItemStack(level, pos, state);
         }
@@ -208,9 +238,14 @@ public class CableBlock extends CableComponentBlock {
     @Override
     public int getChannelCountForConnection(BlockPos self, BlockPos from, Level level) {
         BlockState state = level.getBlockState(self);
+        Vec3i n = from.subtract(self);
+        Direction direction = Direction.fromDelta(n.getX(), n.getY(), n.getZ());
+
+        if (state.hasProperty(CATWALKED) && state.getValue(CATWALKED) && direction == Direction.UP) {
+            return 0;
+        }
+
         if (state.hasProperty(INSULATED) && state.getValue(INSULATED)) {
-            Vec3i n = from.subtract(self);
-            Direction direction = Direction.fromDelta(n.getX(), n.getY(), n.getZ());
 
             boolean shouldConnect = false;
 
@@ -260,7 +295,8 @@ public class CableBlock extends CableComponentBlock {
         boolean south = canConnect(pos, pos.offset(Direction.SOUTH.getNormal()), level);
         boolean east = canConnect(pos, pos.offset(Direction.EAST.getNormal()), level);
         boolean west = canConnect(pos, pos.offset(Direction.WEST.getNormal()), level);
-        boolean up = canConnect(pos, pos.offset(Direction.UP.getNormal()), level);
+        boolean up = (!state.hasProperty(CATWALKED) || !state.getValue(CATWALKED))
+                && canConnect(pos, pos.offset(Direction.UP.getNormal()), level);
         boolean down = canConnect(pos, pos.offset(Direction.DOWN.getNormal()), level);
 
         return state
@@ -270,5 +306,13 @@ public class CableBlock extends CableComponentBlock {
                 .setValue(WEST, west)
                 .setValue(UP, up)
                 .setValue(DOWN, down);
+    }
+
+    public boolean canBeCatwalked(BlockState state) {
+        return state.hasProperty(CATWALKED) && !state.getValue(INSULATED) && !state.getValue(CATWALKED) && !state.getValue(UP);
+    }
+
+    protected boolean usesCatwalkProperty() {
+        return true;
     }
 }

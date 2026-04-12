@@ -18,6 +18,14 @@
         },
         {
             "when": {
+                "catwalked": "true"
+            },
+            "apply": {
+                "model": "zps:block/decor/catwalk"
+            }
+        },
+        {
+            "when": {
                 "north": "true",
                 "insulated": "false"
             },

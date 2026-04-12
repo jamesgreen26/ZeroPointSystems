@@ -137,4 +137,14 @@ public abstract class TransformerBlock extends CableBlock implements EntityBlock
     public boolean isTerminal() {
         return true;
     }
+
+    @Override
+    public boolean canBeCatwalked(BlockState state) {
+        return false;
+    }
+
+    @Override
+    protected boolean usesCatwalkProperty() {
+        return false;
+    }
 }

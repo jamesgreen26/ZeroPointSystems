@@ -40,6 +40,7 @@ public class DenseCablesBlock extends CableBlock {
         if (state.getValue(WEST)) shape = Shapes.or(shape, WEST_SHAPE);
         if (state.getValue(UP)) shape = Shapes.or(shape, UP_SHAPE);
         if (state.getValue(DOWN)) shape = Shapes.or(shape, DOWN_SHAPE);
+        if (state.hasProperty(CATWALKED) && state.getValue(CATWALKED)) shape = Shapes.or(shape, CATWALK_SHAPE);
 
         return shape;
     }

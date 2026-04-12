@@ -1,6 +1,7 @@
 package g_mungus.zps.item;
 
 import g_mungus.zps.block.CatwalkBlock;
+import g_mungus.zps.block.cableNetwork.CableBlock;
 import net.createmod.catnip.placement.IPlacementHelper;
 import net.createmod.catnip.placement.PlacementHelpers;
 import net.createmod.catnip.placement.PlacementOffset;
@@ -59,7 +60,10 @@ public class CatwalkBlockItem extends BlockItem {
 
     @Override
     public Predicate<BlockState> getStatePredicate () {
-      return state -> state.getBlock() instanceof CatwalkBlock;
+      return state -> state.getBlock() instanceof CatwalkBlock
+              || state.getBlock() instanceof CableBlock
+              && state.hasProperty(CableBlock.CATWALKED)
+              && state.getValue(CableBlock.CATWALKED);
     }
 
     @Override

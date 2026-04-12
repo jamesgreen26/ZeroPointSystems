@@ -704,7 +704,12 @@ public class MultiLineCommandSuggestions {
             return MAPPER_STYLE;
         }
 
-        if (ZPSCommands.getExecutor(literal) != null && (parentLiteral == null || parentLiteral.startsWith("have-") || "else".equals(parentLiteral))) {
+        if (ZPSCommands.getExecutor(literal) != null && (
+                parentLiteral == null
+                        || parentLiteral.startsWith("have-")
+                        || "else".equals(parentLiteral)
+                        || ZPSCommands.Paths.EXECUTORS.equals(parentLiteral)
+        )) {
             return EXECUTOR_STYLE;
         }
 

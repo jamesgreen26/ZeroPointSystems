@@ -41,6 +41,13 @@ public class CatwalkBlockItem extends BlockItem {
     IPlacementHelper helper = PlacementHelpers.get(placementHelperID);
     BlockHitResult ray = new BlockHitResult(ctx.getClickLocation(), face, pos, true);
     if (helper.matchesState(state) && player != null && !player.isShiftKeyDown()) {
+      BlockPos targetPos = CatwalkHelper.getTargetPos(player, pos);
+      BlockState targetState = world.getBlockState(targetPos);
+      if (targetState.getBlock() instanceof CableBlock cableBlock && cableBlock.canBeCatwalked(targetState)) {
+        BlockHitResult targetRay = new BlockHitResult(ctx.getClickLocation(), face, targetPos, true);
+        return targetState.use(world, player, ctx.getHand(), targetRay);
+      }
+
       PlacementOffset result = helper.getOffset(player, world, state, pos, ray);
 
       if (result.isSuccessful()) {
@@ -68,12 +75,17 @@ public class CatwalkBlockItem extends BlockItem {
 
     @Override
     public PlacementOffset getOffset(Player player, Level level, BlockState state, BlockPos pos, BlockHitResult ray) {
-      BlockPos newPos = pos.offset(player.getDirection().getNormal());
+      BlockPos newPos = getTargetPos(player, pos);
 
-      if (!level.getBlockState(newPos).canBeReplaced())
+      BlockState targetState = level.getBlockState(newPos);
+      if (!targetState.canBeReplaced() && !(targetState.getBlock() instanceof CableBlock cableBlock && cableBlock.canBeCatwalked(targetState)))
         return PlacementOffset.fail();
 
       return PlacementOffset.success(newPos, offsetState -> offsetState);
+    }
+
+    private static BlockPos getTargetPos(Player player, BlockPos pos) {
+      return pos.offset(player.getDirection().getNormal());
     }
   }
 }

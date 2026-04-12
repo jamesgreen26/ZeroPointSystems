@@ -54,6 +54,7 @@ public class CableBlock extends CableComponentBlock {
     private static final VoxelShape UP_SHAPE = Block.box(6, 10, 6, 10, 16, 10);
     private static final VoxelShape DOWN_SHAPE = Block.box(6, 0, 6, 10, 6, 10);
     protected static final VoxelShape CATWALK_SHAPE = Block.box(0, 12, 0, 16, 16, 16);
+    private static final double CATWALK_MIN_Y = 12.0D / 16.0D;
 
     public CableBlock(Properties properties) {
         super(properties);
@@ -170,10 +171,13 @@ public class CableBlock extends CableComponentBlock {
         if (state.hasProperty(INSULATED) && state.getValue(INSULATED) && !player.isShiftKeyDown()) {
             return new ItemStack(ModItems.CABLE_INSULATION.get(), 1);
         } else if (state.hasProperty(CATWALKED) && state.getValue(CATWALKED) && !player.isShiftKeyDown()) {
-            return new ItemStack(ModItems.CATWALK.get(), 1);
+            if (target instanceof BlockHitResult blockHitResult && isTargetingCatwalk(blockHitResult, pos)) {
+                return new ItemStack(ModItems.CATWALK.get(), 1);
+            }
         } else {
             return getCloneItemStack(level, pos, state);
         }
+        return getCloneItemStack(level, pos, state);
     }
 
     @Override
@@ -317,5 +321,9 @@ public class CableBlock extends CableComponentBlock {
 
     protected boolean usesCatwalkProperty() {
         return true;
+    }
+
+    private boolean isTargetingCatwalk(BlockHitResult hitResult, BlockPos pos) {
+        return hitResult.getLocation().y - pos.getY() >= CATWALK_MIN_Y;
     }
 }

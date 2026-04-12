@@ -3,7 +3,7 @@
 	"textures": {
 		"0": "zps:block/video_display_back",
 		"1": "zps:block/octo_controller_side",
-		"2": "zps:block/data_combinator_append",
+		"2": "zps:block/data_combinator_replace",
 		"particle": "zps:block/video_display_back"
 	},
 	"elements": [

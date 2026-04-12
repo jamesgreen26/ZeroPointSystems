@@ -1,5 +1,6 @@
 package g_mungus.zps.blockentity.light_pipe;
 
+import g_mungus.zps.block.cableNetwork.light_pipe.DataCombinator;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.blockentity.ModBlockEntities;
@@ -28,17 +29,17 @@ public class DataCombinatorBlockEntity extends NetworkTerminalImpl implements Li
         if (channel == Channels.TRIPLE_A) {
             if (!message.equals(textA)) {
                 textA = message;
-                computeAndSend();
+                refreshOutput();
             }
         } else if (channel == Channels.TRIPLE_B) {
             if (!message.equals(textB)) {
                 textB = message;
-                computeAndSend();
+                refreshOutput();
             }
         }
     }
 
-    private void computeAndSend() {
+    public void refreshOutput() {
         String combined = computeCombined();
         if (!combined.equals(outputText)) {
             outputText = combined;
@@ -49,13 +50,20 @@ public class DataCombinatorBlockEntity extends NetworkTerminalImpl implements Li
     }
 
     private String computeCombined() {
+        if (getBlockState().hasProperty(DataCombinator.MODE)) {
+            DataCombinator.CombineMode mode = getBlockState().getValue(DataCombinator.MODE);
+            if (mode == DataCombinator.CombineMode.replace) {
+                if (textA.isEmpty()) return "";
+                if (textB.isEmpty()) return textA;
+                int idx = textA.indexOf("%s");
+                if (idx < 0) return textA;
+                return textA.substring(0, idx) + textB + textA.substring(idx + 2);
+            }
+        }
+
         if (textA.isEmpty() && textB.isEmpty()) return "";
         if (textA.isEmpty()) return textB;
         if (textB.isEmpty()) return textA;
-        int idx = textA.indexOf("%s");
-        if (idx >= 0) {
-            return textA.substring(0, idx) + textB + textA.substring(idx + 2);
-        }
         return textA + textB;
     }
 

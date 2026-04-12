@@ -1,20 +1,36 @@
 {
   "multipart": [
     {
-      "when": { "facing": "south" },
+      "when": { "facing": "south", "combine_mode": "append" },
       "apply": { "model": "zps:block/data_combinator" }
     },
     {
-      "when": { "facing": "west" },
+      "when": { "facing": "west", "combine_mode": "append" },
       "apply": { "model": "zps:block/data_combinator", "y": 90 }
     },
     {
-      "when": { "facing": "north" },
+      "when": { "facing": "north", "combine_mode": "append" },
       "apply": { "model": "zps:block/data_combinator", "y": 180 }
     },
     {
-      "when": { "facing": "east" },
+      "when": { "facing": "east", "combine_mode": "append" },
       "apply": { "model": "zps:block/data_combinator", "y": 270 }
+    },
+    {
+      "when": { "facing": "south", "combine_mode": "replace" },
+      "apply": { "model": "zps:block/data_combinator_replace" }
+    },
+    {
+      "when": { "facing": "west", "combine_mode": "replace" },
+      "apply": { "model": "zps:block/data_combinator_replace", "y": 90 }
+    },
+    {
+      "when": { "facing": "north", "combine_mode": "replace" },
+      "apply": { "model": "zps:block/data_combinator_replace", "y": 180 }
+    },
+    {
+      "when": { "facing": "east", "combine_mode": "replace" },
+      "apply": { "model": "zps:block/data_combinator_replace", "y": 270 }
     }
   ]
 }

@@ -359,7 +359,7 @@
 
     "block.zps.data_comparator.zps_tooltip": "Compares signals from two connected [Light-Pipe Data Cables] according to the current mode.\n\n[Equals]: provides Redstone power when data from the two inputs match exactly.\n\n[Contains]: provides Redstone power when data from the first input contains the full data from the second.\n\n[Greater Than]: provides Redstone power when both inputs can be parsed as numbers and the first is greater than the second.\n\n[Shift + R-Click] to switch Modes.",
 
-    "block.zps.data_combinator.zps_tooltip": "Combines two [Light-Pipe Data Cable] inputs into one output.\n\n[Back]: output port.\n[Left]: Input A. [Right]: Input B.\n\nIf only one input is present, it is passed through.\n\nIf both inputs are present: if Input A contains [%s], the first occurrence is replaced with Input B. Otherwise, Input B is appended to Input A.",
+    "block.zps.data_combinator.zps_tooltip": "Combines two [Light-Pipe Data Cable] inputs into one output according to the current mode.\n\n[Back]: output port.\n[Left]: Input A. [Right]: Input B.\n\n[Append]: passthrough behavior for single inputs, and appends Input B to Input A when both are present.\n\n[Replace]: passthrough from Input A unless Input B is present and Input A contains [%s], in which case the first occurrence is replaced with Input B.\n\n[Shift + R-Click] to switch Modes.",
 
     "block.zps.dodeca_controller.zps_tooltip": "More... MORE!!",
 

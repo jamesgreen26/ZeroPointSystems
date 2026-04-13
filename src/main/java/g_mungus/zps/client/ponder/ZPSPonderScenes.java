@@ -216,27 +216,27 @@ public class ZPSPonderScenes {
 
         builder.overlay().showText(60).text("Dense Cable Separators can be rotated with Shift + R-Click");
 
-        builder.idle(60);
+        builder.idle(75);
 
         InputWindowElement inputWindowElement = new InputWindowElement(util.vector().topOf(3, 1, 1), Pointing.DOWN);
-        builder.addInstruction(new ShowInputInstruction(inputWindowElement, 10));
+        builder.addInstruction(new ShowInputInstruction(inputWindowElement, 16));
         inputWindowElement.builder().rightClick().whileSneaking();
 
         builder.idle(8);
 
         builder.world().cycleBlockProperty(new BlockPos(3, 1, 1), DenseCableSeparatorBlock.ROTATION);
 
-        builder.idle(12);
+        builder.idle(20);
 
         InputWindowElement secondInputWindowElement = new InputWindowElement(util.vector().topOf(3, 1, 1), Pointing.DOWN);
-        builder.addInstruction(new ShowInputInstruction(secondInputWindowElement, 10));
+        builder.addInstruction(new ShowInputInstruction(secondInputWindowElement, 16));
         secondInputWindowElement.builder().rightClick().whileSneaking();
 
         builder.idle(8);
 
         builder.world().cycleBlockProperty(new BlockPos(3, 1, 1), DenseCableSeparatorBlock.ROTATION);
 
-        builder.idle(12);
+        builder.idle(24);
 
         builder.overlay().showText(50).text("This changes the signal routing.");
 

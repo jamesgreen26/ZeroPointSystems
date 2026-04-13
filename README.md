@@ -1,1 +1,1 @@
-[wiki](https://deepwiki.com/jamesgreen26/ZeroPointSystems)
+[docs](https://jamesgreen26.github.io/ZeroPointSystems/)

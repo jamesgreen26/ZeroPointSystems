@@ -13,6 +13,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -76,7 +77,8 @@ public class DodecaControllerBlock extends CableComponentBlock implements Entity
 
     @Override
     public @NotNull InteractionResult use(BlockState state, Level level, BlockPos pos, @NotNull Player player, @NotNull InteractionHand hand, BlockHitResult arg6) {
-        if (player.getItemInHand(hand).is(ModBlocks.DENSE_CABLES.get().asItem())) {
+        ItemStack itemInHand = player.getItemInHand(hand);
+        if (itemInHand.is(ModBlocks.DENSE_CABLES.get().asItem()) || itemInHand.is(ModBlocks.DENSE_CABLE_SEPARATOR.get().asItem())) {
             return InteractionResult.PASS;
         }
 

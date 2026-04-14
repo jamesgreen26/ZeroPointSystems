@@ -39,7 +39,7 @@ public abstract class TransformerBlock extends CableBlock implements EntityBlock
 
     public TransformerBlock(Properties properties) {
         super(properties);
-        this.registerDefaultState(this.stateDefinition.any()
+        BlockState defaultState = this.stateDefinition.any()
                 .setValue(NORTH, false)
                 .setValue(SOUTH, false)
                 .setValue(EAST, false)
@@ -47,8 +47,11 @@ public abstract class TransformerBlock extends CableBlock implements EntityBlock
                 .setValue(UP, false)
                 .setValue(DOWN, false)
                 .setValue(FACING, Direction.DOWN)
-                .setValue(INSULATED, false)
-        );
+                .setValue(INSULATED, false);
+        if (defaultState.hasProperty(CATWALKED)) {
+            defaultState = defaultState.setValue(CATWALKED, false);
+        }
+        this.registerDefaultState(defaultState);
     }
 
     @Override
@@ -116,7 +119,7 @@ public abstract class TransformerBlock extends CableBlock implements EntityBlock
         if (context.getPlayer() != null && context.getPlayer().isShiftKeyDown()) {
             facing = facing.getOpposite();
         }
-        return getNewBlockState(defaultBlockState().setValue(FACING, facing), context.getLevel(), context.getClickedPos());
+        return getNewBlockState(this.defaultBlockState().setValue(FACING, facing), context.getLevel(), context.getClickedPos());
     }
 
     @Override
@@ -140,11 +143,11 @@ public abstract class TransformerBlock extends CableBlock implements EntityBlock
 
     @Override
     public boolean canBeCatwalked(BlockState state) {
-        return false;
+        return super.canBeCatwalked(state) && state.getValue(FACING).equals(Direction.DOWN);
     }
 
-    @Override
-    protected boolean usesCatwalkProperty() {
-        return false;
-    }
+//    @Override
+//    protected boolean usesCatwalkProperty() {
+//        return false;
+//    }
 }

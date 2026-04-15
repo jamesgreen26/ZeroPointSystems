@@ -69,8 +69,7 @@ public class CatwalkBlockItem extends BlockItem {
     public Predicate<BlockState> getStatePredicate () {
       return state -> state.getBlock() instanceof CatwalkBlock
               || state.getBlock() instanceof CableBlock
-              && state.hasProperty(CableBlock.CATWALKED)
-              && state.getValue(CableBlock.CATWALKED);
+              && state.getValue(CableBlock.INSULATION_TYPE).equals(CableBlock.InsulationType.CATWALK);
     }
 
     @Override

@@ -12,6 +12,8 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 
+import static g_mungus.zps.block.cableNetwork.CableBlock.InsulationType.*;
+
 public class DenseCablesBlock extends CableBlock {
 
     private static final VoxelShape CORE = Block.box(2, 2, 2, 14, 14, 14);
@@ -28,7 +30,8 @@ public class DenseCablesBlock extends CableBlock {
 
     @Override
     public @NotNull VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        if (state.getValue(INSULATED)) {
+        InsulationType insulationType = state.getValue(INSULATION_TYPE);
+        if (insulationType.equals(INSULATION) || insulationType.equals(GRATING)) {
             return Shapes.block();
         }
 
@@ -40,7 +43,7 @@ public class DenseCablesBlock extends CableBlock {
         if (state.getValue(WEST)) shape = Shapes.or(shape, WEST_SHAPE);
         if (state.getValue(UP)) shape = Shapes.or(shape, UP_SHAPE);
         if (state.getValue(DOWN)) shape = Shapes.or(shape, DOWN_SHAPE);
-        if (state.hasProperty(CATWALKED) && state.getValue(CATWALKED)) shape = Shapes.or(shape, CATWALK_SHAPE);
+        if (state.getValue(INSULATION_TYPE).equals(CATWALK)) shape = Shapes.or(shape, CATWALK_SHAPE);
 
         return shape;
     }

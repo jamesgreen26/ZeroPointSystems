@@ -28,7 +28,28 @@
           "condition": "minecraft:block_state_property",
           "block": "zps:serial_bus",
           "properties": {
-            "insulated": "true"
+            "insulation_type": "insulation"
+          }
+        },
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "zps:catwalk"
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "minecraft:block_state_property",
+          "block": "zps:dense_cables",
+          "properties": {
+            "insulation_type": "catwalk"
           }
         },
         {

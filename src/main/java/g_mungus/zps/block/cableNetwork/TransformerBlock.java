@@ -18,6 +18,8 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
+import static g_mungus.zps.block.cableNetwork.CableBlock.InsulationType.*;
+
 public abstract class TransformerBlock extends CableBlock implements EntityBlock {
 
     public static final DirectionProperty FACING = DirectionProperty.create("facing");
@@ -39,7 +41,7 @@ public abstract class TransformerBlock extends CableBlock implements EntityBlock
 
     public TransformerBlock(Properties properties) {
         super(properties);
-        BlockState defaultState = this.stateDefinition.any()
+        this.registerDefaultState(this.stateDefinition.any()
                 .setValue(NORTH, false)
                 .setValue(SOUTH, false)
                 .setValue(EAST, false)
@@ -47,16 +49,14 @@ public abstract class TransformerBlock extends CableBlock implements EntityBlock
                 .setValue(UP, false)
                 .setValue(DOWN, false)
                 .setValue(FACING, Direction.DOWN)
-                .setValue(INSULATED, false);
-        if (defaultState.hasProperty(CATWALKED)) {
-            defaultState = defaultState.setValue(CATWALKED, false);
-        }
-        this.registerDefaultState(defaultState);
+                .setValue(INSULATION_TYPE, NONE)
+        );
     }
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        if (state.getValue(INSULATED)) {
+        InsulationType insulationType = state.getValue(INSULATION_TYPE);
+        if (insulationType.equals(INSULATION) || insulationType.equals(GRATING)) {
             return Shapes.block();
         }
         VoxelShape transformerShape = switch (state.getValue(FACING)) {
@@ -83,7 +83,8 @@ public abstract class TransformerBlock extends CableBlock implements EntityBlock
 
     @Override
     public VoxelShape getBlockSupportShape(BlockState state, BlockGetter level, BlockPos pos) {
-        if (state.getValue(INSULATED)) {
+        InsulationType insulationType = state.getValue(INSULATION_TYPE);
+        if (insulationType.equals(INSULATION) || insulationType.equals(GRATING)) {
             return Shapes.block();
         }
         return switch (state.getValue(FACING)) {

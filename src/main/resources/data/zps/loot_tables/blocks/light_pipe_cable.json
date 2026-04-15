@@ -28,7 +28,7 @@
           "condition": "minecraft:block_state_property",
           "block": "zps:light_pipe_cable",
           "properties": {
-            "insulated": "true"
+            "insulation_type": "insulation"
           }
         },
         {
@@ -49,7 +49,7 @@
           "condition": "minecraft:block_state_property",
           "block": "zps:light_pipe_cable",
           "properties": {
-            "catwalked": "true"
+            "insulation_type": "catwalk"
           }
         },
         {

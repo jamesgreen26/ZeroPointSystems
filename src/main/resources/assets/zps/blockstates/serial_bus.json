@@ -2,7 +2,7 @@
   "multipart": [
     {
       "when": {
-        "insulated": "false"
+        "insulation_type": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/light_pipe_core"
@@ -11,7 +11,7 @@
     {
       "when": {
         "facing": "down",
-        "insulated": "false"
+        "insulation_type": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/serial_bus_base"
@@ -20,7 +20,7 @@
     {
       "when": {
         "facing": "up",
-        "insulated": "false"
+        "insulation_type": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/serial_bus_base",
@@ -30,7 +30,7 @@
     {
       "when": {
         "facing": "north",
-        "insulated": "false"
+        "insulation_type": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/serial_bus_base",
@@ -40,7 +40,7 @@
     {
       "when": {
         "facing": "east",
-        "insulated": "false"
+        "insulation_type": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/serial_bus_base",
@@ -51,7 +51,7 @@
     {
       "when": {
         "facing": "south",
-        "insulated": "false"
+        "insulation_type": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/serial_bus_base",
@@ -62,7 +62,7 @@
     {
       "when": {
         "facing": "west",
-        "insulated": "false"
+        "insulation_type": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/serial_bus_base",
@@ -73,7 +73,7 @@
     {
       "when": {
         "facing": "down",
-        "insulated": "false"
+        "insulation_type": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/serial_bus_stem"
@@ -82,7 +82,7 @@
     {
       "when": {
         "facing": "up",
-        "insulated": "false"
+        "insulation_type": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/serial_bus_stem",
@@ -92,7 +92,7 @@
     {
       "when": {
         "facing": "north",
-        "insulated": "false"
+        "insulation_type": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/serial_bus_stem",
@@ -102,7 +102,7 @@
     {
       "when": {
         "facing": "east",
-        "insulated": "false"
+        "insulation_type": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/serial_bus_stem",
@@ -113,7 +113,7 @@
     {
       "when": {
         "facing": "south",
-        "insulated": "false"
+        "insulation_type": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/serial_bus_stem",
@@ -124,7 +124,7 @@
     {
       "when": {
         "facing": "west",
-        "insulated": "false"
+        "insulation_type": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/serial_bus_stem",
@@ -135,7 +135,7 @@
     {
       "when": {
         "facing": "up",
-        "insulated": "true"
+        "insulation_type": "insulation"
       },
       "apply": {
         "model": "zps:block/insulated_serial_bus"
@@ -144,7 +144,7 @@
     {
       "when": {
         "facing": "down",
-        "insulated": "true"
+        "insulation_type": "insulation"
       },
       "apply": {
         "model": "zps:block/insulated_serial_bus",
@@ -154,7 +154,7 @@
     {
       "when": {
         "facing": "north",
-        "insulated": "true"
+        "insulation_type": "insulation"
       },
       "apply": {
         "model": "zps:block/insulated_serial_bus",
@@ -164,7 +164,7 @@
     {
       "when": {
         "facing": "east",
-        "insulated": "true"
+        "insulation_type": "insulation"
       },
       "apply": {
         "model": "zps:block/insulated_serial_bus",
@@ -175,7 +175,7 @@
     {
       "when": {
         "facing": "south",
-        "insulated": "true"
+        "insulation_type": "insulation"
       },
       "apply": {
         "model": "zps:block/insulated_serial_bus",
@@ -186,7 +186,7 @@
     {
       "when": {
         "facing": "west",
-        "insulated": "true"
+        "insulation_type": "insulation"
       },
       "apply": {
         "model": "zps:block/insulated_serial_bus",
@@ -196,7 +196,7 @@
     },
     {
       "when": {
-        "insulated": "true"
+        "insulation_type": "insulation"
       },
       "apply": {
         "model": "zps:block/insulation_core"
@@ -204,8 +204,24 @@
     },
     {
       "when": {
+        "insulation_type": "catwalk"
+      },
+      "apply": {
+        "model": "zps:block/decor/catwalk"
+      }
+    },
+    {
+      "when": {
+        "insulation_type": "grating"
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_block"
+      }
+    },
+    {
+      "when": {
         "north": "true",
-        "insulated": "false"
+        "insulation_type": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/light_pipe_side",
@@ -215,7 +231,7 @@
     {
       "when": {
         "north": "true",
-        "insulated": "true"
+        "insulation_type": "insulation"
       },
       "apply": {
         "model": "zps:block/insulated_single_light_pipe",
@@ -226,7 +242,7 @@
       "when": {
         "AND": [
           {
-            "insulated": "true"
+            "insulation_type": "insulation"
           },
           {
             "north": "false"
@@ -260,7 +276,7 @@
     {
       "when": {
         "south": "true",
-        "insulated": "false"
+        "insulation_type": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/light_pipe_side",
@@ -271,7 +287,7 @@
     {
       "when": {
         "south": "true",
-        "insulated": "true"
+        "insulation_type": "insulation"
       },
       "apply": {
         "model": "zps:block/insulated_single_light_pipe",
@@ -283,7 +299,7 @@
       "when": {
         "AND": [
           {
-            "insulated": "true"
+            "insulation_type": "insulation"
           },
           {
             "south": "false"
@@ -318,7 +334,7 @@
     {
       "when": {
         "east": "true",
-        "insulated": "false"
+        "insulation_type": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/light_pipe_side",
@@ -329,7 +345,7 @@
     {
       "when": {
         "east": "true",
-        "insulated": "true"
+        "insulation_type": "insulation"
       },
       "apply": {
         "model": "zps:block/insulated_single_light_pipe",
@@ -341,7 +357,7 @@
       "when": {
         "AND": [
           {
-            "insulated": "true"
+            "insulation_type": "insulation"
           },
           {
             "east": "false"
@@ -376,7 +392,7 @@
     {
       "when": {
         "west": "true",
-        "insulated": "false"
+        "insulation_type": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/light_pipe_side",
@@ -387,7 +403,7 @@
     {
       "when": {
         "west": "true",
-        "insulated": "true"
+        "insulation_type": "insulation"
       },
       "apply": {
         "model": "zps:block/insulated_single_light_pipe",
@@ -399,7 +415,7 @@
       "when": {
         "AND": [
           {
-            "insulated": "true"
+            "insulation_type": "insulation"
           },
           {
             "west": "false"
@@ -434,7 +450,7 @@
     {
       "when": {
         "up": "true",
-        "insulated": "false"
+        "insulation_type": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/light_pipe_side"
@@ -443,7 +459,7 @@
     {
       "when": {
         "up": "true",
-        "insulated": "true"
+        "insulation_type": "insulation"
       },
       "apply": {
         "model": "zps:block/insulated_single_light_pipe"
@@ -453,7 +469,7 @@
       "when": {
         "AND": [
           {
-            "insulated": "true"
+            "insulation_type": "insulation"
           },
           {
             "up": "false"
@@ -486,7 +502,7 @@
     {
       "when": {
         "down": "true",
-        "insulated": "false"
+        "insulation_type": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/light_pipe_side",
@@ -496,7 +512,7 @@
     {
       "when": {
         "down": "true",
-        "insulated": "true"
+        "insulation_type": "insulation"
       },
       "apply": {
         "model": "zps:block/insulated_single_light_pipe",
@@ -507,7 +523,7 @@
       "when": {
         "AND": [
           {
-            "insulated": "true"
+            "insulation_type": "insulation"
           },
           {
             "down": "false"

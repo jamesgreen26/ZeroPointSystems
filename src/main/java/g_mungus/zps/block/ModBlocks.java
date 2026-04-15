@@ -5,6 +5,7 @@ import g_mungus.zps.block.cableNetwork.*;
 import g_mungus.zps.block.cableNetwork.light_pipe.*;
 import g_mungus.zps.block.cableNetwork.properties.InsulationType;
 import g_mungus.zps.block.datagen.BlockDataGenerator;
+import g_mungus.zps.block.gas.DuctBlock;
 import g_mungus.zps.item.ModItems;
 import g_mungus.zps.mixin.BlockBehaviourAccessor;
 import net.minecraft.core.BlockPos;
@@ -159,6 +160,12 @@ public class ModBlocks {
 
     public static final RegistryObject<Block> LOUDSPEAKER = BLOCKS.register("loudspeaker",
             () -> new LoudspeakerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+
+    public static final RegistryObject<Block> DUCT = BLOCKS.register("gas_duct",
+            () -> new DuctBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(2.0f)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));

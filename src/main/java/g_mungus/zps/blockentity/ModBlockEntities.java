@@ -2,6 +2,7 @@ package g_mungus.zps.blockentity;
 
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.blockentity.gas.DuctBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.*;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.registries.DeferredRegister;
@@ -97,5 +98,10 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("loudspeaker",
                     () -> BlockEntityType.Builder.of(LoudspeakerBlockEntity::new,
                             ModBlocks.LOUDSPEAKER.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<DuctBlockEntity>> DUCT =
+            BLOCK_ENTITIES.register("duct",
+                    () -> BlockEntityType.Builder.of(DuctBlockEntity::new,
+                            ModBlocks.DUCT.get()).build(null));
 
 } 

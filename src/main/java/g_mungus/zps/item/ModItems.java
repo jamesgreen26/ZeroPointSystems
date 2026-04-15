@@ -86,6 +86,9 @@ public class ModItems {
     public static final RegistryObject<Item> RADIO_ANTENNA = ITEMS.register("radio_antenna",
             () -> new RadioAntennaBlockItem(ModBlocks.RADIO_ANTENNA.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> DUCT = ITEMS.register("gas_duct",
+            () -> new BlockItem(ModBlocks.DUCT.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> SPACE_METAL_INGOT = ITEMS.register("space_metal_ingot",
         () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> SPACE_METAL_PLATE = ITEMS.register("space_metal_plate",

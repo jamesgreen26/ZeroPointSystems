@@ -48,6 +48,10 @@
     "mass": 350.0
   },
   {
+    "block": "zps:data_combinator",
+    "mass": 500.0
+  },
+  {
     "tag": "zps:space_plating",
     "mass": 500
   },

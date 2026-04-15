@@ -27,21 +27,21 @@ public class DataCombinatorBlockEntity extends NetworkTerminalImpl implements Li
     @Override
     public void acceptText(int channel, String message) {
         if (channel == Channels.TRIPLE_A) {
-            if (!message.equals(textA)) {
-                textA = message;
-                refreshOutput();
-            }
+            textA = message;
+            refreshOutput(true);
         } else if (channel == Channels.TRIPLE_B) {
-            if (!message.equals(textB)) {
-                textB = message;
-                refreshOutput();
-            }
+            textB = message;
+            refreshOutput(true);
         }
     }
 
     public void refreshOutput() {
+        refreshOutput(false);
+    }
+
+    public void refreshOutput(boolean forceSignalUpdate) {
         String combined = computeCombined();
-        if (!combined.equals(outputText)) {
+        if (!combined.equals(outputText) || forceSignalUpdate) {
             outputText = combined;
             if (level != null) {
                 updateSignal(level);
@@ -72,7 +72,7 @@ public class DataCombinatorBlockEntity extends NetworkTerminalImpl implements Li
         for (NetworkNode terminal : getTerminals(Channels.TRIPLE_C)) {
             BlockEntity be = level.getBlockEntity(terminal.pos());
             int channel = terminal.channel();
-            if (be instanceof LightPipeDataReceiver.Text receiver) {
+            if (be instanceof LightPipeDataReceiver.Text receiver && !(receiver instanceof DataCombinatorBlockEntity)) {
                 receiver.acceptText(channel, outputText.substring(0, Math.min(outputText.length(), receiver.getMaxLength())));
             }
         }

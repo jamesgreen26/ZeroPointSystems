@@ -91,6 +91,10 @@ repositories {
         url = "https://maven.blamejared.com/"
     }
     maven {
+        name = 'Kotlin for Forge'
+        url = 'https://thedarkcolour.github.io/KotlinForForge/'
+    }
+    maven {
         name = "Valkyrien Skies Internal"
         url = 'https://maven.valkyrienskies.org'
         content {
@@ -161,6 +165,11 @@ dependencies {
             prefer "${flywheel_version}"
         }
     }
+
+    jarJar(modImplementation("org.valkyrienskies.kelvin:kelvin-forge:${minecraft_version}-${kelvin_version}") { transitive = false
+        exclude group: 'org.joml', module: ''
+    })
+    modApi("thedarkcolour:kotlinforforge:4.11.0")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.0")

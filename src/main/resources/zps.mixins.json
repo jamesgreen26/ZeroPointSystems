@@ -26,6 +26,7 @@
     "StructureTemplateMixin",
     "WritableBookMixin",
     "WrittenBookMixin",
+    "create.GoggleInfoExtension",
     "create.ScrollValueBehaviourAccessor",
     "ponder.ConfigBaseMixin"
   ],

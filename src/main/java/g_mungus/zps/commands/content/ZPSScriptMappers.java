@@ -20,12 +20,21 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 @Mod.EventBusSubscriber
 public class ZPSScriptMappers {
     private static final String ESCAPED_NEWLINE = "\\n";
     private static final Pattern ESCAPED_NEWLINE_PATTERN = Pattern.compile(Pattern.quote(ESCAPED_NEWLINE));
+
+    private static String formatDouble(double value) {
+        return String.format(Locale.ROOT, "%.2f", value);
+    }
+
+    private static String formatVec3(Vec3 vec3) {
+        return formatDouble(vec3.x) + " " + formatDouble(vec3.y) + " " + formatDouble(vec3.z);
+    }
 
     private static Vec3 resolveVec3Argument(Object argumentValue, net.minecraft.commands.CommandSourceStack commandSource) {
         if (argumentValue instanceof Coordinates coordinates) {
@@ -696,7 +705,7 @@ public class ZPSScriptMappers {
                 String.class,
                 ResourceLocation.parse("zps:double"),
                 ResourceLocation.parse("zps:string"),
-                (value, ctx) -> value.toString()
+                (value, ctx) -> formatDouble(value)
         ));
 
         // as_string for block_pos ("x y z")
@@ -707,6 +716,36 @@ public class ZPSScriptMappers {
                 ResourceLocation.parse("zps:block_pos"),
                 ResourceLocation.parse("zps:string"),
                 (pos, ctx) -> pos.getX() + " " + pos.getY() + " " + pos.getZ()
+        ));
+
+        // as_string for vec_pos ("x y z" with 2 decimal places)
+        event.register(new ScriptMapper<>(
+                "as_string",
+                Vec3.class,
+                String.class,
+                ResourceLocation.parse("zps:vec_pos"),
+                ResourceLocation.parse("zps:string"),
+                (vec3, ctx) -> formatVec3(vec3)
+        ));
+
+        // as_string for vec_box ("x y z" with 2 decimal places)
+        event.register(new ScriptMapper<>(
+                "as_string",
+                Vec3.class,
+                String.class,
+                ResourceLocation.parse("zps:vec_box"),
+                ResourceLocation.parse("zps:string"),
+                (vec3, ctx) -> formatVec3(vec3)
+        ));
+
+        // as_string for vec_dir ("x y z" with 2 decimal places)
+        event.register(new ScriptMapper<>(
+                "as_string",
+                Vec3.class,
+                String.class,
+                ResourceLocation.parse("zps:vec_dir"),
+                ResourceLocation.parse("zps:string"),
+                (vec3, ctx) -> formatVec3(vec3)
         ));
 
         // as_string for dimension (identity - dimension is already a string key)

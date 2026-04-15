@@ -1,16 +1,16 @@
 package g_mungus.zps.blockentity;
 
 import g_mungus.zps.ZPSMod;
-import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.StepdownTransformerBlock;
 import g_mungus.zps.block.cableNetwork.TransformerBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
+import g_mungus.zps.config.ZPSConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -27,13 +27,16 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class StepUpTransformerBlockEntity extends NetworkTerminalImpl {
+public class StepUpTransformerBlockEntity extends NetworkTerminalImpl implements EnergyTransferBE {
     private final EnergyStorage energyHandler;
     private final LazyOptional<IEnergyStorage> energy;
+    private long lastHudInfoRequestTick = Long.MIN_VALUE;
+
+    private static final int MAX_TRANSFER = 4096;
 
     public StepUpTransformerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.STEPUP_TRANSFORMER.get(), pos, state);
-        this.energyHandler = new EnergyStorage(5000, 1000, 1000);
+        this.energyHandler = new EnergyStorage(MAX_TRANSFER * 2, MAX_TRANSFER, MAX_TRANSFER);
         this.energy = LazyOptional.of(() -> energyHandler);
     }
 
@@ -89,7 +92,8 @@ public class StepUpTransformerBlockEntity extends NetworkTerminalImpl {
         // Second pass: distribute energy proportionally
         if (receivingTerminalCount.get() > 0) {
             int availableEnergy = blockEntity.energyHandler.getEnergyStored();
-            int energyPerTransformer = Math.min(availableEnergy, 1000) / receivingTerminalCount.get(); // Send up to 1000 RF/t per transformer
+            int energyPerTransformer = Math.min(availableEnergy, MAX_TRANSFER) / receivingTerminalCount.get(); // Send up to MAX_TRANSFER RF/t per transformer
+            AtomicInteger transferredThisTick = new AtomicInteger();
             
             terminals.forEach(node -> {
                 BlockState state1 = level.getBlockState(node.pos());
@@ -97,6 +101,8 @@ public class StepUpTransformerBlockEntity extends NetworkTerminalImpl {
                     Direction dir = state1.getValue(StepdownTransformerBlock.FACING);
                     BlockPos targetPos2 = node.pos().relative(dir);
                     BlockEntity targetEntity2 = level.getBlockEntity(targetPos2);
+                    StepDownTransformerBlockEntity targetTransformer =
+                            level.getBlockEntity(node.pos()) instanceof StepDownTransformerBlockEntity transformer ? transformer : null;
                     
                     if (targetEntity2 != null) {
                         targetEntity2.getCapability(ForgeCapabilities.ENERGY, dir.getOpposite()).ifPresent(storage -> {
@@ -108,12 +114,21 @@ public class StepUpTransformerBlockEntity extends NetworkTerminalImpl {
                                 if (toSend > 0) {
                                     int extracted = blockEntity.energyHandler.extractEnergy(toSend, false);
                                     storage.receiveEnergy(extracted, false);
+                                    transferredThisTick.addAndGet(extracted);
+
+                                    if (targetTransformer != null) {
+                                        targetTransformer.updateTransferRate(extracted, level.getGameTime());
+                                    }
                                 }
                             }
                         });
                     }
                 }
             });
+
+            blockEntity.provideInfo(transferredThisTick.get());
+        } else {
+            blockEntity.provideInfo(0);
         }
     }
 
@@ -154,4 +169,27 @@ public class StepUpTransformerBlockEntity extends NetworkTerminalImpl {
         }
         return super.getCapability(cap, side);
     }
-} 
+
+    @Override
+    public void setLastHudRefreshTick(long ticks) {
+        lastHudInfoRequestTick = ticks;
+    }
+
+    @Override
+    public long getLastHudRefreshTick() {
+        return lastHudInfoRequestTick;
+    }
+
+    private int hudInfo;
+
+
+    @Override
+    public void provideInfo(Integer info) {
+        hudInfo = info;
+    }
+
+    @Override
+    public Integer getInfo() {
+        return hudInfo;
+    }
+}

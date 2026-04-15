@@ -1,21 +1,16 @@
 package g_mungus.zps.blockentity;
 
 import g_mungus.zps.ZPSMod;
-import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.StepdownTransformerBlock;
 import g_mungus.zps.block.cableNetwork.TransformerBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
-import g_mungus.zps.networking.RequestHudInfoC2SPacket;
-import g_mungus.zps.networking.ZPSGamePackets;
-import g_mungus.zps.util.HudInfoProvider;
-import net.minecraft.ChatFormatting;
+import g_mungus.zps.config.ZPSConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.network.chat.Component;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -37,9 +32,11 @@ public class StepUpTransformerBlockEntity extends NetworkTerminalImpl implements
     private final LazyOptional<IEnergyStorage> energy;
     private long lastHudInfoRequestTick = Long.MIN_VALUE;
 
+    private static final int MAX_TRANSFER = 4096;
+
     public StepUpTransformerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.STEPUP_TRANSFORMER.get(), pos, state);
-        this.energyHandler = new EnergyStorage(5000, 1000, 1000);
+        this.energyHandler = new EnergyStorage(MAX_TRANSFER * 2, MAX_TRANSFER, MAX_TRANSFER);
         this.energy = LazyOptional.of(() -> energyHandler);
     }
 
@@ -95,7 +92,7 @@ public class StepUpTransformerBlockEntity extends NetworkTerminalImpl implements
         // Second pass: distribute energy proportionally
         if (receivingTerminalCount.get() > 0) {
             int availableEnergy = blockEntity.energyHandler.getEnergyStored();
-            int energyPerTransformer = Math.min(availableEnergy, 1000) / receivingTerminalCount.get(); // Send up to 1000 RF/t per transformer
+            int energyPerTransformer = Math.min(availableEnergy, MAX_TRANSFER) / receivingTerminalCount.get(); // Send up to MAX_TRANSFER RF/t per transformer
             AtomicInteger transferredThisTick = new AtomicInteger();
             
             terminals.forEach(node -> {

@@ -15,7 +15,11 @@ public class StepDownTransformerBlockEntity extends NetworkTerminalImpl implemen
     }
 
     public void updateTransferRate(int info, long gameTime) {
-        hudInfo = info;
+        if (lastTransferUpdateTick == gameTime) {
+            hudInfo += info;
+        } else {
+            hudInfo = info;
+        }
         lastTransferUpdateTick = gameTime;
     }
 

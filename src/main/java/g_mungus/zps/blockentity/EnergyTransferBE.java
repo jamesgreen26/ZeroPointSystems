@@ -43,7 +43,7 @@ public interface EnergyTransferBE extends HudInfoProvider<Integer> {
 
             tooltip.add(Component.literal(spacing)
                     .append(Component.literal("Transfer Rate:").withStyle(ChatFormatting.GRAY)));
-            tooltip.add(Component.literal(spacing).append(" ")
+            tooltip.add(Component.literal(spacing)
                     .append(formatInt(getInfo())).append(" FE/t").withStyle(ChatFormatting.AQUA));
         }
     }

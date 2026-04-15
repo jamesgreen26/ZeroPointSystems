@@ -1,8 +1,6 @@
 package g_mungus.zps.util;
 
 import com.bawnorton.mixinsquared.api.MixinCanceller;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.loading.LoadingModList;
 
 import java.util.List;
 

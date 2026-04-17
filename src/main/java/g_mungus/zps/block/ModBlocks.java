@@ -3,14 +3,18 @@ package g_mungus.zps.block;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.cableNetwork.*;
 import g_mungus.zps.block.cableNetwork.light_pipe.*;
+import g_mungus.zps.block.cableNetwork.properties.InsulationType;
 import g_mungus.zps.block.datagen.BlockDataGenerator;
 import g_mungus.zps.item.ModItems;
 import g_mungus.zps.mixin.BlockBehaviourAccessor;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -31,17 +35,23 @@ public class ModBlocks {
         throw new RuntimeException("RegistryObject not present for block: " + name);
     }
 
+    private static BlockBehaviour.Properties cableProperties(float strength) {
+        return BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                .strength(strength)
+                .requiresCorrectToolForDrops()
+                .isRedstoneConductor(ModBlocks::isCableRedstoneConductor);
+    }
+
+    private static boolean isCableRedstoneConductor(BlockState state, BlockGetter level, BlockPos pos) {
+        return !state.hasProperty(CableBlock.INSULATION_TYPE)
+                || state.getValue(CableBlock.INSULATION_TYPE) != InsulationType.GRATING;
+    }
+
     public static final RegistryObject<Block> CABLE = BLOCKS.register("cable",
-        () -> new CableBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
-            .strength(2.0f)
-            .requiresCorrectToolForDrops()
-        ));
+        () -> new CableBlock(cableProperties(2.0f)));
 
     public static final RegistryObject<Block> DENSE_CABLES = BLOCKS.register("dense_cables",
-        () -> new DenseCablesBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
-            .strength(2.5f)
-            .requiresCorrectToolForDrops()
-        ));
+        () -> new DenseCablesBlock(cableProperties(2.5f)));
 
     public static final RegistryObject<Block> DENSE_CABLE_SEPARATOR = BLOCKS.register("dense_cable_separator",
             () -> new DenseCableSeparatorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
@@ -51,22 +61,13 @@ public class ModBlocks {
             ));
 
     public static final RegistryObject<Block> STEPUP_TRANSFORMER = BLOCKS.register("stepup_transformer",
-            () -> new StepupTransformerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
-                    .strength(2.0f)
-                    .requiresCorrectToolForDrops()
-            ));
+            () -> new StepupTransformerBlock(cableProperties(2.0f)));
 
     public static final RegistryObject<Block> STEPDOWN_TRANSFORMER = BLOCKS.register("stepdown_transformer",
-            () -> new StepdownTransformerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
-                    .strength(2.0f)
-                    .requiresCorrectToolForDrops()
-            ));
+            () -> new StepdownTransformerBlock(cableProperties(2.0f)));
 
     public static final RegistryObject<Block> REDSTONE_CONVERTER = BLOCKS.register("redstone_converter",
-            () -> new RedstoneConverterBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
-                    .strength(2.0f)
-                    .requiresCorrectToolForDrops()
-            ));
+            () -> new RedstoneConverterBlock(cableProperties(2.0f)));
 
     public static final RegistryObject<Block> OCTO_CONTROLLER = BLOCKS.register("octo_controller",
             () -> new OctoControllerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
@@ -98,10 +99,7 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()));
 
     public static final RegistryObject<Block> LIGHT_PIPE = BLOCKS.register("light_pipe_cable",
-            () -> new LightPipeCableBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
-                    .strength(2.0f)
-                    .requiresCorrectToolForDrops()
-            ));
+            () -> new LightPipeCableBlock(cableProperties(2.0f)));
 
     public static final RegistryObject<Block> DATA_LECTERN = BLOCKS.register("data_lectern",
             () -> new DataLecternBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
@@ -151,10 +149,7 @@ public class ModBlocks {
                     .noOcclusion()));
 
     public static final RegistryObject<Block> SERIAL_BUS = BLOCKS.register("serial_bus",
-            () -> new SerialBusBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
-                    .strength(2.0f)
-                    .requiresCorrectToolForDrops()
-            ));
+            () -> new SerialBusBlock(cableProperties(2.0f)));
 
     public static final RegistryObject<Block> SCRIPT_TERMINAL = BLOCKS.register("script_terminal",
             () -> new ScriptTerminalBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
@@ -212,6 +207,7 @@ public class ModBlocks {
                     .strength(3.0f)
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.NETHERITE_BLOCK)
+                    .isRedstoneConductor((state, level, pos) -> false)
                     .noOcclusion()
             )
     );
@@ -221,6 +217,7 @@ public class ModBlocks {
                     .strength(3.0f)
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.NETHERITE_BLOCK)
+                    .isRedstoneConductor((state, level, pos) -> false)
                     .noOcclusion()
             )
     );
@@ -238,6 +235,7 @@ public class ModBlocks {
                     .strength(3.0f)
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.NETHERITE_BLOCK)
+                    .isRedstoneConductor((state, level, pos) -> false)
                     .noOcclusion()
             )
     );

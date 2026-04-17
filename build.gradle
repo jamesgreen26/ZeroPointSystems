@@ -73,6 +73,7 @@ repositories {
     maven { url = "https://raw.githubusercontent.com/Fuzss/modresources/main/maven" }
     maven { url = "https://api.modrinth.com/maven" }
     maven { url = "https://maven.ithundxr.dev/mirror" }
+    maven { url = "https://maven.ithundxr.dev/snapshots" }
     flatDir {
         dirs 'libs'
     }
@@ -114,17 +115,7 @@ dependencies {
     additionalRuntimeClasspath(files('libs/jsapi.jar', 'libs/freetts.jar'))
     implementation(files('libs/Registrate-MC1.21-1.3.0+62.jar'))
 
-    // Create pulls in optional JourneyMap integration transitively on 1.21.1.
-    // ZPS does not use it, and the resolved API/mod pair is currently crashing client init.
-    implementation("com.simibubi.create:create-$minecraft_version:$create_version:slim") {
-        exclude group: "maven.modrinth", module: "journeymap"
-        exclude group: "info.journeymap", module: "journeymap-api-neoforge"
-    }
-    runtimeOnly("com.simibubi.create:create-$minecraft_version:$create_version") {
-        exclude group: "maven.modrinth", module: "journeymap"
-        exclude group: "info.journeymap", module: "journeymap-api-neoforge"
-    }
-
+    implementation("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
 
     runtimeOnly("dev.engine-room.vanillin:vanillin-neoforge-$minecraft_version:$vanillin_version")
 

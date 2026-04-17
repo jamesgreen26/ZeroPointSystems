@@ -7,14 +7,57 @@
   },
   "connections": [
     {
-      "type": "is_same_block"
-    },
-    {
       "type": "match_state",
       "block": "zps:cable",
       "properties": {
         "insulated": "grating"
       }
+    },
+    {
+      "type": "match_state",
+      "block": "zps:dense_cables",
+      "properties": {
+        "insulated": "grating"
+      }
+    },
+    {
+      "type": "match_state",
+      "block": "zps:light_pipe_cable",
+      "properties": {
+        "insulated": "grating"
+      }
+    },
+    {
+      "type": "match_state",
+      "block": "zps:stepup_transformer",
+      "properties": {
+        "insulated": "grating"
+      }
+    },
+    {
+      "type": "match_state",
+      "block": "zps:stepdown_transformer",
+      "properties": {
+        "insulated": "grating"
+      }
+    },
+    {
+      "type": "match_state",
+      "block": "zps:redstone_converter",
+      "properties": {
+        "insulated": "grating"
+      }
+    },
+    {
+      "type": "match_state",
+      "block": "zps:serial_bus",
+      "properties": {
+        "insulated": "grating"
+      }
+    },
+    {
+      "type": "match_block",
+      "block": "zps:space_grating_block"
     }
   ]
 }

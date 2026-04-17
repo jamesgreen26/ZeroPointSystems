@@ -13,7 +13,7 @@
       "type": "match_state",
       "block": "zps:cable",
       "properties": {
-        "insulation_type": "grating"
+        "insulated": "grating"
       }
     }
   ]

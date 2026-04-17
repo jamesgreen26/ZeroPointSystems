@@ -28,7 +28,7 @@
           "condition": "minecraft:block_state_property",
           "block": "zps:serial_bus",
           "properties": {
-            "insulation_type": "insulation"
+            "insulated": "insulation"
           }
         },
         {
@@ -49,7 +49,7 @@
           "condition": "minecraft:block_state_property",
           "block": "zps:dense_cables",
           "properties": {
-            "insulation_type": "catwalk"
+            "insulated": "catwalk"
           }
         },
         {

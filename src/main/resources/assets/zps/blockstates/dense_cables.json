@@ -3,7 +3,7 @@
     {
       "when": {
         "AND": [
-          {"insulation_type": "none|catwalk|grating"},
+          {"insulated": "none|catwalk|grating"},
           {"north": "true"},
           {"south": "true"},
           {"east": "false"},
@@ -19,7 +19,7 @@
     {
       "when": {
         "AND": [
-          {"insulation_type": "none|catwalk|grating"},
+          {"insulated": "none|catwalk|grating"},
           {"north": "false"},
           {"south": "false"},
           {"east": "true"},
@@ -36,7 +36,7 @@
     {
       "when": {
         "AND": [
-          {"insulation_type": "none|catwalk|grating"},
+          {"insulated": "none|catwalk|grating"},
           {"north": "false"},
           {"south": "false"},
           {"east": "false"},
@@ -53,7 +53,7 @@
     {
       "when": {
         "AND": [
-          {"insulation_type": "none|catwalk|grating"},
+          {"insulated": "none|catwalk|grating"},
           {
             "NOT": {
               "AND": [
@@ -98,7 +98,7 @@
     },
     {
       "when": {
-        "insulation_type": "insulation"
+        "insulated": "insulation"
       },
       "apply": {
         "model": "zps:block/insulation_core"
@@ -106,7 +106,7 @@
     },
     {
       "when": {
-        "insulation_type": "catwalk"
+        "insulated": "catwalk"
       },
       "apply": {
         "model": "zps:block/decor/catwalk"
@@ -114,7 +114,7 @@
     },
     {
       "when": {
-        "insulation_type": "grating"
+        "insulated": "grating"
       },
       "apply": {
         "model": "zps:block/decor/space_grating_block"
@@ -123,7 +123,7 @@
     {
       "when": {
         "north": "true",
-        "insulation_type": "none|catwalk|grating"
+        "insulated": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/dense_cable_side",
@@ -133,7 +133,7 @@
     {
       "when": {
         "north": "true",
-        "insulation_type": "insulation"
+        "insulated": "insulation"
       },
       "apply": {
         "model": "zps:block/insulated_quad",
@@ -143,7 +143,7 @@
     {
       "when": {
         "north": "false",
-        "insulation_type": "insulation"
+        "insulated": "insulation"
       },
       "apply": {
         "model": "zps:block/insulated_end",
@@ -153,7 +153,7 @@
     {
       "when": {
         "south": "true",
-        "insulation_type": "none|catwalk|grating"
+        "insulated": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/dense_cable_side",
@@ -164,7 +164,7 @@
     {
       "when": {
         "south": "true",
-        "insulation_type": "insulation"
+        "insulated": "insulation"
       },
       "apply": {
         "model": "zps:block/insulated_quad",
@@ -175,7 +175,7 @@
     {
       "when": {
         "south": "false",
-        "insulation_type": "insulation"
+        "insulated": "insulation"
       },
       "apply": {
         "model": "zps:block/insulated_end",
@@ -186,7 +186,7 @@
     {
       "when": {
         "east": "true",
-        "insulation_type": "none|catwalk|grating"
+        "insulated": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/dense_cable_side",
@@ -197,7 +197,7 @@
     {
       "when": {
         "east": "true",
-        "insulation_type": "insulation"
+        "insulated": "insulation"
       },
       "apply": {
         "model": "zps:block/insulated_quad",
@@ -208,7 +208,7 @@
     {
       "when": {
         "east": "false",
-        "insulation_type": "insulation"
+        "insulated": "insulation"
       },
       "apply": {
         "model": "zps:block/insulated_end",
@@ -219,7 +219,7 @@
     {
       "when": {
         "west": "true",
-        "insulation_type": "none|catwalk|grating"
+        "insulated": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/dense_cable_side",
@@ -230,7 +230,7 @@
     {
       "when": {
         "west": "true",
-        "insulation_type": "insulation"
+        "insulated": "insulation"
       },
       "apply": {
         "model": "zps:block/insulated_quad",
@@ -241,7 +241,7 @@
     {
       "when": {
         "west": "false",
-        "insulation_type": "insulation"
+        "insulated": "insulation"
       },
       "apply": {
         "model": "zps:block/insulated_end",
@@ -252,7 +252,7 @@
     {
       "when": {
         "up": "true",
-        "insulation_type": "none|catwalk|grating"
+        "insulated": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/dense_cable_side"
@@ -261,7 +261,7 @@
     {
       "when": {
         "up": "true",
-        "insulation_type": "insulation"
+        "insulated": "insulation"
       },
       "apply": {
         "model": "zps:block/insulated_quad"
@@ -270,7 +270,7 @@
     {
       "when": {
         "up": "false",
-        "insulation_type": "insulation"
+        "insulated": "insulation"
       },
       "apply": {
         "model": "zps:block/insulated_end"
@@ -279,7 +279,7 @@
     {
       "when": {
         "down": "true",
-        "insulation_type": "none|catwalk|grating"
+        "insulated": "none|catwalk|grating"
       },
       "apply": {
         "model": "zps:block/dense_cable_side",
@@ -289,7 +289,7 @@
     {
       "when": {
         "down": "true",
-        "insulation_type": "insulation"
+        "insulated": "insulation"
       },
       "apply": {
         "model": "zps:block/insulated_quad",
@@ -299,7 +299,7 @@
     {
       "when": {
         "down": "false",
-        "insulation_type": "insulation"
+        "insulated": "insulation"
       },
       "apply": {
         "model": "zps:block/insulated_end",

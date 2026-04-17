@@ -12,6 +12,7 @@ import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -23,7 +24,7 @@ import static g_mungus.zps.block.cableNetwork.properties.InsulationType.*;
 
 public abstract class TransformerBlock extends CableBlock implements EntityBlock {
 
-    public static final DirectionProperty FACING = DirectionProperty.create("facing");
+    public static final DirectionProperty FACING = BlockStateProperties.FACING;
 
     private static final VoxelShape NORTH_SHAPE = Block.box(1, 1, 0, 15, 15, 4);
     private static final VoxelShape SOUTH_SHAPE = Block.box(1, 1, 12, 15, 15, 16);

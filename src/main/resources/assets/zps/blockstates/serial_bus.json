@@ -212,10 +212,236 @@
     },
     {
       "when": {
-        "insulated": "grating"
+        "AND": [
+          {"insulated": "grating"},
+          {"facing": "north"}
+        ]
       },
       "apply": {
-        "model": "zps:block/decor/space_grating_block"
+        "model": "zps:block/decor/space_grating_transformer",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"insulated": "grating"},
+          {"north": "true"},
+          {"NOT": {"facing": "north"}}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_cable",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"insulated": "grating"},
+          {"north": "false"},
+          {"NOT": {"facing": "north"}}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_face",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"insulated": "grating"},
+          {"facing": "south"}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_transformer",
+        "x": 90,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"insulated": "grating"},
+          {"south": "true"},
+          {"NOT": {"facing": "south"}}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_cable",
+        "x": 90,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"insulated": "grating"},
+          {"south": "false"},
+          {"NOT": {"facing": "south"}}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_face",
+        "x": 90,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"insulated": "grating"},
+          {"facing": "east"}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_transformer",
+        "x": 90,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"insulated": "grating"},
+          {"east": "true"},
+          {"NOT": {"facing": "east"}}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_cable",
+        "x": 90,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"insulated": "grating"},
+          {"east": "false"},
+          {"NOT": {"facing": "east"}}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_face",
+        "x": 90,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"insulated": "grating"},
+          {"facing": "west"}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_transformer",
+        "x": 90,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"insulated": "grating"},
+          {"west": "true"},
+          {"NOT": {"facing": "west"}}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_cable",
+        "x": 90,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"insulated": "grating"},
+          {"west": "false"},
+          {"NOT": {"facing": "west"}}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_face",
+        "x": 90,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"insulated": "grating"},
+          {"facing": "up"}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_transformer"
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"insulated": "grating"},
+          {"up": "true"},
+          {"NOT": {"facing": "up"}}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_cable"
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"insulated": "grating"},
+          {"up": "false"},
+          {"NOT": {"facing": "up"}}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_face"
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"insulated": "grating"},
+          {"facing": "down"}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_transformer",
+        "x": 180
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"insulated": "grating"},
+          {"down": "true"},
+          {"NOT": {"facing": "down"}}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_cable",
+        "x": 180
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"insulated": "grating"},
+          {"down": "false"},
+          {"NOT": {"facing": "down"}}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_face",
+        "x": 180
       }
     },
     {

@@ -1,0 +1,17 @@
+{
+	"loader": "fusion:model",
+	"type": "base",
+	"textures": {
+		"0": "zps:block/decor/space_grating_block_transformer",
+		"particle": "zps:block/decor/space_grating_block"
+	},
+	"elements": [
+		{
+			"from": [0, 16, 0],
+			"to": [16, 16, 16],
+			"faces": {
+				"up": {"uv": [16, 16, 0, 0], "texture": "#0", "cullface": "up" }
+			}
+		}
+	]
+}

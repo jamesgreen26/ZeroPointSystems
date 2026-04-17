@@ -114,10 +114,126 @@
     },
     {
       "when": {
-        "insulated": "grating"
+        "insulated": "grating",
+        "north": "true"
       },
       "apply": {
-        "model": "zps:block/decor/space_grating_block"
+        "model": "zps:block/decor/space_grating_densecable",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "insulated": "grating",
+        "north": "false"
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_face",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "insulated": "grating",
+        "south": "true"
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_densecable",
+        "x": 90,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "insulated": "grating",
+        "south": "false"
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_face",
+        "x": 90,
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "insulated": "grating",
+        "east": "true"
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_densecable",
+        "x": 90,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "insulated": "grating",
+        "east": "false"
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_face",
+        "x": 90,
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "insulated": "grating",
+        "west": "true"
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_densecable",
+        "x": 90,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "insulated": "grating",
+        "west": "false"
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_face",
+        "x": 90,
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "insulated": "grating",
+        "up": "true"
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_densecable"
+      }
+    },
+    {
+      "when": {
+        "insulated": "grating",
+        "up": "false"
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_face"
+      }
+    },
+    {
+      "when": {
+        "insulated": "grating",
+        "down": "true"
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_densecable",
+        "x": 180
+      }
+    },
+    {
+      "when": {
+        "insulated": "grating",
+        "down": "false"
+      },
+      "apply": {
+        "model": "zps:block/decor/space_grating_face",
+        "x": 180
       }
     },
     {

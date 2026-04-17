@@ -1,0 +1,72 @@
+{
+	"loader": "fusion:model",
+	"type": "connecting",
+	"textures": {
+		"0": "zps:block/decor/space_grating_block",
+		"particle": "zps:block/decor/space_grating_block"
+	},
+	"elements": [
+		{
+			"from": [0, 16, 0],
+			"to": [16, 16, 16],
+			"faces": {
+				"up": {"uv": [16, 16, 0, 0], "texture": "#0", "cullface": "up" }
+			}
+		}
+	],
+	"connections": [
+		{
+			"type": "match_state",
+			"block": "zps:cable",
+			"properties": {
+				"insulated": "grating"
+			}
+		},
+		{
+			"type": "match_state",
+			"block": "zps:dense_cables",
+			"properties": {
+				"insulated": "grating"
+			}
+		},
+		{
+			"type": "match_state",
+			"block": "zps:light_pipe_cable",
+			"properties": {
+				"insulated": "grating"
+			}
+		},
+		{
+			"type": "match_state",
+			"block": "zps:stepup_transformer",
+			"properties": {
+				"insulated": "grating"
+			}
+		},
+		{
+			"type": "match_state",
+			"block": "zps:stepdown_transformer",
+			"properties": {
+				"insulated": "grating"
+			}
+		},
+		{
+			"type": "match_state",
+			"block": "zps:redstone_converter",
+			"properties": {
+				"insulated": "grating"
+			}
+		},
+		{
+			"type": "match_state",
+			"block": "zps:serial_bus",
+			"properties": {
+				"insulated": "grating"
+			}
+		},
+		{
+			"type": "match_block",
+			"block": "zps:space_grating_block"
+		}
+	]
+}

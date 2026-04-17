@@ -1,10 +1,10 @@
 package g_mungus.zps.mixin.ponder;
 
+import net.createmod.catnip.data.Couple;
 import net.createmod.catnip.gui.NavigatableSimiScreen;
 import net.createmod.catnip.gui.UIRenderHelper;
 import net.createmod.catnip.gui.widget.BoxWidget;
-import net.createmod.catnip.utility.Couple;
-import net.createmod.catnip.utility.theme.Color;
+import net.createmod.catnip.theme.Color;
 import net.createmod.ponder.foundation.PonderScene;
 import net.createmod.ponder.foundation.ui.PonderUI;
 import net.minecraft.client.gui.GuiGraphics;

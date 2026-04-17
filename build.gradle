@@ -3,6 +3,10 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.137'
 }
 
+configurations {
+    clientOnlyMods
+}
+
 group = project.maven_group
 version = project.mod_version
 
@@ -97,7 +101,7 @@ dependencies {
     }
 
     // Fusion is a client-only visual mod and should stay out of server and gametest runs.
-    clientAdditionalRuntimeClasspath("maven.modrinth:fusion-connected-textures:${fusion_version}")
+    clientOnlyMods("maven.modrinth:fusion-connected-textures:${fusion_version}")
 
     jarJar(implementation("ace.actually.radios:radios:1.2.0")) {
         version {
@@ -110,12 +114,26 @@ dependencies {
     additionalRuntimeClasspath(files('libs/jsapi.jar', 'libs/freetts.jar'))
     implementation(files('libs/Registrate-MC1.21-1.3.0+62.jar'))
 
-    implementation("com.simibubi.create:create-$minecraft_version:$create_version:slim")
-    runtimeOnly("com.simibubi.create:create-$minecraft_version:$create_version")
-    compileOnly("net.createmod.catnip:Catnip-NeoForge-${minecraft_version}:${catnip_version}")
-    implementation("net.createmod.ponder:Ponder-NeoForge-${minecraft_version}:${ponder_version}")
-    runtimeOnly("dev.engine-room.flywheel:flywheel-neoforge-1.21.1:1.0.0-10")
-    runtimeOnly("dev.engine-room.vanillin:vanillin-neoforge-1.21.1:1.0.0-beta-11")
+    // Create pulls in optional JourneyMap integration transitively on 1.21.1.
+    // ZPS does not use it, and the resolved API/mod pair is currently crashing client init.
+    implementation("com.simibubi.create:create-$minecraft_version:$create_version:slim") {
+        exclude group: "maven.modrinth", module: "journeymap"
+        exclude group: "info.journeymap", module: "journeymap-api-neoforge"
+    }
+    runtimeOnly("com.simibubi.create:create-$minecraft_version:$create_version") {
+        exclude group: "maven.modrinth", module: "journeymap"
+        exclude group: "info.journeymap", module: "journeymap-api-neoforge"
+    }
+
+
+    runtimeOnly("dev.engine-room.vanillin:vanillin-neoforge-$minecraft_version:$vanillin_version")
+
+    implementation(jarJar("net.createmod.ponder:ponder-neoforge:$ponder_version+mc$minecraft_version") {
+        version {
+            strictly "[$ponder_version+mc$minecraft_version,)"
+            prefer "$ponder_version+mc$minecraft_version"
+        }
+    })
 
     runtimeOnly("mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}")
     runtimeOnly("maven.modrinth:spark:${spark_version}")
@@ -130,6 +148,12 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+afterEvaluate {
+    tasks.named('runClient') {
+        classpath += configurations.clientOnlyMods.incoming.files
+    }
 }
 
 configurations.configureEach {

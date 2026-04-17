@@ -39,6 +39,6 @@ side = "BOTH"
 [[dependencies.zps]]
 modId = "fusion"
 type = "required"
-versionRange = "[1.1.1a,)"
+versionRange = "[1,)"
 ordering = "NONE"
 side = "CLIENT"

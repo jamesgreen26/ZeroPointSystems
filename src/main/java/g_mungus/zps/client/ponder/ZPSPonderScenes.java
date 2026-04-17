@@ -6,6 +6,7 @@ import g_mungus.zps.block.cableNetwork.DenseCableSeparatorBlock;
 import g_mungus.zps.block.cableNetwork.RedstoneConverterBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.light_pipe.DataLecternBlock;
+import g_mungus.zps.block.cableNetwork.properties.InsulationType;
 import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
 import g_mungus.zps.client.ponder.api.PonderExtras;
 import g_mungus.zps.client.ponder.api.custom_screen_in_ponder_scene.*;
@@ -132,7 +133,7 @@ public class ZPSPonderScenes {
         builder.idle(50);
 
         BlockState eastWestCable = ModBlocks.CABLE.get().defaultBlockState().setValue(CableBlock.EAST, true).setValue(CableBlock.WEST, true);
-        BlockState eastWestInsulatedCable = ModBlocks.CABLE.get().defaultBlockState().setValue(CableBlock.EAST, true).setValue(CableBlock.WEST, true).setValue(CableBlock.INSULATION_TYPE, CableBlock.InsulationType.INSULATION);
+        BlockState eastWestInsulatedCable = ModBlocks.CABLE.get().defaultBlockState().setValue(CableBlock.EAST, true).setValue(CableBlock.WEST, true).setValue(CableBlock.INSULATION_TYPE, InsulationType.INSULATION);
         BlockState northSouthCable = ModBlocks.CABLE.get().defaultBlockState().setValue(CableBlock.NORTH, true).setValue(CableBlock.SOUTH, true);
 
 

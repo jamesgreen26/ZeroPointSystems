@@ -7,11 +7,12 @@ import g_mungus.zps.block.cableNetwork.core.BuiltinCableStandards;
 import g_mungus.zps.block.cableNetwork.core.CableComponentBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
+import g_mungus.zps.block.cableNetwork.properties.EnumPropertyWithAliases;
+import g_mungus.zps.block.cableNetwork.properties.InsulationType;
 import g_mungus.zps.item.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
-import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -38,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-import static g_mungus.zps.block.cableNetwork.CableBlock.InsulationType.*;
+import static g_mungus.zps.block.cableNetwork.properties.InsulationType.*;
 
 public class CableBlock extends CableComponentBlock {
     public static final BooleanProperty NORTH = BooleanProperty.create("north");
@@ -47,7 +48,7 @@ public class CableBlock extends CableComponentBlock {
     public static final BooleanProperty WEST = BooleanProperty.create("west");
     public static final BooleanProperty UP = BooleanProperty.create("up");
     public static final BooleanProperty DOWN = BooleanProperty.create("down");
-    public static final EnumProperty<InsulationType> INSULATION_TYPE = EnumProperty.create("insulation_type", InsulationType.class);
+    public static final EnumPropertyWithAliases<InsulationType> INSULATION_TYPE = EnumPropertyWithAliases.createWithAliases("insulated", InsulationType.class);
 
     private static final VoxelShape CORE = Block.box(6, 6, 6, 10, 10, 10);
     private static final VoxelShape NORTH_SHAPE = Block.box(6, 6, 0, 10, 10, 6);
@@ -342,21 +343,4 @@ public class CableBlock extends CableComponentBlock {
         return hitResult.getLocation().y - pos.getY() >= CATWALK_MIN_Y;
     }
 
-    public enum InsulationType implements StringRepresentable {
-        NONE("none"),
-        INSULATION("insulation"),
-        CATWALK("catwalk"),
-        GRATING("grating");
-
-        private final String name;
-
-        InsulationType(String name) {
-            this.name = name;
-        }
-
-        @Override
-        public String getSerializedName() {
-            return this.name;
-        }
-    }
 }

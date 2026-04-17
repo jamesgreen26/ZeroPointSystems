@@ -6,6 +6,7 @@ import g_mungus.zps.client.ponder.ZPSPonderPlugin;
 import g_mungus.zps.compat.Compat;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.entity.ModEntities;
+import g_mungus.zps.gametest.EnumPropertyWithAliasesGameTests;
 import g_mungus.zps.item.ModCreativeTabs;
 import g_mungus.zps.item.ModItems;
 import g_mungus.zps.gametest.CableNetworkGameTests;
@@ -64,5 +65,6 @@ public final class ZPSMod {
     private static void registerGameTests(RegisterGameTestsEvent event) {
         event.register(TextDisplayGameTests.class);
         event.register(CableNetworkGameTests.class);
+        event.register(EnumPropertyWithAliasesGameTests.class);
     }
 }

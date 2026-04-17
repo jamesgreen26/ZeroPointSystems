@@ -1,5 +1,6 @@
 package g_mungus.zps.block.cableNetwork;
 
+import g_mungus.zps.block.cableNetwork.properties.InsulationType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -18,7 +19,7 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
-import static g_mungus.zps.block.cableNetwork.CableBlock.InsulationType.*;
+import static g_mungus.zps.block.cableNetwork.properties.InsulationType.*;
 
 public abstract class TransformerBlock extends CableBlock implements EntityBlock {
 

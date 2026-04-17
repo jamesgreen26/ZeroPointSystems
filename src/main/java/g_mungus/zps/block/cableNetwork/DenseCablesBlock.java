@@ -2,6 +2,7 @@ package g_mungus.zps.block.cableNetwork;
 
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
+import g_mungus.zps.block.cableNetwork.properties.InsulationType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -12,7 +13,7 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 
-import static g_mungus.zps.block.cableNetwork.CableBlock.InsulationType.*;
+import static g_mungus.zps.block.cableNetwork.properties.InsulationType.*;
 
 public class DenseCablesBlock extends CableBlock {
 

@@ -2,6 +2,7 @@ package g_mungus.zps.item;
 
 import g_mungus.zps.block.CatwalkBlock;
 import g_mungus.zps.block.cableNetwork.CableBlock;
+import g_mungus.zps.block.cableNetwork.properties.InsulationType;
 import net.createmod.catnip.placement.IPlacementHelper;
 import net.createmod.catnip.placement.PlacementHelpers;
 import net.createmod.catnip.placement.PlacementOffset;
@@ -69,7 +70,7 @@ public class CatwalkBlockItem extends BlockItem {
     public Predicate<BlockState> getStatePredicate () {
       return state -> state.getBlock() instanceof CatwalkBlock
               || state.getBlock() instanceof CableBlock
-              && state.getValue(CableBlock.INSULATION_TYPE).equals(CableBlock.InsulationType.CATWALK);
+              && state.getValue(CableBlock.INSULATION_TYPE).equals(InsulationType.CATWALK);
     }
 
     @Override

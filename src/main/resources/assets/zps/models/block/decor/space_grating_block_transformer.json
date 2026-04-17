@@ -1,0 +1,22 @@
+{
+  "loader": "fusion:model",
+  "type": "connecting",
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "zps:block/decor/space_grating_block_transformer",
+    "bottom": "zps:block/decor/space_grating_block",
+    "side": "zps:block/decor/space_grating_block"
+  },
+  "connections": [
+    {
+      "type": "is_same_block"
+    },
+    {
+      "type": "match_state",
+      "block": "zps:cable",
+      "properties": {
+        "insulated": "grating"
+      }
+    }
+  ]
+}

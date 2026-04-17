@@ -26,7 +26,6 @@ import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -81,6 +80,16 @@ public class CableBlock extends CableComponentBlock {
     @SuppressWarnings("deprecation")
     public boolean useShapeForLightOcclusion(@NotNull BlockState state) {
         return !state.getValue(INSULATION_TYPE).equals(INSULATION);
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public @NotNull VoxelShape getOcclusionShape(BlockState state, @NotNull BlockGetter p_60579_, @NotNull BlockPos p_60580_) {
+        if (state.getValue(INSULATION_TYPE).equals(GRATING)) {
+            return Shapes.empty();
+        } else {
+            return super.getOcclusionShape(state, p_60579_, p_60580_);
+        }
     }
 
     @Override

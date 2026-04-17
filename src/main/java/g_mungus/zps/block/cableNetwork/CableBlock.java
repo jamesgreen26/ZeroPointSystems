@@ -94,6 +94,15 @@ public class CableBlock extends CableComponentBlock {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
+    public boolean skipRendering(BlockState state, BlockState adjacentState, Direction direction) {
+        if (shouldCullMatchingInsulatedFace(state, adjacentState)) {
+            return true;
+        }
+        return super.skipRendering(state, adjacentState, direction);
+    }
+
+    @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         InsulationType insulationType = state.getValue(INSULATION_TYPE);
         if (insulationType.equals(INSULATION) || insulationType.equals(GRATING)) {
@@ -349,6 +358,22 @@ public class CableBlock extends CableComponentBlock {
 
     private boolean isTargetingCatwalk(BlockHitResult hitResult, BlockPos pos) {
         return hitResult.getLocation().y - pos.getY() >= CATWALK_MIN_Y;
+    }
+
+    protected boolean shouldCullMatchingInsulatedFace(BlockState state, BlockState adjacentState) {
+        InsulationType insulationType = state.getValue(INSULATION_TYPE);
+        if (insulationType == GRATING && adjacentState.is(ModBlocks.SPACE_GRATING_BLOCK.get())) {
+            return true;
+        }
+
+        if (!(adjacentState.getBlock() instanceof CableBlock)
+                || !adjacentState.hasProperty(INSULATION_TYPE)
+                || !state.hasProperty(INSULATION_TYPE)) {
+            return false;
+        }
+
+        return insulationType.insulatesAllSides()
+                && insulationType == adjacentState.getValue(INSULATION_TYPE);
     }
 
 }

@@ -354,6 +354,8 @@
     "block.zps.switch_panel.zps_tooltip": "4 levers in 1!\n\nEach switch controls one of the four outputs. Connects with [Dense Cables].",
     "block.zps.graduated_lever.zps_tooltip": "Allows precise control of a redstone signal.\n\nInteract with the upper or lower half of the block to increase or decrease signal strength. Connects with [Cable].",
     "block.zps.catwalk.zps_tooltip": "Can be placed on cable blocks to prevent upwards connection.",
+    "block.zps.space_grating_block.zps_tooltip": "Can be placed on cable blocks to prevent connection in new directions.",
+
 
     "block.zps.radio_transmitter.zps_tooltip": "Transmits a radio signal with data from a [Light-Pipe Data Cable].\n\nTune the radio frequency with [Shift + Right Click]. Higher frequencies have a longer range and require a taller [Radio Antenna] on top.",
     "block.zps.radio_receiver.zps_tooltip": "Receives a radio signal and sends the data over a [Light-Pipe Data Cable].\n\nTune the radio frequency with [Shift + Right Click]. Higher frequencies have a longer range and require a taller [Radio Antenna] on top.",

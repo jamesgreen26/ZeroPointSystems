@@ -102,6 +102,11 @@ public class ManualScreen extends Screen {
             .build());
     }
 
+    @Override
+    protected void renderBlurredBackground(float p_330683_) {
+        // don't blur
+    }
+
     private void loadSelectedDocument() {
         if (this.minecraft == null || this.sections.isEmpty()) {
             return;

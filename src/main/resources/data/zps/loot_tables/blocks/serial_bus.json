@@ -47,9 +47,30 @@
       "conditions": [
         {
           "condition": "minecraft:block_state_property",
-          "block": "zps:dense_cables",
+          "block": "zps:serial_bus",
           "properties": {
             "insulated": "catwalk"
+          }
+        },
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "zps:space_grating_block"
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "minecraft:block_state_property",
+          "block": "zps:serial_bus",
+          "properties": {
+            "insulated": "grating"
           }
         },
         {

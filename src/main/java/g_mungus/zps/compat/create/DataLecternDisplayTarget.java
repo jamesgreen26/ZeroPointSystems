@@ -5,16 +5,16 @@ import com.simibubi.create.content.redstone.displayLink.DisplayLinkContext;
 import com.simibubi.create.content.redstone.displayLink.target.DisplayTargetStats;
 import com.simibubi.create.foundation.utility.CreateLang;
 import g_mungus.zps.blockentity.light_pipe.DataLecternBlockEntity;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.StringTag;
-import net.minecraft.nbt.Tag;
+import g_mungus.zps.util.BookComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.network.Filterable;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.WrittenBookContent;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class DataLecternDisplayTarget extends DisplayTarget {
@@ -29,27 +29,28 @@ public class DataLecternDisplayTarget extends DisplayTarget {
             return;
 
         if (book.is(Items.WRITABLE_BOOK))
-            lectern.setBook(book = signBook(book));
+            lectern.setBook(book = BookComponents.signWritableBook(book, "Printed Book", "Data Gatherer"));
         if (!book.is(Items.WRITTEN_BOOK))
             return;
 
-        ListTag tag = book.getTag().getList("pages", Tag.TAG_STRING);
+        WrittenBookContent content = book.getOrDefault(net.minecraft.core.component.DataComponents.WRITTEN_BOOK_CONTENT, WrittenBookContent.EMPTY);
+        List<Filterable<Component>> pages = new ArrayList<>(content.pages());
 
         boolean changed = false;
         for (int i = 0; i - line < text.size() && i < 50; i++) {
-            if (tag.size() <= i)
-                tag.add(StringTag.valueOf(i < line ? "" : Component.Serializer.toJson(text.get(i - line))));
-            else if (i >= line) {
+            if (pages.size() <= i) {
+                pages.add(Filterable.passThrough(i < line ? Component.empty() : text.get(i - line)));
+            } else if (i >= line) {
                 if (i - line == 0)
                     reserve(i, lectern, context);
                 if (i - line > 0 && isReserved(i - line, lectern, context))
                     break;
-                tag.set(i, StringTag.valueOf(Component.Serializer.toJson(text.get(i - line))));
+                pages.set(i, Filterable.passThrough(text.get(i - line)));
             }
             changed = true;
         }
 
-        book.getTag().put("pages", tag);
+        book.set(net.minecraft.core.component.DataComponents.WRITTEN_BOOK_CONTENT, content.withReplacedPages(pages));
         lectern.setBook(book);
 
         if (changed)
@@ -64,17 +65,6 @@ public class DataLecternDisplayTarget extends DisplayTarget {
     @Override
     public Component getLineOptionText(int line) {
         return CreateLang.translateDirect("display_target.page", line + 1);
-    }
-
-    private ItemStack signBook(ItemStack book) {
-        ItemStack written = new ItemStack(Items.WRITTEN_BOOK);
-        CompoundTag tag = book.getTag();
-        if (tag != null)
-            written.setTag(tag.copy());
-        written.addTagElement("author", StringTag.valueOf("Data Gatherer"));
-        written.addTagElement("filtered_title", StringTag.valueOf("Printed Book"));
-        written.addTagElement("title", StringTag.valueOf("Printed Book"));
-        return written;
     }
 
     @Override

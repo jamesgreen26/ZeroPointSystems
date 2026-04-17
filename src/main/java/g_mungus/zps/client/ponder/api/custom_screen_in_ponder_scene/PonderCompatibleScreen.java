@@ -41,14 +41,14 @@ public abstract class PonderCompatibleScreen extends Screen {
         if (this.minecraft.level != null) {
             arg.fillGradient(0, 0, this.width, this.height, -1072689136, -804253680);
         } else {
-            this.renderDirtBackground(arg);
+            this.renderMenuBackground(arg);
         }
     }
 
     @Override
-    public void renderBackground(GuiGraphics arg) {
+    public void renderBackground(GuiGraphics arg, int mouseX, int mouseY, float partialTick) {
         if (shouldRenderBackground) {
-            super.renderBackground(arg);
+            super.renderBackground(arg, mouseX, mouseY, partialTick);
         }
     }
 

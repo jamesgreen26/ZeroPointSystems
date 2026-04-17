@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import g_mungus.zps.blockentity.NetworkTerminal;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ServerLevelAccessor;
@@ -20,12 +21,13 @@ public class StructureTemplateMixin {
             method = "placeInWorld",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/world/level/block/entity/BlockEntity;load(Lnet/minecraft/nbt/CompoundTag;)V"
+                    target = "Lnet/minecraft/world/level/block/entity/BlockEntity;loadWithComponents(Lnet/minecraft/nbt/CompoundTag;Lnet/minecraft/core/HolderLookup$Provider;)V"
             )
     )
     public void zps$wrapBlockEntityLoad(
             BlockEntity blockEntity,
             CompoundTag tag,
+            HolderLookup.Provider registries,
             Operation<Void> operation,
             ServerLevelAccessor levelAccessor,
             BlockPos pos0,
@@ -40,6 +42,6 @@ public class StructureTemplateMixin {
             resultTag = NetworkTerminal.transformTag(tag, settings.getMirror(), settings.getRotation());
         }
 
-        operation.call(blockEntity, resultTag);
+        operation.call(blockEntity, resultTag, registries);
     }
 }

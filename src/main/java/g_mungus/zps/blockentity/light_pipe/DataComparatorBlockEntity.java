@@ -76,15 +76,15 @@ public class DataComparatorBlockEntity extends NetworkTerminalImpl implements Li
     }
 
     @Override
-    protected void saveAdditional(@NotNull CompoundTag tag) {
-        super.saveAdditional(tag);
+    protected void saveAdditional(@NotNull CompoundTag tag, net.minecraft.core.HolderLookup.@NotNull Provider registries) {
+        super.saveAdditional(tag, registries);
         tag.putString("textA", textA);
         tag.putString("textB", textB);
     }
 
     @Override
-    public void load(@NotNull CompoundTag tag) {
-        super.load(tag);
+    protected void loadAdditional(@NotNull CompoundTag tag, net.minecraft.core.HolderLookup.@NotNull Provider registries) {
+        super.loadAdditional(tag, registries);
         textA = tag.getString("textA");
         textB = tag.getString("textB");
     }

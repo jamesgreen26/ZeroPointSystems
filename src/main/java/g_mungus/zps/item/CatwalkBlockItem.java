@@ -46,13 +46,13 @@ public class CatwalkBlockItem extends BlockItem {
       BlockState targetState = world.getBlockState(targetPos);
       if (targetState.getBlock() instanceof CableBlock cableBlock && cableBlock.canBeCatwalked(targetState)) {
         BlockHitResult targetRay = new BlockHitResult(ctx.getClickLocation(), face, targetPos, true);
-        return targetState.use(world, player, ctx.getHand(), targetRay);
+        return targetState.useItemOn(ctx.getItemInHand(), world, player, ctx.getHand(), targetRay).result();
       }
 
       PlacementOffset result = helper.getOffset(player, world, state, pos, ray);
 
       if (result.isSuccessful()) {
-        return result.placeInWorld(world, this, player, ctx.getHand(), ray);
+        return result.placeInWorld(world, this, player, ctx.getHand(), ray).result();
       }
     }
     return super.useOn(ctx);

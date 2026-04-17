@@ -1,26 +1,34 @@
 package g_mungus.zps.networking;
 
+import g_mungus.zps.ZPSMod;
 import g_mungus.zps.client.tts.TtsSoundsManager;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import java.util.function.Supplier;
+public record LoudspeakerTtsPacket(BlockPos pos, String message) implements CustomPacketPayload {
+    public static final Type<LoudspeakerTtsPacket> TYPE = new Type<>(ZPSMod.resource("loudspeaker_tts"));
+    public static final StreamCodec<RegistryFriendlyByteBuf, LoudspeakerTtsPacket> STREAM_CODEC = new StreamCodec<>() {
+        @Override
+        public LoudspeakerTtsPacket decode(RegistryFriendlyByteBuf buffer) {
+            return new LoudspeakerTtsPacket(buffer.readBlockPos(), buffer.readUtf());
+        }
 
-public record LoudspeakerTtsPacket(BlockPos pos, String message) {
+        @Override
+        public void encode(RegistryFriendlyByteBuf buffer, LoudspeakerTtsPacket packet) {
+            buffer.writeBlockPos(packet.pos);
+            buffer.writeUtf(packet.message);
+        }
+    };
 
-    public static void encode(LoudspeakerTtsPacket packet, FriendlyByteBuf buffer) {
-        buffer.writeBlockPos(packet.pos);
-        buffer.writeUtf(packet.message);
-    }
-
-    public static LoudspeakerTtsPacket decode(FriendlyByteBuf buffer) {
-        return new LoudspeakerTtsPacket(buffer.readBlockPos(), buffer.readUtf());
-    }
-
-    public static void handle(LoudspeakerTtsPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
-        NetworkEvent.Context context = contextSupplier.get();
+    public static void handle(LoudspeakerTtsPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> TtsSoundsManager.speakTextAt(packet.pos, packet.message));
-        context.setPacketHandled(true);
+    }
+
+    @Override
+    public Type<LoudspeakerTtsPacket> type() {
+        return TYPE;
     }
 }

@@ -2,9 +2,9 @@ package g_mungus.zps.blockentity.light_pipe;
 
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
-import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.NetworkTerminalImpl;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -60,14 +60,14 @@ public abstract class AbstractTextDataReceiver extends NetworkTerminalImpl imple
     }
 
     @Override
-    protected void saveAdditional(@NotNull CompoundTag tag) {
-        super.saveAdditional(tag);
+    protected void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
+        super.saveAdditional(tag, registries);
         tag.putString("DisplayText", currentDisplayText);
     }
 
     @Override
-    public void load(@NotNull CompoundTag tag) {
-        super.load(tag);
+    protected void loadAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
+        super.loadAdditional(tag, registries);
         currentDisplayText = tag.getString("DisplayText");
     }
 }

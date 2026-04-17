@@ -9,6 +9,7 @@ import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.config.ZPSConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
@@ -16,20 +17,16 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.energy.EnergyStorage;
-import net.minecraftforge.energy.IEnergyStorage;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.energy.EnergyStorage;
+import net.neoforged.neoforge.energy.IEnergyStorage;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class StepUpTransformerBlockEntity extends NetworkTerminalImpl implements EnergyTransferBE {
     private final EnergyStorage energyHandler;
-    private final LazyOptional<IEnergyStorage> energy;
     private long lastHudInfoRequestTick = Long.MIN_VALUE;
 
     private static final int MAX_TRANSFER = 4096;
@@ -37,7 +34,6 @@ public class StepUpTransformerBlockEntity extends NetworkTerminalImpl implements
     public StepUpTransformerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.STEPUP_TRANSFORMER.get(), pos, state);
         this.energyHandler = new EnergyStorage(MAX_TRANSFER * 2, MAX_TRANSFER, MAX_TRANSFER);
-        this.energy = LazyOptional.of(() -> energyHandler);
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, StepUpTransformerBlockEntity blockEntity) {
@@ -51,15 +47,14 @@ public class StepUpTransformerBlockEntity extends NetworkTerminalImpl implements
         int canStore = Math.min(1000, blockEntity.energyHandler.getMaxEnergyStored() - blockEntity.energyHandler.getEnergyStored());
 
         if (targetEntity != null) {
-            targetEntity.getCapability(ForgeCapabilities.ENERGY, facing.getOpposite()).ifPresent(storage -> {
-                if (storage.canExtract()) {
-                    int energyToExtract = Math.min(storage.getEnergyStored(), canStore);
-                    int energyExtracted = storage.extractEnergy(energyToExtract, false);
-                    if (energyExtracted > 0) {
-                        blockEntity.energyHandler.receiveEnergy(energyExtracted, false);
-                    }
+            IEnergyStorage storage = level.getCapability(Capabilities.EnergyStorage.BLOCK, targetPos, targetEntity.getBlockState(), targetEntity, facing.getOpposite());
+            if (storage != null && storage.canExtract()) {
+                int energyToExtract = Math.min(storage.getEnergyStored(), canStore);
+                int energyExtracted = storage.extractEnergy(energyToExtract, false);
+                if (energyExtracted > 0) {
+                    blockEntity.energyHandler.receiveEnergy(energyExtracted, false);
                 }
-            });
+            }
         }
 
         // Distribute energy to connected terminals
@@ -75,11 +70,10 @@ public class StepUpTransformerBlockEntity extends NetworkTerminalImpl implements
                 BlockEntity targetEntity2 = level.getBlockEntity(targetPos2);
                 
                 if (targetEntity2 != null) {
-                    targetEntity2.getCapability(ForgeCapabilities.ENERGY, dir.getOpposite()).ifPresent(storage -> {
-                        if (storage.canReceive() && storage.getMaxEnergyStored() > storage.getEnergyStored()) {
-                            receivingTerminalCount.incrementAndGet();
-                        }
-                    });
+                    IEnergyStorage storage = level.getCapability(Capabilities.EnergyStorage.BLOCK, targetPos2, targetEntity2.getBlockState(), targetEntity2, dir.getOpposite());
+                    if (storage != null && storage.canReceive() && storage.getMaxEnergyStored() > storage.getEnergyStored()) {
+                        receivingTerminalCount.incrementAndGet();
+                    }
                 }
             } else if (state1.is(ModBlocks.REDSTONE_CONVERTER.get()) && blockEntity.energyHandler.getEnergyStored() > 0) {
                 switch (ZPSConfig.getConverterOverpowerBehavior()) {
@@ -105,23 +99,22 @@ public class StepUpTransformerBlockEntity extends NetworkTerminalImpl implements
                             level.getBlockEntity(node.pos()) instanceof StepDownTransformerBlockEntity transformer ? transformer : null;
                     
                     if (targetEntity2 != null) {
-                        targetEntity2.getCapability(ForgeCapabilities.ENERGY, dir.getOpposite()).ifPresent(storage -> {
-                            if (storage.canReceive()) {
-                                int canExtract = blockEntity.energyHandler.extractEnergy(energyPerTransformer, true);
-                                int canReceive = storage.receiveEnergy(canExtract, true);
+                        IEnergyStorage storage = level.getCapability(Capabilities.EnergyStorage.BLOCK, targetPos2, targetEntity2.getBlockState(), targetEntity2, dir.getOpposite());
+                        if (storage != null && storage.canReceive()) {
+                            int canExtract = blockEntity.energyHandler.extractEnergy(energyPerTransformer, true);
+                            int canReceive = storage.receiveEnergy(canExtract, true);
 
-                                int toSend = Math.min(canExtract, canReceive);
-                                if (toSend > 0) {
-                                    int extracted = blockEntity.energyHandler.extractEnergy(toSend, false);
-                                    storage.receiveEnergy(extracted, false);
-                                    transferredThisTick.addAndGet(extracted);
+                            int toSend = Math.min(canExtract, canReceive);
+                            if (toSend > 0) {
+                                int extracted = blockEntity.energyHandler.extractEnergy(toSend, false);
+                                storage.receiveEnergy(extracted, false);
+                                transferredThisTick.addAndGet(extracted);
 
-                                    if (targetTransformer != null) {
-                                        targetTransformer.updateTransferRate(extracted, level.getGameTime());
-                                    }
+                                if (targetTransformer != null) {
+                                    targetTransformer.updateTransferRate(extracted, level.getGameTime());
                                 }
                             }
-                        });
+                        }
                     }
                 }
             });
@@ -145,29 +138,19 @@ public class StepUpTransformerBlockEntity extends NetworkTerminalImpl implements
     }
 
     @Override
-    public void load(@NotNull CompoundTag tag) {
-        super.load(tag);
+    protected void loadAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
+        super.loadAdditional(tag, registries);
         try {
-            energyHandler.deserializeNBT(tag.get("Energy"));
+            energyHandler.deserializeNBT(registries, tag.get("Energy"));
         } catch (Throwable e) {
             ZPSMod.LOGGER.warn("Failed to deserialize NBT: ", e);
         }
     }
 
     @Override
-    protected void saveAdditional(@NotNull CompoundTag tag) {
-        super.saveAdditional(tag);
-        tag.put("Energy", energyHandler.serializeNBT());
-    }
-
-    @Override
-    public @NotNull <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
-        if (cap == ForgeCapabilities.ENERGY) {
-            if (side != null && side == getBlockState().getValue(TransformerBlock.FACING)) {
-                return energy.cast();
-            }
-        }
-        return super.getCapability(cap, side);
+    protected void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
+        super.saveAdditional(tag, registries);
+        tag.put("Energy", energyHandler.serializeNBT(registries));
     }
 
     @Override

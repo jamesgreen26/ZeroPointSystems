@@ -9,8 +9,8 @@ import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 /**
  * Forge Gametests for {@link TextDisplayBlock#updateShape}.
@@ -19,7 +19,7 @@ import net.minecraftforge.gametest.PrefixGameTestTemplate;
  *   facing normal = (0, 0, -1)
  *   left          = facing × UP = (1, 0, 0)  →  east (+X)
  *
- * Structure template: data/zps/structures/gametest/flat_7x4x7.nbt
+ * Structure template: data/zps/structure/gametest/flat_7x4x7.nbt
  * Stone floor at y=0, 3 blocks of air above. Test blocks placed at y=1.
  *
  * {@code @PrefixGameTestTemplate(false)} disables the default "classname." prefix

@@ -5,20 +5,18 @@ import g_mungus.zps.blockentity.light_pipe.BookHolder;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptContext;
 import g_mungus.zps.commands.api.ScriptGetter;
+import g_mungus.zps.util.BookComponents;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 import java.util.Set;
 
-@Mod.EventBusSubscriber
+@EventBusSubscriber(modid = ZPSMod.MOD_ID)
 public class ZPSScriptGetters {
 
     @SubscribeEvent
@@ -84,11 +82,7 @@ public class ZPSScriptGetters {
                         ItemStack book = holder.zps$getBook();
                         if (book == null) return "";
                         int page = holder.zps$getCurrentPage();
-                        CompoundTag tag = book.getTag();
-                        if (tag == null) return "";
-                        ListTag pages = tag.getList("pages", Tag.TAG_STRING);
-                        if (page < 0 || page >= pages.size()) return "";
-                        return pages.getString(page).replace("\n", "\\n");
+                        return BookComponents.getPageText(book, page, false).replace("\n", "\\n");
                     }
                     return "";
                 },

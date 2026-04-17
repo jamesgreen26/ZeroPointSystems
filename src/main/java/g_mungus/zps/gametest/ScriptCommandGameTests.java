@@ -7,13 +7,11 @@ import g_mungus.zps.commands.api_impl.ZPSCommands;
 import g_mungus.zps.commands.api_impl.ZPSScriptCommandSource;
 import g_mungus.zps.commands.api_impl.arguments.ValueOfExpression;
 import g_mungus.zps.commands.content.executors.SetRedstoneCommand;
+import g_mungus.zps.util.BookComponents;
 import g_mungus.zps.util.BookPageTextLimiter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -21,8 +19,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+
+import java.util.Locale;
 
 /**
  * Game tests for the ZPS script {@code value_of()} command feature.
@@ -82,10 +82,12 @@ public class ScriptCommandGameTests {
         String command = ZPSCommands.Paths.SCRIPT + " "
                 + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ() + " "
                 + tail;
-        return server.getCommands().performPrefixedCommand(
-                server.createCommandSourceStack().withLevel(level),
-                command
-        );
+        server.getCommands().performPrefixedCommand(server.createCommandSourceStack().withLevel(level), command);
+        return 1;
+    }
+
+    private static String formatCommandDouble(double value) {
+        return String.format(Locale.ROOT, "%.1f", value);
     }
 
     private static void assertStoredRedstone(GameTestHelper helper, BlockPos absPos, int expected, String context) {
@@ -129,17 +131,7 @@ public class ScriptCommandGameTests {
             return "";
         }
 
-        int page = holder.zps$getCurrentPage();
-        CompoundTag tag = book.getTag();
-        if (tag == null) {
-            return "";
-        }
-
-        ListTag pages = tag.getList("pages", Tag.TAG_STRING);
-        if (page < 0 || page >= pages.size()) {
-            return "";
-        }
-        return pages.getString(page);
+        return BookComponents.getPageText(book, holder.zps$getCurrentPage(), false);
     }
 
     // -------------------------------------------------------------------------
@@ -474,7 +466,7 @@ public class ScriptCommandGameTests {
         int result = runScriptCommand(
                 helper,
                 absPos,
-                "if pos x < value_of(pos y) set_redstone 3 else set_redstone 12"
+                "if pos x < value_of(pos x - 1) set_redstone 3 else set_redstone 12"
         );
         if (result != 1) {
             helper.fail("zps_script if/else returned " + result + " instead of 1");
@@ -520,7 +512,7 @@ public class ScriptCommandGameTests {
         int result = runScriptCommand(
                 helper,
                 absPos,
-                "if pos x < value_of(pos y + 200) set_redstone value_of(pos z | 1) else set_redstone 0"
+                "if pos x < value_of(pos x + 200) set_redstone value_of(pos z | 1) else set_redstone 0"
         );
         if (result != 1) {
             helper.fail("zps_script multiple value_of returned " + result + " instead of 1");
@@ -563,14 +555,17 @@ public class ScriptCommandGameTests {
         double targetX = absPos.getX() + 10.5;
         double targetY = absPos.getY() + 0.5;
         double targetZ = absPos.getZ() + 0.5;
+        String formattedTargetX = formatCommandDouble(targetX);
+        String formattedTargetY = formatCommandDouble(targetY);
+        String formattedTargetZ = formatCommandDouble(targetZ);
 
         int result = runScriptCommand(
                 helper,
                 absPos,
                 "set_redstone value_of(pos center direction_to "
-                        + targetX + " " + targetY + " " + targetZ
+                        + formattedTargetX + " " + formattedTargetY + " " + formattedTargetZ
                         + " dot value_of(pos center direction_to "
-                        + targetX + " " + targetY + " " + targetZ
+                        + formattedTargetX + " " + formattedTargetY + " " + formattedTargetZ
                         + ") * 15 rounded_down)"
         );
         if (result != 1) {

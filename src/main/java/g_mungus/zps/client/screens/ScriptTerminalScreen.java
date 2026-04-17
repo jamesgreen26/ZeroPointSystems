@@ -133,7 +133,7 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
         if (computer != null) {
             // Use the current isRepeatMode and delay from the buttons
             int currentDelay = DELAY_VALUES[delayIndex];
-            ZPSGamePackets.INSTANCE.sendToServer(new ScriptComputerC2SPacket(computer.getPos(), isRepeatMode, currentDelay, commandEdit.getValue()));
+            ZPSGamePackets.sendToServer(new ScriptComputerC2SPacket(computer.getPos(), isRepeatMode, currentDelay, commandEdit.getValue()));
         }
         if (client != null) client.setScreen(null);
     }
@@ -166,8 +166,8 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
     }
 
     @Override
-    public boolean mouseScrolled(double d, double e, double f) {
-        return this.commandSuggestions.mouseScrolled(f) || super.mouseScrolled(d, e, f);
+    public boolean mouseScrolled(double d, double e, double f, double g) {
+        return this.commandSuggestions.mouseScrolled(g) || super.mouseScrolled(d, e, f, g);
     }
 
     @Override
@@ -177,7 +177,7 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
 
     @Override
     public void render(@NotNull GuiGraphics arg, int i, int j, float f) {
-        this.renderBackground(arg);
+        this.renderBackground(arg, i, j, f);
         arg.drawCenteredString(this.font, SET_COMMAND_LABEL, this.width / 2, 20, 16777215);
         arg.drawString(this.font, COMMAND_LABEL, this.width / 2 - 150, 40, 10526880);
         this.commandEdit.render(arg, i, j, f);

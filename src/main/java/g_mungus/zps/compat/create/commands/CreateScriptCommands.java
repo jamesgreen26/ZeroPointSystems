@@ -19,13 +19,13 @@ import g_mungus.zps.mixin.create.ScrollValueBehaviourAccessor;
 import net.minecraft.commands.arguments.item.ItemArgument;
 import net.minecraft.commands.arguments.item.ItemInput;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.server.command.EnumArgument;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.server.command.EnumArgument;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
@@ -53,7 +53,7 @@ public class CreateScriptCommands {
 
     public static void registerScriptCommands(RegisterScriptCommandsEvent event) {
         var mappingsEvent = new OnRegisterCreateCompatExecutorMappingsEvent();
-        MinecraftForge.EVENT_BUS.post(mappingsEvent);
+        NeoForge.EVENT_BUS.post(mappingsEvent);
 
         Multimap<ScrollBehaviorKey, ResourceLocation> enumGroups = HashMultimap.create();
         Map<ScrollBehaviorKey, ScrollOptionBehaviour<?>> enumSamples = new HashMap<>();
@@ -61,7 +61,7 @@ public class CreateScriptCommands {
         Map<String, ScrollValueBehaviour> intSamples = new HashMap<>();
         Set<ResourceLocation> filterBlocks = new HashSet<>();
 
-        for (var entry : ForgeRegistries.BLOCKS.getEntries()) {
+        for (var entry : BuiltInRegistries.BLOCK.entrySet()) {
             try {
                 if (entry.getValue() instanceof EntityBlock entityBlock) {
                     BlockEntity blockEntity = entityBlock.newBlockEntity(new BlockPos(0, 0, 0), entry.getValue().defaultBlockState());

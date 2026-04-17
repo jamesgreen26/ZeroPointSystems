@@ -2,11 +2,12 @@ package g_mungus.zps.blockentity.light_pipe;
 
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.networking.LoudspeakerTtsPacket;
-import g_mungus.zps.networking.ZPSGamePackets;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 public class LoudspeakerBlockEntity extends AbstractTextDataReceiver {
 
@@ -40,10 +41,7 @@ public class LoudspeakerBlockEntity extends AbstractTextDataReceiver {
 
     private void sendTtsPacket(String message, BlockPos worldPos) {
         if (level == null || level.isClientSide) return;
-        ZPSGamePackets.INSTANCE.send(
-                PacketDistributor.TRACKING_CHUNK.with(() -> level.getChunkAt(worldPos)),
-                new LoudspeakerTtsPacket(worldPos, message)
-        );
+        PacketDistributor.sendToPlayersTrackingChunk((ServerLevel) level, new ChunkPos(worldPos), new LoudspeakerTtsPacket(worldPos, message));
     }
 
 }

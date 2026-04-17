@@ -70,7 +70,7 @@ public class DenseCableSeparatorBlock extends CableComponentBlock {
     }
 
     @Override
-    public @NotNull InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult arg6) {
+    protected @NotNull InteractionResult useComponent(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult arg6) {
         if ((player.getItemInHand(hand).isEmpty() && player.isShiftKeyDown()) || Compat.isCreateWrench(player.getItemInHand(hand).getItem())) {
             level.setBlock(pos, state.setValue(ROTATION, (state.getValue(ROTATION) + 1) % 4), Block.UPDATE_CLIENTS);
 

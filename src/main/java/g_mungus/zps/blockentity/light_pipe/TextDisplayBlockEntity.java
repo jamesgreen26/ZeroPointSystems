@@ -1,6 +1,7 @@
 package g_mungus.zps.blockentity.light_pipe;
 
 import g_mungus.zps.blockentity.ModBlockEntities;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
@@ -18,16 +19,15 @@ public class TextDisplayBlockEntity extends AbstractTextDataReceiver {
         return currentDisplayText;
     }
 
-    @Override
     public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
-        if (pkt != null && pkt.getTag() != null) {
-            load(pkt.getTag());
+        if (pkt != null && pkt.getTag() != null && level != null) {
+            loadAdditional(pkt.getTag(), level.registryAccess());
         }
     }
 
     @Override
-    public @NotNull CompoundTag getUpdateTag() {
-        return saveWithoutMetadata();
+    public @NotNull CompoundTag getUpdateTag(HolderLookup.@NotNull Provider registries) {
+        return saveWithoutMetadata(registries);
     }
 
     @Nullable

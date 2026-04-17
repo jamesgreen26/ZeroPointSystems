@@ -45,7 +45,7 @@ public class CatwalkStairBlockItem extends BlockItem {
       PlacementOffset result = helper.getOffset(player, world, state, pos, ray);
 
       if (result.isSuccessful()) {
-        return result.placeInWorld(world, this, player, ctx.getHand(), ray);
+        return result.placeInWorld(world, this, player, ctx.getHand(), ray).result();
       }
     }
     return super.useOn(ctx);

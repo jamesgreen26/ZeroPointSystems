@@ -5,7 +5,6 @@ import g_mungus.zps.commands.api_impl.arguments.ValueOfOrLiteralArgumentType;
 import g_mungus.zps.commands.api_impl.arguments.ValueOfOrLiteralArgumentTypeInfo;
 import g_mungus.zps.commands.content.arguments.BlockPosListArgument;
 import g_mungus.zps.commands.content.arguments.RadioFrequencyArgument;
-import g_mungus.zps.compat.genesis.CelestialArgument;
 import net.minecraft.commands.synchronization.ArgumentTypeInfo;
 import net.minecraft.commands.synchronization.ArgumentTypeInfos;
 import net.minecraft.commands.synchronization.SingletonArgumentInfo;
@@ -47,7 +46,5 @@ public class ArgumentTypeInfosMixin {
                 (Class<? extends ValueOfOrLiteralArgumentType<?>>) (Class<?>) ValueOfOrLiteralArgumentType.class,
                 ValueOfOrLiteralArgumentTypeInfo.INSTANCE
         );
-
-        register(arg, "zps:celestial", CelestialArgument.class, CelestialArgument.INFO);
     }
 }

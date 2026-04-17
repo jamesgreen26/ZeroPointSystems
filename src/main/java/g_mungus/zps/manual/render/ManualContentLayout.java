@@ -4,6 +4,7 @@ import g_mungus.zps.manual.markdown.ManualDocument;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
@@ -12,7 +13,6 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -124,7 +124,7 @@ public final class ManualContentLayout {
     private static ImageEntry createImageEntry(final ManualDocument.ImageBlock imageBlock, final int y) {
         if (imageBlock.kind() == ManualDocument.ImageKind.ITEM) {
             final String itemId = imageBlock.target().substring("item:".length());
-            final Item item = ForgeRegistries.ITEMS.getValue(net.minecraft.resources.ResourceLocation.parse(itemId));
+            final Item item = BuiltInRegistries.ITEM.get(net.minecraft.resources.ResourceLocation.parse(itemId));
             final ItemStack stack = item == null ? ItemStack.EMPTY : new ItemStack(item);
             return new ImageEntry(y, imageBlock.kind(), imageBlock.target(), Component.literal(imageBlock.altText()), stack, 24, 24);
         }

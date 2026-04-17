@@ -48,7 +48,7 @@ if block == minecraft:piston[facing=up] set_redstone 15
 
 ## Vec Pos
 
-A floating-point position. Produced by: `pos center`, `ship pos`, `celestial pos`
+A floating-point position. Produced by: `pos center`
 
 | Mapper | Output | Description |
 |--------|--------|-------------|
@@ -59,30 +59,9 @@ A floating-point position. Produced by: `pos center`, `ship pos`, `celestial pos
 | `direction_to <coords>` | Vec Dir | Normalized direction vector toward the given position |
 | `rounded_down` | BlockPos | Rounds each component down to get a block position |
 
-Examples:
-
-```
-if ship pos distance_to 0 0 0 > 100 set_redstone 15
-```
-
----
-
-## Vec Box
-
-A size vector (width, height, depth). Produced by: `ship bounding_box`
-
-| Mapper | Output | Description |
-|--------|--------|-------------|
-| `x` | Double | Width |
-| `y` | Double | Height |
-| `z` | Double | Depth |
-| `volume` | Double | Total volume (x × y × z) |
-
----
-
 ## Vec Dir
 
-A direction vector. Produced by: `vec_pos direction_to`, `ship world_vel`, `ship local_vel`, `ship dir`, `vec_dir normalize`, `vec_dir cross`
+A direction vector. Produced by: `vec_pos direction_to`, `vec_dir normalize`, `vec_dir cross`
 
 | Mapper | Output | Description |
 |--------|--------|-------------|
@@ -98,7 +77,7 @@ A direction vector. Produced by: `vec_pos direction_to`, `ship world_vel`, `ship
 
 ## Int
 
-Produced by: `pos x/y/z`, `redstone`, `get_page`, `double rounded_down/rounded_up`, `ship id`, `dimension index`, `string as_int`
+Produced by: `pos x/y/z`, `redstone`, `get_page`, `double rounded_down/rounded_up`, `dimension index`, `string as_int`
 
 | Mapper | Output | Description |
 |--------|--------|-------------|
@@ -128,7 +107,7 @@ set_redstone value_of(pos x & 15)
 
 ## Double
 
-Produced by: `pos x/y/z` (Vec Pos), `vec_dir length/dot`, `vec_box volume`, `int * / `, `ship mass`, `celestial gravity/size`
+Produced by: `pos x/y/z` (Vec Pos), `vec_dir length/dot`, `int * / `
 
 | Mapper | Output | Description |
 |--------|--------|-------------|
@@ -147,7 +126,7 @@ Produced by: `pos x/y/z` (Vec Pos), `vec_dir length/dot`, `vec_box volume`, `int
 
 ## String
 
-Produced by: `read_page`, `pos as_string`, `dimension as_string`, `int as_string`, `double as_string`, `ship slug`, `celestial as_string`
+Produced by: `read_page`, `pos as_string`, `dimension as_string`, `int as_string`, `double as_string`
 
 | Mapper | Output | Description |
 |--------|--------|-------------|

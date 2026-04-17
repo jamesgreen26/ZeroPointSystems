@@ -2,6 +2,7 @@ package g_mungus.zps.blockentity;
 
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -31,14 +32,14 @@ public abstract class NetworkTerminalImpl extends BlockEntity implements Network
     }
 
     @Override
-    public void load(@NotNull CompoundTag tag) {
-        super.load(tag);
+    protected void loadAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
+        super.loadAdditional(tag, registries);
         loadNetwork(tag);
     }
 
     @Override
-    protected void saveAdditional(@NotNull CompoundTag tag) {
-        super.saveAdditional(tag);
+    protected void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
+        super.saveAdditional(tag, registries);
         saveNetwork(tag);
     }
 }

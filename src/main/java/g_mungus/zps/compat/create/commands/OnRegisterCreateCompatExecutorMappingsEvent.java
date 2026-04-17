@@ -3,7 +3,7 @@ package g_mungus.zps.compat.create.commands;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.eventbus.api.Event;
+import net.neoforged.bus.api.Event;
 
 public class OnRegisterCreateCompatExecutorMappingsEvent extends Event {
     private final Multimap<ResourceLocation, MappingEntry> mappings = HashMultimap.create();

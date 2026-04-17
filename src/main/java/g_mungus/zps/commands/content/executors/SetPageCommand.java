@@ -1,23 +1,21 @@
 package g_mungus.zps.commands.content.executors;
 
+import g_mungus.zps.ZPSMod;
 import g_mungus.zps.blockentity.light_pipe.BookHolder;
+import g_mungus.zps.util.BookComponents;
 import g_mungus.zps.util.BookPageTextLimiter;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.StringTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-@Mod.EventBusSubscriber
+@EventBusSubscriber(modid = ZPSMod.MOD_ID)
 public class SetPageCommand {
 
     private record TaskKey(ServerLevel level, BlockPos pos) {}
@@ -36,17 +34,12 @@ public class SetPageCommand {
                     if (book == null) return;
                     int page = holder.zps$getCurrentPage();
                     if (page < 0) page = 0;
-                    CompoundTag tag = book.getOrCreateTag();
-                    if (!tag.contains("pages", Tag.TAG_LIST)) {
-                        tag.put("pages", new ListTag());
-                    }
-                    ListTag pages = tag.getList("pages", 8);
-                    while (pages.size() <= page) {
-                        pages.add(StringTag.valueOf(""));
+                    while (BookComponents.getPageCount(book) <= page) {
+                        BookComponents.setWritablePage(book, BookComponents.getPageCount(book), "");
                         holder.zps$onPageAdded();
                     }
                     String normalizedText = text.replace("\\n", "\n");
-                    pages.set(page, StringTag.valueOf(BookPageTextLimiter.truncateToDisplayableLength(normalizedText)));
+                    BookComponents.setWritablePage(book, page, BookPageTextLimiter.truncateToDisplayableLength(normalizedText));
                     holder.zps$onPageWritten();
                 }
             }));
@@ -74,9 +67,7 @@ public class SetPageCommand {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.START) return;
-
+    public static void onServerTick(ServerTickEvent.Pre event) {
         queue.forEach((key, queued) -> {
             if (queued.delay <= 0) {
                 if (queue.remove(key, queued)) {

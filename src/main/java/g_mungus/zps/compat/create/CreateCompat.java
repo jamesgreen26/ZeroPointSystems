@@ -16,9 +16,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.TickTask;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
@@ -26,13 +26,15 @@ import org.jetbrains.annotations.NotNull;
 public class CreateCompat {
     private static final CreateRegistrate REG = CreateRegistrate.create(ZPSMod.MOD_ID);
 
-    public static final RegistryEntry<SerialBusDisplayLinkSource> SERIAL_BUS_SOURCE = REG.displaySource("serial_bus", SerialBusDisplayLinkSource::new).register();
-    public static final RegistryEntry<DataLecternDisplayTarget> DATA_LECTERN_TARGET = REG.displayTarget("data_lectern", DataLecternDisplayTarget::new).register();
+    public static final RegistryEntry<DisplaySource, SerialBusDisplayLinkSource> SERIAL_BUS_SOURCE =
+            REG.displaySource("serial_bus", SerialBusDisplayLinkSource::new).register();
+    public static final RegistryEntry<DisplayTarget, DataLecternDisplayTarget> DATA_LECTERN_TARGET =
+            REG.displayTarget("data_lectern", DataLecternDisplayTarget::new).register();
 
     public static void init(IEventBus modEventBus) {
         REG.registerEventListeners(modEventBus);
         modEventBus.addListener(CreateCompat::onCommonSetup);
-        MinecraftForge.EVENT_BUS.addListener(CreateScriptExecutorMappers::register);
+        NeoForge.EVENT_BUS.addListener(CreateScriptExecutorMappers::register);
     }
 
     private static void onCommonSetup(FMLCommonSetupEvent event) {

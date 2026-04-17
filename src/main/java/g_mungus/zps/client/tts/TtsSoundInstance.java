@@ -23,7 +23,7 @@ public class TtsSoundInstance extends AbstractTickableSoundInstance {
     private final AudioFormat format;
 
     public static final Sound SOUND = new Sound(
-            "zps:tts_sound",
+            ZPSMod.resource("tts_sound"),
             ConstantFloat.of(1f),
             ConstantFloat.of(1f),
             1,

@@ -10,12 +10,12 @@ import g_mungus.zps.commands.content.executors.SetFrequencyCommand;
 import g_mungus.zps.commands.content.executors.SetRedstoneCommand;
 import g_mungus.zps.commands.content.executors.SetPageCommand;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 import java.util.Set;
 
-@Mod.EventBusSubscriber
+@EventBusSubscriber(modid = ZPSMod.MOD_ID)
 public class ZPSScriptExecutors {
 
     @SubscribeEvent

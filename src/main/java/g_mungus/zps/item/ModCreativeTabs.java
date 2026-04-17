@@ -3,21 +3,23 @@ package g_mungus.zps.item;
 import g_mungus.zps.ZPSMod;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.tags.PaintingVariantTags;
-import net.minecraft.world.entity.decoration.Painting;
 import net.minecraft.world.entity.decoration.PaintingVariant;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.RegistryObject;
+import net.minecraft.world.item.component.CustomData;
+import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredItem;
+import net.neoforged.neoforge.registries.DeferredRegister;
 
 import java.util.Comparator;
 import java.util.function.Predicate;
@@ -29,7 +31,7 @@ public class ModCreativeTabs {
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = 
         DeferredRegister.create(Registries.CREATIVE_MODE_TAB, ZPSMod.MOD_ID);
 
-    public static final RegistryObject<CreativeModeTab> ZPS_TAB = CREATIVE_MODE_TABS.register("zps_tab",
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> ZPS_TAB = CREATIVE_MODE_TABS.register("zps_tab",
         () -> CreativeModeTab.builder()
             .title(Component.translatable("creativetab.zps_tab"))
             .icon(() -> new ItemStack(DENSE_CABLE_SEPARATOR.get()))
@@ -99,7 +101,7 @@ public class ModCreativeTabs {
                 addPaintings(parameters, output);
             }).build());
 
-    public static final RegistryObject<CreativeModeTab> ZPS_DECO_TAB = CREATIVE_MODE_TABS.register("zps_tab_deco",
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> ZPS_DECO_TAB = CREATIVE_MODE_TABS.register("zps_tab_deco",
         () -> CreativeModeTab.builder()
             .title(Component.translatable("creativetab.zps_tab_deco"))
             .icon(() -> new ItemStack(SPACE_TRUSS.get()))
@@ -132,7 +134,7 @@ public class ModCreativeTabs {
         }
     }
 
-    private static void addAll(CreativeModeTab.Output output, RegistryObject<?>... items) {
+    private static void addAll(CreativeModeTab.Output output, DeferredItem<?>... items) {
         for (var entry : items) {
             var it = entry.get();
             if (it instanceof Item item) {
@@ -148,13 +150,22 @@ public class ModCreativeTabs {
     private static void generatePresetPaintings(CreativeModeTab.Output arg, HolderLookup.RegistryLookup<PaintingVariant> arg2, Predicate<Holder<PaintingVariant>> predicate) {
         arg2.listElements().filter(predicate).sorted(PAINTING_COMPARATOR).forEach((arg3x) -> {
             if (arg3x.key().location().getNamespace().equals(ZPSMod.MOD_ID)) {
-                ItemStack itemstack = new ItemStack(Items.PAINTING);
-                CompoundTag compoundtag = itemstack.getOrCreateTagElement("EntityTag");
-                Painting.storeVariant(compoundtag, arg3x);
-                arg.accept(itemstack, CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+                arg.accept(createPaintingStack(arg3x), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
             }
         });
     }
 
-    private static final Comparator<Holder<PaintingVariant>> PAINTING_COMPARATOR = Comparator.comparing(Holder::value, Comparator.comparingInt((PaintingVariant arg) -> arg.getHeight() * arg.getWidth()).thenComparing(PaintingVariant::getWidth));
+    private static ItemStack createPaintingStack(Holder<PaintingVariant> variant) {
+        ItemStack itemstack = new ItemStack(Items.PAINTING);
+        CompoundTag entityData = new CompoundTag();
+        entityData.putString("variant", variant.unwrapKey().orElseThrow().location().toString());
+        itemstack.set(DataComponents.ENTITY_DATA, CustomData.of(entityData));
+        return itemstack;
+    }
+
+    private static final Comparator<Holder<PaintingVariant>> PAINTING_COMPARATOR = Comparator.comparing(
+            Holder::value,
+            Comparator.comparingInt((PaintingVariant arg) -> arg.height() * arg.width())
+                    .thenComparingInt(PaintingVariant::width)
+    );
 } 

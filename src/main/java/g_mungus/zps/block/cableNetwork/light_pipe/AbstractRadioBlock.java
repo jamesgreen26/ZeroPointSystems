@@ -57,7 +57,7 @@ public abstract class AbstractRadioBlock extends CableComponentBlock implements 
     }
 
     @Override
-    public @NotNull InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult arg6) {
+    protected @NotNull InteractionResult useComponent(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult arg6) {
         if ((player.getItemInHand(hand).isEmpty() && player.isShiftKeyDown()) || Compat.isCreateWrench(player.getItemInHand(hand).getItem())) {
             if (!level.isClientSide()) {
                 BlockEntity blockEntity = level.getBlockEntity(pos);
@@ -146,4 +146,3 @@ public abstract class AbstractRadioBlock extends CableComponentBlock implements 
         super.onPlace(newState, level, pos, oldState, moved);
     }
 }
-

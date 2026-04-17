@@ -6,7 +6,6 @@ import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.blockentity.light_pipe.ScriptTerminalBlockEntity;
 import g_mungus.zps.networking.ScriptComputerS2CPacket;
-import g_mungus.zps.networking.ZPSGamePackets;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
@@ -33,7 +32,7 @@ import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraftforge.network.NetworkDirection;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -176,7 +175,7 @@ public class ScriptTerminalBlock extends CableComponentBlock implements EntityBl
 
     @SuppressWarnings("deprecation")
     @Override
-    public @NotNull InteractionResult use(@NotNull BlockState arg, Level arg2, @NotNull BlockPos arg3, @NotNull Player arg4, @NotNull InteractionHand arg5, @NotNull BlockHitResult arg6) {
+    protected @NotNull InteractionResult useComponent(@NotNull BlockState arg, Level arg2, @NotNull BlockPos arg3, @NotNull Player arg4, @NotNull InteractionHand arg5, @NotNull BlockHitResult arg6) {
         BlockEntity blockEntity = arg2.getBlockEntity(arg3);
         if (blockEntity instanceof ScriptTerminalBlockEntity scriptComputer) {
             if (arg4 instanceof ServerPlayer serverPlayer) {
@@ -187,7 +186,7 @@ public class ScriptTerminalBlock extends CableComponentBlock implements EntityBl
                     scriptComputer.getValue(),
                     scriptComputer.collectBlocks()
                 );
-                ZPSGamePackets.INSTANCE.sendTo(packet, serverPlayer.connection.connection, NetworkDirection.PLAY_TO_CLIENT);
+                PacketDistributor.sendToPlayer(serverPlayer, packet);
             }
             return InteractionResult.sidedSuccess(arg2.isClientSide);
         } else {

@@ -97,7 +97,7 @@ public class DataComparator extends CableComponentBlock implements EntityBlock {
     }
 
     @Override
-    public @NotNull InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult arg6) {
+    protected @NotNull InteractionResult useComponent(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult arg6) {
         if ((player.getItemInHand(hand).isEmpty() && player.isShiftKeyDown()) || Compat.isCreateWrench(player.getItemInHand(hand).getItem())) {
             if (state.hasProperty(MODE)) {
                 BlockEntity blockEntity = level.getBlockEntity(pos);

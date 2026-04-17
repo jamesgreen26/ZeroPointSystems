@@ -78,7 +78,7 @@ public class SwitchPanelBlock extends PanelBlock implements EntityBlock {
 
     @Override
     @SuppressWarnings("deprecation")
-    public @NotNull InteractionResult use(
+    protected @NotNull InteractionResult useComponent(
             @NotNull BlockState state,
             @NotNull Level level,
             @NotNull BlockPos pos,

@@ -3,11 +3,12 @@ package g_mungus.zps.blockentity.light_pipe;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.NetworkTerminalImpl;
+import g_mungus.zps.util.BookComponents;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
@@ -124,26 +125,7 @@ public class DataLecternBlockEntity extends NetworkTerminalImpl implements Clear
     }
 
     private String getPageContents() {
-        if (book != null) {
-            CompoundTag tag = book.getTag();
-            if (tag != null) {
-                ListTag pages = tag.getList("pages", 8);
-                if (pages.size() > page) {
-                    String raw = pages.getString(page);
-                    if (book.getItem() instanceof WrittenBookItem) {
-                        try {
-                            Component parsed = Component.Serializer.fromJson(raw);
-
-                            return parsed != null ? parsed.getString() : raw;
-                        } catch (Exception e) {
-                            return raw;
-                        }
-                    }
-                    return raw;
-                }
-            }
-        }
-        return "";
+        return book != null ? BookComponents.getPageText(book, page, false) : "";
     }
 
     @Override
@@ -200,7 +182,7 @@ public class DataLecternBlockEntity extends NetworkTerminalImpl implements Clear
     public void setBook(ItemStack arg, @Nullable Player arg2) {
         this.book = this.resolveBook(arg, arg2);
         this.page = 0;
-        this.pageCount = WrittenBookItem.getPageCount(this.book);
+        this.pageCount = BookComponents.getPageCount(this.book);
         this.setChanged();
         if (level != null) updateSignal(level);
     }
@@ -255,22 +237,22 @@ public class DataLecternBlockEntity extends NetworkTerminalImpl implements Clear
         return true;
     }
 
-    public void load(@NotNull CompoundTag arg) {
-        super.load(arg);
+    protected void loadAdditional(@NotNull CompoundTag arg, HolderLookup.@NotNull Provider registries) {
+        super.loadAdditional(arg, registries);
         if (arg.contains("Book", 10)) {
-            this.book = this.resolveBook(ItemStack.of(arg.getCompound("Book")), null);
+            this.book = this.resolveBook(BookComponents.parse(registries, arg.getCompound("Book")), null);
         } else {
             this.book = ItemStack.EMPTY;
         }
 
-        this.pageCount = WrittenBookItem.getPageCount(this.book);
+        this.pageCount = BookComponents.getPageCount(this.book);
         this.page = Mth.clamp(arg.getInt("Page"), 0, this.pageCount - 1);
     }
 
-    protected void saveAdditional(@NotNull CompoundTag arg) {
-        super.saveAdditional(arg);
+    protected void saveAdditional(@NotNull CompoundTag arg, HolderLookup.@NotNull Provider registries) {
+        super.saveAdditional(arg, registries);
         if (!this.getBook().isEmpty()) {
-            arg.put("Book", this.getBook().save(new CompoundTag()));
+            arg.put("Book", BookComponents.save(registries, this.getBook()));
             arg.putInt("Page", this.page);
         }
 

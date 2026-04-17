@@ -14,14 +14,12 @@ import g_mungus.zps.gametest.TextDisplayGameTests;
 import g_mungus.zps.networking.ZPSGamePackets;
 import g_mungus.zps.painting.ZPSPaintings;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.event.RegisterGameTestsEvent;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.neoforge.event.RegisterGameTestsEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,11 +28,10 @@ public final class ZPSMod {
     public static final String MOD_ID = "zps";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
-    public ZPSMod(FMLJavaModLoadingContext context) {
-        IEventBus modEventBus = context.getModEventBus();
-
-        context.registerConfig(ModConfig.Type.CLIENT, ZPSConfig.CONFIG_SPEC);
-        context.registerConfig(ModConfig.Type.SERVER, ZPSConfig.SERVER_CONFIG_SPEC);
+    public ZPSMod(IEventBus modEventBus, Dist dist, ModContainer modContainer) {
+        modContainer.registerConfig(ModConfig.Type.CLIENT, ZPSConfig.CONFIG_SPEC);
+        modContainer.registerConfig(ModConfig.Type.SERVER, ZPSConfig.SERVER_CONFIG_SPEC);
+        DataFixerUpper.registerAliases();
 
         // Register blocks and block entities
         ModBlocks.BLOCKS.register(modEventBus);
@@ -45,21 +42,18 @@ public final class ZPSMod {
         ModSounds.SOUNDS.register(modEventBus);
         ZPSPaintings.PAINTING_VARIANTS.register(modEventBus);
 
-        // Register common setup event
-        modEventBus.addListener(this::commonSetup);
+        modEventBus.addListener(ZPSGamePackets::register);
         modEventBus.addListener(ZPSMod::registerGameTests);
 
-        DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> ZPSPonderPlugin::registerPlugin);
+        if (dist == Dist.CLIENT) {
+            ZPSPonderPlugin.registerPlugin();
+        }
 
         Compat.onModInit(modEventBus);
     }
 
     public static ResourceLocation resource(String path) {
         return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
-    }
-
-    private void commonSetup(final FMLCommonSetupEvent event) {
-        ZPSGamePackets.register();
     }
 
     private static void registerGameTests(RegisterGameTestsEvent event) {

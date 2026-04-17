@@ -1,7 +1,6 @@
 package g_mungus.zps.client.ponder.api.custom_screen_in_ponder_scene;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.createmod.catnip.gui.element.GuiGameElement;
 import net.createmod.catnip.gui.element.ScreenElement;
 import net.createmod.catnip.math.Pointing;
 import net.createmod.ponder.Ponder;
@@ -156,10 +155,11 @@ public class ScreenSpaceInputWindowElement extends InputWindowElement {
 		}
 
 		if (hasItem) {
-			GuiGameElement.of(item)
-				.<GuiGameElement.GuiRenderBuilder>at(keyWidth + (hasIcon ? 24 : 0), 0)
-				.scale(1.5)
-				.render(graphics);
+			poseStack.pushPose();
+			poseStack.translate(keyWidth + (hasIcon ? 24 : 0), 0, 0);
+			poseStack.scale(1.5f, 1.5f, 1.5f);
+			graphics.renderItem(item, 0, 0);
+			poseStack.popPose();
 		}
 
 		poseStack.popPose();

@@ -1,10 +1,10 @@
 package g_mungus.zps.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 public class ZPSConfig {
     // Client config
-    private static ForgeConfigSpec.ConfigValue<Boolean> terminalKeyboardSounds;
+    private static ModConfigSpec.ConfigValue<Boolean> terminalKeyboardSounds;
     private static final boolean terminalKeyboardSoundsDefault = true;
 
     public static boolean useKeyboardSounds() {
@@ -15,10 +15,10 @@ public class ZPSConfig {
         return result;
     }
 
-    public static final ForgeConfigSpec CONFIG_SPEC = buildConfig();
+    public static final ModConfigSpec CONFIG_SPEC = buildConfig();
 
-    private static ForgeConfigSpec buildConfig() {
-        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+    private static ModConfigSpec buildConfig() {
+        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
         terminalKeyboardSounds = builder.define("TerminalKeyboardSounds", terminalKeyboardSoundsDefault);
         return builder.build();
     }
@@ -29,7 +29,7 @@ public class ZPSConfig {
         DESTROY
     }
 
-    private static ForgeConfigSpec.EnumValue<ConverterOverpowerBehavior> converterOverpowerBehavior;
+    private static ModConfigSpec.EnumValue<ConverterOverpowerBehavior> converterOverpowerBehavior;
 
     public static ConverterOverpowerBehavior getConverterOverpowerBehavior() {
         try {
@@ -38,10 +38,10 @@ public class ZPSConfig {
         return ConverterOverpowerBehavior.DESTROY;
     }
 
-    public static final ForgeConfigSpec SERVER_CONFIG_SPEC = buildServerConfig();
+    public static final ModConfigSpec SERVER_CONFIG_SPEC = buildServerConfig();
 
-    private static ForgeConfigSpec buildServerConfig() {
-        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+    private static ModConfigSpec buildServerConfig() {
+        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
         converterOverpowerBehavior = builder
                 .comment("What happens when a Redstone Converter is connected to an energized Step-Up Transformer.",
                          "EXPLODE: destroys the converter with an explosion",

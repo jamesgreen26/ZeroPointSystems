@@ -29,7 +29,7 @@ public interface EnergyTransferBE extends HudInfoProvider<Integer> {
         }
 
         setLastHudRefreshTick(gameTime);
-        ZPSGamePackets.INSTANCE.sendToServer(new RequestHudInfoC2SPacket(self.getBlockPos()));
+        ZPSGamePackets.sendToServer(new RequestHudInfoC2SPacket(self.getBlockPos()));
     }
 
     @Override

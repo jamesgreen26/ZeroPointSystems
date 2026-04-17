@@ -1,15 +1,29 @@
 package g_mungus.zps.networking;
 
-import net.minecraft.network.FriendlyByteBuf;
+import g_mungus.zps.ZPSMod;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.network.NetworkEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 
-public record ExecutorBlocksS2CPacket(List<ResourceLocation> associatedBlocks) {
+public record ExecutorBlocksS2CPacket(List<ResourceLocation> associatedBlocks) implements CustomPacketPayload {
+    public static final Type<ExecutorBlocksS2CPacket> TYPE = new Type<>(ZPSMod.resource("executor_blocks"));
+    public static final StreamCodec<RegistryFriendlyByteBuf, ExecutorBlocksS2CPacket> STREAM_CODEC = new StreamCodec<>() {
+        @Override
+        public ExecutorBlocksS2CPacket decode(RegistryFriendlyByteBuf buffer) {
+            return new ExecutorBlocksS2CPacket(buffer.readList(buf -> buf.readResourceLocation()));
+        }
+
+        @Override
+        public void encode(RegistryFriendlyByteBuf buffer, ExecutorBlocksS2CPacket packet) {
+            buffer.writeCollection(packet.associatedBlocks, (buf, id) -> buf.writeResourceLocation(id));
+        }
+    };
 
     public static final Set<ResourceLocation> command_capable_blocks = ConcurrentHashMap.newKeySet();
     private static final List<ResourceLocation> blacklist = List.of(
@@ -31,20 +45,15 @@ public record ExecutorBlocksS2CPacket(List<ResourceLocation> associatedBlocks) {
             ResourceLocation.parse("create:green_valve_handle")
     );
 
-    public static void encode(ExecutorBlocksS2CPacket packet, FriendlyByteBuf buffer) {
-        buffer.writeCollection(packet.associatedBlocks, FriendlyByteBuf::writeResourceLocation);
-    }
-
-    public static ExecutorBlocksS2CPacket decode(FriendlyByteBuf buffer) {
-        return new ExecutorBlocksS2CPacket(buffer.readList(FriendlyByteBuf::readResourceLocation));
-    }
-
-    public static void handle(ExecutorBlocksS2CPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
-        NetworkEvent.Context context = contextSupplier.get();
+    public static void handle(ExecutorBlocksS2CPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> {
             command_capable_blocks.addAll(packet.associatedBlocks());
             blacklist.forEach(command_capable_blocks::remove);
         });
-        context.setPacketHandled(true);
+    }
+
+    @Override
+    public Type<ExecutorBlocksS2CPacket> type() {
+        return TYPE;
     }
 }

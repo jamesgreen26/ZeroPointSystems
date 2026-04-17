@@ -56,15 +56,15 @@ public class RedstoneConverterBlockEntity extends NetworkTerminalImpl implements
     }
 
     @Override
-    protected void saveAdditional(@NotNull CompoundTag tag) {
-        super.saveAdditional(tag);
+    protected void saveAdditional(@NotNull CompoundTag tag, net.minecraft.core.HolderLookup.@NotNull Provider registries) {
+        super.saveAdditional(tag, registries);
         tag.putInt("CurrentSignal", this.currentSignal);
         tag.putInt("CurrentSuppliedSignal", this.currentSuppliedSignal);
     }
 
     @Override
-    public void load(@NotNull CompoundTag tag) {
-        super.load(tag);
+    protected void loadAdditional(@NotNull CompoundTag tag, net.minecraft.core.HolderLookup.@NotNull Provider registries) {
+        super.loadAdditional(tag, registries);
         if (tag.contains("CurrentSignal")) {
             this.currentSignal = tag.getInt("CurrentSignal");
         }

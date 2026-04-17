@@ -1,10 +1,24 @@
 package g_mungus.zps.commands.api;
 
 import net.minecraft.commands.CommandBuildContext;
-import net.minecraftforge.eventbus.api.Event;
+import net.neoforged.bus.api.Event;
 
-public abstract class RegisterScriptCommandsEvent extends Event {
-    public abstract void register(ScriptNode node);
+import java.util.function.Consumer;
 
-    public abstract CommandBuildContext buildContext();
+public class RegisterScriptCommandsEvent extends Event {
+    private final Consumer<ScriptNode> registrar;
+    private final CommandBuildContext buildContext;
+
+    public RegisterScriptCommandsEvent(Consumer<ScriptNode> registrar, CommandBuildContext buildContext) {
+        this.registrar = registrar;
+        this.buildContext = buildContext;
+    }
+
+    public void register(ScriptNode node) {
+        registrar.accept(node);
+    }
+
+    public CommandBuildContext buildContext() {
+        return buildContext;
+    }
 }

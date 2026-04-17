@@ -76,7 +76,7 @@ public class DodecaControllerBlock extends CableComponentBlock implements Entity
     }
 
     @Override
-    public @NotNull InteractionResult use(BlockState state, Level level, BlockPos pos, @NotNull Player player, @NotNull InteractionHand hand, BlockHitResult arg6) {
+    protected @NotNull InteractionResult useComponent(BlockState state, Level level, BlockPos pos, @NotNull Player player, @NotNull InteractionHand hand, BlockHitResult arg6) {
         ItemStack itemInHand = player.getItemInHand(hand);
         if (itemInHand.is(ModBlocks.DENSE_CABLES.get().asItem()) || itemInHand.is(ModBlocks.DENSE_CABLE_SEPARATOR.get().asItem())) {
             return InteractionResult.PASS;

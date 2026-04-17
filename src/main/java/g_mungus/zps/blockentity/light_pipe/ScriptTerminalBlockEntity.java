@@ -231,8 +231,8 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
     }
 
     @Override
-    protected void saveAdditional(net.minecraft.nbt.@NotNull CompoundTag tag) {
-        super.saveAdditional(tag);
+    protected void saveAdditional(net.minecraft.nbt.@NotNull CompoundTag tag, net.minecraft.core.HolderLookup.@NotNull Provider registries) {
+        super.saveAdditional(tag, registries);
         tag.putString("AllCommands", allCommands);
         tag.putBoolean("Loop", loop);
         tag.putInt("Delay", delay);
@@ -240,8 +240,8 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
     }
 
     @Override
-    public void load(net.minecraft.nbt.@NotNull CompoundTag tag) {
-        super.load(tag);
+    protected void loadAdditional(net.minecraft.nbt.@NotNull CompoundTag tag, net.minecraft.core.HolderLookup.@NotNull Provider registries) {
+        super.loadAdditional(tag, registries);
         allCommands = tag.getString("AllCommands");
         loop = tag.getBoolean("Loop");
         delay = tag.getInt("Delay");
@@ -249,8 +249,8 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
     }
 
     @Override
-    public net.minecraft.nbt.@NotNull CompoundTag getUpdateTag() {
-        net.minecraft.nbt.CompoundTag tag = super.getUpdateTag();
+    public net.minecraft.nbt.@NotNull CompoundTag getUpdateTag(net.minecraft.core.HolderLookup.@NotNull Provider registries) {
+        net.minecraft.nbt.CompoundTag tag = super.getUpdateTag(registries);
         tag.putString("AllCommands", allCommands);
         tag.putBoolean("Loop", loop);
         tag.putInt("Delay", delay);
@@ -259,7 +259,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
     }
 
     @Override
-    public void handleUpdateTag(net.minecraft.nbt.CompoundTag tag) {
+    public void handleUpdateTag(net.minecraft.nbt.CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
         allCommands = tag.getString("AllCommands");
         loop = tag.getBoolean("Loop");
         delay = tag.getInt("Delay");

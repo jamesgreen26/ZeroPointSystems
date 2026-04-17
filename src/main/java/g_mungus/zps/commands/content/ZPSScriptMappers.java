@@ -3,6 +3,7 @@ package g_mungus.zps.commands.content;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptMapper;
 import g_mungus.zps.commands.api.ScriptMapper2;
@@ -17,13 +18,13 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.pattern.BlockInWorld;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 import java.util.Locale;
 import java.util.regex.Pattern;
 
-@Mod.EventBusSubscriber
+@EventBusSubscriber(modid = ZPSMod.MOD_ID)
 public class ZPSScriptMappers {
     private static final String ESCAPED_NEWLINE = "\\n";
     private static final Pattern ESCAPED_NEWLINE_PATTERN = Pattern.compile(Pattern.quote(ESCAPED_NEWLINE));

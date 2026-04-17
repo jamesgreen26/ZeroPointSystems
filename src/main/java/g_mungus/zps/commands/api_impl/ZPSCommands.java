@@ -23,17 +23,17 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.BlockItem;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.loading.FMLLoader;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import javax.annotation.Nullable;
 import java.nio.file.Files;
@@ -42,7 +42,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-@Mod.EventBusSubscriber
+@EventBusSubscriber(modid = ZPSMod.MOD_ID)
 public class ZPSCommands {
 
     @SubscribeEvent
@@ -73,18 +73,7 @@ public class ZPSCommands {
                         ))
         );
 
-
-        MinecraftForge.EVENT_BUS.post(new RegisterScriptCommandsEvent() {
-            @Override
-            public void register(ScriptNode node) {
-                Registry.register(node);
-            }
-
-            @Override
-            public CommandBuildContext buildContext() {
-                return buildContext;
-            }
-        });
+        NeoForge.EVENT_BUS.post(new RegisterScriptCommandsEvent(Registry::register, buildContext));
 
 
         CommandTreeBuilder commandTreeBuilder = new CommandTreeBuilder(dispatcher);
@@ -193,10 +182,10 @@ public class ZPSCommands {
     public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
 
-        Set<ResourceLocation> blocksWithItems = ForgeRegistries.ITEMS.getValues().stream()
+        Set<ResourceLocation> blocksWithItems = BuiltInRegistries.ITEM.stream()
                 .filter(item -> item instanceof BlockItem)
                 .map(item -> ((BlockItem) item).getBlock())
-                .map(ForgeRegistries.BLOCKS::getKey)
+                .map(BuiltInRegistries.BLOCK::getKey)
                 .filter(Objects::nonNull)
                 .collect(java.util.stream.Collectors.toSet());
 
@@ -206,10 +195,7 @@ public class ZPSCommands {
                 .filter(blocksWithItems::contains)
                 .toList();
 
-        ZPSGamePackets.INSTANCE.send(
-                PacketDistributor.PLAYER.with(() -> player),
-                new ExecutorBlocksS2CPacket(allAssociatedBlocks)
-        );
+        PacketDistributor.sendToPlayer(player, new ExecutorBlocksS2CPacket(allAssociatedBlocks));
 
         List<ResourceLocation> allAssociatedGetterBlocks = Registry.GETTERS.stream()
                 .filter(g -> g.associatedBlocks() != null)
@@ -217,10 +203,7 @@ public class ZPSCommands {
                 .filter(blocksWithItems::contains)
                 .toList();
 
-        ZPSGamePackets.INSTANCE.send(
-                PacketDistributor.PLAYER.with(() -> player),
-                new GetterBlocksS2CPacket(allAssociatedGetterBlocks)
-        );
+        PacketDistributor.sendToPlayer(player, new GetterBlocksS2CPacket(allAssociatedGetterBlocks));
     }
 
 

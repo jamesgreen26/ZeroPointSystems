@@ -2,12 +2,11 @@ package g_mungus.zps.blockentity.light_pipe;
 
 import g_mungus.zps.block.cableNetwork.light_pipe.DataTranscriberBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
+import g_mungus.zps.util.BookComponents;
 import g_mungus.zps.util.BookPageTextLimiter;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.StringTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -60,16 +59,8 @@ public class DataTranscriberBlockEntity extends AbstractTextDataReceiver {
                 if (page < 0) {
                     return false;
                 }
-
-                CompoundTag tag = book.getOrCreateTag();
-                if (!tag.contains("pages", Tag.TAG_LIST)) {
-                    tag.put("pages", new ListTag());
-                }
-
-                ListTag pages = tag.getList("pages", 8);
-                while (pages.size() <= page) {
-                    // fix book having no pages or unexpected desynchronization
-                    pages.add(StringTag.valueOf(""));
+                while (BookComponents.getPageCount(book) <= page) {
+                    BookComponents.setWritablePage(book, BookComponents.getPageCount(book), "");
                     bookHolder.zps$onPageAdded();
                 }
 
@@ -77,14 +68,14 @@ public class DataTranscriberBlockEntity extends AbstractTextDataReceiver {
 
                 if (newText || lastPrintTime < 0) {
                     if (lastPrintTime >= 0) {
-                        if (pages.size() < 100 && bookHolder.zps$getCurrentPage() + 1 >= pages.size()) {
-                            pages.add(StringTag.valueOf(""));
+                        if (BookComponents.getPageCount(book) < 100 && bookHolder.zps$getCurrentPage() + 1 >= BookComponents.getPageCount(book)) {
+                            BookComponents.setWritablePage(book, BookComponents.getPageCount(book), "");
                             bookHolder.zps$onPageAdded();
                         }
                         bookHolder.zps$cyclePages();
                     }
                     lastWrittenText = this.currentDisplayText;
-                    pages.set(bookHolder.zps$getCurrentPage(), StringTag.valueOf(BookPageTextLimiter.truncateToDisplayableLength(this.currentDisplayText)));
+                    BookComponents.setWritablePage(book, bookHolder.zps$getCurrentPage(), BookPageTextLimiter.truncateToDisplayableLength(this.currentDisplayText));
                     bookHolder.zps$onPageWritten();
                     return true;
                 }
@@ -94,8 +85,8 @@ public class DataTranscriberBlockEntity extends AbstractTextDataReceiver {
     }
 
     @Override
-    protected void saveAdditional(@NotNull CompoundTag tag) {
-        super.saveAdditional(tag);
+    protected void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
+        super.saveAdditional(tag, registries);
         tag.putLong("LastPrintTime", lastPrintTime);
         if (lastWrittenText != null) {
             tag.putString("LastWrittenText", lastWrittenText);
@@ -103,8 +94,8 @@ public class DataTranscriberBlockEntity extends AbstractTextDataReceiver {
     }
 
     @Override
-    public void load(@NotNull CompoundTag tag) {
-        super.load(tag);
+    protected void loadAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
+        super.loadAdditional(tag, registries);
         lastPrintTime = tag.contains("LastPrintTime") ? tag.getLong("LastPrintTime") : -20L;
         if (tag.contains("LastWrittenText")) {
             lastWrittenText = tag.getString("LastWrittenText");

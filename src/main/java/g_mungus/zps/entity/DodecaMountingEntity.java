@@ -7,9 +7,7 @@ import g_mungus.zps.networking.DodecaControlPacket;
 import g_mungus.zps.networking.ZPSGamePackets;
 import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
-import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -113,7 +111,7 @@ public class DodecaMountingEntity extends Entity {
     protected void addAdditionalSaveData(@NotNull CompoundTag arg) {}
 
     @Override
-    protected void defineSynchedData() {}
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {}
 
     private void sendControlPacket() {
         if (!level().isClientSide) return;
@@ -131,7 +129,7 @@ public class DodecaMountingEntity extends Entity {
         int k = ModKeybinds.KEY_K.isDown() ? 15 : 0;
         int l = ModKeybinds.KEY_L.isDown() ? 15 : 0;
 
-        ZPSGamePackets.INSTANCE.sendToServer(new DodecaControlPacket(a, b, c, d, e, f, g, h, i, j, k, l));
+        ZPSGamePackets.sendToServer(new DodecaControlPacket(a, b, c, d, e, f, g, h, i, j, k, l));
     }
 
     @Override
@@ -141,10 +139,5 @@ public class DodecaMountingEntity extends Entity {
         } else {
              return null;
         }
-    }
-
-    @Override
-    public @NotNull Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return new ClientboundAddEntityPacket(this);
     }
 }

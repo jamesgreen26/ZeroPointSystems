@@ -10,6 +10,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.stats.Stats;
 import net.minecraft.tags.ItemTags;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
@@ -176,10 +177,10 @@ public class DataLecternBlock extends LecternBlock implements EntityBlock, Cable
     }
 
     @Override
-    public InteractionResult use(BlockState arg, Level arg2, BlockPos arg3, Player arg4, InteractionHand arg5, BlockHitResult arg6) {
+    protected InteractionResult useWithoutItem(BlockState arg, Level arg2, BlockPos arg3, Player arg4, BlockHitResult arg6) {
         if (arg.getValue(HAS_BOOK)) {
             if (!arg2.isClientSide) {
-                if (Compat.isCreateDeployer(arg4) && arg4.getItemInHand(arg5).isEmpty()) {
+                if (Compat.isCreateDeployer(arg4) && arg4.getMainHandItem().isEmpty()) {
                     BlockEntity blockEntity = arg2.getBlockEntity(arg3);
                     if (blockEntity instanceof DataLecternBlockEntity transmitter) {
                         if (transmitter.hasNextPage()) {
@@ -196,10 +197,22 @@ public class DataLecternBlock extends LecternBlock implements EntityBlock, Cable
             }
 
             return InteractionResult.sidedSuccess(arg2.isClientSide);
-        } else {
-            ItemStack itemStack = arg4.getItemInHand(arg5);
-            return !itemStack.isEmpty() && !itemStack.is(ItemTags.LECTERN_BOOKS) ? InteractionResult.CONSUME : InteractionResult.PASS;
         }
+        return InteractionResult.PASS;
+    }
+
+    @Override
+    protected ItemInteractionResult useItemOn(ItemStack itemStack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        if (state.getValue(HAS_BOOK)) {
+            InteractionResult result = useWithoutItem(state, level, pos, player, hit);
+            return result == InteractionResult.PASS ? ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION : ItemInteractionResult.sidedSuccess(level.isClientSide);
+        }
+        if (itemStack.is(ItemTags.LECTERN_BOOKS)) {
+            return super.useItemOn(itemStack, state, level, pos, player, hand, hit);
+        }
+        return !itemStack.isEmpty() && !itemStack.is(ItemTags.LECTERN_BOOKS)
+                ? ItemInteractionResult.CONSUME
+                : ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
     private void openScreen(Level arg, BlockPos arg2, Player arg3) {

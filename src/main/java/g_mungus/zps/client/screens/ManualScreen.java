@@ -184,17 +184,17 @@ public class ManualScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (this.isMouseOverTabs(mouseX, mouseY)) {
-            this.tabScroll = clampScroll(this.tabScroll - (int) Math.signum(delta) * 18, this.maxTabScroll);
+            this.tabScroll = clampScroll(this.tabScroll - (int) Math.signum(scrollY) * 18, this.maxTabScroll);
             this.rebuildWidgets();
             return true;
         }
         if (this.isMouseOverContent(mouseX, mouseY)) {
-            this.scrollAmount = clampScroll(this.scrollAmount - (int) Math.signum(delta) * 18, this.maxScroll);
+            this.scrollAmount = clampScroll(this.scrollAmount - (int) Math.signum(scrollY) * 18, this.maxScroll);
             return true;
         }
-        return super.mouseScrolled(mouseX, mouseY, delta);
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override
@@ -263,7 +263,7 @@ public class ManualScreen extends Screen {
 
     @Override
     public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(graphics);
+        this.renderBackground(graphics, mouseX, mouseY, partialTick);
         this.refreshLayout();
         this.updateSmoothScroll();
 

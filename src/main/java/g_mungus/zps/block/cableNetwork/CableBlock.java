@@ -21,6 +21,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
@@ -29,7 +30,6 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -132,7 +132,7 @@ public class CableBlock extends CableComponentBlock {
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos blockPos, Player arg4, InteractionHand arg5, BlockHitResult arg6) {
+    protected InteractionResult useComponent(BlockState state, Level level, BlockPos blockPos, Player arg4, InteractionHand arg5, BlockHitResult arg6) {
         if (state.getValue(INSULATION_TYPE).equals(NONE) && arg4.getItemInHand(arg5).is(ModItems.CABLE_INSULATION.get())) {
             if (!level.isClientSide()) {
                 level.setBlock(blockPos, state.setValue(INSULATION_TYPE, INSULATION), 3);
@@ -167,7 +167,7 @@ public class CableBlock extends CableComponentBlock {
             }
             return InteractionResult.SUCCESS;
         } else {
-            return super.use(state, level, blockPos, arg4, arg5, arg6);
+            return super.useComponent(state, level, blockPos, arg4, arg5, arg6);
         }
     }
 
@@ -210,20 +210,15 @@ public class CableBlock extends CableComponentBlock {
     }
 
     @Override
-    public ItemStack getCloneItemStack(BlockState state, HitResult target, BlockGetter level, BlockPos pos, Player player)
-    {
-        if (state.hasProperty(INSULATION_TYPE) && state.getValue(INSULATION_TYPE).equals(INSULATION) && !player.isShiftKeyDown()) {
+    public ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state) {
+        if (state.hasProperty(INSULATION_TYPE) && state.getValue(INSULATION_TYPE).equals(INSULATION)) {
             return new ItemStack(ModItems.CABLE_INSULATION.get(), 1);
-        } else if (state.hasProperty(INSULATION_TYPE) && state.getValue(INSULATION_TYPE).equals(GRATING) && !player.isShiftKeyDown()) {
+        } else if (state.hasProperty(INSULATION_TYPE) && state.getValue(INSULATION_TYPE).equals(GRATING)) {
             return new ItemStack(ModItems.SPACE_GRATING_BLOCK.get(), 1);
-        } else if (state.hasProperty(INSULATION_TYPE) && state.getValue(INSULATION_TYPE).equals(CATWALK) && !player.isShiftKeyDown()) {
-            if (target instanceof BlockHitResult blockHitResult && isTargetingCatwalk(blockHitResult, pos)) {
-                return new ItemStack(ModItems.CATWALK.get(), 1);
-            }
-        } else {
-            return getCloneItemStack(level, pos, state);
+        } else if (state.hasProperty(INSULATION_TYPE) && state.getValue(INSULATION_TYPE).equals(CATWALK)) {
+            return new ItemStack(ModItems.CATWALK.get(), 1);
         }
-        return getCloneItemStack(level, pos, state);
+        return super.getCloneItemStack(level, pos, state);
     }
 
     @Override

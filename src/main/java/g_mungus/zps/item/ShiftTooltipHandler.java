@@ -8,16 +8,16 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.item.Item;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderTooltipEvent;
-import net.minecraftforge.event.entity.player.ItemTooltipEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.RenderTooltipEvent;
+import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-@Mod.EventBusSubscriber(modid = ZPSMod.MOD_ID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = ZPSMod.MOD_ID, value = Dist.CLIENT)
 public class ShiftTooltipHandler {
 
     public static boolean hasZpsTooltip(Item item) {

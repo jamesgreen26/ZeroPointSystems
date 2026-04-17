@@ -27,9 +27,9 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.util.FakePlayerFactory;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.common.util.FakePlayerFactory;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 /**
  * Gametests for {@link g_mungus.zps.mixin.StructureTemplateMixin}.
@@ -501,8 +501,7 @@ public class CableNetworkGameTests {
                 leverAbs,
                 false
         );
-        leverState.getBlock().use(leverState, level, leverAbs,
-                FakePlayerFactory.getMinecraft(level), InteractionHand.MAIN_HAND, hit);
+        leverState.useWithoutItem(level, FakePlayerFactory.getMinecraft(level), hit);
 
         // POWER=1 signal must have propagated through the separator chain to light the lamp
         helper.assertBlockProperty(lampRel, RedstoneLampBlock.LIT, true);
@@ -603,8 +602,7 @@ public class CableNetworkGameTests {
                 leverAbs,
                 false
         );
-        leverState.getBlock().use(leverState, level, leverAbs,
-                FakePlayerFactory.getMinecraft(level), InteractionHand.MAIN_HAND, hit);
+        leverState.useWithoutItem(level, FakePlayerFactory.getMinecraft(level), hit);
 
         // POWER=1 on QUAD_3 must light the lamp via the inverted separator chain
         helper.assertBlockProperty(lampRel, RedstoneLampBlock.LIT, true);

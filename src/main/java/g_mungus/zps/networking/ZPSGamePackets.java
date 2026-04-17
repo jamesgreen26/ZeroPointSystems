@@ -1,75 +1,29 @@
 package g_mungus.zps.networking;
 
-import g_mungus.zps.ZPSMod;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.network.NetworkDirection;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.simple.SimpleChannel;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
-public class ZPSGamePackets {
+public final class ZPSGamePackets {
     private static final String PROTOCOL_VERSION = "1";
-    public static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(
-            ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "main"),
-            () -> PROTOCOL_VERSION,
-            PROTOCOL_VERSION::equals,
-            PROTOCOL_VERSION::equals
-    );
 
-    private static int packetId = 0;
+    private ZPSGamePackets() {}
 
-    public static void register() {
-        INSTANCE.messageBuilder(OctoControlPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(OctoControlPacket::encode)
-                .decoder(OctoControlPacket::decode)
-                .consumerMainThread(OctoControlPacket::handle)
-                .add();
+    public static void register(RegisterPayloadHandlersEvent event) {
+        PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
+        registrar.playToServer(OctoControlPacket.TYPE, OctoControlPacket.STREAM_CODEC, OctoControlPacket::handle);
+        registrar.playToServer(DodecaControlPacket.TYPE, DodecaControlPacket.STREAM_CODEC, DodecaControlPacket::handle);
+        registrar.playToServer(ScriptComputerC2SPacket.TYPE, ScriptComputerC2SPacket.STREAM_CODEC, ScriptComputerC2SPacket::handle);
+        registrar.playToServer(RequestHudInfoC2SPacket.TYPE, RequestHudInfoC2SPacket.STREAM_CODEC, RequestHudInfoC2SPacket::handle);
+        registrar.playToClient(ScriptComputerS2CPacket.TYPE, ScriptComputerS2CPacket.STREAM_CODEC, ScriptComputerS2CPacket::handle);
+        registrar.playToClient(LoudspeakerTtsPacket.TYPE, LoudspeakerTtsPacket.STREAM_CODEC, LoudspeakerTtsPacket::handle);
+        registrar.playToClient(ExecutorBlocksS2CPacket.TYPE, ExecutorBlocksS2CPacket.STREAM_CODEC, ExecutorBlocksS2CPacket::handle);
+        registrar.playToClient(GetterBlocksS2CPacket.TYPE, GetterBlocksS2CPacket.STREAM_CODEC, GetterBlocksS2CPacket::handle);
+        registrar.playToClient(HudInfoS2CPacket.TYPE, HudInfoS2CPacket.STREAM_CODEC, HudInfoS2CPacket::handle);
+    }
 
-        INSTANCE.messageBuilder(DodecaControlPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(DodecaControlPacket::encode)
-                .decoder(DodecaControlPacket::decode)
-                .consumerMainThread(DodecaControlPacket::handle)
-                .add();
-
-        INSTANCE.messageBuilder(ScriptComputerC2SPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(ScriptComputerC2SPacket::encode)
-                .decoder(ScriptComputerC2SPacket::decode)
-                .consumerMainThread(ScriptComputerC2SPacket::handle)
-                .add();
-
-        INSTANCE.messageBuilder(ScriptComputerS2CPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(ScriptComputerS2CPacket::encode)
-                .decoder(ScriptComputerS2CPacket::decode)
-                .consumerMainThread(ScriptComputerS2CPacket::handle)
-                .add();
-
-        INSTANCE.messageBuilder(LoudspeakerTtsPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(LoudspeakerTtsPacket::encode)
-                .decoder(LoudspeakerTtsPacket::decode)
-                .consumerMainThread(LoudspeakerTtsPacket::handle)
-                .add();
-
-        INSTANCE.messageBuilder(ExecutorBlocksS2CPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(ExecutorBlocksS2CPacket::encode)
-                .decoder(ExecutorBlocksS2CPacket::decode)
-                .consumerMainThread(ExecutorBlocksS2CPacket::handle)
-                .add();
-
-        INSTANCE.messageBuilder(GetterBlocksS2CPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(GetterBlocksS2CPacket::encode)
-                .decoder(GetterBlocksS2CPacket::decode)
-                .consumerMainThread(GetterBlocksS2CPacket::handle)
-                .add();
-
-        INSTANCE.messageBuilder(RequestHudInfoC2SPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(RequestHudInfoC2SPacket::encode)
-                .decoder(RequestHudInfoC2SPacket::decode)
-                .consumerMainThread(RequestHudInfoC2SPacket::handle)
-                .add();
-
-        INSTANCE.messageBuilder(HudInfoS2CPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(HudInfoS2CPacket::encode)
-                .decoder(HudInfoS2CPacket::decode)
-                .consumerMainThread(HudInfoS2CPacket::handle)
-                .add();
+    public static void sendToServer(CustomPacketPayload payload) {
+        PacketDistributor.sendToServer(payload);
     }
 }

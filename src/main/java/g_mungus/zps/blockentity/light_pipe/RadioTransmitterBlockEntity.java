@@ -6,6 +6,7 @@ import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.NetworkTerminalImpl;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
@@ -139,16 +140,15 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
         return false;
     }
 
-    @Override
     public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
-        if (pkt != null && pkt.getTag() != null) {
-            load(pkt.getTag());
+        if (pkt != null && pkt.getTag() != null && level != null) {
+            loadAdditional(pkt.getTag(), level.registryAccess());
         }
     }
 
     @Override
-    public @NotNull CompoundTag getUpdateTag() {
-        return saveWithoutMetadata();
+    public @NotNull CompoundTag getUpdateTag(HolderLookup.@NotNull Provider registries) {
+        return saveWithoutMetadata(registries);
     }
 
     @Nullable
@@ -158,16 +158,16 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
     }
 
     @Override
-    protected void saveAdditional(@NotNull CompoundTag tag) {
-        super.saveAdditional(tag);
+    protected void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
+        super.saveAdditional(tag, registries);
         tag.putString("DisplayText", currentDisplayText);
         tag.putInt("RadioFrequencyIndex", radioFrequencyIndex);
         tag.putInt("AntennaStrength", antennas);
     }
 
     @Override
-    public void load(@NotNull CompoundTag tag) {
-        super.load(tag);
+    protected void loadAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
+        super.loadAdditional(tag, registries);
         currentDisplayText = tag.getString("DisplayText");
         radioFrequencyIndex = tag.getInt("RadioFrequencyIndex");
         antennas = tag.getInt("AntennaStrength");

@@ -11,9 +11,9 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 import java.util.List;
 
@@ -33,7 +33,7 @@ public interface RadioBlockEntity {
 
     void setFrequencyIndex(int frequencyIndex);
 
-    @Mod.EventBusSubscriber
+    @EventBusSubscriber(modid = ZPSMod.MOD_ID)
     class Subscriber {
         @SubscribeEvent
         static void onNeighborUpdate(BlockEvent.NeighborNotifyEvent event) {

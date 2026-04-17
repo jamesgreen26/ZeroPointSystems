@@ -1,5 +1,5 @@
 modLoader = "javafml"
-loaderVersion = "[47,)"
+loaderVersion = "[4,)"
 license = "MIT"
 
 [[mods]]
@@ -12,30 +12,33 @@ Advanced solutions delivering unmatched efficiency and flexibility.
 '''
 logoFile = "assets/zps/icon.png"
 
+[[mixins]]
+config = "zps.mixins.json"
+
 [[dependencies.zps]]
-modId = "forge"
-mandatory = true
-versionRange = "[47,)"
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.zps]]
 modId = "minecraft"
-mandatory = true
-versionRange = "[1.20.1,)"
+type = "required"
+versionRange = "[1.21.1,1.22)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.zps]]
 modId = "radios"
-mandatory = true
+type = "required"
 versionRange = "[1.2.0,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.zps]]
 modId = "fusion"
-mandatory = true
-versionRange = "[1,)"
+type = "required"
+versionRange = "[1.1.1a,)"
 ordering = "NONE"
 side = "CLIENT"

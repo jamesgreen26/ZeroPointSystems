@@ -2,16 +2,16 @@ package g_mungus.zps.client.debug;
 
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RegisterClientCommandsEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.loading.FMLLoader;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.loading.FMLLoader;
 
-@Mod.EventBusSubscriber(
+@EventBusSubscriber(
         modid = "zps",
         value = Dist.CLIENT,
-        bus = Mod.EventBusSubscriber.Bus.FORGE
+        bus = EventBusSubscriber.Bus.GAME
 )
 public class ZPSClientCommands {
 

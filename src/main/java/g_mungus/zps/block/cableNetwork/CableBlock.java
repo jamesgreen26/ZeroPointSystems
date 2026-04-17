@@ -95,6 +95,15 @@ public class CableBlock extends CableComponentBlock {
 
     @Override
     @SuppressWarnings("deprecation")
+    public float getShadeBrightness(BlockState state, @NotNull BlockGetter level, @NotNull BlockPos pos) {
+        if (state.getValue(INSULATION_TYPE).equals(GRATING)) {
+            return 1.0F;
+        }
+        return super.getShadeBrightness(state, level, pos);
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
     public boolean skipRendering(BlockState state, BlockState adjacentState, Direction direction) {
         if (shouldCullMatchingInsulatedFace(state, adjacentState)) {
             return true;

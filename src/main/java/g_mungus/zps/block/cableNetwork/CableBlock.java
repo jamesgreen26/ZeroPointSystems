@@ -196,6 +196,8 @@ public class CableBlock extends CableComponentBlock {
     {
         if (state.hasProperty(INSULATION_TYPE) && state.getValue(INSULATION_TYPE).equals(INSULATION) && !player.isShiftKeyDown()) {
             return new ItemStack(ModItems.CABLE_INSULATION.get(), 1);
+        } else if (state.hasProperty(INSULATION_TYPE) && state.getValue(INSULATION_TYPE).equals(GRATING) && !player.isShiftKeyDown()) {
+            return new ItemStack(ModItems.SPACE_GRATING_BLOCK.get(), 1);
         } else if (state.hasProperty(INSULATION_TYPE) && state.getValue(INSULATION_TYPE).equals(CATWALK) && !player.isShiftKeyDown()) {
             if (target instanceof BlockHitResult blockHitResult && isTargetingCatwalk(blockHitResult, pos)) {
                 return new ItemStack(ModItems.CATWALK.get(), 1);
@@ -250,10 +252,10 @@ public class CableBlock extends CableComponentBlock {
     public void updateConnections(BlockState state, Level level, BlockPos pos) {
         BlockState newState = getNewBlockState(state, level, pos);
 
-        if (!state.equals(newState) && !state.getValue(INSULATION_TYPE).equals(INSULATION)) {
+        if (!state.equals(newState) && !state.getValue(INSULATION_TYPE).insulatesAllSides()) {
             level.setBlock(pos, newState, 3);
             updateNetwork(pos, level);
-        } else if (state.getValue(INSULATION_TYPE).equals(INSULATION)) {
+        } else if (state.getValue(INSULATION_TYPE).insulatesAllSides()) {
             updateNetwork(pos, level);
         }
     }
@@ -278,7 +280,7 @@ public class CableBlock extends CableComponentBlock {
             return 0;
         }
 
-        if (state.hasProperty(INSULATION_TYPE) && state.getValue(INSULATION_TYPE).equals(INSULATION)) {
+        if (state.hasProperty(INSULATION_TYPE) && state.getValue(INSULATION_TYPE).insulatesAllSides()) {
 
             boolean shouldConnect = false;
 
@@ -343,10 +345,6 @@ public class CableBlock extends CableComponentBlock {
 
     public boolean canBeCatwalked(BlockState state) {
         return !state.getValue(INSULATION_TYPE).equals(INSULATION) && !state.getValue(INSULATION_TYPE).equals(CATWALK) && !state.getValue(UP);
-    }
-
-    protected boolean usesCatwalkProperty() {
-        return true;
     }
 
     private boolean isTargetingCatwalk(BlockHitResult hitResult, BlockPos pos) {

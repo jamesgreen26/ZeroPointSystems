@@ -93,9 +93,9 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(ScriptTerminalBlockEntity::new,
                             ModBlocks.SCRIPT_TERMINAL.get()).build(null));
 
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ScriptTerminalBlockEntity>> LOUDSPEAKER =
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LoudspeakerBlockEntity>> LOUDSPEAKER =
             BLOCK_ENTITIES.register("loudspeaker",
-                    () -> BlockEntityType.Builder.of(ScriptTerminalBlockEntity::new,
+                    () -> BlockEntityType.Builder.of(LoudspeakerBlockEntity::new,
                             ModBlocks.LOUDSPEAKER.get()).build(null));
 
 } 

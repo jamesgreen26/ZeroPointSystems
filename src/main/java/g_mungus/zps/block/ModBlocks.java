@@ -233,8 +233,8 @@ public class ModBlocks {
             )
     );
 
-    public static final RegistryObject<Block> SPACE_GRATING_BLOCK = BLOCKS.register("space_grating_block",
-            () -> new GlassBlock(BlockBehaviour.Properties.of()
+    public static final RegistryObject<SpaceGratingBlock> SPACE_GRATING_BLOCK = BLOCKS.register("space_grating_block",
+            () -> new SpaceGratingBlock(BlockBehaviour.Properties.of()
                     .strength(3.0f)
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.NETHERITE_BLOCK)

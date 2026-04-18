@@ -13,6 +13,10 @@
 - key: create
   title: Create Integration
   url: /create.html
+- key: sable
+  title: Sable Integration
+  url: /sable.html
 - key: valkyrien_skies
   title: Valkyrien Skies Integration
   url: /valkyrien_skies.html
+

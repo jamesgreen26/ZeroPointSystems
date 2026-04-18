@@ -1,9 +1,11 @@
 package g_mungus.zps.compat;
 
+import dev.ryanhcode.sable.companion.SableCompanion;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.compat.create.CreateCompat;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Position;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.ComponentContents;
 import net.minecraft.network.chat.contents.TranslatableContents;
@@ -44,16 +46,19 @@ public class Compat {
     }
 
     public static BlockPos toWorldPos(ServerLevel level, BlockPos pos) {
+        Position projectedPos = pos.getCenter();
+        Vec3 worldPos = SableCompanion.INSTANCE.projectOutOfSubLevel(level, projectedPos);
         if (isVSLoaded()) {
-            Vec3 truePos = VSCompat.shipToWorld(level, pos);
-            return new BlockPos((int) truePos.x, (int) truePos.y, (int) truePos.z);
+            worldPos = VSCompat.shipToWorld(level, new BlockPos((int) worldPos.x, (int) worldPos.y, (int) worldPos.z));
         } else {
-            return pos;
+            return new BlockPos((int) worldPos.x, (int) worldPos.y, (int) worldPos.z);
         }
+        return new BlockPos((int) worldPos.x, (int) worldPos.y, (int) worldPos.z);
     }
 
     @SubscribeEvent
     public static void onRegisterScriptCommandsEvent(RegisterScriptCommandsEvent event) {
+        SableCompat.registerScriptCommands(event);
         if (isVSLoaded()) {
             VSCompat.registerScriptCommands(event);
         }

@@ -65,3 +65,4 @@ write_page value_of(read_page + " (edited)")
 ## Additional Getters
 
 - [Valkyrien Skies](valkyrien_skies.md) — `ship`
+- [Sable](sable.md) — `sublevel`

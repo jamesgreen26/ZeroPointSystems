@@ -48,7 +48,7 @@ if block == minecraft:piston[facing=up] set_redstone 15
 
 ## Vec Pos
 
-A floating-point position. Produced by: `pos center`, `ship pos`
+A floating-point position. Produced by: `pos center`, `ship pos`, `sublevel pos`
 
 | Mapper | Output | Description |
 |--------|--------|-------------|
@@ -69,7 +69,7 @@ if ship pos distance_to 0 0 0 > 100 set_redstone 15
 
 ## Vec Box
 
-A size vector (width, height, depth). Produced by: `ship bounding_box`
+A size vector (width, height, depth). Produced by: `ship bounding_box`, `sublevel bounding_box`
 
 | Mapper | Output | Description |
 |--------|--------|-------------|
@@ -82,7 +82,7 @@ A size vector (width, height, depth). Produced by: `ship bounding_box`
 
 ## Vec Dir
 
-A direction vector. Produced by: `vec_pos direction_to`, `ship world_vel`, `ship local_vel`, `ship dir`, `vec_dir normalize`, `vec_dir cross`
+A direction vector. Produced by: `vec_pos direction_to`, `ship world_vel`, `ship local_vel`, `ship dir`, `sublevel world_vel`, `sublevel local_vel`, `sublevel dir`, `vec_dir normalize`, `vec_dir cross`
 
 | Mapper | Output | Description |
 |--------|--------|-------------|
@@ -147,7 +147,7 @@ Produced by: `pos x/y/z` (Vec Pos), `vec_dir length/dot`, `vec_box volume`, `int
 
 ## String
 
-Produced by: `read_page`, `pos as_string`, `dimension as_string`, `int as_string`, `double as_string`, `ship slug`
+Produced by: `read_page`, `pos as_string`, `dimension as_string`, `int as_string`, `double as_string`, `ship slug`, `sublevel name`, `sublevel id`
 
 | Mapper | Output | Description |
 |--------|--------|-------------|

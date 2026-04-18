@@ -6,7 +6,7 @@
       "item": "minecraft:comparator"
     },
     "B": {
-      "tag": "forge:ingots/space_metal"
+      "tag": "c:ingots/space_metal"
     },
     "C": {
       "item": "zps:light_pipe_cable"

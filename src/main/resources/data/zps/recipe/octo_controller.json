@@ -3,7 +3,7 @@
   "category": "functional",
   "key": {
     "I": {
-      "tag": "forge:ingots/space_metal"
+      "tag": "c:ingots/space_metal"
     },
     "T": {
       "item": "minecraft:tinted_glass"

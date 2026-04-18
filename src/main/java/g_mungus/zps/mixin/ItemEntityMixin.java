@@ -46,8 +46,8 @@ public abstract class ItemEntityMixin extends Entity {
             if (level instanceof ServerLevel serverLevel) {
                 serverLevel.sendParticles(ParticleTypes.LAVA, pos.x, pos.y, pos.z, 10, 0.1, 0.1, 0.1, 0.0);
             }
-            TagKey<Item> blocksTag = TagKey.create(Registries.ITEM, ResourceLocation.tryBuild("forge", "storage_blocks/lithium"));
-            TagKey<Item> rawBlocksTag = TagKey.create(Registries.ITEM, ResourceLocation.tryBuild("forge", "storage_blocks/raw_lithium"));
+            TagKey<Item> blocksTag = TagKey.create(Registries.ITEM, ResourceLocation.tryBuild("c", "storage_blocks/lithium"));
+            TagKey<Item> rawBlocksTag = TagKey.create(Registries.ITEM, ResourceLocation.tryBuild("c", "storage_blocks/raw_lithium"));
             Random random = new Random();
 
             if (item.is(blocksTag)) {
@@ -56,7 +56,7 @@ public abstract class ItemEntityMixin extends Entity {
             } else if (item.is(rawBlocksTag)) {
                 spawnChildItems(level, pos, ModItems.RAW_LITHIUM.get(), random);
             } else {
-                TagKey<Item> ingotsTag = TagKey.create(Registries.ITEM, ResourceLocation.tryBuild("forge", "ingots/lithium"));
+                TagKey<Item> ingotsTag = TagKey.create(Registries.ITEM, ResourceLocation.tryBuild("c", "ingots/lithium"));
 
                 if (item.is(ingotsTag)) {
                     spawnChildItems(level, pos, ModItems.LITHIUM_NUGGET.get(), random);

@@ -2,6 +2,7 @@ package g_mungus.zps;
 
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.ModBlockEntities;
+import g_mungus.zps.client.ClientSetup;
 import g_mungus.zps.client.ponder.ZPSPonderPlugin;
 import g_mungus.zps.compat.Compat;
 import g_mungus.zps.config.ZPSConfig;
@@ -44,6 +45,7 @@ public final class ZPSMod {
 
         if (dist == Dist.CLIENT) {
             ZPSPonderPlugin.registerPlugin();
+            modEventBus.register(ClientSetup.class);
         }
 
         Compat.onModInit(modEventBus);

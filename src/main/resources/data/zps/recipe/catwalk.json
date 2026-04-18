@@ -3,10 +3,10 @@
   "category": "building",
   "key": {
     "B": {
-      "tag": "forge:ingots/space_metal"
+      "tag": "c:ingots/space_metal"
     },
     "R": {
-      "tag": "forge:rods/space_metal"
+      "tag": "c:rods/space_metal"
     }
   },
   "pattern": [

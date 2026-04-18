@@ -3,7 +3,7 @@ package g_mungus.zps.block.cableNetwork.light_pipe;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -57,19 +57,31 @@ public class RadioAntenna extends Block {
     }
 
     @Override
-    public BlockState updateShape(
-            BlockState state,
-            net.minecraft.core.Direction direction,
-            BlockState neighborState,
-            LevelAccessor level,
-            BlockPos pos,
-            BlockPos neighborPos
-    ) {
-        if (direction == net.minecraft.core.Direction.UP) {
-            boolean hasSameAbove = neighborState.is(this);
-            return state.setValue(TOP, !hasSameAbove);
+    public void onPlace(BlockState newState, Level level, BlockPos pos, BlockState oldState, boolean moved) {
+        super.onPlace(newState, level, pos, oldState, moved);
+        syncTopState(level, pos);
+        if (!oldState.is(this)) {
+            syncTopState(level, pos.below());
+        }
+    }
+
+    @Override
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
+        super.onRemove(state, level, pos, newState, moved);
+        if (!state.is(newState.getBlock())) {
+            syncTopState(level, pos.below());
+        }
+    }
+
+    private void syncTopState(Level level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        if (!state.is(this)) {
+            return;
         }
 
-        return state;
+        boolean shouldBeTop = !level.getBlockState(pos.above()).is(this);
+        if (state.getValue(TOP) != shouldBeTop) {
+            level.setBlock(pos, state.setValue(TOP, shouldBeTop), Block.UPDATE_ALL);
+        }
     }
 }

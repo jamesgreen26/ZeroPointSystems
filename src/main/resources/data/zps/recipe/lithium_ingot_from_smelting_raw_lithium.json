@@ -7,5 +7,7 @@
   "ingredient": {
     "item": "zps:raw_lithium"
   },
-  "result": "zps:lithium_ingot"
+  "result": {
+    "id": "zps:lithium_ingot"
+  }
 }

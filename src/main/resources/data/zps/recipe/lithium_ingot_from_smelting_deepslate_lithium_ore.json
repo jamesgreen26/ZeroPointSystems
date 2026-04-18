@@ -7,5 +7,7 @@
   "ingredient": {
     "item": "zps:deepslate_lithium_ore"
   },
-  "result": "zps:lithium_ingot"
+  "result": {
+    "id": "zps:lithium_ingot"
+  }
 }

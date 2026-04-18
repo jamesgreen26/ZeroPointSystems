@@ -176,6 +176,11 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
     }
 
     @Override
+    protected void renderBlurredBackground(float p_330683_) {
+        // don't blur
+    }
+
+    @Override
     public void render(@NotNull GuiGraphics arg, int i, int j, float f) {
         this.renderBackground(arg, i, j, f);
         arg.drawCenteredString(this.font, SET_COMMAND_LABEL, this.width / 2, 20, 16777215);

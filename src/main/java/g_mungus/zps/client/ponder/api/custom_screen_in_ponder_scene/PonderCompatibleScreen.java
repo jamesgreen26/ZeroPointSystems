@@ -28,7 +28,7 @@ public abstract class PonderCompatibleScreen extends Screen {
         this.shouldRenderBackground = shouldRenderBackground;
     }
 
-    private boolean shouldRenderBackground;
+    private boolean shouldRenderBackground = true;
     private boolean isInPonder = false;
 
     protected PonderCompatibleScreen(Component arg) {

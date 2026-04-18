@@ -11,6 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
@@ -34,16 +35,28 @@ public class Compat {
         return BuiltInRegistries.ITEM.getKey(item).equals(ResourceLocation.fromNamespaceAndPath("create", "wrench"));
     }
 
+    private static boolean isVSLoaded() {
+        return ModList.get().isLoaded("valkyrienskies");
+    }
+
     public static boolean isCreateLoaded() {
         return ModList.get().isLoaded("create");
     }
 
     public static BlockPos toWorldPos(ServerLevel level, BlockPos pos) {
-        return pos;
+        if (isVSLoaded()) {
+            Vec3 truePos = VSCompat.shipToWorld(level, pos);
+            return new BlockPos((int) truePos.x, (int) truePos.y, (int) truePos.z);
+        } else {
+            return pos;
+        }
     }
 
     @SubscribeEvent
     public static void onRegisterScriptCommandsEvent(RegisterScriptCommandsEvent event) {
+        if (isVSLoaded()) {
+            VSCompat.registerScriptCommands(event);
+        }
         if (isCreateLoaded()) {
             CreateCompat.registerScriptCommands(event);
         }

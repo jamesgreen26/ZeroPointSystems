@@ -81,6 +81,13 @@ repositories {
         name = "Jared's maven"
         url = "https://maven.blamejared.com/"
     }
+    maven {
+        name = "Valkyrien Skies Internal"
+        url = 'https://maven.valkyrienskies.org'
+        content {
+            includeGroupByRegex "org.valkyrien.*"
+        }
+    }
     maven { url = "https://maven.bawnorton.com/releases" }
 }
 
@@ -142,6 +149,14 @@ dependencies {
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.0")
+
+
+
+    // compat
+
+    compileOnly("org.valkyrienskies.core:api:1.1.0+b714ef303e") { transitive = false }
+    compileOnly("org.joml:joml-primitives:1.10.0")
+    compileOnlyApi("maven.modrinth:valkyrien-skies:1.20.1-forge-2.4.10")
 }
 
 test {

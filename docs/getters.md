@@ -62,4 +62,6 @@ write_page value_of(read_page + " (edited)")
 
 ---
 
-No additional integration-specific getters are available in this version of the port.
+## Additional Getters
+
+- [Valkyrien Skies](valkyrien_skies.md) — `ship`

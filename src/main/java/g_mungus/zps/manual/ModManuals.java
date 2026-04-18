@@ -13,7 +13,8 @@ public final class ModManuals {
         new ManualSection("executors", "executors.md", Component.translatable("zps.manual.executors")),
         new ManualSection("getters", "getters.md", Component.translatable("zps.manual.getters")),
         new ManualSection("mappers", "mappers.md", Component.translatable("zps.manual.mappers")),
-        new ManualSection("create", "create.md", Component.translatable("zps.manual.create"))
+        new ManualSection("create", "create.md", Component.translatable("zps.manual.create")),
+        new ManualSection("valkyrien_skies", "valkyrien_skies.md", Component.translatable("zps.manual.valkyrien_skies"))
     );
 
     private ModManuals() {

@@ -8,6 +8,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.NotNull;
 
 public class SpaceGratingBlock extends Block {
     public SpaceGratingBlock(Properties p_49795_) {
@@ -15,11 +16,13 @@ public class SpaceGratingBlock extends Block {
     }
 
     @Override
-    @SuppressWarnings("deprecation")
-    public boolean skipRendering(BlockState state, BlockState adjacentState, Direction direction) {
+    public boolean skipRendering(@NotNull BlockState state, BlockState adjacentState, @NotNull Direction direction) {
         if (adjacentState.getBlock() instanceof CableBlock
                 && adjacentState.hasProperty(CableBlock.INSULATION_TYPE)
-                && adjacentState.getValue(CableBlock.INSULATION_TYPE) == InsulationType.GRATING) {
+                && adjacentState.getValue(CableBlock.INSULATION_TYPE) == InsulationType.GRATING
+            || adjacentState.getBlock() instanceof SpaceGratingBlock
+        ) {
+
             return true;
         }
         return super.skipRendering(state, adjacentState, direction);

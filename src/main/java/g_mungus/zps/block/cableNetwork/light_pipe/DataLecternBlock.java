@@ -13,7 +13,7 @@ import net.minecraft.tags.ItemTags;
 import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -198,21 +198,23 @@ public class DataLecternBlock extends LecternBlock implements EntityBlock, Cable
 
             return InteractionResult.sidedSuccess(arg2.isClientSide);
         }
-        return InteractionResult.PASS;
+        return InteractionResult.CONSUME;
     }
 
     @Override
     protected ItemInteractionResult useItemOn(ItemStack itemStack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         if (state.getValue(HAS_BOOK)) {
-            InteractionResult result = useWithoutItem(state, level, pos, player, hit);
-            return result == InteractionResult.PASS ? ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION : ItemInteractionResult.sidedSuccess(level.isClientSide);
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
         if (itemStack.is(ItemTags.LECTERN_BOOKS)) {
-            return super.useItemOn(itemStack, state, level, pos, player, hand, hit);
+            return tryPlaceBook(player, level, pos, state, itemStack)
+                    ? ItemInteractionResult.sidedSuccess(level.isClientSide)
+                    : ItemInteractionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
         }
-        return !itemStack.isEmpty() && !itemStack.is(ItemTags.LECTERN_BOOKS)
-                ? ItemInteractionResult.CONSUME
-                : ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        if (itemStack.isEmpty() && hand == InteractionHand.MAIN_HAND) {
+            return ItemInteractionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
+        }
+        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
     private void openScreen(Level arg, BlockPos arg2, Player arg3) {
@@ -260,26 +262,25 @@ public class DataLecternBlock extends LecternBlock implements EntityBlock, Cable
     }
 
 
-    public static boolean tryPlaceBook(Entity arg, Level arg2, BlockPos arg3, BlockState arg4, ItemStack arg5) {
-        if (!(Boolean)arg4.getValue(HAS_BOOK)) {
-            if (!arg2.isClientSide) {
-                placeBook(arg, arg2, arg3, arg4, arg5);
-            }
-
-            return true;
-        } else {
+    public static boolean tryPlaceBook(@Nullable LivingEntity arg, Level arg2, BlockPos arg3, BlockState arg4, ItemStack arg5) {
+        if (arg4.getValue(HAS_BOOK)) {
             return false;
         }
+        if (arg2.isClientSide) {
+            return true;
+        }
+
+        placeBook(arg, arg2, arg3, arg4, arg5);
+        return true;
     }
 
-    private static void placeBook(Entity arg, Level arg2, BlockPos arg3, BlockState arg4, ItemStack arg5) {
+    private static void placeBook(@Nullable LivingEntity arg, Level arg2, BlockPos arg3, BlockState arg4, ItemStack arg5) {
         BlockEntity blockEntity = arg2.getBlockEntity(arg3);
         if (blockEntity instanceof DataLecternBlockEntity be) {
-            be.setBook(arg5.split(1));
+            be.setBook(arg5.consumeAndReturn(1, arg), arg instanceof Player player ? player : null);
             resetBookState(arg, arg2, arg3, arg4, true);
             arg2.playSound(null, arg3, SoundEvents.BOOK_PUT, SoundSource.BLOCKS, 1.0F, 1.0F);
         }
-
     }
 
     static {

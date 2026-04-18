@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "A": {
+      "item": "zps:space_metal_mesh"
+    }
+  },
+  "pattern": [
+    "AAA",
+    "A A",
+    "AAA"
+  ],
+  "result": {
+    "id": "zps:cable_insulation",
+    "count": 4
+  },
+  "show_notification": true
+}

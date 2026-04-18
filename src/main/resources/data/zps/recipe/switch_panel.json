@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "A": { "tag": "forge:ingots/space_metal" },
+    "B": { "item": "minecraft:lever" },
+    "D": { "item": "zps:dense_cables" },
+    "E": { "item": "minecraft:lever" },
+    "G": { "tag": "forge:ingots/space_metal" },
+    "H": { "item": "minecraft:lever" }
+  },
+  "pattern": [
+    "AB ",
+    "DE ",
+    "GH "
+  ],
+  "result": {
+    "id": "zps:switch_panel",
+    "count": 2
+  },
+  "show_notification": true
+}

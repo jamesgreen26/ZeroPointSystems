@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "R": {
+      "tag": "forge:rods/space_metal"
+    },
+    "B": {
+      "tag": "forge:ingots/space_metal"
+    }
+  },
+  "pattern": [
+    "RBR",
+    " R ",
+    " R "
+  ],
+  "result": {
+    "id": "zps:radio_antenna",
+    "count": 1
+  },
+  "show_notification": true
+}

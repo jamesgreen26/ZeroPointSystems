@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "A": { "tag": "forge:ingots/space_metal" },
+    "B": { "tag": "forge:ingots/space_metal" },
+    "C": { "tag": "forge:ingots/space_metal" },
+    "D": { "item": "zps:light_pipe_cable" },
+    "E": { "item": "minecraft:repeater" },
+    "F": { "item": "minecraft:note_block" },
+    "G": { "tag": "forge:ingots/space_metal" },
+    "H": { "tag": "forge:ingots/space_metal" },
+    "I": { "tag": "forge:ingots/space_metal" }
+  },
+  "pattern": [
+    "ABC",
+    "DEF",
+    "GHI"
+  ],
+  "result": {
+    "id": "zps:loudspeaker",
+    "count": 1
+  },
+  "show_notification": true
+}

@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "C": {
+      "item": "zps:cable"
+    },
+    "I": {
+      "tag": "forge:ingots/space_metal"
+    }
+  },
+  "pattern": [
+    " C ",
+    "III"
+  ],
+  "result": {
+    "id": "zps:stepup_transformer",
+    "count": 2
+  },
+  "show_notification": true
+}

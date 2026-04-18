@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "B": {
+      "tag": "forge:ingots/space_metal"
+    },
+    "R": {
+      "tag": "forge:rods/space_metal"
+    }
+  },
+  "pattern": [
+    "RBR",
+    "BRB",
+    "RBR"
+  ],
+  "result": {
+    "id": "zps:riveted_space_plating",
+    "count": 4
+  },
+  "show_notification": true
+}

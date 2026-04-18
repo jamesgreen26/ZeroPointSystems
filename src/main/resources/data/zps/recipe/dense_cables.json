@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "C": {
+      "item": "zps:cable"
+    }
+  },
+  "pattern": [
+    "CC",
+    "CC"
+  ],
+  "result": {
+    "id": "zps:dense_cables",
+    "count": 1
+  },
+  "show_notification": true
+}

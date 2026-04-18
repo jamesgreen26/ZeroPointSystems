@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "R": {
+      "tag": "forge:rods/space_metal"
+    }
+  },
+  "pattern": [
+    "RRR",
+    "R R",
+    "RRR"
+  ],
+  "result": {
+    "id": "zps:space_truss",
+    "count": 6
+  },
+  "show_notification": true
+}

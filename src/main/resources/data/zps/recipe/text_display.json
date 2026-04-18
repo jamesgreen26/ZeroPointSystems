@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "A": { "tag": "forge:ingots/space_metal" },
+    "B": { "tag": "forge:ingots/space_metal" },
+    "C": { "item": "minecraft:tinted_glass" },
+    "D": { "item": "zps:light_pipe_cable" },
+    "E": { "item": "minecraft:repeater" },
+    "F": { "item": "minecraft:tinted_glass" },
+    "G": { "tag": "forge:ingots/space_metal" },
+    "H": { "tag": "forge:ingots/space_metal" },
+    "I": { "item": "minecraft:tinted_glass" }
+  },
+  "pattern": [
+    "ABC",
+    "DEF",
+    "GHI"
+  ],
+  "result": {
+    "id": "zps:text_display",
+    "count": 1
+  },
+  "show_notification": true
+}

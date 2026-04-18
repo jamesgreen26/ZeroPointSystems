@@ -82,7 +82,7 @@ public class BlockDataGenerator {
                 walls.add("zps:" + name + "_wall");
             }
         });
-        String path = FOLDER + "data/minecraft/tags/blocks/walls.json";
+        String path = FOLDER + "data/minecraft/tags/block/walls.json";
         FileWriter.writeFile(path, new TagJsonModel(walls, false).toJsonString());
     }
 
@@ -93,7 +93,7 @@ public class BlockDataGenerator {
                 stairs.add("zps:" + name + "_stairs");
             }
         });
-        String path = FOLDER + "data/minecraft/tags/blocks/stairs.json";
+        String path = FOLDER + "data/minecraft/tags/block/stairs.json";
         FileWriter.writeFile(path, new TagJsonModel(stairs, false).toJsonString());
     }
 
@@ -104,7 +104,7 @@ public class BlockDataGenerator {
                 slabs.add("zps:" + name + "_slab");
             }
         });
-        String path = FOLDER + "data/minecraft/tags/blocks/slabs.json";
+        String path = FOLDER + "data/minecraft/tags/block/slabs.json";
         FileWriter.writeFile(path, new TagJsonModel(slabs, false).toJsonString());
     }
 
@@ -122,7 +122,7 @@ public class BlockDataGenerator {
                 });
             }
         });
-        String path = FOLDER + "data/zps/tags/blocks/space_plating.json";
+        String path = FOLDER + "data/zps/tags/block/space_plating.json";
         FileWriter.writeFile(path, new TagJsonModel(entries, false).toJsonString());
     }
 }

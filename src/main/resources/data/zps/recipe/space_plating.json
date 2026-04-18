@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "B": {
+      "tag": "forge:ingots/space_metal"
+    }
+  },
+  "pattern": [
+    " B ",
+    "B B",
+    " B "
+  ],
+  "result": {
+    "id": "zps:space_plating",
+    "count": 4
+  },
+  "show_notification": true
+}

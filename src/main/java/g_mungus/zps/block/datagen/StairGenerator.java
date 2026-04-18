@@ -26,12 +26,12 @@ public class StairGenerator {
                   ],
                   "result": {
                     "count": 4,
-                    "item": "zps:%1$s_stairs"
+                    "id": "zps:%1$s_stairs"
                   },
                   "show_notification": true
                 }
                 """.formatted(name);
-        String path = BlockDataGenerator.FOLDER + "data/zps/recipes/" + name + "_stairs.json";
+        String path = BlockDataGenerator.FOLDER + "data/zps/recipe/" + name + "_stairs.json";
 
         FileWriter.writeFile(path, json);
     }
@@ -330,7 +330,7 @@ public class StairGenerator {
                           ]
                         }
               """.formatted(name);
-        String path = BlockDataGenerator.FOLDER + "data/zps/loot_tables/blocks/" + name + "_stairs.json";
+        String path = BlockDataGenerator.FOLDER + "data/zps/loot_table/blocks/" + name + "_stairs.json";
 
         FileWriter.writeFile(path, json);
     }

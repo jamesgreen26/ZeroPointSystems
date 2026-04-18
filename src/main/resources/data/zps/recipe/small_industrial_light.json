@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "A": {
+      "item": "minecraft:glass"
+    },
+    "B": {
+      "item": "minecraft:redstone_lamp"
+    },
+    "C": {
+      "tag": "forge:ingots/space_metal"
+    }
+  },
+  "pattern": [
+    "A",
+    "B",
+    "C"
+  ],
+  "result": {
+    "id": "zps:small_industrial_light",
+    "count": 2
+  },
+  "show_notification": true
+}

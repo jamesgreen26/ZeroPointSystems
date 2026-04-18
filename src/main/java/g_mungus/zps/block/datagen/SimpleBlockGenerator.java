@@ -64,7 +64,7 @@ public class SimpleBlockGenerator {
                           ]
                         }
               """.formatted(name);
-        String path = BlockDataGenerator.FOLDER + "data/zps/loot_tables/blocks/" + name + ".json";
+        String path = BlockDataGenerator.FOLDER + "data/zps/loot_table/blocks/" + name + ".json";
 
         FileWriter.writeFile(path, json);
     }

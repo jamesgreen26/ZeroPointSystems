@@ -75,7 +75,7 @@ public class PillarGenerator {
                         }
 
               """.formatted(name);
-        String path = BlockDataGenerator.FOLDER + "data/zps/loot_tables/blocks/" + name + "_pillar.json";
+        String path = BlockDataGenerator.FOLDER + "data/zps/loot_table/blocks/" + name + "_pillar.json";
 
         FileWriter.writeFile(path, json);
     }

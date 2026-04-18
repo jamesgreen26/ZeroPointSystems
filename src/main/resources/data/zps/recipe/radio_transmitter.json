@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "A": {
+      "item": "minecraft:quartz"
+    },
+    "B": {
+      "tag": "forge:ingots/space_metal"
+    },
+    "C": {
+      "item": "zps:light_pipe_cable"
+    },
+    "G": {
+      "item": "minecraft:tinted_glass"
+    }
+  },
+  "pattern": [
+    "BBB",
+    "CAG",
+    "BBB"
+  ],
+  "result": {
+    "id": "zps:radio_transmitter",
+    "count": 1
+  },
+  "show_notification": true
+}

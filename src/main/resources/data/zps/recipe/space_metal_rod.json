@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "B": {
+      "tag": "forge:ingots/space_metal"
+    }
+  },
+  "pattern": [
+    "B",
+    "B"
+  ],
+  "result": {
+    "id": "zps:space_metal_rod",
+    "count": 6
+  },
+  "show_notification": true
+}

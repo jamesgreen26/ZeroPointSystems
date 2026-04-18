@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "T": {
+      "item": "zps:stepdown_transformer"
+    }
+  },
+  "pattern": [
+    "T"
+  ],
+  "result": {
+    "id": "zps:stepup_transformer",
+    "count": 1
+  },
+  "show_notification": true
+}

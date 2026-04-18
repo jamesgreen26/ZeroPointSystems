@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "O": {
+      "item": "zps:space_plating"
+    },
+    "I": {
+      "item": "minecraft:yellow_dye"
+    }
+  },
+  "pattern": [
+    "OOO",
+    "OIO",
+    "OOO"
+  ],
+  "result": {
+    "id": "zps:yellow_space_plating",
+    "count": 8
+  },
+  "show_notification": true
+}

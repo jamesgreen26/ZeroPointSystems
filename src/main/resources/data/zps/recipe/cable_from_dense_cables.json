@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "functional",
+  "ingredients": [
+    {
+      "item": "zps:dense_cables"
+    }
+  ],
+  "result": {
+    "id": "zps:cable",
+    "count": 4
+  }
+}

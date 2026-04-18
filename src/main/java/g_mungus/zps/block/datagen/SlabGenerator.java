@@ -24,12 +24,12 @@ public class SlabGenerator {
                   ],
                   "result": {
                     "count": 6,
-                    "item": "zps:%1$s_slab"
+                    "id": "zps:%1$s_slab"
                   },
                   "show_notification": true
                 }
                 """.formatted(name);
-        String path = BlockDataGenerator.FOLDER + "data/zps/recipes/" + name + "_slab.json";
+        String path = BlockDataGenerator.FOLDER + "data/zps/recipe/" + name + "_slab.json";
 
         FileWriter.writeFile(path, json);
     }
@@ -129,7 +129,7 @@ public class SlabGenerator {
                   }
               
               """.formatted(name);
-        String path = BlockDataGenerator.FOLDER + "data/zps/loot_tables/blocks/" + name + "_slab.json";
+        String path = BlockDataGenerator.FOLDER + "data/zps/loot_table/blocks/" + name + "_slab.json";
 
         FileWriter.writeFile(path, json);
     }

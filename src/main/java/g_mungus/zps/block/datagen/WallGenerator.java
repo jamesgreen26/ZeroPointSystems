@@ -25,12 +25,12 @@ public class WallGenerator {
                   ],
                   "result": {
                     "count": 6,
-                    "item": "zps:%1$s_wall"
+                    "id": "zps:%1$s_wall"
                   },
                   "show_notification": true
                 }
                 """.formatted(name);
-        String path = BlockDataGenerator.FOLDER + "data/zps/recipes/" + name + "_wall.json";
+        String path = BlockDataGenerator.FOLDER + "data/zps/recipe/" + name + "_wall.json";
 
         FileWriter.writeFile(path, json);
     }
@@ -218,7 +218,7 @@ public class WallGenerator {
                           ]
                         }
               """.formatted(name);
-        String path = BlockDataGenerator.FOLDER + "data/zps/loot_tables/blocks/" + name + "_wall.json";
+        String path = BlockDataGenerator.FOLDER + "data/zps/loot_table/blocks/" + name + "_wall.json";
 
         FileWriter.writeFile(path, json);
     }

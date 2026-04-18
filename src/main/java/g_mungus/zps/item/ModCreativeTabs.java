@@ -5,7 +5,10 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.RegistryOps;
+import net.minecraft.world.entity.decoration.Painting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.tags.PaintingVariantTags;
 import net.minecraft.world.entity.decoration.PaintingVariant;
@@ -144,22 +147,32 @@ public class ModCreativeTabs {
     }
 
     private static void addPaintings(CreativeModeTab.ItemDisplayParameters parameters, CreativeModeTab.Output output) {
-        parameters.holders().lookup(Registries.PAINTING_VARIANT).ifPresent((arg2x) -> generatePresetPaintings(output, arg2x, (arg) -> arg.is(PaintingVariantTags.PLACEABLE)));
+        parameters.holders()
+                .lookup(Registries.PAINTING_VARIANT)
+                .ifPresent((arg2x) -> generatePresetPaintings(output, parameters.holders(), arg2x, (arg) -> arg.is(PaintingVariantTags.PLACEABLE)));
     }
 
-    private static void generatePresetPaintings(CreativeModeTab.Output arg, HolderLookup.RegistryLookup<PaintingVariant> arg2, Predicate<Holder<PaintingVariant>> predicate) {
+    private static void generatePresetPaintings(
+            CreativeModeTab.Output arg,
+            HolderLookup.Provider holders,
+            HolderLookup.RegistryLookup<PaintingVariant> arg2,
+            Predicate<Holder<PaintingVariant>> predicate
+    ) {
+        RegistryOps<Tag> registryOps = holders.createSerializationContext(NbtOps.INSTANCE);
         arg2.listElements().filter(predicate).sorted(PAINTING_COMPARATOR).forEach((arg3x) -> {
             if (arg3x.key().location().getNamespace().equals(ZPSMod.MOD_ID)) {
-                arg.accept(createPaintingStack(arg3x), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+                arg.accept(createPaintingStack(arg3x, registryOps), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
             }
         });
     }
 
-    private static ItemStack createPaintingStack(Holder<PaintingVariant> variant) {
+    private static ItemStack createPaintingStack(Holder<PaintingVariant> variant, RegistryOps<Tag> registryOps) {
         ItemStack itemstack = new ItemStack(Items.PAINTING);
-        CompoundTag entityData = new CompoundTag();
-        entityData.putString("variant", variant.unwrapKey().orElseThrow().location().toString());
-        itemstack.set(DataComponents.ENTITY_DATA, CustomData.of(entityData));
+        CustomData customdata = CustomData.EMPTY
+                .update(registryOps, Painting.VARIANT_MAP_CODEC, variant)
+                .getOrThrow()
+                .update(entityData -> entityData.putString("id", "minecraft:painting"));
+        itemstack.set(DataComponents.ENTITY_DATA, customdata);
         return itemstack;
     }
 

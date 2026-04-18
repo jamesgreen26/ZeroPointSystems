@@ -8,11 +8,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.loading.FMLLoader;
 
-@EventBusSubscriber(
-        modid = "zps",
-        value = Dist.CLIENT,
-        bus = EventBusSubscriber.Bus.GAME
-)
+@EventBusSubscriber(modid = "zps", value = Dist.CLIENT)
 public class ZPSClientCommands {
 
     @SubscribeEvent

@@ -126,6 +126,13 @@ dependencies {
         }
     })
 
+    runtimeOnly(jarJar("dev.engine-room.flywheel:flywheel-neoforge-$minecraft_version:$flywheel_version") {
+        version {
+            strictly "[${flywheel_version},2.0)"
+            prefer flywheel_version
+        }
+    })
+
     runtimeOnly("mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}")
     runtimeOnly("maven.modrinth:spark:${spark_version}")
 

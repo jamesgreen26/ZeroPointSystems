@@ -45,6 +45,8 @@ public class Compat {
         return ModList.get().isLoaded("create");
     }
 
+    public static boolean isSableLoaded() { return ModList.get().isLoaded("sable"); }
+
     public static BlockPos toWorldPos(ServerLevel level, BlockPos pos) {
         Position projectedPos = pos.getCenter();
         Vec3 worldPos = SableCompanion.INSTANCE.projectOutOfSubLevel(level, projectedPos);
@@ -58,7 +60,9 @@ public class Compat {
 
     @SubscribeEvent
     public static void onRegisterScriptCommandsEvent(RegisterScriptCommandsEvent event) {
-        SableCompat.registerScriptCommands(event);
+        if (isSableLoaded()) {
+            SableCompat.registerScriptCommands(event);
+        }
         if (isVSLoaded()) {
             VSCompat.registerScriptCommands(event);
         }

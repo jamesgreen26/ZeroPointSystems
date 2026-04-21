@@ -20,9 +20,9 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,11 +31,11 @@ public class LidarScannerBlockEntity extends NetworkTerminalImpl implements Ligh
 
     private static final int GRID_SIZE = 30;
     private static final int TOTAL_RAYS = GRID_SIZE * GRID_SIZE;
-    private static final int TICK_FREQUENCY = 4;
     private static final long SCAN_CACHE_LIFETIME_TICKS = 20L * 5L;
     private static final double MAX_CAST_DISTANCE = 512.0;
     private static final double HALF_FOV_DEGREES = 30.0;
     private static final double SPREAD = Math.tan(Math.toRadians(HALF_FOV_DEGREES));
+    private static final char BLANK_DISTANCE = '!';
     private static final ScanResult FAILED_SCAN = new ScanResult("", false);
     private static final ExecutorService LIDAR_SCAN_EXECUTOR = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = new Thread(runnable, "zps-lidar-scan");
@@ -43,11 +43,14 @@ public class LidarScannerBlockEntity extends NetworkTerminalImpl implements Ligh
         return thread;
     });
 
-    private final int tickOffset = new Random().nextInt(TICK_FREQUENCY);
+    private final char[] encodedFrame = createBlankFrame();
+    private final boolean[] rowHasHit = new boolean[GRID_SIZE];
     private String currentDisplayText = "";
     private @Nullable LidarRaycasts.ScanContext cachedScanContext;
     private long cachedScanContextExpiresAtGameTime = Long.MIN_VALUE;
     private @Nullable InFlightScan inFlightScan;
+    private int nextRowToScan;
+    private @Nullable Direction frameFacing;
 
     public LidarScannerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.LIDAR_SCANNER.get(), pos, state);
@@ -65,17 +68,31 @@ public class LidarScannerBlockEntity extends NetworkTerminalImpl implements Ligh
 
         applyCompletedScan(serverLevel);
 
-        if ((serverLevel.getGameTime() + tickOffset) % TICK_FREQUENCY != 0 || inFlightScan != null) {
+        if (inFlightScan != null) {
             return;
         }
 
         Direction facing = state.getValue(AbstractRadioBlock.FACING);
+        if (frameFacing == null) {
+            frameFacing = facing;
+        } else if (frameFacing != facing) {
+            resetFrame(facing);
+            updateClient();
+            boolean wasPowered = state.getValue(LidarScannerBlock.POWERED);
+            if (wasPowered) {
+                serverLevel.setBlock(getBlockPos(), state.setValue(LidarScannerBlock.POWERED, false), Block.UPDATE_ALL);
+            }
+            updateSignal(serverLevel);
+        }
+
+        int rowToScan = nextRowToScan;
+        nextRowToScan = (nextRowToScan + 1) % GRID_SIZE;
         LidarRaycasts.ScanContext scanContext = getScanContext(serverLevel);
         CompletableFuture<ScanResult> scanFuture = CompletableFuture.supplyAsync(
-                () -> runScan(serverLevel, facing, scanContext),
+                () -> runScanRow(serverLevel, facing, rowToScan, scanContext),
                 LIDAR_SCAN_EXECUTOR
         ).exceptionally(ignored -> FAILED_SCAN);
-        inFlightScan = new InFlightScan(facing, scanFuture);
+        inFlightScan = new InFlightScan(facing, rowToScan, scanFuture);
     }
 
     private void applyCompletedScan(ServerLevel serverLevel) {
@@ -92,7 +109,7 @@ public class LidarScannerBlockEntity extends NetworkTerminalImpl implements Ligh
             scanResult = FAILED_SCAN;
         }
 
-        if (scanResult.encodedFrame().length() != TOTAL_RAYS || isRemoved()) {
+        if (scanResult.encodedFrame().length() != GRID_SIZE || isRemoved()) {
             return;
         }
 
@@ -101,7 +118,11 @@ public class LidarScannerBlockEntity extends NetworkTerminalImpl implements Ligh
             return;
         }
 
-        String nextDisplayText = scanResult.encodedFrame();
+        int rowStart = queuedScan.row() * GRID_SIZE;
+        scanResult.encodedFrame().getChars(0, GRID_SIZE, encodedFrame, rowStart);
+        rowHasHit[queuedScan.row()] = scanResult.hasHit();
+
+        String nextDisplayText = new String(encodedFrame);
         boolean textChanged = !Objects.equals(currentDisplayText, nextDisplayText);
         if (textChanged) {
             currentDisplayText = nextDisplayText;
@@ -109,7 +130,7 @@ public class LidarScannerBlockEntity extends NetworkTerminalImpl implements Ligh
         }
 
         boolean wasPowered = state.getValue(LidarScannerBlock.POWERED);
-        boolean shouldBePowered = scanResult.hasHit();
+        boolean shouldBePowered = hasAnyHit();
         if (wasPowered != shouldBePowered) {
             serverLevel.setBlock(getBlockPos(), state.setValue(LidarScannerBlock.POWERED, shouldBePowered), Block.UPDATE_ALL);
         }
@@ -119,36 +140,58 @@ public class LidarScannerBlockEntity extends NetworkTerminalImpl implements Ligh
         }
     }
 
-    private ScanResult runScan(ServerLevel level, Direction facing, LidarRaycasts.ScanContext scanContext) {
+    private ScanResult runScanRow(ServerLevel level, Direction facing, int row, LidarRaycasts.ScanContext scanContext) {
         Vec3 forward = Vec3.atLowerCornerOf(facing.getNormal());
         Vec3 right = Vec3.atLowerCornerOf(facing.getClockWise().getNormal());
         Vec3 up = new Vec3(0.0, 1.0, 0.0);
 
         Vec3 start = Vec3.atCenterOf(getBlockPos()).add(forward.scale(0.55));
 
-        StringBuilder encoded = new StringBuilder(TOTAL_RAYS);
+        StringBuilder encoded = new StringBuilder(GRID_SIZE);
         boolean hit = false;
-        for (int row = 0; row < GRID_SIZE; row++) {
-            if (Thread.currentThread().isInterrupted()) {
+        if (Thread.currentThread().isInterrupted()) {
+            return FAILED_SCAN;
+        }
+        double v = 1.0 - ((row + 0.5) / GRID_SIZE) * 2.0;
+        for (int col = 0; col < GRID_SIZE; col++) {
+            double u = ((col + 0.5) / GRID_SIZE) * 2.0 - 1.0;
+            Vec3 direction = forward.add(right.scale(u * SPREAD)).add(up.scale(v * SPREAD)).normalize();
+            double distance;
+            try {
+                distance = LidarRaycasts.raycast(level, start, direction, MAX_CAST_DISTANCE, scanContext);
+            } catch (Throwable ignored) {
                 return FAILED_SCAN;
             }
-            double v = 1.0 - ((row + 0.5) / GRID_SIZE) * 2.0;
-            for (int col = 0; col < GRID_SIZE; col++) {
-                double u = ((col + 0.5) / GRID_SIZE) * 2.0 - 1.0;
-                Vec3 direction = forward.add(right.scale(u * SPREAD)).add(up.scale(v * SPREAD)).normalize();
-                double distance;
-                try {
-                    distance = LidarRaycasts.raycast(level, start, direction, MAX_CAST_DISTANCE, scanContext);
-                } catch (Throwable ignored) {
-                    return FAILED_SCAN;
-                }
-                if (distance >= 0.0) {
-                    hit = true;
-                }
-                encoded.append(encodeDistance(distance));
+            if (distance >= 0.0) {
+                hit = true;
+            }
+            encoded.append(encodeDistance(distance));
+        }
+
+        return new ScanResult(encoded.toString(), hit);
+    }
+
+    private void resetFrame(Direction facing) {
+        Arrays.fill(encodedFrame, BLANK_DISTANCE);
+        Arrays.fill(rowHasHit, false);
+        nextRowToScan = 0;
+        frameFacing = facing;
+        currentDisplayText = new String(encodedFrame);
+    }
+
+    private boolean hasAnyHit() {
+        for (boolean rowHit : rowHasHit) {
+            if (rowHit) {
+                return true;
             }
         }
-        return new ScanResult(encoded.toString(), hit);
+        return false;
+    }
+
+    private static char[] createBlankFrame() {
+        char[] frame = new char[TOTAL_RAYS];
+        Arrays.fill(frame, BLANK_DISTANCE);
+        return frame;
     }
 
     private LidarRaycasts.ScanContext getScanContext(ServerLevel level) {
@@ -227,6 +270,13 @@ public class LidarScannerBlockEntity extends NetworkTerminalImpl implements Ligh
     public void load(@NotNull CompoundTag tag) {
         super.load(tag);
         currentDisplayText = tag.getString("DisplayText");
+        Arrays.fill(rowHasHit, false);
+        if (currentDisplayText.length() == TOTAL_RAYS) {
+            currentDisplayText.getChars(0, TOTAL_RAYS, encodedFrame, 0);
+        } else {
+            Arrays.fill(encodedFrame, BLANK_DISTANCE);
+            currentDisplayText = new String(encodedFrame);
+        }
     }
 
     @Override
@@ -249,7 +299,7 @@ public class LidarScannerBlockEntity extends NetworkTerminalImpl implements Ligh
         }
     }
 
-    private record InFlightScan(Direction facing, CompletableFuture<ScanResult> future) {
+    private record InFlightScan(Direction facing, int row, CompletableFuture<ScanResult> future) {
     }
 
     private record ScanResult(String encodedFrame, boolean hasHit) {

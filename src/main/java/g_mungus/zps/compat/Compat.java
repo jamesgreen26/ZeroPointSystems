@@ -73,6 +73,9 @@ public class Compat {
     }
 
     public static void onModInit(IEventBus modEventBus) {
+        if (isVSLoaded()) {
+            VSCompat.init();
+        }
         if (isCreateLoaded()) {
             CreateCompat.init(modEventBus);
         }

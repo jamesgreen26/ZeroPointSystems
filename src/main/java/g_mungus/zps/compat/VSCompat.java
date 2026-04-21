@@ -5,6 +5,7 @@ import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptGetter;
 import g_mungus.zps.commands.api.ScriptMapper;
 import g_mungus.zps.commands.api.ScriptMapper2;
+import g_mungus.zps.lidar.LidarRaycasts;
 import net.minecraftforge.server.command.EnumArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -26,6 +27,12 @@ import org.valkyrienskies.mod.common.VSGameUtilsKt;
 import org.valkyrienskies.mod.common.util.VectorConversionsMCKt;
 
 public class VSCompat {
+
+    static void init() {
+        if (!LidarRaycasts.raycasters.contains(ShipRaycast.INSTANCE)) {
+            LidarRaycasts.raycasters.add(ShipRaycast.INSTANCE);
+        }
+    }
 
     /// Only call after verifying that VS is loaded
     static Vec3 shipToWorld(ServerLevel level, BlockPos pos) {

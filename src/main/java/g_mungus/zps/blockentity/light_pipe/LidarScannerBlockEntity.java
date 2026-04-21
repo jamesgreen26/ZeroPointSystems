@@ -6,7 +6,6 @@ import g_mungus.zps.block.cableNetwork.light_pipe.LidarScannerBlock;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.NetworkTerminalImpl;
-import g_mungus.zps.lidar.HeightMapRaycast;
 import g_mungus.zps.lidar.LidarRaycasts;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -80,6 +79,7 @@ public class LidarScannerBlockEntity extends NetworkTerminalImpl implements Ligh
         Vec3 up = new Vec3(0.0, 1.0, 0.0);
 
         Vec3 start = Vec3.atCenterOf(getBlockPos()).add(forward.scale(0.55));
+        LidarRaycasts.ScanContext scanContext = new LidarRaycasts.ScanContext();
 
         StringBuilder encoded = new StringBuilder(TOTAL_RAYS);
         boolean hit = false;
@@ -88,7 +88,7 @@ public class LidarScannerBlockEntity extends NetworkTerminalImpl implements Ligh
             for (int col = 0; col < GRID_SIZE; col++) {
                 double u = ((col + 0.5) / GRID_SIZE) * 2.0 - 1.0;
                 Vec3 direction = forward.add(right.scale(u * SPREAD)).add(up.scale(v * SPREAD)).normalize();
-                double distance = LidarRaycasts.raycast(level, start, direction, MAX_CAST_DISTANCE);
+                double distance = LidarRaycasts.raycast(level, start, direction, MAX_CAST_DISTANCE, scanContext);
                 if (distance >= 0.0) {
                     hit = true;
                 }

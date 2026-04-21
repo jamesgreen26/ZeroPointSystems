@@ -6,4 +6,12 @@ import net.minecraft.world.phys.Vec3;
 @FunctionalInterface
 public interface RayCast {
     double invoke(Level level, Vec3 start, Vec3 dir, double length);
+
+    default Object createScanCache(Level level) {
+        return null;
+    }
+
+    default double invokeWithCache(Level level, Vec3 start, Vec3 dir, double length, Object scanCache) {
+        return invoke(level, start, dir, length);
+    }
 }

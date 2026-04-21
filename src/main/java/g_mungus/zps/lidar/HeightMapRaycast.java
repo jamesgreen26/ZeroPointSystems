@@ -1,5 +1,8 @@
 package g_mungus.zps.lidar;
 
+import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -11,10 +14,30 @@ public class HeightMapRaycast implements RayCast {
     public static final HeightMapRaycast INSTANCE = new HeightMapRaycast();
     private static final Heightmap.Types HEIGHTMAP_TYPE = Heightmap.Types.MOTION_BLOCKING;
     private static final double EPSILON = 1.0E-12;
+    private static final int HEIGHT_NOT_CACHED = Integer.MIN_VALUE;
+    private static final int HEIGHT_CHUNK_MISSING = Integer.MIN_VALUE + 1;
 
 
     /// Returns the first ray entry into the volume formed between min build height and the motion-blocking heightmap.
+    @Override
     public double invoke(Level level, Vec3 start, Vec3 dir, double length) {
+        return invoke(level, start, dir, length, new ScanCache(level.getMinBuildHeight()));
+    }
+
+    @Override
+    public Object createScanCache(Level level) {
+        return new ScanCache(level.getMinBuildHeight());
+    }
+
+    @Override
+    public double invokeWithCache(Level level, Vec3 start, Vec3 dir, double length, Object scanCache) {
+        if (scanCache instanceof ScanCache typedCache) {
+            return invoke(level, start, dir, length, typedCache);
+        }
+        return invoke(level, start, dir, length);
+    }
+
+    private double invoke(Level level, Vec3 start, Vec3 dir, double length, ScanCache cache) {
         double dirLengthSqr = dir.lengthSqr();
         if (length <= 0.0 || dirLengthSqr < 1.0E-10) {
             return -1.0;
@@ -29,10 +52,9 @@ public class HeightMapRaycast implements RayCast {
         double startY = start.y;
         double startZ = start.z;
 
-        int minBuildHeight = level.getMinBuildHeight();
-        ChunkCache cache = new ChunkCache();
+        int minBuildHeight = cache.minBuildHeight;
 
-        if (isInsideHeightMapVolume(level, startX, startY, startZ, minBuildHeight, cache)) {
+        if (isInsideHeightMapVolume(level, startX, startY, startZ, cache)) {
             return 0.0;
         }
 
@@ -44,7 +66,7 @@ public class HeightMapRaycast implements RayCast {
             int blockX = Mth.floor(startX);
             int blockZ = Mth.floor(startZ);
             int heightTop = getHeightTop(level, blockX, blockZ, cache);
-            if (heightTop == Integer.MIN_VALUE) {
+            if (heightTop == HEIGHT_CHUNK_MISSING) {
                 return -1.0;
             }
             return solveEntryDistance(0.0, length, startY, dirY, minBuildHeight, heightTop);
@@ -84,7 +106,7 @@ public class HeightMapRaycast implements RayCast {
             double tExit = Math.min(length, Math.min(tMaxX, tMaxZ));
 
             int heightTop = getHeightTop(level, blockX, blockZ, cache);
-            if (heightTop != Integer.MIN_VALUE) {
+            if (heightTop != HEIGHT_CHUNK_MISSING) {
                 double hitDistance = solveEntryDistance(t, tExit, startY, dirY, minBuildHeight, heightTop);
                 if (hitDistance >= 0.0) {
                     return hitDistance;
@@ -111,29 +133,39 @@ public class HeightMapRaycast implements RayCast {
         return -1.0;
     }
 
-    private static boolean isInsideHeightMapVolume(Level level, double x, double y, double z, int minBuildHeight, ChunkCache cache) {
-        if (y < minBuildHeight) {
+    private static boolean isInsideHeightMapVolume(Level level, double x, double y, double z, ScanCache cache) {
+        if (y < cache.minBuildHeight) {
             return false;
         }
 
         int blockX = Mth.floor(x);
         int blockZ = Mth.floor(z);
         int heightTop = getHeightTop(level, blockX, blockZ, cache);
-        if (heightTop == Integer.MIN_VALUE) {
+        if (heightTop == HEIGHT_CHUNK_MISSING) {
             return false;
         }
 
         return y < heightTop;
     }
 
-    private static int getHeightTop(Level level, int blockX, int blockZ, ChunkCache cache) {
+    private static int getHeightTop(Level level, int blockX, int blockZ, ScanCache cache) {
+        long columnKey = packBlockPos2D(blockX, blockZ);
+        int cachedHeight = cache.heights.get(columnKey);
+        if (cachedHeight != HEIGHT_NOT_CACHED || cache.heights.containsKey(columnKey)) {
+            return cachedHeight;
+        }
+
         int chunkX = blockX >> 4;
         int chunkZ = blockZ >> 4;
         ChunkAccess chunk = getChunkCached(level, chunkX, chunkZ, cache);
         if (chunk == null) {
-            return Integer.MIN_VALUE;
+            cache.heights.put(columnKey, HEIGHT_CHUNK_MISSING);
+            return HEIGHT_CHUNK_MISSING;
         }
-        return chunk.getHeight(HEIGHTMAP_TYPE, blockX & 15, blockZ & 15) + 1;
+
+        int heightTop = chunk.getHeight(HEIGHTMAP_TYPE, blockX & 15, blockZ & 15) + 1;
+        cache.heights.put(columnKey, heightTop);
+        return heightTop;
     }
 
     private static double solveEntryDistance(double tEnter, double tExit, double startY, double dirY, int minBuildHeight, int heightTop) {
@@ -192,37 +224,39 @@ public class HeightMapRaycast implements RayCast {
         return candidate <= upper ? candidate : -1.0;
     }
 
-    private static ChunkAccess getChunkCached(Level level, int chunkX, int chunkZ, ChunkCache cache) {
+    private static ChunkAccess getChunkCached(Level level, int chunkX, int chunkZ, ScanCache cache) {
         long chunkKey = ChunkPos.asLong(chunkX, chunkZ);
-        if (cache.firstKey == chunkKey) {
-            return cache.firstChunk;
+        ChunkAccess cachedChunk = cache.chunks.get(chunkKey);
+        if (cachedChunk != null) {
+            return cachedChunk;
         }
-        if (cache.secondKey == chunkKey) {
-            ChunkAccess secondChunk = cache.secondChunk;
-            // Promote second entry to first to keep the hottest chunk in slot 1.
-            cache.secondKey = cache.firstKey;
-            cache.secondChunk = cache.firstChunk;
-            cache.firstKey = chunkKey;
-            cache.firstChunk = secondChunk;
-            return secondChunk;
+        if (cache.missingChunks.contains(chunkKey)) {
+            return null;
         }
 
         if (!level.hasChunk(chunkX, chunkZ)) {
+            cache.missingChunks.add(chunkKey);
             return null;
         }
 
         ChunkAccess loadedChunk = level.getChunk(chunkX, chunkZ);
-        cache.secondKey = cache.firstKey;
-        cache.secondChunk = cache.firstChunk;
-        cache.firstKey = chunkKey;
-        cache.firstChunk = loadedChunk;
+        cache.chunks.put(chunkKey, loadedChunk);
         return loadedChunk;
     }
 
-    private static final class ChunkCache {
-        private long firstKey = Long.MIN_VALUE;
-        private ChunkAccess firstChunk;
-        private long secondKey = Long.MIN_VALUE;
-        private ChunkAccess secondChunk;
+    private static long packBlockPos2D(int x, int z) {
+        return ((long) x << 32) ^ (z & 0xFFFF_FFFFL);
+    }
+
+    private static final class ScanCache {
+        private final int minBuildHeight;
+        private final Long2ObjectOpenHashMap<ChunkAccess> chunks = new Long2ObjectOpenHashMap<>();
+        private final LongOpenHashSet missingChunks = new LongOpenHashSet();
+        private final Long2IntOpenHashMap heights = new Long2IntOpenHashMap();
+
+        private ScanCache(int minBuildHeight) {
+            this.minBuildHeight = minBuildHeight;
+            this.heights.defaultReturnValue(HEIGHT_NOT_CACHED);
+        }
     }
 }

@@ -78,6 +78,11 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(RadioReceiverBlockEntity::new,
                             ModBlocks.RADIO_RECEIVER.get()).build(null));
 
+    public static final RegistryObject<BlockEntityType<LidarScannerBlockEntity>> LIDAR_SCANNER =
+            BLOCK_ENTITIES.register("lidar_scanner",
+                    () -> BlockEntityType.Builder.of(LidarScannerBlockEntity::new,
+                            ModBlocks.LIDAR_SCANNER.get()).build(null));
+
     public static final RegistryObject<BlockEntityType<DataComparatorBlockEntity>> DATA_COMPARATOR =
             BLOCK_ENTITIES.register("data_comparator",
                     () -> BlockEntityType.Builder.of(DataComparatorBlockEntity::new,

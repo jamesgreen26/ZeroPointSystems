@@ -60,6 +60,7 @@ public class ModCreativeTabs {
                         LOUDSPEAKER,
                         RADIO_TRANSMITTER,
                         RADIO_RECEIVER,
+                        LIDAR_SCANNER,
                         RADIO_ANTENNA,
 
                         BAUXITE,

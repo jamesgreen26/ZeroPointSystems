@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "A": {
+      "item": "minecraft:spyglass"
+    },
+    "B": {
+      "tag": "forge:ingots/space_metal"
+    },
+    "C": {
+      "item": "zps:light_pipe_cable"
+    }
+  },
+  "pattern": [
+    "BBB",
+    "CAC",
+    "BBB"
+  ],
+  "result": {
+    "item": "zps:lidar_scanner",
+    "count": 1
+  },
+  "show_notification": true
+}

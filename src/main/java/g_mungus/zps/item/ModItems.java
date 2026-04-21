@@ -88,6 +88,9 @@ public class ModItems {
     public static final RegistryObject<Item> RADIO_RECEIVER = ITEMS.register("radio_receiver",
             () -> new BlockItem(ModBlocks.RADIO_RECEIVER.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> LIDAR_SCANNER = ITEMS.register("lidar_scanner",
+            () -> new BlockItem(ModBlocks.LIDAR_SCANNER.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> RADIO_ANTENNA = ITEMS.register("radio_antenna",
             () -> new RadioAntennaBlockItem(ModBlocks.RADIO_ANTENNA.get(), new Item.Properties()));
 

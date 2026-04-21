@@ -18,6 +18,7 @@
     "block.zps.data_transcriber": "Data Transcriber",
     "block.zps.radio_transmitter": "Radio Transmitter",
     "block.zps.radio_receiver": "Radio Receiver",
+    "block.zps.lidar_scanner": "Lidar Scanner",
     "block.zps.radio_antenna": "Radio Antenna",
     "block.zps.data_comparator": "Data Comparator",
     "block.zps.data_combinator": "Data Combinator",
@@ -141,6 +142,7 @@
     "item.zps.video_display": "Video Display",
     "item.zps.radio_transmitter": "Radio Transmitter",
     "item.zps.radio_receiver": "Radio Receiver",
+    "item.zps.lidar_scanner": "Lidar Scanner",
     "item.zps.radio_antenna": "Radio Antenna",
     "item.zps.data_comparator": "Data Comparator",
     "item.zps.data_combinator": "Data Combinator",
@@ -362,6 +364,7 @@
 
     "block.zps.radio_transmitter.zps_tooltip": "Transmits a radio signal with data from a [Light-Pipe Data Cable].\n\nTune the radio frequency with [Shift + Right Click]. Higher frequencies have a longer range and require a taller [Radio Antenna] on top.",
     "block.zps.radio_receiver.zps_tooltip": "Receives a radio signal and sends the data over a [Light-Pipe Data Cable].\n\nTune the radio frequency with [Shift + Right Click]. Higher frequencies have a longer range and require a taller [Radio Antenna] on top.",
+    "block.zps.lidar_scanner.zps_tooltip": "Scans the terrain in front of it and sends a 30x30 depth map through a [Light-Pipe Data Cable].\n\nNear hits appear red on a [Video Display], while far or no-hit rays appear blue.",
 
     "block.zps.loudspeaker.zps_tooltip": "Converts messages from a [Light-Pipe Data Cable] into spoken audio.",
 

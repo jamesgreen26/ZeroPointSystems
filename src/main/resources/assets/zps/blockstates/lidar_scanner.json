@@ -1,0 +1,82 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "facing": "north",
+        "powered": "false"
+      },
+      "apply": {
+        "model": "zps:block/lidar_scanner"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "powered": "false"
+      },
+      "apply": {
+        "model": "zps:block/lidar_scanner",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "powered": "false"
+      },
+      "apply": {
+        "model": "zps:block/lidar_scanner",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "powered": "false"
+      },
+      "apply": {
+        "model": "zps:block/lidar_scanner",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "powered": "true"
+      },
+      "apply": {
+        "model": "zps:block/lidar_scanner_on"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "powered": "true"
+      },
+      "apply": {
+        "model": "zps:block/lidar_scanner_on",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "powered": "true"
+      },
+      "apply": {
+        "model": "zps:block/lidar_scanner_on",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "powered": "true"
+      },
+      "apply": {
+        "model": "zps:block/lidar_scanner_on",
+        "y": 270
+      }
+    }
+  ]
+}

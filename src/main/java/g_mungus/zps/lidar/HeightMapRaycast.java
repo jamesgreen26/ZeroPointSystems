@@ -1,6 +1,5 @@
 package g_mungus.zps.lidar;
 
-import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.util.Mth;
@@ -14,7 +13,6 @@ public class HeightMapRaycast implements RayCast {
     public static final HeightMapRaycast INSTANCE = new HeightMapRaycast();
     private static final Heightmap.Types HEIGHTMAP_TYPE = Heightmap.Types.MOTION_BLOCKING;
     private static final double EPSILON = 1.0E-12;
-    private static final int HEIGHT_NOT_CACHED = Integer.MIN_VALUE;
     private static final int HEIGHT_CHUNK_MISSING = Integer.MIN_VALUE + 1;
 
 
@@ -149,23 +147,17 @@ public class HeightMapRaycast implements RayCast {
     }
 
     private static int getHeightTop(Level level, int blockX, int blockZ, ScanCache cache) {
-        long columnKey = packBlockPos2D(blockX, blockZ);
-        int cachedHeight = cache.heights.get(columnKey);
-        if (cachedHeight != HEIGHT_NOT_CACHED || cache.heights.containsKey(columnKey)) {
-            return cachedHeight;
-        }
-
         int chunkX = blockX >> 4;
         int chunkZ = blockZ >> 4;
-        ChunkAccess chunk = getChunkCached(level, chunkX, chunkZ, cache);
-        if (chunk == null) {
-            cache.heights.put(columnKey, HEIGHT_CHUNK_MISSING);
+        CachedChunk cachedChunk = getChunkCached(level, chunkX, chunkZ, cache);
+        if (cachedChunk == null) {
             return HEIGHT_CHUNK_MISSING;
         }
 
-        int heightTop = chunk.getHeight(HEIGHTMAP_TYPE, blockX & 15, blockZ & 15) + 1;
-        cache.heights.put(columnKey, heightTop);
-        return heightTop;
+        int localX = blockX & 15;
+        int localZ = blockZ & 15;
+        int index = (localZ << 4) | localX;
+        return cachedChunk.heights[index];
     }
 
     private static double solveEntryDistance(double tEnter, double tExit, double startY, double dirY, int minBuildHeight, int heightTop) {
@@ -224,9 +216,9 @@ public class HeightMapRaycast implements RayCast {
         return candidate <= upper ? candidate : -1.0;
     }
 
-    private static ChunkAccess getChunkCached(Level level, int chunkX, int chunkZ, ScanCache cache) {
+    private static CachedChunk getChunkCached(Level level, int chunkX, int chunkZ, ScanCache cache) {
         long chunkKey = ChunkPos.asLong(chunkX, chunkZ);
-        ChunkAccess cachedChunk = cache.chunks.get(chunkKey);
+        CachedChunk cachedChunk = cache.chunks.get(chunkKey);
         if (cachedChunk != null) {
             return cachedChunk;
         }
@@ -240,23 +232,30 @@ public class HeightMapRaycast implements RayCast {
         }
 
         ChunkAccess loadedChunk = level.getChunk(chunkX, chunkZ);
-        cache.chunks.put(chunkKey, loadedChunk);
-        return loadedChunk;
-    }
-
-    private static long packBlockPos2D(int x, int z) {
-        return ((long) x << 32) ^ (z & 0xFFFF_FFFFL);
+        CachedChunk wrappedChunk = new CachedChunk(loadedChunk);
+        cache.chunks.put(chunkKey, wrappedChunk);
+        return wrappedChunk;
     }
 
     private static final class ScanCache {
         private final int minBuildHeight;
-        private final Long2ObjectOpenHashMap<ChunkAccess> chunks = new Long2ObjectOpenHashMap<>();
+        private final Long2ObjectOpenHashMap<CachedChunk> chunks = new Long2ObjectOpenHashMap<>();
         private final LongOpenHashSet missingChunks = new LongOpenHashSet();
-        private final Long2IntOpenHashMap heights = new Long2IntOpenHashMap();
 
         private ScanCache(int minBuildHeight) {
             this.minBuildHeight = minBuildHeight;
-            this.heights.defaultReturnValue(HEIGHT_NOT_CACHED);
+        }
+    }
+
+    private static final class CachedChunk {
+        private final int[] heights = new int[16 * 16];
+
+        private CachedChunk(ChunkAccess chunk) {
+            for (int localZ = 0; localZ < 16; localZ++) {
+                for (int localX = 0; localX < 16; localX++) {
+                    heights[(localZ << 4) | localX] = chunk.getHeight(HEIGHTMAP_TYPE, localX, localZ) + 1;
+                }
+            }
         }
     }
 }

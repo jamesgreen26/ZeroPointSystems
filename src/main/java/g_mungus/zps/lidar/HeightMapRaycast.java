@@ -10,69 +10,186 @@ import net.minecraft.world.phys.Vec3;
 public class HeightMapRaycast implements RayCast {
     public static final HeightMapRaycast INSTANCE = new HeightMapRaycast();
     private static final Heightmap.Types HEIGHTMAP_TYPE = Heightmap.Types.MOTION_BLOCKING;
+    private static final double EPSILON = 1.0E-12;
 
 
-    /// Approximates a raycast and returns the distance of the first intersection of the volumes formed between
-    /// the bottom of build height (underneath bedrock) and the top of the height map
+    /// Returns the first ray entry into the volume formed between min build height and the motion-blocking heightmap.
     public double invoke(Level level, Vec3 start, Vec3 dir, double length) {
-        if (length <= 0.0 || dir.lengthSqr() < 1.0E-10) {
+        double dirLengthSqr = dir.lengthSqr();
+        if (length <= 0.0 || dirLengthSqr < 1.0E-10) {
             return -1.0;
         }
 
-        Vec3 normalizedDir = dir.normalize();
-        double stepSize = 0.25;
-        int sampleCount = Mth.ceil(length / stepSize);
+        double invDirLength = 1.0 / Math.sqrt(dirLengthSqr);
+        double dirX = dir.x * invDirLength;
+        double dirY = dir.y * invDirLength;
+        double dirZ = dir.z * invDirLength;
+
+        double startX = start.x;
+        double startY = start.y;
+        double startZ = start.z;
+
         int minBuildHeight = level.getMinBuildHeight();
         ChunkCache cache = new ChunkCache();
 
-        double previousDistance = 0.0;
-        if (isInsideHeightMapVolume(level, start, minBuildHeight, cache)) {
+        if (isInsideHeightMapVolume(level, startX, startY, startZ, minBuildHeight, cache)) {
             return 0.0;
         }
 
-        for (int i = 1; i <= sampleCount; i++) {
-            double sampleDistance = Math.min(i * stepSize, length);
-            Vec3 samplePoint = start.add(normalizedDir.scale(sampleDistance));
-            boolean inside = isInsideHeightMapVolume(level, samplePoint, minBuildHeight, cache);
+        int stepX = dirX > EPSILON ? 1 : dirX < -EPSILON ? -1 : 0;
+        int stepZ = dirZ > EPSILON ? 1 : dirZ < -EPSILON ? -1 : 0;
 
-            if (inside) {
-                // Refine entry point between the previous sample and this sample.
-                double low = previousDistance;
-                double high = sampleDistance;
-                for (int j = 0; j < 10; j++) {
-                    double mid = (low + high) * 0.5;
-                    Vec3 midPoint = start.add(normalizedDir.scale(mid));
-                    if (isInsideHeightMapVolume(level, midPoint, minBuildHeight, cache)) {
-                        high = mid;
-                    } else {
-                        low = mid;
-                    }
+        // Vertical ray: only a single XZ column is visited.
+        if (stepX == 0 && stepZ == 0) {
+            int blockX = Mth.floor(startX);
+            int blockZ = Mth.floor(startZ);
+            int heightTop = getHeightTop(level, blockX, blockZ, cache);
+            if (heightTop == Integer.MIN_VALUE) {
+                return -1.0;
+            }
+            return solveEntryDistance(0.0, length, startY, dirY, minBuildHeight, heightTop);
+        }
+
+        int blockX = Mth.floor(startX);
+        int blockZ = Mth.floor(startZ);
+
+        double tDeltaX;
+        double tMaxX;
+        if (stepX > 0) {
+            tDeltaX = 1.0 / dirX;
+            tMaxX = ((blockX + 1.0) - startX) / dirX;
+        } else if (stepX < 0) {
+            tDeltaX = 1.0 / -dirX;
+            tMaxX = (startX - blockX) / -dirX;
+        } else {
+            tDeltaX = Double.POSITIVE_INFINITY;
+            tMaxX = Double.POSITIVE_INFINITY;
+        }
+
+        double tDeltaZ;
+        double tMaxZ;
+        if (stepZ > 0) {
+            tDeltaZ = 1.0 / dirZ;
+            tMaxZ = ((blockZ + 1.0) - startZ) / dirZ;
+        } else if (stepZ < 0) {
+            tDeltaZ = 1.0 / -dirZ;
+            tMaxZ = (startZ - blockZ) / -dirZ;
+        } else {
+            tDeltaZ = Double.POSITIVE_INFINITY;
+            tMaxZ = Double.POSITIVE_INFINITY;
+        }
+
+        double t = 0.0;
+        while (t <= length) {
+            double tExit = Math.min(length, Math.min(tMaxX, tMaxZ));
+
+            int heightTop = getHeightTop(level, blockX, blockZ, cache);
+            if (heightTop != Integer.MIN_VALUE) {
+                double hitDistance = solveEntryDistance(t, tExit, startY, dirY, minBuildHeight, heightTop);
+                if (hitDistance >= 0.0) {
+                    return hitDistance;
                 }
-                return high;
             }
 
-            previousDistance = sampleDistance;
+            if (tExit >= length) {
+                break;
+            }
+
+            boolean advanceX = tMaxX <= tMaxZ;
+            boolean advanceZ = tMaxZ <= tMaxX;
+            if (advanceX) {
+                blockX += stepX;
+                tMaxX += tDeltaX;
+            }
+            if (advanceZ) {
+                blockZ += stepZ;
+                tMaxZ += tDeltaZ;
+            }
+            t = tExit;
         }
 
         return -1.0;
     }
 
-    private static boolean isInsideHeightMapVolume(Level level, Vec3 point, int minBuildHeight, ChunkCache cache) {
-        if (point.y < minBuildHeight) {
+    private static boolean isInsideHeightMapVolume(Level level, double x, double y, double z, int minBuildHeight, ChunkCache cache) {
+        if (y < minBuildHeight) {
             return false;
         }
 
-        int x = Mth.floor(point.x);
-        int z = Mth.floor(point.z);
-        int chunkX = x >> 4;
-        int chunkZ = z >> 4;
+        int blockX = Mth.floor(x);
+        int blockZ = Mth.floor(z);
+        int heightTop = getHeightTop(level, blockX, blockZ, cache);
+        if (heightTop == Integer.MIN_VALUE) {
+            return false;
+        }
+
+        return y < heightTop;
+    }
+
+    private static int getHeightTop(Level level, int blockX, int blockZ, ChunkCache cache) {
+        int chunkX = blockX >> 4;
+        int chunkZ = blockZ >> 4;
         ChunkAccess chunk = getChunkCached(level, chunkX, chunkZ, cache);
         if (chunk == null) {
-            return false;
+            return Integer.MIN_VALUE;
+        }
+        return chunk.getHeight(HEIGHTMAP_TYPE, blockX & 15, blockZ & 15) + 1;
+    }
+
+    private static double solveEntryDistance(double tEnter, double tExit, double startY, double dirY, int minBuildHeight, int heightTop) {
+        if (tExit < tEnter) {
+            return -1.0;
         }
 
-        int heightTop = chunk.getHeight(HEIGHTMAP_TYPE, x & 15, z & 15) + 1;
-        return point.y < heightTop;
+        double lower = tEnter;
+        boolean lowerStrict = false;
+        double upper = tExit;
+        boolean upperStrict = false;
+
+        if (dirY > EPSILON) {
+            double minBound = (minBuildHeight - startY) / dirY;
+            if (minBound > lower) {
+                lower = minBound;
+                lowerStrict = false;
+            }
+
+            double topBound = (heightTop - startY) / dirY;
+            if (topBound < upper) {
+                upper = topBound;
+                upperStrict = true;
+            } else if (topBound == upper) {
+                upperStrict = true;
+            }
+        } else if (dirY < -EPSILON) {
+            double minBound = (minBuildHeight - startY) / dirY;
+            if (minBound < upper) {
+                upper = minBound;
+                upperStrict = false;
+            }
+
+            double topBound = (heightTop - startY) / dirY;
+            if (topBound > lower) {
+                lower = topBound;
+                lowerStrict = true;
+            } else if (topBound == lower) {
+                lowerStrict = true;
+            }
+        } else if (startY < minBuildHeight || startY >= heightTop) {
+            return -1.0;
+        }
+
+        if (lower > upper) {
+            return -1.0;
+        }
+        if (lower == upper && (lowerStrict || upperStrict)) {
+            return -1.0;
+        }
+
+        double candidate = lowerStrict ? Math.nextUp(lower) : lower;
+        if (upperStrict) {
+            return candidate < upper ? candidate : -1.0;
+        }
+        return candidate <= upper ? candidate : -1.0;
     }
 
     private static ChunkAccess getChunkCached(Level level, int chunkX, int chunkZ, ChunkCache cache) {

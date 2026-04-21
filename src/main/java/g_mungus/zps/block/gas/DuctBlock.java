@@ -4,6 +4,8 @@ import g_mungus.zps.block.gas.core.KNodeBlockImpl;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -25,5 +27,20 @@ public class DuctBlock extends KNodeBlockImpl implements EntityBlock {
     @Override
     public @Nullable BlockEntity newBlockEntity(@NotNull BlockPos blockPos, @NotNull BlockState blockState) {
         return ModBlockEntities.DUCT.get().create(blockPos, blockState);
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public void neighborChanged(
+            @NotNull BlockState state,
+            @NotNull Level level,
+            @NotNull BlockPos pos,
+            @NotNull Block block,
+            @NotNull BlockPos fromPos,
+            boolean isMoving
+    ) {
+        super.neighborChanged(state, level, pos, block, fromPos, isMoving);
+
+
     }
 }

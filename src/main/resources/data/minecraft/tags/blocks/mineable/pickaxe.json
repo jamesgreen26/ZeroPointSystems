@@ -22,6 +22,7 @@
     "zps:data_combinator",
     "zps:data_lectern",
     "zps:text_display",
+    "zps:video_display",
     "zps:data_transcriber",
     "zps:radio_transmitter",
     "zps:radio_receiver",

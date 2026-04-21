@@ -96,6 +96,10 @@
     "mass": 500
   },
   {
+    "block": "zps:video_display",
+    "mass": 500
+  },
+  {
     "block": "zps:radio_transmitter",
     "mass": 500
   },

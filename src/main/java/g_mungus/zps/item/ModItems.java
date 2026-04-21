@@ -74,6 +74,9 @@ public class ModItems {
     public static final RegistryObject<Item> TEXT_DISPLAY = ITEMS.register("text_display",
             () -> new BlockItem(ModBlocks.TEXT_DISPLAY.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> VIDEO_DISPLAY = ITEMS.register("video_display",
+            () -> new BlockItem(ModBlocks.VIDEO_DISPLAY.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> LOUDSPEAKER = ITEMS.register("loudspeaker",
             () -> new BlockItem(ModBlocks.LOUDSPEAKER.get(), new Item.Properties()));
 

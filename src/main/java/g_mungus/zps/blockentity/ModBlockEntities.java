@@ -58,6 +58,11 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(TextDisplayBlockEntity::new,
                             ModBlocks.TEXT_DISPLAY.get()).build(null));
 
+    public static final RegistryObject<BlockEntityType<VideoDisplayBlockEntity>> VIDEO_DISPLAY =
+            BLOCK_ENTITIES.register("video_display",
+                    () -> BlockEntityType.Builder.of(VideoDisplayBlockEntity::new,
+                            ModBlocks.VIDEO_DISPLAY.get()).build(null));
+
     public static final RegistryObject<BlockEntityType<DataTranscriberBlockEntity>> DATA_TRANSCRIBER =
             BLOCK_ENTITIES.register("data_transcriber",
                     () -> BlockEntityType.Builder.of(DataTranscriberBlockEntity::new,

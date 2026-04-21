@@ -112,6 +112,12 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
 
+    public static final RegistryObject<Block> VIDEO_DISPLAY = BLOCKS.register("video_display",
+            () -> new VideoDisplayBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+
     public static final RegistryObject<Block> DATA_TRANSCRIBER = BLOCKS.register("data_transcriber",
             () -> new DataTranscriberBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(2.0f)

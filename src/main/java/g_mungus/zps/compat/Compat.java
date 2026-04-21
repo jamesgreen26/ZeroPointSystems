@@ -13,6 +13,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -59,6 +60,14 @@ public class Compat {
         }
     }
 
+    public static RayTransform transformLidarRay(Level level, Vec3 start, Vec3 dir) {
+        if (isVSLoaded()) {
+            return VSCompat.transformLidarRay(level, start, dir);
+        } else {
+            return new RayTransform(start, dir);
+        }
+    }
+
     @SubscribeEvent
     public static void onRegisterScriptCommandsEvent(RegisterScriptCommandsEvent event) {
         if (isVSLoaded()) {
@@ -79,5 +88,8 @@ public class Compat {
         if (isCreateLoaded()) {
             CreateCompat.init(modEventBus);
         }
+    }
+
+    public record RayTransform(Vec3 start, Vec3 dir) {
     }
 }

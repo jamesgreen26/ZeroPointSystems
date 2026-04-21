@@ -10,6 +10,7 @@ import net.minecraftforge.server.command.EnumArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3d;
@@ -32,6 +33,25 @@ public class VSCompat {
         if (!LidarRaycasts.raycasters.contains(ShipRaycast.INSTANCE)) {
             LidarRaycasts.raycasters.add(ShipRaycast.INSTANCE);
         }
+    }
+
+    static Compat.RayTransform transformLidarRay(Level level, Vec3 start, Vec3 dir) {
+        Ship ship = VSGameUtilsKt.getShipManagingPos(level, start.x, start.y, start.z);
+        if (ship == null) {
+            return new Compat.RayTransform(start, dir);
+        }
+
+        var transform = ship.getTransform();
+        var shipToWorld = transform.getShipToWorld();
+
+        Vector3d transformedStart = shipToWorld.transformPosition(new Vector3d(start.x, start.y, start.z));
+        Vector3d transformedDir = shipToWorld.transformDirection(new Vector3d(dir.x, dir.y, dir.z));
+        transformedDir.normalize();
+
+        return new Compat.RayTransform(
+                new Vec3(transformedStart.x, transformedStart.y, transformedStart.z),
+                new Vec3(transformedDir.x, transformedDir.y, transformedDir.z)
+        );
     }
 
     /// Only call after verifying that VS is loaded

@@ -90,20 +90,37 @@ public class VideoDisplayBlockEntityRenderer implements BlockEntityRenderer<Vide
 
             float x = originX + col * cellSize;
             float y = originY + row * cellSize;
-            int rgb = decodeRgb565(encodedPixel);
+            int rgb = decodeWarmthColor(encodedPixel);
             addPixelQuad(consumer, pose, x, y, cellSize, rgb);
         }
 
         poseStack.popPose();
     }
 
-    // The encoded frame uses one UTF-16 code unit per pixel, packed as RGB565.
-    private static int decodeRgb565(char encodedPixel) {
-        int value = encodedPixel;
-        int red = ((value >> 11) & 0x1F) * 255 / 31;
-        int green = ((value >> 5) & 0x3F) * 255 / 63;
-        int blue = (value & 0x1F) * 255 / 31;
-        return (red << 16) | (green << 8) | blue;
+    // Converts a codepoint into a 64-entry looping warmth palette using (code - 33) mod 64.
+    // Low values are blue, middle values are green-yellow, high values are red.
+    private static int decodeWarmthColor(char encodedPixel) {
+        int value = Math.floorMod(encodedPixel - 33, 64);
+        float t = value / 63.0f;
+
+        if (t <= 0.5f) {
+            return lerpColor(0x0000FF, 0xB6FF00, t * 2.0f);
+        }
+        return lerpColor(0xB6FF00, 0xFF0000, (t - 0.5f) * 2.0f);
+    }
+
+    private static int lerpColor(int from, int to, float t) {
+        int r0 = (from >> 16) & 0xFF;
+        int g0 = (from >> 8) & 0xFF;
+        int b0 = from & 0xFF;
+        int r1 = (to >> 16) & 0xFF;
+        int g1 = (to >> 8) & 0xFF;
+        int b1 = to & 0xFF;
+
+        int r = Math.round(r0 + (r1 - r0) * t);
+        int g = Math.round(g0 + (g1 - g0) * t);
+        int b = Math.round(b0 + (b1 - b0) * t);
+        return (r << 16) | (g << 8) | b;
     }
 
     private static void addPixelQuad(VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float cellSize, int rgb) {

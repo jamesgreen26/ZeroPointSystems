@@ -5,9 +5,11 @@ import g_mungus.zps.block.ModBlocks;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
+import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
@@ -159,6 +161,12 @@ public class ModItems {
 
     public static final RegistryObject<RedstoneWandItem> REDSTONE_WAND = ITEMS.register("redstone_wand",
             () -> new RedstoneWandItem(new Item.Properties().rarity(Rarity.EPIC).stacksTo(1)));
+
+    @Nullable
+    public static final RegistryObject<Item> HEIGHTMAP_RAYCAST_DEBUGGER = FMLLoader.isProduction()
+            ? null
+            : ITEMS.register("heightmap_raycast_debugger",
+            () -> new HeightMapRayCastDebugItem(new Item.Properties().stacksTo(1)));
 
 /// DECOR ITEMS
 

@@ -268,6 +268,7 @@
     "item.zps.agate_space_plating_slab": "Agate Space Plating Slab",
     "item.zps.agate_space_plating_wall": "Agate Space Plating Wall",
     "item.zps.redstone_wand": "Redstone Wand",
+    "item.zps.heightmap_raycast_debugger": "Heightmap Raycast Debugger",
     "zps.manual.home": "Home",
     "zps.manual.executors": "Executors",
     "zps.manual.getters": "Getters",

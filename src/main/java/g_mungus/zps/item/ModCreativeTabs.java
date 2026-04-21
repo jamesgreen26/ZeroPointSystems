@@ -14,6 +14,7 @@ import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
@@ -130,6 +131,9 @@ public class ModCreativeTabs {
     public static void addToVanillaTabs(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == CreativeModeTabs.OP_BLOCKS) {
             event.accept(ModItems.REDSTONE_WAND.get());
+            if (!FMLLoader.isProduction() && ModItems.HEIGHTMAP_RAYCAST_DEBUGGER != null) {
+                event.accept(ModItems.HEIGHTMAP_RAYCAST_DEBUGGER.get());
+            }
         }
     }
 

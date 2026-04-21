@@ -12,7 +12,7 @@ import net.minecraft.world.phys.Vec3;
 
 public class HeightMapRaycast implements RayCast {
     public static final HeightMapRaycast INSTANCE = new HeightMapRaycast();
-    private static final Heightmap.Types HEIGHTMAP_TYPE = Heightmap.Types.MOTION_BLOCKING;
+    private static final Heightmap.Types HEIGHTMAP_TYPE = Heightmap.Types.OCEAN_FLOOR;
     private static final double EPSILON = 1.0E-12;
     private static final int HEIGHT_CHUNK_MISSING = Integer.MIN_VALUE + 1;
 

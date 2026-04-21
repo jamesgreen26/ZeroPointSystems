@@ -3,6 +3,7 @@ package g_mungus.zps.lidar;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.util.Mth;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -19,12 +20,12 @@ public class HeightMapRaycast implements RayCast {
     /// Returns the first ray entry into the volume formed between min build height and the motion-blocking heightmap.
     @Override
     public double invoke(Level level, Vec3 start, Vec3 dir, double length) {
-        return invoke(level, start, dir, length, new ScanCache(level.getMinBuildHeight()));
+        return invoke(level, start, dir, length, new ScanCache(level.getMinBuildHeight(), level.getMaxBuildHeight()));
     }
 
     @Override
     public Object createScanCache(Level level) {
-        return new ScanCache(level.getMinBuildHeight());
+        return new ScanCache(level.getMinBuildHeight(), level.getMaxBuildHeight());
     }
 
     @Override
@@ -51,6 +52,7 @@ public class HeightMapRaycast implements RayCast {
         double startZ = start.z;
 
         int minBuildHeight = cache.minBuildHeight;
+        int maxBuildHeight = cache.maxBuildHeight;
 
         if (isInsideHeightMapVolume(level, startX, startY, startZ, cache)) {
             return 0.0;
@@ -67,7 +69,11 @@ public class HeightMapRaycast implements RayCast {
             if (heightTop == HEIGHT_CHUNK_MISSING) {
                 return -1.0;
             }
-            return solveEntryDistance(0.0, length, startY, dirY, minBuildHeight, heightTop);
+            double heightMapHit = solveEntryDistance(0.0, length, startY, dirY, minBuildHeight, heightTop);
+            if (heightMapHit < 0.0) {
+                return -1.0;
+            }
+            return findColumnBlockStateHit(level, blockX, blockZ, 0.0, length, startY, dirY, minBuildHeight, maxBuildHeight, heightTop, cache);
         }
 
         int blockX = Mth.floor(startX);
@@ -107,7 +113,10 @@ public class HeightMapRaycast implements RayCast {
             if (heightTop != HEIGHT_CHUNK_MISSING) {
                 double hitDistance = solveEntryDistance(t, tExit, startY, dirY, minBuildHeight, heightTop);
                 if (hitDistance >= 0.0) {
-                    return hitDistance;
+                    double blockStateHit = findColumnBlockStateHit(level, blockX, blockZ, t, tExit, startY, dirY, minBuildHeight, maxBuildHeight, heightTop, cache);
+                    if (blockStateHit >= 0.0) {
+                        return blockStateHit;
+                    }
                 }
             }
 
@@ -216,6 +225,120 @@ public class HeightMapRaycast implements RayCast {
         return candidate <= upper ? candidate : -1.0;
     }
 
+    private static double findColumnBlockStateHit(
+            Level level,
+            int blockX,
+            int blockZ,
+            double tEnter,
+            double tExit,
+            double startY,
+            double dirY,
+            int minBuildHeight,
+            int maxBuildHeight,
+            int heightTop,
+            ScanCache cache
+    ) {
+        if (tExit < tEnter) {
+            return -1.0;
+        }
+
+        CachedChunk cachedChunk = getChunkCached(level, blockX >> 4, blockZ >> 4, cache);
+        if (cachedChunk == null) {
+            return -1.0;
+        }
+
+        int clampedTop = Math.min(heightTop, maxBuildHeight);
+        if (clampedTop <= minBuildHeight) {
+            return -1.0;
+        }
+
+        double lower = tEnter;
+        double upper = tExit;
+
+        if (dirY > EPSILON) {
+            double minBound = (minBuildHeight - startY) / dirY;
+            if (minBound > lower) {
+                lower = minBound;
+            }
+
+            double topBound = (clampedTop - startY) / dirY;
+            if (topBound < upper) {
+                upper = topBound;
+            }
+        } else if (dirY < -EPSILON) {
+            double minBound = (minBuildHeight - startY) / dirY;
+            if (minBound < upper) {
+                upper = minBound;
+            }
+
+            double topBound = (clampedTop - startY) / dirY;
+            if (topBound > lower) {
+                lower = topBound;
+            }
+        } else {
+            if (startY < minBuildHeight || startY >= clampedTop) {
+                return -1.0;
+            }
+        }
+
+        if (lower > upper) {
+            return -1.0;
+        }
+
+        if (dirY > EPSILON) {
+            double startSampleT = lower < upper ? Math.nextUp(lower) : lower;
+            double endSampleT = lower < upper ? Math.nextDown(upper) : upper;
+            if (endSampleT < lower) {
+                endSampleT = lower;
+            }
+
+            int yStart = Mth.floor(startY + dirY * startSampleT);
+            int yEnd = Mth.floor(startY + dirY * endSampleT);
+            yStart = Mth.clamp(yStart, minBuildHeight, clampedTop - 1);
+            yEnd = Mth.clamp(yEnd, minBuildHeight, clampedTop - 1);
+
+            for (int blockY = yStart; blockY <= yEnd; blockY++) {
+                if (isCollidableBlock(cachedChunk, blockX, blockY, blockZ, cache.mutablePos)) {
+                    double blockEntry = Math.max(lower, (blockY - startY) / dirY);
+                    return blockEntry <= upper ? blockEntry : -1.0;
+                }
+            }
+            return -1.0;
+        }
+
+        if (dirY < -EPSILON) {
+            double startSampleT = lower < upper ? Math.nextUp(lower) : lower;
+            double endSampleT = lower < upper ? Math.nextDown(upper) : upper;
+            if (endSampleT < lower) {
+                endSampleT = lower;
+            }
+
+            int yStart = Mth.floor(startY + dirY * startSampleT);
+            int yEnd = Mth.floor(startY + dirY * endSampleT);
+            yStart = Mth.clamp(yStart, minBuildHeight, clampedTop - 1);
+            yEnd = Mth.clamp(yEnd, minBuildHeight, clampedTop - 1);
+
+            for (int blockY = yStart; blockY >= yEnd; blockY--) {
+                if (isCollidableBlock(cachedChunk, blockX, blockY, blockZ, cache.mutablePos)) {
+                    double blockEntry = Math.max(lower, ((blockY + 1.0) - startY) / dirY);
+                    return blockEntry <= upper ? blockEntry : -1.0;
+                }
+            }
+            return -1.0;
+        }
+
+        int blockY = Mth.floor(startY);
+        if (blockY < minBuildHeight || blockY >= clampedTop) {
+            return -1.0;
+        }
+        return isCollidableBlock(cachedChunk, blockX, blockY, blockZ, cache.mutablePos) ? lower : -1.0;
+    }
+
+    private static boolean isCollidableBlock(CachedChunk chunk, int blockX, int blockY, int blockZ, BlockPos.MutableBlockPos mutablePos) {
+        mutablePos.set(blockX, blockY, blockZ);
+        return !chunk.chunk.getBlockState(mutablePos).getCollisionShape(chunk.chunk, mutablePos).isEmpty();
+    }
+
     private static CachedChunk getChunkCached(Level level, int chunkX, int chunkZ, ScanCache cache) {
         long chunkKey = ChunkPos.asLong(chunkX, chunkZ);
         CachedChunk cachedChunk = cache.chunks.get(chunkKey);
@@ -239,18 +362,23 @@ public class HeightMapRaycast implements RayCast {
 
     private static final class ScanCache {
         private final int minBuildHeight;
+        private final int maxBuildHeight;
         private final Long2ObjectOpenHashMap<CachedChunk> chunks = new Long2ObjectOpenHashMap<>();
         private final LongOpenHashSet missingChunks = new LongOpenHashSet();
+        private final BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
 
-        private ScanCache(int minBuildHeight) {
+        private ScanCache(int minBuildHeight, int maxBuildHeight) {
             this.minBuildHeight = minBuildHeight;
+            this.maxBuildHeight = maxBuildHeight;
         }
     }
 
     private static final class CachedChunk {
+        private final ChunkAccess chunk;
         private final int[] heights = new int[16 * 16];
 
         private CachedChunk(ChunkAccess chunk) {
+            this.chunk = chunk;
             for (int localZ = 0; localZ < 16; localZ++) {
                 for (int localX = 0; localX < 16; localX++) {
                     heights[(localZ << 4) | localX] = chunk.getHeight(HEIGHTMAP_TYPE, localX, localZ) + 1;

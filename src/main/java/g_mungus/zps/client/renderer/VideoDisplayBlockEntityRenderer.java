@@ -103,10 +103,17 @@ public class VideoDisplayBlockEntityRenderer implements BlockEntityRenderer<Vide
         int value = Math.floorMod(encodedPixel - 33, 64);
         float t = value / 63.0f;
 
+        int rgb;
         if (t <= 0.5f) {
-            return lerpColor(0x0000FF, 0xB6FF00, t * 2.0f);
+            rgb = lerpColor(0x0000FF, 0xB6FF00, t * 2.0f);
+        } else {
+            rgb = lerpColor(0xB6FF00, 0xFF0000, (t - 0.5f) * 2.0f);
         }
-        return lerpColor(0xB6FF00, 0xFF0000, (t - 0.5f) * 2.0f);
+
+        // Apply a subtle saturation dip across the yellow-orange region.
+        float band = smoothStep(0.42f, 0.62f, t) - smoothStep(0.72f, 0.90f, t);
+        float desaturation = 0.16f * Math.max(0.0f, band);
+        return desaturate(rgb, desaturation);
     }
 
     private static int lerpColor(int from, int to, float t) {
@@ -121,6 +128,24 @@ public class VideoDisplayBlockEntityRenderer implements BlockEntityRenderer<Vide
         int g = Math.round(g0 + (g1 - g0) * t);
         int b = Math.round(b0 + (b1 - b0) * t);
         return (r << 16) | (g << 8) | b;
+    }
+
+    private static float smoothStep(float edge0, float edge1, float x) {
+        float t = (x - edge0) / (edge1 - edge0);
+        t = Math.max(0.0f, Math.min(1.0f, t));
+        return t * t * (3.0f - 2.0f * t);
+    }
+
+    private static int desaturate(int rgb, float amount) {
+        int r = (rgb >> 16) & 0xFF;
+        int g = (rgb >> 8) & 0xFF;
+        int b = rgb & 0xFF;
+
+        float gray = 0.299f * r + 0.587f * g + 0.114f * b;
+        int outR = Math.round(r + (gray - r) * amount);
+        int outG = Math.round(g + (gray - g) * amount);
+        int outB = Math.round(b + (gray - b) * amount);
+        return (outR << 16) | (outG << 8) | outB;
     }
 
     private static void addPixelQuad(VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float cellSize, int rgb) {

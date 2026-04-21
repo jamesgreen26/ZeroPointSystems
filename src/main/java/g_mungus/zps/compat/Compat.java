@@ -25,6 +25,7 @@ import shipwrights.genesis.space.Celestial;
 public class Compat {
 
     public static final String ZPL_MOD_ID = "zpl";
+    public static final long NO_SOURCE_SHIP_ID = Long.MIN_VALUE;
 
     public static final ResourceKey<Registry<Celestial>> CELESTIALS_KEY = ResourceKey.createRegistryKey(ResourceLocation.fromNamespaceAndPath("genesis", "celestials"));
 
@@ -64,7 +65,7 @@ public class Compat {
         if (isVSLoaded()) {
             return VSCompat.transformLidarRay(level, start, dir);
         } else {
-            return new RayTransform(start, dir);
+            return new RayTransform(start, dir, NO_SOURCE_SHIP_ID);
         }
     }
 
@@ -90,6 +91,6 @@ public class Compat {
         }
     }
 
-    public record RayTransform(Vec3 start, Vec3 dir) {
+    public record RayTransform(Vec3 start, Vec3 dir, long sourceShipId) {
     }
 }

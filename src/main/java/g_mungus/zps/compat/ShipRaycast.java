@@ -21,6 +21,13 @@ public class ShipRaycast implements RayCast {
 
     @Override
     public double invoke(Level level, Vec3 start, Vec3 dir, double length) {
+        var sourceShip = VSGameUtilsKt.getShipManagingPos(level, start.x, start.y, start.z);
+        long sourceShipId = sourceShip == null ? Compat.NO_SOURCE_SHIP_ID : sourceShip.getId();
+        return invoke(level, start, dir, length, sourceShipId);
+    }
+
+    @Override
+    public double invoke(Level level, Vec3 start, Vec3 dir, double length, long sourceShipId) {
         if (length <= 0.0 || dir.lengthSqr() < 1.0E-10) {
             return -1.0;
         }
@@ -38,6 +45,10 @@ public class ShipRaycast implements RayCast {
 
         double bestDistance = Double.MAX_VALUE;
         for (var ship : VSGameUtilsKt.getShipsIntersecting(level, queryAabb)) {
+            if (ship.getId() == sourceShipId) {
+                continue;
+            }
+
             RayInterval interval = rayAabbIntersection(start, normalizedDir, length, ship.getWorldAABB());
             if (interval == null || interval.enter() >= bestDistance) {
                 continue;

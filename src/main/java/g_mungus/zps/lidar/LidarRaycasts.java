@@ -22,14 +22,15 @@ public class LidarRaycasts {
         Compat.RayTransform transform = Compat.transformLidarRay(level, start, dir);
         Vec3 transformedStart = transform.start();
         Vec3 transformedDir = transform.dir();
+        long sourceShipId = transform.sourceShipId();
 
         double result = Double.MAX_VALUE;
 
         for (var raycaster : raycasters) {
             Object rayCache = scanContext == null ? null : scanContext.getOrCreateCache(level, raycaster);
             double dist = rayCache == null
-                    ? raycaster.invoke(level, transformedStart, transformedDir, length)
-                    : raycaster.invokeWithCache(level, transformedStart, transformedDir, length, rayCache);
+                    ? raycaster.invoke(level, transformedStart, transformedDir, length, sourceShipId)
+                    : raycaster.invokeWithCache(level, transformedStart, transformedDir, length, rayCache, sourceShipId);
 
             if (dist == 0.0) {
                 return 0.0;

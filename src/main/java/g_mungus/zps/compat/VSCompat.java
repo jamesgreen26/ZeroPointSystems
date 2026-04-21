@@ -38,7 +38,7 @@ public class VSCompat {
     static Compat.RayTransform transformLidarRay(Level level, Vec3 start, Vec3 dir) {
         Ship ship = VSGameUtilsKt.getShipManagingPos(level, start.x, start.y, start.z);
         if (ship == null) {
-            return new Compat.RayTransform(start, dir);
+            return new Compat.RayTransform(start, dir, Compat.NO_SOURCE_SHIP_ID);
         }
 
         var transform = ship.getTransform();
@@ -50,7 +50,8 @@ public class VSCompat {
 
         return new Compat.RayTransform(
                 new Vec3(transformedStart.x, transformedStart.y, transformedStart.z),
-                new Vec3(transformedDir.x, transformedDir.y, transformedDir.z)
+                new Vec3(transformedDir.x, transformedDir.y, transformedDir.z),
+                ship.getId()
         );
     }
 

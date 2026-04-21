@@ -1,6 +1,6 @@
 package g_mungus.zps.item;
 
-import g_mungus.zps.lidar.RayCast;
+import g_mungus.zps.lidar.HeightMapRaycast;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
@@ -30,7 +30,7 @@ public class HeightMapRayCastDebugItem extends Item {
 
         Vec3 start = player.getEyePosition();
         Vec3 direction = player.getLookAngle();
-        double distance = RayCast.heightMapRayCast(serverLevel, start, direction, MAX_CAST_DISTANCE);
+        double distance = HeightMapRaycast.INSTANCE.invoke(serverLevel, start, direction, MAX_CAST_DISTANCE);
 
         if (distance < 0.0) {
             player.sendSystemMessage(Component.literal(

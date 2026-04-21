@@ -28,13 +28,16 @@ public class LidarScannerBlockEntity extends NetworkTerminalImpl implements Ligh
 
     private static final int GRID_SIZE = 30;
     private static final int TOTAL_RAYS = GRID_SIZE * GRID_SIZE;
-    private static final int TICK_FREQUENCY = 2;
+    private static final int TICK_FREQUENCY = 4;
+    private static final long SCAN_CACHE_LIFETIME_TICKS = 20L * 5L;
     private static final double MAX_CAST_DISTANCE = 512.0;
     private static final double HALF_FOV_DEGREES = 30.0;
     private static final double SPREAD = Math.tan(Math.toRadians(HALF_FOV_DEGREES));
 
     private final int tickOffset = new Random().nextInt(TICK_FREQUENCY);
     private String currentDisplayText = "";
+    private @Nullable LidarRaycasts.ScanContext cachedScanContext;
+    private long cachedScanContextExpiresAtGameTime = Long.MIN_VALUE;
 
     public LidarScannerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.LIDAR_SCANNER.get(), pos, state);
@@ -79,7 +82,7 @@ public class LidarScannerBlockEntity extends NetworkTerminalImpl implements Ligh
         Vec3 up = new Vec3(0.0, 1.0, 0.0);
 
         Vec3 start = Vec3.atCenterOf(getBlockPos()).add(forward.scale(0.55));
-        LidarRaycasts.ScanContext scanContext = new LidarRaycasts.ScanContext();
+        LidarRaycasts.ScanContext scanContext = getScanContext(level);
 
         StringBuilder encoded = new StringBuilder(TOTAL_RAYS);
         boolean hit = false;
@@ -96,6 +99,15 @@ public class LidarScannerBlockEntity extends NetworkTerminalImpl implements Ligh
             }
         }
         return new ScanResult(encoded.toString(), hit);
+    }
+
+    private LidarRaycasts.ScanContext getScanContext(ServerLevel level) {
+        long gameTime = level.getGameTime();
+        if (cachedScanContext == null || gameTime >= cachedScanContextExpiresAtGameTime) {
+            cachedScanContext = new LidarRaycasts.ScanContext();
+            cachedScanContextExpiresAtGameTime = gameTime + SCAN_CACHE_LIFETIME_TICKS;
+        }
+        return cachedScanContext;
     }
 
     private static char encodeDistance(double distance) {

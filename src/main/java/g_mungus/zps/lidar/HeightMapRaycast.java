@@ -54,10 +54,6 @@ public class HeightMapRaycast implements RayCast {
         int minBuildHeight = cache.minBuildHeight;
         int maxBuildHeight = cache.maxBuildHeight;
 
-        if (isInsideHeightMapVolume(level, startX, startY, startZ, cache)) {
-            return 0.0;
-        }
-
         int stepX = dirX > EPSILON ? 1 : dirX < -EPSILON ? -1 : 0;
         int stepZ = dirZ > EPSILON ? 1 : dirZ < -EPSILON ? -1 : 0;
 
@@ -138,21 +134,6 @@ public class HeightMapRaycast implements RayCast {
         }
 
         return -1.0;
-    }
-
-    private static boolean isInsideHeightMapVolume(Level level, double x, double y, double z, ScanCache cache) {
-        if (y < cache.minBuildHeight) {
-            return false;
-        }
-
-        int blockX = Mth.floor(x);
-        int blockZ = Mth.floor(z);
-        int heightTop = getHeightTop(level, blockX, blockZ, cache);
-        if (heightTop == HEIGHT_CHUNK_MISSING) {
-            return false;
-        }
-
-        return y < heightTop;
     }
 
     private static int getHeightTop(Level level, int blockX, int blockZ, ScanCache cache) {
@@ -286,11 +267,9 @@ public class HeightMapRaycast implements RayCast {
         }
 
         if (dirY > EPSILON) {
-            double startSampleT = lower < upper ? Math.nextUp(lower) : lower;
-            double endSampleT = lower < upper ? Math.nextDown(upper) : upper;
-            if (endSampleT < lower) {
-                endSampleT = lower;
-            }
+            double sampleNudge = Math.max(1.0E-7, Math.ulp(startY) / Math.max(Math.abs(dirY), EPSILON));
+            double startSampleT = lower < upper ? Math.min(upper, lower + sampleNudge) : lower;
+            double endSampleT = lower < upper ? Math.max(lower, upper - sampleNudge) : upper;
 
             int yStart = Mth.floor(startY + dirY * startSampleT);
             int yEnd = Mth.floor(startY + dirY * endSampleT);
@@ -307,11 +286,9 @@ public class HeightMapRaycast implements RayCast {
         }
 
         if (dirY < -EPSILON) {
-            double startSampleT = lower < upper ? Math.nextUp(lower) : lower;
-            double endSampleT = lower < upper ? Math.nextDown(upper) : upper;
-            if (endSampleT < lower) {
-                endSampleT = lower;
-            }
+            double sampleNudge = Math.max(1.0E-7, Math.ulp(startY) / Math.max(Math.abs(dirY), EPSILON));
+            double startSampleT = lower < upper ? Math.min(upper, lower + sampleNudge) : lower;
+            double endSampleT = lower < upper ? Math.max(lower, upper - sampleNudge) : upper;
 
             int yStart = Mth.floor(startY + dirY * startSampleT);
             int yEnd = Mth.floor(startY + dirY * endSampleT);

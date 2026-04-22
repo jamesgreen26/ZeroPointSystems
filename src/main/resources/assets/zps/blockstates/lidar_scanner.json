@@ -41,6 +41,26 @@
     },
     {
       "when": {
+        "facing": "up",
+        "powered": "false"
+      },
+      "apply": {
+        "model": "zps:block/lidar_scanner",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "down",
+        "powered": "false"
+      },
+      "apply": {
+        "model": "zps:block/lidar_scanner",
+        "x": 90
+      }
+    },
+    {
+      "when": {
         "facing": "north",
         "powered": "true"
       },
@@ -76,6 +96,26 @@
       "apply": {
         "model": "zps:block/lidar_scanner_on",
         "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "up",
+        "powered": "true"
+      },
+      "apply": {
+        "model": "zps:block/lidar_scanner_on",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "down",
+        "powered": "true"
+      },
+      "apply": {
+        "model": "zps:block/lidar_scanner_on",
+        "x": 90
       }
     }
   ]

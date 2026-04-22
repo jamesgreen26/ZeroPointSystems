@@ -1,7 +1,6 @@
 package g_mungus.zps.blockentity.light_pipe;
 
 import g_mungus.zps.block.ModBlocks;
-import g_mungus.zps.block.cableNetwork.light_pipe.AbstractRadioBlock;
 import g_mungus.zps.block.cableNetwork.light_pipe.LidarScannerBlock;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.blockentity.ModBlockEntities;
@@ -33,6 +32,7 @@ public class LidarScannerBlockEntity extends NetworkTerminalImpl implements Ligh
     private static final int TOTAL_RAYS = GRID_SIZE * GRID_SIZE;
     private static final long SCAN_CACHE_LIFETIME_TICKS = 20L * 5L;
     private static final double MAX_CAST_DISTANCE = 512.0;
+    private static final double RAY_START_FACE_OFFSET = 0.5001;
     private static final double HALF_FOV_DEGREES = 30.0;
     private static final double SPREAD = Math.tan(Math.toRadians(HALF_FOV_DEGREES));
     private static final char BLANK_DISTANCE = '!';
@@ -72,7 +72,7 @@ public class LidarScannerBlockEntity extends NetworkTerminalImpl implements Ligh
             return;
         }
 
-        Direction facing = state.getValue(AbstractRadioBlock.FACING);
+        Direction facing = state.getValue(LidarScannerBlock.FACING);
         if (frameFacing == null) {
             frameFacing = facing;
         } else if (frameFacing != facing) {
@@ -114,7 +114,7 @@ public class LidarScannerBlockEntity extends NetworkTerminalImpl implements Ligh
         }
 
         BlockState state = getBlockState();
-        if (!state.is(ModBlocks.LIDAR_SCANNER.get()) || state.getValue(AbstractRadioBlock.FACING) != queuedScan.facing()) {
+        if (!state.is(ModBlocks.LIDAR_SCANNER.get()) || state.getValue(LidarScannerBlock.FACING) != queuedScan.facing()) {
             return;
         }
 
@@ -141,11 +141,49 @@ public class LidarScannerBlockEntity extends NetworkTerminalImpl implements Ligh
     }
 
     private ScanResult runScanRow(ServerLevel level, Direction facing, int row, LidarRaycasts.ScanContext scanContext) {
-        Vec3 forward = Vec3.atLowerCornerOf(facing.getNormal());
-        Vec3 right = Vec3.atLowerCornerOf(facing.getClockWise().getNormal());
-        Vec3 up = new Vec3(0.0, 1.0, 0.0);
+        Vec3 forward;
+        Vec3 right;
+        Vec3 up;
+        switch (facing) {
+            case NORTH -> {
+                forward = new Vec3(0.0, 0.0, -1.0);
+                right = new Vec3(1.0, 0.0, 0.0);
+                up = new Vec3(0.0, 1.0, 0.0);
+            }
+            case EAST -> {
+                forward = new Vec3(1.0, 0.0, 0.0);
+                right = new Vec3(0.0, 0.0, 1.0);
+                up = new Vec3(0.0, 1.0, 0.0);
+            }
+            case SOUTH -> {
+                forward = new Vec3(0.0, 0.0, 1.0);
+                right = new Vec3(-1.0, 0.0, 0.0);
+                up = new Vec3(0.0, 1.0, 0.0);
+            }
+            case WEST -> {
+                forward = new Vec3(-1.0, 0.0, 0.0);
+                right = new Vec3(0.0, 0.0, -1.0);
+                up = new Vec3(0.0, 1.0, 0.0);
+            }
+            case UP -> {
+                forward = new Vec3(0.0, 1.0, 0.0);
+                right = new Vec3(1.0, 0.0, 0.0);
+                up = new Vec3(0.0, 0.0, 1.0);
+            }
+            case DOWN -> {
+                forward = new Vec3(0.0, -1.0, 0.0);
+                right = new Vec3(1.0, 0.0, 0.0);
+                up = new Vec3(0.0, 0.0, -1.0);
+            }
+            default -> {
+                forward = Vec3.atLowerCornerOf(facing.getNormal());
+                Vec3 referenceUp = facing.getAxis() == Direction.Axis.Y ? new Vec3(0.0, 0.0, -1.0) : new Vec3(0.0, 1.0, 0.0);
+                right = forward.cross(referenceUp).normalize();
+                up = right.cross(forward).normalize();
+            }
+        }
 
-        Vec3 start = Vec3.atCenterOf(getBlockPos()).add(forward.scale(0.55));
+        Vec3 start = Vec3.atCenterOf(getBlockPos()).add(forward.scale(RAY_START_FACE_OFFSET));
 
         StringBuilder encoded = new StringBuilder(GRID_SIZE);
         boolean hit = false;

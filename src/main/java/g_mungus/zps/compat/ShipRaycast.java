@@ -122,7 +122,7 @@ public class ShipRaycast implements RayCast {
                     localPassLength,
                     scanCache.heightMapScanCache
             );
-            if (localHit < 0.0) {
+            if (localHit <= 0.0) {
                 continue;
             }
 

@@ -8,6 +8,7 @@ import g_mungus.zps.commands.api.ScriptGetter;
 import g_mungus.zps.commands.api.ScriptMapper;
 import g_mungus.zps.commands.api.ScriptMapper2;
 import g_mungus.zps.compat.Compat;
+import g_mungus.zps.lidar.LidarRaycasts;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
@@ -26,6 +27,12 @@ public class GenesisCompat {
     @SuppressWarnings("unchecked")
     private static Class<Registry<Celestial>> celestialsClass() {
         return (Class<Registry<Celestial>>) (Class<?>) Registry.class;
+    }
+
+    public static void init() {
+        if (!LidarRaycasts.raycasters.contains(CelestialRaycast.INSTANCE)) {
+            LidarRaycasts.raycasters.add(CelestialRaycast.INSTANCE);
+        }
     }
 
     public static void registerScriptCommands(RegisterScriptCommandsEvent event) {

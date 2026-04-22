@@ -89,6 +89,9 @@ public class Compat {
         if (isCreateLoaded()) {
             CreateCompat.init(modEventBus);
         }
+        if (isGenesisLoaded()) {
+            GenesisCompat.init();
+        }
     }
 
     public record RayTransform(Vec3 start, Vec3 dir, long sourceShipId) {

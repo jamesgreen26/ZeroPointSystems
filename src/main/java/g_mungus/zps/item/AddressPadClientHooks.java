@@ -2,6 +2,7 @@ package g_mungus.zps.item;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.client.screens.AddressPadListScreen;
 import g_mungus.zps.client.screens.AddressPadNameScreen;
 import net.createmod.catnip.outliner.Outliner;
 import net.minecraft.client.Minecraft;
@@ -18,10 +19,25 @@ public class AddressPadClientHooks {
     private static final double LABEL_RADIUS = 64.0;
     private static final double LABEL_RADIUS_SQ = LABEL_RADIUS * LABEL_RADIUS;
 
-    public static void openNameEntryScreen(net.minecraft.world.InteractionHand hand, BlockPos pos) {
+    public static void openAddressPadScreen(net.minecraft.world.InteractionHand hand, BlockPos pos) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null) return;
+        ItemStack stack = minecraft.player.getItemInHand(hand);
+        if (!(stack.getItem() instanceof AddressPadItem)) return;
+
+        if (!AddressPadItem.hasSpaceFor(stack, pos)) {
+            minecraft.setScreen(new AddressPadListScreen(hand));
+            return;
+        }
         minecraft.setScreen(new AddressPadNameScreen(hand, pos));
+    }
+
+    public static void openAddressPadListScreen(net.minecraft.world.InteractionHand hand) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null) return;
+        ItemStack stack = minecraft.player.getItemInHand(hand);
+        if (!(stack.getItem() instanceof AddressPadItem)) return;
+        minecraft.setScreen(new AddressPadListScreen(hand));
     }
 
     public static void onRenderLevelStage(RenderLevelStageEvent event) {

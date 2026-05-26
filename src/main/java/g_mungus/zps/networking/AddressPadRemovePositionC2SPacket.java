@@ -1,7 +1,6 @@
 package g_mungus.zps.networking;
 
 import g_mungus.zps.item.AddressPadItem;
-import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
@@ -9,23 +8,20 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-public record AddressPadAddPositionC2SPacket(InteractionHand hand, BlockPos pos, String name) {
-
-    public static void encode(AddressPadAddPositionC2SPacket packet, FriendlyByteBuf buffer) {
+public record AddressPadRemovePositionC2SPacket(InteractionHand hand, String name) {
+    public static void encode(AddressPadRemovePositionC2SPacket packet, FriendlyByteBuf buffer) {
         buffer.writeEnum(packet.hand);
-        buffer.writeBlockPos(packet.pos);
         buffer.writeUtf(packet.name, 64);
     }
 
-    public static AddressPadAddPositionC2SPacket decode(FriendlyByteBuf buffer) {
-        return new AddressPadAddPositionC2SPacket(
+    public static AddressPadRemovePositionC2SPacket decode(FriendlyByteBuf buffer) {
+        return new AddressPadRemovePositionC2SPacket(
                 buffer.readEnum(InteractionHand.class),
-                buffer.readBlockPos(),
                 buffer.readUtf(64)
         );
     }
 
-    public static void handle(AddressPadAddPositionC2SPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
+    public static void handle(AddressPadRemovePositionC2SPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
         NetworkEvent.Context context = contextSupplier.get();
         context.enqueueWork(() -> {
             if (context.getSender() == null) return;
@@ -36,7 +32,7 @@ public record AddressPadAddPositionC2SPacket(InteractionHand hand, BlockPos pos,
             ItemStack held = context.getSender().getItemInHand(packet.hand());
             if (!(held.getItem() instanceof AddressPadItem)) return;
 
-            AddressPadItem.putNamedPosition(held, trimmedName, packet.pos(), true);
+            AddressPadItem.removeNamedPosition(held, trimmedName);
         });
         context.setPacketHandled(true);
     }

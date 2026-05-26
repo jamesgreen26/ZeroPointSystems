@@ -156,6 +156,8 @@ public class ModItems {
 
     public static final RegistryObject<RedstoneWandItem> REDSTONE_WAND = ITEMS.register("redstone_wand",
             () -> new RedstoneWandItem(new Item.Properties().rarity(Rarity.EPIC).stacksTo(1)));
+    public static final RegistryObject<AddressPadItem> ADDRESS_PAD = ITEMS.register("address_pad",
+            () -> new AddressPadItem(new Item.Properties().stacksTo(1)));
 
 /// DECOR ITEMS
 

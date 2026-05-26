@@ -1,5 +1,6 @@
 package g_mungus.zps.client.screens;
 
+import g_mungus.zps.item.AddressPadItem;
 import g_mungus.zps.networking.AddressPadAddPositionC2SPacket;
 import g_mungus.zps.networking.ZPSGamePackets;
 import net.minecraft.client.GameNarrator;
@@ -35,7 +36,8 @@ public class AddressPadNameScreen extends Screen {
 
         this.nameField = new EditBox(this.font, centerX - 100, centerY - 10, 200, 20, LABEL);
         this.nameField.setMaxLength(64);
-        this.nameField.setResponder(value -> this.doneButton.active = !value.trim().isEmpty());
+        this.nameField.setFilter(value -> value.isEmpty() || AddressPadItem.isValidName(value));
+        this.nameField.setResponder(value -> this.doneButton.active = AddressPadItem.isValidName(value));
         this.addRenderableWidget(this.nameField);
         this.setInitialFocus(this.nameField);
 
@@ -68,7 +70,7 @@ public class AddressPadNameScreen extends Screen {
 
     private void submit() {
         String name = this.nameField.getValue().trim();
-        if (name.isEmpty()) return;
+        if (!AddressPadItem.isValidName(name)) return;
         ZPSGamePackets.INSTANCE.sendToServer(new AddressPadAddPositionC2SPacket(this.hand, this.pos, name));
         this.onClose();
     }

@@ -18,10 +18,12 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class AddressPadItem extends Item {
     private static final String POSITIONS_TAG = "positions";
     public static final int MAX_ENTRIES = 15;
+    private static final Pattern VALID_NAME = Pattern.compile("[A-Za-z0-9._]+");
 
     public AddressPadItem(Properties properties) {
         super(properties);
@@ -83,6 +85,10 @@ public class AddressPadItem extends Item {
         }
         result.sort(Comparator.comparing(Entry::name, String.CASE_INSENSITIVE_ORDER));
         return result;
+    }
+
+    public static boolean isValidName(String name) {
+        return name != null && !name.isEmpty() && VALID_NAME.matcher(name).matches();
     }
 
     private static boolean containsPosition(CompoundTag positions, BlockPos pos) {

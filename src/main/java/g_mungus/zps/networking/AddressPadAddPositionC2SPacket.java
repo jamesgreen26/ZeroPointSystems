@@ -31,7 +31,7 @@ public record AddressPadAddPositionC2SPacket(InteractionHand hand, BlockPos pos,
             if (context.getSender() == null) return;
 
             String trimmedName = packet.name().trim();
-            if (trimmedName.isEmpty()) return;
+            if (!AddressPadItem.isValidName(trimmedName)) return;
 
             ItemStack held = context.getSender().getItemInHand(packet.hand());
             if (!(held.getItem() instanceof AddressPadItem)) return;

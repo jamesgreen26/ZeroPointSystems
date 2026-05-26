@@ -12,7 +12,11 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.eventbus.api.Event;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DistExecutor;
+import net.minecraftforge.fml.common.Mod;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -20,6 +24,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Pattern;
 
+@Mod.EventBusSubscriber
 public class AddressPadItem extends Item {
     private static final String POSITIONS_TAG = "positions";
     public static final int MAX_ENTRIES = 15;
@@ -27,6 +32,13 @@ public class AddressPadItem extends Item {
 
     public AddressPadItem(Properties properties) {
         super(properties);
+    }
+
+    @SubscribeEvent
+    public static void bypassBlockInteraction(PlayerInteractEvent.RightClickBlock event) {
+        if (event.getItemStack()
+                .getItem() instanceof AddressPadItem)
+            event.setUseBlock(Event.Result.DENY);
     }
 
     @Override

@@ -71,5 +71,11 @@ public class ZPSGamePackets {
                 .decoder(HudInfoS2CPacket::decode)
                 .consumerMainThread(HudInfoS2CPacket::handle)
                 .add();
+
+        INSTANCE.messageBuilder(AddressPadAddPositionC2SPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(AddressPadAddPositionC2SPacket::encode)
+                .decoder(AddressPadAddPositionC2SPacket::decode)
+                .consumerMainThread(AddressPadAddPositionC2SPacket::handle)
+                .add();
     }
 }

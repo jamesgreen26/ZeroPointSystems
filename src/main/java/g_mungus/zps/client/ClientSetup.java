@@ -5,6 +5,7 @@ import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.client.renderer.*;
 import g_mungus.zps.entity.ModEntities;
+import g_mungus.zps.item.AddressPadClientHooks;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
@@ -14,6 +15,7 @@ import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.common.MinecraftForge;
 
 @Mod.EventBusSubscriber(value = Dist.CLIENT, modid = ZPSMod.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class ClientSetup {
@@ -44,6 +46,8 @@ public class ClientSetup {
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.SPACE_GRATING_BLOCK.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.CATWALK_STAIRS.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.CATWALK.get(), RenderType.cutout());
+
+            MinecraftForge.EVENT_BUS.addListener(AddressPadClientHooks::onRenderLevelStage);
         });
     }
 } 

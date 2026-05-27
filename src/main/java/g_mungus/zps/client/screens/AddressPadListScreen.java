@@ -34,14 +34,19 @@ public class AddressPadListScreen extends Screen {
     private static final ResourceLocation BACKGROUND_TEXTURE = ResourceLocation.fromNamespaceAndPath("zps", "textures/block/decor/riveted_space_plating.png");
     private static final int ROW_HEIGHT = 12;
     private static final int LIST_PANEL_WIDTH = 260;
-    private static final int LIST_PANEL_TOP = 2;
     private static final int LIST_PANEL_PADDING = 24;
+    private static final int TITLE_OFFSET_Y = 22;
+    private static final int LIST_OFFSET_Y = 48;
 
     private final InteractionHand hand;
     private Button copyButton;
     private Button pasteButton;
     private Button clearButton;
     private Button closeButton;
+    private int panelX;
+    private int panelY;
+    private int panelHeight;
+    private int titleY;
     private int listStartX;
     private int listStartY;
 
@@ -52,11 +57,15 @@ public class AddressPadListScreen extends Screen {
 
     @Override
     protected void init() {
-        this.listStartX = this.width / 2 - 112;
-        this.listStartY = 50;
+        this.panelHeight = LIST_OFFSET_Y + (AddressPadItem.MAX_ENTRIES * ROW_HEIGHT) + LIST_PANEL_PADDING;
+        this.panelX = (this.width - LIST_PANEL_WIDTH) / 2;
+        this.panelY = (this.height - this.panelHeight) / 2;
+        this.titleY = this.panelY + TITLE_OFFSET_Y;
+        this.listStartX = this.panelX + LIST_PANEL_PADDING;
+        this.listStartY = this.panelY + LIST_OFFSET_Y;
         int buttonSize = 20;
         int spacing = 4;
-        int columnX = this.width / 2 + 94;
+        int columnX = this.panelX + LIST_PANEL_WIDTH - buttonSize - 16;
         int topY = this.listStartY;
 
         this.copyButton = this.addRenderableWidget(Button.builder(Component.literal("C"), button -> copyEntries())
@@ -77,7 +86,7 @@ public class AddressPadListScreen extends Screen {
     public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(graphics);
         renderTexturedPanel(graphics);
-        graphics.drawCenteredString(this.font, TITLE, this.width / 2, 24, 0xFFFFFF);
+        graphics.drawCenteredString(this.font, TITLE, this.width / 2, this.titleY, 0xFFFFFF);
 
         List<AddressPadItem.Entry> entries = getEntries();
         if (entries.isEmpty()) {
@@ -123,19 +132,16 @@ public class AddressPadListScreen extends Screen {
     }
 
     private void renderTexturedPanel(GuiGraphics graphics) {
-        int panelX = this.listStartX - LIST_PANEL_PADDING;
-        int panelY = LIST_PANEL_TOP;
-        int panelHeight = (this.listStartY - panelY) + (AddressPadItem.MAX_ENTRIES * ROW_HEIGHT) + LIST_PANEL_PADDING;
         int tileSize = 16;
-        for (int y = panelY; y < panelY + panelHeight; y += tileSize) {
-            int drawHeight = Math.min(tileSize, panelY + panelHeight - y);
-            for (int x = panelX; x < panelX + LIST_PANEL_WIDTH; x += tileSize) {
-                int drawWidth = Math.min(tileSize, panelX + LIST_PANEL_WIDTH - x);
+        for (int y = this.panelY; y < this.panelY + this.panelHeight; y += tileSize) {
+            int drawHeight = Math.min(tileSize, this.panelY + this.panelHeight - y);
+            for (int x = this.panelX; x < this.panelX + LIST_PANEL_WIDTH; x += tileSize) {
+                int drawWidth = Math.min(tileSize, this.panelX + LIST_PANEL_WIDTH - x);
                 graphics.blit(BACKGROUND_TEXTURE, x, y, 0, 0, drawWidth, drawHeight, tileSize, tileSize);
             }
         }
 
-        graphics.fill(panelX, panelY, panelX + LIST_PANEL_WIDTH, panelY + panelHeight, 0x55000000);
+        graphics.fill(this.panelX, this.panelY, this.panelX + LIST_PANEL_WIDTH, this.panelY + this.panelHeight, 0x55000000);
     }
 
     @Override

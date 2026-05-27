@@ -91,7 +91,7 @@ public class AddressPadListScreen extends Screen {
 
         List<AddressPadItem.Entry> entries = getEntries();
         if (entries.isEmpty()) {
-            graphics.drawString(this.font, EMPTY, this.width / 2 - this.font.width(EMPTY) / 2, this.listStartY, 0x505050, false);
+            graphics.drawString(this.font, EMPTY, this.width / 2 - this.font.width(EMPTY) / 2, this.listStartY, 0x808080, false);
         } else {
             int startX = this.listStartX;
             int coordsRightX = this.panelX + LIST_PANEL_WIDTH - LIST_PANEL_HORIZONTAL_PADDING;

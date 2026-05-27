@@ -9,7 +9,6 @@ import net.minecraft.client.GameNarrator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -34,9 +33,9 @@ public class AddressPadListScreen extends Screen {
     public static final ResourceLocation PONDER_WIDGETS_LOC = ResourceLocation.fromNamespaceAndPath("ponder", "textures/gui/widgets.png");
     private static final ResourceLocation BACKGROUND_TEXTURE = ResourceLocation.fromNamespaceAndPath("zps", "textures/block/decor/riveted_space_plating.png");
     private static final int ROW_HEIGHT = 12;
-    private static final int LIST_PANEL_WIDTH = 228;
-    private static final int LIST_PANEL_TOP = 18;
-    private static final int LIST_PANEL_PADDING = 8;
+    private static final int LIST_PANEL_WIDTH = 260;
+    private static final int LIST_PANEL_TOP = 2;
+    private static final int LIST_PANEL_PADDING = 24;
 
     private final InteractionHand hand;
     private Button copyButton;
@@ -82,24 +81,28 @@ public class AddressPadListScreen extends Screen {
 
         List<AddressPadItem.Entry> entries = getEntries();
         if (entries.isEmpty()) {
-            graphics.drawCenteredString(this.font, EMPTY, this.width / 2, this.height / 2, 0xA0A0A0);
+            graphics.drawCenteredString(this.font, EMPTY, this.width / 2, this.listStartY, 0xA0A0A0);
         } else {
             int startX = this.listStartX;
+            int coordsRightX = this.copyButton.getX() - 6;
             int startY = this.listStartY;
             int color = 0xE0E0E0;
             int hoverColor = 0xFF8080;
 
             for (int i = 0; i < entries.size(); i++) {
                 AddressPadItem.Entry entry = entries.get(i);
-                String label = format(entry);
+                String nameText = formatName(entry.name());
+                String coordsText = formatCoords(entry);
                 int y = startY + i * ROW_HEIGHT;
-                int width = this.font.width(label);
-                boolean hovered = mouseX >= startX && mouseX <= startX + width && mouseY >= y && mouseY < y + ROW_HEIGHT;
+                int coordsX = coordsRightX - this.font.width(coordsText);
+                boolean hovered = mouseX >= startX && mouseX <= coordsRightX && mouseY >= y && mouseY < y + ROW_HEIGHT;
 
                 if (hovered) {
-                    graphics.drawString(this.font, Component.literal(label).withStyle(style -> style.withStrikethrough(true)), startX, y, hoverColor);
+                    graphics.drawString(this.font, Component.literal(nameText).withStyle(style -> style.withStrikethrough(true)), startX, y, hoverColor);
+                    graphics.drawString(this.font, Component.literal(coordsText).withStyle(style -> style.withStrikethrough(true)), coordsX, y, hoverColor);
                 } else {
-                    graphics.drawString(this.font, label, startX, y, color);
+                    graphics.drawString(this.font, nameText, startX, y, color);
+                    graphics.drawString(this.font, coordsText, coordsX, y, color);
                 }
             }
         }
@@ -141,13 +144,12 @@ public class AddressPadListScreen extends Screen {
 
         List<AddressPadItem.Entry> entries = getEntries();
         int startX = this.listStartX;
+        int coordsRightX = this.copyButton.getX() - 6;
         int startY = this.listStartY;
         for (int i = 0; i < entries.size(); i++) {
             AddressPadItem.Entry entry = entries.get(i);
-            String label = format(entry);
             int y = startY + i * ROW_HEIGHT;
-            int width = this.font.width(label);
-            boolean hovered = mouseX >= startX && mouseX <= startX + width && mouseY >= y && mouseY < y + ROW_HEIGHT;
+            boolean hovered = mouseX >= startX && mouseX <= coordsRightX && mouseY >= y && mouseY < y + ROW_HEIGHT;
             if (!hovered) continue;
 
             ZPSGamePackets.INSTANCE.sendToServer(new AddressPadRemovePositionC2SPacket(hand, entry.name()));
@@ -170,12 +172,15 @@ public class AddressPadListScreen extends Screen {
         return AddressPadItem.getSortedEntries(stack);
     }
 
-    private static String format(AddressPadItem.Entry entry) {
-        String name = entry.name();
+    private static String formatName(String name) {
         if (name.length() > DISPLAY_NAME_MAX) {
             name = name.substring(0, 14) + NAME_ELLIPSIS;
         }
-        return name + " - (" + entry.pos().getX() + ", " + entry.pos().getY() + ", " + entry.pos().getZ() + ")";
+        return name;
+    }
+
+    private static String formatCoords(AddressPadItem.Entry entry) {
+        return "(" + entry.pos().getX() + ", " + entry.pos().getY() + ", " + entry.pos().getZ() + ")";
     }
 
     private void copyEntries() {

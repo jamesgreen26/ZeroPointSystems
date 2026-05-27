@@ -33,8 +33,9 @@ public class AddressPadListScreen extends Screen {
     public static final ResourceLocation PONDER_WIDGETS_LOC = ResourceLocation.fromNamespaceAndPath("ponder", "textures/gui/widgets.png");
     private static final ResourceLocation BACKGROUND_TEXTURE = ResourceLocation.fromNamespaceAndPath("zps", "textures/block/decor/riveted_space_plating.png");
     private static final int ROW_HEIGHT = 12;
-    private static final int LIST_PANEL_WIDTH = 260;
-    private static final int LIST_PANEL_PADDING = 24;
+    private static final int LIST_PANEL_WIDTH = 212;
+    private static final int LIST_PANEL_HORIZONTAL_PADDING = 16;
+    private static final int LIST_PANEL_VERTICAL_PADDING = 24;
     private static final int TITLE_OFFSET_Y = 22;
     private static final int LIST_OFFSET_Y = 48;
 
@@ -57,15 +58,15 @@ public class AddressPadListScreen extends Screen {
 
     @Override
     protected void init() {
-        this.panelHeight = LIST_OFFSET_Y + (AddressPadItem.MAX_ENTRIES * ROW_HEIGHT) + LIST_PANEL_PADDING;
+        this.panelHeight = LIST_OFFSET_Y + (AddressPadItem.MAX_ENTRIES * ROW_HEIGHT) + LIST_PANEL_VERTICAL_PADDING;
         this.panelX = (this.width - LIST_PANEL_WIDTH) / 2;
         this.panelY = (this.height - this.panelHeight) / 2;
         this.titleY = this.panelY + TITLE_OFFSET_Y;
-        this.listStartX = this.panelX + LIST_PANEL_PADDING;
+        this.listStartX = this.panelX + LIST_PANEL_HORIZONTAL_PADDING;
         this.listStartY = this.panelY + LIST_OFFSET_Y;
         int buttonSize = 20;
         int spacing = 4;
-        int columnX = this.panelX + LIST_PANEL_WIDTH - buttonSize - 16;
+        int columnX = this.panelX + LIST_PANEL_WIDTH + 8;
         int topY = this.listStartY;
 
         this.copyButton = this.addRenderableWidget(Button.builder(Component.literal("C"), button -> copyEntries())
@@ -93,7 +94,7 @@ public class AddressPadListScreen extends Screen {
             graphics.drawCenteredString(this.font, EMPTY, this.width / 2, this.listStartY, 0xA0A0A0);
         } else {
             int startX = this.listStartX;
-            int coordsRightX = this.copyButton.getX() - 6;
+            int coordsRightX = this.panelX + LIST_PANEL_WIDTH - LIST_PANEL_HORIZONTAL_PADDING;
             int startY = this.listStartY;
             int color = 0xE0E0E0;
             int hoverColor = 0xFF8080;
@@ -150,7 +151,7 @@ public class AddressPadListScreen extends Screen {
 
         List<AddressPadItem.Entry> entries = getEntries();
         int startX = this.listStartX;
-        int coordsRightX = this.copyButton.getX() - 6;
+        int coordsRightX = this.panelX + LIST_PANEL_WIDTH - LIST_PANEL_HORIZONTAL_PADDING;
         int startY = this.listStartY;
         for (int i = 0; i < entries.size(); i++) {
             AddressPadItem.Entry entry = entries.get(i);

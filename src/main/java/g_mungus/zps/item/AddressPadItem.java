@@ -49,8 +49,10 @@ public class AddressPadItem extends Item {
         BlockState blockState = level.getBlockState(context.getClickedPos());
 
         if (blockState.getBlock() instanceof ScriptTerminalBlock) {
+            if (blockState.getValue(ScriptTerminalBlock.HAS_ADDRESS_PAD)) return InteractionResult.FAIL;
+
             return ScriptTerminalBlock.tryPlaceAddressPad(context.getPlayer(), level, context.getClickedPos(), blockState, context.getItemInHand())
-                    ? InteractionResult.sidedSuccess(level.isClientSide) : InteractionResult.PASS;
+                    ? InteractionResult.sidedSuccess(level.isClientSide) : InteractionResult.SUCCESS;
         } else if (level.isClientSide) {
             DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
                     AddressPadClientHooks.openAddressPadScreen(context.getHand(), context.getClickedPos()));

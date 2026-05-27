@@ -9,10 +9,15 @@ import g_mungus.zps.networking.ScriptComputerS2CPacket;
 import g_mungus.zps.networking.ZPSGamePackets;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.stats.Stats;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -43,6 +48,7 @@ public class ScriptTerminalBlock extends CableComponentBlock implements EntityBl
 
 
     public static final BooleanProperty CONNECTED = BooleanProperty.create("connected");
+    public static final BooleanProperty HAS_ADDRESS_PAD = BooleanProperty.create("has_address_pad");
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
 
@@ -51,13 +57,36 @@ public class ScriptTerminalBlock extends CableComponentBlock implements EntityBl
 
     public ScriptTerminalBlock(Properties arg) {
         super(arg);
-        this.registerDefaultState(this.stateDefinition.any().setValue(CONNECTED, false).setValue(FACING, Direction.NORTH).setValue(POWERED, false));
+        this.registerDefaultState(this.stateDefinition.any()
+                .setValue(CONNECTED, false)
+                .setValue(HAS_ADDRESS_PAD, false)
+                .setValue(FACING, Direction.NORTH)
+                .setValue(POWERED, false));
+    }
+
+    public static boolean tryPlaceAddressPad(Player player, Level level, BlockPos clickedPos, BlockState blockState, ItemStack itemInHand) {
+        if (player == null || itemInHand.isEmpty()) return false;
+        BlockEntity blockEntity = level.getBlockEntity(clickedPos);
+        if (!(blockEntity instanceof ScriptTerminalBlockEntity terminal)) return false;
+        if (terminal.hasAddressPad()) return false;
+
+        if (!level.isClientSide) {
+            terminal.setAddressPad(itemInHand.split(1));
+            resetAddressPadState(level, clickedPos, blockState, true);
+            level.playSound(null, clickedPos, SoundEvents.BOOK_PUT, SoundSource.BLOCKS, 1.0F, 1.0F);
+        }
+        return true;
+    }
+
+    public static void resetAddressPadState(Level level, BlockPos pos, BlockState state, boolean hasAddressPad) {
+        if (level == null || state.getBlock() != level.getBlockState(pos).getBlock()) return;
+        level.setBlock(pos, state.setValue(HAS_ADDRESS_PAD, hasAddressPad), 3);
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.@NotNull Builder<Block, BlockState> arg) {
         super.createBlockStateDefinition(arg);
-        arg.add(CONNECTED, FACING, POWERED);
+        arg.add(CONNECTED, HAS_ADDRESS_PAD, FACING, POWERED);
     }
 
     @Override
@@ -179,6 +208,18 @@ public class ScriptTerminalBlock extends CableComponentBlock implements EntityBl
     public @NotNull InteractionResult use(@NotNull BlockState arg, Level arg2, @NotNull BlockPos arg3, @NotNull Player arg4, @NotNull InteractionHand arg5, @NotNull BlockHitResult arg6) {
         BlockEntity blockEntity = arg2.getBlockEntity(arg3);
         if (blockEntity instanceof ScriptTerminalBlockEntity scriptComputer) {
+            if (arg4.isShiftKeyDown() && arg4.getItemInHand(arg5).isEmpty() && scriptComputer.hasAddressPad()) {
+                if (!arg2.isClientSide) {
+                    ItemStack removed = scriptComputer.removeAddressPad();
+                    resetAddressPadState(arg2, arg3, arg, false);
+                    if (!arg4.addItem(removed)) {
+                        popResource(arg2, arg3, removed);
+                    }
+                    arg4.awardStat(Stats.ITEM_USED.get(removed.getItem()));
+                }
+                return InteractionResult.sidedSuccess(arg2.isClientSide);
+            }
+
             if (arg4 instanceof ServerPlayer serverPlayer) {
                 ScriptComputerS2CPacket packet = new ScriptComputerS2CPacket(
                     arg3,
@@ -193,5 +234,28 @@ public class ScriptTerminalBlock extends CableComponentBlock implements EntityBl
         } else {
             return InteractionResult.PASS;
         }
+    }
+
+    @Override
+    public void onRemove(@NotNull BlockState state, Level level, @NotNull BlockPos pos, @NotNull BlockState newState, boolean moved) {
+        if (!state.is(newState.getBlock())) {
+            BlockEntity blockEntity = level.getBlockEntity(pos);
+            if (blockEntity instanceof ScriptTerminalBlockEntity terminal && terminal.hasAddressPad()) {
+                Direction direction = state.getValue(FACING);
+                ItemStack stack = terminal.removeAddressPad();
+                float xOffset = 0.25F * direction.getStepX();
+                float zOffset = 0.25F * direction.getStepZ();
+                ItemEntity itemEntity = new ItemEntity(
+                        level,
+                        pos.getX() + 0.5F + xOffset,
+                        pos.getY() + 1,
+                        pos.getZ() + 0.5F + zOffset,
+                        stack
+                );
+                itemEntity.setDefaultPickUpDelay();
+                level.addFreshEntity(itemEntity);
+            }
+        }
+        super.onRemove(state, level, pos, newState, moved);
     }
 }

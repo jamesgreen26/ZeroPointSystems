@@ -17,6 +17,10 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.Clearable;
+import net.minecraft.world.Container;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -32,9 +36,98 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements LightPipeDataSender, ScriptComputer {
+public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements LightPipeDataSender, ScriptComputer, Clearable {
+    private ItemStack addressPad = ItemStack.EMPTY;
+    private final Container addressPadAccess = new Container() {
+        @Override
+        public int getContainerSize() {
+            return 1;
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return ScriptTerminalBlockEntity.this.addressPad.isEmpty();
+        }
+
+        @Override
+        public ItemStack getItem(int slot) {
+            return slot == 0 ? ScriptTerminalBlockEntity.this.addressPad : ItemStack.EMPTY;
+        }
+
+        @Override
+        public ItemStack removeItem(int slot, int amount) {
+            if (slot != 0) return ItemStack.EMPTY;
+            ItemStack split = ScriptTerminalBlockEntity.this.addressPad.split(amount);
+            if (ScriptTerminalBlockEntity.this.addressPad.isEmpty()) {
+                ScriptTerminalBlockEntity.this.syncHasAddressPadProperty();
+                ScriptTerminalBlockEntity.this.setChanged();
+            }
+            return split;
+        }
+
+        @Override
+        public ItemStack removeItemNoUpdate(int slot) {
+            if (slot != 0) return ItemStack.EMPTY;
+            ItemStack existing = ScriptTerminalBlockEntity.this.addressPad;
+            ScriptTerminalBlockEntity.this.addressPad = ItemStack.EMPTY;
+            ScriptTerminalBlockEntity.this.syncHasAddressPadProperty();
+            ScriptTerminalBlockEntity.this.setChanged();
+            return existing;
+        }
+
+        @Override
+        public void setItem(int slot, ItemStack stack) {
+            if (slot != 0) return;
+            ScriptTerminalBlockEntity.this.addressPad = stack;
+            ScriptTerminalBlockEntity.this.syncHasAddressPadProperty();
+            ScriptTerminalBlockEntity.this.setChanged();
+        }
+
+        @Override
+        public void setChanged() {
+            ScriptTerminalBlockEntity.this.setChanged();
+        }
+
+        @Override
+        public boolean stillValid(Player player) {
+            return Container.stillValidBlockEntity(ScriptTerminalBlockEntity.this, player);
+        }
+
+        @Override
+        public void clearContent() {
+            ScriptTerminalBlockEntity.this.addressPad = ItemStack.EMPTY;
+            ScriptTerminalBlockEntity.this.syncHasAddressPadProperty();
+            ScriptTerminalBlockEntity.this.setChanged();
+        }
+    };
     public ScriptTerminalBlockEntity(BlockPos arg2, BlockState arg3) {
         super(ModBlockEntities.SCRIPT_TERMINAL.get(), arg2, arg3);
+    }
+
+    public boolean hasAddressPad() {
+        return !addressPad.isEmpty();
+    }
+
+    public ItemStack getAddressPad() {
+        return addressPad;
+    }
+
+    public void setAddressPad(ItemStack addressPad) {
+        this.addressPad = addressPad;
+        syncHasAddressPadProperty();
+        setChanged();
+    }
+
+    public ItemStack removeAddressPad() {
+        ItemStack existing = addressPad;
+        addressPad = ItemStack.EMPTY;
+        syncHasAddressPadProperty();
+        setChanged();
+        return existing;
+    }
+
+    public Container getAddressPadAccess() {
+        return addressPadAccess;
     }
 
     private String allCommands = "";
@@ -237,6 +330,9 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         tag.putBoolean("Loop", loop);
         tag.putInt("Delay", delay);
         tag.putBoolean("WasPowered", wasPowered);
+        if (!addressPad.isEmpty()) {
+            tag.put("AddressPad", addressPad.save(new net.minecraft.nbt.CompoundTag()));
+        }
     }
 
     @Override
@@ -246,6 +342,11 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         loop = tag.getBoolean("Loop");
         delay = tag.getInt("Delay");
         wasPowered = tag.getBoolean("WasPowered");
+        if (tag.contains("AddressPad", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+            addressPad = ItemStack.of(tag.getCompound("AddressPad"));
+        } else {
+            addressPad = ItemStack.EMPTY;
+        }
     }
 
     @Override
@@ -255,6 +356,9 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         tag.putBoolean("Loop", loop);
         tag.putInt("Delay", delay);
         tag.putBoolean("WasPowered", wasPowered);
+        if (!addressPad.isEmpty()) {
+            tag.put("AddressPad", addressPad.save(new net.minecraft.nbt.CompoundTag()));
+        }
         return tag;
     }
 
@@ -264,10 +368,32 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         loop = tag.getBoolean("Loop");
         delay = tag.getInt("Delay");
         wasPowered = tag.getBoolean("WasPowered");
+        if (tag.contains("AddressPad", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+            addressPad = ItemStack.of(tag.getCompound("AddressPad"));
+        } else {
+            addressPad = ItemStack.EMPTY;
+        }
+        syncHasAddressPadProperty();
     }
 
     @Override
     public String provideNextDisplayText(int length) {
         return currentCommand;
+    }
+
+    @Override
+    public void clearContent() {
+        removeAddressPad();
+    }
+
+    private void syncHasAddressPadProperty() {
+        if (level == null) return;
+        BlockState state = getBlockState();
+        if (!(state.getBlock() instanceof ScriptTerminalBlock)) return;
+
+        boolean hasAddressPad = !addressPad.isEmpty();
+        if (state.getValue(ScriptTerminalBlock.HAS_ADDRESS_PAD) == hasAddressPad) return;
+
+        ScriptTerminalBlock.resetAddressPadState(level, worldPosition, state, hasAddressPad);
     }
 }

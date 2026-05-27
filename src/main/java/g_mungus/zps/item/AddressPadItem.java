@@ -1,5 +1,6 @@
 package g_mungus.zps.item;
 
+import g_mungus.zps.block.cableNetwork.light_pipe.ScriptTerminalBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
@@ -11,6 +12,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.Event;
@@ -43,12 +45,18 @@ public class AddressPadItem extends Item {
 
     @Override
     public @NotNull InteractionResult useOn(UseOnContext context) {
-        if (context.getLevel().isClientSide) {
+        Level level = context.getLevel();
+        BlockState blockState = level.getBlockState(context.getClickedPos());
+
+        if (blockState.getBlock() instanceof ScriptTerminalBlock) {
+            return ScriptTerminalBlock.tryPlaceAddressPad(context.getPlayer(), level, context.getClickedPos(), blockState, context.getItemInHand())
+                    ? InteractionResult.sidedSuccess(level.isClientSide) : InteractionResult.PASS;
+        } else if (level.isClientSide) {
             DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
                     AddressPadClientHooks.openAddressPadScreen(context.getHand(), context.getClickedPos()));
         }
 
-        return InteractionResult.sidedSuccess(context.getLevel().isClientSide);
+        return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
     @Override

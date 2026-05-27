@@ -31,7 +31,7 @@ public class AddressPadListScreen extends Screen {
     private static List<AddressPadItem.Entry> copiedEntries = List.of();
 
     public static final ResourceLocation PONDER_WIDGETS_LOC = ResourceLocation.fromNamespaceAndPath("ponder", "textures/gui/widgets.png");
-    private static final ResourceLocation BACKGROUND_TEXTURE = ResourceLocation.fromNamespaceAndPath("zps", "textures/block/decor/riveted_space_plating.png");
+    private static final ResourceLocation BACKGROUND_TEXTURE = ResourceLocation.fromNamespaceAndPath("zps", "textures/gui/address_pad_list_panel.png");
     private static final int ROW_HEIGHT = 12;
     private static final int LIST_PANEL_WIDTH = 212;
     private static final int LIST_PANEL_HORIZONTAL_PADDING = 16;
@@ -87,16 +87,16 @@ public class AddressPadListScreen extends Screen {
     public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(graphics);
         renderTexturedPanel(graphics);
-        graphics.drawCenteredString(this.font, TITLE, this.width / 2, this.titleY, 0xFFFFFF);
+        graphics.drawString(this.font, TITLE, this.width / 2 - this.font.width(TITLE) / 2, this.titleY, 0x303030, false);
 
         List<AddressPadItem.Entry> entries = getEntries();
         if (entries.isEmpty()) {
-            graphics.drawCenteredString(this.font, EMPTY, this.width / 2, this.listStartY, 0xA0A0A0);
+            graphics.drawString(this.font, EMPTY, this.width / 2 - this.font.width(EMPTY) / 2, this.listStartY, 0x505050, false);
         } else {
             int startX = this.listStartX;
             int coordsRightX = this.panelX + LIST_PANEL_WIDTH - LIST_PANEL_HORIZONTAL_PADDING;
             int startY = this.listStartY;
-            int color = 0xE0E0E0;
+            int color = 0x303030;
             int hoverColor = 0xFF8080;
 
             for (int i = 0; i < entries.size(); i++) {
@@ -108,11 +108,11 @@ public class AddressPadListScreen extends Screen {
                 boolean hovered = mouseX >= startX && mouseX <= coordsRightX && mouseY >= y && mouseY < y + ROW_HEIGHT;
 
                 if (hovered) {
-                    graphics.drawString(this.font, Component.literal(nameText).withStyle(style -> style.withStrikethrough(true)), startX, y, hoverColor);
-                    graphics.drawString(this.font, Component.literal(coordsText).withStyle(style -> style.withStrikethrough(true)), coordsX, y, hoverColor);
+                    graphics.drawString(this.font, Component.literal(nameText).withStyle(style -> style.withStrikethrough(true)), startX, y, hoverColor, false);
+                    graphics.drawString(this.font, Component.literal(coordsText).withStyle(style -> style.withStrikethrough(true)), coordsX, y, hoverColor, false);
                 } else {
-                    graphics.drawString(this.font, nameText, startX, y, color);
-                    graphics.drawString(this.font, coordsText, coordsX, y, color);
+                    graphics.drawString(this.font, nameText, startX, y, color, false);
+                    graphics.drawString(this.font, coordsText, coordsX, y, color, false);
                 }
             }
         }
@@ -133,16 +133,7 @@ public class AddressPadListScreen extends Screen {
     }
 
     private void renderTexturedPanel(GuiGraphics graphics) {
-        int tileSize = 16;
-        for (int y = this.panelY; y < this.panelY + this.panelHeight; y += tileSize) {
-            int drawHeight = Math.min(tileSize, this.panelY + this.panelHeight - y);
-            for (int x = this.panelX; x < this.panelX + LIST_PANEL_WIDTH; x += tileSize) {
-                int drawWidth = Math.min(tileSize, this.panelX + LIST_PANEL_WIDTH - x);
-                graphics.blit(BACKGROUND_TEXTURE, x, y, 0, 0, drawWidth, drawHeight, tileSize, tileSize);
-            }
-        }
-
-        graphics.fill(this.panelX, this.panelY, this.panelX + LIST_PANEL_WIDTH, this.panelY + this.panelHeight, 0x55000000);
+        graphics.blit(BACKGROUND_TEXTURE, this.panelX, this.panelY, 0, 0, LIST_PANEL_WIDTH, this.panelHeight, LIST_PANEL_WIDTH, this.panelHeight);
     }
 
     @Override

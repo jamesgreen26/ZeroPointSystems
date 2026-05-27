@@ -8,6 +8,7 @@ import g_mungus.zps.block.cableNetwork.light_pipe.ScriptTerminalBlock;
 import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.NetworkTerminalImpl;
+import g_mungus.zps.ZPSMod;
 import g_mungus.zps.item.AddressPadItem;
 import g_mungus.zps.networking.ScriptComputerC2SPacket;
 import net.minecraft.commands.CommandSource;
@@ -16,6 +17,8 @@ import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Clearable;
@@ -28,6 +31,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -118,6 +122,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         this.addressPad = addressPad;
         syncHasAddressPadProperty();
         setChanged();
+        syncClientState();
     }
 
     public ItemStack removeAddressPad() {
@@ -125,6 +130,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         addressPad = ItemStack.EMPTY;
         syncHasAddressPadProperty();
         setChanged();
+        syncClientState();
         return existing;
     }
 
@@ -345,11 +351,14 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
     @Override
     public Set<String> getAvailableAddressNames() {
         if (!hasAddressPad()) {
+            ZPSMod.LOGGER.debug("ScriptTerminalBlockEntity.getAvailableAddressNames no address pad present");
             return Set.of();
         }
-        return AddressPadItem.getSortedEntries(addressPad).stream()
+        Set<String> addresses = AddressPadItem.getSortedEntries(addressPad).stream()
                 .map(AddressPadItem.Entry::name)
                 .collect(Collectors.toSet());
+        ZPSMod.LOGGER.debug("ScriptTerminalBlockEntity.getAvailableAddressNames {}", addresses);
+        return addresses;
     }
 
     @Override
@@ -391,6 +400,19 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         return tag;
     }
 
+    @Nullable
+    @Override
+    public ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override
+    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
+        if (pkt != null && pkt.getTag() != null) {
+            handleUpdateTag(pkt.getTag());
+        }
+    }
+
     @Override
     public void handleUpdateTag(net.minecraft.nbt.CompoundTag tag) {
         allCommands = tag.getString("AllCommands");
@@ -424,5 +446,11 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         if (state.getValue(ScriptTerminalBlock.HAS_ADDRESS_PAD) == hasAddressPad) return;
 
         ScriptTerminalBlock.resetAddressPadState(level, worldPosition, state, hasAddressPad);
+    }
+
+    private void syncClientState() {
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_ALL);
+        }
     }
 }

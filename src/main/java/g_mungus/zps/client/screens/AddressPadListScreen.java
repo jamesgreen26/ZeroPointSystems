@@ -26,7 +26,7 @@ public class AddressPadListScreen extends Screen {
     private static final Component PASTE_TOOLTIP = Component.literal("Paste entries");
     private static final Component CLEAR_TOOLTIP = Component.literal("Clear entries");
     private static final Component CLOSE_TOOLTIP = Component.literal("Close");
-    private static final int DISPLAY_NAME_MAX = 16;
+    private static final int DISPLAY_NAME_MAX = 15;
     private static final String NAME_ELLIPSIS = " . . .";
     private static List<AddressPadItem.Entry> copiedEntries = List.of();
 
@@ -172,7 +172,7 @@ public class AddressPadListScreen extends Screen {
 
     private static String formatName(String name) {
         if (name.length() > DISPLAY_NAME_MAX) {
-            name = name.substring(0, 14) + NAME_ELLIPSIS;
+            name = name.substring(0, DISPLAY_NAME_MAX - 2) + NAME_ELLIPSIS;
         }
         return name;
     }

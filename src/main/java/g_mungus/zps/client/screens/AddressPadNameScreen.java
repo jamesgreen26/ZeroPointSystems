@@ -68,6 +68,14 @@ public class AddressPadNameScreen extends Screen {
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
+    @Override
+    public boolean charTyped(char codePoint, int modifiers) {
+        if (codePoint == ' ') {
+            return super.charTyped('_', modifiers);
+        }
+        return super.charTyped(codePoint, modifiers);
+    }
+
     private void submit() {
         String name = this.nameField.getValue().trim();
         if (!AddressPadItem.isValidName(name)) return;

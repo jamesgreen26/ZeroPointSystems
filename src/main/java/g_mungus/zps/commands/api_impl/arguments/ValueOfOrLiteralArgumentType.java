@@ -8,7 +8,6 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestion;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api_impl.ValueOfDispatchers;
 import g_mungus.zps.commands.api_impl.ZPSScriptCommandSource;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
@@ -51,28 +50,20 @@ public class ValueOfOrLiteralArgumentType<A> implements ArgumentType<Object> {
 
     public static void setActiveAddressNames(Collection<String> addressNames) {
         activeAddressNames = Set.copyOf(addressNames);
-        ZPSMod.LOGGER.debug("ValueOfOrLiteralArgumentType: active addresses set to {}", activeAddressNames);
     }
 
     @Override
     public Object parse(StringReader reader) throws CommandSyntaxException {
         int cursor = reader.getCursor();
         String remaining = reader.getRemaining();
-        ZPSMod.LOGGER.debug(
-                "ValueOfOrLiteralArgumentType.parse targetType={} wrappedType={} remaining='{}' cursor={}",
-                targetTypeKey, wrappedType.getClass().getSimpleName(), remaining, cursor
-        );
         if (isBlockPosArgument()) {
             Matcher matcher = ADDRESS_TOKEN.matcher(remaining);
             if (matcher.find() && isPlaceholderBoundary(reader, cursor + matcher.group(0).length())) {
                 String name = matcher.group(1);
-                ZPSMod.LOGGER.debug("ValueOfOrLiteralArgumentType.parse found @{} available={}", name, getAvailableAddressNames(null));
                 if (getAvailableAddressNames(null).contains(name)) {
                     reader.setCursor(cursor + matcher.group(0).length());
-                    ZPSMod.LOGGER.debug("ValueOfOrLiteralArgumentType.parse accepted @{}", name);
                     return new AddressReference(name);
                 }
-                ZPSMod.LOGGER.debug("ValueOfOrLiteralArgumentType.parse rejected @{} (not available)", name);
             }
         }
         if (remaining.startsWith(ARGUMENT_PLACEHOLDER) && isPlaceholderBoundary(reader, cursor + ARGUMENT_PLACEHOLDER.length())) {
@@ -123,13 +114,6 @@ public class ValueOfOrLiteralArgumentType<A> implements ArgumentType<Object> {
     @Override
     public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> context, SuggestionsBuilder builder) {
         String remaining = builder.getRemaining();
-        ZPSMod.LOGGER.debug(
-                "ValueOfOrLiteralArgumentType.listSuggestions targetType={} wrappedType={} remaining='{}' sourceType={}",
-                targetTypeKey,
-                wrappedType.getClass().getSimpleName(),
-                remaining,
-                context.getSource() == null ? "null" : context.getSource().getClass().getName()
-        );
         var addressSuggestions = CompletableFuture.completedFuture(new SuggestionsBuilder(builder.getInput(), builder.getStart()).build());
 
         if (!remaining.isBlank()) {
@@ -267,7 +251,6 @@ public class ValueOfOrLiteralArgumentType<A> implements ArgumentType<Object> {
         SuggestionsBuilder addressBuilder = builder.createOffset(builder.getStart());
         String lowerRemaining = remaining.toLowerCase();
         Collection<String> availableAddresses = getAvailableAddressNames(source);
-        ZPSMod.LOGGER.debug("ValueOfOrLiteralArgumentType.buildAddressSuggestions remaining='{}' available={}", remaining, availableAddresses);
         for (String address : availableAddresses) {
             String suggestion = "@" + address;
             if (suggestion.toLowerCase().startsWith(lowerRemaining)) {
@@ -279,10 +262,8 @@ public class ValueOfOrLiteralArgumentType<A> implements ArgumentType<Object> {
 
     private static Collection<String> getAvailableAddressNames(Object source) {
         if (source instanceof ZPSScriptCommandSource scriptSource) {
-            ZPSMod.LOGGER.debug("ValueOfOrLiteralArgumentType.getAvailableAddressNames using source-bound addresses");
             return scriptSource.getAvailableAddressNames();
         }
-        ZPSMod.LOGGER.debug("ValueOfOrLiteralArgumentType.getAvailableAddressNames using static active addresses");
         return activeAddressNames;
     }
 }

@@ -4,7 +4,6 @@ import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.tree.CommandNode;
-import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.ScriptContext;
 import g_mungus.zps.commands.api.ScriptExecutor;
 import g_mungus.zps.commands.api.ScriptGetter;
@@ -400,13 +399,10 @@ public class CommandTreeBuilder {
 
     private static Object resolveAddressReference(Object rawArg, ZPSScriptCommandSource source) {
         if (rawArg instanceof AddressReference addressReference) {
-            ZPSMod.LOGGER.debug("CommandTreeBuilder.resolveAddressReference resolving @{}", addressReference.name());
             BlockPos resolved = source.resolveAddress(addressReference.name());
             if (resolved == null) {
-                ZPSMod.LOGGER.warn("CommandTreeBuilder.resolveAddressReference missing @{} in current source context", addressReference.name());
                 throw new IllegalArgumentException("Address @" + addressReference.name() + " is not available in this context");
             }
-            ZPSMod.LOGGER.debug("CommandTreeBuilder.resolveAddressReference resolved @{} -> {}", addressReference.name(), resolved);
             return resolved;
         }
         return rawArg;

@@ -8,7 +8,6 @@ import g_mungus.zps.block.cableNetwork.light_pipe.ScriptTerminalBlock;
 import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.NetworkTerminalImpl;
-import g_mungus.zps.ZPSMod;
 import g_mungus.zps.item.AddressPadItem;
 import g_mungus.zps.networking.ScriptComputerC2SPacket;
 import net.minecraft.commands.CommandSource;
@@ -351,14 +350,11 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
     @Override
     public Set<String> getAvailableAddressNames() {
         if (!hasAddressPad()) {
-            ZPSMod.LOGGER.debug("ScriptTerminalBlockEntity.getAvailableAddressNames no address pad present");
             return Set.of();
         }
-        Set<String> addresses = AddressPadItem.getSortedEntries(addressPad).stream()
+        return AddressPadItem.getSortedEntries(addressPad).stream()
                 .map(AddressPadItem.Entry::name)
                 .collect(Collectors.toSet());
-        ZPSMod.LOGGER.debug("ScriptTerminalBlockEntity.getAvailableAddressNames {}", addresses);
-        return addresses;
     }
 
     @Override

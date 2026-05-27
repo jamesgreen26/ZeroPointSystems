@@ -1,6 +1,5 @@
 package g_mungus.zps.commands.api_impl;
 
-import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.ScriptContext;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.core.BlockPos;
@@ -62,18 +61,14 @@ public class ZPSScriptCommandSource implements CommandSource {
 
     public void setAvailableAddresses(Map<String, BlockPos> availableAddresses) {
         this.availableAddresses = new HashMap<>(availableAddresses);
-        ZPSMod.LOGGER.debug("ZPSScriptCommandSource.setAvailableAddresses keys={}", this.availableAddresses.keySet());
     }
 
     public Collection<String> getAvailableAddressNames() {
-        ZPSMod.LOGGER.debug("ZPSScriptCommandSource.getAvailableAddressNames keys={}", availableAddresses.keySet());
         return availableAddresses.keySet();
     }
 
     public @Nullable BlockPos resolveAddress(String name) {
-        BlockPos resolved = availableAddresses.get(name);
-        ZPSMod.LOGGER.debug("ZPSScriptCommandSource.resolveAddress @{} -> {}", name, resolved);
-        return resolved;
+        return availableAddresses.get(name);
     }
 
     @ApiStatus.Internal

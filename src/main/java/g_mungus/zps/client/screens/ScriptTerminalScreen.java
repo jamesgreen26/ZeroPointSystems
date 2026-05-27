@@ -1,7 +1,6 @@
 package g_mungus.zps.client.screens;
 
 import g_mungus.zps.ModSounds;
-import g_mungus.zps.ZPSMod;
 import g_mungus.zps.blockentity.light_pipe.ScriptComputer;
 import g_mungus.zps.client.ponder.api.custom_screen_in_ponder_scene.PonderCompatibleScreen;
 import g_mungus.zps.client.screens.components.MultiLineEditBox;
@@ -117,8 +116,6 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
         this.commandEdit.setResponder(this::onEdited);
         this.addWidget(this.commandEdit);
         this.setInitialFocus(this.commandEdit);
-        Set<String> availableAddresses = this.computer != null ? this.computer.getAvailableAddressNames() : Set.of();
-        ZPSMod.LOGGER.debug("ScriptTerminalScreen.init available addresses={}", availableAddresses);
         refreshActiveAddresses();
 
         this.commandSuggestions = new MultiLineCommandSuggestions(this.minecraft, new ScriptDispatcherProvider(this.minecraft), this, this.commandEdit, this.font, true, true, 0, 7, false, Integer.MIN_VALUE, connectedBlocks);
@@ -140,14 +137,12 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
             int currentDelay = DELAY_VALUES[delayIndex];
             ZPSGamePackets.INSTANCE.sendToServer(new ScriptComputerC2SPacket(computer.getPos(), isRepeatMode, currentDelay, commandEdit.getValue()));
         }
-        ZPSMod.LOGGER.debug("ScriptTerminalScreen.onDone clearing active addresses");
         ValueOfOrLiteralArgumentType.setActiveAddressNames(Set.of());
         if (client != null) client.setScreen(null);
     }
 
     @Override
     public void onClose() {
-        ZPSMod.LOGGER.debug("ScriptTerminalScreen.onClose clearing active addresses");
         ValueOfOrLiteralArgumentType.setActiveAddressNames(Set.of());
         super.onClose();
     }

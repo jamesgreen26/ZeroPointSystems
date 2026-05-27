@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "P": { "item": "minecraft:paper" },
+    "S": { "tag": "minecraft:wooden_slabs" }
+  },
+  "pattern": [
+    "P",
+    "S"
+  ],
+  "result": {
+    "item": "zps:address_pad",
+    "count": 1
+  },
+  "show_notification": true
+}

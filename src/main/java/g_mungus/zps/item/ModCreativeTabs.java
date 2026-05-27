@@ -60,8 +60,6 @@ public class ModCreativeTabs {
                         RADIO_RECEIVER,
                         RADIO_ANTENNA,
 
-                        ADDRESS_PAD,
-
                         BAUXITE,
                         LITHIUM_ORE,
                         DEEPSLATE_LITHIUM_ORE,
@@ -80,7 +78,7 @@ public class ModCreativeTabs {
 
 //                        SPACE_METAL_PLATE,
                         SPACE_METAL_MESH,
-                        SPACE_METAL_ROD
+                        SPACE_METAL_ROD,
 //                        SPACE_METAL_PIPE,
 //                        SPACE_METAL_SCREW,
 //                        SPACE_METAL_BOLT,
@@ -97,7 +95,10 @@ public class ModCreativeTabs {
 //                        COPPER_SPOOL,
 //                        GOLD_SPOOL,
 //                        VERDITE_SPOOL
-                );
+
+                        ADDRESS_PAD
+
+                        );
                 addPaintings(parameters, output);
             }).build());
 

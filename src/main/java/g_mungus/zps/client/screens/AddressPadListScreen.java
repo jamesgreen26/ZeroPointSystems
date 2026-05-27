@@ -30,6 +30,11 @@ public class AddressPadListScreen extends Screen {
     private static List<AddressPadItem.Entry> copiedEntries = List.of();
 
     public static final ResourceLocation PONDER_WIDGETS_LOC = ResourceLocation.fromNamespaceAndPath("ponder", "textures/gui/widgets.png");
+    private static final ResourceLocation BACKGROUND_TEXTURE = ResourceLocation.fromNamespaceAndPath("zps", "textures/block/decor/riveted_space_plating.png");
+    private static final int ROW_HEIGHT = 12;
+    private static final int LIST_PANEL_WIDTH = 304;
+    private static final int LIST_PANEL_TOP = 18;
+    private static final int LIST_PANEL_PADDING = 8;
 
     private final InteractionHand hand;
     private Button copyButton;
@@ -70,6 +75,7 @@ public class AddressPadListScreen extends Screen {
     @Override
     public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(graphics);
+        renderTexturedPanel(graphics);
         graphics.drawCenteredString(this.font, TITLE, this.width / 2, 24, 0xFFFFFF);
 
         List<AddressPadItem.Entry> entries = getEntries();
@@ -78,16 +84,15 @@ public class AddressPadListScreen extends Screen {
         } else {
             int startX = this.listStartX;
             int startY = this.listStartY;
-            int rowHeight = 12;
             int color = 0xE0E0E0;
             int hoverColor = 0xFF8080;
 
             for (int i = 0; i < entries.size(); i++) {
                 AddressPadItem.Entry entry = entries.get(i);
                 String label = format(entry);
-                int y = startY + i * rowHeight;
+                int y = startY + i * ROW_HEIGHT;
                 int width = this.font.width(label);
-                boolean hovered = mouseX >= startX && mouseX <= startX + width && mouseY >= y && mouseY < y + rowHeight;
+                boolean hovered = mouseX >= startX && mouseX <= startX + width && mouseY >= y && mouseY < y + ROW_HEIGHT;
 
                 if (hovered) {
                     graphics.drawString(this.font, Component.literal(label).withStyle(style -> style.withStrikethrough(true)), startX, y, hoverColor);
@@ -112,6 +117,22 @@ public class AddressPadListScreen extends Screen {
         }
     }
 
+    private void renderTexturedPanel(GuiGraphics graphics) {
+        int panelX = this.listStartX - LIST_PANEL_PADDING;
+        int panelY = LIST_PANEL_TOP;
+        int panelHeight = (this.listStartY - panelY) + (AddressPadItem.MAX_ENTRIES * ROW_HEIGHT) + LIST_PANEL_PADDING;
+        int tileSize = 16;
+        for (int y = panelY; y < panelY + panelHeight; y += tileSize) {
+            int drawHeight = Math.min(tileSize, panelY + panelHeight - y);
+            for (int x = panelX; x < panelX + LIST_PANEL_WIDTH; x += tileSize) {
+                int drawWidth = Math.min(tileSize, panelX + LIST_PANEL_WIDTH - x);
+                graphics.blit(BACKGROUND_TEXTURE, x, y, 0, 0, drawWidth, drawHeight, tileSize, tileSize);
+            }
+        }
+
+        graphics.fill(panelX, panelY, panelX + LIST_PANEL_WIDTH, panelY + panelHeight, 0x55000000);
+    }
+
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button != 0) return super.mouseClicked(mouseX, mouseY, button);
@@ -119,13 +140,12 @@ public class AddressPadListScreen extends Screen {
         List<AddressPadItem.Entry> entries = getEntries();
         int startX = this.listStartX;
         int startY = this.listStartY;
-        int rowHeight = 12;
         for (int i = 0; i < entries.size(); i++) {
             AddressPadItem.Entry entry = entries.get(i);
             String label = format(entry);
-            int y = startY + i * rowHeight;
+            int y = startY + i * ROW_HEIGHT;
             int width = this.font.width(label);
-            boolean hovered = mouseX >= startX && mouseX <= startX + width && mouseY >= y && mouseY < y + rowHeight;
+            boolean hovered = mouseX >= startX && mouseX <= startX + width && mouseY >= y && mouseY < y + ROW_HEIGHT;
             if (!hovered) continue;
 
             ZPSGamePackets.INSTANCE.sendToServer(new AddressPadRemovePositionC2SPacket(hand, entry.name()));

@@ -8,6 +8,7 @@ import g_mungus.zps.block.cableNetwork.light_pipe.ScriptTerminalBlock;
 import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.NetworkTerminalImpl;
+import g_mungus.zps.item.AddressPadItem;
 import g_mungus.zps.networking.ScriptComputerC2SPacket;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
@@ -35,6 +36,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements LightPipeDataSender, ScriptComputer, Clearable {
     private ItemStack addressPad = ItemStack.EMPTY;
@@ -186,10 +188,27 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
             executeWaitCommand(command);
             clearOutput();
         } else {
-            currentCommand = resolveCoordinates(command, level, worldPosition, getBlockState());
+            currentCommand = resolveAddresses(resolveCoordinates(command, level, worldPosition, getBlockState()));
             updateSignal(level);
             tickDelay = delay - 1; // delay value from GUI (2t, 4t, 8t, or 16t)
         }
+    }
+
+    private String resolveAddresses(String command) {
+        if (!hasAddressPad()) return command;
+
+        var entries = AddressPadItem.getSortedEntries(addressPad).stream()
+                .sorted((a, b) -> Integer.compare(b.name().length(), a.name().length()))
+                .toList();
+
+        String result = command;
+        for (AddressPadItem.Entry entry : entries) {
+            String key = "@" + Pattern.quote(entry.name());
+            BlockPos pos = entry.pos();
+            String replacement = pos.getX() + " " + pos.getY() + " " + pos.getZ();
+            result = result.replaceAll("(?<![A-Za-z0-9._])" + key + "(?![A-Za-z0-9._])", replacement);
+        }
+        return result;
     }
 
     /// mostly just visible for testing

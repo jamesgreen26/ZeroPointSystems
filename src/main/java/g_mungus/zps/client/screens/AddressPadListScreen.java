@@ -27,12 +27,14 @@ public class AddressPadListScreen extends Screen {
     private static final Component PASTE_TOOLTIP = Component.literal("Paste entries");
     private static final Component CLEAR_TOOLTIP = Component.literal("Clear entries");
     private static final Component CLOSE_TOOLTIP = Component.literal("Close");
+    private static final int DISPLAY_NAME_MAX = 16;
+    private static final String NAME_ELLIPSIS = " . . .";
     private static List<AddressPadItem.Entry> copiedEntries = List.of();
 
     public static final ResourceLocation PONDER_WIDGETS_LOC = ResourceLocation.fromNamespaceAndPath("ponder", "textures/gui/widgets.png");
     private static final ResourceLocation BACKGROUND_TEXTURE = ResourceLocation.fromNamespaceAndPath("zps", "textures/block/decor/riveted_space_plating.png");
     private static final int ROW_HEIGHT = 12;
-    private static final int LIST_PANEL_WIDTH = 304;
+    private static final int LIST_PANEL_WIDTH = 228;
     private static final int LIST_PANEL_TOP = 18;
     private static final int LIST_PANEL_PADDING = 8;
 
@@ -51,11 +53,11 @@ public class AddressPadListScreen extends Screen {
 
     @Override
     protected void init() {
-        this.listStartX = this.width / 2 - 150;
+        this.listStartX = this.width / 2 - 112;
         this.listStartY = 50;
         int buttonSize = 20;
         int spacing = 4;
-        int columnX = this.width / 2 + 132;
+        int columnX = this.width / 2 + 94;
         int topY = this.listStartY;
 
         this.copyButton = this.addRenderableWidget(Button.builder(Component.literal("C"), button -> copyEntries())
@@ -169,7 +171,11 @@ public class AddressPadListScreen extends Screen {
     }
 
     private static String format(AddressPadItem.Entry entry) {
-        return entry.name() + " - (" + entry.pos().getX() + ", " + entry.pos().getY() + ", " + entry.pos().getZ() + ")";
+        String name = entry.name();
+        if (name.length() > DISPLAY_NAME_MAX) {
+            name = name.substring(0, 14) + NAME_ELLIPSIS;
+        }
+        return name + " - (" + entry.pos().getX() + ", " + entry.pos().getY() + ", " + entry.pos().getZ() + ")";
     }
 
     private void copyEntries() {

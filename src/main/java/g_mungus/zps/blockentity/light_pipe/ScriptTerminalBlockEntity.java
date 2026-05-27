@@ -343,6 +343,16 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
     }
 
     @Override
+    public Set<String> getAvailableAddressNames() {
+        if (!hasAddressPad()) {
+            return Set.of();
+        }
+        return AddressPadItem.getSortedEntries(addressPad).stream()
+                .map(AddressPadItem.Entry::name)
+                .collect(Collectors.toSet());
+    }
+
+    @Override
     protected void saveAdditional(net.minecraft.nbt.@NotNull CompoundTag tag) {
         super.saveAdditional(tag);
         tag.putString("AllCommands", allCommands);

@@ -13,6 +13,7 @@ import g_mungus.zps.commands.api_impl.arguments.ValueOfExpression;
 import g_mungus.zps.commands.api_impl.arguments.ValueOfOrLiteralArgumentType;
 import g_mungus.zps.commands.api_impl.arguments.ZPSArgument;
 import g_mungus.zps.commands.api_impl.arguments.ArgumentPlaceholder;
+import g_mungus.zps.commands.api_impl.arguments.AddressReference;
 import g_mungus.zps.commands.api_impl.arguments.ZPSLiteral;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
@@ -131,6 +132,7 @@ public class CommandTreeBuilder {
                     if (rawArg instanceof ValueOfExpression<?> expr) {
                         rawArg = expr.evaluate(commandSource, source.getPos());
                     }
+                    rawArg = resolveAddressReference(rawArg, source);
                     source.predicateValue = mapperFunction.apply(source.predicateValue,
                             new ScriptContextWithArgumentImpl<>(rawArg, source.getPos(), commandSource.getLevel(), commandSource));
                 }
@@ -219,6 +221,7 @@ public class CommandTreeBuilder {
                     if (rawArg instanceof ValueOfExpression<?> expr) {
                         rawArg = expr.evaluate(commandSource, source.getPos());
                     }
+                    rawArg = resolveAddressReference(rawArg, source);
                     ScriptContext executorContext = new ScriptContextImpl(commandSource, source.getPos(), commandSource.getLevel());
                     I mappedValue = typed.argumentMapper().apply((A) rawArg, executorContext);
                     return typed.function().apply(mappedValue, executorContext);
@@ -243,6 +246,7 @@ public class CommandTreeBuilder {
                         if (rawArg instanceof ValueOfExpression<?> expr) {
                             rawArg = expr.evaluate(context.getSource(), source.getPos());
                         }
+                        rawArg = resolveAddressReference(rawArg, source);
                         ScriptContext executorContext = new ScriptContextImpl(context.getSource(), source.getPos(), context.getSource().getLevel());
                         I mappedValue = typed.argumentMapper().apply((A) rawArg, executorContext);
                         return typed.function().apply(mappedValue, executorContext);
@@ -357,6 +361,7 @@ public class CommandTreeBuilder {
                     if (rawArg instanceof ValueOfExpression<?> expr) {
                         rawArg = expr.evaluate(commandSource, source.getPos());
                     }
+                    rawArg = resolveAddressReference(rawArg, source);
                     source.predicateValue = mapperFunction.apply(source.predicateValue,
                             new ScriptContextWithArgumentImpl<>(rawArg, source.getPos(), commandSource.getLevel(), commandSource));
                 }
@@ -391,6 +396,17 @@ public class CommandTreeBuilder {
     private record ScriptContextImpl(CommandSourceStack commandSource, BlockPos pos, ServerLevel level) implements ScriptContext {}
 
     private record ScriptContextWithArgumentImpl<T>(T argumentValue, BlockPos pos, ServerLevel level, CommandSourceStack commandSource) implements ScriptContext.WithArgument<T> { }
+
+    private static Object resolveAddressReference(Object rawArg, ZPSScriptCommandSource source) {
+        if (rawArg instanceof AddressReference addressReference) {
+            BlockPos resolved = source.resolveAddress(addressReference.name());
+            if (resolved == null) {
+                throw new IllegalArgumentException("Address @" + addressReference.name() + " is not available in this context");
+            }
+            return resolved;
+        }
+        return rawArg;
+    }
 
     @SuppressWarnings("unused")
     public enum ComputeKey {compute}

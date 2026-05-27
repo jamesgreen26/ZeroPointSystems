@@ -3,8 +3,15 @@ package g_mungus.zps.commands.api_impl.arguments;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+import com.mojang.brigadier.tree.RootCommandNode;
+import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.resources.ResourceLocation;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -16,9 +23,19 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ValueOfOrLiteralArgumentTypeTest {
 
     private static final ResourceLocation INT_KEY = ResourceLocation.parse("zps:int");
+    private static final ResourceLocation BLOCK_POS_KEY = ResourceLocation.parse("zps:block_pos");
 
     private static ValueOfOrLiteralArgumentType<Integer> intType() {
         return ValueOfOrLiteralArgumentType.of(IntegerArgumentType.integer(), INT_KEY);
+    }
+
+    private static ValueOfOrLiteralArgumentType<?> blockPosType() {
+        return ValueOfOrLiteralArgumentType.of(BlockPosArgument.blockPos(), BLOCK_POS_KEY);
+    }
+
+    @AfterEach
+    void clearAddressContext() {
+        ValueOfOrLiteralArgumentType.setActiveAddressNames(Set.of());
     }
 
     // -------------------------------------------------------------------------
@@ -162,5 +179,42 @@ public class ValueOfOrLiteralArgumentTypeTest {
         // " more" should remain
         assertTrue(reader.canRead());
         assertEquals(' ', reader.peek());
+    }
+
+    @Test
+    public void parse_blockPosAddress_returnsAddressReference() throws CommandSyntaxException {
+        ValueOfOrLiteralArgumentType.setActiveAddressNames(Set.of("home"));
+        StringReader reader = new StringReader("@home");
+        Object result = blockPosType().parse(reader);
+        assertInstanceOf(AddressReference.class, result);
+        assertEquals("home", ((AddressReference) result).name());
+    }
+
+    @Test
+    public void parse_blockPosAddress_notAvailableFallsBackToWrappedParser() {
+        ValueOfOrLiteralArgumentType.setActiveAddressNames(Set.of("home"));
+        StringReader reader = new StringReader("@missing");
+        assertThrows(CommandSyntaxException.class, () -> blockPosType().parse(reader));
+    }
+
+    @Test
+    public void parse_nonBlockPosAddress_notAccepted() {
+        ValueOfOrLiteralArgumentType.setActiveAddressNames(Set.of("home"));
+        StringReader reader = new StringReader("@home");
+        assertThrows(CommandSyntaxException.class, () -> intType().parse(reader));
+    }
+
+    @Test
+    public void suggest_blockPosAddresses_only() throws ExecutionException, InterruptedException {
+        ValueOfOrLiteralArgumentType.setActiveAddressNames(Set.of("home", "hub"));
+        var dispatcher = new com.mojang.brigadier.CommandDispatcher<Object>();
+        var context = new com.mojang.brigadier.context.CommandContextBuilder<>(dispatcher, new Object(), new RootCommandNode<>(), 0)
+                .build("");
+        var suggestions = blockPosType()
+                .listSuggestions(context, new SuggestionsBuilder("@h", 0))
+                .get();
+        var texts = suggestions.getList().stream().map(s -> s.getText()).toList();
+        assertTrue(texts.contains("@home"));
+        assertTrue(texts.contains("@hub"));
     }
 }

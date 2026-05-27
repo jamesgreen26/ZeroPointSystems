@@ -9,16 +9,24 @@ import com.mojang.brigadier.suggestion.Suggestion;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import g_mungus.zps.commands.api_impl.ValueOfDispatchers;
+import g_mungus.zps.commands.api_impl.ZPSScriptCommandSource;
+import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ValueOfOrLiteralArgumentType<A> implements ArgumentType<Object> {
     private static final String ARGUMENT_PLACEHOLDER = "%s";
     private static final String VALUE_OF_PREFIX = "value_of(";
+    private static final Pattern ADDRESS_TOKEN = Pattern.compile("^@([A-Za-z0-9._]+)");
+    private static volatile Set<String> activeAddressNames = Set.of();
 
     private final ArgumentType<A> wrappedType;
     private final ResourceLocation targetTypeKey;
@@ -40,10 +48,24 @@ public class ValueOfOrLiteralArgumentType<A> implements ArgumentType<Object> {
         return targetTypeKey;
     }
 
+    public static void setActiveAddressNames(Collection<String> addressNames) {
+        activeAddressNames = Set.copyOf(addressNames);
+    }
+
     @Override
     public Object parse(StringReader reader) throws CommandSyntaxException {
         int cursor = reader.getCursor();
         String remaining = reader.getRemaining();
+        if (isBlockPosArgument()) {
+            Matcher matcher = ADDRESS_TOKEN.matcher(remaining);
+            if (matcher.find() && isPlaceholderBoundary(reader, cursor + matcher.group(0).length())) {
+                String name = matcher.group(1);
+                if (getAvailableAddressNames(null).contains(name)) {
+                    reader.setCursor(cursor + matcher.group(0).length());
+                    return new AddressReference(name);
+                }
+            }
+        }
         if (remaining.startsWith(ARGUMENT_PLACEHOLDER) && isPlaceholderBoundary(reader, cursor + ARGUMENT_PLACEHOLDER.length())) {
             reader.setCursor(cursor + ARGUMENT_PLACEHOLDER.length());
             return new ArgumentPlaceholder(targetTypeKey);
@@ -92,6 +114,7 @@ public class ValueOfOrLiteralArgumentType<A> implements ArgumentType<Object> {
     @Override
     public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> context, SuggestionsBuilder builder) {
         String remaining = builder.getRemaining();
+        var addressSuggestions = CompletableFuture.completedFuture(new SuggestionsBuilder(builder.getInput(), builder.getStart()).build());
 
         if (!remaining.isBlank()) {
 
@@ -110,6 +133,16 @@ public class ValueOfOrLiteralArgumentType<A> implements ArgumentType<Object> {
                 }
                 return Suggestions.empty();
             }
+
+            if (isBlockPosArgument()) {
+                addressSuggestions = CompletableFuture.completedFuture(
+                        buildAddressSuggestions(builder, context.getSource(), remaining)
+                );
+            }
+        } else if (isBlockPosArgument()) {
+            addressSuggestions = CompletableFuture.completedFuture(
+                    buildAddressSuggestions(builder, context.getSource(), remaining)
+            );
         }
 
         SuggestionsBuilder withValueOf = builder.createOffset(builder.getStart());
@@ -118,15 +151,19 @@ public class ValueOfOrLiteralArgumentType<A> implements ArgumentType<Object> {
         }
 
 
-        return wrappedType.listSuggestions(context, builder).thenCombine(
-                CompletableFuture.completedFuture(withValueOf.buildFuture().join()),
-                (wrappedSuggestions, valueOfSuggestions) -> {
+        return wrappedType.listSuggestions(context, builder)
+                .thenCombine(CompletableFuture.completedFuture(withValueOf.buildFuture().join()), (wrappedSuggestions, valueOfSuggestions) -> {
                     var combined = new SuggestionsBuilder(builder.getInput(), builder.getStart());
                     wrappedSuggestions.getList().forEach(s -> combined.suggest(s.getText(), s.getTooltip()));
                     valueOfSuggestions.getList().forEach(s -> combined.suggest(s.getText(), s.getTooltip()));
                     return combined.build();
-                }
-        );
+                })
+                .thenCombine(addressSuggestions, (existingSuggestions, addressSuggestionSet) -> {
+                    var combined = new SuggestionsBuilder(builder.getInput(), builder.getStart());
+                    existingSuggestions.getList().forEach(s -> combined.suggest(s.getText(), s.getTooltip()));
+                    addressSuggestionSet.getList().forEach(s -> combined.suggest(s.getText(), s.getTooltip()));
+                    return combined.build();
+                });
     }
 
     @Override
@@ -204,5 +241,28 @@ public class ValueOfOrLiteralArgumentType<A> implements ArgumentType<Object> {
         }
 
         return Character.isWhitespace(reader.getString().charAt(endCursor));
+    }
+
+    private boolean isBlockPosArgument() {
+        return wrappedType instanceof BlockPosArgument;
+    }
+
+    private Suggestions buildAddressSuggestions(SuggestionsBuilder builder, Object source, String remaining) {
+        SuggestionsBuilder addressBuilder = builder.createOffset(builder.getStart());
+        String lowerRemaining = remaining.toLowerCase();
+        for (String address : getAvailableAddressNames(source)) {
+            String suggestion = "@" + address;
+            if (suggestion.toLowerCase().startsWith(lowerRemaining)) {
+                addressBuilder.suggest(suggestion);
+            }
+        }
+        return addressBuilder.build();
+    }
+
+    private static Collection<String> getAvailableAddressNames(Object source) {
+        if (source instanceof ZPSScriptCommandSource scriptSource) {
+            return scriptSource.getAvailableAddressNames();
+        }
+        return activeAddressNames;
     }
 }

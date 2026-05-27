@@ -23,7 +23,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 @Mod.EventBusSubscriber
@@ -88,6 +90,18 @@ public class AddressPadItem extends Item {
         stack.getOrCreateTag().put(POSITIONS_TAG, positions);
     }
 
+    public static void replaceNamedPositions(ItemStack stack, List<Entry> entries) {
+        CompoundTag positions = new CompoundTag();
+        int added = 0;
+        for (Entry entry : entries) {
+            if (added >= MAX_ENTRIES) break;
+            if (!isValidName(entry.name())) continue;
+            positions.putLong(entry.name(), entry.pos().asLong());
+            added++;
+        }
+        stack.getOrCreateTag().put(POSITIONS_TAG, positions);
+    }
+
     public static CompoundTag getPositions(ItemStack stack) {
         return stack.getOrCreateTag().getCompound(POSITIONS_TAG);
     }
@@ -100,12 +114,17 @@ public class AddressPadItem extends Item {
 
     public static List<Entry> getSortedEntries(ItemStack stack) {
         CompoundTag positions = getPositions(stack);
-        List<Entry> result = new ArrayList<>();
+        List<Entry> result = new ArrayList<>(toEntryMap(positions).values());
+        result.sort(Comparator.comparing(Entry::name, String.CASE_INSENSITIVE_ORDER));
+        return result;
+    }
+
+    public static Map<String, Entry> toEntryMap(CompoundTag positions) {
+        Map<String, Entry> result = new LinkedHashMap<>();
         for (String name : positions.getAllKeys()) {
             if (!positions.contains(name, Tag.TAG_LONG)) continue;
-            result.add(new Entry(name, BlockPos.of(positions.getLong(name))));
+            result.put(name, new Entry(name, BlockPos.of(positions.getLong(name))));
         }
-        result.sort(Comparator.comparing(Entry::name, String.CASE_INSENSITIVE_ORDER));
         return result;
     }
 

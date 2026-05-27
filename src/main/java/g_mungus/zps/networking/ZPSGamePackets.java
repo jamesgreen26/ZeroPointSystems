@@ -83,5 +83,11 @@ public class ZPSGamePackets {
                 .decoder(AddressPadRemovePositionC2SPacket::decode)
                 .consumerMainThread(AddressPadRemovePositionC2SPacket::handle)
                 .add();
+
+        INSTANCE.messageBuilder(AddressPadSetEntriesC2SPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(AddressPadSetEntriesC2SPacket::encode)
+                .decoder(AddressPadSetEntriesC2SPacket::decode)
+                .consumerMainThread(AddressPadSetEntriesC2SPacket::handle)
+                .add();
     }
 }

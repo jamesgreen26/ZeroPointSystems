@@ -10,6 +10,7 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import g_mungus.zps.commands.api_impl.ValueOfDispatchers;
 import g_mungus.zps.commands.api_impl.ZPSScriptCommandSource;
+import net.createmod.catnip.annotations.ClientOnly;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.resources.ResourceLocation;
 
@@ -26,7 +27,8 @@ public class ValueOfOrLiteralArgumentType<A> implements ArgumentType<Object> {
     private static final String ARGUMENT_PLACEHOLDER = "%s";
     private static final String VALUE_OF_PREFIX = "value_of(";
     private static final Pattern ADDRESS_TOKEN = Pattern.compile("^@([A-Za-z0-9._]+)");
-    private static volatile Set<String> activeAddressNames = Set.of();
+
+    private static volatile Set<String> activeAddressNames = Set.of(); // modified clientside only!!!
 
     private final ArgumentType<A> wrappedType;
     private final ResourceLocation targetTypeKey;
@@ -48,6 +50,7 @@ public class ValueOfOrLiteralArgumentType<A> implements ArgumentType<Object> {
         return targetTypeKey;
     }
 
+    /// Only call this clientside!!
     public static void setActiveAddressNames(Collection<String> addressNames) {
         activeAddressNames = Set.copyOf(addressNames);
     }

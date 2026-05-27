@@ -34,11 +34,11 @@ public class ScriptTerminalBlockEntityRenderer implements BlockEntityRenderer<Sc
         if (!blockState.getValue(ScriptTerminalBlock.HAS_ADDRESS_PAD)) return;
 
         poseStack.pushPose();
-        poseStack.translate(0.5F, 1.0F, 0.5F);
+        poseStack.translate(0.5F, 0.875F, 0.5F);
         float g = blockState.getValue(ScriptTerminalBlock.FACING).getClockWise().toYRot();
         poseStack.mulPose(Axis.YP.rotationDegrees(-(g + 90)));
-//        poseStack.mulPose(Axis.ZP.rotationDegrees(67.5F));
-//        poseStack.translate(0.0F, -0.125F, 0.0F);
+        poseStack.mulPose(Axis.XP.rotationDegrees(-22.5F));
+        poseStack.translate(0.0F, -0.375F, 0.0F);
 
         BakedModel model = Minecraft.getInstance().getModelManager().getModel(ADDRESS_PAD_BER_MODEL);
         itemRenderer.render(

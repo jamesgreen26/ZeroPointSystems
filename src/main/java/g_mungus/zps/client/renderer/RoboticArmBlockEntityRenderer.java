@@ -309,7 +309,12 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
     }
 
     @Override
-    public boolean shouldRender(RoboticArmBlockEntity p_173568_, Vec3 p_173569_) {
-        return true;
+    public int getViewDistance() {
+        return 96;
+    }
+
+    @Override
+    public boolean shouldRender(RoboticArmBlockEntity blockEntity, Vec3 cameraPos) {
+        return Vec3.atCenterOf(blockEntity.getBlockPos()).closerThan(cameraPos, getViewDistance());
     }
 }

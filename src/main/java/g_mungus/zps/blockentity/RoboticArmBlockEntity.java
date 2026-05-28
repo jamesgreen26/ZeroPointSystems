@@ -25,6 +25,7 @@ import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.util.FakePlayer;
@@ -253,6 +254,19 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
     public void clearContent() {
         heldStack = ItemStack.EMPTY;
         setChanged();
+    }
+
+    @Override
+    public @NotNull AABB getRenderBoundingBox() {
+        int r = MAX_DISTANCE_BLOCKS;
+        return new AABB(
+                worldPosition.getX() - r,
+                worldPosition.getY() - r,
+                worldPosition.getZ() - r,
+                worldPosition.getX() + r + 1.0,
+                worldPosition.getY() + r + 1.0,
+                worldPosition.getZ() + r + 1.0
+        );
     }
 
     private void writeArmState(CompoundTag tag) {

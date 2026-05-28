@@ -22,7 +22,8 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
     private static final float ARM_A = 1.0f;
     private static final float SEGMENT_COUNT = 3.0f;
     private static final float EPSILON = 1.0e-4f;
-    private static final int FIRST_JOINT_SAMPLES = 180;
+    private static final double SWIVEL_ANGLE_MIN = 0.05;
+    private static final double SWIVEL_PITCH_MAX = 0.18;
 
     public RoboticArmBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
     }
@@ -36,7 +37,7 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
 
         ArmPlane armPlane = ArmPlane.from(BASE_POS, handPos);
         PlanePoint hand2d = armPlane.toPlane(handPos);
-        ArmSolution solution2d = solveArmInPlane(hand2d, segmentLength, BASE_POS, handPos, armPlane);
+        ArmSolution solution2d = solveArmInPlane(hand2d, segmentLength);
         PlanePoint firstJoint2d = solution2d.firstJoint();
         PlanePoint secondJoint2d = solution2d.secondJoint();
         Vec3 firstJoint = armPlane.toWorld(firstJoint2d);
@@ -58,7 +59,33 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
         double progress = Math.min(1.0, Math.max(0.0, elapsed / RoboticArmBlockEntity.MOVE_TIME_TICKS));
         Vec3 start = toLocalCenter(blockEntity.getBlockPos(), blockEntity.getMoveStartBlockPos());
         Vec3 end = toLocalCenter(blockEntity.getBlockPos(), blockEntity.getMoveTargetBlockPos());
-        return start.lerp(end, progress);
+        return interpolateHandSwivel(start, end, progress);
+    }
+
+    private static Vec3 interpolateHandSwivel(Vec3 start, Vec3 end, double progress) {
+        Vec3 startLocal = start.subtract(BASE_POS);
+        Vec3 endLocal = end.subtract(BASE_POS);
+
+        double startHorizontal = Math.sqrt((startLocal.x * startLocal.x) + (startLocal.z * startLocal.z));
+        double endHorizontal = Math.sqrt((endLocal.x * endLocal.x) + (endLocal.z * endLocal.z));
+        if (startHorizontal < EPSILON || endHorizontal < EPSILON) return start.lerp(end, progress);
+
+        double startAzimuth = Math.atan2(startLocal.z, startLocal.x);
+        double endAzimuth = Math.atan2(endLocal.z, endLocal.x);
+        double deltaAzimuth = wrapRadians(endAzimuth - startAzimuth);
+        if (Math.abs(deltaAzimuth) < SWIVEL_ANGLE_MIN) return start.lerp(end, progress);
+
+        double azimuth = startAzimuth + (deltaAzimuth * progress);
+        double horizontal = lerp(startHorizontal, endHorizontal, progress);
+
+        double y = lerp(startLocal.y, endLocal.y, progress);
+        double sweepFactor = clamp(Math.abs(deltaAzimuth) / Math.PI, 0.0, 1.0);
+        double pitchNudge = Math.sin(Math.PI * progress) * SWIVEL_PITCH_MAX * sweepFactor;
+        y += pitchNudge;
+
+        double x = Math.cos(azimuth) * horizontal;
+        double z = Math.sin(azimuth) * horizontal;
+        return BASE_POS.add(x, y, z);
     }
 
     private static Vec3 toLocalCenter(net.minecraft.core.BlockPos origin, net.minecraft.core.BlockPos target) {
@@ -69,81 +96,33 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
         );
     }
 
-    private static ArmSolution solveArmInPlane(PlanePoint hand, float segmentLength, Vec3 worldBase, Vec3 worldHand, ArmPlane armPlane) {
+    private static ArmSolution solveArmInPlane(PlanePoint hand, float segmentLength) {
         if (length(hand) < EPSILON) {
             PlanePoint first = new PlanePoint(0.0, segmentLength);
             PlanePoint second = first.add(0.0, segmentLength);
             return new ArmSolution(first, second);
         }
 
-        ArmSolution best = null;
-        double bestScore = -Double.MAX_VALUE;
+        double handAngle = Math.atan2(hand.y, hand.r);
+        double normalizedReach = clamp(length(hand) / segmentLength, 0.0, 3.0);
 
-        for (int i = 0; i < FIRST_JOINT_SAMPLES; i++) {
-            double theta = (Math.PI * 2.0 * i) / FIRST_JOINT_SAMPLES;
-            PlanePoint first = new PlanePoint(segmentLength * Math.cos(theta), segmentLength * Math.sin(theta));
-            if (distance(first, hand) > (segmentLength * 2.0) + EPSILON) continue;
+        // For equal bend at both joints:
+        // d/L = |dir(a) + dir(a+b) + dir(a+2b)| = |1 + 2cos(b)|
+        // Choose the forward-facing branch: 1 + 2cos(b) = d/L.
+        double cosBend = clamp((normalizedReach - 1.0) * 0.5, -1.0, 1.0);
+        double bend = Math.acos(cosBend);
+        double firstAngle = handAngle - bend;
+        double secondAngle = handAngle;
 
-            ArmSolution candidate = solveWithFirstJoint(first, hand, segmentLength, worldBase, worldHand, armPlane);
-            if (candidate.score() > bestScore) {
-                bestScore = candidate.score();
-                best = candidate;
-            }
-        }
-
-        if (best != null) return best;
-
-        PlanePoint handDirection = normalize(hand);
-        PlanePoint fallbackFirst = new PlanePoint(segmentLength * handDirection.r, segmentLength * handDirection.y);
-        PlanePoint fallbackSecond = fallbackFirst.add(segmentLength * handDirection.r, segmentLength * handDirection.y);
-        return new ArmSolution(fallbackFirst, fallbackSecond, -1.0);
-    }
-
-    private static ArmSolution solveWithFirstJoint(PlanePoint firstJoint, PlanePoint hand, float segmentLength,
-                                                   Vec3 worldBase, Vec3 worldHand, ArmPlane armPlane) {
-        PlanePoint secondA;
-        PlanePoint secondB;
-        PlanePoint toHand = hand.subtract(firstJoint);
-        double distance = Math.sqrt((toHand.r * toHand.r) + (toHand.y * toHand.y));
-        if (distance < EPSILON) {
-            secondA = firstJoint.add(0.0, segmentLength);
-            secondB = secondA;
-        } else {
-            double clampedDistance = Math.min(distance, segmentLength * 2.0);
-            double midDistance = clampedDistance * 0.5;
-            double perpendicular = Math.sqrt(Math.max(0.0, (segmentLength * segmentLength) - (midDistance * midDistance)));
-            double ux = toHand.r / distance;
-            double uy = toHand.y / distance;
-
-            PlanePoint midpoint = firstJoint.add(ux * midDistance, uy * midDistance);
-            secondA = midpoint.add(-uy * perpendicular, ux * perpendicular);
-            secondB = midpoint.add(uy * perpendicular, -ux * perpendicular);
-        }
-
-        double scoreA = alignmentScore(secondA, hand, worldBase, worldHand, armPlane);
-        double scoreB = alignmentScore(secondB, hand, worldBase, worldHand, armPlane);
-        PlanePoint second = scoreA >= scoreB ? secondA : secondB;
-        double score = Math.max(scoreA, scoreB);
-        return new ArmSolution(firstJoint, second, score);
-    }
-
-    private static double alignmentScore(PlanePoint secondJoint, PlanePoint hand,
-                                         Vec3 worldBase, Vec3 worldHand, ArmPlane armPlane) {
-        Vec3 worldSecond = armPlane.toWorld(secondJoint);
-        Vec3 last = normalize(worldHand.subtract(worldSecond));
-        Vec3 baseToHand = normalize(worldHand.subtract(worldBase));
-        return last.dot(baseToHand);
-    }
-
-    private static Vec3 normalize(Vec3 vec) {
-        if (vec.lengthSqr() < EPSILON) return new Vec3(1.0, 0.0, 0.0);
-        return vec.normalize();
-    }
-
-    private static PlanePoint normalize(PlanePoint point) {
-        double len = length(point);
-        if (len < EPSILON) return new PlanePoint(1.0, 0.0);
-        return new PlanePoint(point.r / len, point.y / len);
+        PlanePoint first = new PlanePoint(
+                segmentLength * Math.cos(firstAngle),
+                segmentLength * Math.sin(firstAngle)
+        );
+        PlanePoint second = first.add(
+                segmentLength * Math.cos(secondAngle),
+                segmentLength * Math.sin(secondAngle)
+        );
+        return new ArmSolution(first, second);
     }
 
     private static double length(PlanePoint point) {
@@ -154,19 +133,19 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
         return Math.max(min, Math.min(max, value));
     }
 
-    private static double distance(PlanePoint a, PlanePoint b) {
-        double dr = a.r - b.r;
-        double dy = a.y - b.y;
-        return Math.sqrt((dr * dr) + (dy * dy));
+    private static double lerp(double start, double end, double t) {
+        return start + ((end - start) * t);
+    }
+
+    private static double wrapRadians(double angle) {
+        while (angle > Math.PI) angle -= Math.PI * 2.0;
+        while (angle < -Math.PI) angle += Math.PI * 2.0;
+        return angle;
     }
 
     private record PlanePoint(double r, double y) {
         private PlanePoint add(double dr, double dy) {
             return new PlanePoint(r + dr, y + dy);
-        }
-
-        private PlanePoint subtract(PlanePoint other) {
-            return new PlanePoint(r - other.r, y - other.y);
         }
     }
 

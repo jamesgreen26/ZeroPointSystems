@@ -1,5 +1,6 @@
 package g_mungus.zps.blockentity;
 
+import g_mungus.zps.ZPSMod;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -18,21 +19,29 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BarrelBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.util.FakePlayer;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
+@Mod.EventBusSubscriber(modid = ZPSMod.MOD_ID)
 public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Clearable {
     public static final int MOVE_TIME_TICKS = 15;
     public static final int MAX_DISTANCE_BLOCKS = 4;
+    private static final int CONTAINER_CLOSE_DELAY_TICKS = 3;
 
     private boolean moving;
     private BlockPos handBlockPos;
@@ -43,6 +52,7 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
     private PendingTransfer pendingTransfer = PendingTransfer.NONE;
     private BlockPos pendingTransferTargetPos = BlockPos.ZERO;
     private transient FakePlayer usePlayer;
+    private static final ConcurrentLinkedQueue<DelayedContainerCloseJob> delayedContainerCloseJobs = new ConcurrentLinkedQueue<>();
     private final Container heldStackAccess = new Container() {
         @Override
         public int getContainerSize() {
@@ -303,12 +313,64 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
             return;
         }
 
-        if (pendingTransfer == PendingTransfer.RETRIEVE) {
-            tryRetrieveFrom(container);
-        } else if (pendingTransfer == PendingTransfer.DEPOSIT) {
-            tryDepositInto(container);
+        Player interactionPlayer = getContainerInteractionPlayer();
+        openContainerForVisualTransfer(blockEntity, interactionPlayer);
+        try {
+            if (pendingTransfer == PendingTransfer.RETRIEVE) {
+                tryRetrieveFrom(container);
+            } else if (pendingTransfer == PendingTransfer.DEPOSIT) {
+                tryDepositInto(container);
+            }
+        } finally {
+            scheduleContainerClose(blockEntity.getBlockPos(), gameTimeWithDelay(), interactionPlayer);
         }
         pendingTransfer = PendingTransfer.NONE;
+    }
+
+    private long gameTimeWithDelay() {
+        return level != null ? level.getGameTime() + CONTAINER_CLOSE_DELAY_TICKS : CONTAINER_CLOSE_DELAY_TICKS;
+    }
+
+    private void scheduleContainerClose(BlockPos blockPos, long closeGameTime, @Nullable Player player) {
+        if (player == null) return;
+        if (!(level instanceof ServerLevel serverLevel)) return;
+        delayedContainerCloseJobs.add(new DelayedContainerCloseJob(serverLevel, blockPos.immutable(), closeGameTime, player));
+    }
+
+    @SubscribeEvent
+    public static void onServerTick(TickEvent.ServerTickEvent event) {
+        if (event.phase != TickEvent.Phase.START || delayedContainerCloseJobs.isEmpty()) return;
+        for (DelayedContainerCloseJob delayedClose : delayedContainerCloseJobs) {
+            if (delayedClose.level.getGameTime() < delayedClose.closeGameTime) continue;
+            BlockEntity blockEntity = delayedClose.level.getBlockEntity(delayedClose.blockPos);
+            if (blockEntity != null) {
+                closeContainerAfterVisualTransfer(blockEntity, delayedClose.player);
+            }
+            delayedContainerCloseJobs.remove(delayedClose);
+        }
+    }
+
+    private @Nullable Player getContainerInteractionPlayer() {
+        if (!(level instanceof ServerLevel serverLevel)) return null;
+        return getOrCreateUsePlayer(serverLevel);
+    }
+
+    private static void openContainerForVisualTransfer(BlockEntity blockEntity, @Nullable Player player) {
+        if (player == null) return;
+        if (blockEntity instanceof ChestBlockEntity chest) {
+            chest.startOpen(player);
+        } else if (blockEntity instanceof BarrelBlockEntity barrel) {
+            barrel.startOpen(player);
+        }
+    }
+
+    private static void closeContainerAfterVisualTransfer(BlockEntity blockEntity, @Nullable Player player) {
+        if (player == null) return;
+        if (blockEntity instanceof ChestBlockEntity chest) {
+            chest.stopOpen(player);
+        } else if (blockEntity instanceof BarrelBlockEntity barrel) {
+            barrel.stopOpen(player);
+        }
     }
 
     private void tryRetrieveFrom(Container source) {
@@ -486,4 +548,6 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
             return values()[value];
         }
     }
+
+    private record DelayedContainerCloseJob(ServerLevel level, BlockPos blockPos, long closeGameTime, Player player) {}
 }

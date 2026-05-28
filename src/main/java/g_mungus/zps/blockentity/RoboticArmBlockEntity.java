@@ -42,6 +42,8 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
     public static final int MOVE_TIME_TICKS = 15;
     public static final int MAX_DISTANCE_BLOCKS = 4;
     private static final int CONTAINER_CLOSE_DELAY_TICKS = 3;
+    public static final int MIN_RETRIEVE_AMOUNT = 1;
+    public static final int MAX_RETRIEVE_AMOUNT = 64;
 
     private boolean moving;
     private BlockPos handBlockPos;
@@ -51,6 +53,8 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
     private ItemStack heldStack = ItemStack.EMPTY;
     private PendingTransfer pendingTransfer = PendingTransfer.NONE;
     private BlockPos pendingTransferTargetPos = BlockPos.ZERO;
+    private int retrieveAmount = 1;
+    private boolean viewRange = false;
     private transient FakePlayer usePlayer;
     private static final ConcurrentLinkedQueue<DelayedContainerCloseJob> delayedContainerCloseJobs = new ConcurrentLinkedQueue<>();
     private final Container heldStackAccess = new Container() {
@@ -259,6 +263,8 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
         tag.putLong("MoveTargetBlockPos", moveTargetBlockPos.asLong());
         tag.putInt("PendingTransfer", pendingTransfer.ordinal());
         tag.putLong("PendingTransferTargetPos", pendingTransferTargetPos.asLong());
+        tag.putInt("RetrieveAmount", retrieveAmount);
+        tag.putBoolean("ViewRange", viewRange);
     }
 
     private void readArmState(CompoundTag tag) {
@@ -269,6 +275,8 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
         moveTargetBlockPos = tag.contains("MoveTargetBlockPos", Tag.TAG_LONG) ? BlockPos.of(tag.getLong("MoveTargetBlockPos")) : handBlockPos;
         pendingTransfer = PendingTransfer.byOrdinal(tag.getInt("PendingTransfer"));
         pendingTransferTargetPos = tag.contains("PendingTransferTargetPos", Tag.TAG_LONG) ? BlockPos.of(tag.getLong("PendingTransferTargetPos")) : BlockPos.ZERO;
+        retrieveAmount = clampRetrieveAmount(tag.contains("RetrieveAmount", Tag.TAG_ANY_NUMERIC) ? tag.getInt("RetrieveAmount") : 1);
+        viewRange = tag.getBoolean("ViewRange");
     }
 
     private void writeInventoryState(CompoundTag tag) {
@@ -374,15 +382,21 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
     }
 
     private void tryRetrieveFrom(Container source) {
+        int desired = retrieveAmount;
+        int moved = 0;
         if (!heldStack.isEmpty() && heldStack.getCount() >= heldStack.getMaxStackSize()) return;
 
-        for (int slot = 0; slot < source.getContainerSize(); slot++) {
+        for (int slot = 0; slot < source.getContainerSize() && moved < desired; slot++) {
             ItemStack sourceStack = source.getItem(slot);
             if (sourceStack.isEmpty()) continue;
             if (!canTakeItem(source, slot, sourceStack, Direction.DOWN)) continue;
             if (!heldStack.isEmpty() && !ItemStack.isSameItemSameTags(heldStack, sourceStack)) continue;
 
-            ItemStack extracted = source.removeItem(slot, 1);
+            int maxByHeld = heldStack.isEmpty() ? sourceStack.getMaxStackSize() : heldStack.getMaxStackSize() - heldStack.getCount();
+            int toExtract = Math.min(desired - moved, Math.min(sourceStack.getCount(), maxByHeld));
+            if (toExtract <= 0) break;
+
+            ItemStack extracted = source.removeItem(slot, toExtract);
             if (extracted.isEmpty()) continue;
 
             if (heldStack.isEmpty()) {
@@ -390,11 +404,32 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
             } else {
                 heldStack.grow(extracted.getCount());
             }
+            moved += extracted.getCount();
 
             source.setChanged();
             setChanged();
-            return;
         }
+    }
+
+    public int getRetrieveAmount() {
+        return retrieveAmount;
+    }
+
+    public boolean isViewRange() {
+        return viewRange;
+    }
+
+    public void setArmSettings(int retrieveAmount, boolean viewRange) {
+        this.retrieveAmount = clampRetrieveAmount(retrieveAmount);
+        this.viewRange = viewRange;
+        setChanged();
+        if (level != null) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_ALL);
+        }
+    }
+
+    private static int clampRetrieveAmount(int value) {
+        return Math.max(MIN_RETRIEVE_AMOUNT, Math.min(MAX_RETRIEVE_AMOUNT, value));
     }
 
     private void tryDepositInto(Container target) {

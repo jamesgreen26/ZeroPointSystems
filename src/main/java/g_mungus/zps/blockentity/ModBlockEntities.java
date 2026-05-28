@@ -98,4 +98,9 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(LoudspeakerBlockEntity::new,
                             ModBlocks.LOUDSPEAKER.get()).build(null));
 
+    public static final RegistryObject<BlockEntityType<RoboticArmBlockEntity>> ROBOTIC_ARM =
+            BLOCK_ENTITIES.register("robotic_arm",
+                    () -> BlockEntityType.Builder.of(RoboticArmBlockEntity::new,
+                            ModBlocks.ROBOTIC_ARM.get()).build(null));
+
 } 

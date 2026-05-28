@@ -5,10 +5,14 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptExecutor;
+import g_mungus.zps.commands.content.executors.RoboticArmItemCommand;
 import g_mungus.zps.commands.content.arguments.RadioFrequencyArgument;
 import g_mungus.zps.commands.content.executors.SetFrequencyCommand;
 import g_mungus.zps.commands.content.executors.SetRedstoneCommand;
 import g_mungus.zps.commands.content.executors.SetPageCommand;
+import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
+import net.minecraft.commands.arguments.coordinates.Coordinates;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -72,6 +76,36 @@ public class ZPSScriptExecutors {
                         frequencyIndex
                 ),
                 Set.of(ZPSMod.resource("radio_transmitter"), ZPSMod.resource("radio_receiver"))
+        ));
+
+        event.register(new ScriptExecutor<>(
+                "get_items",
+                BlockPos.class,
+                ResourceLocation.parse("zps:block_pos"),
+                BlockPosArgument.blockPos(),
+                Coordinates.class,
+                (coordinates, context) -> coordinates.getBlockPos(context.commandSource()),
+                (targetPos, context) -> RoboticArmItemCommand.getItems(
+                        context.commandSource().getLevel(),
+                        context.pos(),
+                        targetPos
+                ),
+                Set.of(ZPSMod.resource("robotic_arm"))
+        ));
+
+        event.register(new ScriptExecutor<>(
+                "put_items",
+                BlockPos.class,
+                ResourceLocation.parse("zps:block_pos"),
+                BlockPosArgument.blockPos(),
+                Coordinates.class,
+                (coordinates, context) -> coordinates.getBlockPos(context.commandSource()),
+                (targetPos, context) -> RoboticArmItemCommand.putItems(
+                        context.commandSource().getLevel(),
+                        context.pos(),
+                        targetPos
+                ),
+                Set.of(ZPSMod.resource("robotic_arm"))
         ));
     }
 }

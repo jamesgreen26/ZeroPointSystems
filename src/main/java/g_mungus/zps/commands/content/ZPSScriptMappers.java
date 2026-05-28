@@ -11,9 +11,11 @@ import net.minecraft.commands.arguments.DimensionArgument;
 import net.minecraft.commands.arguments.blocks.BlockPredicateArgument;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.commands.arguments.coordinates.Coordinates;
+import net.minecraft.commands.arguments.item.ItemPredicateArgument;
 import net.minecraft.commands.arguments.coordinates.Vec3Argument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.pattern.BlockInWorld;
 import net.minecraft.world.phys.Vec3;
@@ -303,6 +305,30 @@ public class ZPSScriptMappers {
                 BlockPredicateArgument.blockPredicate(event.buildContext()),
                 BlockPredicateArgument.Result.class,
                 null
+        ));
+
+        // Equality check for item against item predicate
+        event.register(new ScriptMapper2<>(
+                "==",
+                ItemStack.class,
+                Boolean.class,
+                ResourceLocation.parse("zps:item"),
+                ResourceLocation.parse("zps:boolean"),
+                "item",
+                (itemStack, context) -> context.argumentValue().test(itemStack),
+                ItemPredicateArgument.itemPredicate(event.buildContext()),
+                ItemPredicateArgument.Result.class,
+                null
+        ));
+
+        // ItemStack count
+        event.register(new ScriptMapper<>(
+                "count",
+                ItemStack.class,
+                Integer.class,
+                ResourceLocation.parse("zps:item"),
+                ResourceLocation.parse("zps:int"),
+                (itemStack, scriptContext) -> itemStack.getCount()
         ));
 
         // Equality check for int

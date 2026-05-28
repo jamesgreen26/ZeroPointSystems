@@ -1,6 +1,7 @@
 package g_mungus.zps.commands.content;
 
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.blockentity.RoboticArmBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.BookHolder;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptContext;
@@ -93,6 +94,20 @@ public class ZPSScriptGetters {
                     return "";
                 },
                 lecternBlocks
+        ));
+
+        event.register(ScriptGetter.withBlocks(
+                "held_item",
+                ItemStack.class,
+                ResourceLocation.parse("zps:item"),
+                scriptContext -> {
+                    BlockEntity be = scriptContext.level().getBlockEntity(scriptContext.pos());
+                    if (be instanceof RoboticArmBlockEntity roboticArm) {
+                        return roboticArm.getHeldStack().copy();
+                    }
+                    return ItemStack.EMPTY;
+                },
+                Set.of(ZPSMod.resource("robotic_arm"))
         ));
     }
 }

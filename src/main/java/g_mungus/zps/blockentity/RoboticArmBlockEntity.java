@@ -22,7 +22,7 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl {
 
     public RoboticArmBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.ROBOTIC_ARM.get(), pos, state);
-        handBlockPos = pos;
+        handBlockPos = pos.above();
         moveStartBlockPos = pos;
         moveTargetBlockPos = pos;
     }
@@ -85,12 +85,12 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl {
             int y = worldPosition.getY() + level.random.nextInt((MAX_DISTANCE_BLOCKS * 2) + 1) - MAX_DISTANCE_BLOCKS;
             int z = worldPosition.getZ() + level.random.nextInt((MAX_DISTANCE_BLOCKS * 2) + 1) - MAX_DISTANCE_BLOCKS;
             BlockPos candidate = new BlockPos(x, y, z);
-            if (candidate.distSqr(worldPosition) <= (double) (MAX_DISTANCE_BLOCKS * MAX_DISTANCE_BLOCKS)) {
+            if (candidate.distSqr(worldPosition) <= (double) (MAX_DISTANCE_BLOCKS * MAX_DISTANCE_BLOCKS) && !candidate.equals(worldPosition)) {
                 return candidate;
             }
         }
 
-        return worldPosition;
+        return handBlockPos;
     }
 
     @Override

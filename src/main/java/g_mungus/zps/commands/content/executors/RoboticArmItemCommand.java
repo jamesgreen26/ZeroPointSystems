@@ -22,4 +22,20 @@ public class RoboticArmItemCommand {
         }
         return 0;
     }
+
+    public static int useItem(ServerLevel serverLevel, BlockPos armPos, BlockPos targetPos) {
+        BlockEntity blockEntity = serverLevel.getBlockEntity(armPos);
+        if (blockEntity instanceof RoboticArmBlockEntity roboticArm) {
+            return roboticArm.UseAt(targetPos) ? 1 : 0;
+        }
+        return 0;
+    }
+
+    public static int shiftUseItem(ServerLevel serverLevel, BlockPos armPos, BlockPos targetPos) {
+        BlockEntity blockEntity = serverLevel.getBlockEntity(armPos);
+        if (blockEntity instanceof RoboticArmBlockEntity roboticArm) {
+            return roboticArm.ShiftUseAt(targetPos) ? 1 : 0;
+        }
+        return 0;
+    }
 }

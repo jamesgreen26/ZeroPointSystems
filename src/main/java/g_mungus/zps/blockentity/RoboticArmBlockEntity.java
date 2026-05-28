@@ -1,21 +1,30 @@
 package g_mungus.zps.blockentity;
 
+import com.mojang.authlib.GameProfile;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Clearable;
 import net.minecraft.world.Container;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.WorldlyContainer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.core.Direction;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.common.util.FakePlayer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.UUID;
 
 public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Clearable {
     public static final int MOVE_TIME_TICKS = 15;
@@ -29,6 +38,7 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
     private ItemStack heldStack = ItemStack.EMPTY;
     private PendingTransfer pendingTransfer = PendingTransfer.NONE;
     private BlockPos pendingTransferTargetPos = BlockPos.ZERO;
+    private transient FakePlayer usePlayer;
     private final Container heldStackAccess = new Container() {
         @Override
         public int getContainerSize() {
@@ -154,6 +164,18 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
         return moveHandTo(targetPos);
     }
 
+    public boolean UseAt(BlockPos targetPos) {
+        pendingTransfer = PendingTransfer.USE;
+        pendingTransferTargetPos = targetPos;
+        return moveHandTo(targetPos);
+    }
+
+    public boolean ShiftUseAt(BlockPos targetPos) {
+        pendingTransfer = PendingTransfer.SHIFT_USE;
+        pendingTransferTargetPos = targetPos;
+        return moveHandTo(targetPos);
+    }
+
     public Container getHeldStackAccess() {
         return heldStackAccess;
     }
@@ -246,6 +268,18 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
     private void runPendingTransfer() {
         if (level == null || pendingTransfer == PendingTransfer.NONE) return;
         if (!handBlockPos.equals(pendingTransferTargetPos)) return;
+
+        if (pendingTransfer == PendingTransfer.USE) {
+            tryUseAt(pendingTransferTargetPos, false);
+            pendingTransfer = PendingTransfer.NONE;
+            return;
+        }
+
+        if (pendingTransfer == PendingTransfer.SHIFT_USE) {
+            tryUseAt(pendingTransferTargetPos, true);
+            pendingTransfer = PendingTransfer.NONE;
+            return;
+        }
 
         BlockEntity blockEntity = level.getBlockEntity(pendingTransferTargetPos);
         if (!(blockEntity instanceof Container container)) {
@@ -347,10 +381,64 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
         return container.canPlaceItem(slot, stack);
     }
 
+    private void tryUseAt(BlockPos targetPos, boolean shiftUse) {
+        if (!(level instanceof ServerLevel serverLevel)) return;
+
+        FakePlayer fakePlayer = getOrCreateUsePlayer(serverLevel);
+        fakePlayer.setShiftKeyDown(shiftUse);
+        fakePlayer.setItemInHand(InteractionHand.MAIN_HAND, heldStack.copy());
+
+        Direction hitFace = getHitFace(targetPos);
+        Vec3 targetCenter = Vec3.atCenterOf(targetPos);
+        fakePlayer.setPos(targetCenter.x, targetCenter.y, targetCenter.z);
+
+        BlockHitResult hitResult = new BlockHitResult(targetCenter, hitFace, targetPos, false);
+        InteractionResult result = fakePlayer.gameMode.useItemOn(
+                fakePlayer,
+                serverLevel,
+                fakePlayer.getMainHandItem(),
+                InteractionHand.MAIN_HAND,
+                hitResult
+        );
+
+        if (!result.consumesAction()) {
+            fakePlayer.gameMode.useItem(
+                    fakePlayer,
+                    serverLevel,
+                    fakePlayer.getMainHandItem(),
+                    InteractionHand.MAIN_HAND
+            );
+        }
+
+        heldStack = fakePlayer.getMainHandItem().copy();
+        fakePlayer.setShiftKeyDown(false);
+        setChanged();
+    }
+
+    private Direction getHitFace(BlockPos targetPos) {
+        int dx = worldPosition.getX() - targetPos.getX();
+        int dy = worldPosition.getY() - targetPos.getY();
+        int dz = worldPosition.getZ() - targetPos.getZ();
+        if (dx == 0 && dy == 0 && dz == 0) return Direction.UP;
+        return Direction.getNearest(dx, dy, dz);
+    }
+
+    private FakePlayer getOrCreateUsePlayer(ServerLevel serverLevel) {
+        if (usePlayer == null || usePlayer.level() != serverLevel) {
+            usePlayer = new FakePlayer(
+                    serverLevel,
+                    new GameProfile(UUID.fromString("c4ec0cd8-0975-4cd9-a413-6eecbbfb4f9d"), "[ZPS Robotic Arm]")
+            );
+        }
+        return usePlayer;
+    }
+
     private enum PendingTransfer {
         NONE,
         RETRIEVE,
-        DEPOSIT;
+        DEPOSIT,
+        USE,
+        SHIFT_USE;
 
         static PendingTransfer byOrdinal(int value) {
             if (value < 0 || value >= values().length) return NONE;

@@ -107,5 +107,35 @@ public class ZPSScriptExecutors {
                 ),
                 Set.of(ZPSMod.resource("robotic_arm"))
         ));
+
+        event.register(new ScriptExecutor<>(
+                "use",
+                BlockPos.class,
+                ResourceLocation.parse("zps:block_pos"),
+                BlockPosArgument.blockPos(),
+                Coordinates.class,
+                (coordinates, context) -> coordinates.getBlockPos(context.commandSource()),
+                (targetPos, context) -> RoboticArmItemCommand.useItem(
+                        context.commandSource().getLevel(),
+                        context.pos(),
+                        targetPos
+                ),
+                Set.of(ZPSMod.resource("robotic_arm"))
+        ));
+
+        event.register(new ScriptExecutor<>(
+                "shift_use",
+                BlockPos.class,
+                ResourceLocation.parse("zps:block_pos"),
+                BlockPosArgument.blockPos(),
+                Coordinates.class,
+                (coordinates, context) -> coordinates.getBlockPos(context.commandSource()),
+                (targetPos, context) -> RoboticArmItemCommand.shiftUseItem(
+                        context.commandSource().getLevel(),
+                        context.pos(),
+                        targetPos
+                ),
+                Set.of(ZPSMod.resource("robotic_arm"))
+        ));
     }
 }

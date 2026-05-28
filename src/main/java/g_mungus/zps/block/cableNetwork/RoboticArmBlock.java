@@ -3,6 +3,7 @@ package g_mungus.zps.block.cableNetwork;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.BaseEntityBlock;
+import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -19,6 +20,11 @@ public class RoboticArmBlock extends BaseEntityBlock {
     @Override
     public @Nullable BlockEntity newBlockEntity(@NotNull BlockPos pos, @NotNull BlockState state) {
         return new RoboticArmBlockEntity(pos, state);
+    }
+
+    @Override
+    public @NotNull RenderShape getRenderShape(@NotNull BlockState state) {
+        return RenderShape.MODEL;
     }
 
     @Override

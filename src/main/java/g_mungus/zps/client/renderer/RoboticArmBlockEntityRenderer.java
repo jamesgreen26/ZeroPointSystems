@@ -17,8 +17,6 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
 
 public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<RoboticArmBlockEntity> {
     private static final Vec3 BASE_POS = new Vec3(0.5, 0.5, 0.5);
@@ -50,26 +48,28 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
         Vec3 firstJoint = armPlane.toWorld(firstJoint2d);
         Vec3 secondJoint = armPlane.toWorld(secondJoint2d);
 
-        renderSegmentModel(BASE_POS, firstJoint, segmentModel, poseStack, bufferSource, packedLight, packedOverlay);
-        renderSegmentModel(firstJoint, secondJoint, segmentModel, poseStack, bufferSource, packedLight, packedOverlay);
-        renderSegmentModel(secondJoint, handPos, segmentModel, poseStack, bufferSource, packedLight, packedOverlay);
+        renderSegmentModel(BASE_POS, firstJoint, armPlane.radialAxis(), segmentModel, poseStack, bufferSource, packedLight, packedOverlay);
+        renderSegmentModel(firstJoint, secondJoint, armPlane.radialAxis(), segmentModel, poseStack, bufferSource, packedLight, packedOverlay);
+        renderSegmentModel(secondJoint, handPos, armPlane.radialAxis(), segmentModel, poseStack, bufferSource, packedLight, packedOverlay);
 
         renderHeldItem(blockEntity, handPos, poseStack, bufferSource, packedLight, packedOverlay);
     }
 
-    private void renderSegmentModel(Vec3 start, Vec3 end, BakedModel model,
+    private void renderSegmentModel(Vec3 start, Vec3 end, Vec3 radialAxis, BakedModel model,
                                     PoseStack poseStack, MultiBufferSource bufferSource,
                                     int packedLight, int packedOverlay) {
         Vec3 direction = end.subtract(start);
         if (direction.lengthSqr() < EPSILON) return;
 
-        float dx = (float) direction.x;
-        float dy = (float) direction.y;
-        float dz = (float) direction.z;
+        double radialComponent = direction.dot(radialAxis);
+        double verticalComponent = direction.y;
+        float swivelYawDegrees = (float) Math.toDegrees(Math.atan2(radialAxis.z, radialAxis.x));
+        float hingeDegrees = (float) Math.toDegrees(Math.atan2(radialComponent, verticalComponent));
+
         poseStack.pushPose();
         poseStack.translate(start.x, start.y, start.z);
-        Quaternionf orientation = new Quaternionf().rotationTo(new Vector3f(0.0f, 1.0f, 0.0f), new Vector3f(dx, dy, dz).normalize());
-        poseStack.mulPose(orientation);
+        poseStack.mulPose(Axis.YP.rotationDegrees(-swivelYawDegrees));
+        poseStack.mulPose(Axis.ZP.rotationDegrees(-hingeDegrees));
         poseStack.translate(0.0F, 0.5F, 0.0F);
         itemRenderer.render(
                 SEGMENT_MODEL_STACK,

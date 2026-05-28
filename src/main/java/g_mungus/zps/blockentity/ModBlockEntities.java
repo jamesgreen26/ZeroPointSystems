@@ -103,4 +103,9 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(RoboticArmBlockEntity::new,
                             ModBlocks.ROBOTIC_ARM.get()).build(null));
 
+    public static final RegistryObject<BlockEntityType<CreativeEnergyCellBlockEntity>> CREATIVE_ENERGY_CELL =
+            BLOCK_ENTITIES.register("creative_energy_cell",
+                    () -> BlockEntityType.Builder.of(CreativeEnergyCellBlockEntity::new,
+                            ModBlocks.CREATIVE_ENERGY_CELL.get()).build(null));
+
 } 

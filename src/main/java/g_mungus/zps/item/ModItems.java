@@ -89,6 +89,9 @@ public class ModItems {
     public static final RegistryObject<Item> ROBOTIC_ARM = ITEMS.register("robotic_arm",
             () -> new BlockItem(ModBlocks.ROBOTIC_ARM.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> CREATIVE_ENERGY_CELL = ITEMS.register("creative_energy_cell",
+            () -> new BlockItem(ModBlocks.CREATIVE_ENERGY_CELL.get(), new Item.Properties().rarity(Rarity.EPIC)));
+
     public static final RegistryObject<Item> SPACE_METAL_INGOT = ITEMS.register("space_metal_ingot",
         () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> SPACE_METAL_PLATE = ITEMS.register("space_metal_plate",

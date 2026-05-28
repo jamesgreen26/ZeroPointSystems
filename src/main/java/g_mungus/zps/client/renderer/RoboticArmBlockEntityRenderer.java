@@ -27,6 +27,8 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
     private static final ItemStack SEGMENT_MODEL_STACK = new ItemStack(ModItems.ROBOTIC_ARM.get());
     private static final ModelResourceLocation SEGMENT_BER_MODEL =
             new ModelResourceLocation(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "robotic_arm_segment"), "inventory");
+    private static final ModelResourceLocation SWIVEL_BASE_BER_MODEL =
+            new ModelResourceLocation(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "robotic_arm_swivel_base"), "inventory");
     private final ItemRenderer itemRenderer;
 
     public RoboticArmBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
@@ -39,8 +41,10 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
         Vec3 handPos = getInterpolatedHandPosition(blockEntity, partialTick);
         float segmentLength = RoboticArmBlockEntity.MAX_DISTANCE_BLOCKS / SEGMENT_COUNT;
         BakedModel segmentModel = Minecraft.getInstance().getModelManager().getModel(SEGMENT_BER_MODEL);
+        BakedModel swivelBaseModel = Minecraft.getInstance().getModelManager().getModel(SWIVEL_BASE_BER_MODEL);
 
         ArmPlane armPlane = ArmPlane.from(BASE_POS, handPos);
+        renderSwivelBaseModel(armPlane.radialAxis(), swivelBaseModel, poseStack, bufferSource, packedLight, packedOverlay);
         PlanePoint hand2d = armPlane.toPlane(handPos);
         ArmSolution solution2d = solveArmInPlane(hand2d, segmentLength);
         PlanePoint firstJoint2d = solution2d.firstJoint();
@@ -53,6 +57,26 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
         renderSegmentModel(secondJoint, handPos, armPlane.radialAxis(), segmentModel, poseStack, bufferSource, packedLight, packedOverlay);
 
         renderHeldItem(blockEntity, handPos, poseStack, bufferSource, packedLight, packedOverlay);
+    }
+
+    private void renderSwivelBaseModel(Vec3 radialAxis, BakedModel model,
+                                       PoseStack poseStack, MultiBufferSource bufferSource,
+                                       int packedLight, int packedOverlay) {
+        float swivelYawDegrees = (float) Math.toDegrees(Math.atan2(radialAxis.z, radialAxis.x));
+        poseStack.pushPose();
+        poseStack.translate(0.5F, 0.5F, 0.5F);
+        poseStack.mulPose(Axis.YP.rotationDegrees(-swivelYawDegrees));
+        itemRenderer.render(
+                SEGMENT_MODEL_STACK,
+                ItemDisplayContext.NONE,
+                false,
+                poseStack,
+                bufferSource,
+                packedLight,
+                packedOverlay,
+                model
+        );
+        poseStack.popPose();
     }
 
     private void renderSegmentModel(Vec3 start, Vec3 end, Vec3 radialAxis, BakedModel model,

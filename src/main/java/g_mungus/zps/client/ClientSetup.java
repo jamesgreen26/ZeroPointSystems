@@ -26,6 +26,8 @@ public class ClientSetup {
             new ModelResourceLocation(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "address_pad_ber"), "inventory");
     private static final ModelResourceLocation ROBOTIC_ARM_SEGMENT_BER_MODEL =
             new ModelResourceLocation(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "robotic_arm_segment"), "inventory");
+    private static final ModelResourceLocation ROBOTIC_ARM_SWIVEL_BASE_BER_MODEL =
+            new ModelResourceLocation(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "robotic_arm_swivel_base"), "inventory");
 
     @SubscribeEvent
     public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
@@ -36,6 +38,7 @@ public class ClientSetup {
     public static void onRegisterAdditionalModels(ModelEvent.RegisterAdditional event) {
         event.register(ADDRESS_PAD_BER_MODEL);
         event.register(ROBOTIC_ARM_SEGMENT_BER_MODEL);
+        event.register(ROBOTIC_ARM_SWIVEL_BASE_BER_MODEL);
     }
 
     @SuppressWarnings("removal")

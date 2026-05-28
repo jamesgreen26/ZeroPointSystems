@@ -5,6 +5,8 @@ import com.mojang.math.Axis;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
 import g_mungus.zps.item.ModItems;
+import net.createmod.catnip.outliner.Outliner;
+import net.minecraft.core.BlockPos;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
@@ -18,6 +20,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<RoboticArmBlockEntity> {
     private static final Vec3 BASE_POS = new Vec3(0.5, 0.5, 0.5);
     private static final float SEGMENT_COUNT = 3.0f;
@@ -29,6 +34,7 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
             new ModelResourceLocation(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "robotic_arm_segment"), "inventory");
     private static final ModelResourceLocation SWIVEL_BASE_BER_MODEL =
             new ModelResourceLocation(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "robotic_arm_swivel_base"), "inventory");
+    private static final List<BlockPos> RANGE_VOLUME_OFFSETS = buildRangeVolumeOffsets();
     private final ItemRenderer itemRenderer;
 
     public RoboticArmBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
@@ -38,6 +44,20 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
     @Override
     public void render(RoboticArmBlockEntity blockEntity, float partialTick, @NotNull PoseStack poseStack,
                        @NotNull MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
+        if (blockEntity.isViewRange()) {
+            BlockPos origin = blockEntity.getBlockPos();
+            List<BlockPos> volumePositions = new ArrayList<>(RANGE_VOLUME_OFFSETS.size());
+            for (BlockPos offset : RANGE_VOLUME_OFFSETS) {
+                volumePositions.add(origin.offset(offset));
+            }
+            Outliner.getInstance()
+                    .showCluster("robotic_arm_range_" + origin.asLong(), volumePositions)
+                    .colored(0x00FFFF)
+                    .withFaceTextures(ZPSSpecialTextures.CHECKERED, ZPSSpecialTextures.HIGHLIGHT_CHECKERED)
+                    .disableCull()
+                    .lineWidth(1 / 16f);
+        }
+
         Vec3 handPos = getInterpolatedHandPosition(blockEntity, partialTick);
         float segmentLength = RoboticArmBlockEntity.MAX_DISTANCE_BLOCKS / SEGMENT_COUNT;
         BakedModel segmentModel = Minecraft.getInstance().getModelManager().getModel(SEGMENT_BER_MODEL);
@@ -234,6 +254,22 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
         while (angle > Math.PI) angle -= Math.PI * 2.0;
         while (angle < -Math.PI) angle += Math.PI * 2.0;
         return angle;
+    }
+
+    private static List<BlockPos> buildRangeVolumeOffsets() {
+        List<BlockPos> result = new ArrayList<>();
+        int max = RoboticArmBlockEntity.MAX_DISTANCE_BLOCKS;
+        int maxSq = max * max;
+        for (int x = -max; x <= max; x++) {
+            for (int y = -max; y <= max; y++) {
+                for (int z = -max; z <= max; z++) {
+                    BlockPos offset = new BlockPos(x, y, z);
+                    if (offset.distSqr(BlockPos.ZERO) > maxSq) continue;
+                    result.add(offset);
+                }
+            }
+        }
+        return List.copyOf(result);
     }
 
     private record PlanePoint(double r, double y) {

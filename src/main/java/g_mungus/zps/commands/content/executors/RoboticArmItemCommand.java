@@ -7,7 +7,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 
 public class RoboticArmItemCommand {
 
-    public static int getItems(ServerLevel serverLevel, BlockPos armPos, BlockPos targetPos) {
+    public static int takeItems(ServerLevel serverLevel, BlockPos armPos, BlockPos targetPos) {
         BlockEntity blockEntity = serverLevel.getBlockEntity(armPos);
         if (blockEntity instanceof RoboticArmBlockEntity roboticArm) {
             return roboticArm.RetrieveItemsFrom(targetPos) ? 1 : 0;

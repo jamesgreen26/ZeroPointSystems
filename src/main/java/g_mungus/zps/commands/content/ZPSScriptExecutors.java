@@ -79,13 +79,13 @@ public class ZPSScriptExecutors {
         ));
 
         event.register(new ScriptExecutor<>(
-                "get_items",
+                "take_items",
                 BlockPos.class,
                 ResourceLocation.parse("zps:block_pos"),
                 BlockPosArgument.blockPos(),
                 Coordinates.class,
                 (coordinates, context) -> coordinates.getBlockPos(context.commandSource()),
-                (targetPos, context) -> RoboticArmItemCommand.getItems(
+                (targetPos, context) -> RoboticArmItemCommand.takeItems(
                         context.commandSource().getLevel(),
                         context.pos(),
                         targetPos

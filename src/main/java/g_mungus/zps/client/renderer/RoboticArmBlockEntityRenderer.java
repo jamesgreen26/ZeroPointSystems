@@ -2,12 +2,16 @@ package g_mungus.zps.client.renderer;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.PoseStack.Pose;
+import com.mojang.math.Axis;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.world.item.ItemDisplayContext;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import org.jetbrains.annotations.NotNull;
@@ -24,8 +28,10 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
     private static final float EPSILON = 1.0e-4f;
     private static final double SWIVEL_ANGLE_MIN = 0.05;
     private static final double SWIVEL_PITCH_MAX = 0.18;
+    private final ItemRenderer itemRenderer;
 
     public RoboticArmBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
+        this.itemRenderer = context.getItemRenderer();
     }
 
     @Override
@@ -49,6 +55,34 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
 
         drawJointBox(poseStack, lines, BASE_POS, 0.08f, 0.5f, 0.9f, 1.0f, 1.0f);
         drawJointBox(poseStack, lines, handPos, 0.10f, 1.0f, 0.7f, 0.2f, 1.0f);
+
+        renderHeldItem(blockEntity, handPos, poseStack, bufferSource, packedLight, packedOverlay);
+    }
+
+    private void renderHeldItem(RoboticArmBlockEntity blockEntity, Vec3 handPos, PoseStack poseStack,
+                                MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
+        ItemStack heldStack = blockEntity.getHeldStack();
+        if (heldStack.isEmpty()) return;
+
+        poseStack.pushPose();
+        poseStack.translate(handPos.x, handPos.y, handPos.z);
+        Vec3 fromBase = handPos.subtract(BASE_POS);
+        if ((fromBase.x * fromBase.x) + (fromBase.z * fromBase.z) > EPSILON) {
+            float yawDegrees = (float) Math.toDegrees(Math.atan2(fromBase.z, fromBase.x));
+            poseStack.mulPose(Axis.YP.rotationDegrees(-yawDegrees + 90.0f));
+        }
+        poseStack.scale(0.55f, 0.55f, 0.55f);
+        itemRenderer.renderStatic(
+                heldStack,
+                ItemDisplayContext.FIXED,
+                packedLight,
+                packedOverlay,
+                poseStack,
+                bufferSource,
+                blockEntity.getLevel(),
+                (int) blockEntity.getBlockPos().asLong()
+        );
+        poseStack.popPose();
     }
 
     private static Vec3 getInterpolatedHandPosition(RoboticArmBlockEntity blockEntity, float partialTick) {

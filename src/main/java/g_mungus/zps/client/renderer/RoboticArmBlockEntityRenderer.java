@@ -122,7 +122,10 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
                 segmentLength * Math.cos(secondAngle),
                 segmentLength * Math.sin(secondAngle)
         );
-        return new ArmSolution(first, second);
+        PlanePoint axis = new PlanePoint(hand.r / length(hand), hand.y / length(hand));
+        PlanePoint mirroredFirst = reflectAcrossAxis(first, axis);
+        PlanePoint mirroredSecond = reflectAcrossAxis(second, axis);
+        return new ArmSolution(mirroredFirst, mirroredSecond);
     }
 
     private static double length(PlanePoint point) {
@@ -135,6 +138,13 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
 
     private static double lerp(double start, double end, double t) {
         return start + ((end - start) * t);
+    }
+
+    private static PlanePoint reflectAcrossAxis(PlanePoint point, PlanePoint axisUnit) {
+        double projection = (point.r * axisUnit.r) + (point.y * axisUnit.y);
+        double reflectedR = (2.0 * projection * axisUnit.r) - point.r;
+        double reflectedY = (2.0 * projection * axisUnit.y) - point.y;
+        return new PlanePoint(reflectedR, reflectedY);
     }
 
     private static double wrapRadians(double angle) {

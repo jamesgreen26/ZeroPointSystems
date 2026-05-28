@@ -38,4 +38,12 @@ public class RoboticArmItemCommand {
         }
         return 0;
     }
+
+    public static int dropItems(ServerLevel serverLevel, BlockPos armPos, BlockPos targetPos) {
+        BlockEntity blockEntity = serverLevel.getBlockEntity(armPos);
+        if (blockEntity instanceof RoboticArmBlockEntity roboticArm) {
+            return roboticArm.DropItemsAt(targetPos) ? 1 : 0;
+        }
+        return 0;
+    }
 }

@@ -14,6 +14,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.WorldlyContainer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
@@ -179,6 +180,12 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
         return moveHandTo(targetPos);
     }
 
+    public boolean DropItemsAt(BlockPos targetPos) {
+        pendingTransfer = PendingTransfer.DROP;
+        pendingTransferTargetPos = targetPos;
+        return moveHandTo(targetPos);
+    }
+
     public Container getHeldStackAccess() {
         return heldStackAccess;
     }
@@ -280,6 +287,12 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
 
         if (pendingTransfer == PendingTransfer.SHIFT_USE) {
             tryUseAt(pendingTransferTargetPos, true);
+            pendingTransfer = PendingTransfer.NONE;
+            return;
+        }
+
+        if (pendingTransfer == PendingTransfer.DROP) {
+            tryDropAt(pendingTransferTargetPos);
             pendingTransfer = PendingTransfer.NONE;
             return;
         }
@@ -446,12 +459,27 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
         return usePlayer;
     }
 
+    private void tryDropAt(BlockPos targetPos) {
+        if (level == null || level.isClientSide) return;
+        if (heldStack.isEmpty()) return;
+
+        ItemStack dropStack = heldStack.copy();
+        heldStack = ItemStack.EMPTY;
+
+        Vec3 center = Vec3.atCenterOf(targetPos);
+        ItemEntity itemEntity = new ItemEntity(level, center.x, center.y, center.z, dropStack);
+        itemEntity.setDeltaMovement(0.0D, 0.0D, 0.0D);
+        level.addFreshEntity(itemEntity);
+        setChanged();
+    }
+
     private enum PendingTransfer {
         NONE,
         RETRIEVE,
         DEPOSIT,
         USE,
-        SHIFT_USE;
+        SHIFT_USE,
+        DROP;
 
         static PendingTransfer byOrdinal(int value) {
             if (value < 0 || value >= values().length) return NONE;

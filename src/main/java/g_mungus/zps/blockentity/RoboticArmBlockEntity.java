@@ -14,10 +14,13 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.WorldlyContainer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.util.FakePlayer;
@@ -393,10 +396,20 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
         fakePlayer.setPos(targetCenter.x, targetCenter.y, targetCenter.z);
 
         BlockHitResult hitResult = new BlockHitResult(targetCenter, hitFace, targetPos, false);
+        ItemStack heldByPlayer = fakePlayer.getMainHandItem();
+        if (!heldByPlayer.isEmpty() && heldByPlayer.getItem() instanceof BlockItem) {
+            BlockState targetState = serverLevel.getBlockState(targetPos);
+            BlockPlaceContext placeContext = new BlockPlaceContext(new UseOnContext(fakePlayer, InteractionHand.MAIN_HAND, hitResult));
+            if (!targetState.canBeReplaced(placeContext)) {
+                fakePlayer.setShiftKeyDown(false);
+                return;
+            }
+        }
+
         InteractionResult result = fakePlayer.gameMode.useItemOn(
                 fakePlayer,
                 serverLevel,
-                fakePlayer.getMainHandItem(),
+                heldByPlayer,
                 InteractionHand.MAIN_HAND,
                 hitResult
         );

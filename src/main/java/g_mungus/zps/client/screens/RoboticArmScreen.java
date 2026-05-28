@@ -17,6 +17,7 @@ public class RoboticArmScreen extends Screen {
     private static final Component TITLE = Component.literal("Robotic Arm");
     private static final Component RETRIEVE_LABEL = Component.literal("\"take_items\" stack size");
     private static final Component VIEW_RANGE_LABEL = Component.literal("View Range");
+    private static final Component ENERGY_LABEL = Component.literal("Energy");
 
     private final BlockPos blockPos;
     private RetrieveAmountSlider retrieveSlider;
@@ -37,7 +38,6 @@ public class RoboticArmScreen extends Screen {
         int centerX = this.width / 2;
         int centerY = this.height / 2;
         int sliderY = centerY - 10;
-        int viewRangeLabelY = centerY + 18;
         int viewRangeButtonY = centerY + 30;
         int bottomButtonsY = centerY + 60;
 
@@ -64,6 +64,11 @@ public class RoboticArmScreen extends Screen {
     public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(graphics);
         graphics.drawCenteredString(this.font, TITLE, this.width / 2, this.height / 2 - 50, 0xFFFFFF);
+        graphics.drawString(this.font, ENERGY_LABEL, this.width / 2 - 100, this.height / 2 - 42, 0xA0A0A0);
+        RoboticArmBlockEntity be = getBlockEntity();
+        int energyStored = be != null ? be.getEnergyStored() : 0;
+        int maxEnergy = be != null ? be.getMaxEnergyStored() : RoboticArmBlockEntity.ENERGY_CAPACITY;
+        graphics.drawString(this.font, energyStored + " / " + maxEnergy + " FE", this.width / 2 - 52, this.height / 2 - 42, 0x55FF55);
         graphics.drawString(this.font, RETRIEVE_LABEL, this.width / 2 - 100, this.height / 2 - 22, 0xA0A0A0);
         graphics.drawString(this.font, VIEW_RANGE_LABEL, this.width / 2 - 100, this.height / 2 + 18, 0xA0A0A0);
         super.render(graphics, mouseX, mouseY, partialTick);

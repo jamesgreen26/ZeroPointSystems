@@ -25,6 +25,11 @@ import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.energy.EnergyStorage;
+import net.minecraftforge.energy.IEnergyStorage;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -45,6 +50,8 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
     private static final int CONTAINER_CLOSE_DELAY_TICKS = 3;
     public static final int MIN_RETRIEVE_AMOUNT = 1;
     public static final int MAX_RETRIEVE_AMOUNT = 64;
+    public static final int ENERGY_CAPACITY = 8192;
+    public static final int ENERGY_PER_MOVE_TICK = 8;
 
     private boolean moving;
     private BlockPos handBlockPos;
@@ -56,7 +63,10 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
     private BlockPos pendingTransferTargetPos = BlockPos.ZERO;
     private int retrieveAmount = 1;
     private boolean viewRange = false;
+    private boolean energyRanOutDuringMove = false;
     private transient FakePlayer usePlayer;
+    private final RoboticArmEnergyStorage energyStorage;
+    private final LazyOptional<IEnergyStorage> energyCapability;
     private static final ConcurrentLinkedQueue<DelayedContainerCloseJob> delayedContainerCloseJobs = new ConcurrentLinkedQueue<>();
     private final Container heldStackAccess = new Container() {
         @Override
@@ -119,6 +129,8 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
 
     public RoboticArmBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.ROBOTIC_ARM.get(), pos, state);
+        this.energyStorage = new RoboticArmEnergyStorage();
+        this.energyCapability = LazyOptional.of(() -> energyStorage);
         handBlockPos = pos.above();
         moveStartBlockPos = pos;
         moveTargetBlockPos = pos;
@@ -129,10 +141,23 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
 
         long gameTime = level.getGameTime();
 
+        if (moving) {
+            int extracted = energyStorage.consumeInternal(ENERGY_PER_MOVE_TICK);
+            if (extracted < ENERGY_PER_MOVE_TICK) {
+                energyRanOutDuringMove = true;
+            }
+        }
+
         if (moving && gameTime - moveStartTick >= MOVE_TIME_TICKS) {
             moving = false;
             handBlockPos = moveTargetBlockPos;
-            runPendingTransfer();
+            boolean canCompletePendingAction = !energyRanOutDuringMove || energyStorage.getEnergyStored() > ENERGY_PER_MOVE_TICK;
+            if (canCompletePendingAction) {
+                runPendingTransfer();
+            } else {
+                pendingTransfer = PendingTransfer.NONE;
+            }
+            energyRanOutDuringMove = false;
             setChanged();
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_ALL);
         }
@@ -161,11 +186,13 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
     public boolean moveHandTo(BlockPos newBlockPos) {
         if (level == null || moving) return false;
         if (newBlockPos.distSqr(worldPosition) > (double) (MAX_DISTANCE_BLOCKS * MAX_DISTANCE_BLOCKS)) return false;
+        if (energyStorage.getEnergyStored() <= ENERGY_PER_MOVE_TICK) return false;
 
         moveStartBlockPos = handBlockPos;
         moveTargetBlockPos = newBlockPos;
         moveStartTick = level.getGameTime();
         moving = true;
+        energyRanOutDuringMove = false;
         setChanged();
         level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_ALL);
         return true;
@@ -279,6 +306,7 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
         tag.putLong("PendingTransferTargetPos", pendingTransferTargetPos.asLong());
         tag.putInt("RetrieveAmount", retrieveAmount);
         tag.putBoolean("ViewRange", viewRange);
+        tag.put("Energy", energyStorage.serializeNBT());
     }
 
     private void readArmState(CompoundTag tag) {
@@ -291,6 +319,9 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
         pendingTransferTargetPos = tag.contains("PendingTransferTargetPos", Tag.TAG_LONG) ? BlockPos.of(tag.getLong("PendingTransferTargetPos")) : BlockPos.ZERO;
         retrieveAmount = clampRetrieveAmount(tag.contains("RetrieveAmount", Tag.TAG_ANY_NUMERIC) ? tag.getInt("RetrieveAmount") : 1);
         viewRange = tag.getBoolean("ViewRange");
+        if (tag.contains("Energy")) {
+            energyStorage.deserializeNBT(tag.get("Energy"));
+        }
     }
 
     private void writeInventoryState(CompoundTag tag) {
@@ -446,6 +477,35 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
         return Math.max(MIN_RETRIEVE_AMOUNT, Math.min(MAX_RETRIEVE_AMOUNT, value));
     }
 
+    public int getEnergyStored() {
+        return energyStorage.getEnergyStored();
+    }
+
+    public int getMaxEnergyStored() {
+        return energyStorage.getMaxEnergyStored();
+    }
+
+    private void onEnergyChanged() {
+        setChanged();
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_ALL);
+        }
+    }
+
+    @Override
+    public void invalidateCaps() {
+        super.invalidateCaps();
+        energyCapability.invalidate();
+    }
+
+    @Override
+    public @NotNull <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
+        if (cap == ForgeCapabilities.ENERGY) {
+            return energyCapability.cast();
+        }
+        return super.getCapability(cap, side);
+    }
+
     private void tryDepositInto(Container target) {
         if (heldStack.isEmpty()) return;
 
@@ -599,4 +659,33 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
     }
 
     private record DelayedContainerCloseJob(ServerLevel level, BlockPos blockPos, long closeGameTime, Player player) {}
+
+    private class RoboticArmEnergyStorage extends EnergyStorage {
+        private RoboticArmEnergyStorage() {
+            super(ENERGY_CAPACITY, ENERGY_CAPACITY, 0);
+        }
+
+        @Override
+        public int receiveEnergy(int maxReceive, boolean simulate) {
+            int received = super.receiveEnergy(maxReceive, simulate);
+            if (received > 0 && !simulate) {
+                onEnergyChanged();
+            }
+            return received;
+        }
+
+        @Override
+        public boolean canExtract() {
+            return false;
+        }
+
+        private int consumeInternal(int amount) {
+            int extracted = Math.min(energy, Math.max(0, amount));
+            if (extracted > 0) {
+                energy -= extracted;
+                onEnergyChanged();
+            }
+            return extracted;
+        }
+    }
 }

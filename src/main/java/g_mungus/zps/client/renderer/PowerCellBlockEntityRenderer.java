@@ -16,10 +16,14 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class PowerCellBlockEntityRenderer implements BlockEntityRenderer<PowerCellBlockEntity> {
     private static final ItemStack DIVIDER_MODEL_STACK = new ItemStack(ModItems.POWER_CELL.get());
     private static final ModelResourceLocation DIVIDER_BER_MODEL =
             new ModelResourceLocation(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "power_cell_divider"), "inventory");
+    private static final Map<Long, Float> SMOOTHED_FILL_BY_POS = new HashMap<>();
     private final ItemRenderer itemRenderer;
 
     public PowerCellBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
@@ -35,7 +39,16 @@ public class PowerCellBlockEntityRenderer implements BlockEntityRenderer<PowerCe
         }
 
         float fill = (float) blockEntity.getEnergyStored() / maxEnergy;
-        float dividerYOffset = fill * (9.0f / 16.0f);
+        long posKey = blockEntity.getBlockPos().asLong();
+        float previousSmoothedFill = SMOOTHED_FILL_BY_POS.getOrDefault(posKey, fill);
+        float smoothing = 0.2f;
+        float smoothedFill = previousSmoothedFill + ((fill - previousSmoothedFill) * smoothing);
+        if (Math.abs(smoothedFill - fill) < 0.0005f) {
+            smoothedFill = fill;
+        }
+        SMOOTHED_FILL_BY_POS.put(posKey, smoothedFill);
+
+        float dividerYOffset = smoothedFill * (9.0f / 16.0f);
 
         BakedModel dividerModel = Minecraft.getInstance().getModelManager().getModel(DIVIDER_BER_MODEL);
 

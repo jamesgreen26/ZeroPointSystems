@@ -28,6 +28,8 @@ public class ClientSetup {
             new ModelResourceLocation(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "robotic_arm_segment"), "inventory");
     private static final ModelResourceLocation ROBOTIC_ARM_SWIVEL_BASE_BER_MODEL =
             new ModelResourceLocation(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "robotic_arm_swivel_base"), "inventory");
+    private static final ModelResourceLocation POWER_CELL_DIVIDER_BER_MODEL =
+            new ModelResourceLocation(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "power_cell_divider"), "inventory");
 
     @SubscribeEvent
     public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
@@ -39,6 +41,7 @@ public class ClientSetup {
         event.register(ADDRESS_PAD_BER_MODEL);
         event.register(ROBOTIC_ARM_SEGMENT_BER_MODEL);
         event.register(ROBOTIC_ARM_SWIVEL_BASE_BER_MODEL);
+        event.register(POWER_CELL_DIVIDER_BER_MODEL);
     }
 
     @SuppressWarnings("removal")
@@ -54,6 +57,7 @@ public class ClientSetup {
             BlockEntityRenderers.register(ModBlockEntities.RADIO_TRANSMITTER.get(), RadioTransmitterBlockEntityRenderer::new);
             BlockEntityRenderers.register(ModBlockEntities.RADIO_RECEIVER.get(), RadioReceiverBlockEntityRenderer::new);
             BlockEntityRenderers.register(ModBlockEntities.ROBOTIC_ARM.get(), RoboticArmBlockEntityRenderer::new);
+            BlockEntityRenderers.register(ModBlockEntities.POWER_CELL.get(), PowerCellBlockEntityRenderer::new);
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DENSE_CABLE_SEPARATOR.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.LIGHT_PIPE.get(), RenderType.translucent());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.SERIAL_BUS.get(), RenderType.translucent());

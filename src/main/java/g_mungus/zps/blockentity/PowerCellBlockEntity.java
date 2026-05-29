@@ -4,6 +4,9 @@ import g_mungus.zps.block.PowerCellBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -19,7 +22,7 @@ public class PowerCellBlockEntity extends BlockEntity {
     private static final int MAX_ENERGY = 256_000;
     private static final int MAX_TRANSFER = 16_384;
 
-    private final EnergyStorage energyStorage = new EnergyStorage(MAX_ENERGY, MAX_TRANSFER, MAX_TRANSFER) {
+    private final SyncedEnergyStorage energyStorage = new SyncedEnergyStorage(MAX_ENERGY, MAX_TRANSFER, MAX_TRANSFER) {
         @Override
         public int receiveEnergy(int maxReceive, boolean simulate) {
             int received = super.receiveEnergy(maxReceive, simulate);
@@ -41,18 +44,38 @@ public class PowerCellBlockEntity extends BlockEntity {
 
     private final LazyOptional<IEnergyStorage> energy = LazyOptional.of(() -> energyStorage);
     private int lastSyncedLevel = -1;
+    private int lastSentClientEnergy = Integer.MIN_VALUE;
 
     public PowerCellBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.POWER_CELL.get(), pos, state);
+    }
+
+    private static class SyncedEnergyStorage extends EnergyStorage {
+        public SyncedEnergyStorage(int capacity, int maxReceive, int maxExtract) {
+            super(capacity, maxReceive, maxExtract);
+        }
+
+        public void setEnergyStoredExact(int energy) {
+            this.energy = Math.max(0, Math.min(this.capacity, energy));
+        }
     }
 
     public void serverTick() {
         updateFillLevel();
     }
 
+    public int getEnergyStored() {
+        return energyStorage.getEnergyStored();
+    }
+
+    public int getMaxEnergyStored() {
+        return energyStorage.getMaxEnergyStored();
+    }
+
     private void onEnergyChanged() {
         setChanged();
         updateFillLevel();
+        syncToClient();
     }
 
     private void updateFillLevel() {
@@ -85,6 +108,18 @@ public class PowerCellBlockEntity extends BlockEntity {
         return (int) Math.min(9, (energyStored * 9L) / maxEnergy);
     }
 
+    private void syncToClient() {
+        if (level == null || level.isClientSide()) {
+            return;
+        }
+        int energyStored = energyStorage.getEnergyStored();
+        if (energyStored == lastSentClientEnergy) {
+            return;
+        }
+        lastSentClientEnergy = energyStored;
+        level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
+    }
+
     @Override
     protected void saveAdditional(@NotNull CompoundTag tag) {
         super.saveAdditional(tag);
@@ -95,7 +130,35 @@ public class PowerCellBlockEntity extends BlockEntity {
     public void load(@NotNull CompoundTag tag) {
         super.load(tag);
         if (tag.contains("Energy")) {
-            energyStorage.receiveEnergy(tag.getInt("Energy"), false);
+            energyStorage.setEnergyStoredExact(tag.getInt("Energy"));
+        }
+    }
+
+    @Override
+    public @NotNull CompoundTag getUpdateTag() {
+        CompoundTag tag = super.getUpdateTag();
+        tag.putInt("Energy", energyStorage.getEnergyStored());
+        return tag;
+    }
+
+    @Override
+    public void handleUpdateTag(@NotNull CompoundTag tag) {
+        super.handleUpdateTag(tag);
+        if (tag.contains("Energy")) {
+            energyStorage.setEnergyStoredExact(tag.getInt("Energy"));
+        }
+    }
+
+    @Override
+    public @Nullable ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override
+    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
+        CompoundTag tag = pkt.getTag();
+        if (tag != null) {
+            handleUpdateTag(tag);
         }
     }
 

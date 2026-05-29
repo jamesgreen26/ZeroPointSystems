@@ -62,6 +62,7 @@ public class ModCreativeTabs {
 
                         ROBOTIC_ARM,
                         CREATIVE_POWER_CELL,
+                        POWER_CELL,
 
                         BAUXITE,
                         LITHIUM_ORE,

@@ -48,7 +48,7 @@ public class StepUpTransformerBlockEntity extends NetworkTerminalImpl implements
         BlockPos targetPos = pos.relative(facing);
         BlockEntity targetEntity = level.getBlockEntity(targetPos);
 
-        int canStore = Math.min(1000, blockEntity.energyHandler.getMaxEnergyStored() - blockEntity.energyHandler.getEnergyStored());
+        int canStore = Math.min(MAX_TRANSFER, blockEntity.energyHandler.getMaxEnergyStored() - blockEntity.energyHandler.getEnergyStored());
 
         if (targetEntity != null) {
             targetEntity.getCapability(ForgeCapabilities.ENERGY, facing.getOpposite()).ifPresent(storage -> {

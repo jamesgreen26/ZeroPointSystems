@@ -175,6 +175,12 @@ public class ModBlocks {
                     .noOcclusion()
                     .requiresCorrectToolForDrops()));
 
+    public static final RegistryObject<Block> POWER_CELL = BLOCKS.register("power_cell",
+            () -> new PowerCellBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.0f)
+                    .noOcclusion()
+                    .requiresCorrectToolForDrops()));
+
 
     /// RESOURCE BLOCKS
     public static final RegistryObject<Block> BAUXITE = BLOCKS.register("bauxite",

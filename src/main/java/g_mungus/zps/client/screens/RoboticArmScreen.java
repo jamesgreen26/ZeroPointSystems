@@ -51,24 +51,14 @@ public class RoboticArmScreen extends Screen {
         int sliderY = retrieveLabelY + LABEL_TO_CONTROL_GAP;
         int viewRangeLabelY = sliderY + CONTROL_HEIGHT + SECTION_GAP;
         int viewRangeButtonY = viewRangeLabelY + LABEL_TO_CONTROL_GAP;
-        int bottomButtonsY = viewRangeButtonY + CONTROL_HEIGHT + SECTION_GAP;
 
         this.retrieveSlider = this.addRenderableWidget(new RetrieveAmountSlider(centerX - 100, sliderY, CONTROL_WIDTH, CONTROL_HEIGHT, retrieveAmount));
         this.viewRangeButton = this.addRenderableWidget(Button.builder(viewRangeButtonText(), button -> {
                     this.viewRange = !this.viewRange;
                     button.setMessage(viewRangeButtonText());
+                    sendSettings();
                 })
                 .bounds(centerX - 100, viewRangeButtonY, CONTROL_WIDTH, CONTROL_HEIGHT)
-                .build());
-
-        this.addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> {
-                    sendSettings();
-                    this.onClose();
-                })
-                .bounds(centerX - 100, bottomButtonsY, 98, 20)
-                .build());
-        this.addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, button -> this.onClose())
-                .bounds(centerX + 2, bottomButtonsY, 98, 20)
                 .build());
     }
 
@@ -140,7 +130,7 @@ public class RoboticArmScreen extends Screen {
 
         @Override
         protected void applyValue() {
-            // Sent on Done.
+            sendSettings();
         }
 
         int getAmount() {

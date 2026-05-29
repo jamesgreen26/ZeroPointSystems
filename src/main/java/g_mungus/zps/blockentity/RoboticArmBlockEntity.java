@@ -185,6 +185,16 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
         return moveStartTick;
     }
 
+    public BlockPos getCurrentTargetBlockPos() {
+        if (moving) {
+            return moveTargetBlockPos;
+        }
+        if (pendingTransfer != PendingTransfer.NONE) {
+            return pendingTransferTargetPos;
+        }
+        return handBlockPos;
+    }
+
     public boolean moveHandTo(BlockPos newBlockPos) {
         if (level == null || moving) return false;
         if (newBlockPos.distSqr(worldPosition) > (double) (MAX_DISTANCE_BLOCKS * MAX_DISTANCE_BLOCKS)) return false;

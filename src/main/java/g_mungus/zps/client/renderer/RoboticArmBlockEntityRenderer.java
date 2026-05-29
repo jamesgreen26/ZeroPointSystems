@@ -1,6 +1,7 @@
 package g_mungus.zps.client.renderer;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
@@ -8,7 +9,9 @@ import g_mungus.zps.item.ModItems;
 import net.createmod.catnip.outliner.Outliner;
 import net.minecraft.core.BlockPos;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.entity.ItemRenderer;
@@ -44,6 +47,8 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
     @Override
     public void render(RoboticArmBlockEntity blockEntity, float partialTick, @NotNull PoseStack poseStack,
                        @NotNull MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
+        renderDebugTargetBox(blockEntity, poseStack, bufferSource);
+
         if (blockEntity.isViewRange()) {
             BlockPos origin = blockEntity.getBlockPos();
             List<BlockPos> volumePositions = new ArrayList<>(RANGE_VOLUME_OFFSETS.size());
@@ -79,6 +84,36 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
         renderSegmentModel(secondJoint, handPos, armPlane.radialAxis(), segmentModel, poseStack, bufferSource, packedLight, packedOverlay);
 
         renderHeldItem(blockEntity, handPos, poseStack, bufferSource, packedLight, packedOverlay);
+    }
+
+    private void renderDebugTargetBox(RoboticArmBlockEntity blockEntity, PoseStack poseStack, MultiBufferSource bufferSource) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (!minecraft.getEntityRenderDispatcher().shouldRenderHitBoxes()) return;
+
+        BlockPos origin = blockEntity.getBlockPos();
+        BlockPos target = blockEntity.getCurrentTargetBlockPos();
+        double minX = target.getX() - origin.getX();
+        double minY = target.getY() - origin.getY();
+        double minZ = target.getZ() - origin.getZ();
+        double maxX = minX + 1.0;
+        double maxY = minY + 1.0;
+        double maxZ = minZ + 1.0;
+
+        VertexConsumer lineBuffer = bufferSource.getBuffer(RenderType.lines());
+        LevelRenderer.renderLineBox(
+                poseStack,
+                lineBuffer,
+                minX,
+                minY,
+                minZ,
+                maxX,
+                maxY,
+                maxZ,
+                1.0f,
+                0.2f,
+                0.2f,
+                1.0f
+        );
     }
 
     private void renderSwivelBaseModel(Vec3 radialAxis, BakedModel model,

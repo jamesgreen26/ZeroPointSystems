@@ -21,7 +21,9 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<RoboticArmBlockEntity> {
     private static final Vec3 BASE_POS = new Vec3(0.5, 0.5, 0.5);
@@ -36,6 +38,7 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
             new ModelResourceLocation(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "robotic_arm_swivel_base"), "inventory");
     private static final List<BlockPos> RANGE_VOLUME_OFFSETS = buildRangeVolumeOffsets();
     private final ItemRenderer itemRenderer;
+    private final Map<Long, Vec3> lastSwivelAxes = new HashMap<>();
 
     public RoboticArmBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
         this.itemRenderer = context.getItemRenderer();
@@ -58,12 +61,15 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
                     .lineWidth(1 / 16f);
         }
 
-        Vec3 handPos = getInterpolatedHandPosition(blockEntity, partialTick);
+        long armKey = blockEntity.getBlockPos().asLong();
+        Vec3 fallbackAxis = lastSwivelAxes.getOrDefault(armKey, new Vec3(1.0, 0.0, 0.0));
+        Vec3 handPos = getInterpolatedHandPosition(blockEntity, partialTick, fallbackAxis);
         float segmentLength = RoboticArmBlockEntity.MAX_DISTANCE_BLOCKS / SEGMENT_COUNT;
         BakedModel segmentModel = Minecraft.getInstance().getModelManager().getModel(SEGMENT_BER_MODEL);
         BakedModel swivelBaseModel = Minecraft.getInstance().getModelManager().getModel(SWIVEL_BASE_BER_MODEL);
 
-        ArmPlane armPlane = ArmPlane.from(BASE_POS, handPos);
+        ArmPlane armPlane = ArmPlane.from(BASE_POS, handPos, fallbackAxis);
+        lastSwivelAxes.put(armKey, armPlane.radialAxis());
         renderSwivelBaseModel(armPlane.radialAxis(), swivelBaseModel, poseStack, bufferSource, packedLight, packedOverlay);
         PlanePoint hand2d = armPlane.toPlane(handPos);
         ArmSolution solution2d = solveArmInPlane(hand2d, segmentLength);
@@ -154,7 +160,7 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
         poseStack.popPose();
     }
 
-    private static Vec3 getInterpolatedHandPosition(RoboticArmBlockEntity blockEntity, float partialTick) {
+    private static Vec3 getInterpolatedHandPosition(RoboticArmBlockEntity blockEntity, float partialTick, Vec3 fallbackAxis) {
         Vec3 settled = toLocalCenter(blockEntity.getBlockPos(), blockEntity.getHandBlockPos());
         if (!blockEntity.isMoving() || blockEntity.getLevel() == null) return settled;
 
@@ -162,19 +168,24 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
         double progress = Math.min(1.0, Math.max(0.0, elapsed / RoboticArmBlockEntity.MOVE_TIME_TICKS));
         Vec3 start = toLocalCenter(blockEntity.getBlockPos(), blockEntity.getMoveStartBlockPos());
         Vec3 end = toLocalCenter(blockEntity.getBlockPos(), blockEntity.getMoveTargetBlockPos());
-        return interpolateHandSwivel(start, end, progress);
+        return interpolateHandSwivel(start, end, progress, fallbackAxis);
     }
 
-    private static Vec3 interpolateHandSwivel(Vec3 start, Vec3 end, double progress) {
+    private static Vec3 interpolateHandSwivel(Vec3 start, Vec3 end, double progress, Vec3 fallbackAxis) {
         Vec3 startLocal = start.subtract(BASE_POS);
         Vec3 endLocal = end.subtract(BASE_POS);
 
         double startHorizontal = Math.sqrt((startLocal.x * startLocal.x) + (startLocal.z * startLocal.z));
         double endHorizontal = Math.sqrt((endLocal.x * endLocal.x) + (endLocal.z * endLocal.z));
-        if (startHorizontal < EPSILON || endHorizontal < EPSILON) return start.lerp(end, progress);
+        if (startHorizontal < EPSILON && endHorizontal < EPSILON) return start.lerp(end, progress);
 
-        double startAzimuth = Math.atan2(startLocal.z, startLocal.x);
-        double endAzimuth = Math.atan2(endLocal.z, endLocal.x);
+        double fallbackAzimuth = Math.atan2(fallbackAxis.z, fallbackAxis.x);
+        double startAzimuth = startHorizontal < EPSILON
+                ? fallbackAzimuth
+                : Math.atan2(startLocal.z, startLocal.x);
+        double endAzimuth = endHorizontal < EPSILON
+                ? fallbackAzimuth
+                : Math.atan2(endLocal.z, endLocal.x);
         double deltaAzimuth = wrapRadians(endAzimuth - startAzimuth);
         if (Math.abs(deltaAzimuth) < SWIVEL_ANGLE_MIN) return start.lerp(end, progress);
 
@@ -285,10 +296,13 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
     }
 
     private record ArmPlane(Vec3 base, Vec3 radialAxis) {
-        private static ArmPlane from(Vec3 base, Vec3 hand) {
+        private static ArmPlane from(Vec3 base, Vec3 hand, Vec3 fallbackAxis) {
             Vec3 horizontal = new Vec3(hand.x - base.x, 0.0, hand.z - base.z);
             if (horizontal.lengthSqr() < EPSILON) {
-                return new ArmPlane(base, new Vec3(1.0, 0.0, 0.0));
+                if (fallbackAxis.lengthSqr() < EPSILON) {
+                    return new ArmPlane(base, new Vec3(1.0, 0.0, 0.0));
+                }
+                return new ArmPlane(base, fallbackAxis.normalize());
             }
             return new ArmPlane(base, horizontal.normalize());
         }

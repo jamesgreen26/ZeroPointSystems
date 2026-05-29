@@ -17,6 +17,9 @@ Produced by: `pos`, `string as_block_pos`, `vec_pos rounded_down`
 | `y` | Int | Y coordinate |
 | `z` | Int | Z coordinate |
 | `center` | Vec Pos | The centered floating-point position (`x + 0.5`, `y + 0.5`, `z + 0.5`) |
+| `offset_x <int>` | BlockPos | Returns a new position offset by the given amount on the X axis |
+| `offset_y <int>` | BlockPos | Returns a new position offset by the given amount on the Y axis |
+| `offset_z <int>` | BlockPos | Returns a new position offset by the given amount on the Z axis |
 | `== <coords>` | Boolean | True if equal to the given position |
 | `as_string` | String | Formats as `"x y z"` |
 

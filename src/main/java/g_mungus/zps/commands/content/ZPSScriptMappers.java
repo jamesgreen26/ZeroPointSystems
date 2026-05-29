@@ -86,6 +86,45 @@ public class ZPSScriptMappers {
                 (blockPos, scriptContext) -> blockPos.getCenter()
         ));
 
+        event.register(new ScriptMapper2<>(
+                "offset_x",
+                BlockPos.class,
+                BlockPos.class,
+                ResourceLocation.parse("zps:block_pos"),
+                ResourceLocation.parse("zps:block_pos"),
+                "int",
+                (blockPos, context) -> blockPos.offset(context.argumentValue(), 0, 0),
+                IntegerArgumentType.integer(),
+                Integer.class,
+                ResourceLocation.parse("zps:int")
+        ));
+
+        event.register(new ScriptMapper2<>(
+                "offset_y",
+                BlockPos.class,
+                BlockPos.class,
+                ResourceLocation.parse("zps:block_pos"),
+                ResourceLocation.parse("zps:block_pos"),
+                "int",
+                (blockPos, context) -> blockPos.offset(0, context.argumentValue(), 0),
+                IntegerArgumentType.integer(),
+                Integer.class,
+                ResourceLocation.parse("zps:int")
+        ));
+
+        event.register(new ScriptMapper2<>(
+                "offset_z",
+                BlockPos.class,
+                BlockPos.class,
+                ResourceLocation.parse("zps:block_pos"),
+                ResourceLocation.parse("zps:block_pos"),
+                "int",
+                (blockPos, context) -> blockPos.offset(0, 0, context.argumentValue()),
+                IntegerArgumentType.integer(),
+                Integer.class,
+                ResourceLocation.parse("zps:int")
+        ));
+
         // Vec3 Position - X coordinate
         event.register(new ScriptMapper<>(
                 "x",

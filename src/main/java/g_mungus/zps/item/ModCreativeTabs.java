@@ -60,6 +60,8 @@ public class ModCreativeTabs {
                         RADIO_RECEIVER,
                         RADIO_ANTENNA,
 
+                        ROBOTIC_ARM,
+
                         BAUXITE,
                         LITHIUM_ORE,
                         DEEPSLATE_LITHIUM_ORE,

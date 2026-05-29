@@ -19,6 +19,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.entity.BarrelBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
@@ -371,7 +372,8 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
         }
 
         BlockEntity blockEntity = level.getBlockEntity(pendingTransferTargetPos);
-        if (!(blockEntity instanceof Container container)) {
+        Container container = resolveTransferContainer(pendingTransferTargetPos);
+        if (container == null) {
             pendingTransfer = PendingTransfer.NONE;
             return;
         }
@@ -388,6 +390,20 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
             scheduleContainerClose(blockEntity.getBlockPos(), gameTimeWithDelay(), interactionPlayer);
         }
         pendingTransfer = PendingTransfer.NONE;
+    }
+
+    private @Nullable Container resolveTransferContainer(BlockPos targetPos) {
+        if (level == null) return null;
+        BlockState targetState = level.getBlockState(targetPos);
+        if (targetState.getBlock() instanceof ChestBlock chestBlock) {
+            return ChestBlock.getContainer(chestBlock, targetState, level, targetPos, true);
+        }
+
+        BlockEntity blockEntity = level.getBlockEntity(targetPos);
+        if (blockEntity instanceof Container container) {
+            return container;
+        }
+        return null;
     }
 
     private long gameTimeWithDelay() {

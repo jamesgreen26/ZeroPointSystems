@@ -17,7 +17,7 @@ import org.jetbrains.annotations.NotNull;
 public class RoboticArmScreen extends Screen {
     private static final Component TITLE = Component.literal("Robotic Arm");
     private static final Component ENERGY_LABEL = Component.literal("Energy");
-    private static final Component RETRIEVE_LABEL = Component.literal("\"take_items\" stack size");
+    private static final Component RETRIEVE_LABEL = Component.literal("Item transfer stack size");
     private static final Component VIEW_RANGE_LABEL = Component.literal("View Range");
     private static final int CONTROL_WIDTH = 200;
     private static final int CONTROL_HEIGHT = 20;

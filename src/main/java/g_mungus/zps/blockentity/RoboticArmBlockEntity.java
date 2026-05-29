@@ -518,31 +518,40 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
 
     private void tryDepositInto(Container target) {
         if (heldStack.isEmpty()) return;
+        int desired = Math.min(retrieveAmount, heldStack.getCount());
+        int moved = 0;
 
-        for (int slot = 0; slot < target.getContainerSize(); slot++) {
+        for (int slot = 0; slot < target.getContainerSize() && moved < desired; slot++) {
             if (!canPlaceItem(target, slot, heldStack, Direction.UP)) continue;
 
             ItemStack targetStack = target.getItem(slot);
-            if (!targetStack.isEmpty() && (!ItemStack.isSameItemSameTags(targetStack, heldStack) || targetStack.getCount() >= targetStack.getMaxStackSize())) {
+            if (!targetStack.isEmpty() && !ItemStack.isSameItemSameTags(targetStack, heldStack)) {
                 continue;
             }
 
-            ItemStack one = heldStack.copy();
-            one.setCount(1);
+            int freeSpace = targetStack.isEmpty()
+                    ? heldStack.getMaxStackSize()
+                    : targetStack.getMaxStackSize() - targetStack.getCount();
+            if (freeSpace <= 0) continue;
+
+            int toMove = Math.min(desired - moved, Math.min(heldStack.getCount(), freeSpace));
+            if (toMove <= 0) continue;
 
             if (targetStack.isEmpty()) {
-                target.setItem(slot, one);
+                ItemStack inserted = heldStack.copy();
+                inserted.setCount(toMove);
+                target.setItem(slot, inserted);
             } else {
-                targetStack.grow(1);
+                targetStack.grow(toMove);
                 target.setItem(slot, targetStack);
             }
 
-            heldStack.shrink(1);
+            heldStack.shrink(toMove);
+            moved += toMove;
             if (heldStack.isEmpty()) heldStack = ItemStack.EMPTY;
 
             target.setChanged();
             setChanged();
-            return;
         }
     }
 

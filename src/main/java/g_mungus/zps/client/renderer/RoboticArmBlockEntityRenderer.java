@@ -21,9 +21,7 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<RoboticArmBlockEntity> {
     private static final Vec3 BASE_POS = new Vec3(0.5, 0.5, 0.5);
@@ -38,7 +36,6 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
             new ModelResourceLocation(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "robotic_arm_swivel_base"), "inventory");
     private static final List<BlockPos> RANGE_VOLUME_OFFSETS = buildRangeVolumeOffsets();
     private final ItemRenderer itemRenderer;
-    private final Map<Long, Vec3> lastSwivelAxes = new HashMap<>();
 
     public RoboticArmBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
         this.itemRenderer = context.getItemRenderer();
@@ -61,15 +58,14 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
                     .lineWidth(1 / 16f);
         }
 
-        long armKey = blockEntity.getBlockPos().asLong();
-        Vec3 fallbackAxis = lastSwivelAxes.getOrDefault(armKey, new Vec3(1.0, 0.0, 0.0));
+        Vec3 fallbackAxis = blockEntity.getLastSwivelAxis();
         Vec3 handPos = getInterpolatedHandPosition(blockEntity, partialTick, fallbackAxis);
         float segmentLength = RoboticArmBlockEntity.MAX_DISTANCE_BLOCKS / SEGMENT_COUNT;
         BakedModel segmentModel = Minecraft.getInstance().getModelManager().getModel(SEGMENT_BER_MODEL);
         BakedModel swivelBaseModel = Minecraft.getInstance().getModelManager().getModel(SWIVEL_BASE_BER_MODEL);
 
         ArmPlane armPlane = ArmPlane.from(BASE_POS, handPos, fallbackAxis);
-        lastSwivelAxes.put(armKey, armPlane.radialAxis());
+        blockEntity.setLastSwivelAxis(armPlane.radialAxis());
         renderSwivelBaseModel(armPlane.radialAxis(), swivelBaseModel, poseStack, bufferSource, packedLight, packedOverlay);
         PlanePoint hand2d = armPlane.toPlane(handPos);
         ArmSolution solution2d = solveArmInPlane(hand2d, segmentLength);

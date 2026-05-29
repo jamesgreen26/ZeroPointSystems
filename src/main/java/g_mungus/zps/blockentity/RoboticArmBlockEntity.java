@@ -64,6 +64,7 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
     private int retrieveAmount = 1;
     private boolean viewRange = false;
     private boolean energyRanOutDuringMove = false;
+    private Vec3 lastSwivelAxis = new Vec3(1.0, 0.0, 0.0);
     private transient FakePlayer usePlayer;
     private final RoboticArmEnergyStorage energyStorage;
     private final LazyOptional<IEnergyStorage> energyCapability;
@@ -234,6 +235,15 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
 
     public ItemStack getHeldStack() {
         return heldStack;
+    }
+
+    public Vec3 getLastSwivelAxis() {
+        return lastSwivelAxis;
+    }
+
+    public void setLastSwivelAxis(Vec3 axis) {
+        if (axis.lengthSqr() <= 1.0e-8) return;
+        lastSwivelAxis = axis.normalize();
     }
 
     @Override

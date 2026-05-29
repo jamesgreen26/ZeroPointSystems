@@ -654,6 +654,31 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
         setChanged();
     }
 
+    public void dropHeldStackAtHandPosition() {
+        if (level == null || level.isClientSide) return;
+        if (heldStack.isEmpty()) return;
+
+        ItemStack dropStack = heldStack.copy();
+        heldStack = ItemStack.EMPTY;
+
+        Vec3 dropPosition = getCurrentHandWorldPosition();
+        ItemEntity itemEntity = new ItemEntity(level, dropPosition.x, dropPosition.y, dropPosition.z, dropStack);
+        itemEntity.setDeltaMovement(0.0D, 0.0D, 0.0D);
+        level.addFreshEntity(itemEntity);
+        setChanged();
+    }
+
+    private Vec3 getCurrentHandWorldPosition() {
+        Vec3 settled = Vec3.atCenterOf(handBlockPos);
+        if (!moving || level == null) return settled;
+
+        double elapsed = level.getGameTime() - moveStartTick;
+        double progress = Math.min(1.0D, Math.max(0.0D, elapsed / (double) MOVE_TIME_TICKS));
+        Vec3 start = Vec3.atCenterOf(moveStartBlockPos);
+        Vec3 end = Vec3.atCenterOf(moveTargetBlockPos);
+        return start.lerp(end, progress);
+    }
+
     private enum PendingTransfer {
         NONE,
         RETRIEVE,

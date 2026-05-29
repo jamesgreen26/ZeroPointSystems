@@ -486,6 +486,104 @@ public class ScriptCommandGameTests {
     }
 
     /**
+     * First condition false, second condition true: should execute the
+     * {@code else if} branch.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_ifElseIf_firstFalseSecondTrue_executesElseIf(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+        BlockPos falsePos = absPos.offset(1, 0, 0);
+
+        int result = runScriptCommand(
+                helper,
+                absPos,
+                "if pos == " + falsePos.getX() + " " + falsePos.getY() + " " + falsePos.getZ()
+                        + " set_redstone 1 else if pos == " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ()
+                        + " set_redstone 2 else set_redstone 3"
+        );
+        if (result != 1) {
+            helper.fail("zps_script if/else if returned " + result + " instead of 1");
+            return;
+        }
+
+        assertStoredRedstone(helper, absPos, 2, "zps_script if/else if");
+        helper.succeed();
+    }
+
+    /**
+     * First condition true, second condition false: should execute the first
+     * {@code if} branch.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_ifElseIf_firstTrueSecondFalse_executesIf(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+        BlockPos falsePos = absPos.offset(1, 0, 0);
+
+        int result = runScriptCommand(
+                helper,
+                absPos,
+                "if pos == " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ()
+                        + " set_redstone 1 else if pos == " + falsePos.getX() + " " + falsePos.getY() + " " + falsePos.getZ()
+                        + " set_redstone 2 else set_redstone 3"
+        );
+        if (result != 1) {
+            helper.fail("zps_script if/else if first-true second-false returned " + result + " instead of 1");
+            return;
+        }
+
+        assertStoredRedstone(helper, absPos, 1, "zps_script if/else if first-true second-false");
+        helper.succeed();
+    }
+
+    /**
+     * Both conditions true: should execute the first {@code if} branch.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_ifElseIf_bothTrue_executesFirstIf(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+
+        int result = runScriptCommand(
+                helper,
+                absPos,
+                "if pos == " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ()
+                        + " set_redstone 1 else if pos == " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ()
+                        + " set_redstone 2 else set_redstone 3"
+        );
+        if (result != 1) {
+            helper.fail("zps_script if/else if both-true returned " + result + " instead of 1");
+            return;
+        }
+
+        assertStoredRedstone(helper, absPos, 1, "zps_script if/else if both-true");
+        helper.succeed();
+    }
+
+    /**
+     * Both conditions false: should execute the {@code else} branch.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_ifElseIf_bothFalse_executesElse(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+        BlockPos falsePosA = absPos.offset(1, 0, 0);
+        BlockPos falsePosB = absPos.offset(2, 0, 0);
+
+        int result = runScriptCommand(
+                helper,
+                absPos,
+                "if pos == " + falsePosA.getX() + " " + falsePosA.getY() + " " + falsePosA.getZ()
+                        + " set_redstone 1 else if pos == " + falsePosB.getX() + " " + falsePosB.getY() + " " + falsePosB.getZ()
+                        + " set_redstone 2 else set_redstone 3"
+        );
+        if (result != 1) {
+            helper.fail("zps_script if/else if both-false returned " + result + " instead of 1");
+            return;
+        }
+
+        assertStoredRedstone(helper, absPos, 3, "zps_script if/else if both-false");
+        helper.succeed();
+    }
+
+    /**
      * Nested {@code value_of(...)} should work through the public command path,
      * not just the inner dispatcher helper.
      */

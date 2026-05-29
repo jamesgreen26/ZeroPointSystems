@@ -213,6 +213,9 @@ public class CommandTreeBuilder {
         var builtArgument = argumentBuilder.executes(context -> {
             CommandSourceStack commandSource = context.getSource();
             if (commandSource.source instanceof ZPSScriptCommandSource source) {
+                if (source.execute != null) {
+                    return source.execute.get();
+                }
                 if (source.predicate.test(source.predicateValue)) {
                     Object rawArg = context.getArgument(argumentKey, Object.class);
                     if (rawArg instanceof ArgumentPlaceholder) {
@@ -226,8 +229,6 @@ public class CommandTreeBuilder {
                     I mappedValue = typed.argumentMapper().apply((A) rawArg, executorContext);
                     return typed.function().apply(mappedValue, executorContext);
 
-                } else if (source.execute != null) {
-                    return source.execute.get();
                 }
             }
             return 0;
@@ -236,21 +237,24 @@ public class CommandTreeBuilder {
         if (isConditional) {
             builtArgument.then((new ZPSLiteral.Builder<CommandSourceStack>("else")).forward(executors, context -> {
                 if (context.getSource().source instanceof ZPSScriptCommandSource source) {
+                    boolean matched = source.predicate.test(source.predicateValue);
                     source.predicate = source.predicate.cycle();
 
-                    source.execute = () -> {
-                        Object rawArg = context.getArgument(argumentKey, Object.class);
-                        if (rawArg instanceof ArgumentPlaceholder) {
-                            throw new IllegalArgumentException("Argument placeholder %s must be replaced before execution");
-                        }
-                        if (rawArg instanceof ValueOfExpression<?> expr) {
-                            rawArg = expr.evaluate(context.getSource(), source.getPos());
-                        }
-                        rawArg = resolveAddressReference(rawArg, source);
-                        ScriptContext executorContext = new ScriptContextImpl(context.getSource(), source.getPos(), context.getSource().getLevel());
-                        I mappedValue = typed.argumentMapper().apply((A) rawArg, executorContext);
-                        return typed.function().apply(mappedValue, executorContext);
-                    };
+                    if (matched && source.execute == null) {
+                        source.execute = () -> {
+                            Object rawArg = context.getArgument(argumentKey, Object.class);
+                            if (rawArg instanceof ArgumentPlaceholder) {
+                                throw new IllegalArgumentException("Argument placeholder %s must be replaced before execution");
+                            }
+                            if (rawArg instanceof ValueOfExpression<?> expr) {
+                                rawArg = expr.evaluate(context.getSource(), source.getPos());
+                            }
+                            rawArg = resolveAddressReference(rawArg, source);
+                            ScriptContext executorContext = new ScriptContextImpl(context.getSource(), source.getPos(), context.getSource().getLevel());
+                            I mappedValue = typed.argumentMapper().apply((A) rawArg, executorContext);
+                            return typed.function().apply(mappedValue, executorContext);
+                        };
+                    }
                 }
                 return List.of(context.getSource());
             }, false));

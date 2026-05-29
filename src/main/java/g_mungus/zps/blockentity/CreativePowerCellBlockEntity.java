@@ -12,7 +12,7 @@ import net.minecraftforge.energy.IEnergyStorage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class CreativePowerCellBlockEntity extends BlockEntity {
+public class CreativePowerCellBlockEntity extends BlockEntity implements EnergyStorageBE {
     private static final IEnergyStorage CREATIVE_ENERGY = new IEnergyStorage() {
         @Override
         public int receiveEnergy(int maxReceive, boolean simulate) {
@@ -46,6 +46,8 @@ public class CreativePowerCellBlockEntity extends BlockEntity {
     };
 
     private final LazyOptional<IEnergyStorage> energy = LazyOptional.of(() -> CREATIVE_ENERGY);
+    private long lastHudInfoRequestTick = Long.MIN_VALUE;
+    private int hudInfo = INFINITE_FE_INFO;
 
     public CreativePowerCellBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.CREATIVE_POWER_CELL.get(), pos, state);
@@ -63,6 +65,29 @@ public class CreativePowerCellBlockEntity extends BlockEntity {
             target.getCapability(ForgeCapabilities.ENERGY, side.getOpposite())
                     .ifPresent(storage -> storage.receiveEnergy(Integer.MAX_VALUE, false));
         }
+    }
+
+    @Override
+    public void setLastHudRefreshTick(long ticks) {
+        lastHudInfoRequestTick = ticks;
+    }
+
+    @Override
+    public long getLastHudRefreshTick() {
+        return lastHudInfoRequestTick;
+    }
+
+    @Override
+    public void provideInfo(Integer info) {
+        hudInfo = info;
+    }
+
+    @Override
+    public Integer getInfo() {
+        if (level != null && !level.isClientSide) {
+            return INFINITE_FE_INFO;
+        }
+        return hudInfo;
     }
 
     @Override

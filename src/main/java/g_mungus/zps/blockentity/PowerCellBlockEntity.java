@@ -5,7 +5,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -18,8 +17,8 @@ import net.minecraftforge.energy.IEnergyStorage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class PowerCellBlockEntity extends BlockEntity {
-    private static final int MAX_ENERGY = 256_000;
+public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE {
+    private static final int MAX_ENERGY = 512_000;
     private static final int MAX_TRANSFER = 16_384;
 
     private final SyncedEnergyStorage energyStorage = new SyncedEnergyStorage(MAX_ENERGY, MAX_TRANSFER, MAX_TRANSFER) {
@@ -46,6 +45,8 @@ public class PowerCellBlockEntity extends BlockEntity {
     private int lastSyncedLevel = -1;
     private int lastSentClientEnergy = Integer.MIN_VALUE;
     private float clientSmoothedFill = 0.0f;
+    private long lastHudInfoRequestTick = Long.MIN_VALUE;
+    private int hudInfo;
 
     public PowerCellBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.POWER_CELL.get(), pos, state);
@@ -79,6 +80,29 @@ public class PowerCellBlockEntity extends BlockEntity {
 
     public void setClientSmoothedFill(float clientSmoothedFill) {
         this.clientSmoothedFill = clientSmoothedFill;
+    }
+
+    @Override
+    public void setLastHudRefreshTick(long ticks) {
+        lastHudInfoRequestTick = ticks;
+    }
+
+    @Override
+    public long getLastHudRefreshTick() {
+        return lastHudInfoRequestTick;
+    }
+
+    @Override
+    public void provideInfo(Integer info) {
+        hudInfo = info;
+    }
+
+    @Override
+    public Integer getInfo() {
+        if (level != null && !level.isClientSide) {
+            return energyStorage.getEnergyStored();
+        }
+        return hudInfo;
     }
 
     private void onEnergyChanged() {

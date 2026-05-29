@@ -45,6 +45,7 @@ public class PowerCellBlockEntity extends BlockEntity {
     private final LazyOptional<IEnergyStorage> energy = LazyOptional.of(() -> energyStorage);
     private int lastSyncedLevel = -1;
     private int lastSentClientEnergy = Integer.MIN_VALUE;
+    private float clientSmoothedFill = 0.0f;
 
     public PowerCellBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.POWER_CELL.get(), pos, state);
@@ -70,6 +71,14 @@ public class PowerCellBlockEntity extends BlockEntity {
 
     public int getMaxEnergyStored() {
         return energyStorage.getMaxEnergyStored();
+    }
+
+    public float getClientSmoothedFill() {
+        return clientSmoothedFill;
+    }
+
+    public void setClientSmoothedFill(float clientSmoothedFill) {
+        this.clientSmoothedFill = clientSmoothedFill;
     }
 
     private void onEnergyChanged() {

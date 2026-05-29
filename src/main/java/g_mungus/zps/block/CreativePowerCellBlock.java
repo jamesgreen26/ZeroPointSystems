@@ -1,6 +1,6 @@
 package g_mungus.zps.block;
 
-import g_mungus.zps.blockentity.CreativeEnergyCellBlockEntity;
+import g_mungus.zps.blockentity.CreativePowerCellBlockEntity;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
@@ -13,8 +13,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class CreativeEnergyCellBlock extends BaseEntityBlock {
-    public CreativeEnergyCellBlock(Properties properties) {
+public class CreativePowerCellBlock extends BaseEntityBlock {
+    public CreativePowerCellBlock(Properties properties) {
         super(properties);
     }
 
@@ -26,7 +26,7 @@ public class CreativeEnergyCellBlock extends BaseEntityBlock {
     @Nullable
     @Override
     public BlockEntity newBlockEntity(@NotNull BlockPos pos, @NotNull BlockState state) {
-        return ModBlockEntities.CREATIVE_ENERGY_CELL.get().create(pos, state);
+        return ModBlockEntities.CREATIVE_POWER_CELL.get().create(pos, state);
     }
 
     @Nullable
@@ -34,8 +34,8 @@ public class CreativeEnergyCellBlock extends BaseEntityBlock {
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, @NotNull BlockState state,
                                                                    @NotNull BlockEntityType<T> type) {
         return level.isClientSide() ? null : (level1, pos, state1, be) -> {
-            if (be instanceof CreativeEnergyCellBlockEntity) {
-                CreativeEnergyCellBlockEntity.tick(level1, pos);
+            if (be instanceof CreativePowerCellBlockEntity) {
+                CreativePowerCellBlockEntity.tick(level1, pos);
             }
         };
     }

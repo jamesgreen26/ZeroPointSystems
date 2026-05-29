@@ -1,6 +1,0 @@
-{
-  "parent": "block/cube_all",
-  "textures": {
-    "all": "zps:block/creative_energy_cell"
-  }
-}

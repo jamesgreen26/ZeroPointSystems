@@ -169,9 +169,10 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
 
-    public static final RegistryObject<Block> CREATIVE_ENERGY_CELL = BLOCKS.register("creative_energy_cell",
-            () -> new CreativeEnergyCellBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+    public static final RegistryObject<Block> CREATIVE_POWER_CELL = BLOCKS.register("creative_power_cell",
+            () -> new CreativePowerCellBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0f)
+                    .noOcclusion()
                     .requiresCorrectToolForDrops()));
 
 

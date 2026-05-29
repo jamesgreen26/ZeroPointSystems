@@ -61,6 +61,7 @@ public class ModCreativeTabs {
                         RADIO_ANTENNA,
 
                         ROBOTIC_ARM,
+                        CREATIVE_POWER_CELL,
 
                         BAUXITE,
                         LITHIUM_ORE,
@@ -134,7 +135,6 @@ public class ModCreativeTabs {
     public static void addToVanillaTabs(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == CreativeModeTabs.OP_BLOCKS) {
             event.accept(ModItems.REDSTONE_WAND.get());
-            event.accept(CREATIVE_ENERGY_CELL.get());
         }
     }
 

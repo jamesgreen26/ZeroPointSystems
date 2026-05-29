@@ -12,7 +12,7 @@ import net.minecraftforge.energy.IEnergyStorage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class CreativeEnergyCellBlockEntity extends BlockEntity {
+public class CreativePowerCellBlockEntity extends BlockEntity {
     private static final IEnergyStorage CREATIVE_ENERGY = new IEnergyStorage() {
         @Override
         public int receiveEnergy(int maxReceive, boolean simulate) {
@@ -47,8 +47,8 @@ public class CreativeEnergyCellBlockEntity extends BlockEntity {
 
     private final LazyOptional<IEnergyStorage> energy = LazyOptional.of(() -> CREATIVE_ENERGY);
 
-    public CreativeEnergyCellBlockEntity(BlockPos pos, BlockState state) {
-        super(ModBlockEntities.CREATIVE_ENERGY_CELL.get(), pos, state);
+    public CreativePowerCellBlockEntity(BlockPos pos, BlockState state) {
+        super(ModBlockEntities.CREATIVE_POWER_CELL.get(), pos, state);
     }
 
     public static void tick(Level level, BlockPos pos) {

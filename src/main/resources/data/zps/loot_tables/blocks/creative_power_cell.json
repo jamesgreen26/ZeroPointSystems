@@ -6,7 +6,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "zps:creative_energy_cell"
+          "name": "zps:creative_power_cell"
         }
       ],
       "conditions": [

@@ -7,7 +7,7 @@
     "zps:stepup_transformer",
     "zps:stepdown_transformer",
     "zps:redstone_converter",
-    "zps:creative_energy_cell",
+    "zps:creative_power_cell",
     "zps:octo_controller",
     "zps:dodeca_controller",
     "zps:cable_insulation",

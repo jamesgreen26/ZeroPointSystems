@@ -110,7 +110,7 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
                 maxY,
                 maxZ,
                 1.0f,
-                0.2f,
+                blockEntity.isMoving() ? 0.2f : 1.0f,
                 0.2f,
                 1.0f
         );

@@ -16,9 +16,13 @@ import g_mungus.zps.commands.api_impl.arguments.ArgumentPlaceholder;
 import g_mungus.zps.commands.api_impl.arguments.AddressReference;
 import g_mungus.zps.commands.api_impl.arguments.ZPSLiteral;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.arguments.coordinates.Coordinates;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.phys.Vec2;
+import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.function.BiFunction;
@@ -133,6 +137,7 @@ public class CommandTreeBuilder {
                         rawArg = expr.evaluate(commandSource, source.getPos());
                     }
                     rawArg = resolveAddressReference(rawArg, source);
+                    rawArg = coerceArgument(rawArg, scriptMapper2.argumentClass(), commandSource);
                     source.predicateValue = mapperFunction.apply(source.predicateValue,
                             new ScriptContextWithArgumentImpl<>(rawArg, source.getPos(), commandSource.getLevel(), commandSource));
                 }
@@ -225,6 +230,7 @@ public class CommandTreeBuilder {
                         rawArg = expr.evaluate(commandSource, source.getPos());
                     }
                     rawArg = resolveAddressReference(rawArg, source);
+                    rawArg = coerceArgument(rawArg, typed.argumentClass(), commandSource);
                     ScriptContext executorContext = new ScriptContextImpl(commandSource, source.getPos(), commandSource.getLevel());
                     I mappedValue = typed.argumentMapper().apply((A) rawArg, executorContext);
                     return typed.function().apply(mappedValue, executorContext);
@@ -250,6 +256,7 @@ public class CommandTreeBuilder {
                                 rawArg = expr.evaluate(context.getSource(), source.getPos());
                             }
                             rawArg = resolveAddressReference(rawArg, source);
+                            rawArg = coerceArgument(rawArg, typed.argumentClass(), context.getSource());
                             ScriptContext executorContext = new ScriptContextImpl(context.getSource(), source.getPos(), context.getSource().getLevel());
                             I mappedValue = typed.argumentMapper().apply((A) rawArg, executorContext);
                             return typed.function().apply(mappedValue, executorContext);
@@ -366,6 +373,7 @@ public class CommandTreeBuilder {
                         rawArg = expr.evaluate(commandSource, source.getPos());
                     }
                     rawArg = resolveAddressReference(rawArg, source);
+                    rawArg = coerceArgument(rawArg, scriptMapper2.argumentClass(), commandSource);
                     source.predicateValue = mapperFunction.apply(source.predicateValue,
                             new ScriptContextWithArgumentImpl<>(rawArg, source.getPos(), commandSource.getLevel(), commandSource));
                 }
@@ -410,6 +418,59 @@ public class CommandTreeBuilder {
             return resolved;
         }
         return rawArg;
+    }
+
+    private static Object coerceArgument(Object rawArg, Class<?> expectedClass, CommandSourceStack commandSource) {
+        if (rawArg == null || expectedClass.isInstance(rawArg) || expectedClass == Object.class) {
+            return rawArg;
+        }
+
+        if (rawArg instanceof Coordinates coordinates) {
+            if (expectedClass == BlockPos.class) {
+                return coordinates.getBlockPos(commandSource);
+            }
+            if (expectedClass == Vec3.class) {
+                return coordinates.getPosition(commandSource);
+            }
+        }
+        if (expectedClass == Coordinates.class) {
+            if (rawArg instanceof BlockPos blockPos) {
+                return new FixedCoordinates(Vec3.atCenterOf(blockPos));
+            }
+            if (rawArg instanceof Vec3 vec3) {
+                return new FixedCoordinates(vec3);
+            }
+        }
+
+        throw new IllegalArgumentException("Expected argument type " + expectedClass.getSimpleName()
+                + ", got " + rawArg.getClass().getSimpleName());
+    }
+
+    private record FixedCoordinates(Vec3 position) implements Coordinates {
+        @Override
+        public @NotNull Vec3 getPosition(CommandSourceStack source) {
+            return position;
+        }
+
+        @Override
+        public @NotNull Vec2 getRotation(CommandSourceStack source) {
+            return source.getRotation();
+        }
+
+        @Override
+        public boolean isXRelative() {
+            return false;
+        }
+
+        @Override
+        public boolean isYRelative() {
+            return false;
+        }
+
+        @Override
+        public boolean isZRelative() {
+            return false;
+        }
     }
 
     @SuppressWarnings("unused")

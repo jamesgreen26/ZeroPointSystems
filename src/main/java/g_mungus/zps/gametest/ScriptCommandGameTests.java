@@ -822,6 +822,29 @@ public class ScriptCommandGameTests {
     }
 
     /**
+     * {@code if pos == value_of(pos offset_y 1 offset_y -1) set_redstone 15}
+     * should evaluate to true because the nested value_of returns the original
+     * position after inverse offsets.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_ifPosEqualsValueOfOffsetChain_setsRedstone15(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+
+        int result = runScriptCommand(
+                helper,
+                absPos,
+                "if pos == value_of(pos offset_y 1 offset_y -1) set_redstone 15"
+        );
+        if (result != 1) {
+            helper.fail("zps_script if pos == value_of(pos offset_y 1 offset_y -1) returned " + result + " instead of 1");
+            return;
+        }
+
+        assertStoredRedstone(helper, absPos, 15, "zps_script if pos == value_of(pos offset_y 1 offset_y -1)");
+        helper.succeed();
+    }
+
+    /**
      * Nested {@code value_of(...)} should work through the public command path,
      * not just the inner dispatcher helper.
      */

@@ -12,17 +12,10 @@ public class ZPSMixinCanceller implements MixinCanceller {
 
     // mod list is not available early enough
     boolean isCreatePresent() {
-        boolean createPresent;
         try {
-            Class.forName(
-                    "com.simibubi.create.Create",
-                    false,
-                    ZPSMixinCanceller.class.getClassLoader()
-            );
-            createPresent = true;
-        } catch (ClassNotFoundException e) {
-            createPresent = false;
+            return ZPSMixinCanceller.class.getClassLoader().getResource("com/simibubi/create/Create.class") != null;
+        } catch (Exception e) {
+            return false;
         }
-        return createPresent;
     }
 }

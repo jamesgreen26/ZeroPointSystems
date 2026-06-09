@@ -37,5 +37,10 @@
     "key.zps.j": "kanal J",
     "key.zps.k": "kanal K",
     "key.zps.l": "kanal L",
+
+    "sounds.zps.keystroke": "Tastatur klackert",
+    "sounds.zps.static": "Rauschen zischt",
+    "sounds.zps.arm_move": "Roboterarm bewegt sich",
+
     "key.categories.zps": "Zero Point Systems"
 }

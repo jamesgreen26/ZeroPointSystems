@@ -376,6 +376,9 @@
     "block.zps.dodeca_controller.zps_tooltip": "More... MORE!!",
     "item.zps.address_pad.zps_tooltip": "Saves named block positions as Addresses.\n\n[R-Click a block]: creates a new Address at that position (max 15).\n\n[R-Click the air]: opens GUI to manage saved Addresses.\n\n[R-Click a Script Terminal]: places the Address Pad on the Script Terminal, allowing the Addresses to be used in Script Commands.",
 
+    "sounds.zps.keystroke": "Keyboard clacks",
+    "sounds.zps.static": "Static hisses",
+    "sounds.zps.arm_move": "Robotic arm moves",
 
     "zps.display_source.serial_bus": "Serial Bus Data"
 }

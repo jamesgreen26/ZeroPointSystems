@@ -19,5 +19,11 @@
         "preload": true
       }
     ]
+  },
+  "arm_move": {
+    "subtitle": "sounds.zps.arm_move",
+    "sounds": [
+      "zps:arm_move"
+    ]
   }
 }

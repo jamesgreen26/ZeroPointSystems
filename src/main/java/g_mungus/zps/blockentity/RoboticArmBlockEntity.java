@@ -1,5 +1,6 @@
 package g_mungus.zps.blockentity;
 
+import g_mungus.zps.ModSounds;
 import g_mungus.zps.ZPSMod;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.core.BlockPos;
@@ -9,6 +10,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Clearable;
 import net.minecraft.world.Container;
 import net.minecraft.world.InteractionHand;
@@ -53,6 +55,9 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
     public static final int MAX_RETRIEVE_AMOUNT = 64;
     public static final int ENERGY_CAPACITY = 8192;
     public static final int ENERGY_PER_MOVE_TICK = 8;
+    private static final float ARM_MOVE_VOLUME = 0.8F;
+    private static final float MIN_ARM_MOVE_PITCH = 0.8F;
+    private static final float MAX_ARM_MOVE_PITCH = 1.2F;
 
     private boolean moving;
     private BlockPos handBlockPos;
@@ -200,6 +205,7 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
         if (newBlockPos.distSqr(worldPosition) > (double) (MAX_DISTANCE_BLOCKS * MAX_DISTANCE_BLOCKS)) return false;
         if (energyStorage.getEnergyStored() <= ENERGY_PER_MOVE_TICK) return false;
 
+        playMoveSound(newBlockPos);
         moveStartBlockPos = handBlockPos;
         moveTargetBlockPos = newBlockPos;
         moveStartTick = level.getGameTime();
@@ -208,6 +214,14 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
         setChanged();
         level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_ALL);
         return true;
+    }
+
+    private void playMoveSound(BlockPos newBlockPos) {
+        if (level == null) return;
+        double distance = Math.sqrt(handBlockPos.distSqr(newBlockPos));
+        double maxTravelDistance = MAX_DISTANCE_BLOCKS * 2.0;
+        float pitch = (float) (MIN_ARM_MOVE_PITCH + (MAX_ARM_MOVE_PITCH - MIN_ARM_MOVE_PITCH) * Math.min(distance / maxTravelDistance, 1.0));
+        level.playSound(null, worldPosition, ModSounds.ARM_MOVE.get(), SoundSource.BLOCKS, ARM_MOVE_VOLUME, pitch);
     }
 
     public boolean RetrieveItemsFrom(BlockPos targetPos) {

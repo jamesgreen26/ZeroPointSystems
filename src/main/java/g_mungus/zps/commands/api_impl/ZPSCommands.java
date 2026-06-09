@@ -74,6 +74,12 @@ public class ZPSCommands {
         );
 
 
+        // RegisterCommandsEvent fires again on /reload; without clearing, structurally
+        // identical nodes that lack value-based equality (ScriptMapper2's wrapper lambda,
+        // executors using argument types without equals) accumulate as duplicates and
+        // produce ambiguous duplicate branches in the rebuilt tree.
+        Registry.clear();
+
         MinecraftForge.EVENT_BUS.post(new RegisterScriptCommandsEvent() {
             @Override
             public void register(ScriptNode node) {

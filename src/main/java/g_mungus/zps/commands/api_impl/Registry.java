@@ -15,6 +15,12 @@ class Registry {
     static Set<ScriptMapper<?, ?>> MAPPERS = new HashSet<>();
 
 
+    static void clear() {
+        EXECUTORS.clear();
+        GETTERS.clear();
+        MAPPERS.clear();
+    }
+
     static void register(ScriptNode node) {
         if (node instanceof ScriptExecutor<?, ?> executor) {
             EXECUTORS.add(executor);

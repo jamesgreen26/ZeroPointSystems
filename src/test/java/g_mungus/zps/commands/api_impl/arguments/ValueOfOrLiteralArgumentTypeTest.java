@@ -205,6 +205,33 @@ public class ValueOfOrLiteralArgumentTypeTest {
     }
 
     @Test
+    public void parse_placeholderWithoutBoundary_fallsBackToWrappedType() {
+        // "%sx" is not a placeholder (no whitespace/EOF boundary after %s),
+        // so it must be handed to the wrapped int parser, which rejects it.
+        StringReader reader = new StringReader("%sx");
+        assertThrows(CommandSyntaxException.class, () -> intType().parse(reader));
+    }
+
+    @Test
+    public void parse_addressWithoutBoundary_fallsBackToWrappedType() {
+        // "@home)" has no boundary after the address token, so it is not
+        // treated as an address even when the name is active.
+        ValueOfOrLiteralArgumentType.setActiveAddressNames(Set.of("home"));
+        StringReader reader = new StringReader("@home)");
+        assertThrows(CommandSyntaxException.class, () -> blockPosType().parse(reader));
+    }
+
+    @Test
+    public void parse_addressFollowedByWhitespace_isAccepted() throws CommandSyntaxException {
+        ValueOfOrLiteralArgumentType.setActiveAddressNames(Set.of("home"));
+        StringReader reader = new StringReader("@home next");
+        Object result = blockPosType().parse(reader);
+        assertInstanceOf(AddressReference.class, result);
+        assertTrue(reader.canRead());
+        assertEquals(' ', reader.peek(), "Only the address token should be consumed");
+    }
+
+    @Test
     public void suggest_blockPosAddresses_only() throws ExecutionException, InterruptedException {
         ValueOfOrLiteralArgumentType.setActiveAddressNames(Set.of("home", "hub"));
         var dispatcher = new com.mojang.brigadier.CommandDispatcher<Object>();

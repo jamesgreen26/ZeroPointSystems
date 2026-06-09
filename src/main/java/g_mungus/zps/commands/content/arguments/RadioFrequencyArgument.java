@@ -43,11 +43,13 @@ public class RadioFrequencyArgument implements ArgumentType<Integer> {
 
     @Override
     public Integer parse(StringReader reader) throws CommandSyntaxException {
+        int start = reader.getCursor();
         String input = reader.readUnquotedString();
 
         int index = FREQUENCIES.indexOf(input);
 
         if (index == -1) {
+            reader.setCursor(start);
             throw ERROR_INVALID_FREQUENCY.createWithContext(reader, input);
         }
 

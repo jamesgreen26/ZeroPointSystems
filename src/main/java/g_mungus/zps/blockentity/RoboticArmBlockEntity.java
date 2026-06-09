@@ -12,6 +12,7 @@ import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Clearable;
+import net.minecraft.world.CompoundContainer;
 import net.minecraft.world.Container;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -26,6 +27,7 @@ import net.minecraft.world.level.block.entity.BarrelBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraftforge.common.capabilities.Capability;
@@ -395,7 +397,6 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
             return;
         }
 
-        BlockEntity blockEntity = level.getBlockEntity(pendingTransferTargetPos);
         Container container = resolveTransferContainer(pendingTransferTargetPos);
         if (container == null) {
             pendingTransfer = PendingTransfer.NONE;
@@ -403,7 +404,7 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
         }
 
         Player interactionPlayer = getContainerInteractionPlayer();
-        openContainerForVisualTransfer(blockEntity, interactionPlayer);
+        openContainerForVisualTransfer(container, interactionPlayer);
         try {
             if (pendingTransfer == PendingTransfer.RETRIEVE) {
                 tryRetrieveFrom(container);
@@ -411,13 +412,17 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
                 tryDepositInto(container);
             }
         } finally {
-            scheduleContainerClose(blockEntity.getBlockPos(), gameTimeWithDelay(), interactionPlayer);
+            scheduleContainerClose(pendingTransferTargetPos, gameTimeWithDelay(), interactionPlayer);
         }
         pendingTransfer = PendingTransfer.NONE;
     }
 
     private @Nullable Container resolveTransferContainer(BlockPos targetPos) {
         if (level == null) return null;
+        return resolveTransferContainer(level, targetPos);
+    }
+
+    private static @Nullable Container resolveTransferContainer(Level level, BlockPos targetPos) {
         BlockState targetState = level.getBlockState(targetPos);
         if (targetState.getBlock() instanceof ChestBlock chestBlock) {
             return ChestBlock.getContainer(chestBlock, targetState, level, targetPos, true);
@@ -445,9 +450,9 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
         if (event.phase != TickEvent.Phase.START || delayedContainerCloseJobs.isEmpty()) return;
         for (DelayedContainerCloseJob delayedClose : delayedContainerCloseJobs) {
             if (delayedClose.level.getGameTime() < delayedClose.closeGameTime) continue;
-            BlockEntity blockEntity = delayedClose.level.getBlockEntity(delayedClose.blockPos);
-            if (blockEntity != null) {
-                closeContainerAfterVisualTransfer(blockEntity, delayedClose.player);
+            Container container = resolveTransferContainer(delayedClose.level, delayedClose.blockPos);
+            if (container != null) {
+                closeContainerAfterVisualTransfer(container, delayedClose.player);
             }
             delayedContainerCloseJobs.remove(delayedClose);
         }
@@ -458,21 +463,17 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
         return getOrCreateUsePlayer(serverLevel);
     }
 
-    private static void openContainerForVisualTransfer(BlockEntity blockEntity, @Nullable Player player) {
+    private static void openContainerForVisualTransfer(Container container, @Nullable Player player) {
         if (player == null) return;
-        if (blockEntity instanceof ChestBlockEntity chest) {
-            chest.startOpen(player);
-        } else if (blockEntity instanceof BarrelBlockEntity barrel) {
-            barrel.startOpen(player);
+        if (container instanceof ChestBlockEntity || container instanceof CompoundContainer || container instanceof BarrelBlockEntity) {
+            container.startOpen(player);
         }
     }
 
-    private static void closeContainerAfterVisualTransfer(BlockEntity blockEntity, @Nullable Player player) {
+    private static void closeContainerAfterVisualTransfer(Container container, @Nullable Player player) {
         if (player == null) return;
-        if (blockEntity instanceof ChestBlockEntity chest) {
-            chest.stopOpen(player);
-        } else if (blockEntity instanceof BarrelBlockEntity barrel) {
-            barrel.stopOpen(player);
+        if (container instanceof ChestBlockEntity || container instanceof CompoundContainer || container instanceof BarrelBlockEntity) {
+            container.stopOpen(player);
         }
     }
 

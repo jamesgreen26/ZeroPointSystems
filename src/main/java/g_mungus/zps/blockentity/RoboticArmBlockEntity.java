@@ -20,18 +20,21 @@ import net.minecraft.world.WorldlyContainer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.stats.Stats;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.BucketPickup;
 import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.LiquidBlockContainer;
 import net.minecraft.world.level.block.entity.BarrelBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraftforge.common.capabilities.Capability;
@@ -661,6 +664,13 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
             return;
         }
 
+        if (tryPlaceFluidFromBucket(targetPos, fakePlayer, hitResult)) {
+            heldStack = fakePlayer.getMainHandItem().copy();
+            fakePlayer.setShiftKeyDown(false);
+            setChanged();
+            return;
+        }
+
         InteractionResult result = fakePlayer.gameMode.useItemOn(
                 fakePlayer,
                 serverLevel,
@@ -705,6 +715,41 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
         level.gameEvent(fakePlayer, GameEvent.FLUID_PICKUP, targetPos);
         fakePlayer.setItemInHand(InteractionHand.MAIN_HAND, pickedUpStack);
         return true;
+    }
+
+    private boolean tryPlaceFluidFromBucket(BlockPos targetPos, FakePlayer fakePlayer, BlockHitResult hitResult) {
+        if (!(level instanceof ServerLevel serverLevel)) return false;
+
+        ItemStack bucketStack = fakePlayer.getMainHandItem();
+        if (!(bucketStack.getItem() instanceof BucketItem bucketItem) || bucketItem.getFluid() == Fluids.EMPTY || bucketStack.getCount() != 1) {
+            return false;
+        }
+
+        Direction hitFace = hitResult.getDirection();
+        if (!canPlaceBucketFluidAt(targetPos)) return false;
+        if (!level.mayInteract(fakePlayer, targetPos) || !fakePlayer.mayUseItemAt(targetPos, hitFace, bucketStack)) {
+            return false;
+        }
+
+        if (!bucketItem.emptyContents(fakePlayer, serverLevel, targetPos, null, bucketStack)) {
+            return false;
+        }
+
+        bucketItem.checkExtraContent(fakePlayer, serverLevel, bucketStack, targetPos);
+        fakePlayer.awardStat(Stats.ITEM_USED.get(bucketStack.getItem()));
+        fakePlayer.setItemInHand(InteractionHand.MAIN_HAND, BucketItem.getEmptySuccessItem(bucketStack, fakePlayer));
+        return true;
+    }
+
+    private boolean canPlaceBucketFluidAt(BlockPos targetPos) {
+        if (level == null) return false;
+        BlockState targetState = level.getBlockState(targetPos);
+        Block targetBlock = targetState.getBlock();
+        if (!(heldStack.getItem() instanceof BucketItem bucketItem)) return false;
+        return targetState.isAir()
+                || targetState.canBeReplaced(bucketItem.getFluid())
+                || targetBlock instanceof LiquidBlockContainer liquidContainer
+                && liquidContainer.canPlaceLiquid(level, targetPos, targetState, bucketItem.getFluid());
     }
 
     private Direction getHitFace(BlockPos targetPos) {

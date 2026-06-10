@@ -10,6 +10,12 @@ import org.valkyrienskies.mod.common.VSGameUtilsKt;
 public class VSClientCompat {
 
     /// Only call after verifying that VS is loaded
+    static boolean isOnShip(ClientLevel level, BlockPos pos) {
+        return VSGameUtilsKt.getLoadedShipManagingPos(level,
+                pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) != null;
+    }
+
+    /// Only call after verifying that VS is loaded
     static Vec3 toWorldRenderPos(ClientLevel level, Vec3 pos) {
         ClientShip ship = VSGameUtilsKt.getLoadedShipManagingPos(level, pos.x, pos.y, pos.z);
         if (ship == null) return pos;

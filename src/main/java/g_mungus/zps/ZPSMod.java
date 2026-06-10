@@ -3,6 +3,7 @@ package g_mungus.zps;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.client.ponder.ZPSPonderPlugin;
+import g_mungus.zps.client.renderer.ZPSPartialModels;
 import g_mungus.zps.compat.Compat;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.entity.ModEntities;
@@ -50,6 +51,7 @@ public final class ZPSMod {
         modEventBus.addListener(ZPSMod::registerGameTests);
 
         DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> ZPSPonderPlugin::registerPlugin);
+        DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> ZPSPartialModels::init);
 
         Compat.onModInit(modEventBus);
     }

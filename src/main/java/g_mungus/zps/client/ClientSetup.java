@@ -1,5 +1,6 @@
 package g_mungus.zps.client;
 
+import dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.ModBlockEntities;
@@ -57,6 +58,11 @@ public class ClientSetup {
             BlockEntityRenderers.register(ModBlockEntities.RADIO_TRANSMITTER.get(), RadioTransmitterBlockEntityRenderer::new);
             BlockEntityRenderers.register(ModBlockEntities.RADIO_RECEIVER.get(), RadioReceiverBlockEntityRenderer::new);
             BlockEntityRenderers.register(ModBlockEntities.ROBOTIC_ARM.get(), RoboticArmBlockEntityRenderer::new);
+            SimpleBlockEntityVisualizer.builder(ModBlockEntities.ROBOTIC_ARM.get())
+                    .factory(RoboticArmVisual::new)
+                    // The BER keeps rendering the held item, debug overlays, and the on-ship fallback
+                    .neverSkipVanillaRender()
+                    .apply();
             BlockEntityRenderers.register(ModBlockEntities.POWER_CELL.get(), PowerCellBlockEntityRenderer::new);
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DENSE_CABLE_SEPARATOR.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.LIGHT_PIPE.get(), RenderType.translucent());

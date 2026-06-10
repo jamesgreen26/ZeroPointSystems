@@ -668,7 +668,8 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
 
         Direction hitFace = getHitFace(targetPos);
         Vec3 targetCenter = Vec3.atCenterOf(targetPos);
-        fakePlayer.setPos(targetCenter.x, targetCenter.y, targetCenter.z);
+        Vec3 armWorldCenter = Compat.toWorldPos(serverLevel, Vec3.atCenterOf(worldPosition));
+        fakePlayer.setPos(armWorldCenter.x, armWorldCenter.y, armWorldCenter.z);
 
         BlockHitResult hitResult = new BlockHitResult(targetCenter, hitFace, targetPos, false);
         ItemStack heldByPlayer = fakePlayer.getMainHandItem();
@@ -777,11 +778,12 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
     }
 
     private Direction getHitFace(BlockPos targetPos) {
-        int dx = worldPosition.getX() - targetPos.getX();
-        int dy = worldPosition.getY() - targetPos.getY();
-        int dz = worldPosition.getZ() - targetPos.getZ();
-        if (dx == 0 && dy == 0 && dz == 0) return Direction.UP;
-        return Direction.getNearest(dx, dy, dz);
+        if (level == null) return Direction.UP;
+        Vec3 localArmCenter = Compat.toLocalSpaceOf(level, targetPos, Vec3.atCenterOf(worldPosition));
+        Vec3 targetCenter = Vec3.atCenterOf(targetPos);
+        Vec3 targetToArm = localArmCenter.subtract(targetCenter);
+        if (targetToArm.lengthSqr() <= 1.0e-8) return Direction.UP;
+        return Direction.getNearest(targetToArm.x, targetToArm.y, targetToArm.z);
     }
 
     private FakePlayer getOrCreateUsePlayer(ServerLevel serverLevel) {

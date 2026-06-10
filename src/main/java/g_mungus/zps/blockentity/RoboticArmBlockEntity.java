@@ -679,6 +679,11 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
             BlockState targetState = serverLevel.getBlockState(targetPos);
             BlockPlaceContext placeContext = new BlockPlaceContext(new UseOnContext(fakePlayer, InteractionHand.MAIN_HAND, hitResult));
             if (!targetState.canBeReplaced(placeContext)) {
+                if (!shiftUse) {
+                    targetState.use(serverLevel, fakePlayer, InteractionHand.MAIN_HAND, hitResult);
+                    heldStack = fakePlayer.getMainHandItem().copy();
+                    setChanged();
+                }
                 fakePlayer.setShiftKeyDown(false);
                 return;
             }

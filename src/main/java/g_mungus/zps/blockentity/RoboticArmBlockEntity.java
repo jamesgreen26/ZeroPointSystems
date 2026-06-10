@@ -12,6 +12,7 @@ import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
 import net.minecraft.world.Clearable;
 import net.minecraft.world.CompoundContainer;
 import net.minecraft.world.Container;
@@ -669,10 +670,11 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
         Direction hitFace = getHitFace(targetPos);
         Vec3 targetCenter = Vec3.atCenterOf(targetPos);
         Vec3 armWorldCenter = Compat.toWorldPos(serverLevel, Vec3.atCenterOf(worldPosition));
-        fakePlayer.setPos(armWorldCenter.x, armWorldCenter.y, armWorldCenter.z);
+        Vec3 handWorldCenter = Compat.toWorldPos(serverLevel, Vec3.atCenterOf(handBlockPos));
 
         BlockHitResult hitResult = new BlockHitResult(targetCenter, hitFace, targetPos, false);
         ItemStack heldByPlayer = fakePlayer.getMainHandItem();
+        positionUsePlayer(fakePlayer, armWorldCenter, handWorldCenter, heldByPlayer.getItem() instanceof BlockItem);
         if (!heldByPlayer.isEmpty() && heldByPlayer.getItem() instanceof BlockItem) {
             BlockState targetState = serverLevel.getBlockState(targetPos);
             BlockPlaceContext placeContext = new BlockPlaceContext(new UseOnContext(fakePlayer, InteractionHand.MAIN_HAND, hitResult));
@@ -716,6 +718,26 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
         heldStack = fakePlayer.getMainHandItem().copy();
         fakePlayer.setShiftKeyDown(false);
         setChanged();
+    }
+
+    private static void positionUsePlayer(FakePlayer fakePlayer, Vec3 armWorldCenter, Vec3 handWorldCenter, boolean blockPlacement) {
+        Vec3 aim = handWorldCenter.subtract(armWorldCenter);
+        if (aim.lengthSqr() <= 1.0e-8) {
+            aim = new Vec3(0.0, 0.0, 1.0);
+        } else {
+            aim = aim.normalize();
+        }
+
+        double horizontalDistance = Math.sqrt(aim.x * aim.x + aim.z * aim.z);
+        float yRot = (float) (Mth.atan2(-aim.x, aim.z) * (double) (180F / (float) Math.PI));
+        float xRot = (float) (Mth.atan2(-aim.y, horizontalDistance) * (double) (180F / (float) Math.PI));
+
+        Vec3 playerPos = blockPlacement
+                ? armWorldCenter
+                : new Vec3(handWorldCenter.x, handWorldCenter.y - fakePlayer.getEyeHeight() + 0.1D, handWorldCenter.z);
+        fakePlayer.moveTo(playerPos.x, playerPos.y, playerPos.z, yRot, xRot);
+        fakePlayer.setYHeadRot(yRot);
+        fakePlayer.setYBodyRot(yRot);
     }
 
     private boolean tryPickupFluidWithBucket(BlockPos targetPos, FakePlayer fakePlayer, BlockHitResult hitResult) {

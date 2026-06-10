@@ -1,7 +1,7 @@
 package g_mungus.zps.item;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import g_mungus.zps.ZPSMod;
+import g_mungus.zps.client.renderer.ZPSSpecialTextures;
 import g_mungus.zps.client.screens.AddressPadListScreen;
 import g_mungus.zps.client.screens.AddressPadNameScreen;
 import g_mungus.zps.compat.ClientCompat;
@@ -17,17 +17,13 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
+
+import java.util.Collections;
+
 public class AddressPadClientHooks {
     private static final double LABEL_RADIUS = 64.0;
     private static final double LABEL_RADIUS_SQ = LABEL_RADIUS * LABEL_RADIUS;
     private static final double LABEL_HEIGHT_ABOVE_CENTER = 0.8;
-    // Each row is one edge of the unit cube: start corner offset, end corner offset.
-    private static final int[][] BOX_EDGES = {
-            {0, 0, 0, 1, 0, 0}, {0, 0, 0, 0, 1, 0}, {0, 0, 0, 0, 0, 1},
-            {1, 1, 0, 0, 1, 0}, {1, 1, 0, 1, 0, 0}, {1, 1, 0, 1, 1, 1},
-            {0, 1, 1, 0, 0, 1}, {0, 1, 1, 0, 1, 0}, {0, 1, 1, 1, 1, 1},
-            {1, 0, 1, 1, 0, 0}, {1, 0, 1, 0, 0, 1}, {1, 0, 1, 1, 1, 1},
-    };
 
     public static void openAddressPadScreen(net.minecraft.world.InteractionHand hand, BlockPos pos) {
         Minecraft minecraft = Minecraft.getInstance();
@@ -81,7 +77,11 @@ public class AddressPadClientHooks {
             double distanceSq = worldCenter.distanceToSqr(player.position());
             if (distanceSq > LABEL_RADIUS_SQ) continue;
 
-            showBoxOutline("address_pad_" + player.getUUID() + "_" + pos.asLong(), pos);
+            Outliner.getInstance()
+                    .showCluster("address_pad_" + player.getUUID() + "_" + pos.asLong(), Collections.singletonList(pos))
+                    .colored(0x00FFFF)
+                    .disableCull()
+                    .lineWidth(1 / 16f);
 
             float alpha = 1.0f - Mth.clamp((float) Math.sqrt(distanceSq) / (float) LABEL_RADIUS, 0f, 1f);
             if (alpha <= 0.02f) continue;
@@ -125,22 +125,6 @@ public class AddressPadClientHooks {
         }
 
         buffer.endBatch();
-    }
-
-    // Drawn as individual lines rather than showAABB: Valkyrien Skies' Outline mixin only
-    // transforms line geometry exactly (absolute double-precision endpoints), so this is the
-    // one Outliner shape that lands correctly on rotated or distant ships.
-    private static void showBoxOutline(String key, BlockPos pos) {
-        Vec3 corner = new Vec3(pos.getX(), pos.getY(), pos.getZ());
-        for (int i = 0; i < BOX_EDGES.length; i++) {
-            int[] edge = BOX_EDGES[i];
-            Outliner.getInstance()
-                    .showLine(key + "_" + i,
-                            corner.add(edge[0], edge[1], edge[2]),
-                            corner.add(edge[3], edge[4], edge[5]))
-                    .colored(0x00FFFF)
-                    .lineWidth(1 / 16f);
-        }
     }
 
     private static ItemStack getHeldAddressPad(LocalPlayer player) {

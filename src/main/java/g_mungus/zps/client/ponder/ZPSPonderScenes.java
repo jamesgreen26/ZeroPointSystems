@@ -6,9 +6,12 @@ import g_mungus.zps.block.cableNetwork.DenseCableSeparatorBlock;
 import g_mungus.zps.block.cableNetwork.RedstoneConverterBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.light_pipe.DataLecternBlock;
+import g_mungus.zps.block.cableNetwork.light_pipe.ScriptTerminalBlock;
 import g_mungus.zps.block.cableNetwork.properties.InsulationType;
+import g_mungus.zps.blockentity.RoboticArmBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
 import g_mungus.zps.client.ponder.api.PonderExtras;
+import g_mungus.zps.client.ponder.api.RoboticArmRangeInstruction;
 import g_mungus.zps.client.ponder.api.custom_screen_in_ponder_scene.*;
 import g_mungus.zps.client.screens.ScriptTerminalScreen;
 import g_mungus.zps.item.ModItems;
@@ -18,21 +21,25 @@ import net.createmod.ponder.api.element.ElementLink;
 import net.createmod.ponder.api.element.EntityElement;
 import net.createmod.ponder.api.scene.SceneBuilder;
 import net.createmod.ponder.api.scene.SceneBuildingUtil;
+import net.createmod.ponder.api.scene.Selection;
 import net.createmod.ponder.foundation.element.InputWindowElement;
 import net.createmod.ponder.foundation.instruction.DisplayWorldSectionInstruction;
 import net.createmod.ponder.foundation.instruction.FadeOutOfSceneInstruction;
 import net.createmod.ponder.foundation.instruction.ShowInputInstruction;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.piglin.AbstractPiglin;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.piston.PistonBaseBlock;
@@ -490,6 +497,247 @@ public class ZPSPonderScenes {
         builder.addInstruction(new FadeOutOfSceneInstruction<>(2, Direction.DOWN, builder.world().makeSectionIndependent(util.select().position(3,3,3))));
         builder.idle(1);
         builder.world().cycleBlockProperty(new BlockPos(3,2,3), PistonBaseBlock.EXTENDED);
+    }
+
+    // --- Robotic Arm scene helpers ---
+
+    private static long ponderGameTime() {
+        ClientLevel level = Minecraft.getInstance().level;
+        return level == null ? 0L : level.getGameTime();
+    }
+
+    /** Snaps the hand to a settled pose with no animation (also used to set the initial rest pose). */
+    private static void setArmHand(SceneBuilder builder, SceneBuildingUtil util, BlockPos armPos, BlockPos hand) {
+        builder.world().modifyBlockEntityNBT(util.select().position(armPos), RoboticArmBlockEntity.class, nbt -> {
+            nbt.putBoolean("Moving", false);
+            nbt.putLong("HandBlockPos", hand.asLong());
+            nbt.putLong("MoveStartBlockPos", hand.asLong());
+            nbt.putLong("MoveTargetBlockPos", hand.asLong());
+            nbt.putLong("MoveStartTick", 0L);
+        });
+    }
+
+    /**
+     * Plays a real {@code MOVE_TIME_TICKS}-long hand move by driving the renderer's NBT fields.
+     * {@code MoveStartTick} is re-based every scene tick because the client game time is frozen
+     * while the Ponder UI is open in singleplayer (the integrated server is paused). Consumes
+     * {@code MOVE_TIME_TICKS} scene ticks.
+     */
+    private static void armMove(SceneBuilder builder, SceneBuildingUtil util, BlockPos armPos, BlockPos from, BlockPos to) {
+        Selection arm = util.select().position(armPos);
+        for (int i = 0; i < RoboticArmBlockEntity.MOVE_TIME_TICKS; i++) {
+            final long tick = i;
+            builder.world().modifyBlockEntityNBT(arm, RoboticArmBlockEntity.class, nbt -> {
+                nbt.putBoolean("Moving", true);
+                nbt.putLong("MoveStartBlockPos", from.asLong());
+                nbt.putLong("MoveTargetBlockPos", to.asLong());
+                nbt.putLong("MoveStartTick", ponderGameTime() - tick);
+            });
+            builder.idle(1);
+        }
+        setArmHand(builder, util, armPos, to);
+    }
+
+    private static void setArmHeldStack(SceneBuilder builder, SceneBuildingUtil util, BlockPos armPos, ItemStack stack) {
+        builder.world().modifyBlockEntityNBT(util.select().position(armPos), RoboticArmBlockEntity.class, nbt -> {
+            if (stack.isEmpty()) {
+                nbt.remove("HeldStack"); // absence == empty in readInventoryState
+            } else {
+                nbt.put("HeldStack", stack.save(new CompoundTag()));
+            }
+        });
+    }
+
+    public static void roboticArmTutorial(SceneBuilder builder, SceneBuildingUtil util) {
+        BlockPos arm = new BlockPos(3, 1, 3);
+        BlockPos rest = arm.above();
+        BlockPos chest = new BlockPos(1, 1, 3);
+        BlockPos barrel = new BlockPos(5, 1, 3);
+
+        builder.configureBasePlate(0, 0, 7);
+        builder.title("robotic_arm", "Robotic Arm");
+        builder.showBasePlate();
+        setArmHand(builder, util, arm, rest); // rest pose before the arm becomes visible
+        builder.idle(5);
+
+        builder.world().showSection(util.select().position(arm), Direction.DOWN);
+        builder.idle(10);
+        builder.overlay().showText(85)
+                .text("The Robotic Arm picks up and places items, and interacts with nearby blocks.")
+                .pointAt(util.vector().topOf(arm)).placeNearTarget();
+        builder.idle(95);
+
+        builder.world().showSection(util.select().fromTo(3, 1, 2, 4, 1, 1), Direction.DOWN);
+        builder.overlay().showText(85)
+                .text("It requires Forge Energy, supplied through any face of its base.")
+                .pointAt(util.vector().centerOf(3, 1, 2)).placeNearTarget();
+        builder.idle(10);
+        builder.effects().emitParticles(new Vec3(3.5, 1.6, 2.95),
+                builder.effects().simpleParticleEmitter(ParticleTypes.ELECTRIC_SPARK, new Vec3(0, 0, 0.2)), 2, 20);
+        builder.idle(85);
+
+        builder.addInstruction(new RoboticArmRangeInstruction(arm, 85));
+        builder.overlay().showText(85)
+                .text("The hand can reach any block within 4 blocks of the base.")
+                .pointAt(util.vector().topOf(arm));
+        builder.idle(95);
+
+        builder.addKeyframe();
+        builder.world().showSection(util.select().position(chest), Direction.DOWN);
+        builder.world().showSection(util.select().position(barrel), Direction.DOWN);
+        builder.idle(15);
+
+        builder.overlay().showText(60)
+                .text("It can move items between nearby containers.");
+        builder.idle(70);
+
+        builder.overlay().showText(45).text("Take Items").colored(PonderPalette.INPUT)
+                .pointAt(util.vector().topOf(chest)).placeNearTarget();
+        armMove(builder, util, arm, rest, chest);
+        setArmHeldStack(builder, util, arm, new ItemStack(Items.COPPER_INGOT, 16));
+        builder.idle(35);
+
+        builder.overlay().showText(45).text("Put Items").colored(PonderPalette.INPUT)
+                .pointAt(util.vector().topOf(barrel)).placeNearTarget();
+        armMove(builder, util, arm, chest, barrel);
+        setArmHeldStack(builder, util, arm, ItemStack.EMPTY);
+        builder.idle(35);
+        armMove(builder, util, arm, barrel, rest);
+        builder.idle(10);
+
+        builder.addKeyframe();
+        builder.overlay().showControls(util.vector().topOf(arm), Pointing.DOWN, 20).rightClick();
+        builder.idle(10);
+        builder.overlay().showText(120)
+                .text("Interact with the arm to set how many items it moves per action, check its stored energy, and preview its range.");
+        builder.idle(130);
+    }
+
+    public static void roboticArmUseTutorial(SceneBuilder builder, SceneBuildingUtil util) {
+        BlockPos arm = new BlockPos(3, 1, 3);
+        BlockPos rest = arm.above();
+        BlockPos water = new BlockPos(1, 1, 1);
+        BlockPos lever = new BlockPos(5, 2, 3);
+        BlockPos dropPos = new BlockPos(3, 1, 5);
+
+        builder.configureBasePlate(0, 0, 7);
+        builder.title("robotic_arm_use", "Robotic Arm: Using Held Items");
+        builder.showBasePlate();
+        setArmHand(builder, util, arm, rest);
+        builder.idle(5);
+
+        builder.world().showSection(util.select().position(arm), Direction.DOWN);
+        builder.idle(10);
+        builder.overlay().showText(100)
+                .text("Besides moving items, the Robotic Arm can use its held item on a block, just like a player would.");
+        builder.idle(110);
+
+        builder.world().showSection(util.select().fromTo(0, 1, 0, 2, 1, 2), Direction.DOWN);
+        builder.world().showSection(util.select().fromTo(5, 1, 3, 5, 2, 3), Direction.DOWN);
+        setArmHeldStack(builder, util, arm, new ItemStack(Items.BUCKET));
+        builder.idle(5);
+        builder.overlay().showText(95)
+                .text("Its actions Use, Shift+Use and Drop right-click, sneak-right-click, or drop the held item.");
+        builder.idle(105);
+        builder.overlay().showText(45)
+                .text("Here it holds an empty Bucket.")
+                .pointAt(util.vector().topOf(arm)).placeNearTarget();
+        builder.idle(55);
+
+        // Use: fill the bucket from the water pool
+        builder.addKeyframe();
+        builder.overlay().showText(45).text("Use").colored(PonderPalette.INPUT)
+                .pointAt(util.vector().centerOf(water)).placeNearTarget();
+        armMove(builder, util, arm, rest, water);
+        builder.world().setBlock(water, Blocks.AIR.defaultBlockState(), false);
+        setArmHeldStack(builder, util, arm, new ItemStack(Items.WATER_BUCKET));
+        builder.idle(35);
+
+        // Shift+Use: sneak-interact with the lever
+        builder.addKeyframe();
+        builder.overlay().showText(45).text("Shift+Use").colored(PonderPalette.INPUT)
+                .pointAt(util.vector().topOf(lever)).placeNearTarget();
+        armMove(builder, util, arm, water, lever);
+        builder.world().toggleRedstonePower(util.select().fromTo(5, 1, 3, 5, 2, 3));
+        builder.idle(35);
+
+        // Drop: release the held bucket
+        builder.addKeyframe();
+        builder.overlay().showText(45).text("Drop").colored(PonderPalette.INPUT)
+                .pointAt(util.vector().centerOf(dropPos)).placeNearTarget();
+        armMove(builder, util, arm, lever, dropPos);
+        setArmHeldStack(builder, util, arm, ItemStack.EMPTY);
+        builder.world().createItemEntity(util.vector().centerOf(dropPos), Vec3.ZERO, new ItemStack(Items.WATER_BUCKET));
+        builder.idle(35);
+        armMove(builder, util, arm, dropPos, rest);
+        builder.idle(15);
+    }
+
+    public static void roboticArmScriptTutorial(SceneBuilder builder, SceneBuildingUtil util) {
+        BlockPos arm = new BlockPos(2, 1, 3);
+        BlockPos rest = arm.above();
+        BlockPos bus = new BlockPos(1, 1, 3);
+        BlockPos terminal = new BlockPos(1, 1, 1);
+        BlockPos lever = new BlockPos(0, 1, 1);
+        BlockPos chest = new BlockPos(4, 1, 3);
+        BlockPos barrel = new BlockPos(2, 1, 5);
+
+        builder.configureBasePlate(0, 0, 7);
+        builder.title("robotic_arm_script", "Robotic Arm: Script Control");
+        builder.showBasePlate();
+        setArmHand(builder, util, arm, rest);
+        builder.idle(5);
+
+        builder.world().showSection(PonderExtras.selectBlocks(builder, util,
+                ModBlocks.SCRIPT_TERMINAL.get(),
+                ModBlocks.LIGHT_PIPE.get(),
+                ModBlocks.SERIAL_BUS.get(),
+                ModBlocks.ROBOTIC_ARM.get(),
+                Blocks.CHEST, Blocks.BARREL
+        ), Direction.DOWN);
+        builder.idle(15);
+
+        builder.overlay().showText(100)
+                .text("Robotic Arms can be automated by a Script Terminal, through a Serial Bus whose interface faces the arm.");
+        builder.overlay().showOutline(PonderPalette.GREEN, "bus", util.select().position(bus), 100);
+        builder.overlay().showOutline(PonderPalette.BLUE, "arm", util.select().position(arm), 100);
+        builder.idle(110);
+
+        builder.overlay().showText(100)
+                .text("Arm commands target a position relative to the arm: take_items, put_items, use, shift_use and drop_items.");
+        builder.idle(110);
+
+        builder.addKeyframe();
+        builder.world().showSection(util.select().position(lever), Direction.DOWN);
+        builder.idle(10);
+        builder.world().toggleRedstonePower(util.select().position(lever));
+        builder.world().cycleBlockProperty(terminal, ScriptTerminalBlock.POWERED);
+        builder.idle(10);
+
+        builder.overlay().showText(40).text("take_items ~2 ~ ~").colored(PonderPalette.INPUT)
+                .pointAt(util.vector().topOf(terminal)).placeNearTarget();
+        armMove(builder, util, arm, rest, chest);
+        setArmHeldStack(builder, util, arm, new ItemStack(Items.COPPER_INGOT, 16));
+        builder.idle(20);
+
+        builder.overlay().showText(40).text("put_items ~ ~ ~2").colored(PonderPalette.INPUT)
+                .pointAt(util.vector().topOf(terminal)).placeNearTarget();
+        armMove(builder, util, arm, chest, barrel);
+        setArmHeldStack(builder, util, arm, ItemStack.EMPTY);
+        builder.idle(20);
+        armMove(builder, util, arm, barrel, rest);
+        builder.idle(10);
+
+        builder.world().toggleRedstonePower(util.select().position(lever));
+        builder.world().cycleBlockProperty(terminal, ScriptTerminalBlock.POWERED);
+        builder.idle(10);
+
+        builder.overlay().showText(85)
+                .text("Commands are dispatched in sequence each time the Terminal is powered.");
+        builder.idle(95);
+        builder.overlay().showText(85)
+                .text("Combined with conditions and loops, this allows fully automated item handling.");
+        builder.idle(95);
     }
 
     private static void typeChar(SceneBuilder builder, ScreenPonderElement screenElement, char c) {

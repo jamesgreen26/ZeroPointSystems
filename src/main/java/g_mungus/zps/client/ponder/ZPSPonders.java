@@ -57,5 +57,11 @@ public class ZPSPonders {
         HELPER.forComponents(
                 DATA_TRANSCRIBER
         ).addStoryBoard("data_transcriber", ZPSPonderScenes::dataTranscriberTutorial);
+
+        HELPER.forComponents(
+                ROBOTIC_ARM
+        ).addStoryBoard("robotic_arm", ZPSPonderScenes::roboticArmTutorial)
+         .addStoryBoard("robotic_arm_use", ZPSPonderScenes::roboticArmUseTutorial)
+         .addStoryBoard("robotic_arm_script", ZPSPonderScenes::roboticArmScriptTutorial, ZPSPonderTags.HAS_SCRIPT_CAPS);
     }
 }

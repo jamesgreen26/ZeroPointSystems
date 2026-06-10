@@ -46,17 +46,7 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
         renderDebugTargetBox(blockEntity, poseStack, bufferSource);
 
         if (blockEntity.isViewRange()) {
-            BlockPos origin = blockEntity.getBlockPos();
-            List<BlockPos> volumePositions = new ArrayList<>(RANGE_VOLUME_OFFSETS.size());
-            for (BlockPos offset : RANGE_VOLUME_OFFSETS) {
-                volumePositions.add(origin.offset(offset));
-            }
-            Outliner.getInstance()
-                    .showCluster("robotic_arm_range_" + origin.asLong(), volumePositions)
-                    .colored(0x00FFFF)
-                    .withFaceTextures(ZPSSpecialTextures.CHECKERED, ZPSSpecialTextures.HIGHLIGHT_CHECKERED)
-                    .disableCull()
-                    .lineWidth(1 / 16f);
+            showRangeOutline(Outliner.getInstance(), blockEntity.getBlockPos());
         }
 
         // RoboticArmVisual renders the arm geometry when Flywheel is active
@@ -182,6 +172,20 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
                 (int) blockEntity.getBlockPos().asLong()
         );
         poseStack.popPose();
+    }
+
+    /** Draws the arm's reach volume as a cyan checkered cluster onto the given outliner. */
+    public static void showRangeOutline(Outliner outliner, BlockPos origin) {
+        List<BlockPos> volumePositions = new ArrayList<>(RANGE_VOLUME_OFFSETS.size());
+        for (BlockPos offset : RANGE_VOLUME_OFFSETS) {
+            volumePositions.add(origin.offset(offset));
+        }
+        outliner
+                .showCluster("robotic_arm_range_" + origin.asLong(), volumePositions)
+                .colored(0x00FFFF)
+                .withFaceTextures(ZPSSpecialTextures.CHECKERED, ZPSSpecialTextures.HIGHLIGHT_CHECKERED)
+                .disableCull()
+                .lineWidth(1 / 16f);
     }
 
     private static List<BlockPos> buildRangeVolumeOffsets() {

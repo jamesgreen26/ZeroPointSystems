@@ -2,6 +2,7 @@ package g_mungus.zps.blockentity;
 
 import g_mungus.zps.ModSounds;
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.compat.Compat;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -59,6 +60,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Clearable {
     public static final int MOVE_TIME_TICKS = 15;
     public static final int MAX_DISTANCE_BLOCKS = 4;
+    private static final double RANGE_CHECK_EPSILON = 1.0e-4;
     private static final int CONTAINER_CLOSE_DELAY_TICKS = 3;
     public static final int MIN_RETRIEVE_AMOUNT = 1;
     public static final int MAX_RETRIEVE_AMOUNT = 64;
@@ -209,9 +211,16 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
         return handBlockPos;
     }
 
+    public boolean isWithinRange(BlockPos targetPos) {
+        if (level == null) return false;
+        Vec3 localTarget = Compat.toLocalSpaceOf(level, worldPosition, Vec3.atCenterOf(targetPos));
+        // Tolerance for float error in ship transforms; squared block-center distances are integers, so anything below 1 is safe
+        return localTarget.distanceToSqr(Vec3.atCenterOf(worldPosition)) <= (double) (MAX_DISTANCE_BLOCKS * MAX_DISTANCE_BLOCKS) + RANGE_CHECK_EPSILON;
+    }
+
     public boolean moveHandTo(BlockPos newBlockPos) {
         if (level == null || moving) return false;
-        if (newBlockPos.distSqr(worldPosition) > (double) (MAX_DISTANCE_BLOCKS * MAX_DISTANCE_BLOCKS)) return false;
+        if (!isWithinRange(newBlockPos)) return false;
         if (energyStorage.getEnergyStored() <= ENERGY_PER_MOVE_TICK) return false;
 
         playMoveSound(newBlockPos);
@@ -227,7 +236,9 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
 
     private void playMoveSound(BlockPos newBlockPos) {
         if (level == null || handBlockPos.equals(newBlockPos)) return;
-        double distance = Math.sqrt(handBlockPos.distSqr(newBlockPos));
+        Vec3 localHand = Compat.toLocalSpaceOf(level, worldPosition, Vec3.atCenterOf(handBlockPos));
+        Vec3 localTarget = Compat.toLocalSpaceOf(level, worldPosition, Vec3.atCenterOf(newBlockPos));
+        double distance = Math.sqrt(localHand.distanceToSqr(localTarget));
         double maxTravelDistance = MAX_DISTANCE_BLOCKS * 2.0;
         float pitch = (float) (MIN_ARM_MOVE_PITCH + (MAX_ARM_MOVE_PITCH - MIN_ARM_MOVE_PITCH) * Math.min(distance / maxTravelDistance, 1.0));
         level.playSound(null, worldPosition, ModSounds.ARM_MOVE.get(), SoundSource.BLOCKS, ARM_MOVE_VOLUME, pitch);
@@ -385,6 +396,11 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
     private void runPendingTransfer() {
         if (level == null || pendingTransfer == PendingTransfer.NONE) return;
         if (!handBlockPos.equals(pendingTransferTargetPos)) return;
+        // The target may have drifted out of range during the move (e.g. ships moving apart)
+        if (!isWithinRange(pendingTransferTargetPos)) {
+            pendingTransfer = PendingTransfer.NONE;
+            return;
+        }
 
         if (pendingTransfer == PendingTransfer.USE) {
             tryUseAt(pendingTransferTargetPos, false);

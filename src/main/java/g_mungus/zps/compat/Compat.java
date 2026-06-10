@@ -13,6 +13,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -62,6 +63,17 @@ public class Compat {
     public static Vec3 toWorldPos(ServerLevel level, Vec3 pos) {
         if (isVSLoaded()) {
             return VSCompat.shipToWorld(level, pos);
+        } else {
+            return pos;
+        }
+    }
+
+    /// Transforms pos (in its own grid's coordinates) into the local space of the
+    /// grid managing anchorPos. Identity when VS is not loaded.
+    public static Vec3 toLocalSpaceOf(Level level, BlockPos anchorPos, Vec3 pos) {
+        if (isVSLoaded()) {
+            Vec3 worldPos = VSCompat.shipToWorld(level, pos);
+            return VSCompat.worldToShip(level, anchorPos, worldPos);
         } else {
             return pos;
         }

@@ -9,6 +9,7 @@ import net.minecraftforge.server.command.EnumArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3d;
@@ -33,8 +34,19 @@ public class VSCompat {
     }
 
     /// Only call after verifying that VS is loaded
-    static Vec3 shipToWorld(ServerLevel level, Vec3 pos) {
+    static Vec3 shipToWorld(Level level, Vec3 pos) {
         return VSGameUtilsKt.toWorldCoordinates(level, pos);
+    }
+
+    /// Only call after verifying that VS is loaded.
+    /// Transforms a world-space position into the local space of the ship managing anchorPos.
+    /// Returns worldPos unchanged if anchorPos is not on a ship.
+    static Vec3 worldToShip(Level level, BlockPos anchorPos, Vec3 worldPos) {
+        Ship ship = VSGameUtilsKt.getShipManagingPos(level, anchorPos);
+        if (ship == null) return worldPos;
+        Vector3d local = ship.getTransform().getWorldToShip()
+                .transformPosition(VectorConversionsMCKt.toJOML(worldPos));
+        return VectorConversionsMCKt.toMinecraft(local);
     }
 
     static void registerScriptCommands(RegisterScriptCommandsEvent event) {

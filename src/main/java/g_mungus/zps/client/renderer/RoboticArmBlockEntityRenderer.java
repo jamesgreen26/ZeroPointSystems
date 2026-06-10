@@ -5,10 +5,12 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
+import g_mungus.zps.compat.ClientCompat;
 import g_mungus.zps.item.ModItems;
 import net.createmod.catnip.outliner.Outliner;
 import net.minecraft.core.BlockPos;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -92,9 +94,10 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
 
         BlockPos origin = blockEntity.getBlockPos();
         BlockPos target = blockEntity.getCurrentTargetBlockPos();
-        double minX = target.getX() - origin.getX();
-        double minY = target.getY() - origin.getY();
-        double minZ = target.getZ() - origin.getZ();
+        Vec3 localCenter = toLocalCenter(origin, target);
+        double minX = localCenter.x - 0.5;
+        double minY = localCenter.y - 0.5;
+        double minZ = localCenter.z - 0.5;
         double maxX = minX + 1.0;
         double maxY = minY + 1.0;
         double maxZ = minZ + 1.0;
@@ -234,11 +237,16 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
     }
 
     private static Vec3 toLocalCenter(net.minecraft.core.BlockPos origin, net.minecraft.core.BlockPos target) {
-        return new Vec3(
-                (target.getX() - origin.getX()) + 0.5,
-                (target.getY() - origin.getY()) + 0.5,
-                (target.getZ() - origin.getZ()) + 0.5
-        );
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level == null) {
+            return new Vec3(
+                    (target.getX() - origin.getX()) + 0.5,
+                    (target.getY() - origin.getY()) + 0.5,
+                    (target.getZ() - origin.getZ()) + 0.5
+            );
+        }
+        Vec3 local = ClientCompat.toLocalRenderSpaceOf(level, origin, Vec3.atCenterOf(target));
+        return local.subtract(origin.getX(), origin.getY(), origin.getZ());
     }
 
     private static ArmSolution solveArmInPlane(PlanePoint hand, float segmentLength) {

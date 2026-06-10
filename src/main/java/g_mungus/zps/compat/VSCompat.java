@@ -32,6 +32,11 @@ public class VSCompat {
         return VSGameUtilsKt.toWorldCoordinates(level, pos);
     }
 
+    /// Only call after verifying that VS is loaded
+    static Vec3 shipToWorld(ServerLevel level, Vec3 pos) {
+        return VSGameUtilsKt.toWorldCoordinates(level, pos);
+    }
+
     static void registerScriptCommands(RegisterScriptCommandsEvent event) {
         event.register(new ScriptGetter<>(
                 "ship",

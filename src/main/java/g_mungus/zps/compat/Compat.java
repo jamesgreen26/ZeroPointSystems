@@ -59,6 +59,14 @@ public class Compat {
         }
     }
 
+    public static Vec3 toWorldPos(ServerLevel level, Vec3 pos) {
+        if (isVSLoaded()) {
+            return VSCompat.shipToWorld(level, pos);
+        } else {
+            return pos;
+        }
+    }
+
     @SubscribeEvent
     public static void onRegisterScriptCommandsEvent(RegisterScriptCommandsEvent event) {
         if (isVSLoaded()) {

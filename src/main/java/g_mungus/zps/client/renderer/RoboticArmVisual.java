@@ -9,7 +9,6 @@ import dev.engine_room.flywheel.lib.model.Models;
 import dev.engine_room.flywheel.lib.visual.AbstractBlockEntityVisual;
 import dev.engine_room.flywheel.lib.visual.SimpleDynamicVisual;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
-import g_mungus.zps.compat.ClientCompat;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.function.Consumer;
@@ -24,9 +23,6 @@ public class RoboticArmVisual extends AbstractBlockEntityVisual<RoboticArmBlockE
     private final TransformedInstance middleSegment;
     private final TransformedInstance upperSegment;
     private final TransformedInstance[] instances;
-    // VS renders ship block entities through the vanilla BER path with a transformed pose
-    // stack; a Flywheel visual would draw at the shipyard coordinates instead.
-    private final boolean hiddenOnShip;
 
     private Vec3 lastHandPos;
 
@@ -41,14 +37,7 @@ public class RoboticArmVisual extends AbstractBlockEntityVisual<RoboticArmBlockE
         upperSegment = createSegmentInstance();
         instances = new TransformedInstance[]{swivelBase, lowerSegment, middleSegment, upperSegment};
 
-        hiddenOnShip = ClientCompat.isOnShip(blockEntity.getLevel(), blockEntity.getBlockPos());
-        if (hiddenOnShip) {
-            for (TransformedInstance instance : instances) {
-                instance.setZeroTransform().setChanged();
-            }
-        } else {
-            animate(partialTick);
-        }
+        animate(partialTick);
     }
 
     private TransformedInstance createSegmentInstance() {
@@ -59,7 +48,6 @@ public class RoboticArmVisual extends AbstractBlockEntityVisual<RoboticArmBlockE
 
     @Override
     public void beginFrame(DynamicVisual.Context ctx) {
-        if (hiddenOnShip) return;
         animate(ctx.partialTick());
     }
 

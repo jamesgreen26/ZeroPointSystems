@@ -6,7 +6,6 @@ import com.mojang.math.Axis;
 import dev.engine_room.flywheel.api.visualization.VisualizationManager;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
-import g_mungus.zps.compat.ClientCompat;
 import g_mungus.zps.item.ModItems;
 import net.createmod.catnip.outliner.Outliner;
 import net.minecraft.core.BlockPos;
@@ -60,10 +59,8 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
                     .lineWidth(1 / 16f);
         }
 
-        // RoboticArmVisual renders the arm geometry when Flywheel is active, except on
-        // VS ships where only the vanilla BER path receives the ship transform.
-        boolean flywheelActive = VisualizationManager.supportsVisualization(blockEntity.getLevel())
-                && !ClientCompat.isOnShip(blockEntity.getLevel(), blockEntity.getBlockPos());
+        // RoboticArmVisual renders the arm geometry when Flywheel is active
+        boolean flywheelActive = VisualizationManager.supportsVisualization(blockEntity.getLevel());
         if (flywheelActive && blockEntity.getHeldStack().isEmpty()) return;
 
         RoboticArmKinematics.ArmPose pose = RoboticArmKinematics.solve(blockEntity, partialTick);

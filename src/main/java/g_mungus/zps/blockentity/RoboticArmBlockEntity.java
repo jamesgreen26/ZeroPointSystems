@@ -32,6 +32,7 @@ import net.minecraft.world.level.block.LiquidBlockContainer;
 import net.minecraft.world.level.block.entity.BarrelBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraft.world.level.block.entity.ShulkerBoxBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
@@ -488,16 +489,23 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
 
     private static void openContainerForVisualTransfer(Container container, @Nullable Player player) {
         if (player == null) return;
-        if (container instanceof ChestBlockEntity || container instanceof CompoundContainer || container instanceof BarrelBlockEntity) {
+        if (shouldOpenVisually(container)) {
             container.startOpen(player);
         }
     }
 
     private static void closeContainerAfterVisualTransfer(Container container, @Nullable Player player) {
         if (player == null) return;
-        if (container instanceof ChestBlockEntity || container instanceof CompoundContainer || container instanceof BarrelBlockEntity) {
+        if (shouldOpenVisually(container)) {
             container.stopOpen(player);
         }
+    }
+
+    private static boolean shouldOpenVisually(Container container) {
+        return container instanceof ChestBlockEntity
+                || container instanceof CompoundContainer
+                || container instanceof BarrelBlockEntity
+                || container instanceof ShulkerBoxBlockEntity;
     }
 
     private void tryRetrieveFrom(Container source) {

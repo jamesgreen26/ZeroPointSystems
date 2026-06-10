@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.client.screens.AddressPadListScreen;
 import g_mungus.zps.client.screens.AddressPadNameScreen;
+import g_mungus.zps.compat.ClientCompat;
 import net.createmod.catnip.outliner.Outliner;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -14,10 +15,19 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 public class AddressPadClientHooks {
     private static final double LABEL_RADIUS = 64.0;
     private static final double LABEL_RADIUS_SQ = LABEL_RADIUS * LABEL_RADIUS;
+    private static final double LABEL_HEIGHT_ABOVE_CENTER = 0.8;
+    // Each row is one edge of the unit cube: start corner offset, end corner offset.
+    private static final int[][] BOX_EDGES = {
+            {0, 0, 0, 1, 0, 0}, {0, 0, 0, 0, 1, 0}, {0, 0, 0, 0, 0, 1},
+            {1, 1, 0, 0, 1, 0}, {1, 1, 0, 1, 0, 0}, {1, 1, 0, 1, 1, 1},
+            {0, 1, 1, 0, 0, 1}, {0, 1, 1, 0, 1, 0}, {0, 1, 1, 1, 1, 1},
+            {1, 0, 1, 1, 0, 0}, {1, 0, 1, 0, 0, 1}, {1, 0, 1, 1, 1, 1},
+    };
 
     public static void openAddressPadScreen(net.minecraft.world.InteractionHand hand, BlockPos pos) {
         Minecraft minecraft = Minecraft.getInstance();
@@ -65,20 +75,13 @@ public class AddressPadClientHooks {
             if (!positions.contains(name, Tag.TAG_LONG)) continue;
 
             BlockPos pos = BlockPos.of(positions.getLong(name));
-            double centerX = pos.getX() + 0.5;
-            double centerY = pos.getY() + 1.3;
-            double centerZ = pos.getZ() + 0.5;
+            // Stored positions may be in a VS shipyard; gauge distance and draw the label in world space.
+            Vec3 worldCenter = ClientCompat.toWorldRenderPos(minecraft.level, Vec3.atCenterOf(pos));
 
-            double dx = centerX - player.getX();
-            double dy = centerY - player.getY();
-            double dz = centerZ - player.getZ();
-            double distanceSq = dx * dx + dy * dy + dz * dz;
+            double distanceSq = worldCenter.distanceToSqr(player.position());
             if (distanceSq > LABEL_RADIUS_SQ) continue;
 
-            Outliner.getInstance()
-                    .showAABB("address_pad_" + player.getUUID() + "_" + pos.asLong(), new net.minecraft.world.phys.AABB(pos))
-                    .colored(0x00FFFF)
-                    .lineWidth(1 / 16f);
+            showBoxOutline("address_pad_" + player.getUUID() + "_" + pos.asLong(), pos);
 
             float alpha = 1.0f - Mth.clamp((float) Math.sqrt(distanceSq) / (float) LABEL_RADIUS, 0f, 1f);
             if (alpha <= 0.02f) continue;
@@ -87,7 +90,7 @@ public class AddressPadClientHooks {
             int bgAlpha = ((int) (alpha * 90) << 24);
 
             poseStack.pushPose();
-            poseStack.translate(centerX - camX, centerY - camY, centerZ - camZ);
+            poseStack.translate(worldCenter.x - camX, worldCenter.y + LABEL_HEIGHT_ABOVE_CENTER - camY, worldCenter.z - camZ);
             poseStack.mulPose(minecraft.getEntityRenderDispatcher().cameraOrientation());
 
             float scale = 0.025f;
@@ -122,6 +125,22 @@ public class AddressPadClientHooks {
         }
 
         buffer.endBatch();
+    }
+
+    // Drawn as individual lines rather than showAABB: Valkyrien Skies' Outline mixin only
+    // transforms line geometry exactly (absolute double-precision endpoints), so this is the
+    // one Outliner shape that lands correctly on rotated or distant ships.
+    private static void showBoxOutline(String key, BlockPos pos) {
+        Vec3 corner = new Vec3(pos.getX(), pos.getY(), pos.getZ());
+        for (int i = 0; i < BOX_EDGES.length; i++) {
+            int[] edge = BOX_EDGES[i];
+            Outliner.getInstance()
+                    .showLine(key + "_" + i,
+                            corner.add(edge[0], edge[1], edge[2]),
+                            corner.add(edge[3], edge[4], edge[5]))
+                    .colored(0x00FFFF)
+                    .lineWidth(1 / 16f);
+        }
     }
 
     private static ItemStack getHeldAddressPad(LocalPlayer player) {

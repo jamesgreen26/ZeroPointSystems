@@ -40,7 +40,7 @@ public class Compat {
         return BuiltInRegistries.ITEM.getKey(item).equals(ResourceLocation.fromNamespaceAndPath("create", "wrench"));
     }
 
-    private static boolean isVSLoaded() {
+    static boolean isVSLoaded() {
         return ModList.get().isLoaded("valkyrienskies");
     }
 

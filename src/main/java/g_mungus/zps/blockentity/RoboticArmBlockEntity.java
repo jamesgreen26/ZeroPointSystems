@@ -226,7 +226,7 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
     }
 
     private void playMoveSound(BlockPos newBlockPos) {
-        if (level == null) return;
+        if (level == null || handBlockPos.equals(newBlockPos)) return;
         double distance = Math.sqrt(handBlockPos.distSqr(newBlockPos));
         double maxTravelDistance = MAX_DISTANCE_BLOCKS * 2.0;
         float pitch = (float) (MIN_ARM_MOVE_PITCH + (MAX_ARM_MOVE_PITCH - MIN_ARM_MOVE_PITCH) * Math.min(distance / maxTravelDistance, 1.0));

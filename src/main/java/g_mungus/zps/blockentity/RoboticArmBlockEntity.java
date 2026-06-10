@@ -21,13 +21,17 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.stats.Stats;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.BucketPickup;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.entity.BarrelBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraftforge.common.capabilities.Capability;
@@ -650,6 +654,13 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
             }
         }
 
+        if (tryPickupFluidWithBucket(targetPos, fakePlayer, hitResult)) {
+            heldStack = fakePlayer.getMainHandItem().copy();
+            fakePlayer.setShiftKeyDown(false);
+            setChanged();
+            return;
+        }
+
         InteractionResult result = fakePlayer.gameMode.useItemOn(
                 fakePlayer,
                 serverLevel,
@@ -670,6 +681,30 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
         heldStack = fakePlayer.getMainHandItem().copy();
         fakePlayer.setShiftKeyDown(false);
         setChanged();
+    }
+
+    private boolean tryPickupFluidWithBucket(BlockPos targetPos, FakePlayer fakePlayer, BlockHitResult hitResult) {
+        if (level == null) return false;
+
+        ItemStack bucketStack = fakePlayer.getMainHandItem();
+        if (!bucketStack.is(Items.BUCKET) || bucketStack.getCount() != 1) return false;
+
+        Direction hitFace = hitResult.getDirection();
+        if (!level.mayInteract(fakePlayer, targetPos) || !fakePlayer.mayUseItemAt(targetPos.relative(hitFace), hitFace, bucketStack)) {
+            return false;
+        }
+
+        BlockState targetState = level.getBlockState(targetPos);
+        if (!(targetState.getBlock() instanceof BucketPickup bucketPickup)) return false;
+
+        ItemStack pickedUpStack = bucketPickup.pickupBlock(level, targetPos, targetState);
+        if (pickedUpStack.isEmpty()) return false;
+
+        fakePlayer.awardStat(Stats.ITEM_USED.get(bucketStack.getItem()));
+        bucketPickup.getPickupSound(targetState).ifPresent(sound -> fakePlayer.playSound(sound, 1.0F, 1.0F));
+        level.gameEvent(fakePlayer, GameEvent.FLUID_PICKUP, targetPos);
+        fakePlayer.setItemInHand(InteractionHand.MAIN_HAND, pickedUpStack);
+        return true;
     }
 
     private Direction getHitFace(BlockPos targetPos) {

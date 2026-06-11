@@ -18,7 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE {
-    private static final int MAX_ENERGY = 512_000;
+    private static final int MAX_ENERGY = 2_097_152;
     private static final int MAX_TRANSFER = 16_384;
 
     private final SyncedEnergyStorage energyStorage = new SyncedEnergyStorage(MAX_ENERGY, MAX_TRANSFER, MAX_TRANSFER) {

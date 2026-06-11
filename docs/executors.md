@@ -62,6 +62,37 @@ set_frequency 10KHz
 
 ---
 
+## Robotic Arm
+
+The following commands require the target block to be a `Robotic Arm`.
+
+Unlike other executors, the argument is a **block position** (`x y z`) telling the arm which block to act on, not a value applied to the arm itself. The arm first swings its hand to that position, then performs the action. The target must be within 4 blocks of the arm; positions out of range are skipped.
+
+| Executor      | Argument  | Description                                                                                       |
+|---------------|-----------|---------------------------------------------------------------------------------------------------|
+| `take_items`  | `<x y z>` | Pulls items from the inventory at the target position into the arm's hand.                         |
+| `put_items`   | `<x y z>` | Deposits the arm's held items into the inventory at the target position.                           |
+| `use`         | `<x y z>` | Right-clicks the target with the held item (place a block, fill/empty a bucket, use an item, ...). |
+| `shift_use`   | `<x y z>` | Sneak right-clicks the target with the held item.                                                  |
+| `drop_items`  | `<x y z>` | Drops held items into the world at the target position as item entities.                           |
+
+`take_items`, `put_items`, and `drop_items` move at most the **transfer amount** configured in the arm's GUI (1–64) per instruction; any remainder stays in the arm's hand. `use` and `shift_use` interact with the held item and do not transfer a quantity.
+
+Examples:
+
+```
+take_items 1 3 5
+put_items 0 1 2
+drop_items 0 2 2
+```
+
+```
+use 0 1 2
+use value_of(pos offset_y 1)
+```
+
+---
+
 ## Additional Executors
 
 - [Create](create.md) — auto-generated executors for Create mod blocks (`set_rpm`, `set_filter`, `set_rotation_mode`, ...)

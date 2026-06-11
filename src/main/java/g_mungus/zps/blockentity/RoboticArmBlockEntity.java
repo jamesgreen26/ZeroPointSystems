@@ -827,8 +827,9 @@ public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Cleara
         if (level == null || level.isClientSide) return;
         if (heldStack.isEmpty()) return;
 
-        ItemStack dropStack = heldStack.copy();
-        heldStack = ItemStack.EMPTY;
+        int toDrop = Math.min(retrieveAmount, heldStack.getCount());
+        ItemStack dropStack = heldStack.split(toDrop);
+        if (heldStack.isEmpty()) heldStack = ItemStack.EMPTY;
 
         Vec3 center = Vec3.atCenterOf(targetPos);
         ItemEntity itemEntity = new ItemEntity(level, center.x, center.y, center.z, dropStack);

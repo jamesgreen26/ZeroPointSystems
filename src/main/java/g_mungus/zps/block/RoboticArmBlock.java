@@ -1,4 +1,4 @@
-package g_mungus.zps.block.cableNetwork;
+package g_mungus.zps.block;
 
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
 import g_mungus.zps.client.screens.RoboticArmClientHooks;

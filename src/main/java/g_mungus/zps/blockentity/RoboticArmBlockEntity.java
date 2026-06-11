@@ -59,7 +59,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Mod.EventBusSubscriber(modid = ZPSMod.MOD_ID)
-public class RoboticArmBlockEntity extends NetworkTerminalImpl implements Clearable {
+public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
     public static final int MOVE_TIME_TICKS = 15;
     public static final int MAX_DISTANCE_BLOCKS = 4;
     private static final double RANGE_CHECK_EPSILON = 1.0e-4;

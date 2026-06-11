@@ -2,20 +2,20 @@
   "type": "minecraft:crafting_shaped",
   "category": "functional",
   "key": {
-    "C": {
-      "item": "zps:cable"
-    },
-    "F": {
-      "item": "minecraft:furnace"
+    "#": {
+      "item": "minecraft:smooth_stone"
     },
     "I": {
       "tag": "forge:ingots/space_metal"
+    },
+    "X": {
+      "item": "minecraft:furnace"
     }
   },
   "pattern": [
-    "ICI",
-    "IFI",
-    "III"
+    "III",
+    "IXI",
+    "###"
   ],
   "result": {
     "item": "zps:coal_burner",

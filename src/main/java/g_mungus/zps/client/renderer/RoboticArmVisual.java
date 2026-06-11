@@ -66,8 +66,8 @@ public class RoboticArmVisual extends AbstractBlockEntityVisual<RoboticArmBlockE
                 .setChanged();
 
         transformSegment(lowerSegment, RoboticArmKinematics.BASE_POS, pose.firstJoint(), pose, 1.0f);
-        transformSegment(middleSegment, pose.firstJoint(), pose.secondJoint(), pose, 0.9999f);
-        transformSegment(upperSegment, pose.secondJoint(), pose.handPos(), pose, 0.9998f);
+        transformSegment(middleSegment, pose.firstJoint(), pose.secondJoint(), pose, 0.999f);
+        transformSegment(upperSegment, pose.secondJoint(), pose.handPos(), pose, 0.998f);
     }
 
     private void transformSegment(TransformedInstance instance, Vec3 start, Vec3 end, RoboticArmKinematics.ArmPose pose, float scale) {

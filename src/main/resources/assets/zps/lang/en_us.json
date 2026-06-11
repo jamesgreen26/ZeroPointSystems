@@ -352,6 +352,14 @@
 
     "zps.ponder.robotic_arm.header": "Robotic Arm",
     "zps.ponder.robotic_arm.text_1": "The Robotic Arm can interact with and move items between nearby blocks.",
+    "zps.ponder.robotic_arm.text_2": "While active, the arm consumes 8 FE per tick.",
+    "zps.ponder.robotic_arm.text_3": "To control the Robotic Arm, send instructions from an adjacent Serial Bus.",
+    "zps.ponder.robotic_arm.text_4": "The arm can accept a new instruction once every 16 gameticks.",
+    "zps.ponder.robotic_arm.text_5": "take_items 1 3 5",
+    "zps.ponder.robotic_arm.text_6": "drop_items 0 2 2",
+    "zps.ponder.robotic_arm.text_7": "take_items 1 3 5",
+    "zps.ponder.robotic_arm.text_8": "use 0 1 2",
+    "zps.ponder.robotic_arm.text_9": "use 6 1 4",
 
     "zps.ponder.tag.can_insulate": "Blocks that can be Insulated",
     "zps.ponder.tag.can_insulate.description": "Components or Blocks which can have Cable Insulation applied to them, which prevents the block from connecting in new directions.",

@@ -5,9 +5,12 @@ import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.client.renderer.*;
+import g_mungus.zps.client.screens.CoalBurnerScreen;
 import g_mungus.zps.entity.ModEntities;
 import g_mungus.zps.item.AddressPadClientHooks;
+import g_mungus.zps.menu.ModMenus;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
@@ -51,6 +54,7 @@ public class ClientSetup {
         event.enqueueWork(() -> {
             EntityRenderers.register(ModEntities.OCTO_MOUNTING.get(), OctoMountingRenderer::new);
             EntityRenderers.register(ModEntities.DODECA_MOUNTING.get(), DodecaMountingRenderer::new);
+            MenuScreens.register(ModMenus.COAL_BURNER.get(), CoalBurnerScreen::new);
             BlockEntityRenderers.register(ModBlockEntities.GRADUATED_LEVER.get(), GraduatedLeverBlockEntityRenderer::new);
             BlockEntityRenderers.register(ModBlockEntities.DATA_LECTERN.get(), DataLecternBlockEntityRenderer::new);
             BlockEntityRenderers.register(ModBlockEntities.SCRIPT_TERMINAL.get(), ScriptTerminalBlockEntityRenderer::new);

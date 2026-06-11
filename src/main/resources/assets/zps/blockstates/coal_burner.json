@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "lit=false": {
+      "model": "zps:block/coal_burner"
+    },
+    "lit=true": {
+      "model": "zps:block/coal_burner_lit"
+    }
+  }
+}

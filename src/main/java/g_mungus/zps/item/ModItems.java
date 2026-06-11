@@ -95,6 +95,9 @@ public class ModItems {
     public static final RegistryObject<Item> POWER_CELL = ITEMS.register("power_cell",
             () -> new BlockItem(ModBlocks.POWER_CELL.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> COAL_BURNER = ITEMS.register("coal_burner",
+            () -> new BlockItem(ModBlocks.COAL_BURNER.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> SPACE_METAL_INGOT = ITEMS.register("space_metal_ingot",
         () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> SPACE_METAL_PLATE = ITEMS.register("space_metal_plate",

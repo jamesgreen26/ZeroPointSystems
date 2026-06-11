@@ -12,6 +12,7 @@ import g_mungus.zps.item.ModCreativeTabs;
 import g_mungus.zps.item.ModItems;
 import g_mungus.zps.gametest.CableNetworkGameTests;
 import g_mungus.zps.gametest.TextDisplayGameTests;
+import g_mungus.zps.menu.ModMenus;
 import g_mungus.zps.networking.ZPSGamePackets;
 import g_mungus.zps.painting.ZPSPaintings;
 import net.minecraft.resources.ResourceLocation;
@@ -41,6 +42,7 @@ public final class ZPSMod {
         ModBlocks.BLOCKS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
+        ModMenus.MENUS.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
         ModEntities.ENTITIES.register(modEventBus);
         ModSounds.SOUNDS.register(modEventBus);

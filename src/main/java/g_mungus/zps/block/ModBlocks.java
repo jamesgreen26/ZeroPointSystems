@@ -181,6 +181,11 @@ public class ModBlocks {
                     .noOcclusion()
                     .requiresCorrectToolForDrops()));
 
+    public static final RegistryObject<Block> COAL_BURNER = BLOCKS.register("coal_burner",
+            () -> new CoalBurnerBlock(BlockBehaviour.Properties.copy(Blocks.FURNACE)
+                    .strength(3.5f)
+                    .requiresCorrectToolForDrops()));
+
 
     /// RESOURCE BLOCKS
     public static final RegistryObject<Block> BAUXITE = BLOCKS.register("bauxite",

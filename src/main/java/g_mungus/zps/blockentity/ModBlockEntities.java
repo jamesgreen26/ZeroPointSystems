@@ -113,4 +113,9 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(PowerCellBlockEntity::new,
                             ModBlocks.POWER_CELL.get()).build(null));
 
+    public static final RegistryObject<BlockEntityType<CoalBurnerBlockEntity>> COAL_BURNER =
+            BLOCK_ENTITIES.register("coal_burner",
+                    () -> BlockEntityType.Builder.of(CoalBurnerBlockEntity::new,
+                            ModBlocks.COAL_BURNER.get()).build(null));
+
 } 

@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "C": {
+      "item": "zps:cable"
+    },
+    "F": {
+      "item": "minecraft:furnace"
+    },
+    "I": {
+      "tag": "forge:ingots/space_metal"
+    }
+  },
+  "pattern": [
+    "ICI",
+    "IFI",
+    "III"
+  ],
+  "result": {
+    "item": "zps:coal_burner",
+    "count": 1
+  },
+  "show_notification": true
+}

@@ -90,6 +90,7 @@ public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGenerato
 
     public void serverTick() {
         currentProductionRate = 0;
+        boolean wasBurning = burnTime > 0;
 
         if (energyStorage.getEnergyStored() < energyStorage.getMaxEnergyStored()) {
             if (burnTime <= 0) {
@@ -103,7 +104,7 @@ public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGenerato
             }
         }
 
-        updateLitState();
+        updateLitState(wasBurning || burnTime > 0);
     }
 
     private void consumeFuel() {
@@ -119,7 +120,7 @@ public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGenerato
         setChanged();
     }
 
-    private void updateLitState() {
+    private void updateLitState(boolean lit) {
         if (level == null) {
             return;
         }
@@ -129,7 +130,6 @@ public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGenerato
             return;
         }
 
-        boolean lit = burnTime > 0;
         if (state.getValue(CoalBurnerBlock.LIT) != lit) {
             level.setBlock(worldPosition, state.setValue(CoalBurnerBlock.LIT, lit), Block.UPDATE_ALL);
         }

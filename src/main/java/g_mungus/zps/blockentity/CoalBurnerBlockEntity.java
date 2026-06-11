@@ -31,9 +31,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGeneratorBE, MenuProvider {
-    private static final int MAX_ENERGY = 64_000;
+    private static final int MAX_ENERGY = 8192;
     private static final int MAX_OUTPUT = 256;
-    private static final int FE_PER_TICK = 40;
+    private static final int FE_PER_TICK = 64;
 
     private final GeneratorEnergyStorage energyStorage = new GeneratorEnergyStorage();
     private final FuelItemStackHandler fuelInventory = new FuelItemStackHandler();
@@ -90,7 +90,6 @@ public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGenerato
 
     public void serverTick() {
         currentProductionRate = 0;
-        pushEnergy();
 
         if (energyStorage.getEnergyStored() < energyStorage.getMaxEnergyStored()) {
             if (burnTime <= 0) {
@@ -105,38 +104,6 @@ public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGenerato
         }
 
         updateLitState();
-    }
-
-    private void pushEnergy() {
-        if (level == null || energyStorage.getEnergyStored() <= 0) {
-            return;
-        }
-
-        for (Direction side : Direction.values()) {
-            if (energyStorage.getEnergyStored() <= 0) {
-                return;
-            }
-
-            BlockEntity target = level.getBlockEntity(worldPosition.relative(side));
-            if (target == null) {
-                continue;
-            }
-
-            target.getCapability(ForgeCapabilities.ENERGY, side.getOpposite()).ifPresent(storage -> {
-                if (!storage.canReceive()) {
-                    return;
-                }
-
-                int available = energyStorage.extractEnergy(MAX_OUTPUT, true);
-                int accepted = storage.receiveEnergy(available, true);
-                int toSend = Math.min(available, accepted);
-                if (toSend > 0) {
-                    int extracted = energyStorage.extractEnergy(toSend, false);
-                    storage.receiveEnergy(extracted, false);
-                    setChanged();
-                }
-            });
-        }
     }
 
     private void consumeFuel() {

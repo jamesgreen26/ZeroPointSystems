@@ -121,6 +121,8 @@ if pos == ^3 ^ ^-12 set_redstone 0
 
 The coordinates are resolved when the command is dispatched, not when it's executed.
 
+---
+
 ## Addresses
 
 Typing out coordinates by hand is error-prone, especially when using many positions at once. The **Address Pad** lets you save block positions under memorable names and refer to them in scripts with a `@name` token.

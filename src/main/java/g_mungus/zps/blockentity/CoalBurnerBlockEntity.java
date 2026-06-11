@@ -30,7 +30,7 @@ import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class CoalBurnerBlockEntity extends BlockEntity implements EnergyStorageBE, MenuProvider {
+public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGeneratorBE, MenuProvider {
     private static final int MAX_ENERGY = 64_000;
     private static final int MAX_OUTPUT = 256;
     private static final int FE_PER_TICK = 40;
@@ -70,6 +70,7 @@ public class CoalBurnerBlockEntity extends BlockEntity implements EnergyStorageB
 
     private int burnTime;
     private int totalBurnTime;
+    private int currentProductionRate;
     private long lastHudInfoRequestTick = Long.MIN_VALUE;
     private int hudInfo;
 
@@ -88,6 +89,7 @@ public class CoalBurnerBlockEntity extends BlockEntity implements EnergyStorageB
     }
 
     public void serverTick() {
+        currentProductionRate = 0;
         pushEnergy();
 
         if (energyStorage.getEnergyStored() < energyStorage.getMaxEnergyStored()) {
@@ -97,7 +99,7 @@ public class CoalBurnerBlockEntity extends BlockEntity implements EnergyStorageB
 
             if (burnTime > 0) {
                 burnTime--;
-                energyStorage.generateEnergy(FE_PER_TICK);
+                currentProductionRate = energyStorage.generateEnergy(FE_PER_TICK);
                 setChanged();
             }
         }
@@ -195,7 +197,7 @@ public class CoalBurnerBlockEntity extends BlockEntity implements EnergyStorageB
     @Override
     public Integer getInfo() {
         if (level != null && !level.isClientSide) {
-            return energyStorage.getEnergyStored();
+            return currentProductionRate;
         }
         return hudInfo;
     }
@@ -275,8 +277,10 @@ public class CoalBurnerBlockEntity extends BlockEntity implements EnergyStorageB
             super(MAX_ENERGY, 0, MAX_OUTPUT);
         }
 
-        private void generateEnergy(int amount) {
-            energy = Math.min(capacity, energy + amount);
+        private int generateEnergy(int amount) {
+            int inserted = Math.min(Math.max(0, amount), capacity - energy);
+            energy += inserted;
+            return inserted;
         }
 
         private void setEnergyStoredExact(int energy) {

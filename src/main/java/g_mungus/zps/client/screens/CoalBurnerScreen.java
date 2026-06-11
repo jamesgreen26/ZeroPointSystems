@@ -1,5 +1,6 @@
 package g_mungus.zps.client.screens;
 
+import g_mungus.zps.ZPSMod;
 import g_mungus.zps.menu.CoalBurnerMenu;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -10,12 +11,15 @@ import net.minecraft.world.entity.player.Inventory;
 import org.jetbrains.annotations.NotNull;
 
 public class CoalBurnerScreen extends AbstractContainerScreen<CoalBurnerMenu> {
-    private static final ResourceLocation FURNACE_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath("minecraft", "textures/gui/container/furnace.png");
-    private static final int ENERGY_BAR_X = 152;
-    private static final int ENERGY_BAR_Y = 17;
-    private static final int ENERGY_BAR_WIDTH = 12;
-    private static final int ENERGY_BAR_HEIGHT = 52;
+    private static final ResourceLocation TEXTURE = ZPSMod.resource("textures/gui/coal_burner.png");
+    private static final int ENERGY_BAR_X = 153;
+    private static final int ENERGY_BAR_Y = 18;
+    private static final int ENERGY_BAR_WIDTH = 10;
+    private static final int ENERGY_BAR_HEIGHT = 50;
+    private static final int BURN_FLAME_X = 80;
+    private static final int BURN_FLAME_Y = 56;
+    private static final int BURN_FLAME_WIDTH = 14;
+    private static final int BURN_FLAME_HEIGHT = 14;
 
     public CoalBurnerScreen(CoalBurnerMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -36,18 +40,18 @@ public class CoalBurnerScreen extends AbstractContainerScreen<CoalBurnerMenu> {
     protected void renderBg(@NotNull GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         int x = this.leftPos;
         int y = this.topPos;
-        graphics.blit(FURNACE_TEXTURE, x, y, 0, 0, this.imageWidth, this.imageHeight);
+        graphics.blit(TEXTURE, x, y, 0, 0, this.imageWidth, this.imageHeight);
 
         int burnProgress = getBurnProgress();
         if (burnProgress > 0) {
-            graphics.blit(FURNACE_TEXTURE, x + 56, y + 36 + 13 - burnProgress, 176, 13 - burnProgress, 14, burnProgress + 1);
+            graphics.blit(TEXTURE, x + BURN_FLAME_X, y + BURN_FLAME_Y + BURN_FLAME_HEIGHT - burnProgress,
+                    176, BURN_FLAME_HEIGHT - burnProgress, BURN_FLAME_WIDTH, burnProgress + 1);
         }
 
-        graphics.fill(x + ENERGY_BAR_X, y + ENERGY_BAR_Y, x + ENERGY_BAR_X + ENERGY_BAR_WIDTH, y + ENERGY_BAR_Y + ENERGY_BAR_HEIGHT, 0xFF1B1B1B);
         int energyFill = getEnergyFill();
         if (energyFill > 0) {
             int fillTop = y + ENERGY_BAR_Y + ENERGY_BAR_HEIGHT - energyFill;
-            graphics.fill(x + ENERGY_BAR_X + 1, fillTop, x + ENERGY_BAR_X + ENERGY_BAR_WIDTH - 1, y + ENERGY_BAR_Y + ENERGY_BAR_HEIGHT - 1, 0xFF2380A8);
+            graphics.fill(x + ENERGY_BAR_X, fillTop, x + ENERGY_BAR_X + ENERGY_BAR_WIDTH, y + ENERGY_BAR_Y + ENERGY_BAR_HEIGHT, 0xFF2380A8);
         }
     }
 
@@ -62,7 +66,7 @@ public class CoalBurnerScreen extends AbstractContainerScreen<CoalBurnerMenu> {
         if (totalBurnTime <= 0) {
             return 0;
         }
-        return Mth.clamp((menu.getBurnTime() * 13) / totalBurnTime, 0, 13);
+        return Mth.clamp((menu.getBurnTime() * BURN_FLAME_HEIGHT) / totalBurnTime, 0, BURN_FLAME_HEIGHT);
     }
 
     private int getEnergyFill() {

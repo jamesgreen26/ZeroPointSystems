@@ -43,7 +43,7 @@ public class CoalBurnerMenu extends AbstractContainerMenu {
         Level level = blockEntity.getLevel();
         this.access = level == null ? ContainerLevelAccess.NULL : ContainerLevelAccess.create(level, blockEntity.getBlockPos());
 
-        this.addSlot(new SlotItemHandler(blockEntity.getFuelInventory(), 0, 56, 53));
+        this.addSlot(new SlotItemHandler(blockEntity.getFuelInventory(), 0, 79, 34));
 
         for (int row = 0; row < 3; ++row) {
             for (int col = 0; col < 9; ++col) {

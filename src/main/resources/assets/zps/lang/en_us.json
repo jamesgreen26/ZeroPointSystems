@@ -398,6 +398,7 @@
     "block.zps.data_combinator.zps_tooltip": "Combines two [Light-Pipe Data Cable] inputs into one output according to the current mode.\n\n[Back]: output port.\n[Left]: Input A. [Right]: Input B.\n\n[Append]: passthrough behavior for single inputs, and appends Input B to Input A when both are present.\n\n[Replace]: passthrough from Input A unless Input B is present and Input A contains [%s], in which case the first occurrence is replaced with Input B.\n\n[Shift + R-Click] to switch Modes.",
 
     "block.zps.dodeca_controller.zps_tooltip": "More... MORE!!",
+    "item.zps.robotic_arm_segment.zps_tooltip": "Used to construct a [Robotic Arm].\n\n[R-Click an Incomplete Arm]: attaches this arm segment to the incomplete robotic arm.",
     "item.zps.address_pad.zps_tooltip": "Saves named block positions as Addresses.\n\n[R-Click a block]: creates a new Address at that position (max 15).\n\n[R-Click the air]: opens GUI to manage saved Addresses.\n\n[R-Click a Script Terminal]: places the Address Pad on the Script Terminal, allowing the Addresses to be used in Script Commands.",
 
     "sounds.zps.keystroke": "Keyboard clacks",

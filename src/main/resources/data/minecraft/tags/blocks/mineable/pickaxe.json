@@ -33,6 +33,7 @@
     "zps:serial_bus",
     "zps:script_terminal",
     "zps:loudspeaker",
+    "zps:robotic_arm",
     "zps:incomplete_robotic_arm_0",
     "zps:incomplete_robotic_arm_1",
     "zps:incomplete_robotic_arm_2",

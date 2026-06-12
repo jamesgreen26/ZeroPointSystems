@@ -2,24 +2,23 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "L": {
-      "item": "zps:lithium_ingot"
+    "C": {
+      "item": "zps:copper_magnetron"
     },
-    "M": {
-      "item": "zps:space_metal_mesh"
+    "I": {
+      "item": "zps:space_metal_ingot"
     },
     "R": {
       "item": "zps:space_metal_rod"
     }
   },
   "pattern": [
-    " MR",
-    "MLM",
-    "RM "
+    "R R",
+    "ICI",
+    "III"
   ],
   "result": {
-    "item": "zps:power_cell_component",
-    "count": 1
+    "item": "zps:incomplete_robotic_arm_0"
   },
   "show_notification": true
 }

@@ -92,9 +92,9 @@ public class ModCreativeTabs {
 //                        CAPACITOR,
 //                        TRANSISTOR,
 //                        MODULATOR,
-//                        COPPER_MAGNETRON,
+                        COPPER_MAGNETRON,
 //                        GOLD_MAGNETRON,
-//                        COPPER_WIRE,
+                        COPPER_WIRE,
 //                        GOLD_WIRE,
 //                        VERDITE_WIRE,
 //                        EMPTY_SPOOL,
@@ -102,7 +102,7 @@ public class ModCreativeTabs {
 //                        GOLD_SPOOL,
 //                        VERDITE_SPOOL
 
-                        POWER_CELL_COMPONENT,
+                        ENERGY_STORAGE_MODULE,
 
                         ROBOTIC_ARM_SEGMENT,
                         ADDRESS_PAD

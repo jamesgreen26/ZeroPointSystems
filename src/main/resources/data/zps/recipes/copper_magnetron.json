@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "item": "zps:space_metal_ingot"
+    },
+    "W": {
+      "item": "zps:copper_wire"
+    }
+  },
+  "pattern": [
+    "WWW",
+    "WIW",
+    "WWW"
+  ],
+  "result": {
+    "item": "zps:copper_magnetron"
+  },
+  "show_notification": true
+}

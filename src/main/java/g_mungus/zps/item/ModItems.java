@@ -110,7 +110,7 @@ public class ModItems {
     public static final RegistryObject<Item> COAL_BURNER = ITEMS.register("coal_burner",
             () -> new BlockItem(ModBlocks.COAL_BURNER.get(), new Item.Properties()));
 
-    public static final RegistryObject<Item> POWER_CELL_COMPONENT = ITEMS.register("power_cell_component",
+    public static final RegistryObject<Item> ENERGY_STORAGE_MODULE = ITEMS.register("energy_storage_module",
             () -> new Item(new Item.Properties()));
 
     public static final RegistryObject<Item> SPACE_METAL_INGOT = ITEMS.register("space_metal_ingot",

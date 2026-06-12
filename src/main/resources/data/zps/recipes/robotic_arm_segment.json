@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "item": "zps:space_metal_ingot"
+    },
+    "M": {
+      "item": "zps:space_metal_mesh"
+    },
+    "R": {
+      "item": "zps:space_metal_rod"
+    }
+  },
+  "pattern": [
+    " RI",
+    "RMR",
+    "IR "
+  ],
+  "result": {
+    "item": "zps:robotic_arm_segment"
+  },
+  "show_notification": true
+}

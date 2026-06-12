@@ -61,6 +61,7 @@ public class ModCreativeTabs {
                         RADIO_ANTENNA,
 
                         ROBOTIC_ARM,
+                        ROBOTIC_ARM_SEGMENT,
                         CREATIVE_POWER_CELL,
                         POWER_CELL,
                         COAL_BURNER,

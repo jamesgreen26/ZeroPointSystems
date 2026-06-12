@@ -33,6 +33,8 @@ public class CoalBurnerScreen extends AbstractContainerScreen<CoalBurnerMenu> {
 
         if (isHovering(ENERGY_BAR_X, ENERGY_BAR_Y, ENERGY_BAR_WIDTH, ENERGY_BAR_HEIGHT, mouseX, mouseY)) {
             graphics.renderTooltip(this.font, Component.literal(menu.getEnergyStored() + " / " + menu.getMaxEnergyStored() + " FE"), mouseX, mouseY);
+        } else if (isHovering(BURN_FLAME_X, BURN_FLAME_Y, BURN_FLAME_WIDTH, BURN_FLAME_HEIGHT, mouseX, mouseY)) {
+            graphics.renderTooltip(this.font, Component.literal(formatSeconds(menu.getBurnTime()) + " / " + formatSeconds(menu.getTotalBurnTime())), mouseX, mouseY);
         }
     }
 
@@ -75,5 +77,10 @@ public class CoalBurnerScreen extends AbstractContainerScreen<CoalBurnerMenu> {
             return 0;
         }
         return Mth.clamp((menu.getEnergyStored() * ENERGY_BAR_HEIGHT) / maxEnergy, 0, ENERGY_BAR_HEIGHT);
+    }
+
+    private static String formatSeconds(int ticks) {
+        int seconds = Math.max(0, ticks) / 20;
+        return seconds + "s";
     }
 }

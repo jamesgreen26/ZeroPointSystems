@@ -1,0 +1,22 @@
+{
+  "type": "create:item_application",
+  "conditions": [
+    {
+      "type": "forge:mod_loaded",
+      "modid": "create"
+    }
+  ],
+  "ingredients": [
+    {
+      "item": "zps:incomplete_robotic_arm_1"
+    },
+    {
+      "item": "zps:robotic_arm_segment"
+    }
+  ],
+  "results": [
+    {
+      "item": "zps:incomplete_robotic_arm_2"
+    }
+  ]
+}

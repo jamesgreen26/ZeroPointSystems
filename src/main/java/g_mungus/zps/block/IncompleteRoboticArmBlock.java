@@ -1,9 +1,12 @@
 package g_mungus.zps.block;
 
+import g_mungus.zps.ZPSMod;
 import g_mungus.zps.item.ModItems;
+import net.minecraft.advancements.Advancement;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
@@ -58,6 +61,7 @@ public class IncompleteRoboticArmBlock extends Block {
             level.setBlock(pos, nextBlock.defaultBlockState(), Block.UPDATE_ALL);
             level.playSound(null, pos, SoundEvents.IRON_GOLEM_REPAIR, SoundSource.BLOCKS, 0.7f, 1.2f);
             spawnSegmentAddedParticles((ServerLevel) level, pos);
+            awardCompletionAdvancement(player);
 
             if (!player.getAbilities().instabuild) {
                 heldStack.shrink(1);
@@ -81,5 +85,17 @@ public class IncompleteRoboticArmBlock extends Block {
                 0.18,
                 0.09
         );
+    }
+
+    private void awardCompletionAdvancement(Player player) {
+        if (segmentCount != 2 || !(player instanceof ServerPlayer serverPlayer)) {
+            return;
+        }
+
+        Advancement advancement = serverPlayer.server.getAdvancements()
+                .getAdvancement(ZPSMod.resource("robotic_arm_completed"));
+        if (advancement != null) {
+            serverPlayer.getAdvancements().award(advancement, "has_robotic_arm");
+        }
     }
 }

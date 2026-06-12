@@ -20,6 +20,7 @@ public class CoalBurnerScreen extends AbstractContainerScreen<CoalBurnerMenu> {
     private static final int BURN_FLAME_Y = 56;
     private static final int BURN_FLAME_WIDTH = 14;
     private static final int BURN_FLAME_HEIGHT = 14;
+    private static final int BURN_FLAME_PROGRESS_MAX = BURN_FLAME_HEIGHT - 1;
 
     public CoalBurnerScreen(CoalBurnerMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -45,9 +46,9 @@ public class CoalBurnerScreen extends AbstractContainerScreen<CoalBurnerMenu> {
         graphics.blit(TEXTURE, x, y, 0, 0, this.imageWidth, this.imageHeight);
 
         int burnProgress = getBurnProgress();
-        if (burnProgress > 0) {
-            graphics.blit(TEXTURE, x + BURN_FLAME_X, y + BURN_FLAME_Y + BURN_FLAME_HEIGHT - burnProgress,
-                    176, BURN_FLAME_HEIGHT - burnProgress, BURN_FLAME_WIDTH, burnProgress + 1);
+        if (menu.getBurnTime() > 0) {
+            graphics.blit(TEXTURE, x + BURN_FLAME_X, y + BURN_FLAME_Y + BURN_FLAME_PROGRESS_MAX - burnProgress,
+                    176, BURN_FLAME_PROGRESS_MAX - burnProgress, BURN_FLAME_WIDTH, burnProgress + 1);
         }
 
         int energyFill = getEnergyFill();
@@ -68,7 +69,7 @@ public class CoalBurnerScreen extends AbstractContainerScreen<CoalBurnerMenu> {
         if (totalBurnTime <= 0) {
             return 0;
         }
-        return Mth.clamp((menu.getBurnTime() * BURN_FLAME_HEIGHT) / totalBurnTime, 0, BURN_FLAME_HEIGHT);
+        return Mth.clamp((menu.getBurnTime() * BURN_FLAME_PROGRESS_MAX) / totalBurnTime, 0, BURN_FLAME_PROGRESS_MAX);
     }
 
     private int getEnergyFill() {

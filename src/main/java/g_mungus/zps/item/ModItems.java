@@ -89,8 +89,17 @@ public class ModItems {
     public static final RegistryObject<Item> ROBOTIC_ARM = ITEMS.register("robotic_arm",
             () -> new BlockItem(ModBlocks.ROBOTIC_ARM.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> INCOMPLETE_ROBOTIC_ARM_0 = ITEMS.register("incomplete_robotic_arm_0",
+            () -> new IncompleteRoboticArmBlockItem(ModBlocks.INCOMPLETE_ROBOTIC_ARM_0.get(), new Item.Properties(), 0));
+
+    public static final RegistryObject<Item> INCOMPLETE_ROBOTIC_ARM_1 = ITEMS.register("incomplete_robotic_arm_1",
+            () -> new IncompleteRoboticArmBlockItem(ModBlocks.INCOMPLETE_ROBOTIC_ARM_1.get(), new Item.Properties(), 1));
+
+    public static final RegistryObject<Item> INCOMPLETE_ROBOTIC_ARM_2 = ITEMS.register("incomplete_robotic_arm_2",
+            () -> new IncompleteRoboticArmBlockItem(ModBlocks.INCOMPLETE_ROBOTIC_ARM_2.get(), new Item.Properties(), 2));
+
     public static final RegistryObject<Item> ROBOTIC_ARM_SEGMENT = ITEMS.register("robotic_arm_segment",
-            () -> new RoboticArmSegmentItem(new Item.Properties()));
+            () -> new RoboticArmSegmentItem(new Item.Properties().stacksTo(1)));
 
     public static final RegistryObject<Item> CREATIVE_POWER_CELL = ITEMS.register("creative_power_cell",
             () -> new BlockItem(ModBlocks.CREATIVE_POWER_CELL.get(), new Item.Properties().rarity(Rarity.EPIC)));

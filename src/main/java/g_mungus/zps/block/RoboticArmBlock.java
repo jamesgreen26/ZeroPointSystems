@@ -25,7 +25,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class RoboticArmBlock extends BaseEntityBlock {
-    private static final VoxelShape SHAPE = Shapes.or(
+    public static final VoxelShape SHAPE = Shapes.or(
             Block.box(0.0D, 0.0D, 0.0D, 16.0D, 8.0D, 16.0D),
             Block.box(2.0D, 8.0D, 2.0D, 14.0D, 14.0D, 14.0D)
     );

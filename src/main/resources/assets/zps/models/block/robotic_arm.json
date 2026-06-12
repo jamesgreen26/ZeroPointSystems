@@ -1,6 +1,7 @@
 {
 	"format_version": "1.9.0",
 	"parent": "block/cube",
+	"ambientocclusion": false,
 	"textures": {
 		"0": "zps:block/robotic_arm_base",
 		"particle": "zps:block/robotic_arm_base"

@@ -169,6 +169,24 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
 
+    public static final RegistryObject<Block> INCOMPLETE_ROBOTIC_ARM_0 = BLOCKS.register("incomplete_robotic_arm_0",
+            () -> new IncompleteRoboticArmBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion(), 0));
+
+    public static final RegistryObject<Block> INCOMPLETE_ROBOTIC_ARM_1 = BLOCKS.register("incomplete_robotic_arm_1",
+            () -> new IncompleteRoboticArmBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion(), 1));
+
+    public static final RegistryObject<Block> INCOMPLETE_ROBOTIC_ARM_2 = BLOCKS.register("incomplete_robotic_arm_2",
+            () -> new IncompleteRoboticArmBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion(), 2));
+
     public static final RegistryObject<Block> CREATIVE_POWER_CELL = BLOCKS.register("creative_power_cell",
             () -> new CreativePowerCellBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0f)

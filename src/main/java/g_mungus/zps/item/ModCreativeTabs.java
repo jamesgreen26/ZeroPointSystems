@@ -60,8 +60,8 @@ public class ModCreativeTabs {
                         RADIO_RECEIVER,
                         RADIO_ANTENNA,
 
+                        INCOMPLETE_ROBOTIC_ARM_0,
                         ROBOTIC_ARM,
-                        ROBOTIC_ARM_SEGMENT,
                         CREATIVE_POWER_CELL,
                         POWER_CELL,
                         COAL_BURNER,
@@ -104,7 +104,9 @@ public class ModCreativeTabs {
 
                         POWER_CELL_COMPONENT,
 
+                        ROBOTIC_ARM_SEGMENT,
                         ADDRESS_PAD
+
 
                         );
                 addPaintings(parameters, output);

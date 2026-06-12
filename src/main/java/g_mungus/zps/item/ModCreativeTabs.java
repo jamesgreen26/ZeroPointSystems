@@ -101,6 +101,8 @@ public class ModCreativeTabs {
 //                        GOLD_SPOOL,
 //                        VERDITE_SPOOL
 
+                        POWER_CELL_COMPONENT,
+
                         ADDRESS_PAD
 
                         );

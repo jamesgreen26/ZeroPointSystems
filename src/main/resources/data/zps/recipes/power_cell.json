@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "C": {
+      "item": "zps:power_cell_component"
+    },
+    "I": {
+      "tag": "forge:ingots/space_metal"
+    }
+  },
+  "pattern": [
+    "III",
+    "CCC",
+    "III"
+  ],
+  "result": {
+    "item": "zps:power_cell",
+    "count": 1
+  },
+  "show_notification": true
+}

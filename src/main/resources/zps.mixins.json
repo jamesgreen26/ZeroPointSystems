@@ -27,6 +27,7 @@
     "WritableBookMixin",
     "WrittenBookMixin",
     "create.GoggleInfoExtension",
+    "create.ManualApplicationRecipeMixin",
     "create.ScrollValueBehaviourAccessor",
     "ponder.ConfigBaseMixin"
   ],

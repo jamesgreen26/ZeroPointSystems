@@ -92,16 +92,18 @@ public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGenerato
         currentProductionRate = 0;
         boolean wasBurning = burnTime > 0;
 
-        if (energyStorage.getEnergyStored() < energyStorage.getMaxEnergyStored()) {
-            if (burnTime <= 0) {
-                consumeFuel();
-            }
+        if (burnTime <= 0 && energyStorage.getEnergyStored() < energyStorage.getMaxEnergyStored()) {
+            consumeFuel();
+        }
 
-            if (burnTime > 0) {
-                burnTime--;
-                currentProductionRate = energyStorage.generateEnergy(FE_PER_TICK);
-                setChanged();
-            }
+        if (burnTime == 0 && totalBurnTime > 0) {
+            totalBurnTime = 0;
+            setChanged();
+        } else if (burnTime > 0) {
+            burnTime--;
+            energyStorage.generateEnergy(FE_PER_TICK);
+            currentProductionRate = FE_PER_TICK;
+            setChanged();
         }
 
         updateLitState(wasBurning || burnTime > 0);

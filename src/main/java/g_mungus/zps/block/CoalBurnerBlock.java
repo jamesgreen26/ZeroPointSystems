@@ -89,9 +89,9 @@ public class CoalBurnerBlock extends BaseEntityBlock {
         Direction direction = state.getValue(FACING);
         Direction.Axis axis = direction.getAxis();
         double offset = 0.52;
-        double randomOffset = random.nextDouble() * 0.6 - 0.3;
+        double randomOffset = random.nextDouble() * 0.3 - 0.15;
         double xOffset = axis == Direction.Axis.X ? direction.getStepX() * offset : randomOffset;
-        double yOffset = random.nextDouble() * 6.0 / 16.0;
+        double yOffset = (random.nextDouble() * 4.0 + 5.0) / 16.0;
         double zOffset = axis == Direction.Axis.Z ? direction.getStepZ() * offset : randomOffset;
         level.addParticle(ParticleTypes.SMOKE, x + xOffset, y + yOffset, z + zOffset, 0.0, 0.0, 0.0);
         level.addParticle(ParticleTypes.FLAME, x + xOffset, y + yOffset, z + zOffset, 0.0, 0.0, 0.0);

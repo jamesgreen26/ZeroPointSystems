@@ -46,4 +46,13 @@ public class RoboticArmItemCommand {
         }
         return 0;
     }
+
+    public static int setTransferCount(ServerLevel serverLevel, BlockPos armPos, int transferCount) {
+        BlockEntity blockEntity = serverLevel.getBlockEntity(armPos);
+        if (blockEntity instanceof RoboticArmBlockEntity roboticArm) {
+            roboticArm.setArmSettings(transferCount, roboticArm.isViewRange());
+            return 1;
+        }
+        return 0;
+    }
 }

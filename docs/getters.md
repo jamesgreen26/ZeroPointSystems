@@ -69,6 +69,7 @@ The following getter requires the target block to be a `Robotic Arm`.
 | Getter      | Output | Description                                                                |
 |-------------|--------|----------------------------------------------------------------------------|
 | `held_item` | Item   | The item currently held in the arm's hand. Returns an empty stack if the hand is empty. |
+| `transfer_count` | Int | The maximum stack size moved by `take_items`, `put_items`, and `drop_items`. |
 
 The resulting Item can be compared against an item predicate with `==`, or its stack size read with `count`.
 
@@ -80,6 +81,10 @@ if held_item == minecraft:lava_bucket use 6 1 4
 
 ```
 if held_item count > 0 put_items 0 1 2 else take_items 1 3 5
+```
+
+```
+if transfer_count < 16 set_transfer_count 16
 ```
 
 ---

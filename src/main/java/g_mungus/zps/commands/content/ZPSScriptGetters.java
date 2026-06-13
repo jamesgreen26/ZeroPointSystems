@@ -109,5 +109,19 @@ public class ZPSScriptGetters {
                 },
                 Set.of(ZPSMod.resource("robotic_arm"))
         ));
+
+        event.register(ScriptGetter.withBlocks(
+                "transfer_count",
+                Integer.class,
+                ResourceLocation.parse("zps:int"),
+                scriptContext -> {
+                    BlockEntity be = scriptContext.level().getBlockEntity(scriptContext.pos());
+                    if (be instanceof RoboticArmBlockEntity roboticArm) {
+                        return roboticArm.getRetrieveAmount();
+                    }
+                    return 0;
+                },
+                Set.of(ZPSMod.resource("robotic_arm"))
+        ));
     }
 }

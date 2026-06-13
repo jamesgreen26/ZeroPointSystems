@@ -3,6 +3,7 @@ package g_mungus.zps.commands.content;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.blockentity.RoboticArmBlockEntity;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptExecutor;
 import g_mungus.zps.commands.content.executors.RoboticArmItemCommand;
@@ -149,6 +150,19 @@ public class ZPSScriptExecutors {
                         context.commandSource().getLevel(),
                         context.pos(),
                         targetPos
+                ),
+                Set.of(ZPSMod.resource("robotic_arm"))
+        ));
+
+        event.register(ScriptExecutor.simpleWithBlocks(
+                "set_transfer_count",
+                Integer.class,
+                ResourceLocation.parse("zps:int"),
+                IntegerArgumentType.integer(RoboticArmBlockEntity.MIN_RETRIEVE_AMOUNT, RoboticArmBlockEntity.MAX_RETRIEVE_AMOUNT),
+                (transferCount, context) -> RoboticArmItemCommand.setTransferCount(
+                        context.commandSource().getLevel(),
+                        context.pos(),
+                        transferCount
                 ),
                 Set.of(ZPSMod.resource("robotic_arm"))
         ));

@@ -52,6 +52,7 @@ import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.items.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -423,21 +424,29 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
         }
 
         Container container = resolveTransferContainer(pendingTransferTargetPos);
-        if (container == null) {
+        if (container != null) {
+            Player interactionPlayer = getContainerInteractionPlayer();
+            openContainerForVisualTransfer(container, interactionPlayer);
+            try {
+                if (pendingTransfer == PendingTransfer.RETRIEVE) {
+                    tryRetrieveFrom(container);
+                } else if (pendingTransfer == PendingTransfer.DEPOSIT) {
+                    tryDepositInto(container);
+                }
+            } finally {
+                scheduleContainerClose(pendingTransferTargetPos, gameTimeWithDelay(), interactionPlayer);
+            }
             pendingTransfer = PendingTransfer.NONE;
             return;
         }
 
-        Player interactionPlayer = getContainerInteractionPlayer();
-        openContainerForVisualTransfer(container, interactionPlayer);
-        try {
+        IItemHandler itemHandler = resolveTransferItemHandler(pendingTransferTargetPos, getTransferSide(pendingTransfer));
+        if (itemHandler != null) {
             if (pendingTransfer == PendingTransfer.RETRIEVE) {
-                tryRetrieveFrom(container);
+                tryRetrieveFrom(itemHandler);
             } else if (pendingTransfer == PendingTransfer.DEPOSIT) {
-                tryDepositInto(container);
+                tryDepositInto(itemHandler);
             }
-        } finally {
-            scheduleContainerClose(pendingTransferTargetPos, gameTimeWithDelay(), interactionPlayer);
         }
         pendingTransfer = PendingTransfer.NONE;
     }
@@ -458,6 +467,17 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
             return container;
         }
         return null;
+    }
+
+    private @Nullable IItemHandler resolveTransferItemHandler(BlockPos targetPos, Direction side) {
+        if (level == null) return null;
+        BlockEntity blockEntity = level.getBlockEntity(targetPos);
+        if (blockEntity == null) return null;
+        return blockEntity.getCapability(ForgeCapabilities.ITEM_HANDLER, side).orElse(null);
+    }
+
+    private static Direction getTransferSide(PendingTransfer transfer) {
+        return transfer == PendingTransfer.RETRIEVE ? Direction.DOWN : Direction.UP;
     }
 
     private long gameTimeWithDelay() {
@@ -535,6 +555,33 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
             moved += extracted.getCount();
 
             source.setChanged();
+            setChanged();
+        }
+    }
+
+    private void tryRetrieveFrom(IItemHandler source) {
+        int desired = retrieveAmount;
+        int moved = 0;
+        if (!heldStack.isEmpty() && heldStack.getCount() >= heldStack.getMaxStackSize()) return;
+
+        for (int slot = 0; slot < source.getSlots() && moved < desired; slot++) {
+            ItemStack sourceStack = source.getStackInSlot(slot);
+            if (sourceStack.isEmpty()) continue;
+            if (!heldStack.isEmpty() && !ItemStack.isSameItemSameTags(heldStack, sourceStack)) continue;
+
+            int maxByHeld = heldStack.isEmpty() ? sourceStack.getMaxStackSize() : heldStack.getMaxStackSize() - heldStack.getCount();
+            int toExtract = Math.min(desired - moved, Math.min(sourceStack.getCount(), maxByHeld));
+            if (toExtract <= 0) break;
+
+            ItemStack extracted = source.extractItem(slot, toExtract, false);
+            if (extracted.isEmpty()) continue;
+
+            if (heldStack.isEmpty()) {
+                heldStack = extracted;
+            } else {
+                heldStack.grow(extracted.getCount());
+            }
+            moved += extracted.getCount();
             setChanged();
         }
     }
@@ -624,6 +671,28 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
             if (heldStack.isEmpty()) heldStack = ItemStack.EMPTY;
 
             target.setChanged();
+            setChanged();
+        }
+    }
+
+    private void tryDepositInto(IItemHandler target) {
+        if (heldStack.isEmpty()) return;
+        int desired = Math.min(retrieveAmount, heldStack.getCount());
+        int moved = 0;
+
+        for (int slot = 0; slot < target.getSlots() && moved < desired; slot++) {
+            int toMove = Math.min(desired - moved, heldStack.getCount());
+            if (toMove <= 0) break;
+
+            ItemStack insertionAttempt = heldStack.copy();
+            insertionAttempt.setCount(toMove);
+            ItemStack remainder = target.insertItem(slot, insertionAttempt, false);
+            int inserted = insertionAttempt.getCount() - remainder.getCount();
+            if (inserted <= 0) continue;
+
+            heldStack.shrink(inserted);
+            moved += inserted;
+            if (heldStack.isEmpty()) heldStack = ItemStack.EMPTY;
             setChanged();
         }
     }

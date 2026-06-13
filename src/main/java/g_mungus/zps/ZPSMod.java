@@ -8,6 +8,7 @@ import g_mungus.zps.compat.Compat;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.entity.ModEntities;
 import g_mungus.zps.gametest.EnumPropertyWithAliasesGameTests;
+import g_mungus.zps.gametest.RoboticArmGameTests;
 import g_mungus.zps.item.ModCreativeTabs;
 import g_mungus.zps.item.ModItems;
 import g_mungus.zps.gametest.CableNetworkGameTests;
@@ -70,5 +71,6 @@ public final class ZPSMod {
         event.register(TextDisplayGameTests.class);
         event.register(CableNetworkGameTests.class);
         event.register(EnumPropertyWithAliasesGameTests.class);
+        event.register(RoboticArmGameTests.class);
     }
 }

@@ -20,6 +20,7 @@ Produced by: `pos`, `string as_block_pos`, `vec_pos rounded_down`
 | `offset_x <int>` | BlockPos | Returns a new position offset by the given amount on the X axis |
 | `offset_y <int>` | BlockPos | Returns a new position offset by the given amount on the Y axis |
 | `offset_z <int>` | BlockPos | Returns a new position offset by the given amount on the Z axis |
+| `offset <coords>` | BlockPos | Returns a new position offset by the given coordinate components |
 | `== <coords>` | Boolean | True if equal to the given position |
 | `as_string` | String | Formats as `"x y z"` |
 

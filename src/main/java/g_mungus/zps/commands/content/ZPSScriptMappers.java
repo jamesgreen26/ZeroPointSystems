@@ -125,6 +125,19 @@ public class ZPSScriptMappers {
                 ResourceLocation.parse("zps:int")
         ));
 
+        event.register(new ScriptMapper2<>(
+                "offset",
+                BlockPos.class,
+                BlockPos.class,
+                ResourceLocation.parse("zps:block_pos"),
+                ResourceLocation.parse("zps:block_pos"),
+                "coordinates",
+                (blockPos, context) -> blockPos.offset(context.argumentValue().getBlockPos(context.commandSource())),
+                BlockPosArgument.blockPos(),
+                Coordinates.class,
+                ResourceLocation.parse("zps:block_pos")
+        ));
+
         // Vec3 Position - X coordinate
         event.register(new ScriptMapper<>(
                 "x",

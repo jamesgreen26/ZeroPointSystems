@@ -1,11 +1,20 @@
 package g_mungus.zps.blockentity;
 
 import g_mungus.zps.block.PowerCellBlock;
+import g_mungus.zps.menu.PowerCellMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.world.Containers;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -14,12 +23,15 @@ import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.energy.EnergyStorage;
 import net.minecraftforge.energy.IEnergyStorage;
+import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE {
+public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE, MenuProvider {
     private static final int MAX_ENERGY = 2_097_152;
     private static final int MAX_TRANSFER = 16_384;
+    private static final int ITEM_CHARGE_TRANSFER = 1024;
 
     private final SyncedEnergyStorage energyStorage = new SyncedEnergyStorage(MAX_ENERGY, MAX_TRANSFER, MAX_TRANSFER) {
         @Override
@@ -42,6 +54,32 @@ public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE
     };
 
     private final LazyOptional<IEnergyStorage> energy = LazyOptional.of(() -> energyStorage);
+    private final ChargeItemStackHandler chargeInventory = new ChargeItemStackHandler();
+    private final LazyOptional<IItemHandler> items = LazyOptional.of(() -> chargeInventory);
+    private final ContainerData dataAccess = new ContainerData() {
+        @Override
+        public int get(int index) {
+            return switch (index) {
+                case 0 -> energyStorage.getEnergyStored();
+                case 1 -> energyStorage.getMaxEnergyStored();
+                case 2 -> getChargeItemEnergyStored();
+                case 3 -> getChargeItemMaxEnergyStored();
+                default -> 0;
+            };
+        }
+
+        @Override
+        public void set(int index, int value) {
+            if (index == 0) {
+                energyStorage.setEnergyStoredExact(value);
+            }
+        }
+
+        @Override
+        public int getCount() {
+            return 4;
+        }
+    };
     private int lastSyncedLevel = -1;
     private int lastSentClientEnergy = Integer.MIN_VALUE;
     private float clientSmoothedFill = 0.0f;
@@ -63,7 +101,29 @@ public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE
     }
 
     public void serverTick() {
+        chargeItem();
         updateFillLevel();
+    }
+
+    public static boolean isChargeable(ItemStack stack) {
+        return !stack.isEmpty() && stack.getCapability(ForgeCapabilities.ENERGY)
+                .map(IEnergyStorage::canReceive)
+                .orElse(false);
+    }
+
+    public IItemHandler getChargeInventory() {
+        return chargeInventory;
+    }
+
+    public void dropContents() {
+        if (level == null || level.isClientSide()) {
+            return;
+        }
+
+        ItemStack stack = chargeInventory.getStackInSlot(0);
+        if (!stack.isEmpty()) {
+            Containers.dropItemStack(level, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), stack);
+        }
     }
 
     public int getEnergyStored() {
@@ -72,6 +132,53 @@ public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE
 
     public int getMaxEnergyStored() {
         return energyStorage.getMaxEnergyStored();
+    }
+
+    private void chargeItem() {
+        if (energyStorage.getEnergyStored() <= 0) {
+            return;
+        }
+
+        ItemStack stack = chargeInventory.getStackInSlot(0);
+        if (stack.isEmpty()) {
+            return;
+        }
+
+        stack.getCapability(ForgeCapabilities.ENERGY).ifPresent(itemEnergy -> {
+            if (!itemEnergy.canReceive()) {
+                return;
+            }
+
+            int available = energyStorage.extractEnergy(ITEM_CHARGE_TRANSFER, true);
+            int accepted = itemEnergy.receiveEnergy(available, true);
+            int transfer = Math.min(available, accepted);
+            if (transfer <= 0) {
+                return;
+            }
+
+            int extracted = energyStorage.extractEnergy(transfer, false);
+            int received = itemEnergy.receiveEnergy(extracted, false);
+            if (received < extracted) {
+                energyStorage.receiveEnergy(extracted - received, false);
+            }
+
+            chargeInventory.setStackInSlot(0, stack);
+            setChanged();
+        });
+    }
+
+    private int getChargeItemEnergyStored() {
+        ItemStack stack = chargeInventory.getStackInSlot(0);
+        return stack.getCapability(ForgeCapabilities.ENERGY)
+                .map(IEnergyStorage::getEnergyStored)
+                .orElse(0);
+    }
+
+    private int getChargeItemMaxEnergyStored() {
+        ItemStack stack = chargeInventory.getStackInSlot(0);
+        return stack.getCapability(ForgeCapabilities.ENERGY)
+                .map(IEnergyStorage::getMaxEnergyStored)
+                .orElse(0);
     }
 
     public float getClientSmoothedFill() {
@@ -157,6 +264,7 @@ public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE
     protected void saveAdditional(@NotNull CompoundTag tag) {
         super.saveAdditional(tag);
         tag.putInt("Energy", energyStorage.getEnergyStored());
+        tag.put("ChargeItem", chargeInventory.serializeNBT());
     }
 
     @Override
@@ -164,6 +272,9 @@ public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE
         super.load(tag);
         if (tag.contains("Energy")) {
             energyStorage.setEnergyStoredExact(tag.getInt("Energy"));
+        }
+        if (tag.contains("ChargeItem")) {
+            chargeInventory.deserializeNBT(tag.getCompound("ChargeItem"));
         }
     }
 
@@ -200,6 +311,9 @@ public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE
         if (cap == ForgeCapabilities.ENERGY) {
             return energy.cast();
         }
+        if (cap == ForgeCapabilities.ITEM_HANDLER) {
+            return items.cast();
+        }
         return super.getCapability(cap, side);
     }
 
@@ -207,5 +321,38 @@ public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE
     public void invalidateCaps() {
         super.invalidateCaps();
         energy.invalidate();
+        items.invalidate();
+    }
+
+    @Override
+    public @NotNull Component getDisplayName() {
+        return Component.translatable("block.zps.power_cell");
+    }
+
+    @Override
+    public @Nullable AbstractContainerMenu createMenu(int containerId, @NotNull Inventory inventory,
+                                                     @NotNull Player player) {
+        return new PowerCellMenu(containerId, inventory, this, dataAccess);
+    }
+
+    private class ChargeItemStackHandler extends ItemStackHandler {
+        private ChargeItemStackHandler() {
+            super(1);
+        }
+
+        @Override
+        public boolean isItemValid(int slot, @NotNull ItemStack stack) {
+            return isChargeable(stack);
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return 1;
+        }
+
+        @Override
+        protected void onContentsChanged(int slot) {
+            setChanged();
+        }
     }
 }

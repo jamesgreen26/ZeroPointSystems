@@ -3,6 +3,7 @@ package g_mungus.zps.blockentity;
 import g_mungus.zps.networking.RequestHudInfoC2SPacket;
 import g_mungus.zps.networking.ZPSGamePackets;
 import g_mungus.zps.util.HudInfoProvider;
+import g_mungus.zps.util.NumberFormatter;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -44,7 +45,7 @@ public interface EnergyGeneratorBE extends HudInfoProvider<Integer> {
             tooltip.add(Component.literal(spacing)
                     .append(Component.literal("Generating:").withStyle(ChatFormatting.GRAY)));
             tooltip.add(Component.literal(spacing)
-                    .append(formatInt(getInfo())).append(" FE/t").withStyle(ChatFormatting.AQUA));
+                    .append(NumberFormatter.formatInt(getInfo())).append(" FE/t").withStyle(ChatFormatting.AQUA));
         }
     }
 

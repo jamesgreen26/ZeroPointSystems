@@ -13,4 +13,7 @@ public class ModMenus {
 
     public static final RegistryObject<MenuType<CoalBurnerMenu>> COAL_BURNER =
             MENUS.register("coal_burner", () -> IForgeMenuType.create(CoalBurnerMenu::new));
+
+    public static final RegistryObject<MenuType<PowerCellMenu>> POWER_CELL =
+            MENUS.register("power_cell", () -> IForgeMenuType.create(PowerCellMenu::new));
 }

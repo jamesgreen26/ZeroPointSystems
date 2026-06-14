@@ -1,5 +1,6 @@
 package g_mungus.zps.item;
 
+import g_mungus.zps.util.NumberFormatter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -114,8 +115,8 @@ public class PowerDrillItem extends DiggerItem {
     public void appendHoverText(@NotNull ItemStack stack, @Nullable Level level, List<Component> tooltip, @NotNull TooltipFlag flag) {
         tooltip.add(Component.translatable(
                 "item.zps.power_drill.energy",
-                formatInt(getStoredEnergy(stack)),
-                formatInt(MAX_ENERGY)
+                NumberFormatter.formatInt(getStoredEnergy(stack)),
+                NumberFormatter.formatInt(MAX_ENERGY)
         ).withStyle(ChatFormatting.GRAY));
         super.appendHoverText(stack, level, tooltip, flag);
     }
@@ -149,16 +150,6 @@ public class PowerDrillItem extends DiggerItem {
             setStoredEnergy(stack, getStoredEnergy(stack) - extracted);
         }
         return extracted;
-    }
-
-    private static String formatInt(int n) {
-        if (n > 1_000_000) {
-            return Math.round((double) n / 100_000d) / 10d + "M";
-        }
-        if (n > 10_000) {
-            return Math.round((double) n / 100d) / 10d + "K";
-        }
-        return n + "";
     }
 
     private static class EnergyCapabilityProvider implements ICapabilitySerializable<CompoundTag> {

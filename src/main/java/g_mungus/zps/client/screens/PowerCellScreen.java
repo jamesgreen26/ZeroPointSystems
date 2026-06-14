@@ -1,7 +1,7 @@
 package g_mungus.zps.client.screens;
 
 import g_mungus.zps.ZPSMod;
-import g_mungus.zps.menu.CoalBurnerMenu;
+import g_mungus.zps.menu.PowerCellMenu;
 import g_mungus.zps.util.NumberFormatter;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -11,19 +11,15 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import org.jetbrains.annotations.NotNull;
 
-public class CoalBurnerScreen extends AbstractContainerScreen<CoalBurnerMenu> {
-    private static final ResourceLocation TEXTURE = ZPSMod.resource("textures/gui/coal_burner.png");
+public class PowerCellScreen extends AbstractContainerScreen<PowerCellMenu> {
+    private static final ResourceLocation TEXTURE = ZPSMod.resource("textures/gui/power_cell.png");
     private static final int ENERGY_BAR_X = 153;
     private static final int ENERGY_BAR_Y = 18;
     private static final int ENERGY_BAR_WIDTH = 10;
     private static final int ENERGY_BAR_HEIGHT = 50;
-    private static final int BURN_FLAME_X = 80;
-    private static final int BURN_FLAME_Y = 56;
-    private static final int BURN_FLAME_WIDTH = 14;
-    private static final int BURN_FLAME_HEIGHT = 14;
-    private static final int BURN_FLAME_PROGRESS_MAX = BURN_FLAME_HEIGHT - 1;
+    private static final int ENERGY_COLOR = 0xFF2380A8;
 
-    public CoalBurnerScreen(CoalBurnerMenu menu, Inventory inventory, Component title) {
+    public PowerCellScreen(PowerCellMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
     }
 
@@ -35,8 +31,6 @@ public class CoalBurnerScreen extends AbstractContainerScreen<CoalBurnerMenu> {
 
         if (isHovering(ENERGY_BAR_X, ENERGY_BAR_Y, ENERGY_BAR_WIDTH, ENERGY_BAR_HEIGHT, mouseX, mouseY)) {
             graphics.renderTooltip(this.font, Component.literal(formatEnergy(menu.getEnergyStored(), menu.getMaxEnergyStored())), mouseX, mouseY);
-        } else if (isHovering(BURN_FLAME_X, BURN_FLAME_Y, BURN_FLAME_WIDTH, BURN_FLAME_HEIGHT, mouseX, mouseY)) {
-            graphics.renderTooltip(this.font, Component.literal(formatSeconds(menu.getBurnTime()) + " / " + formatSeconds(menu.getTotalBurnTime())), mouseX, mouseY);
         }
     }
 
@@ -46,17 +40,7 @@ public class CoalBurnerScreen extends AbstractContainerScreen<CoalBurnerMenu> {
         int y = this.topPos;
         graphics.blit(TEXTURE, x, y, 0, 0, this.imageWidth, this.imageHeight);
 
-        int burnProgress = getBurnProgress();
-        if (menu.getBurnTime() > 0) {
-            graphics.blit(TEXTURE, x + BURN_FLAME_X, y + BURN_FLAME_Y + BURN_FLAME_PROGRESS_MAX - burnProgress,
-                    176, BURN_FLAME_PROGRESS_MAX - burnProgress, BURN_FLAME_WIDTH, burnProgress + 1);
-        }
-
-        int energyFill = getEnergyFill();
-        if (energyFill > 0) {
-            int fillTop = y + ENERGY_BAR_Y + ENERGY_BAR_HEIGHT - energyFill;
-            graphics.fill(x + ENERGY_BAR_X, fillTop, x + ENERGY_BAR_X + ENERGY_BAR_WIDTH, y + ENERGY_BAR_Y + ENERGY_BAR_HEIGHT, 0xFF2380A8);
-        }
+        drawBar(graphics, x + ENERGY_BAR_X, y + ENERGY_BAR_Y, getCellEnergyFill(), ENERGY_COLOR);
     }
 
     @Override
@@ -65,25 +49,19 @@ public class CoalBurnerScreen extends AbstractContainerScreen<CoalBurnerMenu> {
         graphics.drawString(this.font, "FE", ENERGY_BAR_X, ENERGY_BAR_Y + ENERGY_BAR_HEIGHT + 4, 0x404040, false);
     }
 
-    private int getBurnProgress() {
-        int totalBurnTime = menu.getTotalBurnTime();
-        if (totalBurnTime <= 0) {
-            return 0;
+    private void drawBar(GuiGraphics graphics, int x, int y, int fill, int color) {
+        if (fill > 0) {
+            int fillTop = y + ENERGY_BAR_HEIGHT - fill;
+            graphics.fill(x, fillTop, x + ENERGY_BAR_WIDTH, y + ENERGY_BAR_HEIGHT, color);
         }
-        return Mth.clamp((menu.getBurnTime() * BURN_FLAME_PROGRESS_MAX) / totalBurnTime, 0, BURN_FLAME_PROGRESS_MAX);
     }
 
-    private int getEnergyFill() {
+    private int getCellEnergyFill() {
         int maxEnergy = menu.getMaxEnergyStored();
         if (maxEnergy <= 0) {
             return 0;
         }
         return Mth.clamp((menu.getEnergyStored() * ENERGY_BAR_HEIGHT) / maxEnergy, 0, ENERGY_BAR_HEIGHT);
-    }
-
-    private static String formatSeconds(int ticks) {
-        int seconds = Math.max(0, ticks) / 20;
-        return seconds + "s";
     }
 
     private static String formatEnergy(int stored, int max) {

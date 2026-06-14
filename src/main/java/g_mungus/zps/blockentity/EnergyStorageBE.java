@@ -3,6 +3,7 @@ package g_mungus.zps.blockentity;
 import g_mungus.zps.networking.RequestHudInfoC2SPacket;
 import g_mungus.zps.networking.ZPSGamePackets;
 import g_mungus.zps.util.HudInfoProvider;
+import g_mungus.zps.util.NumberFormatter;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -46,7 +47,7 @@ public interface EnergyStorageBE extends HudInfoProvider<Integer> {
                     .append(Component.literal("Stored:").withStyle(ChatFormatting.GRAY)));
 
             int info = getInfo();
-            String valueText = info == INFINITE_FE_INFO ? "∞ FE" : formatInt(info) + " FE";
+            String valueText = info == INFINITE_FE_INFO ? "∞ FE" : NumberFormatter.formatInt(info) + " FE";
             tooltip.add(Component.literal(spacing)
                     .append(Component.literal(valueText).withStyle(ChatFormatting.AQUA)));
         }

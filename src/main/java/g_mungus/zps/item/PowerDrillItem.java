@@ -1,15 +1,19 @@
 package g_mungus.zps.item;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import g_mungus.zps.client.renderer.PowerDrillItemRenderer;
 import g_mungus.zps.util.NumberFormatter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.DiggerItem;
 import net.minecraft.world.item.ItemStack;
@@ -56,7 +60,26 @@ public class PowerDrillItem extends DiggerItem {
             public BlockEntityWithoutLevelRenderer getCustomRenderer() {
                 return renderer;
             }
+
+            @Override
+            public boolean applyForgeHandTransform(PoseStack poseStack, LocalPlayer player, HumanoidArm arm, ItemStack itemInHand,
+                                                   float partialTick, float equipProcess, float swingProcess) {
+                int handSide = arm == HumanoidArm.RIGHT ? 1 : -1;
+                poseStack.translate(handSide * 0.36F, -0.54F + equipProcess * -0.6F, -0.98F);
+                poseStack.mulPose(Axis.YP.rotationDegrees(handSide * 18.0F));
+                poseStack.mulPose(Axis.XP.rotationDegrees(-18.0F));
+                poseStack.mulPose(Axis.ZP.rotationDegrees(handSide * -8.0F));
+                return true;
+            }
         });
+    }
+
+    @Override
+    public boolean shouldCauseReequipAnimation(ItemStack oldStack, ItemStack newStack, boolean slotChanged) {
+        if (oldStack.getItem() instanceof PowerDrillItem && newStack.getItem() instanceof PowerDrillItem) {
+            return slotChanged;
+        }
+        return super.shouldCauseReequipAnimation(oldStack, newStack, slotChanged);
     }
 
     @Override

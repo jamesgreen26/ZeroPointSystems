@@ -14,6 +14,7 @@ import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.DiggerItem;
@@ -37,11 +38,13 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
 public class PowerDrillItem extends DiggerItem {
     private static final String ENERGY_TAG = "Energy";
     private static final String LAST_POWERED_USE_TICK_TAG = "LastPoweredUseTick";
+    private static final String DRILL_ID_TAG = "DrillId";
     public static final int MAX_ENERGY = 128_000;
     private static final int ENERGY_PER_BLOCK = 96;
     private static final int ENERGY_BAR_COLOR = 0x55FFFF;
@@ -79,9 +82,15 @@ public class PowerDrillItem extends DiggerItem {
     @Override
     public boolean shouldCauseReequipAnimation(ItemStack oldStack, ItemStack newStack, boolean slotChanged) {
         if (oldStack.getItem() instanceof PowerDrillItem && newStack.getItem() instanceof PowerDrillItem) {
-            return slotChanged;
+            return getOrCreateDrillId(oldStack) != getOrCreateDrillId(newStack);
         }
         return super.shouldCauseReequipAnimation(oldStack, newStack, slotChanged);
+    }
+
+    @Override
+    public void inventoryTick(ItemStack stack, Level level, Entity entity, int slotId, boolean isSelected) {
+        getOrCreateDrillId(stack);
+        super.inventoryTick(stack, level, entity, slotId, isSelected);
     }
 
     @Override
@@ -191,9 +200,22 @@ public class PowerDrillItem extends DiggerItem {
         return tag == null ? Long.MIN_VALUE : tag.getLong(LAST_POWERED_USE_TICK_TAG);
     }
 
+    public static long getOrCreateDrillId(ItemStack stack) {
+        CompoundTag tag = stack.getOrCreateTag();
+        if (!tag.contains(DRILL_ID_TAG)) {
+            tag.putLong(DRILL_ID_TAG, generateDrillId());
+        }
+        return tag.getLong(DRILL_ID_TAG);
+    }
+
     private static int getStoredEnergy(ItemStack stack) {
         CompoundTag tag = stack.getTag();
         return tag == null ? 0 : Math.min(tag.getInt(ENERGY_TAG), MAX_ENERGY);
+    }
+
+    private static long generateDrillId() {
+        long id = ThreadLocalRandom.current().nextLong();
+        return id == 0L ? 1L : id;
     }
 
     private static void markPoweredUse(ItemStack stack, Level level) {

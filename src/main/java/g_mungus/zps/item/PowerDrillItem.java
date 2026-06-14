@@ -242,6 +242,11 @@ public class PowerDrillItem extends DiggerItem implements CustomArmPoseItem {
         return HumanoidModel.ArmPose.CROSSBOW_HOLD;
     }
 
+    @Override
+    public boolean shouldSwingArm() {
+        return false;
+    }
+
     private static class EnergyCapabilityProvider implements ICapabilitySerializable<CompoundTag> {
         private final StackEnergyStorage energyStorage;
         private final LazyOptional<IEnergyStorage> energy;

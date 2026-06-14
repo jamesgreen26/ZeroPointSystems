@@ -11,4 +11,8 @@ import net.minecraft.world.item.ItemStack;
 public interface CustomArmPoseItem {
 	@Nullable
 	ArmPose getArmPose(ItemStack stack, AbstractClientPlayer player, InteractionHand hand);
+
+	default boolean shouldSwingArm() {
+		return true;
+	}
 }

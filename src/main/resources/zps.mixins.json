@@ -23,6 +23,7 @@
     "ClientboundCommandsPacketMixin",
     "ItemEntityMixin",
     "LecternBlockEntityMixin",
+    "LivingEntityMixin",
     "ServerLevelMixin",
     "StructureTemplateMixin",
     "WritableBookMixin",

@@ -103,6 +103,7 @@ public class ModCreativeTabs {
 //                        VERDITE_SPOOL
 
                         ENERGY_STORAGE_MODULE,
+                        POWER_DRILL,
 
                         ROBOTIC_ARM_SEGMENT,
                         ADDRESS_PAD

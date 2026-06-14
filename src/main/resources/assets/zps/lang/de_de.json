@@ -23,6 +23,7 @@
     "item.zps.light_pipe_cable": "Lichtwellen-Kabel",
     "item.zps.data_lectern": "Skript-Sender",
     "item.zps.power_drill": "Power Drill",
+    "item.zps.power_drill.energy": "Stored: %s / %s FE",
 
     "creativetab.zps_tab": "Zero Point Systems",
 

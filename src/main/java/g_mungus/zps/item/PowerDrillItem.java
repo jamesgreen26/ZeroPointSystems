@@ -117,7 +117,7 @@ public class PowerDrillItem extends DiggerItem {
                 "item.zps.power_drill.energy",
                 NumberFormatter.formatInt(getStoredEnergy(stack)),
                 NumberFormatter.formatInt(MAX_ENERGY)
-        ).withStyle(ChatFormatting.GRAY));
+        ).withStyle(style -> style.withColor(ShiftTooltipHandler.BASE_COLOR)));
         super.appendHoverText(stack, level, tooltip, flag);
     }
 

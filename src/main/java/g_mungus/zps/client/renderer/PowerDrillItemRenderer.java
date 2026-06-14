@@ -34,6 +34,7 @@ public class PowerDrillItemRenderer extends BlockEntityWithoutLevelRenderer {
     private final RandomSource random = RandomSource.create();
     private float spinAngle;
     private float spinSpeed;
+    private float boostProgress;
     private float lastRenderTime = Float.NaN;
 
     public PowerDrillItemRenderer() {
@@ -56,8 +57,7 @@ public class PowerDrillItemRenderer extends BlockEntityWithoutLevelRenderer {
 
         renderModel(base, stack, poseStack, bufferSource, packedLight, packedOverlay);
 
-        float renderTime = getRenderTime(minecraft);
-        updateSpin(stack, minecraft, renderTime);
+        updateSpin(stack, minecraft);
 
         poseStack.pushPose();
         poseStack.mulPose(Axis.ZP.rotationDegrees(spinAngle));
@@ -67,10 +67,18 @@ public class PowerDrillItemRenderer extends BlockEntityWithoutLevelRenderer {
         poseStack.popPose();
     }
 
-    private void updateSpin(ItemStack stack, Minecraft minecraft, float renderTime) {
+    public float getBoostProgress(ItemStack stack, Minecraft minecraft) {
+        updateSpin(stack, minecraft);
+        return boostProgress;
+    }
+
+    private void updateSpin(ItemStack stack, Minecraft minecraft) {
+        float renderTime = getRenderTime(minecraft);
         float targetSpeed = getTargetSpinSpeed(stack, minecraft, renderTime);
+        float targetBoostProgress = targetSpeed == BOOSTED_SPIN_SPEED ? 1.0F : 0.0F;
         if (Float.isNaN(lastRenderTime)) {
             spinSpeed = targetSpeed;
+            boostProgress = targetBoostProgress;
             lastRenderTime = renderTime;
         }
 
@@ -80,6 +88,8 @@ public class PowerDrillItemRenderer extends BlockEntityWithoutLevelRenderer {
         float transitionTicks = targetSpeed > spinSpeed ? SPEED_UP_TRANSITION_TICKS : SLOW_DOWN_TRANSITION_TICKS;
         float transition = elapsedTicks <= 0 ? 0 : 1 - (float) Math.exp(-elapsedTicks / transitionTicks);
         spinSpeed = Mth.lerp(transition, spinSpeed, targetSpeed);
+        float boostTransition = elapsedTicks <= 0 ? 0 : 1 - (float) Math.exp(-elapsedTicks / SPEED_UP_TRANSITION_TICKS);
+        boostProgress = Mth.lerp(boostTransition, boostProgress, targetBoostProgress);
         spinAngle = (spinAngle + spinSpeed * elapsedTicks) % 360f;
     }
 

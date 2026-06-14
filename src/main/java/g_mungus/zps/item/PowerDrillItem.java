@@ -8,6 +8,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.network.chat.Component;
@@ -67,7 +68,8 @@ public class PowerDrillItem extends DiggerItem {
                 int handSide = arm == HumanoidArm.RIGHT ? 1 : -1;
                 poseStack.translate(handSide * 0.36F, -0.54F + equipProcess * -0.6F, -0.98F);
                 poseStack.mulPose(Axis.YP.rotationDegrees(handSide * 18.0F));
-                poseStack.mulPose(Axis.XP.rotationDegrees(-18.0F));
+                float upwardTilt = renderer.getBoostProgress(itemInHand, Minecraft.getInstance()) * 20.0F;
+                poseStack.mulPose(Axis.XP.rotationDegrees(-18.0F + upwardTilt));
                 poseStack.mulPose(Axis.ZP.rotationDegrees(handSide * -8.0F));
                 return true;
             }

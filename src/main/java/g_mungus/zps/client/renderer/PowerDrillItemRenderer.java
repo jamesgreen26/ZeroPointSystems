@@ -35,10 +35,11 @@ public class PowerDrillItemRenderer extends BlockEntityWithoutLevelRenderer {
     private static final float SLOW_DOWN_TRANSITION_TICKS = 40f;
     private static final float STALE_STATE_TICKS = 20 * 60;
     private static final float STATE_CLEANUP_INTERVAL_TICKS = 20 * 10;
+    private static final double NANOS_PER_TICK = 50_000_000.0;
 
     private final RandomSource random = RandomSource.create();
     private final Map<Long, DrillRenderState> renderStates = new HashMap<>();
-    private float lastStateCleanupTime = Float.NaN;
+    private double lastStateCleanupTime = Double.NaN;
 
     public PowerDrillItemRenderer() {
         super(null, null);
@@ -62,11 +63,11 @@ public class PowerDrillItemRenderer extends BlockEntityWithoutLevelRenderer {
 
         DrillRenderState renderState = isAnimatedContext(displayContext) ? getRenderState(stack) : null;
         if (renderState != null) {
-            renderState.update(stack, minecraft, this);
+            renderState.updateForRender(stack, minecraft, this);
         }
 
         poseStack.pushPose();
-        poseStack.mulPose(Axis.ZP.rotationDegrees(renderState == null ? 0.0F : renderState.spinAngle));
+        poseStack.mulPose(Axis.ZP.rotationDegrees(renderState == null ? 0.0F : (float) renderState.spinAngle));
         renderModel(head, stack, poseStack, bufferSource, packedLight, packedOverlay);
         poseStack.popPose();
 
@@ -75,7 +76,7 @@ public class PowerDrillItemRenderer extends BlockEntityWithoutLevelRenderer {
 
     public float getBoostProgress(ItemStack stack, Minecraft minecraft) {
         DrillRenderState renderState = getRenderState(stack);
-        renderState.update(stack, minecraft, this);
+        renderState.updateBoost(stack, minecraft, this);
         return renderState.boostProgress;
     }
 
@@ -83,8 +84,8 @@ public class PowerDrillItemRenderer extends BlockEntityWithoutLevelRenderer {
         return renderStates.computeIfAbsent(PowerDrillItem.getOrCreateDrillId(stack), ignored -> new DrillRenderState());
     }
 
-    private void cleanupStaleStates(float renderTime) {
-        if (!Float.isNaN(lastStateCleanupTime) && renderTime - lastStateCleanupTime < STATE_CLEANUP_INTERVAL_TICKS) {
+    private void cleanupStaleStates(double renderTime) {
+        if (!Double.isNaN(lastStateCleanupTime) && renderTime - lastStateCleanupTime < STATE_CLEANUP_INTERVAL_TICKS) {
             return;
         }
 
@@ -100,39 +101,57 @@ public class PowerDrillItemRenderer extends BlockEntityWithoutLevelRenderer {
     }
 
     private static class DrillRenderState {
-        private float spinAngle;
-        private float spinSpeed;
+        private double spinAngle;
+        private double spinSpeed;
         private float boostProgress;
-        private float lastRenderTime = Float.NaN;
-        private float lastUpdateTime = Float.NaN;
+        private double lastSpinRenderTime = Double.NaN;
+        private double lastBoostRenderTime = Double.NaN;
+        private double lastUpdateTime = Double.NaN;
 
-        private void update(ItemStack stack, Minecraft minecraft, PowerDrillItemRenderer renderer) {
-            float renderTime = getRenderTime(minecraft);
-            renderer.cleanupStaleStates(renderTime);
-            lastUpdateTime = renderTime;
-            float targetSpeed = getTargetSpinSpeed(stack, minecraft, renderTime);
-            float targetBoostProgress = targetSpeed == BOOSTED_SPIN_SPEED ? 1.0F : 0.0F;
-            if (Float.isNaN(lastRenderTime)) {
+        private void updateForRender(ItemStack stack, Minecraft minecraft, PowerDrillItemRenderer renderer) {
+            double renderTime = getSmoothRenderTime();
+            updateBoost(stack, minecraft, renderer, renderTime);
+
+            float targetSpeed = getTargetSpinSpeed(stack, minecraft);
+            if (Double.isNaN(lastSpinRenderTime)) {
                 spinSpeed = targetSpeed;
-                boostProgress = targetBoostProgress;
-                lastRenderTime = renderTime;
+                lastSpinRenderTime = renderTime;
             }
 
-            float elapsedTicks = Math.max(0, renderTime - lastRenderTime);
-            lastRenderTime = renderTime;
+            double elapsedTicks = Math.max(0.0, renderTime - lastSpinRenderTime);
+            lastSpinRenderTime = renderTime;
 
-            float transitionTicks = targetSpeed > spinSpeed ? SPEED_UP_TRANSITION_TICKS : SLOW_DOWN_TRANSITION_TICKS;
-            float transition = elapsedTicks <= 0 ? 0 : 1 - (float) Math.exp(-elapsedTicks / transitionTicks);
+            double transitionTicks = targetSpeed > spinSpeed ? SPEED_UP_TRANSITION_TICKS : SLOW_DOWN_TRANSITION_TICKS;
+            double transition = elapsedTicks <= 0.0 ? 0.0 : 1.0 - Math.exp(-elapsedTicks / transitionTicks);
             spinSpeed = Mth.lerp(transition, spinSpeed, targetSpeed);
-            float boostTransition = elapsedTicks <= 0 ? 0 : 1 - (float) Math.exp(-elapsedTicks / SPEED_UP_TRANSITION_TICKS);
+            spinAngle = (spinAngle + spinSpeed * elapsedTicks) % 360.0;
+        }
+
+        private void updateBoost(ItemStack stack, Minecraft minecraft, PowerDrillItemRenderer renderer) {
+            updateBoost(stack, minecraft, renderer, getSmoothRenderTime());
+        }
+
+        private void updateBoost(ItemStack stack, Minecraft minecraft, PowerDrillItemRenderer renderer, double renderTime) {
+            lastUpdateTime = renderTime;
+            renderer.cleanupStaleStates(renderTime);
+            float targetSpeed = getTargetSpinSpeed(stack, minecraft);
+            float targetBoostProgress = targetSpeed == BOOSTED_SPIN_SPEED ? 1.0F : 0.0F;
+            if (Double.isNaN(lastBoostRenderTime)) {
+                boostProgress = targetBoostProgress;
+                lastBoostRenderTime = renderTime;
+            }
+
+            double elapsedTicks = Math.max(0.0, renderTime - lastBoostRenderTime);
+            lastBoostRenderTime = renderTime;
+
+            float boostTransition = elapsedTicks <= 0.0 ? 0.0F : 1.0F - (float) Math.exp(-elapsedTicks / SPEED_UP_TRANSITION_TICKS);
             boostProgress = Mth.lerp(boostTransition, boostProgress, targetBoostProgress);
-            spinAngle = (spinAngle + spinSpeed * elapsedTicks) % 360f;
         }
     }
 
-    private static float getTargetSpinSpeed(ItemStack stack, Minecraft minecraft, float renderTime) {
+    private static float getTargetSpinSpeed(ItemStack stack, Minecraft minecraft) {
         long lastPoweredUseTick = PowerDrillItem.getLastPoweredUseTick(stack);
-        if (minecraft.level != null && renderTime - lastPoweredUseTick <= BOOST_DURATION_TICKS) {
+        if (minecraft.level != null && getGameRenderTime(minecraft) - lastPoweredUseTick <= BOOST_DURATION_TICKS) {
             return BOOSTED_SPIN_SPEED;
         }
 
@@ -143,8 +162,12 @@ public class PowerDrillItemRenderer extends BlockEntityWithoutLevelRenderer {
         return WRENCH_PASSIVE_SPIN_SPEED;
     }
 
-    private static float getRenderTime(Minecraft minecraft) {
-        return minecraft.level == null ? Util.getMillis() / 50f : minecraft.level.getGameTime() + minecraft.getFrameTime();
+    private static double getGameRenderTime(Minecraft minecraft) {
+        return minecraft.level == null ? getSmoothRenderTime() : minecraft.level.getGameTime() + minecraft.getFrameTime();
+    }
+
+    private static double getSmoothRenderTime() {
+        return Util.getNanos() / NANOS_PER_TICK;
     }
 
     private void renderModel(BakedModel model, ItemStack stack, PoseStack poseStack, MultiBufferSource bufferSource,

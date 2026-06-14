@@ -31,6 +31,7 @@ public class PowerDrillItem extends DiggerItem {
     private static final String ENERGY_TAG = "Energy";
     private static final int MAX_ENERGY = 128_000;
     private static final int ENERGY_PER_BLOCK = 96;
+    private static final int ENERGY_BAR_COLOR = 0x55FFFF;
     private static final float EFFICIENCY_FIVE_SPEED_BONUS = 26.0F;
 
     public PowerDrillItem(Properties properties) {
@@ -92,6 +93,21 @@ public class PowerDrillItem extends DiggerItem {
     @Override
     public boolean isBookEnchantable(ItemStack stack, ItemStack book) {
         return false;
+    }
+
+    @Override
+    public boolean isBarVisible(ItemStack stack) {
+        return true;
+    }
+
+    @Override
+    public int getBarWidth(ItemStack stack) {
+        return Math.round(13.0F * getStoredEnergy(stack) / MAX_ENERGY);
+    }
+
+    @Override
+    public int getBarColor(ItemStack stack) {
+        return ENERGY_BAR_COLOR;
     }
 
     @Override

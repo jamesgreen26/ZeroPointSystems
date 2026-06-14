@@ -4,6 +4,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import g_mungus.zps.client.renderer.PowerDrillItemRenderer;
 import g_mungus.zps.util.NumberFormatter;
+import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -14,6 +16,7 @@ import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
@@ -41,7 +44,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
-public class PowerDrillItem extends DiggerItem {
+public class PowerDrillItem extends DiggerItem implements CustomArmPoseItem {
     private static final String ENERGY_TAG = "Energy";
     private static final String LAST_POWERED_USE_TICK_TAG = "LastPoweredUseTick";
     private static final String DRILL_ID_TAG = "DrillId";
@@ -232,6 +235,11 @@ public class PowerDrillItem extends DiggerItem {
             setStoredEnergy(stack, getStoredEnergy(stack) - extracted);
         }
         return extracted;
+    }
+
+    @Override
+    public HumanoidModel.@Nullable ArmPose getArmPose(ItemStack stack, AbstractClientPlayer player, InteractionHand hand) {
+        return HumanoidModel.ArmPose.CROSSBOW_HOLD;
     }
 
     private static class EnergyCapabilityProvider implements ICapabilitySerializable<CompoundTag> {

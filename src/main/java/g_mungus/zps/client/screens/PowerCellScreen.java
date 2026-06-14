@@ -1,6 +1,7 @@
 package g_mungus.zps.client.screens;
 
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.blockentity.ItemChargingPowerCell;
 import g_mungus.zps.menu.PowerCellMenu;
 import g_mungus.zps.util.NumberFormatter;
 import net.minecraft.client.gui.GuiGraphics;
@@ -57,6 +58,11 @@ public class PowerCellScreen extends AbstractContainerScreen<PowerCellMenu> {
     }
 
     private int getCellEnergyFill() {
+        if (menu.getEnergyStored() == ItemChargingPowerCell.INFINITE_ENERGY
+                || menu.getMaxEnergyStored() == ItemChargingPowerCell.INFINITE_ENERGY) {
+            return ENERGY_BAR_HEIGHT;
+        }
+
         int maxEnergy = menu.getMaxEnergyStored();
         if (maxEnergy <= 0) {
             return 0;
@@ -65,6 +71,9 @@ public class PowerCellScreen extends AbstractContainerScreen<PowerCellMenu> {
     }
 
     private static String formatEnergy(int stored, int max) {
+        if (stored == ItemChargingPowerCell.INFINITE_ENERGY || max == ItemChargingPowerCell.INFINITE_ENERGY) {
+            return "∞ FE";
+        }
         return NumberFormatter.formatInt(stored) + " / " + NumberFormatter.formatInt(max) + " FE";
     }
 }

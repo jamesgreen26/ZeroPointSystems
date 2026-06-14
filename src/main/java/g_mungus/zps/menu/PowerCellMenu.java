@@ -1,6 +1,7 @@
 package g_mungus.zps.menu;
 
 import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.blockentity.ItemChargingPowerCell;
 import g_mungus.zps.blockentity.PowerCellBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
@@ -24,7 +25,7 @@ public class PowerCellMenu extends AbstractContainerMenu {
     private static final int HOTBAR_START = 28;
     private static final int HOTBAR_END = 37;
 
-    private final PowerCellBlockEntity blockEntity;
+    private final ItemChargingPowerCell blockEntity;
     private final ContainerData data;
     private final ContainerLevelAccess access;
 
@@ -36,7 +37,7 @@ public class PowerCellMenu extends AbstractContainerMenu {
         this(containerId, inventory, resolveBlockEntity(inventory.player.level(), pos), new SimpleContainerData(4));
     }
 
-    public PowerCellMenu(int containerId, Inventory inventory, PowerCellBlockEntity blockEntity, ContainerData data) {
+    public PowerCellMenu(int containerId, Inventory inventory, ItemChargingPowerCell blockEntity, ContainerData data) {
         super(ModMenus.POWER_CELL.get(), containerId);
         this.blockEntity = blockEntity;
         this.data = data;
@@ -58,9 +59,9 @@ public class PowerCellMenu extends AbstractContainerMenu {
         this.addDataSlots(data);
     }
 
-    private static PowerCellBlockEntity resolveBlockEntity(Level level, BlockPos pos) {
+    private static ItemChargingPowerCell resolveBlockEntity(Level level, BlockPos pos) {
         BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (blockEntity instanceof PowerCellBlockEntity powerCell) {
+        if (blockEntity instanceof ItemChargingPowerCell powerCell) {
             return powerCell;
         }
         throw new IllegalStateException("Missing power cell block entity at " + pos);
@@ -68,7 +69,8 @@ public class PowerCellMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(@NotNull Player player) {
-        return stillValid(access, player, ModBlocks.POWER_CELL.get());
+        return stillValid(access, player, ModBlocks.POWER_CELL.get())
+                || stillValid(access, player, ModBlocks.CREATIVE_POWER_CELL.get());
     }
 
     @Override
@@ -122,7 +124,7 @@ public class PowerCellMenu extends AbstractContainerMenu {
         return data.get(3);
     }
 
-    public PowerCellBlockEntity getBlockEntity() {
+    public ItemChargingPowerCell getBlockEntity() {
         return blockEntity;
     }
 }

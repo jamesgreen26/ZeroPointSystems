@@ -28,7 +28,7 @@ import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE, MenuProvider {
+public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE, MenuProvider, ItemChargingPowerCell {
     private static final int MAX_ENERGY = 2_097_152;
     private static final int MAX_TRANSFER = 16_384;
     private static final int ITEM_CHARGE_TRANSFER = 1024;
@@ -60,8 +60,8 @@ public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE
         @Override
         public int get(int index) {
             return switch (index) {
-                case 0 -> energyStorage.getEnergyStored();
-                case 1 -> energyStorage.getMaxEnergyStored();
+                case 0 -> getMenuEnergyStored();
+                case 1 -> getMenuMaxEnergyStored();
                 case 2 -> getChargeItemEnergyStored();
                 case 3 -> getChargeItemMaxEnergyStored();
                 default -> 0;
@@ -113,6 +113,16 @@ public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE
 
     public IItemHandler getChargeInventory() {
         return chargeInventory;
+    }
+
+    @Override
+    public int getMenuEnergyStored() {
+        return energyStorage.getEnergyStored();
+    }
+
+    @Override
+    public int getMenuMaxEnergyStored() {
+        return energyStorage.getMaxEnergyStored();
     }
 
     public void dropContents() {
@@ -167,14 +177,16 @@ public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE
         });
     }
 
-    private int getChargeItemEnergyStored() {
+    @Override
+    public int getChargeItemEnergyStored() {
         ItemStack stack = chargeInventory.getStackInSlot(0);
         return stack.getCapability(ForgeCapabilities.ENERGY)
                 .map(IEnergyStorage::getEnergyStored)
                 .orElse(0);
     }
 
-    private int getChargeItemMaxEnergyStored() {
+    @Override
+    public int getChargeItemMaxEnergyStored() {
         ItemStack stack = chargeInventory.getStackInSlot(0);
         return stack.getCapability(ForgeCapabilities.ENERGY)
                 .map(IEnergyStorage::getMaxEnergyStored)

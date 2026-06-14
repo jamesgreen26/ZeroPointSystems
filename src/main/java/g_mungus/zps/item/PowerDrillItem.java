@@ -5,6 +5,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.DiggerItem;
@@ -56,6 +57,9 @@ public class PowerDrillItem extends DiggerItem {
     public boolean mineBlock(ItemStack stack, Level level, BlockState state, BlockPos pos, LivingEntity entity) {
         if (!level.isClientSide && state.getDestroySpeed(level, pos) != 0.0F && hasEnergyForBlock(stack) && isDrillMineable(state)) {
             extractEnergy(stack, ENERGY_PER_BLOCK, false);
+            if (!hasEnergyForBlock(stack) && entity instanceof ServerPlayer player) {
+                player.displayClientMessage(Component.literal("LOW POWER").withStyle(ChatFormatting.RED), true);
+            }
         }
         return true;
     }

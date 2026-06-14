@@ -14,6 +14,7 @@ import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
@@ -103,13 +104,11 @@ public class ModCreativeTabs {
 //                        VERDITE_SPOOL
 
                         ENERGY_STORAGE_MODULE,
-                        POWER_DRILL,
-
-                        ROBOTIC_ARM_SEGMENT,
-                        ADDRESS_PAD
-
+                        ROBOTIC_ARM_SEGMENT
 
                         );
+                addPoweredTools(parameters, output);
+                output.accept(ADDRESS_PAD.get());
                 addPaintings(parameters, output);
             }).build());
 
@@ -153,6 +152,13 @@ public class ModCreativeTabs {
                 output.accept(item);
             }
         }
+    }
+
+    private static void addPoweredTools(CreativeModeTab.ItemDisplayParameters parameters, CreativeModeTab.Output output) {
+        ItemStack powerDrill = new ItemStack(POWER_DRILL.get());
+        powerDrill.getCapability(ForgeCapabilities.ENERGY).orElseThrow(IllegalArgumentException::new).receiveEnergy(PowerDrillItem.MAX_ENERGY, false);
+
+        output.accept(powerDrill);
     }
 
     private static void addPaintings(CreativeModeTab.ItemDisplayParameters parameters, CreativeModeTab.Output output) {

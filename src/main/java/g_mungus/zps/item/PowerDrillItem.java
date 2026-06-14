@@ -30,7 +30,7 @@ import java.util.List;
 
 public class PowerDrillItem extends DiggerItem {
     private static final String ENERGY_TAG = "Energy";
-    private static final int MAX_ENERGY = 128_000;
+    public static final int MAX_ENERGY = 128_000;
     private static final int ENERGY_PER_BLOCK = 96;
     private static final int ENERGY_BAR_COLOR = 0x55FFFF;
     private static final float EFFICIENCY_FIVE_SPEED_BONUS = 26.0F;

@@ -1,10 +1,12 @@
 package g_mungus.zps.item;
 
+import g_mungus.zps.client.renderer.PowerDrillItemRenderer;
 import g_mungus.zps.util.NumberFormatter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
@@ -23,13 +25,18 @@ import net.minecraftforge.common.capabilities.ICapabilitySerializable;
 import net.minecraftforge.common.TierSortingRegistry;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.energy.IEnergyStorage;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 public class PowerDrillItem extends DiggerItem {
     private static final String ENERGY_TAG = "Energy";
+    private static final String LAST_POWERED_USE_TICK_TAG = "LastPoweredUseTick";
     public static final int MAX_ENERGY = 128_000;
     private static final int ENERGY_PER_BLOCK = 96;
     private static final int ENERGY_BAR_COLOR = 0x55FFFF;
@@ -37,6 +44,19 @@ public class PowerDrillItem extends DiggerItem {
 
     public PowerDrillItem(Properties properties) {
         super(1.0F, -2.8F, Tiers.IRON, BlockTags.MINEABLE_WITH_PICKAXE, properties.setNoRepair());
+    }
+
+    @Override
+    @OnlyIn(Dist.CLIENT)
+    public void initializeClient(Consumer<IClientItemExtensions> consumer) {
+        consumer.accept(new IClientItemExtensions() {
+            private final PowerDrillItemRenderer renderer = new PowerDrillItemRenderer();
+
+            @Override
+            public BlockEntityWithoutLevelRenderer getCustomRenderer() {
+                return renderer;
+            }
+        });
     }
 
     @Override
@@ -57,10 +77,13 @@ public class PowerDrillItem extends DiggerItem {
 
     @Override
     public boolean mineBlock(ItemStack stack, Level level, BlockState state, BlockPos pos, LivingEntity entity) {
-        if (!level.isClientSide && state.getDestroySpeed(level, pos) != 0.0F && hasEnergyForBlock(stack) && isDrillMineable(state)) {
-            extractEnergy(stack, ENERGY_PER_BLOCK, false);
-            if (!hasEnergyForBlock(stack) && entity instanceof ServerPlayer player) {
-                player.displayClientMessage(Component.literal("LOW POWER").withStyle(ChatFormatting.RED), true);
+        if (state.getDestroySpeed(level, pos) != 0.0F && hasEnergyForBlock(stack) && isDrillMineable(state)) {
+            markPoweredUse(stack, level);
+            if (!level.isClientSide) {
+                extractEnergy(stack, ENERGY_PER_BLOCK, false);
+                if (!hasEnergyForBlock(stack) && entity instanceof ServerPlayer player) {
+                    player.displayClientMessage(Component.literal("LOW POWER").withStyle(ChatFormatting.RED), true);
+                }
             }
         }
         return true;
@@ -68,6 +91,9 @@ public class PowerDrillItem extends DiggerItem {
 
     @Override
     public boolean hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
+        if (hasEnergyForBlock(stack)) {
+            markPoweredUse(stack, attacker.level());
+        }
         return true;
     }
 
@@ -131,13 +157,22 @@ public class PowerDrillItem extends DiggerItem {
         return state.is(BlockTags.MINEABLE_WITH_PICKAXE) || state.is(BlockTags.MINEABLE_WITH_SHOVEL);
     }
 
-    private static boolean hasEnergyForBlock(ItemStack stack) {
+    public static boolean hasEnergyForBlock(ItemStack stack) {
         return getStoredEnergy(stack) >= ENERGY_PER_BLOCK;
+    }
+
+    public static long getLastPoweredUseTick(ItemStack stack) {
+        CompoundTag tag = stack.getTag();
+        return tag == null ? Long.MIN_VALUE : tag.getLong(LAST_POWERED_USE_TICK_TAG);
     }
 
     private static int getStoredEnergy(ItemStack stack) {
         CompoundTag tag = stack.getTag();
         return tag == null ? 0 : Math.min(tag.getInt(ENERGY_TAG), MAX_ENERGY);
+    }
+
+    private static void markPoweredUse(ItemStack stack, Level level) {
+        stack.getOrCreateTag().putLong(LAST_POWERED_USE_TICK_TAG, level.getGameTime());
     }
 
     private static void setStoredEnergy(ItemStack stack, int energy) {

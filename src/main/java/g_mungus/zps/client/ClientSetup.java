@@ -16,6 +16,7 @@ import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.minecraft.client.renderer.entity.EntityRenderers;
+import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ModelEvent;
@@ -35,6 +36,8 @@ public class ClientSetup {
             new ModelResourceLocation(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "robotic_arm_swivel_base"), "inventory");
     private static final ModelResourceLocation POWER_CELL_DIVIDER_BER_MODEL =
             new ModelResourceLocation(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "power_cell_divider"), "inventory");
+    private static final ModelResourceLocation POWER_DRILL_MODEL =
+            new ModelResourceLocation(ZPSMod.resource("power_drill"), "inventory");
 
     @SubscribeEvent
     public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
@@ -47,6 +50,16 @@ public class ClientSetup {
         event.register(ROBOTIC_ARM_SEGMENT_BER_MODEL);
         event.register(ROBOTIC_ARM_SWIVEL_BASE_BER_MODEL);
         event.register(POWER_CELL_DIVIDER_BER_MODEL);
+        event.register(PowerDrillItemRenderer.BASE_MODEL);
+        event.register(PowerDrillItemRenderer.HEAD_MODEL);
+    }
+
+    @SubscribeEvent
+    public static void onModifyBakingResult(ModelEvent.ModifyBakingResult event) {
+        BakedModel powerDrillModel = event.getModels().get(POWER_DRILL_MODEL);
+        if (powerDrillModel != null) {
+            event.getModels().put(POWER_DRILL_MODEL, new CustomRendererItemModel(powerDrillModel));
+        }
     }
 
     @SuppressWarnings("removal")

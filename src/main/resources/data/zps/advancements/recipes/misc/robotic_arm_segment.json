@@ -1,0 +1,61 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_space_metal_ingot": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "zps:space_metal_ingot"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_space_metal_mesh": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "zps:space_metal_mesh"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_space_metal_rod": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "zps:space_metal_rod"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "zps:robotic_arm_segment"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_space_metal_ingot",
+      "has_space_metal_mesh",
+      "has_space_metal_rod",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "zps:robotic_arm_segment"
+    ]
+  },
+  "sends_telemetry_event": false
+}

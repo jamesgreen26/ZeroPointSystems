@@ -1,0 +1,46 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_ingots_space_metal": {
+      "conditions": {
+        "items": [
+          {
+            "tag": "forge:ingots/space_metal"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_space_metal_mesh": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "zps:space_metal_mesh"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "zps:space_mesh_block"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_ingots_space_metal",
+      "has_space_metal_mesh",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "zps:space_mesh_block"
+    ]
+  },
+  "sends_telemetry_event": false
+}

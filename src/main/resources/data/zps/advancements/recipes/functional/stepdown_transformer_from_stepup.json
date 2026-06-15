@@ -1,0 +1,35 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_stepup_transformer": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "zps:stepup_transformer"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "zps:stepdown_transformer_from_stepup"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_stepup_transformer",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "zps:stepdown_transformer_from_stepup"
+    ]
+  },
+  "sends_telemetry_event": false
+}

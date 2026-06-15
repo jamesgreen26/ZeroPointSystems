@@ -1,6 +1,6 @@
 {
   "type": "minecraft:crafting_shaped",
-  "category": "functional",
+  "category": "redstone",
   "key": {
     "R": {
       "tag": "forge:rods/space_metal"

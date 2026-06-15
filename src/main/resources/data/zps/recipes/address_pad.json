@@ -1,9 +1,13 @@
 {
   "type": "minecraft:crafting_shaped",
-  "category": "functional",
+  "category": "redstone",
   "key": {
-    "P": { "item": "minecraft:paper" },
-    "S": { "tag": "minecraft:wooden_slabs" }
+    "P": {
+      "item": "minecraft:paper"
+    },
+    "S": {
+      "tag": "minecraft:wooden_slabs"
+    }
   },
   "pattern": [
     "P",

@@ -1,6 +1,6 @@
 {
   "type": "minecraft:crafting_shaped",
-  "category": "functional",
+  "category": "misc",
   "key": {
     "B": {
       "tag": "forge:ingots/space_metal"

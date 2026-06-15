@@ -1,16 +1,34 @@
 {
   "type": "minecraft:crafting_shaped",
-  "category": "functional",
+  "category": "redstone",
   "key": {
-    "A": { "tag": "forge:ingots/space_metal" },
-    "B": { "tag": "forge:ingots/space_metal" },
-    "C": { "item": "minecraft:tinted_glass" },
-    "D": { "item": "zps:light_pipe_cable" },
-    "E": { "item": "minecraft:repeater" },
-    "F": { "item": "minecraft:tinted_glass" },
-    "G": { "tag": "forge:ingots/space_metal" },
-    "H": { "tag": "forge:ingots/space_metal" },
-    "I": { "item": "minecraft:tinted_glass" }
+    "A": {
+      "tag": "forge:ingots/space_metal"
+    },
+    "B": {
+      "tag": "forge:ingots/space_metal"
+    },
+    "C": {
+      "item": "minecraft:tinted_glass"
+    },
+    "D": {
+      "item": "zps:light_pipe_cable"
+    },
+    "E": {
+      "item": "minecraft:repeater"
+    },
+    "F": {
+      "item": "minecraft:tinted_glass"
+    },
+    "G": {
+      "tag": "forge:ingots/space_metal"
+    },
+    "H": {
+      "tag": "forge:ingots/space_metal"
+    },
+    "I": {
+      "item": "minecraft:tinted_glass"
+    }
   },
   "pattern": [
     "ABC",

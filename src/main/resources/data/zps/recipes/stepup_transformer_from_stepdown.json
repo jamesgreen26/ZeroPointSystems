@@ -1,6 +1,6 @@
 {
   "type": "minecraft:crafting_shaped",
-  "category": "functional",
+  "category": "redstone",
   "key": {
     "T": {
       "item": "zps:stepdown_transformer"

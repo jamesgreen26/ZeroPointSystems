@@ -1,6 +1,6 @@
 {
   "type": "minecraft:crafting_shaped",
-  "category": "functional",
+  "category": "redstone",
   "key": {
     "I": {
       "tag": "forge:ingots/space_metal"

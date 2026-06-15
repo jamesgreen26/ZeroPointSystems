@@ -1,14 +1,28 @@
 {
   "type": "minecraft:crafting_shaped",
-  "category": "functional",
+  "category": "redstone",
   "key": {
-    "B": { "item": "zps:light_pipe_cable" },
-    "D": { "tag": "forge:ingots/space_metal" },
-    "E": { "tag": "forge:ingots/space_metal" },
-    "F": { "tag": "forge:ingots/space_metal" },
-    "G": { "item": "minecraft:quartz" },
-    "H": { "item": "minecraft:quartz" },
-    "I": { "item": "minecraft:quartz" }
+    "B": {
+      "item": "zps:light_pipe_cable"
+    },
+    "D": {
+      "tag": "forge:ingots/space_metal"
+    },
+    "E": {
+      "tag": "forge:ingots/space_metal"
+    },
+    "F": {
+      "tag": "forge:ingots/space_metal"
+    },
+    "G": {
+      "item": "minecraft:quartz"
+    },
+    "H": {
+      "item": "minecraft:quartz"
+    },
+    "I": {
+      "item": "minecraft:quartz"
+    }
   },
   "pattern": [
     " B ",

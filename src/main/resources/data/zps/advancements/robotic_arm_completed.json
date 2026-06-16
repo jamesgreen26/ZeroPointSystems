@@ -1,11 +1,14 @@
 {
+  "parent": "zps:root",
   "display": {
     "icon": {
       "item": "zps:robotic_arm"
     },
     "title": "Wrrrrrrrrr... Clunk",
-    "description": "Construct a complete Robotic Arm.",
-    "background": "minecraft:textures/block/black_concrete.png",
+    "description": {
+      "color": "#4C99C9",
+      "text": "Construct a complete Robotic Arm."
+    },
     "frame": "goal",
     "show_toast": true,
     "announce_to_chat": false,

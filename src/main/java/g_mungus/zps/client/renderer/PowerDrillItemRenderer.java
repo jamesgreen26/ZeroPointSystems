@@ -36,6 +36,7 @@ public class PowerDrillItemRenderer extends BlockEntityWithoutLevelRenderer {
     private static final float STALE_STATE_TICKS = 20 * 60;
     private static final float STATE_CLEANUP_INTERVAL_TICKS = 20 * 10;
     private static final double NANOS_PER_TICK = 50_000_000.0;
+    private static final double GROUND_MODEL_Z_OFFSET = 4.0D / 16.0D;
 
     private final RandomSource random = RandomSource.create();
     private final Map<Long, DrillRenderState> renderStates = new HashMap<>();
@@ -57,6 +58,10 @@ public class PowerDrillItemRenderer extends BlockEntityWithoutLevelRenderer {
         BakedModel head = minecraft.getModelManager().getModel(HEAD_MODEL);
 
         poseStack.pushPose();
+        if (displayContext == ItemDisplayContext.GROUND) {
+            poseStack.translate(0.0D, 0.0D, GROUND_MODEL_Z_OFFSET);
+        }
+
         poseStack.translate(0.5F, 0.5F, 0.5F);
 
         renderModel(base, stack, poseStack, bufferSource, packedLight, packedOverlay);

@@ -38,6 +38,8 @@ public class ClientSetup {
             new ModelResourceLocation(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "power_cell_divider"), "inventory");
     private static final ModelResourceLocation POWER_DRILL_MODEL =
             new ModelResourceLocation(ZPSMod.resource("power_drill"), "inventory");
+    private static final ModelResourceLocation CHAINSAW_MODEL =
+            new ModelResourceLocation(ZPSMod.resource("chainsaw"), "inventory");
 
     @SubscribeEvent
     public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
@@ -50,8 +52,9 @@ public class ClientSetup {
         event.register(ROBOTIC_ARM_SEGMENT_BER_MODEL);
         event.register(ROBOTIC_ARM_SWIVEL_BASE_BER_MODEL);
         event.register(POWER_CELL_DIVIDER_BER_MODEL);
-        event.register(PowerDrillItemRenderer.BASE_MODEL);
-        event.register(PowerDrillItemRenderer.HEAD_MODEL);
+        event.register(PoweredToolItemRenderer.BASE_MODEL);
+        event.register(PoweredToolItemRenderer.HEAD_MODEL);
+        event.register(ChainsawItemRenderer.BLADE_MODEL);
     }
 
     @SubscribeEvent
@@ -59,6 +62,10 @@ public class ClientSetup {
         BakedModel powerDrillModel = event.getModels().get(POWER_DRILL_MODEL);
         if (powerDrillModel != null) {
             event.getModels().put(POWER_DRILL_MODEL, new CustomRendererItemModel(powerDrillModel));
+        }
+        BakedModel chainsawModel = event.getModels().get(CHAINSAW_MODEL);
+        if (chainsawModel != null) {
+            event.getModels().put(CHAINSAW_MODEL, new CustomRendererItemModel(chainsawModel));
         }
     }
 

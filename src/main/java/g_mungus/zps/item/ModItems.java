@@ -114,6 +114,8 @@ public class ModItems {
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<PowerDrillItem> POWER_DRILL = ITEMS.register("power_drill",
             () -> new PowerDrillItem(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<ChainsawItem> CHAINSAW = ITEMS.register("chainsaw",
+            () -> new ChainsawItem(new Item.Properties().stacksTo(1)));
 
     public static final RegistryObject<Item> SPACE_METAL_INGOT = ITEMS.register("space_metal_ingot",
         () -> new Item(new Item.Properties()));

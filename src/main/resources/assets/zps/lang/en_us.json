@@ -142,6 +142,8 @@
     "item.zps.energy_storage_module": "Energy Storage Module",
     "item.zps.power_drill": "Power Drill",
     "item.zps.power_drill.energy": "Stored Energy: %s / %s FE",
+    "item.zps.chainsaw": "Chainsaw",
+    "item.zps.chainsaw.energy": "Stored Energy: %s / %s FE",
     "item.zps.octo_controller": "Octo-Controller",
     "item.zps.dodeca_controller": "Dodeca-Controller",
     "item.zps.switch_panel": "Switch Panel",

@@ -156,9 +156,12 @@ public class ModCreativeTabs {
 
     private static void addPoweredTools(CreativeModeTab.ItemDisplayParameters parameters, CreativeModeTab.Output output) {
         ItemStack powerDrill = new ItemStack(POWER_DRILL.get());
-        powerDrill.getCapability(ForgeCapabilities.ENERGY).orElseThrow(IllegalArgumentException::new).receiveEnergy(PowerDrillItem.MAX_ENERGY, false);
+        powerDrill.getCapability(ForgeCapabilities.ENERGY).orElseThrow(IllegalArgumentException::new).receiveEnergy(PoweredToolItem.MAX_ENERGY, false);
+        ItemStack chainsaw = new ItemStack(CHAINSAW.get());
+        chainsaw.getCapability(ForgeCapabilities.ENERGY).orElseThrow(IllegalArgumentException::new).receiveEnergy(PoweredToolItem.MAX_ENERGY, false);
 
         output.accept(powerDrill);
+        output.accept(chainsaw);
     }
 
     private static void addPaintings(CreativeModeTab.ItemDisplayParameters parameters, CreativeModeTab.Output output) {

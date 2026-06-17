@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGeneratorBE, MenuProvider {
     private static final int MAX_ENERGY = 8192;
     private static final int MAX_OUTPUT = 256;
-    private static final int FE_PER_TICK = 64;
+    private static final int FE_PER_TICK = 32;
 
     private final GeneratorEnergyStorage energyStorage = new GeneratorEnergyStorage();
     private final FuelItemStackHandler fuelInventory = new FuelItemStackHandler();

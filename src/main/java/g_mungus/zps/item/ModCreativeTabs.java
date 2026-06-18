@@ -18,6 +18,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.CustomData;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -65,6 +66,12 @@ public class ModCreativeTabs {
                         RADIO_RECEIVER,
                         RADIO_ANTENNA,
 
+                        INCOMPLETE_ROBOTIC_ARM_0,
+                        ROBOTIC_ARM,
+                        CREATIVE_POWER_CELL,
+                        POWER_CELL,
+                        COAL_BURNER,
+
                         BAUXITE,
                         LITHIUM_ORE,
                         DEEPSLATE_LITHIUM_ORE,
@@ -83,7 +90,7 @@ public class ModCreativeTabs {
 
 //                        SPACE_METAL_PLATE,
                         SPACE_METAL_MESH,
-                        SPACE_METAL_ROD
+                        SPACE_METAL_ROD,
 //                        SPACE_METAL_PIPE,
 //                        SPACE_METAL_SCREW,
 //                        SPACE_METAL_BOLT,
@@ -91,16 +98,22 @@ public class ModCreativeTabs {
 //                        CAPACITOR,
 //                        TRANSISTOR,
 //                        MODULATOR,
-//                        COPPER_MAGNETRON,
+                        COPPER_MAGNETRON,
 //                        GOLD_MAGNETRON,
-//                        COPPER_WIRE,
+                        COPPER_WIRE,
 //                        GOLD_WIRE,
 //                        VERDITE_WIRE,
 //                        EMPTY_SPOOL,
 //                        COPPER_SPOOL,
 //                        GOLD_SPOOL,
 //                        VERDITE_SPOOL
-                );
+
+                        ENERGY_STORAGE_MODULE,
+                        ROBOTIC_ARM_SEGMENT
+
+                        );
+                addPoweredTools(parameters, output);
+                output.accept(ADDRESS_PAD.get());
                 addPaintings(parameters, output);
             }).build());
 
@@ -144,6 +157,22 @@ public class ModCreativeTabs {
                 output.accept(item);
             }
         }
+    }
+
+    private static void addPoweredTools(CreativeModeTab.ItemDisplayParameters parameters, CreativeModeTab.Output output) {
+        ItemStack powerDrill = new ItemStack(POWER_DRILL.get());
+        var powerDrillEnergy = powerDrill.getCapability(Capabilities.EnergyStorage.ITEM);
+        if (powerDrillEnergy != null) {
+            powerDrillEnergy.receiveEnergy(PoweredToolItem.MAX_ENERGY, false);
+        }
+        ItemStack chainsaw = new ItemStack(CHAINSAW.get());
+        var chainsawEnergy = chainsaw.getCapability(Capabilities.EnergyStorage.ITEM);
+        if (chainsawEnergy != null) {
+            chainsawEnergy.receiveEnergy(PoweredToolItem.MAX_ENERGY, false);
+        }
+
+        output.accept(powerDrill);
+        output.accept(chainsaw);
     }
 
     private static void addPaintings(CreativeModeTab.ItemDisplayParameters parameters, CreativeModeTab.Output output) {

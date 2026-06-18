@@ -1,0 +1,36 @@
+{
+  "parent": "zps:root",
+  "display": {
+    "icon": {
+      "item": "zps:robotic_arm"
+    },
+    "title": "Wrrrrrrrrr... Clunk",
+    "description": {
+      "color": "#4C99C9",
+      "text": "Construct a complete Robotic Arm."
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "has_robotic_arm": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "zps:robotic_arm"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_robotic_arm"
+    ]
+  ]
+}

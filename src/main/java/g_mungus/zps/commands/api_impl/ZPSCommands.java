@@ -15,6 +15,7 @@ import g_mungus.zps.commands.api.ScriptGetter;
 import g_mungus.zps.commands.api.ScriptMapper;
 import g_mungus.zps.commands.api.ScriptNode;
 import g_mungus.zps.commands.api_impl.debug.BrigadierCanvasExporter;
+import g_mungus.zps.commands.debug.SetHeldItemEnergyCommand;
 import g_mungus.zps.networking.ExecutorBlocksS2CPacket;
 import g_mungus.zps.networking.GetterBlocksS2CPacket;
 import g_mungus.zps.networking.ZPSGamePackets;
@@ -73,6 +74,10 @@ public class ZPSCommands {
                         ))
         );
 
+        // RegisterCommandsEvent fires again on /reload; without clearing, structurally
+        // identical nodes that lack value-based equality accumulate as duplicates and
+        // produce ambiguous duplicate branches in the rebuilt tree.
+        Registry.clear();
         NeoForge.EVENT_BUS.post(new RegisterScriptCommandsEvent(Registry::register, buildContext));
 
 
@@ -86,6 +91,8 @@ public class ZPSCommands {
         commandTreeBuilder.buildExecutors();
 
         if (!FMLLoader.isProduction()) {
+            dispatcher.register(SetHeldItemEnergyCommand.COMMAND);
+
             try {
                 String output = new BrigadierCanvasExporter<CommandSourceStack>().export(dispatcher.getRoot().getChild(Paths.INTERNAL));
                 Files.writeString(Path.of("commands.canvas"), output);

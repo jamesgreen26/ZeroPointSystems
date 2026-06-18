@@ -1,0 +1,46 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_cable": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "zps:cable"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_ingots_space_metal": {
+      "conditions": {
+        "items": [
+          {
+            "tag": "c:ingots/space_metal"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "zps:stepup_transformer"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_cable",
+      "has_ingots_space_metal",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "zps:stepup_transformer"
+    ]
+  },
+  "sends_telemetry_event": false
+}

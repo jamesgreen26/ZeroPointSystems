@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "S": {
+      "item": "zps:space_metal_ingot"
+    },
+    "C": {
+      "item": "zps:copper_magnetron"
+    },
+    "E": {
+      "item": "zps:energy_storage_module"
+    }
+  },
+  "pattern": [
+    " II",
+    "SCI",
+    "ES "
+  ],
+  "result": {
+    "id": "zps:power_drill",
+    "count": 1
+  },
+  "show_notification": true
+}

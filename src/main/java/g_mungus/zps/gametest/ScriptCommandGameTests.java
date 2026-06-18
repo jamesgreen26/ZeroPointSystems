@@ -478,6 +478,365 @@ public class ScriptCommandGameTests {
     }
 
     /**
+     * First condition false, second condition true: should execute the
+     * {@code else if} branch.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_ifElseIf_firstFalseSecondTrue_executesElseIf(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+        BlockPos falsePos = absPos.offset(1, 0, 0);
+
+        int result = runScriptCommand(
+                helper,
+                absPos,
+                "if pos == " + falsePos.getX() + " " + falsePos.getY() + " " + falsePos.getZ()
+                        + " set_redstone 1 else if pos == " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ()
+                        + " set_redstone 2 else set_redstone 3"
+        );
+        if (result != 1) {
+            helper.fail("zps_script if/else if returned " + result + " instead of 1");
+            return;
+        }
+
+        assertStoredRedstone(helper, absPos, 2, "zps_script if/else if");
+        helper.succeed();
+    }
+
+    /**
+     * First condition true, second condition false: should execute the first
+     * {@code if} branch.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_ifElseIf_firstTrueSecondFalse_executesIf(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+        BlockPos falsePos = absPos.offset(1, 0, 0);
+
+        int result = runScriptCommand(
+                helper,
+                absPos,
+                "if pos == " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ()
+                        + " set_redstone 1 else if pos == " + falsePos.getX() + " " + falsePos.getY() + " " + falsePos.getZ()
+                        + " set_redstone 2 else set_redstone 3"
+        );
+        if (result != 1) {
+            helper.fail("zps_script if/else if first-true second-false returned " + result + " instead of 1");
+            return;
+        }
+
+        assertStoredRedstone(helper, absPos, 1, "zps_script if/else if first-true second-false");
+        helper.succeed();
+    }
+
+    /**
+     * Both conditions true: should execute the first {@code if} branch.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_ifElseIf_bothTrue_executesFirstIf(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+
+        int result = runScriptCommand(
+                helper,
+                absPos,
+                "if pos == " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ()
+                        + " set_redstone 1 else if pos == " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ()
+                        + " set_redstone 2 else set_redstone 3"
+        );
+        if (result != 1) {
+            helper.fail("zps_script if/else if both-true returned " + result + " instead of 1");
+            return;
+        }
+
+        assertStoredRedstone(helper, absPos, 1, "zps_script if/else if both-true");
+        helper.succeed();
+    }
+
+    /**
+     * Both conditions false: should execute the {@code else} branch.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_ifElseIf_bothFalse_executesElse(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+        BlockPos falsePosA = absPos.offset(1, 0, 0);
+        BlockPos falsePosB = absPos.offset(2, 0, 0);
+
+        int result = runScriptCommand(
+                helper,
+                absPos,
+                "if pos == " + falsePosA.getX() + " " + falsePosA.getY() + " " + falsePosA.getZ()
+                        + " set_redstone 1 else if pos == " + falsePosB.getX() + " " + falsePosB.getY() + " " + falsePosB.getZ()
+                        + " set_redstone 2 else set_redstone 3"
+        );
+        if (result != 1) {
+            helper.fail("zps_script if/else if both-false returned " + result + " instead of 1");
+            return;
+        }
+
+        assertStoredRedstone(helper, absPos, 3, "zps_script if/else if both-false");
+        helper.succeed();
+    }
+
+    /**
+     * unless C1 A else if C2 B else C, with C1=true and C2=true: executes B.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_unlessElseIf_c1TrueC2True_executesElseIf(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+
+        int result = runScriptCommand(
+                helper,
+                absPos,
+                "unless pos == " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ()
+                        + " set_redstone 1 else if pos == " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ()
+                        + " set_redstone 2 else set_redstone 3"
+        );
+        if (result != 1) {
+            helper.fail("zps_script unless/else if c1=true c2=true returned " + result + " instead of 1");
+            return;
+        }
+
+        assertStoredRedstone(helper, absPos, 2, "zps_script unless/else if c1=true c2=true");
+        helper.succeed();
+    }
+
+    /**
+     * unless C1 A else if C2 B else C, with C1=true and C2=false: executes C.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_unlessElseIf_c1TrueC2False_executesElse(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+        BlockPos falsePos = absPos.offset(1, 0, 0);
+
+        int result = runScriptCommand(
+                helper,
+                absPos,
+                "unless pos == " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ()
+                        + " set_redstone 1 else if pos == " + falsePos.getX() + " " + falsePos.getY() + " " + falsePos.getZ()
+                        + " set_redstone 2 else set_redstone 3"
+        );
+        if (result != 1) {
+            helper.fail("zps_script unless/else if c1=true c2=false returned " + result + " instead of 1");
+            return;
+        }
+
+        assertStoredRedstone(helper, absPos, 3, "zps_script unless/else if c1=true c2=false");
+        helper.succeed();
+    }
+
+    /**
+     * unless C1 A else if C2 B else C, with C1=false and C2=true: executes A.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_unlessElseIf_c1FalseC2True_executesUnless(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+        BlockPos falsePosA = absPos.offset(1, 0, 0);
+
+        int result = runScriptCommand(
+                helper,
+                absPos,
+                "unless pos == " + falsePosA.getX() + " " + falsePosA.getY() + " " + falsePosA.getZ()
+                        + " set_redstone 1 else if pos == " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ()
+                        + " set_redstone 2 else set_redstone 3"
+        );
+        if (result != 1) {
+            helper.fail("zps_script unless/else if c1=false c2=true returned " + result + " instead of 1");
+            return;
+        }
+
+        assertStoredRedstone(helper, absPos, 1, "zps_script unless/else if c1=false c2=true");
+        helper.succeed();
+    }
+
+    /**
+     * unless C1 A else if C2 B else C, with C1=false and C2=false: executes A.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_unlessElseIf_c1FalseC2False_executesUnless(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+        BlockPos falsePos = absPos.offset(1, 0, 0);
+
+        int result = runScriptCommand(
+                helper,
+                absPos,
+                "unless pos == " + falsePos.getX() + " " + falsePos.getY() + " " + falsePos.getZ()
+                        + " set_redstone 1 else if pos == " + falsePos.getX() + " " + falsePos.getY() + " " + falsePos.getZ()
+                        + " set_redstone 2 else set_redstone 3"
+        );
+        if (result != 1) {
+            helper.fail("zps_script unless/else if c1=false c2=false returned " + result + " instead of 1");
+            return;
+        }
+
+        assertStoredRedstone(helper, absPos, 1, "zps_script unless/else if c1=false c2=false");
+        helper.succeed();
+    }
+
+    /**
+     * if C1 A else if C2 B else if C3 C else D, with C1=true C2=true C3=true:
+     * executes A.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_ifElseIfElseIf_c1TrueC2TrueC3True_executesFirstIf(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+        int result = runScriptCommand(helper, absPos,
+                "if pos == " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ()
+                        + " set_redstone 1 else if pos == " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ()
+                        + " set_redstone 2 else if pos == " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ()
+                        + " set_redstone 3 else set_redstone 4");
+        if (result != 1) {
+            helper.fail("zps_script if/else if/else if c1=true c2=true c3=true returned " + result + " instead of 1");
+            return;
+        }
+        assertStoredRedstone(helper, absPos, 1, "zps_script if/else if/else if c1=true c2=true c3=true");
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_ifElseIfElseIf_c1TrueC2TrueC3False_executesFirstIf(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+        BlockPos falsePos = absPos.offset(1, 0, 0);
+        int result = runScriptCommand(helper, absPos,
+                "if pos == " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ()
+                        + " set_redstone 1 else if pos == " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ()
+                        + " set_redstone 2 else if pos == " + falsePos.getX() + " " + falsePos.getY() + " " + falsePos.getZ()
+                        + " set_redstone 3 else set_redstone 4");
+        if (result != 1) {
+            helper.fail("zps_script if/else if/else if c1=true c2=true c3=false returned " + result + " instead of 1");
+            return;
+        }
+        assertStoredRedstone(helper, absPos, 1, "zps_script if/else if/else if c1=true c2=true c3=false");
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_ifElseIfElseIf_c1TrueC2FalseC3True_executesFirstIf(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+        BlockPos falsePos = absPos.offset(1, 0, 0);
+        int result = runScriptCommand(helper, absPos,
+                "if pos == " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ()
+                        + " set_redstone 1 else if pos == " + falsePos.getX() + " " + falsePos.getY() + " " + falsePos.getZ()
+                        + " set_redstone 2 else if pos == " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ()
+                        + " set_redstone 3 else set_redstone 4");
+        if (result != 1) {
+            helper.fail("zps_script if/else if/else if c1=true c2=false c3=true returned " + result + " instead of 1");
+            return;
+        }
+        assertStoredRedstone(helper, absPos, 1, "zps_script if/else if/else if c1=true c2=false c3=true");
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_ifElseIfElseIf_c1TrueC2FalseC3False_executesFirstIf(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+        BlockPos falsePosA = absPos.offset(1, 0, 0);
+        BlockPos falsePosB = absPos.offset(2, 0, 0);
+        int result = runScriptCommand(helper, absPos,
+                "if pos == " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ()
+                        + " set_redstone 1 else if pos == " + falsePosA.getX() + " " + falsePosA.getY() + " " + falsePosA.getZ()
+                        + " set_redstone 2 else if pos == " + falsePosB.getX() + " " + falsePosB.getY() + " " + falsePosB.getZ()
+                        + " set_redstone 3 else set_redstone 4");
+        if (result != 1) {
+            helper.fail("zps_script if/else if/else if c1=true c2=false c3=false returned " + result + " instead of 1");
+            return;
+        }
+        assertStoredRedstone(helper, absPos, 1, "zps_script if/else if/else if c1=true c2=false c3=false");
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_ifElseIfElseIf_c1FalseC2TrueC3True_executesSecondIf(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+        BlockPos falsePos = absPos.offset(1, 0, 0);
+        int result = runScriptCommand(helper, absPos,
+                "if pos == " + falsePos.getX() + " " + falsePos.getY() + " " + falsePos.getZ()
+                        + " set_redstone 1 else if pos == " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ()
+                        + " set_redstone 2 else if pos == " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ()
+                        + " set_redstone 3 else set_redstone 4");
+        if (result != 1) {
+            helper.fail("zps_script if/else if/else if c1=false c2=true c3=true returned " + result + " instead of 1");
+            return;
+        }
+        assertStoredRedstone(helper, absPos, 2, "zps_script if/else if/else if c1=false c2=true c3=true");
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_ifElseIfElseIf_c1FalseC2TrueC3False_executesSecondIf(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+        BlockPos falsePosA = absPos.offset(1, 0, 0);
+        BlockPos falsePosB = absPos.offset(2, 0, 0);
+        int result = runScriptCommand(helper, absPos,
+                "if pos == " + falsePosA.getX() + " " + falsePosA.getY() + " " + falsePosA.getZ()
+                        + " set_redstone 1 else if pos == " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ()
+                        + " set_redstone 2 else if pos == " + falsePosB.getX() + " " + falsePosB.getY() + " " + falsePosB.getZ()
+                        + " set_redstone 3 else set_redstone 4");
+        if (result != 1) {
+            helper.fail("zps_script if/else if/else if c1=false c2=true c3=false returned " + result + " instead of 1");
+            return;
+        }
+        assertStoredRedstone(helper, absPos, 2, "zps_script if/else if/else if c1=false c2=true c3=false");
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_ifElseIfElseIf_c1FalseC2FalseC3True_executesThirdIf(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+        BlockPos falsePos = absPos.offset(1, 0, 0);
+        int result = runScriptCommand(helper, absPos,
+                "if pos == " + falsePos.getX() + " " + falsePos.getY() + " " + falsePos.getZ()
+                        + " set_redstone 1 else if pos == " + falsePos.getX() + " " + falsePos.getY() + " " + falsePos.getZ()
+                        + " set_redstone 2 else if pos == " + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ()
+                        + " set_redstone 3 else set_redstone 4");
+        if (result != 1) {
+            helper.fail("zps_script if/else if/else if c1=false c2=false c3=true returned " + result + " instead of 1");
+            return;
+        }
+        assertStoredRedstone(helper, absPos, 3, "zps_script if/else if/else if c1=false c2=false c3=true");
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_ifElseIfElseIf_c1FalseC2FalseC3False_executesElse(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+        BlockPos falsePosA = absPos.offset(1, 0, 0);
+        BlockPos falsePosB = absPos.offset(2, 0, 0);
+        BlockPos falsePosC = absPos.offset(3, 0, 0);
+        int result = runScriptCommand(helper, absPos,
+                "if pos == " + falsePosA.getX() + " " + falsePosA.getY() + " " + falsePosA.getZ()
+                        + " set_redstone 1 else if pos == " + falsePosB.getX() + " " + falsePosB.getY() + " " + falsePosB.getZ()
+                        + " set_redstone 2 else if pos == " + falsePosC.getX() + " " + falsePosC.getY() + " " + falsePosC.getZ()
+                        + " set_redstone 3 else set_redstone 4");
+        if (result != 1) {
+            helper.fail("zps_script if/else if/else if c1=false c2=false c3=false returned " + result + " instead of 1");
+            return;
+        }
+        assertStoredRedstone(helper, absPos, 4, "zps_script if/else if/else if c1=false c2=false c3=false");
+        helper.succeed();
+    }
+
+    /**
+     * {@code if pos == value_of(pos offset_y 1 offset_y -1) set_redstone 15}
+     * should evaluate to true because the nested value_of returns the original
+     * position after inverse offsets.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_ifPosEqualsValueOfOffsetChain_setsRedstone15(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+
+        int result = runScriptCommand(
+                helper,
+                absPos,
+                "if pos == value_of(pos offset_y 1 offset_y -1) set_redstone 15"
+        );
+        if (result != 1) {
+            helper.fail("zps_script if pos == value_of(pos offset_y 1 offset_y -1) returned " + result + " instead of 1");
+            return;
+        }
+
+        assertStoredRedstone(helper, absPos, 15, "zps_script if pos == value_of(pos offset_y 1 offset_y -1)");
+        helper.succeed();
+    }
+
+    /**
      * Nested {@code value_of(...)} should work through the public command path,
      * not just the inner dispatcher helper.
      */

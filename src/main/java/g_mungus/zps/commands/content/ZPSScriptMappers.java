@@ -12,9 +12,11 @@ import net.minecraft.commands.arguments.DimensionArgument;
 import net.minecraft.commands.arguments.blocks.BlockPredicateArgument;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.commands.arguments.coordinates.Coordinates;
+import net.minecraft.commands.arguments.item.ItemPredicateArgument;
 import net.minecraft.commands.arguments.coordinates.Vec3Argument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.pattern.BlockInWorld;
 import net.minecraft.world.phys.Vec3;
@@ -83,6 +85,58 @@ public class ZPSScriptMappers {
                 ResourceLocation.parse("zps:block_pos"),
                 ResourceLocation.parse("zps:vec_pos"),
                 (blockPos, scriptContext) -> blockPos.getCenter()
+        ));
+
+        event.register(new ScriptMapper2<>(
+                "offset_x",
+                BlockPos.class,
+                BlockPos.class,
+                ResourceLocation.parse("zps:block_pos"),
+                ResourceLocation.parse("zps:block_pos"),
+                "int",
+                (blockPos, context) -> blockPos.offset(context.argumentValue(), 0, 0),
+                IntegerArgumentType.integer(),
+                Integer.class,
+                ResourceLocation.parse("zps:int")
+        ));
+
+        event.register(new ScriptMapper2<>(
+                "offset_y",
+                BlockPos.class,
+                BlockPos.class,
+                ResourceLocation.parse("zps:block_pos"),
+                ResourceLocation.parse("zps:block_pos"),
+                "int",
+                (blockPos, context) -> blockPos.offset(0, context.argumentValue(), 0),
+                IntegerArgumentType.integer(),
+                Integer.class,
+                ResourceLocation.parse("zps:int")
+        ));
+
+        event.register(new ScriptMapper2<>(
+                "offset_z",
+                BlockPos.class,
+                BlockPos.class,
+                ResourceLocation.parse("zps:block_pos"),
+                ResourceLocation.parse("zps:block_pos"),
+                "int",
+                (blockPos, context) -> blockPos.offset(0, 0, context.argumentValue()),
+                IntegerArgumentType.integer(),
+                Integer.class,
+                ResourceLocation.parse("zps:int")
+        ));
+
+        event.register(new ScriptMapper2<>(
+                "offset",
+                BlockPos.class,
+                BlockPos.class,
+                ResourceLocation.parse("zps:block_pos"),
+                ResourceLocation.parse("zps:block_pos"),
+                "coordinates",
+                (blockPos, context) -> blockPos.offset(context.argumentValue().getBlockPos(context.commandSource())),
+                BlockPosArgument.blockPos(),
+                Coordinates.class,
+                ResourceLocation.parse("zps:block_pos")
         ));
 
         // Vec3 Position - X coordinate
@@ -304,6 +358,30 @@ public class ZPSScriptMappers {
                 BlockPredicateArgument.blockPredicate(event.buildContext()),
                 BlockPredicateArgument.Result.class,
                 null
+        ));
+
+        // Equality check for item against item predicate
+        event.register(new ScriptMapper2<>(
+                "==",
+                ItemStack.class,
+                Boolean.class,
+                ResourceLocation.parse("zps:item"),
+                ResourceLocation.parse("zps:boolean"),
+                "item",
+                (itemStack, context) -> context.argumentValue().test(itemStack),
+                ItemPredicateArgument.itemPredicate(event.buildContext()),
+                ItemPredicateArgument.Result.class,
+                null
+        ));
+
+        // ItemStack count
+        event.register(new ScriptMapper<>(
+                "count",
+                ItemStack.class,
+                Integer.class,
+                ResourceLocation.parse("zps:item"),
+                ResourceLocation.parse("zps:int"),
+                (itemStack, scriptContext) -> itemStack.getCount()
         ));
 
         // Equality check for int

@@ -10,6 +10,7 @@ public class ModSounds {
     public static final DeferredRegister<SoundEvent> SOUNDS = DeferredRegister.create(Registries.SOUND_EVENT, ZPSMod.MOD_ID);
     public static DeferredHolder<SoundEvent, SoundEvent> KEYSTROKE = registerSoundEvent("keystroke");
     public static DeferredHolder<SoundEvent, SoundEvent> STATIC = registerSoundEvent("static");
+    public static DeferredHolder<SoundEvent, SoundEvent> ARM_MOVE = registerSoundEvent("arm_move");
 
     private static DeferredHolder<SoundEvent, SoundEvent> registerSoundEvent(String name) {
         return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, name)));

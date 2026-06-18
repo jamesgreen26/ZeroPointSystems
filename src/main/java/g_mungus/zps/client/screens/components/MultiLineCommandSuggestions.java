@@ -143,11 +143,8 @@ public class MultiLineCommandSuggestions {
 
                 int j = Mth.clamp(this.input.getScreenX(absoluteStartPos), 0, this.input.getScreenX(0) + this.input.getInnerWidth() - i);
 
-                // Calculate Y position based on current line
-                int currentLineNumber = getCurrentLineNumber();
                 int lineHeight = 10; // LINE_HEIGHT from MultiLineEditBox
-                int inputY = this.input.getY();
-                int lineY = inputY + 4 + (currentLineNumber * lineHeight); // +4 for border
+                int lineY = this.input.getScreenY(this.input.getCursorPosition());
                 int k = this.anchorToBottom ? lineY - 3 : lineY + lineHeight + 3;
 
                 this.suggestions = new MultiLineCommandSuggestions.SuggestionsList(j, k, i, this.sortSuggestions(suggestions), bl);
@@ -754,11 +751,8 @@ public class MultiLineCommandSuggestions {
     }
 
     public void renderUsage(GuiGraphics arg) {
-        // Calculate Y position based on current line
-        int currentLineNumber = getCurrentLineNumber();
         int lineHeight = 10; // LINE_HEIGHT from MultiLineEditBox
-        int inputY = this.input.getY();
-        int lineY = inputY + 4 + (currentLineNumber * lineHeight); // +4 for border
+        int lineY = this.input.getScreenY(this.input.getCursorPosition());
         int baseY = this.anchorToBottom ? lineY - 14 - 13 : lineY + lineHeight + 3;
 
         int i = 0;

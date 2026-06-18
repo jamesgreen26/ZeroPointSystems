@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": {
+      "item": "zps:copper_magnetron"
+    },
+    "I": {
+      "item": "zps:space_metal_ingot"
+    },
+    "R": {
+      "item": "zps:space_metal_rod"
+    }
+  },
+  "pattern": [
+    "R R",
+    "ICI",
+    "III"
+  ],
+  "result": {
+    "id": "zps:incomplete_robotic_arm_0"
+  },
+  "show_notification": true
+}

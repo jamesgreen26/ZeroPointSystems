@@ -108,7 +108,7 @@ It always runs when reached, and delays the dispatch of following commands.
 
 ---
 
-## Coordinates
+## Coordinate Types
 
 Arguments support Minecraft's relative (`~`) and local (`^`) coordinate syntax, resolved relative to the terminal's position.
 
@@ -120,6 +120,31 @@ if pos == ^3 ^ ^-12 set_redstone 0
 ```
 
 The coordinates are resolved when the command is dispatched, not when it's executed.
+
+---
+
+## Addresses
+
+Typing out coordinates by hand is error-prone, especially when using many positions at once. The **Address Pad** lets you save block positions under memorable names and refer to them in scripts with a `@name` token.
+
+**Saving addresses** — hold an Address Pad and:
+
+- **Right-click a block** to save its position as a new address (up to 15 per pad).
+- **Right-click the air** to open a screen for renaming and removing saved addresses.
+
+Address names may contain letters, digits, `.`, and `_`.
+
+**Using addresses** — right-click a Script Terminal with the Address Pad to attach it. Once attached, any of its saved addresses can be used wherever a coordinate argument is expected, by writing `@` followed by the name:
+
+```
+take_items @input_chest
+put_items @furnace
+if block == minecraft:lava_cauldron use @bucket_dropoff
+```
+
+Each `@name` is substituted with the saved position's absolute `x y z` coordinates when the command is dispatched, exactly as if you had typed them out.
+
+> **Addresses only work from a Script Terminal with an attached Address Pad.** They are resolved by the terminal using its pad, so a `@name` token will *not* resolve from other command sources such as command blocks or chat — only literal coordinates and the `~` / `^` syntax work there.
 
 ---
 

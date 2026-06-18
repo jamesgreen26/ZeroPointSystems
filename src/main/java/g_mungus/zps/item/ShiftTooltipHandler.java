@@ -71,7 +71,7 @@ public class ShiftTooltipHandler {
         }
     }
 
-    private static final int BASE_COLOR = 0x4c99c9;     // normal text
+    static final int BASE_COLOR = 0x4c99c9;     // normal text
     private static final int HIGHLIGHT_COLOR = 0x79f1a3; // bracketed text
 
     private static @NotNull MutableComponent formatLine(String line) {

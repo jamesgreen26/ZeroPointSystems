@@ -8,6 +8,10 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
@@ -19,6 +23,7 @@ public class ZPSScriptCommandSource implements CommandSource {
     public PredicateType predicate = PredicateType.NONE;
     public Supplier<Integer> execute = null;
     public Class<?> executeType = null;
+    private Map<String, BlockPos> availableAddresses = Collections.emptyMap();
 
     public ZPSScriptCommandSource(@Nullable CommandSource delegate) {
         this.delegate = delegate;
@@ -52,6 +57,18 @@ public class ZPSScriptCommandSource implements CommandSource {
 
     public BlockPos getPos() {
         return this.blockPos;
+    }
+
+    public void setAvailableAddresses(Map<String, BlockPos> availableAddresses) {
+        this.availableAddresses = new HashMap<>(availableAddresses);
+    }
+
+    public Collection<String> getAvailableAddressNames() {
+        return availableAddresses.keySet();
+    }
+
+    public @Nullable BlockPos resolveAddress(String name) {
+        return availableAddresses.get(name);
     }
 
     @ApiStatus.Internal

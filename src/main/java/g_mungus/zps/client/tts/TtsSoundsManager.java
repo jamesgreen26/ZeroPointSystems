@@ -99,7 +99,7 @@ public class TtsSoundsManager {
                     actualFormat.getSampleRate(), 16, actualFormat.getChannels(), true, false);
         }
 
-        TtsSoundInstance newSoundInstance = new TtsSoundInstance(audioData, actualFormat, center.x, center.y, center.z);
+        TtsSoundInstance newSoundInstance = new TtsSoundInstance(audioData, actualFormat, text, center.x, center.y, center.z);
         TrackedSound trackedSound = new TrackedSound(newSoundInstance, System.currentTimeMillis());
 
         // Replace old sound if any

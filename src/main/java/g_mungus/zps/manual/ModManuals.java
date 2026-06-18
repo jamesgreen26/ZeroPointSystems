@@ -14,8 +14,7 @@ public final class ModManuals {
         new ManualSection("getters", "getters.md", Component.translatable("zps.manual.getters")),
         new ManualSection("mappers", "mappers.md", Component.translatable("zps.manual.mappers")),
         new ManualSection("create", "create.md", Component.translatable("zps.manual.create")),
-        new ManualSection("sable", "sable.md", Component.translatable("zps.manual.sable")),
-        new ManualSection("valkyrien_skies", "valkyrien_skies.md", Component.translatable("zps.manual.valkyrien_skies"))
+        new ManualSection("sable", "sable.md", Component.translatable("zps.manual.sable"))
     );
 
     private ModManuals() {

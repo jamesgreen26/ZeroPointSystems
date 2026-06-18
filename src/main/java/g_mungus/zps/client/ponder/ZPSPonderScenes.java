@@ -7,6 +7,7 @@ import g_mungus.zps.block.cableNetwork.RedstoneConverterBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.light_pipe.DataLecternBlock;
 import g_mungus.zps.block.cableNetwork.properties.InsulationType;
+import g_mungus.zps.blockentity.RoboticArmBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
 import g_mungus.zps.client.ponder.api.PonderExtras;
 import g_mungus.zps.client.ponder.api.custom_screen_in_ponder_scene.*;
@@ -18,22 +19,27 @@ import net.createmod.ponder.api.element.ElementLink;
 import net.createmod.ponder.api.element.EntityElement;
 import net.createmod.ponder.api.scene.SceneBuilder;
 import net.createmod.ponder.api.scene.SceneBuildingUtil;
+import net.createmod.ponder.api.scene.Selection;
 import net.createmod.ponder.foundation.element.InputWindowElement;
 import net.createmod.ponder.foundation.instruction.DisplayWorldSectionInstruction;
 import net.createmod.ponder.foundation.instruction.FadeOutOfSceneInstruction;
 import net.createmod.ponder.foundation.instruction.ShowInputInstruction;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.piglin.AbstractPiglin;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.BarrelBlock;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.piston.PistonBaseBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -491,6 +497,167 @@ public class ZPSPonderScenes {
         builder.idle(1);
         builder.world().cycleBlockProperty(new BlockPos(3,2,3), PistonBaseBlock.EXTENDED);
     }
+
+    // --- Robotic Arm scene helpers ---
+
+    private static long ponderGameTime() {
+        ClientLevel level = Minecraft.getInstance().level;
+        return level == null ? 0L : level.getGameTime();
+    }
+
+    /** Snaps the hand to a settled pose with no animation (also used to set the initial rest pose). */
+    private static void setArmHand(SceneBuilder builder, SceneBuildingUtil util, BlockPos armPos, BlockPos hand) {
+        builder.world().modifyBlockEntityNBT(util.select().position(armPos), RoboticArmBlockEntity.class, nbt -> {
+            nbt.putBoolean("Moving", false);
+            nbt.putLong("HandBlockPos", hand.asLong());
+            nbt.putLong("MoveStartBlockPos", hand.asLong());
+            nbt.putLong("MoveTargetBlockPos", hand.asLong());
+            nbt.putLong("MoveStartTick", 0L);
+        });
+    }
+
+    /**
+     * Plays a real {@code MOVE_TIME_TICKS}-long hand move by driving the renderer's NBT fields.
+     * {@code MoveStartTick} is re-based every scene tick because the client game time is frozen
+     * while the Ponder UI is open in singleplayer (the integrated server is paused). Consumes
+     * {@code MOVE_TIME_TICKS} scene ticks.
+     */
+    private static void armMove(SceneBuilder builder, SceneBuildingUtil util, BlockPos armPos, BlockPos from, BlockPos to) {
+        Selection arm = util.select().position(armPos);
+        for (int i = 0; i < RoboticArmBlockEntity.MOVE_TIME_TICKS; i++) {
+            final long tick = i;
+            builder.world().modifyBlockEntityNBT(arm, RoboticArmBlockEntity.class, nbt -> {
+                nbt.putBoolean("Moving", true);
+                nbt.putLong("MoveStartBlockPos", from.asLong());
+                nbt.putLong("MoveTargetBlockPos", to.asLong());
+                nbt.putLong("MoveStartTick", ponderGameTime() - tick);
+            });
+            builder.idle(1);
+        }
+        setArmHand(builder, util, armPos, to);
+    }
+
+    private static void setArmHeldStack(SceneBuilder builder, SceneBuildingUtil util, BlockPos armPos, ItemStack stack) {
+        builder.world().modifyBlockEntityNBT(util.select().position(armPos), RoboticArmBlockEntity.class, nbt -> {
+            if (stack.isEmpty()) {
+                nbt.remove("HeldStack"); // absence == empty in readInventoryState
+            } else if (Minecraft.getInstance().level != null) {
+                nbt.put("HeldStack", stack.save(Minecraft.getInstance().level.registryAccess(), new CompoundTag()));
+            }
+        });
+    }
+
+    public static void roboticArmTutorial(SceneBuilder builder, SceneBuildingUtil util) {
+        BlockPos arm = new BlockPos(3, 1, 3);
+        BlockPos rest = arm.above();
+        BlockPos barrel = new BlockPos(1, 3, 5);
+        BlockPos cauldron_0 = new BlockPos(0, 1, 2);
+        BlockPos cauldron_1 = new BlockPos(6, 1, 4);
+        BlockPos drop = new BlockPos(0, 2, 2); // above cauldron_0
+
+        Selection energy_blocks = util.select().fromTo(4, 1, 1, 4, 1, 3);
+        Selection control_blocks = util.select().fromTo(1, 1, 1, 3, 1, 2);
+        Selection target_blocks = PonderExtras.selectBlocks(builder, util, Blocks.BARREL, Blocks.CAULDRON, Blocks.LAVA_CAULDRON, ModBlocks.SPACE_TRUSS.get());
+
+        builder.configureBasePlate(0, 0, 7);
+        builder.title("robotic_arm", "Robotic Arm");
+        builder.showBasePlate();
+        setArmHand(builder, util, arm, rest); // rest pose before the arm becomes visible
+        builder.idle(5);
+
+        builder.world().showSection(util.select().position(arm), Direction.DOWN);
+        builder.idle(10);
+        builder.overlay().showText(75)
+                .text("The Robotic Arm can interact with and move items between nearby blocks.").placeNearTarget();
+        builder.idle(85);
+
+        builder.world().showSection(energy_blocks, Direction.DOWN);
+        builder.idle(10);
+        builder.overlay().showText(75)
+                .text("While active, the arm consumes 8 FE per tick.").placeNearTarget();
+        builder.idle(85);
+
+        builder.world().showSection(control_blocks, Direction.DOWN);
+        builder.idle(10);
+        builder.overlay().showText(65)
+                .text("To control the Robotic Arm, send instructions from an adjacent Serial Bus.").placeNearTarget();
+        builder.idle(75);
+        builder.overlay().showText(65)
+                .text("The arm can accept a new instruction once every 16 gameticks.").placeNearTarget();
+        builder.idle(75);
+
+
+        builder.world().showSection(target_blocks, Direction.DOWN);
+
+        builder.idle(10);
+        builder.addKeyframe();
+        builder.idle(10);
+
+        builder.world().toggleRedstonePower(util.select().position(1,1,1));
+
+        builder.idle(15);
+
+        builder.overlay().showText(30).text("take_items 1 3 5").colored(PonderPalette.INPUT).pointAt(barrel.getCenter()).placeNearTarget();
+
+        armMove(builder, util, arm, rest, barrel);
+        builder.idle(15);
+        builder.world().setBlock(barrel, Blocks.BARREL.defaultBlockState().setValue(BarrelBlock.OPEN, true), false);
+        builder.idle(5);
+        builder.world().setBlock(barrel, Blocks.BARREL.defaultBlockState(), false);
+        builder.idle(5);
+
+        setArmHeldStack(builder, util, arm, new ItemStack(Items.DIRT)); // barrel handed the arm a dirt block
+        builder.idle(10);
+
+        // drop_items 0 2 2 (drop the dirt above cauldron 0, it falls into the lava)
+        builder.overlay().showText(30).text("drop_items 0 2 2").colored(PonderPalette.INPUT).pointAt(drop.getCenter()).placeNearTarget();
+        armMove(builder, util, arm, barrel, drop);
+        builder.idle(10);
+        setArmHeldStack(builder, util, arm, ItemStack.EMPTY);
+        ElementLink<EntityElement> dirtItem = builder.world()
+                .createItemEntity(new Vec3(0.5, 2.2, 2.5), new Vec3(0, -0.1, 0), new ItemStack(Items.DIRT));
+        builder.idle(20);
+        builder.world().modifyEntity(dirtItem, Entity::discard); // consumed by the lava cauldron
+        builder.effects().emitParticles(new Vec3(0.5, 1.6, 2.5),
+                builder.effects().simpleParticleEmitter(ParticleTypes.LAVA, new Vec3(0, 0, 0)), 3, 1);
+        builder.idle(5);
+
+        // take_items 1 3 5 (retrieve an empty bucket from the barrel)
+        builder.overlay().showText(30).text("take_items 1 3 5").colored(PonderPalette.INPUT).pointAt(barrel.getCenter()).placeNearTarget();
+        armMove(builder, util, arm, drop, barrel);
+        builder.idle(15);
+        builder.world().setBlock(barrel, Blocks.BARREL.defaultBlockState().setValue(BarrelBlock.OPEN, true), false);
+        builder.idle(5);
+        builder.world().setBlock(barrel, Blocks.BARREL.defaultBlockState(), false);
+        builder.idle(10);
+        setArmHeldStack(builder, util, arm, new ItemStack(Items.BUCKET));
+        builder.idle(5);
+
+        // use 0 1 2 (empty lava from cauldron 0 into the held bucket)
+        builder.overlay().showText(30).text("use 0 1 2").colored(PonderPalette.INPUT).pointAt(cauldron_0.getCenter()).placeNearTarget();
+        armMove(builder, util, arm, barrel, cauldron_0);
+        builder.idle(10);
+        builder.world().setBlock(cauldron_0, Blocks.CAULDRON.defaultBlockState(), false);
+        setArmHeldStack(builder, util, arm, new ItemStack(Items.LAVA_BUCKET));
+        builder.effects().emitParticles(new Vec3(0.5, 1.6, 2.5),
+                builder.effects().simpleParticleEmitter(ParticleTypes.LAVA, new Vec3(0, 0, 0)), 3, 1);
+        builder.idle(25);
+
+        // use 6 1 4 (fill cauldron 1 with lava from the held bucket)
+        builder.overlay().showText(30).text("use 6 1 4").colored(PonderPalette.INPUT).pointAt(cauldron_1.getCenter()).placeNearTarget();
+        armMove(builder, util, arm, cauldron_0, cauldron_1);
+        builder.idle(10);
+        builder.world().setBlock(cauldron_1, Blocks.LAVA_CAULDRON.defaultBlockState(), false);
+        setArmHeldStack(builder, util, arm, new ItemStack(Items.BUCKET));
+        builder.effects().emitParticles(new Vec3(6.5, 1.6, 4.5),
+                builder.effects().simpleParticleEmitter(ParticleTypes.LAVA, new Vec3(0, 0, 0)), 3, 1);
+        builder.idle(5);
+
+        armMove(builder, util, arm, cauldron_1, rest); // return to the rest pose
+        builder.idle(20);
+    }
+
+
 
     private static void typeChar(SceneBuilder builder, ScreenPonderElement screenElement, char c) {
         builder.addInstruction(new ModifyScreenInstruction(screenElement, it -> it.charTyped(c, 0)));

@@ -140,6 +140,10 @@
     "item.zps.script_terminal": "Terminal",
     "item.zps.data_transcriber": "Transcripteur de données",
     "item.zps.loudspeaker": "Enceinte",
+    "item.zps.power_drill": "Power Drill",
+    "item.zps.power_drill.energy": "Stored: %s / %s FE",
+    "item.zps.chainsaw": "Chainsaw",
+    "item.zps.chainsaw.energy": "Stored: %s / %s FE",
     "item.zps.bauxite": "Bauxite",
     "item.zps.lithium_ore": "Minerai de lithium",
     "item.zps.deepslate_lithium_ore": "Minerai de lithium des profondeurs",
@@ -346,6 +350,9 @@
 
     "block.zps.dodeca_controller.zps_tooltip": "More... MORE!!",
 
+    "sounds.zps.keystroke": "Le clavier claque",
+    "sounds.zps.static": "Des parasites sifflent",
+    "sounds.zps.arm_move": "Le bras robotique bouge",
 
     "zps.display_source.serial_bus": "Serial Bus Data"
 }

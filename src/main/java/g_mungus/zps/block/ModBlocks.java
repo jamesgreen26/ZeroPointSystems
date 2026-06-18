@@ -163,6 +163,47 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
 
+    public static final DeferredBlock<Block> ROBOTIC_ARM = BLOCKS.register("robotic_arm",
+            () -> new RoboticArmBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+
+    public static final DeferredBlock<Block> INCOMPLETE_ROBOTIC_ARM_0 = BLOCKS.register("incomplete_robotic_arm_0",
+            () -> new IncompleteRoboticArmBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion(), 0));
+
+    public static final DeferredBlock<Block> INCOMPLETE_ROBOTIC_ARM_1 = BLOCKS.register("incomplete_robotic_arm_1",
+            () -> new IncompleteRoboticArmBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion(), 1));
+
+    public static final DeferredBlock<Block> INCOMPLETE_ROBOTIC_ARM_2 = BLOCKS.register("incomplete_robotic_arm_2",
+            () -> new IncompleteRoboticArmBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion(), 2));
+
+    public static final DeferredBlock<Block> CREATIVE_POWER_CELL = BLOCKS.register("creative_power_cell",
+            () -> new CreativePowerCellBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(3.0f)
+                    .noOcclusion()
+                    .requiresCorrectToolForDrops()));
+
+    public static final DeferredBlock<Block> POWER_CELL = BLOCKS.register("power_cell",
+            () -> new PowerCellBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(3.0f)
+                    .noOcclusion()
+                    .requiresCorrectToolForDrops()));
+
+    public static final DeferredBlock<Block> COAL_BURNER = BLOCKS.register("coal_burner",
+            () -> new CoalBurnerBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.FURNACE)
+                    .strength(3.5f)
+                    .requiresCorrectToolForDrops()));
+
 
     /// RESOURCE BLOCKS
     public static final DeferredBlock<Block> BAUXITE = BLOCKS.register("bauxite",

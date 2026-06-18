@@ -57,5 +57,9 @@ public class ZPSPonders {
         HELPER.forComponents(
                 DATA_TRANSCRIBER
         ).addStoryBoard("data_transcriber", ZPSPonderScenes::dataTranscriberTutorial);
+
+        HELPER.forComponents(
+                ROBOTIC_ARM
+        ).addStoryBoard("robotic_arm", ZPSPonderScenes::roboticArmTutorial);
     }
 }

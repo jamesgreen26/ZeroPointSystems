@@ -84,6 +84,37 @@ public class ModItems {
     public static final DeferredItem<Item> RADIO_ANTENNA = ITEMS.register("radio_antenna",
             () -> new RadioAntennaBlockItem(ModBlocks.RADIO_ANTENNA.get(), new Item.Properties()));
 
+    public static final DeferredItem<Item> ROBOTIC_ARM = ITEMS.register("robotic_arm",
+            () -> new BlockItem(ModBlocks.ROBOTIC_ARM.get(), new Item.Properties()));
+
+    public static final DeferredItem<Item> INCOMPLETE_ROBOTIC_ARM_0 = ITEMS.register("incomplete_robotic_arm_0",
+            () -> new IncompleteRoboticArmBlockItem(ModBlocks.INCOMPLETE_ROBOTIC_ARM_0.get(), new Item.Properties(), 0));
+
+    public static final DeferredItem<Item> INCOMPLETE_ROBOTIC_ARM_1 = ITEMS.register("incomplete_robotic_arm_1",
+            () -> new IncompleteRoboticArmBlockItem(ModBlocks.INCOMPLETE_ROBOTIC_ARM_1.get(), new Item.Properties(), 1));
+
+    public static final DeferredItem<Item> INCOMPLETE_ROBOTIC_ARM_2 = ITEMS.register("incomplete_robotic_arm_2",
+            () -> new IncompleteRoboticArmBlockItem(ModBlocks.INCOMPLETE_ROBOTIC_ARM_2.get(), new Item.Properties(), 2));
+
+    public static final DeferredItem<Item> ROBOTIC_ARM_SEGMENT = ITEMS.register("robotic_arm_segment",
+            () -> new RoboticArmSegmentItem(new Item.Properties().stacksTo(1)));
+
+    public static final DeferredItem<Item> CREATIVE_POWER_CELL = ITEMS.register("creative_power_cell",
+            () -> new BlockItem(ModBlocks.CREATIVE_POWER_CELL.get(), new Item.Properties().rarity(Rarity.EPIC)));
+
+    public static final DeferredItem<Item> POWER_CELL = ITEMS.register("power_cell",
+            () -> new BlockItem(ModBlocks.POWER_CELL.get(), new Item.Properties()));
+
+    public static final DeferredItem<Item> COAL_BURNER = ITEMS.register("coal_burner",
+            () -> new BlockItem(ModBlocks.COAL_BURNER.get(), new Item.Properties()));
+
+    public static final DeferredItem<Item> ENERGY_STORAGE_MODULE = ITEMS.register("energy_storage_module",
+            () -> new Item(new Item.Properties()));
+    public static final DeferredItem<PowerDrillItem> POWER_DRILL = ITEMS.register("power_drill",
+            () -> new PowerDrillItem(new Item.Properties().stacksTo(1)));
+    public static final DeferredItem<ChainsawItem> CHAINSAW = ITEMS.register("chainsaw",
+            () -> new ChainsawItem(new Item.Properties().stacksTo(1)));
+
     public static final DeferredItem<Item> SPACE_METAL_INGOT = ITEMS.register("space_metal_ingot",
         () -> new Item(new Item.Properties()));
     public static final DeferredItem<Item> SPACE_METAL_PLATE = ITEMS.register("space_metal_plate",
@@ -154,6 +185,8 @@ public class ModItems {
 
     public static final DeferredItem<RedstoneWandItem> REDSTONE_WAND = ITEMS.register("redstone_wand",
             () -> new RedstoneWandItem(new Item.Properties().rarity(Rarity.EPIC).stacksTo(1)));
+    public static final DeferredItem<AddressPadItem> ADDRESS_PAD = ITEMS.register("address_pad",
+            () -> new AddressPadItem(new Item.Properties().stacksTo(1)));
 
 /// DECOR ITEMS
 

@@ -1,0 +1,29 @@
+{
+  "criteria": {
+    "0": {
+      "conditions": {},
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "background": "zps:textures/block/decor/aluminum_plating.png",
+    "description": {
+      "color": "#4C99C9",
+      "text": "Welcome to ZPS!"
+    },
+    "frame": "task",
+    "hidden": false,
+    "icon": {
+      "item": "zps:script_terminal"
+    },
+    "show_toast": false,
+    "title": "Zero Point Systems"
+  },
+  "requirements": [
+    [
+      "0"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

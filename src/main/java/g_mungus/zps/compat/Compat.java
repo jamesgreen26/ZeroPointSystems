@@ -13,6 +13,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -50,21 +51,22 @@ public class Compat {
     public static BlockPos toWorldPos(ServerLevel level, BlockPos pos) {
         Position projectedPos = pos.getCenter();
         Vec3 worldPos = SableCompanion.INSTANCE.projectOutOfSubLevel(level, projectedPos);
-        if (isVSLoaded()) {
-            worldPos = VSCompat.shipToWorld(level, new BlockPos((int) worldPos.x, (int) worldPos.y, (int) worldPos.z));
-        } else {
-            return new BlockPos((int) worldPos.x, (int) worldPos.y, (int) worldPos.z);
-        }
         return new BlockPos((int) worldPos.x, (int) worldPos.y, (int) worldPos.z);
+    }
+
+    public static Vec3 toWorldPos(ServerLevel level, Vec3 pos) {
+        return pos;
+    }
+
+    /// Transforms pos into the local space of the grid managing anchorPos.
+    public static Vec3 toLocalSpaceOf(Level level, BlockPos anchorPos, Vec3 pos) {
+        return pos;
     }
 
     @SubscribeEvent
     public static void onRegisterScriptCommandsEvent(RegisterScriptCommandsEvent event) {
         if (isSableLoaded()) {
             SableCompat.registerScriptCommands(event);
-        }
-        if (isVSLoaded()) {
-            VSCompat.registerScriptCommands(event);
         }
         if (isCreateLoaded()) {
             CreateCompat.registerScriptCommands(event);

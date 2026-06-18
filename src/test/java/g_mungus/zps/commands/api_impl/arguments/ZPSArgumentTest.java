@@ -73,6 +73,52 @@ public class ZPSArgumentTest {
     }
 
     @Test
+    public void testEqualButDistinctRedirectTargetsSatisfyHashCodeContract() {
+        // Two redirect targets that are equal (same literal, no children) but are
+        // NOT the same instance. equals() compares redirects by value, so the two
+        // argument nodes are equal — the hashCode contract then requires equal
+        // hash codes. Identity-based hashing of the redirect broke this, which
+        // silently defeats HashMap-based deduplication.
+        ZPSLiteral<SharedSuggestionProvider> targetA = new ZPSLiteral.Builder<SharedSuggestionProvider>("target").build();
+        ZPSLiteral<SharedSuggestionProvider> targetB = new ZPSLiteral.Builder<SharedSuggestionProvider>("target").build();
+        assertNotSame(targetA, targetB);
+        assertEquals(targetA, targetB, "Precondition: targets must be equal by value");
+
+        ZPSArgument<SharedSuggestionProvider, Integer> arg1 = ZPSArgument.Builder
+                .<SharedSuggestionProvider, Integer>argument("value", IntegerArgumentType.integer())
+                .redirect(targetA)
+                .build();
+        ZPSArgument<SharedSuggestionProvider, Integer> arg2 = ZPSArgument.Builder
+                .<SharedSuggestionProvider, Integer>argument("value", IntegerArgumentType.integer())
+                .redirect(targetB)
+                .build();
+
+        assertEquals(arg1, arg2, "Arguments with equal redirects should be equal");
+        assertEquals(arg1.hashCode(), arg2.hashCode(),
+                "Equal objects must have equal hash codes (equals/hashCode contract)");
+
+        Map<ZPSArgument<SharedSuggestionProvider, Integer>, String> map = new HashMap<>();
+        map.put(arg1, "first");
+        map.put(arg2, "second");
+        assertEquals(1, map.size(), "HashMap must deduplicate equal arguments");
+    }
+
+    @Test
+    public void testLiteralsWithEqualButDistinctRedirectTargetsSatisfyHashCodeContract() {
+        ZPSLiteral<SharedSuggestionProvider> targetA = new ZPSLiteral.Builder<SharedSuggestionProvider>("target").build();
+        ZPSLiteral<SharedSuggestionProvider> targetB = new ZPSLiteral.Builder<SharedSuggestionProvider>("target").build();
+
+        ZPSLiteral<SharedSuggestionProvider> lit1 = new ZPSLiteral.Builder<SharedSuggestionProvider>("branch")
+                .redirect(targetA).build();
+        ZPSLiteral<SharedSuggestionProvider> lit2 = new ZPSLiteral.Builder<SharedSuggestionProvider>("branch")
+                .redirect(targetB).build();
+
+        assertEquals(lit1, lit2, "Literals with equal redirects should be equal");
+        assertEquals(lit1.hashCode(), lit2.hashCode(),
+                "Equal objects must have equal hash codes (equals/hashCode contract)");
+    }
+
+    @Test
     public void testArgumentsWithSameNameAndSameRedirectAreEqual() {
         // Create target node
         ZPSLiteral<SharedSuggestionProvider> target = new ZPSLiteral.Builder<SharedSuggestionProvider>("target").build();

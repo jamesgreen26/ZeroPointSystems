@@ -1,6 +1,6 @@
 {
   "type": "minecraft:crafting_shapeless",
-  "category": "functional",
+  "category": "redstone",
   "ingredients": [
     {
       "item": "zps:dense_cables"

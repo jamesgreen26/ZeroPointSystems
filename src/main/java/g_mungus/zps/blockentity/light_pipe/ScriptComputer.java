@@ -4,6 +4,8 @@ import g_mungus.zps.networking.ScriptComputerC2SPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.Set;
+
 public interface ScriptComputer {
     void acceptUpdatePacket(ScriptComputerC2SPacket packet);
 
@@ -16,4 +18,8 @@ public interface ScriptComputer {
     boolean getLoop();
 
     int getDelay();
+
+    default Set<String> getAvailableAddressNames() {
+        return Set.of();
+    }
 }

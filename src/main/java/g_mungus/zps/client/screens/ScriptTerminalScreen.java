@@ -6,6 +6,7 @@ import g_mungus.zps.client.ponder.api.custom_screen_in_ponder_scene.PonderCompat
 import g_mungus.zps.client.screens.components.MultiLineEditBox;
 import g_mungus.zps.client.screens.components.MultiLineCommandSuggestions;
 import g_mungus.zps.client.screens.components.ScriptDispatcherProvider;
+import g_mungus.zps.commands.api_impl.arguments.ValueOfOrLiteralArgumentType;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.manual.ModManuals;
 import g_mungus.zps.networking.ScriptComputerC2SPacket;
@@ -115,6 +116,7 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
         this.commandEdit.setResponder(this::onEdited);
         this.addWidget(this.commandEdit);
         this.setInitialFocus(this.commandEdit);
+        refreshActiveAddresses();
 
         this.commandSuggestions = new MultiLineCommandSuggestions(this.minecraft, new ScriptDispatcherProvider(this.minecraft), this, this.commandEdit, this.font, true, true, 0, 7, false, Integer.MIN_VALUE, connectedBlocks);
         this.commandSuggestions.setAllowSuggestions(true);
@@ -135,16 +137,25 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
             int currentDelay = DELAY_VALUES[delayIndex];
             ZPSGamePackets.sendToServer(new ScriptComputerC2SPacket(computer.getPos(), isRepeatMode, currentDelay, commandEdit.getValue()));
         }
+        ValueOfOrLiteralArgumentType.setActiveAddressNames(Set.of());
         if (client != null) client.setScreen(null);
     }
 
+    @Override
+    public void onClose() {
+        ValueOfOrLiteralArgumentType.setActiveAddressNames(Set.of());
+        super.onClose();
+    }
+
     private void onEdited(String string) {
+        refreshActiveAddresses();
         this.captureDraft();
         this.commandSuggestions.updateCommandInfo();
     }
 
     @Override
     public boolean keyPressed(int i, int j, int k) {
+        refreshActiveAddresses();
         boolean soundPlayed = false;
         if (ZPSConfig.useKeyboardSounds() && i != 256) {
             Minecraft.getInstance().player.playSound(ModSounds.KEYSTROKE.get());
@@ -286,6 +297,10 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
             }
         }
         return 1;
+    }
+
+    private void refreshActiveAddresses() {
+        ValueOfOrLiteralArgumentType.setActiveAddressNames(this.computer != null ? this.computer.getAvailableAddressNames() : Set.of());
     }
 
     private record TerminalDraft(String command, int cursorPosition, boolean repeatMode, int delayIndex) {

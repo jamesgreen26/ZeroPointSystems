@@ -98,4 +98,24 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(LoudspeakerBlockEntity::new,
                             ModBlocks.LOUDSPEAKER.get()).build(null));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<RoboticArmBlockEntity>> ROBOTIC_ARM =
+            BLOCK_ENTITIES.register("robotic_arm",
+                    () -> BlockEntityType.Builder.of(RoboticArmBlockEntity::new,
+                            ModBlocks.ROBOTIC_ARM.get()).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CreativePowerCellBlockEntity>> CREATIVE_POWER_CELL =
+            BLOCK_ENTITIES.register("creative_power_cell",
+                    () -> BlockEntityType.Builder.of(CreativePowerCellBlockEntity::new,
+                            ModBlocks.CREATIVE_POWER_CELL.get()).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PowerCellBlockEntity>> POWER_CELL =
+            BLOCK_ENTITIES.register("power_cell",
+                    () -> BlockEntityType.Builder.of(PowerCellBlockEntity::new,
+                            ModBlocks.POWER_CELL.get()).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CoalBurnerBlockEntity>> COAL_BURNER =
+            BLOCK_ENTITIES.register("coal_burner",
+                    () -> BlockEntityType.Builder.of(CoalBurnerBlockEntity::new,
+                            ModBlocks.COAL_BURNER.get()).build(null));
+
 } 

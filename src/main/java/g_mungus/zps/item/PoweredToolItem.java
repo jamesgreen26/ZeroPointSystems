@@ -1,0 +1,312 @@
+package g_mungus.zps.item;
+
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
+import g_mungus.zps.client.renderer.PoweredToolItemRenderer;
+import g_mungus.zps.util.NumberFormatter;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.DiggerItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Tier;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.Tiers;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
+import net.neoforged.neoforge.energy.IEnergyStorage;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
+
+public class PoweredToolItem extends DiggerItem implements CustomArmPoseItem {
+    private static final String ENERGY_TAG = "Energy";
+    private static final String LAST_POWERED_USE_TICK_TAG = "LastPoweredUseTick";
+    private static final String TOOL_ID_TAG = "ToolId";
+    public static final int MAX_ENERGY = 128_000;
+    private static final int ENERGY_PER_BLOCK = 96;
+    private static final int ENERGY_BAR_COLOR = 0x55FFFF;
+    private static final float EFFICIENCY_FIVE_SPEED_BONUS = 26.0F;
+
+    private final String energyTranslationKey;
+    private final TagKey<Block> boostedSpeedTag;
+    private final List<TagKey<Block>> mineableTags;
+
+    protected PoweredToolItem(Properties properties, String energyTranslationKey, TagKey<Block> primaryMineableTag,
+                              TagKey<Block> boostedSpeedTag, List<TagKey<Block>> mineableTags) {
+        this(properties, Tiers.IRON, energyTranslationKey, primaryMineableTag, boostedSpeedTag, mineableTags);
+    }
+
+    protected PoweredToolItem(Properties properties, Tier tier, String energyTranslationKey, TagKey<Block> primaryMineableTag,
+                              TagKey<Block> boostedSpeedTag, List<TagKey<Block>> mineableTags) {
+        super(tier, primaryMineableTag, properties.attributes(DiggerItem.createAttributes(tier, 1.0F, -2.8F)).setNoRepair());
+        this.energyTranslationKey = energyTranslationKey;
+        this.boostedSpeedTag = boostedSpeedTag;
+        this.mineableTags = List.copyOf(mineableTags);
+    }
+
+    @Override
+    @OnlyIn(Dist.CLIENT)
+    public void initializeClient(Consumer<IClientItemExtensions> consumer) {
+        consumer.accept(new IClientItemExtensions() {
+            private final PoweredToolItemRenderer renderer = createRenderer();
+
+            @Override
+            public BlockEntityWithoutLevelRenderer getCustomRenderer() {
+                return renderer;
+            }
+
+            @Override
+            public boolean applyForgeHandTransform(PoseStack poseStack, LocalPlayer player, HumanoidArm arm, ItemStack itemInHand,
+                                                   float partialTick, float equipProcess, float swingProcess) {
+                int handSide = arm == HumanoidArm.RIGHT ? 1 : -1;
+                poseStack.translate(handSide * 0.36F, -0.54F + equipProcess * -0.6F, -0.98F);
+                poseStack.mulPose(Axis.YP.rotationDegrees(handSide * 18.0F));
+                float upwardTilt = renderer.getBoostProgress(itemInHand, Minecraft.getInstance()) * 20.0F;
+                poseStack.mulPose(Axis.XP.rotationDegrees(-18.0F + upwardTilt));
+                poseStack.mulPose(Axis.ZP.rotationDegrees(handSide * -8.0F));
+                return true;
+            }
+        });
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    protected PoweredToolItemRenderer createRenderer() {
+        return new PoweredToolItemRenderer();
+    }
+
+    @Override
+    public boolean shouldCauseReequipAnimation(ItemStack oldStack, ItemStack newStack, boolean slotChanged) {
+        if (oldStack.getItem() instanceof PoweredToolItem && newStack.getItem() instanceof PoweredToolItem) {
+            return getOrCreateToolId(oldStack) != getOrCreateToolId(newStack);
+        }
+        return super.shouldCauseReequipAnimation(oldStack, newStack, slotChanged);
+    }
+
+    @Override
+    public void inventoryTick(ItemStack stack, Level level, Entity entity, int slotId, boolean isSelected) {
+        getOrCreateToolId(stack);
+        super.inventoryTick(stack, level, entity, slotId, isSelected);
+    }
+
+    @Override
+    public float getDestroySpeed(ItemStack stack, BlockState state) {
+        if (!hasEnergyForBlock(stack) || !isPoweredToolMineable(state)) {
+            return 1.0F;
+        }
+        if (state.is(boostedSpeedTag)) {
+            return Tiers.IRON.getSpeed() + EFFICIENCY_FIVE_SPEED_BONUS;
+        }
+        return Tiers.IRON.getSpeed();
+    }
+
+    @Override
+    public boolean isCorrectToolForDrops(ItemStack stack, BlockState state) {
+        return hasEnergyForBlock(stack) && isPoweredToolMineable(state) && !state.is(Tiers.IRON.getIncorrectBlocksForDrops());
+    }
+
+    @Override
+    public boolean mineBlock(ItemStack stack, Level level, BlockState state, BlockPos pos, LivingEntity entity) {
+        if (state.getDestroySpeed(level, pos) != 0.0F && hasEnergyForBlock(stack) && isPoweredToolMineable(state)) {
+            markPoweredUse(stack, level);
+            if (!level.isClientSide) {
+                extractEnergy(stack, ENERGY_PER_BLOCK, false);
+                if (!hasEnergyForBlock(stack) && entity instanceof ServerPlayer player) {
+                    player.displayClientMessage(Component.literal("LOW POWER").withStyle(ChatFormatting.RED), true);
+                }
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public boolean hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
+        if (hasEnergyForBlock(stack)) {
+            markPoweredUse(stack, attacker.level());
+        }
+        return true;
+    }
+
+    @Override
+    public boolean isDamageable(ItemStack stack) {
+        return false;
+    }
+
+    @Override
+    public boolean isEnchantable(ItemStack stack) {
+        return false;
+    }
+
+    @Override
+    public int getEnchantmentValue(ItemStack stack) {
+        return 0;
+    }
+
+    public boolean canApplyAtEnchantingTable(ItemStack stack, Enchantment enchantment) {
+        return false;
+    }
+
+    public boolean isBookEnchantable(ItemStack stack, ItemStack book) {
+        return false;
+    }
+
+    @Override
+    public boolean isBarVisible(ItemStack stack) {
+        return true;
+    }
+
+    @Override
+    public int getBarWidth(ItemStack stack) {
+        return Math.round(13.0F * getStoredEnergy(stack) / MAX_ENERGY);
+    }
+
+    @Override
+    public int getBarColor(ItemStack stack) {
+        return ENERGY_BAR_COLOR;
+    }
+
+    @Override
+    public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context, List<Component> tooltip, @NotNull TooltipFlag flag) {
+        tooltip.add(Component.translatable(
+                energyTranslationKey,
+                NumberFormatter.formatInt(getStoredEnergy(stack)),
+                NumberFormatter.formatInt(MAX_ENERGY)
+        ).withStyle(style -> style.withColor(ShiftTooltipHandler.BASE_COLOR)));
+        super.appendHoverText(stack, context, tooltip, flag);
+    }
+
+    private boolean isPoweredToolMineable(BlockState state) {
+        for (TagKey<Block> mineableTag : mineableTags) {
+            if (state.is(mineableTag)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean hasEnergyForBlock(ItemStack stack) {
+        return getStoredEnergy(stack) >= ENERGY_PER_BLOCK;
+    }
+
+    public static long getLastPoweredUseTick(ItemStack stack) {
+        CompoundTag tag = getCustomData(stack);
+        return tag.contains(LAST_POWERED_USE_TICK_TAG) ? tag.getLong(LAST_POWERED_USE_TICK_TAG) : Long.MIN_VALUE;
+    }
+
+    public static long getOrCreateToolId(ItemStack stack) {
+        CompoundTag tag = getCustomData(stack);
+        if (!tag.contains(TOOL_ID_TAG)) {
+            long toolId = generateToolId();
+            updateCustomData(stack, data -> data.putLong(TOOL_ID_TAG, toolId));
+            return toolId;
+        }
+        return tag.getLong(TOOL_ID_TAG);
+    }
+
+    private static int getStoredEnergy(ItemStack stack) {
+        return Math.min(getCustomData(stack).getInt(ENERGY_TAG), MAX_ENERGY);
+    }
+
+    private static long generateToolId() {
+        long id = ThreadLocalRandom.current().nextLong();
+        return id == 0L ? 1L : id;
+    }
+
+    private static void markPoweredUse(ItemStack stack, Level level) {
+        updateCustomData(stack, tag -> tag.putLong(LAST_POWERED_USE_TICK_TAG, level.getGameTime()));
+    }
+
+    private static void setStoredEnergy(ItemStack stack, int energy) {
+        updateCustomData(stack, tag -> tag.putInt(ENERGY_TAG, Math.max(0, Math.min(energy, MAX_ENERGY))));
+    }
+
+    private static int extractEnergy(ItemStack stack, int maxExtract, boolean simulate) {
+        int extracted = Math.min(getStoredEnergy(stack), Math.max(0, maxExtract));
+        if (!simulate && extracted > 0) {
+            setStoredEnergy(stack, getStoredEnergy(stack) - extracted);
+        }
+        return extracted;
+    }
+
+    @Override
+    public HumanoidModel.@Nullable ArmPose getArmPose(ItemStack stack, AbstractClientPlayer player, InteractionHand hand) {
+        return HumanoidModel.ArmPose.CROSSBOW_HOLD;
+    }
+
+    @Override
+    public boolean shouldSwingArm() {
+        return false;
+    }
+
+    private static CompoundTag getCustomData(ItemStack stack) {
+        return stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+    }
+
+    private static void updateCustomData(ItemStack stack, java.util.function.Consumer<CompoundTag> updater) {
+        CustomData.update(DataComponents.CUSTOM_DATA, stack, updater);
+    }
+
+    public static class StackEnergyStorage implements IEnergyStorage {
+        private final ItemStack stack;
+
+        public StackEnergyStorage(ItemStack stack) {
+            this.stack = stack;
+        }
+
+        @Override
+        public int receiveEnergy(int maxReceive, boolean simulate) {
+            int received = Math.min(MAX_ENERGY - getEnergyStored(), Math.max(0, maxReceive));
+            if (!simulate && received > 0) {
+                setStoredEnergy(stack, getEnergyStored() + received);
+            }
+            return received;
+        }
+
+        @Override
+        public int extractEnergy(int maxExtract, boolean simulate) {
+            return PoweredToolItem.extractEnergy(stack, maxExtract, simulate);
+        }
+
+        @Override
+        public int getEnergyStored() {
+            return getStoredEnergy(stack);
+        }
+
+        @Override
+        public int getMaxEnergyStored() {
+            return MAX_ENERGY;
+        }
+
+        @Override
+        public boolean canExtract() {
+            return true;
+        }
+
+        @Override
+        public boolean canReceive() {
+            return true;
+        }
+    }
+}

@@ -13,11 +13,16 @@ import g_mungus.zps.commands.api_impl.arguments.ValueOfExpression;
 import g_mungus.zps.commands.api_impl.arguments.ValueOfOrLiteralArgumentType;
 import g_mungus.zps.commands.api_impl.arguments.ZPSArgument;
 import g_mungus.zps.commands.api_impl.arguments.ArgumentPlaceholder;
+import g_mungus.zps.commands.api_impl.arguments.AddressReference;
 import g_mungus.zps.commands.api_impl.arguments.ZPSLiteral;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.arguments.coordinates.Coordinates;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.phys.Vec2;
+import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.function.BiFunction;
@@ -131,6 +136,8 @@ public class CommandTreeBuilder {
                     if (rawArg instanceof ValueOfExpression<?> expr) {
                         rawArg = expr.evaluate(commandSource, source.getPos());
                     }
+                    rawArg = resolveAddressReference(rawArg, source);
+                    rawArg = coerceArgument(rawArg, scriptMapper2.argumentClass(), commandSource);
                     source.predicateValue = mapperFunction.apply(source.predicateValue,
                             new ScriptContextWithArgumentImpl<>(rawArg, source.getPos(), commandSource.getLevel(), commandSource));
                 }
@@ -211,6 +218,9 @@ public class CommandTreeBuilder {
         var builtArgument = argumentBuilder.executes(context -> {
             CommandSourceStack commandSource = context.getSource();
             if (commandSource.source instanceof ZPSScriptCommandSource source) {
+                if (source.execute != null) {
+                    return source.execute.get();
+                }
                 if (source.predicate.test(source.predicateValue)) {
                     Object rawArg = context.getArgument(argumentKey, Object.class);
                     if (rawArg instanceof ArgumentPlaceholder) {
@@ -219,12 +229,12 @@ public class CommandTreeBuilder {
                     if (rawArg instanceof ValueOfExpression<?> expr) {
                         rawArg = expr.evaluate(commandSource, source.getPos());
                     }
+                    rawArg = resolveAddressReference(rawArg, source);
+                    rawArg = coerceArgument(rawArg, typed.argumentClass(), commandSource);
                     ScriptContext executorContext = new ScriptContextImpl(commandSource, source.getPos(), commandSource.getLevel());
                     I mappedValue = typed.argumentMapper().apply((A) rawArg, executorContext);
                     return typed.function().apply(mappedValue, executorContext);
 
-                } else if (source.execute != null) {
-                    return source.execute.get();
                 }
             }
             return 0;
@@ -233,20 +243,25 @@ public class CommandTreeBuilder {
         if (isConditional) {
             builtArgument.then((new ZPSLiteral.Builder<CommandSourceStack>("else")).forward(executors, context -> {
                 if (context.getSource().source instanceof ZPSScriptCommandSource source) {
+                    boolean matched = source.predicate.test(source.predicateValue);
                     source.predicate = source.predicate.cycle();
 
-                    source.execute = () -> {
-                        Object rawArg = context.getArgument(argumentKey, Object.class);
-                        if (rawArg instanceof ArgumentPlaceholder) {
-                            throw new IllegalArgumentException("Argument placeholder %s must be replaced before execution");
-                        }
-                        if (rawArg instanceof ValueOfExpression<?> expr) {
-                            rawArg = expr.evaluate(context.getSource(), source.getPos());
-                        }
-                        ScriptContext executorContext = new ScriptContextImpl(context.getSource(), source.getPos(), context.getSource().getLevel());
-                        I mappedValue = typed.argumentMapper().apply((A) rawArg, executorContext);
-                        return typed.function().apply(mappedValue, executorContext);
-                    };
+                    if (matched && source.execute == null) {
+                        source.execute = () -> {
+                            Object rawArg = context.getArgument(argumentKey, Object.class);
+                            if (rawArg instanceof ArgumentPlaceholder) {
+                                throw new IllegalArgumentException("Argument placeholder %s must be replaced before execution");
+                            }
+                            if (rawArg instanceof ValueOfExpression<?> expr) {
+                                rawArg = expr.evaluate(context.getSource(), source.getPos());
+                            }
+                            rawArg = resolveAddressReference(rawArg, source);
+                            rawArg = coerceArgument(rawArg, typed.argumentClass(), context.getSource());
+                            ScriptContext executorContext = new ScriptContextImpl(context.getSource(), source.getPos(), context.getSource().getLevel());
+                            I mappedValue = typed.argumentMapper().apply((A) rawArg, executorContext);
+                            return typed.function().apply(mappedValue, executorContext);
+                        };
+                    }
                 }
                 return List.of(context.getSource());
             }, false));
@@ -357,6 +372,8 @@ public class CommandTreeBuilder {
                     if (rawArg instanceof ValueOfExpression<?> expr) {
                         rawArg = expr.evaluate(commandSource, source.getPos());
                     }
+                    rawArg = resolveAddressReference(rawArg, source);
+                    rawArg = coerceArgument(rawArg, scriptMapper2.argumentClass(), commandSource);
                     source.predicateValue = mapperFunction.apply(source.predicateValue,
                             new ScriptContextWithArgumentImpl<>(rawArg, source.getPos(), commandSource.getLevel(), commandSource));
                 }
@@ -391,6 +408,70 @@ public class CommandTreeBuilder {
     private record ScriptContextImpl(CommandSourceStack commandSource, BlockPos pos, ServerLevel level) implements ScriptContext {}
 
     private record ScriptContextWithArgumentImpl<T>(T argumentValue, BlockPos pos, ServerLevel level, CommandSourceStack commandSource) implements ScriptContext.WithArgument<T> { }
+
+    private static Object resolveAddressReference(Object rawArg, ZPSScriptCommandSource source) {
+        if (rawArg instanceof AddressReference addressReference) {
+            BlockPos resolved = source.resolveAddress(addressReference.name());
+            if (resolved == null) {
+                throw new IllegalArgumentException("Address @" + addressReference.name() + " is not available in this context");
+            }
+            return resolved;
+        }
+        return rawArg;
+    }
+
+    private static Object coerceArgument(Object rawArg, Class<?> expectedClass, CommandSourceStack commandSource) {
+        if (rawArg == null || expectedClass.isInstance(rawArg) || expectedClass == Object.class) {
+            return rawArg;
+        }
+
+        if (rawArg instanceof Coordinates coordinates) {
+            if (expectedClass == BlockPos.class) {
+                return coordinates.getBlockPos(commandSource);
+            }
+            if (expectedClass == Vec3.class) {
+                return coordinates.getPosition(commandSource);
+            }
+        }
+        if (expectedClass == Coordinates.class) {
+            if (rawArg instanceof BlockPos blockPos) {
+                return new FixedCoordinates(Vec3.atCenterOf(blockPos));
+            }
+            if (rawArg instanceof Vec3 vec3) {
+                return new FixedCoordinates(vec3);
+            }
+        }
+
+        throw new IllegalArgumentException("Expected argument type " + expectedClass.getSimpleName()
+                + ", got " + rawArg.getClass().getSimpleName());
+    }
+
+    private record FixedCoordinates(Vec3 position) implements Coordinates {
+        @Override
+        public @NotNull Vec3 getPosition(CommandSourceStack source) {
+            return position;
+        }
+
+        @Override
+        public @NotNull Vec2 getRotation(CommandSourceStack source) {
+            return source.getRotation();
+        }
+
+        @Override
+        public boolean isXRelative() {
+            return false;
+        }
+
+        @Override
+        public boolean isYRelative() {
+            return false;
+        }
+
+        @Override
+        public boolean isZRelative() {
+            return false;
+        }
+    }
 
     @SuppressWarnings("unused")
     public enum ComputeKey {compute}

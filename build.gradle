@@ -143,7 +143,7 @@ dependencies {
         }
     })
 
-    runtimeOnly(jarJar("dev.engine-room.flywheel:flywheel-neoforge-$minecraft_version:$flywheel_version") {
+    implementation(jarJar("dev.engine-room.flywheel:flywheel-neoforge-$minecraft_version:$flywheel_version") {
         version {
             strictly "[${flywheel_version},2.0)"
             prefer flywheel_version

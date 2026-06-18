@@ -30,9 +30,9 @@ import java.util.List;
 public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<RoboticArmBlockEntity> {
     private static final ItemStack SEGMENT_MODEL_STACK = new ItemStack(ModItems.ROBOTIC_ARM.get());
     private static final ModelResourceLocation SEGMENT_BER_MODEL =
-            ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "robotic_arm_segment"));
+            ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "item/robotic_arm_segment"));
     private static final ModelResourceLocation SWIVEL_BASE_BER_MODEL =
-            ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "robotic_arm_swivel_base"));
+            ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "item/robotic_arm_swivel_base"));
     private static final List<BlockPos> RANGE_VOLUME_OFFSETS = buildRangeVolumeOffsets();
     private final ItemRenderer itemRenderer;
 

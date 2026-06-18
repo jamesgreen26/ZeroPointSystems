@@ -26,13 +26,13 @@ import net.neoforged.neoforge.common.NeoForge;
 
 public class ClientSetup {
     private static final ModelResourceLocation ADDRESS_PAD_BER_MODEL =
-            ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "address_pad_ber"));
+            ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "item/address_pad_ber"));
     private static final ModelResourceLocation ROBOTIC_ARM_SEGMENT_BER_MODEL =
-            ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "robotic_arm_segment"));
+            ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "item/robotic_arm_segment"));
     private static final ModelResourceLocation ROBOTIC_ARM_SWIVEL_BASE_BER_MODEL =
-            ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "robotic_arm_swivel_base"));
+            ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "item/robotic_arm_swivel_base"));
     private static final ModelResourceLocation POWER_CELL_DIVIDER_BER_MODEL =
-            ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "power_cell_divider"));
+            ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "item/power_cell_divider"));
     private static final ModelResourceLocation POWER_DRILL_MODEL =
             new ModelResourceLocation(ZPSMod.resource("power_drill"), "inventory");
     private static final ModelResourceLocation CHAINSAW_MODEL =

@@ -26,8 +26,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class PoweredToolItemRenderer extends BlockEntityWithoutLevelRenderer {
-    public static final ModelResourceLocation BASE_MODEL = ModelResourceLocation.standalone(ZPSMod.resource("power_drill_base"));
-    public static final ModelResourceLocation HEAD_MODEL = ModelResourceLocation.standalone(ZPSMod.resource("power_drill_head"));
+    public static final ModelResourceLocation BASE_MODEL = ModelResourceLocation.standalone(ZPSMod.resource("item/power_drill_base"));
+    public static final ModelResourceLocation HEAD_MODEL = ModelResourceLocation.standalone(ZPSMod.resource("item/power_drill_head"));
 
     private static final float PASSIVE_SPIN_SPEED = 0.5f;
     private static final float BOOSTED_SPIN_SPEED = 36f;

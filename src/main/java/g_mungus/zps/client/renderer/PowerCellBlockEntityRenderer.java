@@ -19,7 +19,7 @@ import org.jetbrains.annotations.NotNull;
 public class PowerCellBlockEntityRenderer implements BlockEntityRenderer<PowerCellBlockEntity> {
     private static final ItemStack DIVIDER_MODEL_STACK = new ItemStack(ModItems.POWER_CELL.get());
     private static final ModelResourceLocation DIVIDER_BER_MODEL =
-            ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "power_cell_divider"));
+            ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "item/power_cell_divider"));
     private final ItemRenderer itemRenderer;
 
     public PowerCellBlockEntityRenderer(BlockEntityRendererProvider.Context context) {

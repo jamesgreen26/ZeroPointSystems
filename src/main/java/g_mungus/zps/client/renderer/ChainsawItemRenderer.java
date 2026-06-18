@@ -6,7 +6,7 @@ import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.util.Mth;
 
 public class ChainsawItemRenderer extends PoweredToolItemRenderer {
-    public static final ModelResourceLocation BLADE_MODEL = ModelResourceLocation.standalone(ZPSMod.resource("chainsaw_blade"));
+    public static final ModelResourceLocation BLADE_MODEL = ModelResourceLocation.standalone(ZPSMod.resource("item/chainsaw_blade"));
 
     public ChainsawItemRenderer() {
         super(BASE_MODEL, BLADE_MODEL);

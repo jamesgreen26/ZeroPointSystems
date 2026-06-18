@@ -20,7 +20,7 @@ import org.jetbrains.annotations.NotNull;
 public class ScriptTerminalBlockEntityRenderer implements BlockEntityRenderer<ScriptTerminalBlockEntity> {
     private static final ItemStack ADDRESS_PAD_STACK = new ItemStack(ModItems.ADDRESS_PAD.get());
     private static final ModelResourceLocation ADDRESS_PAD_BER_MODEL =
-            ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "address_pad_ber"));
+            ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "item/address_pad_ber"));
     private final ItemRenderer itemRenderer;
 
     public ScriptTerminalBlockEntityRenderer(BlockEntityRendererProvider.Context context) {

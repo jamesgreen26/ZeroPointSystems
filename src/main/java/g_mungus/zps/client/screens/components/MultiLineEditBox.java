@@ -39,6 +39,12 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 	private static final int BORDER_COLOR = -6250336;
 	private static final int BACKGROUND_COLOR = -16777216;
 	private static final int LINE_HEIGHT = 10;
+	private static final int SCROLLBAR_WIDTH = 6;
+	private static final int SCROLLBAR_PADDING = 2;
+	private static final int SCROLL_STEP_LINES = 3;
+	private static final int SCROLLBAR_TRACK_COLOR = -14540254;
+	private static final int SCROLLBAR_HANDLE_COLOR = -6250336;
+	private static final int SCROLLBAR_HANDLE_COLOR_FOCUSED = -1;
 	private final Font font;
 	private String value = "";
 	private int maxLength = 32;
@@ -48,6 +54,9 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 	private boolean isEditable = true;
 	private boolean shiftPressed;
 	private int displayPos;
+	private int verticalScrollLine;
+	private boolean draggingScrollbar;
+	private int scrollbarDragOffset;
 	private int cursorPos;
 	private int highlightPos;
 	private int textColor = 14737632;
@@ -128,34 +137,6 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 		if (k < l) {
 			string2 = string2.substring(0, k);
 			l = k;
-		}
-
-		// Check if adding newlines would exceed the maximum number of lines
-		if (string2.contains("\n")) {
-			String string3 = new StringBuilder(this.value).replace(i, j, string2).toString();
-			int newLineCount = string3.split("\n", -1).length;
-			int maxLines = this.getMaxLines();
-
-			if (newLineCount > maxLines) {
-				// Filter out newlines that would exceed capacity
-				StringBuilder filtered = new StringBuilder();
-				int currentLines = this.value.substring(0, i).split("\n", -1).length;
-
-				for (int idx = 0; idx < string2.length(); idx++) {
-					char c = string2.charAt(idx);
-					if (c == '\n') {
-						currentLines++;
-						if (currentLines > maxLines) {
-							// Skip this and all remaining newlines
-							continue;
-						}
-					}
-					filtered.append(c);
-				}
-
-				string2 = filtered.toString();
-				l = string2.length();
-			}
 		}
 
 		String string3 = new StringBuilder(this.value).replace(i, j, string2).toString();
@@ -456,6 +437,9 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 			return;
 		}
 
+		lineIndex += this.verticalScrollLine;
+		lineIndex = Mth.clamp(lineIndex, 0, lines.length - 1);
+
 		// Calculate position up to the clicked line
 		int positionUpToLine = 0;
 		for (int i = 0; i < lineIndex && i < lines.length; i++) {
@@ -470,6 +454,50 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 		int posInLine = this.font.plainSubstrByWidth(visiblePart, clickX).length() + scrollOffset;
 
 		this.moveCursorTo(positionUpToLine + posInLine);
+	}
+
+	@Override
+	public boolean mouseClicked(double d, double e, int i) {
+		if (this.visible && i == 0 && this.isScrollbarMouseOver(d, e) && this.getMaxScrollLine() > 0) {
+			this.setFocused(true);
+			ScrollbarMetrics metrics = this.getScrollbarMetrics();
+			this.draggingScrollbar = true;
+			this.scrollbarDragOffset = Mth.clamp((int)e - metrics.handleTop(), 0, metrics.handleHeight());
+			this.updateScrollbarDrag(e);
+			return true;
+		}
+
+		return super.mouseClicked(d, e, i);
+	}
+
+	@Override
+	public boolean mouseReleased(double d, double e, int i) {
+		if (i == 0 && this.draggingScrollbar) {
+			this.draggingScrollbar = false;
+			return true;
+		}
+
+		return super.mouseReleased(d, e, i);
+	}
+
+	@Override
+	public boolean mouseDragged(double d, double e, int i, double f, double g) {
+		if (this.draggingScrollbar && i == 0) {
+			this.updateScrollbarDrag(e);
+			return true;
+		}
+
+		return super.mouseDragged(d, e, i, f, g);
+	}
+
+	@Override
+	public boolean mouseScrolled(double d, double e, double f) {
+		if (!this.isMouseOver(d, e) || this.getMaxScrollLine() <= 0) {
+			return false;
+		}
+
+		this.scrollLines(-(int)Math.signum(f) * SCROLL_STEP_LINES);
+		return true;
 	}
 
 	@Override
@@ -491,6 +519,7 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 			int maxWidth = this.getInnerWidth();
 
 			String[] lines = this.value.split("\n", -1);
+			this.clampVerticalScroll(lines.length);
 
 			// Calculate which line the cursor and highlight are on
 			int cursorLine = -1, cursorPosInLine = -1;
@@ -516,7 +545,7 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 
 			// Render lines
 			int y = startY;
-			for (int lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+			for (int lineIdx = this.verticalScrollLine; lineIdx < lines.length; lineIdx++) {
 				if (y + LINE_HEIGHT > this.getY() + this.height) {
 					break;
 				}
@@ -591,6 +620,8 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 				y += LINE_HEIGHT;
 			}
 
+			this.renderScrollbar(arg, lines.length);
+
 			// Render hint if empty and not focused
 			if (this.hint != null && this.value.isEmpty() && !this.isFocused()) {
 				arg.drawString(this.font, this.hint, startX, startY, textColor);
@@ -603,10 +634,26 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 					int safePos = Math.min(cursorPosInLine, lines[cursorLine].length());
 					cursorX += this.font.width(lines[cursorLine].substring(0, safePos));
 				}
-				int suggestY = startY + (cursorLine >= 0 ? cursorLine * LINE_HEIGHT : 0);
+				int suggestY = startY + (cursorLine >= 0 ? (cursorLine - this.verticalScrollLine) * LINE_HEIGHT : 0);
 				arg.drawString(this.font, this.suggestion, cursorX, suggestY, -8355712);
 			}
 		}
+	}
+
+	private void renderScrollbar(GuiGraphics graphics, int lineCount) {
+		if (this.getMaxScrollLine(lineCount) <= 0) {
+			return;
+		}
+
+		ScrollbarMetrics metrics = this.getScrollbarMetrics(lineCount);
+		graphics.fill(metrics.left(), metrics.trackTop(), metrics.left() + SCROLLBAR_WIDTH, metrics.trackBottom(), SCROLLBAR_TRACK_COLOR);
+		graphics.fill(
+			metrics.left(),
+			metrics.handleTop(),
+			metrics.left() + SCROLLBAR_WIDTH,
+			metrics.handleTop() + metrics.handleHeight(),
+			this.isFocused() ? SCROLLBAR_HANDLE_COLOR_FOCUSED : SCROLLBAR_HANDLE_COLOR
+		);
 	}
 
 	private void renderHighlight(GuiGraphics arg, int i, int j, int k, int l) {
@@ -695,7 +742,8 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 	}
 
 	public int getInnerWidth() {
-		return this.isBordered() ? this.width - 8 : this.width;
+		int innerWidth = this.isBordered() ? this.width - 8 : this.width;
+		return Math.max(1, innerWidth - this.getScrollbarGutterWidth());
 	}
 
 	public int getMaxLines() {
@@ -757,6 +805,7 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 
 				// Clamp displayPos to valid range
 				this.displayPos = Mth.clamp(this.displayPos, 0, currentLineText.length());
+				this.ensureLineVisible(currentLine);
 			}
 		}
 	}
@@ -801,6 +850,105 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 		}
 
 		return startX;
+	}
+
+	public int getScreenY(int i) {
+		String[] lines = this.value.split("\n", -1);
+		int lineIdx = this.getLineForPosition(Mth.clamp(i, 0, this.value.length()), lines);
+		int startY = this.bordered ? this.getY() + 4 : this.getY();
+		return startY + (lineIdx - this.verticalScrollLine) * LINE_HEIGHT;
+	}
+
+	private int getScrollbarGutterWidth() {
+		return this.getMaxScrollLine() > 0 ? SCROLLBAR_WIDTH + SCROLLBAR_PADDING : 0;
+	}
+
+	private int getLineForPosition(int position, String[] lines) {
+		int charCount = 0;
+		for (int lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+			int lineLength = lines[lineIdx].length();
+			if (position >= charCount && position <= charCount + lineLength) {
+				return lineIdx;
+			}
+			charCount += lineLength + 1;
+		}
+		return Math.max(0, lines.length - 1);
+	}
+
+	private int getMaxScrollLine() {
+		return this.getMaxScrollLine(this.value.split("\n", -1).length);
+	}
+
+	private int getMaxScrollLine(int lineCount) {
+		return Math.max(0, lineCount - this.getMaxLines());
+	}
+
+	private void scrollLines(int lines) {
+		this.verticalScrollLine = Mth.clamp(this.verticalScrollLine + lines, 0, this.getMaxScrollLine());
+	}
+
+	private void ensureLineVisible(int line) {
+		if (line < this.verticalScrollLine) {
+			this.verticalScrollLine = line;
+		} else {
+			int lastVisibleLine = this.verticalScrollLine + this.getMaxLines() - 1;
+			if (line > lastVisibleLine) {
+				this.verticalScrollLine = line - this.getMaxLines() + 1;
+			}
+		}
+		this.verticalScrollLine = Mth.clamp(this.verticalScrollLine, 0, this.getMaxScrollLine());
+	}
+
+	private void clampVerticalScroll(int lineCount) {
+		this.verticalScrollLine = Mth.clamp(this.verticalScrollLine, 0, this.getMaxScrollLine(lineCount));
+	}
+
+	private boolean isScrollbarMouseOver(double mouseX, double mouseY) {
+		if (this.getMaxScrollLine() <= 0) {
+			return false;
+		}
+
+		ScrollbarMetrics metrics = this.getScrollbarMetrics();
+		return mouseX >= metrics.left()
+			&& mouseX < metrics.left() + SCROLLBAR_WIDTH
+			&& mouseY >= metrics.trackTop()
+			&& mouseY < metrics.trackBottom();
+	}
+
+	private void updateScrollbarDrag(double mouseY) {
+		ScrollbarMetrics metrics = this.getScrollbarMetrics();
+		int minTop = metrics.trackTop();
+		int maxTop = metrics.trackBottom() - metrics.handleHeight();
+		if (maxTop <= minTop) {
+			this.verticalScrollLine = 0;
+			return;
+		}
+
+		int targetTop = Mth.clamp((int)Math.round(mouseY) - this.scrollbarDragOffset, minTop, maxTop);
+		float progress = (targetTop - minTop) / (float)(maxTop - minTop);
+		this.verticalScrollLine = Mth.clamp(Math.round(progress * this.getMaxScrollLine()), 0, this.getMaxScrollLine());
+	}
+
+	private ScrollbarMetrics getScrollbarMetrics() {
+		return this.getScrollbarMetrics(this.value.split("\n", -1).length);
+	}
+
+	private ScrollbarMetrics getScrollbarMetrics(int lineCount) {
+		int trackTop = this.getY() + (this.bordered ? 4 : 0);
+		int trackBottom = this.getY() + this.height - (this.bordered ? 4 : 0);
+		int trackHeight = Math.max(1, trackBottom - trackTop);
+		int visibleLines = this.getMaxLines();
+		int handleHeight = Mth.clamp((int)(trackHeight * (visibleLines / (float)Math.max(visibleLines, lineCount))), 8, trackHeight);
+		int maxScrollLine = this.getMaxScrollLine(lineCount);
+		int handleTop = trackTop;
+		if (maxScrollLine > 0 && trackHeight > handleHeight) {
+			handleTop += Math.round((trackHeight - handleHeight) * (this.verticalScrollLine / (float)maxScrollLine));
+		}
+		int left = this.getX() + this.width - (this.bordered ? 4 : 0) - SCROLLBAR_WIDTH;
+		return new ScrollbarMetrics(left, trackTop, trackBottom, handleTop, handleHeight);
+	}
+
+	private record ScrollbarMetrics(int left, int trackTop, int trackBottom, int handleTop, int handleHeight) {
 	}
 
 	@Override

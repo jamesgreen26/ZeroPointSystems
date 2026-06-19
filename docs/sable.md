@@ -26,8 +26,6 @@ Produced by: `sublevel`
 | `bounding_box` | Vec Box | The sublevel bounding box dimensions in global space. Returns zero if not inside a sublevel. |
 | `dir <direction>` | Vec Dir | A cardinal direction (`north`, `south`, `east`, `west`, `up`, `down`) rotated to match the sublevel's current orientation. Returns the unrotated direction if not inside a sublevel. |
 
-Sable Companion does not expose a mass-like property, so there is no `mass` mapper equivalent here.
-
 ---
 
 ## Examples

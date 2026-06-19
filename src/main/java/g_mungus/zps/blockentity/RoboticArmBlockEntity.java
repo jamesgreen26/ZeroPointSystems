@@ -895,28 +895,42 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
     }
 
     public void dropHeldStackAtHandPosition() {
-        if (level == null || level.isClientSide) return;
+        if (!(level instanceof ServerLevel serverLevel)) return;
         if (heldStack.isEmpty()) return;
 
         ItemStack dropStack = heldStack.copy();
         heldStack = ItemStack.EMPTY;
 
+        // getCurrentHandWorldPosition() already returns a world-space position; it projects each
+        // move endpoint to world space before interpolating, so a hand crossing the sublevel
+        // boundary stays meaningful.
         Vec3 dropPosition = getCurrentHandWorldPosition();
-        ItemEntity itemEntity = new ItemEntity(level, dropPosition.x, dropPosition.y, dropPosition.z, dropStack);
+        ItemEntity itemEntity = new ItemEntity(serverLevel, dropPosition.x, dropPosition.y, dropPosition.z, dropStack);
         itemEntity.setDeltaMovement(0.0D, 0.0D, 0.0D);
-        level.addFreshEntity(itemEntity);
+        serverLevel.addFreshEntity(itemEntity);
         setChanged();
     }
 
     private Vec3 getCurrentHandWorldPosition() {
-        Vec3 settled = Vec3.atCenterOf(handBlockPos);
+        Vec3 settled = handBlockToWorld(handBlockPos);
         if (!moving || level == null) return settled;
 
         double elapsed = level.getGameTime() - moveStartTick;
         double progress = Math.min(1.0D, Math.max(0.0D, elapsed / (double) MOVE_TIME_TICKS));
-        Vec3 start = Vec3.atCenterOf(moveStartBlockPos);
-        Vec3 end = Vec3.atCenterOf(moveTargetBlockPos);
+        // The move endpoints can live in different coordinate spaces (e.g. start inside the
+        // sublevel, target out in worldspace) when the hand travels across the grid boundary.
+        // Project each endpoint to world space first so interpolating between them is meaningful.
+        Vec3 start = handBlockToWorld(moveStartBlockPos);
+        Vec3 end = handBlockToWorld(moveTargetBlockPos);
         return start.lerp(end, progress);
+    }
+
+    /// Projects a hand/target block position into world space, resolving the grid from the block
+    /// itself (each endpoint is a real, in-bounds block). Identity off-server or when not on a
+    /// ship/sublevel.
+    private Vec3 handBlockToWorld(BlockPos blockPos) {
+        if (!(level instanceof ServerLevel serverLevel)) return Vec3.atCenterOf(blockPos);
+        return Compat.toWorldPos(serverLevel, blockPos, Vec3.atCenterOf(blockPos));
     }
 
     private enum PendingTransfer {

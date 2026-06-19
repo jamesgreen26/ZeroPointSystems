@@ -68,6 +68,19 @@ public class Compat {
         return pos;
     }
 
+    /// Projects pos (in the local grid space of the grid managing anchorPos) into world space.
+    /// anchorPos resolves which ship/sublevel to use, so positions outside that grid's strict
+    /// bounds still transform correctly. Identity when neither VS nor Sable is loaded.
+    public static Vec3 toWorldPos(ServerLevel level, BlockPos anchorPos, Vec3 pos) {
+        if (isVSLoaded()) {
+            return VSCompat.shipToWorld(level, anchorPos, pos);
+        }
+        if (isSableLoaded()) {
+            return SableCompat.subLevelToWorld(level, anchorPos, pos);
+        }
+        return pos;
+    }
+
     /// Transforms pos (in its own grid's coordinates) into the local space of the grid managing
     /// anchorPos. Identity when neither VS nor Sable is loaded.
     public static Vec3 toLocalSpaceOf(Level level, BlockPos anchorPos, Vec3 pos) {

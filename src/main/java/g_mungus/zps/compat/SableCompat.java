@@ -159,6 +159,17 @@ public final class SableCompat {
     }
 
     /// Only call after verifying that Sable is loaded.
+    /// Transforms pos (in the local space of the sublevel managing anchorPos) into world space.
+    /// anchorPos resolves which sublevel to use, so positions outside the sublevel's strict
+    /// bounds still transform correctly. Returns pos unchanged if anchorPos is not inside a
+    /// sublevel.
+    static Vec3 subLevelToWorld(Level level, BlockPos anchorPos, Vec3 pos) {
+        SubLevelAccess subLevel = SableCompanion.INSTANCE.getContaining(level, anchorPos.getCenter());
+        if (subLevel == null) return pos;
+        return subLevel.logicalPose().transformPosition(pos);
+    }
+
+    /// Only call after verifying that Sable is loaded.
     /// Sable equivalent of VSCompat#worldToShip: transforms a world-space position into the
     /// local space of the sublevel managing anchorPos. Returns worldPos unchanged if anchorPos
     /// is not inside a sublevel.

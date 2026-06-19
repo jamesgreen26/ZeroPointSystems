@@ -39,6 +39,18 @@ public class VSCompat {
     }
 
     /// Only call after verifying that VS is loaded.
+    /// Transforms pos (in the ship-space of the ship managing anchorPos) into world coordinates.
+    /// anchorPos resolves the ship, so positions outside the ship's strict bounds still transform
+    /// correctly. Returns pos unchanged if anchorPos is not on a ship.
+    static Vec3 shipToWorld(Level level, BlockPos anchorPos, Vec3 pos) {
+        Ship ship = VSGameUtilsKt.getShipManagingPos(level, anchorPos);
+        if (ship == null) return pos;
+        Vector3d world = ship.getTransform().getShipToWorld()
+                .transformPosition(VectorConversionsMCKt.toJOML(pos));
+        return VectorConversionsMCKt.toMinecraft(world);
+    }
+
+    /// Only call after verifying that VS is loaded.
     /// Transforms a world-space position into the local space of the ship managing anchorPos.
     /// Returns worldPos unchanged if anchorPos is not on a ship.
     static Vec3 worldToShip(Level level, BlockPos anchorPos, Vec3 worldPos) {

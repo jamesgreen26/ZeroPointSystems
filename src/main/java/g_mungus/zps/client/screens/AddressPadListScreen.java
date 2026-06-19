@@ -85,7 +85,7 @@ public class AddressPadListScreen extends Screen {
 
     @Override
     public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(graphics, mouseX, mouseY, partialTick);
+        super.render(graphics, mouseX, mouseY, partialTick);
         renderTexturedPanel(graphics);
         graphics.drawString(this.font, TITLE, this.width / 2 - this.font.width(TITLE) / 2, this.titleY, 0x303030, false);
 
@@ -117,7 +117,6 @@ public class AddressPadListScreen extends Screen {
             }
         }
 
-        super.render(graphics, mouseX, mouseY, partialTick);
         PonderGuiTextures.ICON_CONFIG_DISCARD.render(graphics, this.clearButton.getX() + 2, this.clearButton.getY() + 2);
         PonderGuiTextures.ICON_DISABLE.render(graphics, this.closeButton.getX() + 2, this.closeButton.getY() + 2);
 

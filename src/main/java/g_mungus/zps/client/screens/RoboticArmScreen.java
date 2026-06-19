@@ -64,7 +64,7 @@ public class RoboticArmScreen extends Screen {
 
     @Override
     public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(graphics, mouseX, mouseY, partialTick);
+        super.render(graphics, mouseX, mouseY, partialTick);
         int centerX = this.width / 2;
         int centerY = this.height / 2;
         int topSectionY = centerY + TOP_SECTION_Y_OFFSET;
@@ -95,7 +95,6 @@ public class RoboticArmScreen extends Screen {
         graphics.drawCenteredString(this.font, energyText, centerX, barY + 6, 0xFFFFFF);
         graphics.drawString(this.font, RETRIEVE_LABEL, centerX - 100, retrieveLabelY, 0xA0A0A0);
         graphics.drawString(this.font, VIEW_RANGE_LABEL, centerX - 100, viewRangeLabelY, 0xA0A0A0);
-        super.render(graphics, mouseX, mouseY, partialTick);
     }
 
     @Override

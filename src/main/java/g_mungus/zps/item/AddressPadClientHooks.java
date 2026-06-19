@@ -47,7 +47,7 @@ public class AddressPadClientHooks {
     }
 
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_WEATHER) return;
 
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;

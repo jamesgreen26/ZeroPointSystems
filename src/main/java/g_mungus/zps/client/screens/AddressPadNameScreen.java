@@ -53,10 +53,9 @@ public class AddressPadNameScreen extends Screen {
 
     @Override
     public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(graphics, mouseX, mouseY, partialTick);
+        super.render(graphics, mouseX, mouseY, partialTick);
 //        graphics.drawCenteredString(this.font, TITLE, this.width / 2, this.height / 2 - 34, 0xFFFFFF);
         graphics.drawString(this.font, LABEL, this.width / 2 - 100, this.height / 2 - 24, 0xA0A0A0);
-        super.render(graphics, mouseX, mouseY, partialTick);
     }
 
     @Override

@@ -922,14 +922,24 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
     }
 
     private Vec3 getCurrentHandWorldPosition() {
-        Vec3 settled = Vec3.atCenterOf(handBlockPos);
+        Vec3 settled = handBlockToWorld(handBlockPos);
         if (!moving || level == null) return settled;
 
         double elapsed = level.getGameTime() - moveStartTick;
         double progress = Math.min(1.0D, Math.max(0.0D, elapsed / (double) MOVE_TIME_TICKS));
-        Vec3 start = Vec3.atCenterOf(moveStartBlockPos);
-        Vec3 end = Vec3.atCenterOf(moveTargetBlockPos);
+        // The move endpoints can live in different coordinate spaces (e.g. start in a ship's
+        // shipyard, target out in worldspace) when the hand travels across the ship boundary.
+        // Project each endpoint to world space first so interpolating between them is meaningful.
+        Vec3 start = handBlockToWorld(moveStartBlockPos);
+        Vec3 end = handBlockToWorld(moveTargetBlockPos);
         return start.lerp(end, progress);
+    }
+
+    /// Projects a hand/target block position into world space. Each endpoint is a real, in-bounds
+    /// block, so its own grid resolves the transform. Identity off-server or when VS is not loaded.
+    private Vec3 handBlockToWorld(BlockPos blockPos) {
+        if (!(level instanceof ServerLevel serverLevel)) return Vec3.atCenterOf(blockPos);
+        return Compat.toWorldPos(serverLevel, Vec3.atCenterOf(blockPos));
     }
 
     private enum PendingTransfer {

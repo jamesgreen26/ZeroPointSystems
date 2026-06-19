@@ -1,6 +1,5 @@
 {
-	"loader": "fusion:model",
-	"type": "base",
+	"render_type": "minecraft:cutout",
 	"textures": {
 		"0": "zps:block/decor/space_grating_block_densecable",
 		"particle": "zps:block/decor/space_grating_block"

@@ -1,8 +1,7 @@
 {
-	"loader": "fusion:model",
-	"type": "base",
 	"format_version": "1.21.6",
 	"credit": "Made with Blockbench",
+	"render_type": "minecraft:cutout",
 	"texture_size": [32, 32],
 	"textures": {
 		"0": "zps:block/decor/catwalk_steps",

@@ -15,6 +15,7 @@ import g_mungus.zps.commands.api.ScriptGetter;
 import g_mungus.zps.commands.api.ScriptMapper;
 import g_mungus.zps.commands.api.ScriptNode;
 import g_mungus.zps.commands.api_impl.debug.BrigadierCanvasExporter;
+import g_mungus.zps.commands.debug.PlaceBlockPanoramaCommand;
 import g_mungus.zps.commands.debug.SetHeldItemEnergyCommand;
 import g_mungus.zps.networking.ExecutorBlocksS2CPacket;
 import g_mungus.zps.networking.GetterBlocksS2CPacket;
@@ -104,6 +105,7 @@ public class ZPSCommands {
         commandTreeBuilder.buildExecutors();
 
         if (!FMLLoader.isProduction()) {
+            dispatcher.register(PlaceBlockPanoramaCommand.COMMAND);
             dispatcher.register(SetHeldItemEnergyCommand.COMMAND);
 
             try {

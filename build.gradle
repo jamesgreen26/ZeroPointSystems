@@ -114,9 +114,6 @@ dependencies {
     compileOnly(annotationProcessor("com.github.bawnorton.mixinsquared:mixinsquared-common:0.3.6-beta.1"))
     jarJar(implementation("com.github.bawnorton.mixinsquared:mixinsquared-forge:0.3.6-beta.1"))
 
-    // Fusion is a client-only visual mod — not needed on server or gameTestServer
-    clientOnlyMods("maven.modrinth:fusion-connected-textures:1.2.12-forge-mc1.20.1")
-
     jarJar(modImplementation("ace.actually.radios:radios:1.2.0")) {
         version {
             strictly "[1.2.0,)"

@@ -1,5 +1,5 @@
 {
-  "loader": "fusion:model",
+  "loader": "zps:model",
   "type": "connecting",
   "parent": "minecraft:block/cube_all",
   "textures": {

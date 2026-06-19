@@ -1,0 +1,33 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_raw_lithium": {
+      "conditions": {
+        "items": [
+          {
+            "items": "zps:raw_lithium"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "zps:lithium_ingot_from_smelting_raw_lithium"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_raw_lithium",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "zps:lithium_ingot_from_smelting_raw_lithium"
+    ]
+  },
+  "sends_telemetry_event": false
+}

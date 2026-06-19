@@ -1,0 +1,55 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_copper_magnetron": {
+      "conditions": {
+        "items": [
+          {
+            "items": "zps:copper_magnetron"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_space_metal_ingot": {
+      "conditions": {
+        "items": [
+          {
+            "items": "zps:space_metal_ingot"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_space_metal_rod": {
+      "conditions": {
+        "items": [
+          {
+            "items": "zps:space_metal_rod"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "zps:incomplete_robotic_arm_0"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_copper_magnetron",
+      "has_space_metal_ingot",
+      "has_space_metal_rod",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "zps:incomplete_robotic_arm_0"
+    ]
+  },
+  "sends_telemetry_event": false
+}

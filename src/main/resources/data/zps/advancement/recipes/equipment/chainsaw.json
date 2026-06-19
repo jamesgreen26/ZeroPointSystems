@@ -1,0 +1,66 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_chain": {
+      "conditions": {
+        "items": [
+          {
+            "items": "minecraft:chain"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_copper_magnetron": {
+      "conditions": {
+        "items": [
+          {
+            "items": "zps:copper_magnetron"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_energy_storage_module": {
+      "conditions": {
+        "items": [
+          {
+            "items": "zps:energy_storage_module"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_space_metal_ingot": {
+      "conditions": {
+        "items": [
+          {
+            "items": "zps:space_metal_ingot"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "zps:chainsaw"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_chain",
+      "has_copper_magnetron",
+      "has_energy_storage_module",
+      "has_space_metal_ingot",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "zps:chainsaw"
+    ]
+  },
+  "sends_telemetry_event": false
+}

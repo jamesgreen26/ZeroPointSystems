@@ -1,6 +1,5 @@
 {
-	"loader": "fusion:model",
-	"type": "base",
+	"render_type": "minecraft:solid",
 	"textures": {
 		"0": "zps:block/insulated_serial_bus",
 		"particle": "zps:block/insulated_serial_bus"

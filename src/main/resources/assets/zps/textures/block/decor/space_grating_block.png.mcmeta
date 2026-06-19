@@ -1,7 +1,6 @@
 {
-   "fusion": {
+   "zps": {
       "type": "connecting",
-      "layout": "pieced",
-      "render_type": "cutout"
+      "layout": "pieced"
    }
 }

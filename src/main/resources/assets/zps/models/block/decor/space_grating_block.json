@@ -1,7 +1,8 @@
 {
-  "loader": "fusion:model",
+  "loader": "zps:model",
   "type": "connecting",
   "parent": "minecraft:block/cube_all",
+  "render_type": "minecraft:cutout",
   "textures": {
     "all": "zps:block/decor/space_grating_block"
   },

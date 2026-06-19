@@ -112,9 +112,6 @@ dependencies {
         }
     }
 
-    // Fusion is a client-only visual mod and should stay out of server and gametest runs.
-    clientOnlyMods("maven.modrinth:fusion-connected-textures:${fusion_version}")
-
     jarJar(implementation("ace.actually.radios:radios:1.3.0")) {
         version {
             strictly "[1.2.0,)"

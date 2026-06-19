@@ -47,7 +47,7 @@ public class AddressPadClientHooks {
     }
 
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_WEATHER) return;
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
 
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
@@ -94,7 +94,7 @@ public class AddressPadClientHooks {
             poseStack.mulPose(minecraft.getEntityRenderDispatcher().cameraOrientation());
 
             float scale = 0.025f;
-            poseStack.scale(-scale, -scale, scale);
+            poseStack.scale(scale, -scale, scale);
 
             float x = -font.width(name) / 2f;
             font.drawInBatch(

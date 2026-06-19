@@ -11,8 +11,11 @@ import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptGetter;
 import g_mungus.zps.commands.api.ScriptMapper;
 import g_mungus.zps.commands.api.ScriptMapper2;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Position;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.server.command.EnumArgument;
 import org.jetbrains.annotations.NotNull;
@@ -135,6 +138,34 @@ public final class SableCompat {
                 Direction.class,
                 ZPSMod.resource("direction")
         ));
+
+        // TODO: VSCompat registers a "mass" mapper (ship inertia mass scaled by its
+        //  ship-to-world volume). The Sable companion API exposes no inertia/mass accessor
+        //  on SubLevelAccess, so there is no exact Sable equivalent to register here.
+    }
+
+    /// Only call after verifying that Sable is loaded.
+    /// Sable equivalent of VSCompat#shipToWorld(ServerLevel, BlockPos).
+    static Vec3 subLevelToWorld(ServerLevel level, BlockPos pos) {
+        Position center = pos.getCenter();
+        return SableCompanion.INSTANCE.projectOutOfSubLevel(level, center);
+    }
+
+    /// Only call after verifying that Sable is loaded.
+    /// Sable equivalent of VSCompat#shipToWorld(Level, Vec3).
+    static Vec3 subLevelToWorld(Level level, Vec3 pos) {
+        Position position = pos;
+        return SableCompanion.INSTANCE.projectOutOfSubLevel(level, position);
+    }
+
+    /// Only call after verifying that Sable is loaded.
+    /// Sable equivalent of VSCompat#worldToShip: transforms a world-space position into the
+    /// local space of the sublevel managing anchorPos. Returns worldPos unchanged if anchorPos
+    /// is not inside a sublevel.
+    static Vec3 worldToSubLevel(Level level, BlockPos anchorPos, Vec3 worldPos) {
+        SubLevelAccess subLevel = SableCompanion.INSTANCE.getContaining(level, anchorPos.getCenter());
+        if (subLevel == null) return worldPos;
+        return subLevel.logicalPose().transformPositionInverse(worldPos);
     }
 
     private static Vec3 subLevelDirection(SubLevelAccess subLevel, Direction direction) {

@@ -1,11 +1,9 @@
 package g_mungus.zps.compat;
 
-import dev.ryanhcode.sable.companion.SableCompanion;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.compat.create.CreateCompat;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Position;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.ComponentContents;
 import net.minecraft.network.chat.contents.TranslatableContents;
@@ -38,7 +36,7 @@ public class Compat {
         return BuiltInRegistries.ITEM.getKey(item).equals(ResourceLocation.fromNamespaceAndPath("create", "wrench"));
     }
 
-    private static boolean isVSLoaded() {
+    public static boolean isVSLoaded() {
         return ModList.get().isLoaded("valkyrienskies");
     }
 
@@ -49,23 +47,46 @@ public class Compat {
     public static boolean isSableLoaded() { return ModList.get().isLoaded("sable"); }
 
     public static BlockPos toWorldPos(ServerLevel level, BlockPos pos) {
-        Position projectedPos = pos.getCenter();
-        Vec3 worldPos = SableCompanion.INSTANCE.projectOutOfSubLevel(level, projectedPos);
-        return new BlockPos((int) worldPos.x, (int) worldPos.y, (int) worldPos.z);
-    }
-
-    public static Vec3 toWorldPos(ServerLevel level, Vec3 pos) {
+        if (isVSLoaded()) {
+            Vec3 truePos = VSCompat.shipToWorld(level, pos);
+            return new BlockPos((int) truePos.x, (int) truePos.y, (int) truePos.z);
+        }
+        if (isSableLoaded()) {
+            Vec3 worldPos = SableCompat.subLevelToWorld(level, pos);
+            return new BlockPos((int) worldPos.x, (int) worldPos.y, (int) worldPos.z);
+        }
         return pos;
     }
 
-    /// Transforms pos into the local space of the grid managing anchorPos.
+    public static Vec3 toWorldPos(ServerLevel level, Vec3 pos) {
+        if (isVSLoaded()) {
+            return VSCompat.shipToWorld(level, pos);
+        }
+        if (isSableLoaded()) {
+            return SableCompat.subLevelToWorld(level, pos);
+        }
+        return pos;
+    }
+
+    /// Transforms pos (in its own grid's coordinates) into the local space of the grid managing
+    /// anchorPos. Identity when neither VS nor Sable is loaded.
     public static Vec3 toLocalSpaceOf(Level level, BlockPos anchorPos, Vec3 pos) {
+        if (isVSLoaded()) {
+            Vec3 worldPos = VSCompat.shipToWorld(level, pos);
+            return VSCompat.worldToShip(level, anchorPos, worldPos);
+        }
+        if (isSableLoaded()) {
+            Vec3 worldPos = SableCompat.subLevelToWorld(level, pos);
+            return SableCompat.worldToSubLevel(level, anchorPos, worldPos);
+        }
         return pos;
     }
 
     @SubscribeEvent
     public static void onRegisterScriptCommandsEvent(RegisterScriptCommandsEvent event) {
-        if (isSableLoaded()) {
+        if (isVSLoaded()) {
+            VSCompat.registerScriptCommands(event);
+        } else if (isSableLoaded()) {
             SableCompat.registerScriptCommands(event);
         }
         if (isCreateLoaded()) {

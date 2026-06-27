@@ -140,6 +140,7 @@ public class ClientSetup {
             NeoForge.EVENT_BUS.addListener(ContraptionInteractionClient::onRenderLevelStage);
             NeoForge.EVENT_BUS.addListener(ContraptionInteractionClient::onRenderHighlight);
             NeoForge.EVENT_BUS.addListener(ContraptionInteractionClient::onClientTick);
+            NeoForge.EVENT_BUS.addListener(ContraptionInteractionClient::onComputeCameraAngles);
         });
     }
 

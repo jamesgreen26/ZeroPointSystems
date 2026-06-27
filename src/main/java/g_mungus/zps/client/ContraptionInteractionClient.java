@@ -14,6 +14,7 @@ import g_mungus.zps.contraption.ContraptionBlockGetter;
 import g_mungus.zps.contraption.ContraptionPlaceContext;
 import g_mungus.zps.contraption.ContraptionSimLevel;
 import g_mungus.zps.contraption.ContraptionTransform;
+import g_mungus.zps.contraption.util.ContraptionMath;
 import g_mungus.zps.networking.ContraptionBreakC2SPacket;
 import g_mungus.zps.networking.ContraptionBreakProgressC2SPacket;
 import g_mungus.zps.networking.ContraptionPlaceC2SPacket;
@@ -42,6 +43,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderHighlightEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.neoforge.client.event.ViewportEvent;
 
 /**
  * Client-side targeting, input handling and rendering for breaking and placing
@@ -74,6 +76,12 @@ public final class ContraptionInteractionClient {
 	private static int useDelay;
 
 	private static final Map<Integer, RemoteBreak> remoteBreaks = new HashMap<>();
+
+	// The contraption the local player is currently standing on (Y-axis only), and the
+	// platform's interpolated angle last frame, so we can turn the player exactly in step
+	// with the rendered rotation each frame (smooth; a per-tick turn would step at 20 Hz).
+	private static ServoMotorBlockEntity ridingMotor;
+	private static float lastPlatformAngle;
 
 	// region input (called from MinecraftMixin)
 
@@ -254,6 +262,70 @@ public final class ContraptionInteractionClient {
 					be.collideWithPlayer(mc.player);
 			}
 		}
+	}
+
+	/**
+	 * Per-frame: if the local player is standing on a contraption spinning about Y, turn
+	 * their look to follow it, tracking the platform's interpolated angle exactly so the
+	 * camera stays in lockstep with the rendered rotation (frame-perfect, no 20 Hz step).
+	 */
+	public static void onComputeCameraAngles(ViewportEvent.ComputeCameraAngles event) {
+		Minecraft mc = Minecraft.getInstance();
+		LocalPlayer player = mc.player;
+		if (player == null) {
+			ridingMotor = null;
+			return;
+		}
+		float partialTick = (float) event.getPartialTick();
+		ServoMotorBlockEntity motor = findRidingMotor(player, partialTick);
+		if (motor == null) {
+			ridingMotor = null;
+			return;
+		}
+
+		float current = motor.getInterpolatedAngle(partialTick);
+		if (motor != ridingMotor) {
+			// Just stepped on: establish the baseline without an initial jump.
+			ridingMotor = motor;
+			lastPlatformAngle = current;
+			return;
+		}
+
+		float platformDelta = ContraptionMath.getShortestAngleDiff(lastPlatformAngle, current);
+		lastPlatformAngle = current;
+		if (platformDelta == 0)
+			return;
+
+		// Platform turns +Z toward +X (ContraptionMath); Minecraft yaw runs the other way.
+		float yawDelta = -platformDelta;
+		float newYaw = player.getYRot() + yawDelta;
+		player.setYRot(newYaw);
+		player.yRotO = newYaw;
+		player.setYHeadRot(player.getYHeadRot() + yawDelta);
+		player.yHeadRotO = player.getYHeadRot();
+		player.yBodyRot += yawDelta;
+		player.yBodyRotO = player.yBodyRot;
+		event.setYaw(newYaw);
+	}
+
+	@org.jetbrains.annotations.Nullable
+	private static ServoMotorBlockEntity findRidingMotor(LocalPlayer player, float partialTick) {
+		for (ServoMotorBlockEntity be : ServoMotorBlockEntity.ACTIVE_CLIENT) {
+			if (be.getRotationAxis() != Direction.Axis.Y || be.getLevel() != player.level())
+				continue;
+			Contraption contraption = be.getContraption();
+			if (contraption == null || contraption.isEmpty())
+				continue;
+			ContraptionTransform transform = ContraptionTransform.ofInterpolated(be, partialTick);
+			// Block supporting the player's feet, in contraption-local space.
+			Vec3 local = transform.worldToLocal(player.position());
+			BlockPos support = BlockPos.containing(local.x, local.y - 0.05, local.z);
+			StructureBlockInfo info = contraption.getBlocks().get(support);
+			if (info != null
+				&& !info.state().getCollisionShape(new ContraptionBlockGetter(contraption), support).isEmpty())
+				return be;
+		}
+		return null;
 	}
 
 	public static void onRenderHighlight(RenderHighlightEvent.Block event) {

@@ -67,6 +67,20 @@ public class Contraption {
 	}
 
 	/**
+	 * Shallow copy of the structure (block infos and update tags are immutable /
+	 * treated as such). Used for client-side prediction, where a fresh instance is
+	 * needed so the renderer/collider pick up the change (they key on identity).
+	 */
+	public Contraption copy() {
+		Contraption copy = new Contraption();
+		copy.anchor = anchor;
+		copy.blocks.putAll(blocks);
+		copy.updateTags.putAll(updateTags);
+		copy.bounds = bounds;
+		return copy;
+	}
+
+	/**
 	 * Flood-fill outward from the anchor, capturing all connected movable blocks
 	 * (excluding the controller block) into local coordinates.
 	 */

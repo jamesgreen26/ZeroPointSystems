@@ -7,13 +7,12 @@ import java.util.function.Predicate;
 
 import javax.annotation.Nullable;
 
-import net.createmod.catnip.levelWrappers.PlacementSimulationServerLevel;
-
 import g_mungus.zps.client.renderer.contraption.ContraptionRenderState;
 import g_mungus.zps.contraption.AssemblyException;
 import g_mungus.zps.contraption.Contraption;
 import g_mungus.zps.contraption.ContraptionPlaceContext;
 import g_mungus.zps.contraption.ContraptionRotationState;
+import g_mungus.zps.contraption.ContraptionSimLevel;
 import g_mungus.zps.contraption.ContraptionTransform;
 import g_mungus.zps.contraption.StructureTransform;
 import g_mungus.zps.contraption.collision.ContraptionCollider;
@@ -45,7 +44,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -94,6 +92,17 @@ public class ServoMotorBlockEntity extends BlockEntity {
 	@Nullable
 	public Contraption getContraption() {
 		return contraption;
+	}
+
+	/**
+	 * Client-only: replace the contraption with a predicted version (after a local
+	 * break/place) so it renders/collides immediately, before the authoritative
+	 * server sync arrives and replaces it. A fresh instance triggers the renderer
+	 * and render-state caches to rebuild (they key on identity).
+	 */
+	public void setContraptionClient(Contraption predicted) {
+		if (level != null && level.isClientSide)
+			contraption = predicted;
 	}
 
 	public boolean isRunning() {
@@ -284,7 +293,7 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		if (!contraption.getBlocks().containsKey(local))
 			return false;
 		ItemStack stack = player.getItemInHand(hand);
-		if (!(stack.getItem() instanceof BlockItem blockItem))
+		if (!(stack.getItem() instanceof BlockItem))
 			return false;
 
 		ServerLevel serverLevel = (ServerLevel) level;
@@ -292,21 +301,16 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		if (!inReach(local, player, transform))
 			return false;
 
-		// Simulation level carrying the contraption's blocks at their local positions, so
+		// Read-only overlay exposing the contraption's blocks at their local positions, so
 		// getStateForPlacement sees in-structure neighbours (fences/walls/redstone/stairs).
-		PlacementSimulationServerLevel sim = new PlacementSimulationServerLevel(serverLevel);
-		for (StructureBlockInfo info : contraption.getBlocks().values())
-			sim.setBlock(info.pos(), info.state(), Block.UPDATE_CLIENTS);
-
-		BlockHitResult localHitResult = new BlockHitResult(localHit, localFace, local, false);
-		ContraptionPlaceContext ctx = new ContraptionPlaceContext(sim, player, hand, stack, localHitResult, transform);
-		if (!ctx.canPlace())
+		ContraptionSimLevel sim = new ContraptionSimLevel(serverLevel, contraption);
+		ContraptionPlaceContext.Placed placed =
+			ContraptionPlaceContext.resolve(sim, player, hand, stack, local, localFace, localHit, transform);
+		if (placed == null)
 			return false;
 
-		BlockPos placePos = ctx.getClickedPos();
-		BlockState placeState = blockItem.getBlock().getStateForPlacement(ctx);
-		if (placeState == null || !placeState.canSurvive(sim, placePos))
-			return false;
+		BlockPos placePos = placed.pos();
+		BlockState placeState = placed.state();
 
 		CompoundTag beNbt = null;
 		CompoundTag updateTag = null;
@@ -409,11 +413,26 @@ public class ServoMotorBlockEntity extends BlockEntity {
 	}
 
 	private void readState(CompoundTag tag, HolderLookup.Provider registries) {
+		// A structure edit (break/place) re-syncs the whole BE while it keeps spinning. The
+		// client advances the angle deterministically every tick, so adopting the packet's
+		// (already stale) angle here would snap the rotation. Only adopt the synced angle on
+		// the initial load; otherwise keep the client's free-running angle.
+		boolean wasRunningWithContraption = running && contraption != null;
+		float clientAngle = angle;
+		float clientPrevAngle = prevAngle;
+
 		running = tag.getBoolean("Running");
 		wasPowered = tag.getBoolean("WasPowered");
 		rotationAxis = Axis.values()[tag.getInt("Axis")];
-		angle = tag.getFloat("Angle");
-		prevAngle = angle;
+
+		if (level != null && level.isClientSide && wasRunningWithContraption && running) {
+			angle = clientAngle;
+			prevAngle = clientPrevAngle;
+		} else {
+			angle = tag.getFloat("Angle");
+			prevAngle = angle;
+		}
+
 		if (tag.contains("Contraption")) {
 			contraption = new Contraption();
 			contraption.readNBT(registries, tag.getCompound("Contraption"));

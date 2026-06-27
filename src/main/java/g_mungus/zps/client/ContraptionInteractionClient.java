@@ -11,6 +11,8 @@ import g_mungus.zps.blockentity.ServoMotorBlockEntity;
 import g_mungus.zps.client.renderer.contraption.ContraptionRenderWorld;
 import g_mungus.zps.contraption.Contraption;
 import g_mungus.zps.contraption.ContraptionBlockGetter;
+import g_mungus.zps.contraption.ContraptionPlaceContext;
+import g_mungus.zps.contraption.ContraptionSimLevel;
 import g_mungus.zps.contraption.ContraptionTransform;
 import g_mungus.zps.networking.ContraptionBreakC2SPacket;
 import g_mungus.zps.networking.ContraptionBreakProgressC2SPacket;
@@ -23,10 +25,14 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.resources.model.ModelBakery;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
 import net.minecraft.world.phys.BlockHitResult;
@@ -114,9 +120,49 @@ public final class ContraptionInteractionClient {
 
 		ZPSGamePackets.sendToServer(new ContraptionPlaceC2SPacket(currentHit.motor().getBlockPos(),
 			currentHit.localPos(), currentHit.localFace(), currentHit.localHit(), hand));
+		// Predict the placement locally so the block appears immediately; the authoritative
+		// server sync replaces it a round-trip later (and corrects it if the server disagrees).
+		predictPlacement(player, currentHit, hand);
 		player.swing(hand);
 		useDelay = ACTION_DELAY;
 		return true;
+	}
+
+	private static void predictPlacement(LocalPlayer player, Hit hit, InteractionHand hand) {
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.level == null) return;
+		ServoMotorBlockEntity motor = hit.motor();
+		Contraption contraption = motor.getContraption();
+		if (contraption == null) return;
+
+		ItemStack stack = player.getItemInHand(hand);
+		ContraptionTransform transform = ContraptionTransform.ofCurrent(motor);
+		ContraptionSimLevel sim = new ContraptionSimLevel(mc.level, contraption);
+		ContraptionPlaceContext.Placed placed = ContraptionPlaceContext.resolve(sim, player, hand, stack,
+			hit.localPos(), hit.localFace(), hit.localHit(), transform);
+		if (placed == null) return;
+
+		CompoundTag beNbt = null;
+		CompoundTag updateTag = null;
+		if (placed.state().getBlock() instanceof EntityBlock entityBlock) {
+			BlockEntity be = entityBlock.newBlockEntity(placed.pos(), placed.state());
+			if (be != null) {
+				be.setLevel(mc.level);
+				beNbt = be.saveWithFullMetadata(mc.level.registryAccess());
+				updateTag = be.getUpdateTag(mc.level.registryAccess());
+			}
+		}
+		Contraption predicted = contraption.copy();
+		predicted.putBlock(placed.pos(), placed.state(), beNbt, updateTag);
+		motor.setContraptionClient(predicted);
+	}
+
+	private static void predictBreak(ServoMotorBlockEntity motor, BlockPos local) {
+		Contraption contraption = motor.getContraption();
+		if (contraption == null) return;
+		Contraption predicted = contraption.copy();
+		predicted.removeBlock(local);
+		motor.setContraptionClient(predicted);
 	}
 
 	private static void progressMining() {
@@ -149,6 +195,7 @@ public final class ContraptionInteractionClient {
 
 		if (player.getAbilities().instabuild) {
 			sendBreak(motor, local);
+			predictBreak(motor, local);
 			destroyDelay = ACTION_DELAY;
 			resetBreak();
 			return;
@@ -162,6 +209,7 @@ public final class ContraptionInteractionClient {
 		}
 		if (destroyProgress >= 1.0f) {
 			sendBreak(motor, local);
+			predictBreak(motor, local);
 			destroyDelay = ACTION_DELAY;
 			resetBreak();
 		}

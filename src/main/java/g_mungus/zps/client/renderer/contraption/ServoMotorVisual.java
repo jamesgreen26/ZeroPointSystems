@@ -22,7 +22,6 @@ import dev.engine_room.flywheel.lib.instance.TransformedInstance;
 import dev.engine_room.flywheel.lib.model.baked.BlockModelBuilder;
 import dev.engine_room.flywheel.lib.visual.AbstractBlockEntityVisual;
 import dev.engine_room.flywheel.lib.visual.SimpleDynamicVisual;
-import dev.engine_room.flywheel.lib.visualization.VisualizationHelper;
 import g_mungus.zps.blockentity.ServoMotorBlockEntity;
 import g_mungus.zps.contraption.Contraption;
 import net.minecraft.core.BlockPos;
@@ -87,10 +86,12 @@ public class ServoMotorVisual extends AbstractBlockEntityVisual<ServoMotorBlockE
 		if (renderState == null)
 			return;
 
+		// Mirror Create: create a Flywheel child visual for every captured block entity
+		// that has a visualizer. The BER independently decides whether to ALSO run the
+		// vanilla renderer (it skips a block entity only when it opts out of vanilla
+		// render). This lets e.g. the robotic arm draw its segments via the child visual
+		// while its BER still draws the held item.
 		for (BlockEntity be : renderState.getBlockEntities()) {
-			// Only host the ones the BER will skip; everything else renders vanilla.
-			if (!VisualizationHelper.skipVanillaRender(be))
-				continue;
 			BlockEntityVisualizer<? super BlockEntity> visualizer =
 				(BlockEntityVisualizer<? super BlockEntity>) VisualizerRegistry.getVisualizer(be.getType());
 			if (visualizer == null)

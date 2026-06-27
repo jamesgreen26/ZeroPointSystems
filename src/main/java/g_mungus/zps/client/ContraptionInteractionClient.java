@@ -19,6 +19,7 @@ import g_mungus.zps.networking.ContraptionBreakC2SPacket;
 import g_mungus.zps.networking.ContraptionBreakProgressC2SPacket;
 import g_mungus.zps.networking.ContraptionPlaceC2SPacket;
 import g_mungus.zps.networking.ZPSGamePackets;
+import g_mungus.zps.mixin.MinecraftAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -73,7 +74,6 @@ public final class ContraptionInteractionClient {
 	private static float destroyProgress;
 	private static int lastSentStage = -1;
 	private static int destroyDelay;
-	private static int useDelay;
 
 	private static final Map<Integer, RemoteBreak> remoteBreaks = new HashMap<>();
 
@@ -94,7 +94,9 @@ public final class ContraptionInteractionClient {
 		if (mc.player == null) return false;
 		pick(partialTick());
 		if (currentHit == null) return false;
-		progressMining();
+		// A fresh click acts immediately, mirroring vanilla's startAttack (only the held
+		// path below is throttled by destroyDelay).
+		progressMining(true);
 		mc.player.swing(InteractionHand.MAIN_HAND);
 		return true;
 	}
@@ -107,7 +109,7 @@ public final class ContraptionInteractionClient {
 			resetBreak();
 			return false;
 		}
-		progressMining();
+		progressMining(false);
 		mc.player.swing(InteractionHand.MAIN_HAND);
 		return true;
 	}
@@ -118,7 +120,6 @@ public final class ContraptionInteractionClient {
 		if (player == null) return false;
 		pick(partialTick());
 		if (currentHit == null) return false;
-		if (useDelay > 0) return true;
 
 		InteractionHand hand = null;
 		if (player.getMainHandItem().getItem() instanceof BlockItem) hand = InteractionHand.MAIN_HAND;
@@ -132,7 +133,9 @@ public final class ContraptionInteractionClient {
 		// server sync replaces it a round-trip later (and corrects it if the server disagrees).
 		predictPlacement(player, currentHit, hand);
 		player.swing(hand);
-		useDelay = ACTION_DELAY;
+		// Throttle only the held auto-repeat: vanilla re-fires startUseItem when
+		// rightClickDelay hits 0, while a fresh keyUse.consumeClick() bypasses it.
+		((MinecraftAccessor) mc).setRightClickDelay(ACTION_DELAY);
 		return true;
 	}
 
@@ -173,14 +176,15 @@ public final class ContraptionInteractionClient {
 		motor.setContraptionClient(predicted);
 	}
 
-	private static void progressMining() {
+	private static void progressMining(boolean fresh) {
 		Minecraft mc = Minecraft.getInstance();
 		LocalPlayer player = mc.player;
 		if (player == null || currentHit == null) {
 			resetBreak();
 			return;
 		}
-		if (destroyDelay > 0) return;
+		// destroyDelay only throttles the held auto-repeat; a fresh click always acts.
+		if (!fresh && destroyDelay > 0) return;
 
 		ServoMotorBlockEntity motor = currentHit.motor();
 		BlockPos local = currentHit.localPos();
@@ -242,7 +246,6 @@ public final class ContraptionInteractionClient {
 
 	public static void onClientTick(ClientTickEvent.Post event) {
 		if (destroyDelay > 0) destroyDelay--;
-		if (useDelay > 0) useDelay--;
 
 		Minecraft mc = Minecraft.getInstance();
 		if (mc.level == null) {

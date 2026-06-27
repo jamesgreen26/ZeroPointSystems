@@ -115,10 +115,13 @@ public class ClientSetup {
                     // The BER keeps rendering the held item, debug overlays, and the on-ship fallback
                     .neverSkipVanillaRender()
                     .apply();
-            // Servo Motor contraption: Flywheel visual when available, vanilla BER fallback otherwise.
+            // Servo Motor contraption: Flywheel draws the static structure + child block-entity
+            // visuals; the BER always runs to draw captured block entities via their vanilla
+            // renderers (and the whole structure when Flywheel is unavailable).
             BlockEntityRenderers.register(ModBlockEntities.SERVO_MOTOR.get(), ServoMotorBlockEntityRenderer::new);
             SimpleBlockEntityVisualizer.builder(ModBlockEntities.SERVO_MOTOR.get())
                     .factory(ServoMotorVisual::new)
+                    .neverSkipVanillaRender()
                     .apply();
             BlockEntityRenderers.register(ModBlockEntities.POWER_CELL.get(), PowerCellBlockEntityRenderer::new);
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DENSE_CABLE_SEPARATOR.get(), RenderType.cutout());

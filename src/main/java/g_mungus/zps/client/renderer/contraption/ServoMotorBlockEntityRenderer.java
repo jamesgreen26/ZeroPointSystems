@@ -3,15 +3,19 @@ package g_mungus.zps.client.renderer.contraption;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 
+import dev.engine_room.flywheel.api.visualization.VisualizationManager;
+import dev.engine_room.flywheel.lib.visualization.VisualizationHelper;
 import g_mungus.zps.blockentity.ServoMotorBlockEntity;
 import g_mungus.zps.contraption.Contraption;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
 import net.neoforged.neoforge.client.model.data.ModelData;
 
@@ -33,6 +37,7 @@ public class ServoMotorBlockEntityRenderer implements BlockEntityRenderer<ServoM
 
 		float angle = be.getInterpolatedAngle(partialTick);
 		Direction facing = be.getFacing();
+		boolean flywheelActive = be.getLevel() != null && VisualizationManager.supportsVisualization(be.getLevel());
 
 		poseStack.pushPose();
 		// BER origin is the motor block corner; shift to the anchor block and pivot there.
@@ -41,16 +46,53 @@ public class ServoMotorBlockEntityRenderer implements BlockEntityRenderer<ServoM
 		poseStack.mulPose(axisRotation(facing.getAxis(), angle));
 		poseStack.translate(-0.5, -0.5, -0.5);
 
-		BlockRenderDispatcher dispatcher = Minecraft.getInstance().getBlockRenderer();
-		for (StructureBlockInfo info : contraption.getBlocks().values()) {
-			BlockPos local = info.pos();
+		// Static block models: only when Flywheel isn't drawing the structure instance.
+		if (!flywheelActive) {
+			BlockRenderDispatcher dispatcher = Minecraft.getInstance().getBlockRenderer();
+			for (StructureBlockInfo info : contraption.getBlocks().values()) {
+				BlockPos local = info.pos();
+				poseStack.pushPose();
+				poseStack.translate(local.getX(), local.getY(), local.getZ());
+				dispatcher.renderSingleBlock(info.state(), poseStack, buffers, packedLight, packedOverlay,
+					ModelData.EMPTY, null);
+				poseStack.popPose();
+			}
+		}
+
+		// Captured block entities (chests, signs, machines, ...): rendered via their
+		// vanilla renderers so they keep rendering while assembled. A block entity is
+		// skipped only when Flywheel is active AND it opts out of vanilla rendering
+		// (its Flywheel child visual draws it instead).
+		renderCapturedBlockEntities(be, partialTick, poseStack, buffers, packedLight, packedOverlay, flywheelActive);
+
+		poseStack.popPose();
+	}
+
+	private static void renderCapturedBlockEntities(ServoMotorBlockEntity be, float partialTick, PoseStack poseStack,
+		MultiBufferSource buffers, int packedLight, int packedOverlay, boolean flywheelActive) {
+		ContraptionRenderState renderState = be.getRenderState();
+		if (renderState == null)
+			return;
+
+		BlockEntityRenderDispatcher dispatcher = Minecraft.getInstance().getBlockEntityRenderDispatcher();
+		for (BlockEntity captured : renderState.getBlockEntities()) {
+			if (flywheelActive && VisualizationHelper.skipVanillaRender(captured))
+				continue;
+			BlockEntityRenderer<BlockEntity> renderer = dispatcher.getRenderer(captured);
+			if (renderer == null)
+				continue;
+			BlockPos local = captured.getBlockPos();
 			poseStack.pushPose();
 			poseStack.translate(local.getX(), local.getY(), local.getZ());
-			dispatcher.renderSingleBlock(info.state(), poseStack, buffers, packedLight, packedOverlay,
-				ModelData.EMPTY, null);
+			try {
+				// Approximate lighting with the motor's packed light; the captured block
+				// entities live at contraption-local positions, so true light is unavailable.
+				renderer.render(captured, partialTick, poseStack, buffers, packedLight, packedOverlay);
+			} catch (Exception ignored) {
+				// A misbehaving virtual render shouldn't crash the frame.
+			}
 			poseStack.popPose();
 		}
-		poseStack.popPose();
 	}
 
 	private static org.joml.Quaternionf axisRotation(Direction.Axis axis, float degrees) {

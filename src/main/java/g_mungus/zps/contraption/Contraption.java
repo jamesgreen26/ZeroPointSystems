@@ -40,12 +40,18 @@ public class Contraption {
 	public static final int MAX_BLOCKS = 4096;
 
 	private final Map<BlockPos, StructureBlockInfo> blocks = new HashMap<>();
+	/** Client-render NBT (getUpdateTag) per local pos, for reconstructing block entities on the client. */
+	private final Map<BlockPos, CompoundTag> updateTags = new HashMap<>();
 	private BlockPos anchor = BlockPos.ZERO;
 	@Nullable
 	private AABB bounds;
 
 	public Map<BlockPos, StructureBlockInfo> getBlocks() {
 		return blocks;
+	}
+
+	public Map<BlockPos, CompoundTag> getUpdateTags() {
+		return updateTags;
 	}
 
 	public BlockPos getAnchor() {
@@ -105,6 +111,8 @@ public class Contraption {
 		BlockEntity be = level.getBlockEntity(pos);
 		CompoundTag nbt = be == null ? null : be.saveWithFullMetadata(level.registryAccess());
 		blocks.put(local, new StructureBlockInfo(local, state, nbt));
+		if (be != null)
+			updateTags.put(local, be.getUpdateTag(level.registryAccess()));
 		expandBounds(local);
 	}
 
@@ -166,6 +174,9 @@ public class Contraption {
 			entry.put("State", NbtUtils.writeBlockState(info.state()));
 			if (info.nbt() != null)
 				entry.put("Data", info.nbt());
+			CompoundTag updateTag = updateTags.get(info.pos());
+			if (updateTag != null)
+				entry.put("UpdateTag", updateTag);
 			list.add(entry);
 		}
 		tag.put("Blocks", list);
@@ -174,6 +185,7 @@ public class Contraption {
 
 	public void readNBT(HolderLookup.Provider registries, CompoundTag tag) {
 		blocks.clear();
+		updateTags.clear();
 		bounds = null;
 		anchor = BlockPos.of(tag.getLong("Anchor"));
 
@@ -185,6 +197,8 @@ public class Contraption {
 			BlockState state = NbtUtils.readBlockState(blockGetter, entry.getCompound("State"));
 			CompoundTag data = entry.contains("Data") ? entry.getCompound("Data") : null;
 			blocks.put(local, new StructureBlockInfo(local, state, data));
+			if (entry.contains("UpdateTag"))
+				updateTags.put(local, entry.getCompound("UpdateTag"));
 			expandBounds(local);
 		}
 	}

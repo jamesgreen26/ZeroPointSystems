@@ -2,6 +2,7 @@ package g_mungus.zps.blockentity;
 
 import javax.annotation.Nullable;
 
+import g_mungus.zps.client.renderer.contraption.ContraptionRenderState;
 import g_mungus.zps.contraption.AssemblyException;
 import g_mungus.zps.contraption.Contraption;
 import g_mungus.zps.contraption.ContraptionRotationState;
@@ -45,6 +46,10 @@ public class ServoMotorBlockEntity extends BlockEntity {
 	private float angle;
 	private float prevAngle;
 
+	/** Client-only cache of reconstructed block entities for rendering. */
+	@Nullable
+	private ContraptionRenderState renderState;
+
 	public ServoMotorBlockEntity(BlockPos pos, BlockState state) {
 		super(ModBlockEntities.SERVO_MOTOR.get(), pos, state);
 	}
@@ -76,6 +81,21 @@ public class ServoMotorBlockEntity extends BlockEntity {
 
 	public Axis getRotationAxis() {
 		return rotationAxis;
+	}
+
+	/**
+	 * Client-only: reconstructed block entities of the captured structure, rebuilt
+	 * when the contraption changes. Returns null when nothing is assembled.
+	 */
+	@Nullable
+	public ContraptionRenderState getRenderState() {
+		if (level == null || contraption == null) {
+			renderState = null;
+			return null;
+		}
+		if (renderState == null || renderState.getContraption() != contraption)
+			renderState = new ContraptionRenderState(level, contraption);
+		return renderState;
 	}
 
 	// region ticking

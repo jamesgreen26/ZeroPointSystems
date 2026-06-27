@@ -24,6 +24,7 @@
     "ItemEntityMixin",
     "LecternBlockEntityMixin",
     "LivingEntityMixin",
+    "ServerGamePacketListenerImplAccessor",
     "ServerLevelMixin",
     "StructureTemplateMixin",
     "create.GoggleInfoExtension",

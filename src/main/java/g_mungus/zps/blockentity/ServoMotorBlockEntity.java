@@ -1,5 +1,7 @@
 package g_mungus.zps.blockentity;
 
+import java.util.function.Predicate;
+
 import javax.annotation.Nullable;
 
 import g_mungus.zps.client.renderer.contraption.ContraptionRenderState;
@@ -9,6 +11,7 @@ import g_mungus.zps.contraption.ContraptionRotationState;
 import g_mungus.zps.contraption.StructureTransform;
 import g_mungus.zps.contraption.collision.ContraptionCollider;
 import g_mungus.zps.contraption.util.ContraptionMath;
+import g_mungus.zps.mixin.ServerGamePacketListenerImplAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
@@ -16,6 +19,9 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
@@ -121,13 +127,21 @@ public class ServoMotorBlockEntity extends BlockEntity {
 			return;
 
 		angle = (angle + DEGREES_PER_TICK) % 360;
-		collideEntities();
+		// Resolve non-player entities here; players are resolved client-side.
+		collide(entity -> !(entity instanceof Player));
+		// Riders stand on blocks that aren't in the world, so keep the server from
+		// kicking them for "floating".
+		keepRidersAfloat();
 	}
 
 	public void clientTick() {
 		prevAngle = angle;
-		if (running)
-			angle = (angle + DEGREES_PER_TICK) % 360;
+		if (!running || contraption == null)
+			return;
+
+		angle = (angle + DEGREES_PER_TICK) % 360;
+		// Resolve the local player client-side so collision feels solid.
+		collideClientPlayer();
 	}
 
 	// endregion
@@ -182,12 +196,31 @@ public class ServoMotorBlockEntity extends BlockEntity {
 
 	// region collision
 
-	private void collideEntities() {
+	private void collide(Predicate<Entity> shouldCollide) {
 		Vec3 anchorVec = Vec3.atLowerCornerOf(worldPosition.relative(getFacing()));
 		ContraptionRotationState rotation = new ContraptionRotationState(rotationAxis, angle);
 		AABB worldBounds = computeWorldBounds(anchorVec);
 		ContraptionCollider.collideEntities(level, anchorVec, rotation, contraption, worldBounds,
-			this::getContactPointMotion);
+			this::getContactPointMotion, shouldCollide);
+	}
+
+	/** Resolve the local player on the client; their movement is client-authoritative. */
+	private void collideClientPlayer() {
+		Player player = net.minecraft.client.Minecraft.getInstance().player;
+		if (player != null)
+			collide(entity -> entity == player);
+	}
+
+	private void keepRidersAfloat() {
+		AABB bounds = computeWorldBounds(Vec3.atLowerCornerOf(worldPosition.relative(getFacing())));
+		for (Player player : level.getEntitiesOfClass(Player.class, bounds)) {
+			if (player instanceof ServerPlayer serverPlayer) {
+				ServerGamePacketListenerImplAccessor connection =
+					(ServerGamePacketListenerImplAccessor) serverPlayer.connection;
+				connection.setAboveGroundTickCount(0);
+				connection.setAboveGroundVehicleTickCount(0);
+			}
+		}
 	}
 
 	/** Velocity of the rotating platform at a world point, for carrying riders. */

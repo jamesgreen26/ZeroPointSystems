@@ -2,6 +2,7 @@ package g_mungus.zps.contraption.collision;
 
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableFloat;
@@ -24,10 +25,12 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 /**
- * Pushes/carries entities that touch a rotating contraption. Server-side,
- * driven from the host BlockEntity's tick. Clean-room port of the core of
- * Create's ContraptionCollider (single rotation axis, no translation, no
- * client-prediction or train-damage paths); no com.simibubi.* references.
+ * Pushes/carries entities that touch a rotating contraption. Driven from the
+ * host BlockEntity's tick on BOTH sides: the server resolves non-player
+ * entities, the client resolves its local player (player movement is
+ * client-authoritative, so resolving it server-side would only fight the client
+ * and feel like drag). Clean-room port of the core of Create's
+ * ContraptionCollider (single rotation axis, no translation); no com.simibubi.* references.
  */
 public final class ContraptionCollider {
 
@@ -39,9 +42,11 @@ public final class ContraptionCollider {
 	 * @param worldBounds   generous world-space AABB enclosing the rotating structure.
 	 * @param contactMotion maps a world point on the structure to the platform's
 	 *                      velocity there this tick (for carrying riders).
+	 * @param shouldCollide which nearby entities to resolve this tick (used to split
+	 *                      player vs non-player handling by side).
 	 */
 	public static void collideEntities(Level level, Vec3 anchorVec, ContraptionRotationState rotation,
-		Contraption contraption, AABB worldBounds, Function<Vec3, Vec3> contactMotion) {
+		Contraption contraption, AABB worldBounds, Function<Vec3, Vec3> contactMotion, Predicate<Entity> shouldCollide) {
 		if (contraption == null || contraption.isEmpty())
 			return;
 
@@ -50,6 +55,8 @@ public final class ContraptionCollider {
 		List<Entity> nearby = level.getEntitiesOfClass(Entity.class, worldBounds.inflate(2).expandTowards(0, 32, 0));
 		for (Entity entity : nearby) {
 			if (!entity.isAlive() || entity.isPassenger() || entity.noPhysics)
+				continue;
+			if (!shouldCollide.test(entity))
 				continue;
 
 			Matrix3d rotationMatrix = rotation.asMatrix();

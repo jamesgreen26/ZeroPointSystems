@@ -49,7 +49,11 @@ public class ContraptionRenderWorld implements net.minecraft.world.level.BlockAn
 
 	@Override
 	public float getShade(Direction direction, boolean shade) {
-		return level.getShade(direction, shade);
+		// No directional face shading is baked into the model. Flywheel applies the
+		// cardinal (face-direction) diffuse shading on the GPU via CardinalLightingMode,
+		// so baking vanilla's getShade darkening in here would double it and make the
+		// contraption too dark. Matches Create's VirtualRenderWorld.getShade.
+		return 1f;
 	}
 
 	@Override

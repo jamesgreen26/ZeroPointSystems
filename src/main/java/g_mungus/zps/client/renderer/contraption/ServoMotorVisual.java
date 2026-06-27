@@ -7,8 +7,6 @@ import java.util.function.Consumer;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 
-import com.mojang.math.Axis;
-
 import dev.engine_room.flywheel.api.instance.Instance;
 import dev.engine_room.flywheel.api.material.CardinalLightingMode;
 import dev.engine_room.flywheel.api.material.Material;
@@ -33,6 +31,7 @@ import dev.engine_room.flywheel.lib.task.RunnablePlan;
 import dev.engine_room.flywheel.lib.visual.AbstractBlockEntityVisual;
 import g_mungus.zps.blockentity.ServoMotorBlockEntity;
 import g_mungus.zps.contraption.Contraption;
+import g_mungus.zps.contraption.ContraptionTransform;
 import it.unimi.dsi.fastutil.longs.LongArraySet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.core.BlockPos;
@@ -167,13 +166,7 @@ public class ServoMotorVisual extends AbstractBlockEntityVisual<ServoMotorBlockE
 
 		Matrix4f pose = new Matrix4f();
 		pose.translate(vp.getX() + facing.getStepX(), vp.getY() + facing.getStepY(), vp.getZ() + facing.getStepZ());
-		pose.translate(0.5f, 0.5f, 0.5f);
-		switch (blockEntity.getRotationAxis()) {
-			case X -> pose.rotate(Axis.XP.rotationDegrees(angle));
-			case Y -> pose.rotate(Axis.YP.rotationDegrees(angle));
-			case Z -> pose.rotate(Axis.ZP.rotationDegrees(angle));
-		}
-		pose.translate(-0.5f, -0.5f, -0.5f);
+		ContraptionTransform.pivotRotate(pose, blockEntity.getRotationAxis(), angle);
 
 		embedding.transforms(pose, pose.normal(new Matrix3f()));
 	}

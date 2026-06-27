@@ -121,6 +121,41 @@ public class Contraption {
 		bounds = bounds == null ? box : bounds.minmax(box);
 	}
 
+	/** Recompute the structure bounds from scratch (after a block is removed). */
+	private void recomputeBounds() {
+		bounds = null;
+		for (BlockPos local : blocks.keySet())
+			expandBounds(local);
+	}
+
+	/**
+	 * Insert or replace a block in the structure at a local position (used by
+	 * in-flight placement). Returns false if the position lies outside the loaded
+	 * structure entirely (never null state expected from callers).
+	 */
+	public void putBlock(BlockPos local, BlockState state, @Nullable CompoundTag beNbt, @Nullable CompoundTag updateTag) {
+		blocks.put(local, new StructureBlockInfo(local, state, beNbt));
+		if (updateTag != null)
+			updateTags.put(local, updateTag);
+		else
+			updateTags.remove(local);
+		expandBounds(local);
+	}
+
+	/**
+	 * Remove a block from the structure (used by in-flight mining). Returns the
+	 * removed info, or null if there was no block there.
+	 */
+	@Nullable
+	public StructureBlockInfo removeBlock(BlockPos local) {
+		StructureBlockInfo removed = blocks.remove(local);
+		if (removed == null)
+			return null;
+		updateTags.remove(local);
+		recomputeBounds();
+		return removed;
+	}
+
 	/** Remove all captured blocks from the world (brittle first, then solid). */
 	public void removeBlocksFromWorld(Level level) {
 		for (boolean brittlePass : new boolean[] { true, false }) {

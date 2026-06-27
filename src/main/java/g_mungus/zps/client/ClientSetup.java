@@ -137,6 +137,9 @@ public class ClientSetup {
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.CATWALK.get(), RenderType.cutout());
 
             NeoForge.EVENT_BUS.addListener(AddressPadClientHooks::onRenderLevelStage);
+            NeoForge.EVENT_BUS.addListener(ContraptionInteractionClient::onRenderLevelStage);
+            NeoForge.EVENT_BUS.addListener(ContraptionInteractionClient::onRenderHighlight);
+            NeoForge.EVENT_BUS.addListener(ContraptionInteractionClient::onClientTick);
         });
     }
 

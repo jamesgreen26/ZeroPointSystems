@@ -25,6 +25,10 @@ public final class ZPSGamePackets {
         registrar.playToServer(AddressPadRemovePositionC2SPacket.TYPE, AddressPadRemovePositionC2SPacket.STREAM_CODEC, AddressPadRemovePositionC2SPacket::handle);
         registrar.playToServer(AddressPadSetEntriesC2SPacket.TYPE, AddressPadSetEntriesC2SPacket.STREAM_CODEC, AddressPadSetEntriesC2SPacket::handle);
         registrar.playToServer(RoboticArmSettingsC2SPacket.TYPE, RoboticArmSettingsC2SPacket.STREAM_CODEC, RoboticArmSettingsC2SPacket::handle);
+        registrar.playToServer(ContraptionBreakC2SPacket.TYPE, ContraptionBreakC2SPacket.STREAM_CODEC, ContraptionBreakC2SPacket::handle);
+        registrar.playToServer(ContraptionPlaceC2SPacket.TYPE, ContraptionPlaceC2SPacket.STREAM_CODEC, ContraptionPlaceC2SPacket::handle);
+        registrar.playToServer(ContraptionBreakProgressC2SPacket.TYPE, ContraptionBreakProgressC2SPacket.STREAM_CODEC, ContraptionBreakProgressC2SPacket::handle);
+        registrar.playToClient(ContraptionDestroyStageS2CPacket.TYPE, ContraptionDestroyStageS2CPacket.STREAM_CODEC, ContraptionDestroyStageS2CPacket::handle);
     }
 
     public static void sendToServer(CustomPacketPayload payload) {

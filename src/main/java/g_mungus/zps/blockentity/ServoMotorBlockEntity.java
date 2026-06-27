@@ -1,13 +1,20 @@
 package g_mungus.zps.blockentity;
 
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
 import javax.annotation.Nullable;
 
+import net.createmod.catnip.levelWrappers.PlacementSimulationServerLevel;
+
 import g_mungus.zps.client.renderer.contraption.ContraptionRenderState;
 import g_mungus.zps.contraption.AssemblyException;
 import g_mungus.zps.contraption.Contraption;
+import g_mungus.zps.contraption.ContraptionPlaceContext;
 import g_mungus.zps.contraption.ContraptionRotationState;
+import g_mungus.zps.contraption.ContraptionTransform;
 import g_mungus.zps.contraption.StructureTransform;
 import g_mungus.zps.contraption.collision.ContraptionCollider;
 import g_mungus.zps.contraption.util.ContraptionMath;
@@ -19,16 +26,26 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -41,6 +58,12 @@ public class ServoMotorBlockEntity extends BlockEntity {
 
 	/** Rotation speed in degrees per tick (~16 RPM at 2°/t). */
 	public static final float DEGREES_PER_TICK = 2f;
+
+	/** Client-side set of currently-assembled motors, for interaction raytracing. */
+	public static final Set<ServoMotorBlockEntity> ACTIVE_CLIENT = ConcurrentHashMap.newKeySet();
+
+	/** Max squared distance from a player to a contraption block for break/place. */
+	private static final double INTERACT_RANGE_SQR = 7.0 * 7.0;
 
 	@Nullable
 	private Contraption contraption;
@@ -83,6 +106,11 @@ public class ServoMotorBlockEntity extends BlockEntity {
 
 	public float getInterpolatedAngle(float partialTick) {
 		return ContraptionMath.angleLerp(partialTick, prevAngle, angle);
+	}
+
+	/** Raw current rotation angle in degrees (server-authoritative). */
+	public float getAngle() {
+		return angle;
 	}
 
 	public Axis getRotationAxis() {
@@ -136,12 +164,21 @@ public class ServoMotorBlockEntity extends BlockEntity {
 
 	public void clientTick() {
 		prevAngle = angle;
-		if (!running || contraption == null)
+		if (!running || contraption == null) {
+			ACTIVE_CLIENT.remove(this);
 			return;
+		}
+		ACTIVE_CLIENT.add(this);
 
 		angle = (angle + DEGREES_PER_TICK) % 360;
-		// Resolve the local player client-side so collision feels solid.
-		collideClientPlayer();
+		// Local-player collision is driven from ContraptionInteractionClient (client-only)
+		// so this class never references client types and stays dist-safe.
+	}
+
+	@Override
+	public void setRemoved() {
+		super.setRemoved();
+		ACTIVE_CLIENT.remove(this);
 	}
 
 	// endregion
@@ -194,6 +231,109 @@ public class ServoMotorBlockEntity extends BlockEntity {
 
 	// endregion
 
+	// region in-flight editing (break / place)
+
+	/** True if {@code player} is close enough to the rotated world position of a local block. */
+	private boolean inReach(BlockPos local, ServerPlayer player, ContraptionTransform transform) {
+		return player.position().distanceToSqr(transform.localBlockCenterToWorld(local)) <= INTERACT_RANGE_SQR;
+	}
+
+	/** Mine a single block out of the structure: drops, particles/sound, and structure update. */
+	public void breakContraptionBlock(BlockPos local, ServerPlayer player) {
+		if (level == null || level.isClientSide || contraption == null)
+			return;
+		StructureBlockInfo info = contraption.getBlocks().get(local);
+		if (info == null)
+			return;
+		ServerLevel serverLevel = (ServerLevel) level;
+		ContraptionTransform transform = ContraptionTransform.ofCurrent(this);
+		if (!inReach(local, player, transform))
+			return;
+
+		BlockState state = info.state();
+		BlockPos worldPos = BlockPos.containing(transform.localBlockCenterToWorld(local));
+		ItemStack tool = player.getMainHandItem();
+
+		if (!player.isCreative() && serverLevel.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS)) {
+			BlockEntity be = null;
+			if (info.nbt() != null && state.getBlock() instanceof EntityBlock entityBlock) {
+				be = entityBlock.newBlockEntity(worldPos, state);
+				if (be != null) {
+					be.setLevel(serverLevel);
+					be.loadWithComponents(info.nbt(), serverLevel.registryAccess());
+				}
+			}
+			List<ItemStack> drops = Block.getDrops(state, serverLevel, worldPos, be, player, tool);
+			for (ItemStack drop : drops)
+				Block.popResource(serverLevel, worldPos, drop);
+			state.spawnAfterBreak(serverLevel, worldPos, tool, true);
+		}
+
+		// Break particles + sound (vanilla level event 2001).
+		serverLevel.levelEvent(2001, worldPos, Block.getId(state));
+		contraption.removeBlock(local);
+		setChanged();
+		sendData();
+	}
+
+	/** Place the player's held block into the structure with full vanilla placement context. */
+	public boolean placeContraptionBlock(BlockPos local, Direction localFace, Vec3 localHit, ServerPlayer player,
+		InteractionHand hand) {
+		if (level == null || level.isClientSide || contraption == null)
+			return false;
+		if (!contraption.getBlocks().containsKey(local))
+			return false;
+		ItemStack stack = player.getItemInHand(hand);
+		if (!(stack.getItem() instanceof BlockItem blockItem))
+			return false;
+
+		ServerLevel serverLevel = (ServerLevel) level;
+		ContraptionTransform transform = ContraptionTransform.ofCurrent(this);
+		if (!inReach(local, player, transform))
+			return false;
+
+		// Simulation level carrying the contraption's blocks at their local positions, so
+		// getStateForPlacement sees in-structure neighbours (fences/walls/redstone/stairs).
+		PlacementSimulationServerLevel sim = new PlacementSimulationServerLevel(serverLevel);
+		for (StructureBlockInfo info : contraption.getBlocks().values())
+			sim.setBlock(info.pos(), info.state(), Block.UPDATE_CLIENTS);
+
+		BlockHitResult localHitResult = new BlockHitResult(localHit, localFace, local, false);
+		ContraptionPlaceContext ctx = new ContraptionPlaceContext(sim, player, hand, stack, localHitResult, transform);
+		if (!ctx.canPlace())
+			return false;
+
+		BlockPos placePos = ctx.getClickedPos();
+		BlockState placeState = blockItem.getBlock().getStateForPlacement(ctx);
+		if (placeState == null || !placeState.canSurvive(sim, placePos))
+			return false;
+
+		CompoundTag beNbt = null;
+		CompoundTag updateTag = null;
+		if (placeState.getBlock() instanceof EntityBlock entityBlock) {
+			BlockEntity be = entityBlock.newBlockEntity(placePos, placeState);
+			if (be != null) {
+				be.setLevel(serverLevel);
+				beNbt = be.saveWithFullMetadata(serverLevel.registryAccess());
+				updateTag = be.getUpdateTag(serverLevel.registryAccess());
+			}
+		}
+
+		contraption.putBlock(placePos, placeState, beNbt, updateTag);
+		if (!player.isCreative())
+			stack.shrink(1);
+
+		Vec3 worldCenter = transform.localBlockCenterToWorld(placePos);
+		SoundType sound = placeState.getSoundType();
+		serverLevel.playSound(null, BlockPos.containing(worldCenter), sound.getPlaceSound(), SoundSource.BLOCKS,
+			(sound.getVolume() + 1.0f) / 2.0f, sound.getPitch() * 0.8f);
+		setChanged();
+		sendData();
+		return true;
+	}
+
+	// endregion
+
 	// region collision
 
 	private void collide(Predicate<Entity> shouldCollide) {
@@ -204,11 +344,15 @@ public class ServoMotorBlockEntity extends BlockEntity {
 			this::getContactPointMotion, shouldCollide);
 	}
 
-	/** Resolve the local player on the client; their movement is client-authoritative. */
-	private void collideClientPlayer() {
-		Player player = net.minecraft.client.Minecraft.getInstance().player;
-		if (player != null)
-			collide(entity -> entity == player);
+	/**
+	 * Resolve a single player against this contraption (their movement is
+	 * client-authoritative, so the client drives this for its local player). Kept
+	 * free of any client-only type so this BlockEntity class stays dist-safe.
+	 */
+	public void collideWithPlayer(Player player) {
+		if (!running || contraption == null || player == null)
+			return;
+		collide(entity -> entity == player);
 	}
 
 	private void keepRidersAfloat() {

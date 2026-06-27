@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "facing=north": { "model": "zps:block/servo_motor" },
+    "facing=east": { "model": "zps:block/servo_motor", "y": 90 },
+    "facing=south": { "model": "zps:block/servo_motor", "y": 180 },
+    "facing=west": { "model": "zps:block/servo_motor", "y": 270 },
+    "facing=up": { "model": "zps:block/servo_motor", "x": 270 },
+    "facing=down": { "model": "zps:block/servo_motor", "x": 90 }
+  }
+}

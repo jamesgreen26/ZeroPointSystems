@@ -7,6 +7,8 @@ import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.client.model.connected.ConnectedModelLoader;
 import g_mungus.zps.client.model.connected.ConnectedTextureMeta;
 import g_mungus.zps.client.renderer.*;
+import g_mungus.zps.client.renderer.contraption.ServoMotorBlockEntityRenderer;
+import g_mungus.zps.client.renderer.contraption.ServoMotorVisual;
 import g_mungus.zps.client.screens.CoalBurnerScreen;
 import g_mungus.zps.client.screens.PowerCellScreen;
 import g_mungus.zps.config.ZPSConfig;
@@ -112,6 +114,11 @@ public class ClientSetup {
                     .factory(RoboticArmVisual::new)
                     // The BER keeps rendering the held item, debug overlays, and the on-ship fallback
                     .neverSkipVanillaRender()
+                    .apply();
+            // Servo Motor contraption: Flywheel visual when available, vanilla BER fallback otherwise.
+            BlockEntityRenderers.register(ModBlockEntities.SERVO_MOTOR.get(), ServoMotorBlockEntityRenderer::new);
+            SimpleBlockEntityVisualizer.builder(ModBlockEntities.SERVO_MOTOR.get())
+                    .factory(ServoMotorVisual::new)
                     .apply();
             BlockEntityRenderers.register(ModBlockEntities.POWER_CELL.get(), PowerCellBlockEntityRenderer::new);
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DENSE_CABLE_SEPARATOR.get(), RenderType.cutout());

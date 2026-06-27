@@ -73,6 +73,7 @@ public final class ZPSMod {
         event.register(CableNetworkGameTests.class);
         event.register(EnumPropertyWithAliasesGameTests.class);
         event.register(RoboticArmGameTests.class);
+        event.register(g_mungus.zps.gametest.ServoMotorGameTests.class);
     }
 
     private static void registerCapabilities(RegisterCapabilitiesEvent event) {

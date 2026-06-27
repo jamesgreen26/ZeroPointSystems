@@ -28,6 +28,11 @@ public class ModBlockEntities {
             () -> BlockEntityType.Builder.of(StepDownTransformerBlockEntity::new, 
                 ModBlocks.STEPDOWN_TRANSFORMER.get()).build(null));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ServoMotorBlockEntity>> SERVO_MOTOR =
+        BLOCK_ENTITIES.register("servo_motor",
+            () -> BlockEntityType.Builder.of(ServoMotorBlockEntity::new,
+                ModBlocks.SERVO_MOTOR.get()).build(null));
+
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<OctoControllerBlockEntity>> OCTO_CONTROLLER =
         BLOCK_ENTITIES.register("octo_controller",
             () -> BlockEntityType.Builder.of(OctoControllerBlockEntity::new,

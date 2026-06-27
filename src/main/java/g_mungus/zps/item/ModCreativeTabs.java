@@ -41,6 +41,7 @@ public class ModCreativeTabs {
             .icon(() -> new ItemStack(DENSE_CABLE_SEPARATOR.get()))
             .displayItems((parameters, output) -> {
                 addAll(output,
+                        SERVO_MOTOR,
                         OCTO_CONTROLLER,
                         DODECA_CONTROLLER,
                         DENSE_CABLE_SEPARATOR,

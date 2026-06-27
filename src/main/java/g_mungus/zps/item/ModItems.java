@@ -15,6 +15,9 @@ public class ModItems {
 
     public static final List<DeferredItem<?>> DYNAMIC_ITEMS = new ArrayList<>();
 
+    public static final DeferredItem<Item> SERVO_MOTOR = ITEMS.register("servo_motor",
+            () -> new BlockItem(ModBlocks.SERVO_MOTOR.get(), new Item.Properties()));
+
     public static final DeferredItem<Item> OCTO_CONTROLLER = ITEMS.register("octo_controller",
             () -> new BlockItem(ModBlocks.OCTO_CONTROLLER.get(), new Item.Properties()));
 

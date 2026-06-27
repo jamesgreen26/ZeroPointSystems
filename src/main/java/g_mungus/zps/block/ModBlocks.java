@@ -204,6 +204,12 @@ public class ModBlocks {
                     .strength(3.5f)
                     .requiresCorrectToolForDrops()));
 
+    public static final DeferredBlock<Block> SERVO_MOTOR = BLOCKS.register("servo_motor",
+            () -> new ServoMotorBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(3.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+
 
     /// RESOURCE BLOCKS
     public static final DeferredBlock<Block> BAUXITE = BLOCKS.register("bauxite",

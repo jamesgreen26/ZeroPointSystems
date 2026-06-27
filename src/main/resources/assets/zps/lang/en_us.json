@@ -1,4 +1,9 @@
 {
+    "block.zps.servo_motor": "Servo Motor",
+    "item.zps.servo_motor": "Servo Motor",
+    "zps.contraption.too_large": "Structure is too large to assemble",
+    "zps.contraption.unloaded_chunk": "Structure reaches into an unloaded chunk at [%s, %s, %s]",
+    "zps.contraption.empty": "No blocks to assemble",
     "block.zps.cable": "Cable",
     "block.zps.dense_cables": "Dense Cables",
     "block.zps.dense_cable_separator": "Dense Cable Separator",

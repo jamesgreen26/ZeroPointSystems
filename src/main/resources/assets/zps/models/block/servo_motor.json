@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "top": "zps:block/robotic_arm_base",
+    "front": "zps:block/robotic_arm_swivel_base",
+    "side": "zps:block/robotic_arm_base"
+  }
+}

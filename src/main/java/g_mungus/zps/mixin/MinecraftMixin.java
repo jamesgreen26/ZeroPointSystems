@@ -35,4 +35,10 @@ public class MinecraftMixin {
 		if (ContraptionInteractionClient.handleStartUseItem())
 			ci.cancel();
 	}
+
+	@Inject(method = "pickBlock", at = @At("HEAD"), cancellable = true)
+	private void zps$pickBlock(CallbackInfo ci) {
+		if (ContraptionInteractionClient.handlePickBlock())
+			ci.cancel();
+	}
 }

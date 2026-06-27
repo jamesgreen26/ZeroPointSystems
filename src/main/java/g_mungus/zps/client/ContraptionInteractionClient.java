@@ -21,6 +21,7 @@ import g_mungus.zps.networking.ContraptionPlaceC2SPacket;
 import g_mungus.zps.networking.ZPSGamePackets;
 import g_mungus.zps.mixin.MinecraftAccessor;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -30,6 +31,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
@@ -137,6 +139,56 @@ public final class ContraptionInteractionClient {
 		// rightClickDelay hits 0, while a fresh keyUse.consumeClick() bypasses it.
 		((MinecraftAccessor) mc).setRightClickDelay(ACTION_DELAY);
 		return true;
+	}
+
+	/**
+	 * Middle-click pick-block on a contraption: resolve the targeted block to its item
+	 * and select/add it just like vanilla {@code Minecraft.pickBlock}. Returns false when
+	 * no contraption block is targeted so vanilla can pick the world block instead.
+	 */
+	public static boolean handlePickBlock() {
+		Minecraft mc = Minecraft.getInstance();
+		LocalPlayer player = mc.player;
+		if (player == null || mc.level == null) return false;
+		pick(partialTick());
+		if (currentHit == null) return false;
+
+		Contraption contraption = currentHit.motor().getContraption();
+		if (contraption == null) return false;
+		StructureBlockInfo info = contraption.getBlocks().get(currentHit.localPos());
+		if (info == null) return false;
+		BlockState state = info.state();
+		if (state.isAir()) return false;
+
+		boolean creative = player.getAbilities().instabuild;
+		ContraptionSimLevel sim = new ContraptionSimLevel(mc.level, contraption);
+		ItemStack stack = state.getBlock().getCloneItemStack(sim, currentHit.localPos(), state);
+		if (stack.isEmpty()) return false;
+
+		// Ctrl+pick in creative copies the block entity data, mirroring vanilla.
+		if (creative && Screen.hasControlDown() && state.hasBlockEntity() && info.nbt() != null) {
+			BlockEntity be = BlockEntity.loadStatic(currentHit.localPos(), state, info.nbt(), mc.level.registryAccess());
+			if (be != null) addCustomNbtData(stack, be, mc.level);
+		}
+
+		Inventory inventory = player.getInventory();
+		int slot = inventory.findSlotMatchingItem(stack);
+		if (creative) {
+			inventory.setPickedItem(stack);
+			mc.gameMode.handleCreativeModeItemAdd(player.getItemInHand(InteractionHand.MAIN_HAND), 36 + inventory.selected);
+		} else if (slot != -1) {
+			if (Inventory.isHotbarSlot(slot)) inventory.selected = slot;
+			else mc.gameMode.handlePickItem(slot);
+		}
+		return true;
+	}
+
+	/** Inlined copy of the private {@code Minecraft.addCustomNbtData} (block entity → item). */
+	private static void addCustomNbtData(ItemStack stack, BlockEntity blockEntity, net.minecraft.world.level.Level level) {
+		CompoundTag tag = blockEntity.saveCustomAndMetadata(level.registryAccess());
+		blockEntity.removeComponentsFromTag(tag);
+		BlockItem.setBlockEntityData(stack, blockEntity.getType(), tag);
+		stack.applyComponents(blockEntity.collectComponents());
 	}
 
 	private static void predictPlacement(LocalPlayer player, Hit hit, InteractionHand hand) {

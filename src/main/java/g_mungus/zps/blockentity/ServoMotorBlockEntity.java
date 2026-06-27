@@ -376,7 +376,12 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		Vec3 rel = worldPos.subtract(Vec3.atLowerCornerOf(worldPosition.relative(getFacing())))
 			.subtract(ContraptionMath.CENTER_OF_ORIGIN);
 		float angleDelta = angle - prevAngle;
-		return rel.subtract(ContraptionMath.rotate(rel, -angleDelta, rotationAxis));
+		// Carry the rider to where this platform-fixed point will actually be after this
+		// tick's rotation (re-apply the real rotation by +delta), so it lands exactly on
+		// its circle. Using the previous tick's chord instead steps along the tangent each
+		// tick and spirals the rider outward — Create maps through local space for the same
+		// reason (toLocalVector(p,0) -> toGlobalVector(p,1)).
+		return ContraptionMath.rotate(rel, angleDelta, rotationAxis).subtract(rel);
 	}
 
 	private AABB computeWorldBounds(Vec3 anchorVec) {

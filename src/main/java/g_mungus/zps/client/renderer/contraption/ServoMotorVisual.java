@@ -10,115 +10,157 @@ import org.joml.Matrix4f;
 import com.mojang.math.Axis;
 
 import dev.engine_room.flywheel.api.instance.Instance;
+import dev.engine_room.flywheel.api.material.CardinalLightingMode;
+import dev.engine_room.flywheel.api.material.Material;
 import dev.engine_room.flywheel.api.model.Model;
+import dev.engine_room.flywheel.api.task.Plan;
 import dev.engine_room.flywheel.api.visual.BlockEntityVisual;
 import dev.engine_room.flywheel.api.visual.DynamicVisual;
+import dev.engine_room.flywheel.api.visual.ShaderLightVisual;
+import dev.engine_room.flywheel.api.visual.TickableVisual;
 import dev.engine_room.flywheel.api.visualization.BlockEntityVisualizer;
 import dev.engine_room.flywheel.api.visualization.VisualEmbedding;
 import dev.engine_room.flywheel.api.visualization.VisualizationContext;
 import dev.engine_room.flywheel.api.visualization.VisualizerRegistry;
 import dev.engine_room.flywheel.lib.instance.InstanceTypes;
 import dev.engine_room.flywheel.lib.instance.TransformedInstance;
+import dev.engine_room.flywheel.lib.material.SimpleMaterial;
+import dev.engine_room.flywheel.lib.model.ModelUtil;
 import dev.engine_room.flywheel.lib.model.baked.BlockModelBuilder;
+import dev.engine_room.flywheel.lib.task.NestedPlan;
+import dev.engine_room.flywheel.lib.task.PlanMap;
+import dev.engine_room.flywheel.lib.task.RunnablePlan;
 import dev.engine_room.flywheel.lib.visual.AbstractBlockEntityVisual;
-import dev.engine_room.flywheel.lib.visual.SimpleDynamicVisual;
 import g_mungus.zps.blockentity.ServoMotorBlockEntity;
 import g_mungus.zps.contraption.Contraption;
+import it.unimi.dsi.fastutil.longs.LongArraySet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.SectionPos;
 import net.minecraft.core.Vec3i;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.phys.AABB;
 
 /**
- * GPU-instanced rendering of a Servo Motor's contraption while the Flywheel
- * backend is active. Builds one baked model from the captured blocks and applies
- * the live rotation each frame. Captured block entities that have their own
- * Flywheel visualizer and opt out of vanilla rendering are hosted as child
- * visuals on a {@link VisualEmbedding} carrying the contraption transform; the
- * remaining block entities are drawn by {@link ServoMotorBlockEntityRenderer}.
+ * GPU-instanced rendering of a Servo Motor's contraption while Flywheel is
+ * active, modelled on Create's {@code ContraptionVisual}. The structure model
+ * and the child block-entity visuals live on a {@link VisualEmbedding} that
+ * carries the contraption transform, and lighting is provided by registering the
+ * contraption's world light sections as a {@link ShaderLightVisual} (the block
+ * materials sample those sections by world position on the GPU).
  */
 public class ServoMotorVisual extends AbstractBlockEntityVisual<ServoMotorBlockEntity>
-	implements SimpleDynamicVisual {
+	implements DynamicVisual, TickableVisual, ShaderLightVisual {
+
+	private static final int LIGHT_PADDING = 1;
+
+	private final VisualEmbedding embedding;
+	private final List<BlockEntityVisual<?>> children = new ArrayList<>();
+	private final PlanMap<DynamicVisual, DynamicVisual.Context> dynamicVisuals = new PlanMap<>();
+	private final PlanMap<TickableVisual, TickableVisual.Context> tickableVisuals = new PlanMap<>();
 
 	@org.jetbrains.annotations.Nullable
 	private TransformedInstance structure;
 	@org.jetbrains.annotations.Nullable
 	private Contraption builtContraption;
 
-	private final VisualEmbedding embedding;
-	private final List<BlockEntityVisual<?>> children = new ArrayList<>();
+	@org.jetbrains.annotations.Nullable
+	private SectionCollector sectionCollector;
+	private long minSection = Long.MIN_VALUE;
+	private long maxSection = Long.MIN_VALUE;
 
 	public ServoMotorVisual(VisualizationContext ctx, ServoMotorBlockEntity blockEntity, float partialTick) {
 		super(ctx, blockEntity, partialTick);
 		embedding = visualizationContext.createEmbedding(Vec3i.ZERO);
-		setupStructure(partialTick);
-		applyTransform(partialTick);
+		setEmbeddingTransform(partialTick);
+		setupStructure();
+		setupChildren(partialTick);
 	}
 
-	private void setupStructure(float partialTick) {
-		Contraption contraption = blockEntity.getContraption();
-		builtContraption = contraption;
+	// region setup
 
+	private void setupStructure() {
+		builtContraption = blockEntity.getContraption();
 		if (structure != null) {
 			structure.delete();
 			structure = null;
 		}
-		children.forEach(BlockEntityVisual::delete);
-		children.clear();
-
-		if (contraption == null || contraption.isEmpty())
+		if (builtContraption == null || builtContraption.isEmpty())
 			return;
 
 		Model model = new BlockModelBuilder(
-			new ContraptionRenderWorld(blockEntity.getLevel(), contraption),
-			contraption.getBlocks().keySet()).build();
+			new ContraptionRenderWorld(blockEntity.getLevel(), builtContraption),
+			builtContraption.getBlocks().keySet())
+			// Contraption blocks are lit per-section like normal chunks, not like an entity.
+			.materialFunc((renderType, shaded, ao) -> {
+				Material material = ModelUtil.getMaterial(renderType, shaded, ao);
+				if (material != null && material.cardinalLightingMode() == CardinalLightingMode.ENTITY)
+					return SimpleMaterial.builderOf(material).cardinalLightingMode(CardinalLightingMode.CHUNK).build();
+				return material;
+			})
+			.build();
 
-		structure = instancerProvider()
+		structure = embedding.instancerProvider()
 			.instancer(InstanceTypes.TRANSFORMED, model)
 			.createInstance();
-
-		setupChildren(partialTick);
+		structure.setChanged();
 	}
 
 	@SuppressWarnings("unchecked")
 	private void setupChildren(float partialTick) {
+		children.forEach(BlockEntityVisual::delete);
+		children.clear();
+		dynamicVisuals.clear();
+		tickableVisuals.clear();
+
 		ContraptionRenderState renderState = blockEntity.getRenderState();
 		if (renderState == null)
 			return;
 
-		// Mirror Create: create a Flywheel child visual for every captured block entity
-		// that has a visualizer. The BER independently decides whether to ALSO run the
-		// vanilla renderer (it skips a block entity only when it opts out of vanilla
-		// render). This lets e.g. the robotic arm draw its segments via the child visual
-		// while its BER still draws the held item.
+		// One Flywheel child visual per captured block entity that has a visualizer
+		// (matches Create). The BER independently decides whether to also draw it.
 		for (BlockEntity be : renderState.getBlockEntities()) {
 			BlockEntityVisualizer<? super BlockEntity> visualizer =
 				(BlockEntityVisualizer<? super BlockEntity>) VisualizerRegistry.getVisualizer(be.getType());
 			if (visualizer == null)
 				continue;
-			children.add(visualizer.createVisual(embedding, be, partialTick));
+			BlockEntityVisual<? super BlockEntity> visual = visualizer.createVisual(embedding, be, partialTick);
+			children.add(visual);
+			if (visual instanceof DynamicVisual dynamic)
+				dynamicVisuals.add(dynamic, dynamic.planFrame());
+			if (visual instanceof TickableVisual tickable)
+				tickableVisuals.add(tickable, tickable.planTick());
 		}
 	}
 
+	// endregion
+
+	// region per-frame / per-tick plans
+
 	@Override
-	public void beginFrame(DynamicVisual.Context ctx) {
-		if (blockEntity.getContraption() != builtContraption)
-			setupStructure(ctx.partialTick());
-		applyTransform(ctx.partialTick());
+	public Plan<DynamicVisual.Context> planFrame() {
+		// beginFrame must run before the children so structure/children changes are picked up.
+		return RunnablePlan.<DynamicVisual.Context>of(this::beginFrame).then(dynamicVisuals);
 	}
 
-	private void applyTransform(float partialTick) {
-		// Drive the embedding (and thus all child block-entity visuals) with the
-		// contraption transform, and mirror it onto the structure instance.
-		Matrix4f pose = contraptionPose(partialTick);
-		embedding.transforms(pose, pose.normal(new Matrix3f()));
-
-		if (structure == null)
-			return;
-		structure.setTransform(pose).setChanged();
+	@Override
+	public Plan<TickableVisual.Context> planTick() {
+		return tickableVisuals;
 	}
 
-	private Matrix4f contraptionPose(float partialTick) {
+	private void beginFrame(DynamicVisual.Context ctx) {
+		float partialTick = ctx.partialTick();
+		setEmbeddingTransform(partialTick);
+		checkAndUpdateLightSections();
+		if (blockEntity.getContraption() != builtContraption) {
+			setupStructure();
+			setupChildren(partialTick);
+		}
+	}
+
+	private void setEmbeddingTransform(float partialTick) {
 		float angle = blockEntity.getInterpolatedAngle(partialTick);
 		Direction facing = blockEntity.getFacing();
 		BlockPos vp = getVisualPosition();
@@ -126,24 +168,61 @@ public class ServoMotorVisual extends AbstractBlockEntityVisual<ServoMotorBlockE
 		Matrix4f pose = new Matrix4f();
 		pose.translate(vp.getX() + facing.getStepX(), vp.getY() + facing.getStepY(), vp.getZ() + facing.getStepZ());
 		pose.translate(0.5f, 0.5f, 0.5f);
-		pose.rotate(axisRotation(facing.getAxis(), angle));
+		switch (blockEntity.getRotationAxis()) {
+			case X -> pose.rotate(Axis.XP.rotationDegrees(angle));
+			case Y -> pose.rotate(Axis.YP.rotationDegrees(angle));
+			case Z -> pose.rotate(Axis.ZP.rotationDegrees(angle));
+		}
 		pose.translate(-0.5f, -0.5f, -0.5f);
-		return pose;
+
+		embedding.transforms(pose, pose.normal(new Matrix3f()));
 	}
 
-	private static org.joml.Quaternionf axisRotation(Direction.Axis axis, float degrees) {
-		return switch (axis) {
-			case X -> Axis.XP.rotationDegrees(degrees);
-			case Y -> Axis.YP.rotationDegrees(degrees);
-			case Z -> Axis.ZP.rotationDegrees(degrees);
-		};
+	// endregion
+
+	// region shader lighting
+
+	@Override
+	public void setSectionCollector(SectionCollector collector) {
+		this.sectionCollector = collector;
+		minSection = Long.MIN_VALUE;
+		maxSection = Long.MIN_VALUE;
+		checkAndUpdateLightSections();
+	}
+
+	private void checkAndUpdateLightSections() {
+		if (sectionCollector == null)
+			return;
+
+		AABB bounds = blockEntity.getRenderBoundingBox();
+		int minX = SectionPos.blockToSectionCoord(Mth.floor(bounds.minX) - LIGHT_PADDING);
+		int minY = SectionPos.blockToSectionCoord(Mth.floor(bounds.minY) - LIGHT_PADDING);
+		int minZ = SectionPos.blockToSectionCoord(Mth.floor(bounds.minZ) - LIGHT_PADDING);
+		int maxX = SectionPos.blockToSectionCoord(Mth.ceil(bounds.maxX) + LIGHT_PADDING);
+		int maxY = SectionPos.blockToSectionCoord(Mth.ceil(bounds.maxY) + LIGHT_PADDING);
+		int maxZ = SectionPos.blockToSectionCoord(Mth.ceil(bounds.maxZ) + LIGHT_PADDING);
+
+		long min = SectionPos.asLong(minX, minY, minZ);
+		long max = SectionPos.asLong(maxX, maxY, maxZ);
+		if (min == minSection && max == maxSection)
+			return;
+		minSection = min;
+		maxSection = max;
+
+		LongSet sections = new LongArraySet();
+		for (int x = minX; x <= maxX; x++)
+			for (int y = minY; y <= maxY; y++)
+				for (int z = minZ; z <= maxZ; z++)
+					sections.add(SectionPos.asLong(x, y, z));
+		sectionCollector.sections(sections);
 	}
 
 	@Override
 	public void updateLight(float partialTick) {
-		if (structure != null)
-			relight(structure);
+		// Brightness comes from the shader light sections registered above; nothing to do.
 	}
+
+	// endregion
 
 	@Override
 	protected void _delete() {
@@ -153,6 +232,8 @@ public class ServoMotorVisual extends AbstractBlockEntityVisual<ServoMotorBlockE
 		}
 		children.forEach(BlockEntityVisual::delete);
 		children.clear();
+		dynamicVisuals.clear();
+		tickableVisuals.clear();
 		embedding.delete();
 	}
 

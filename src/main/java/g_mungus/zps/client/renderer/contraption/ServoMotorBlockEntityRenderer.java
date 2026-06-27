@@ -59,10 +59,10 @@ public class ServoMotorBlockEntityRenderer implements BlockEntityRenderer<ServoM
 			}
 		}
 
-		// Captured block entities (chests, signs, machines, ...): rendered via their
-		// vanilla renderers so they keep rendering while assembled. A block entity is
-		// skipped only when Flywheel is active AND it opts out of vanilla rendering
-		// (its Flywheel child visual draws it instead).
+		// Captured block entities (chests, signs, ...): rendered via their vanilla
+		// renderers so they keep rendering while assembled. A block entity is skipped
+		// only when Flywheel is active AND it opts out of vanilla rendering — those are
+		// drawn by their Flywheel child visual in ServoMotorVisual instead.
 		renderCapturedBlockEntities(be, partialTick, poseStack, buffers, packedLight, packedOverlay, flywheelActive);
 
 		poseStack.popPose();
@@ -85,8 +85,6 @@ public class ServoMotorBlockEntityRenderer implements BlockEntityRenderer<ServoM
 			poseStack.pushPose();
 			poseStack.translate(local.getX(), local.getY(), local.getZ());
 			try {
-				// Approximate lighting with the motor's packed light; the captured block
-				// entities live at contraption-local positions, so true light is unavailable.
 				renderer.render(captured, partialTick, poseStack, buffers, packedLight, packedOverlay);
 			} catch (Exception ignored) {
 				// A misbehaving virtual render shouldn't crash the frame.

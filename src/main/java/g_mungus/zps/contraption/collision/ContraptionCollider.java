@@ -16,6 +16,8 @@ import g_mungus.zps.contraption.util.ContraptionMath;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction.Axis;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.item.FallingBlockEntity;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -238,6 +240,8 @@ public final class ContraptionCollider {
 				if (canWalk || !rotation.hasVerticalRotation())
 					if (canWalk)
 						entity.setOnGround(true);
+				if (entity instanceof ItemEntity || entity instanceof FallingBlockEntity)
+					entityMotion = entityMotion.multiply(.5f, 1, .5f);
 				Vec3 contactPointMotion = contactMotion.apply(entityPosition);
 				allowedMovement = collide(contactPointMotion, entity);
 				entity.setPos(entityPosition.x + allowedMovement.x, entityPosition.y,

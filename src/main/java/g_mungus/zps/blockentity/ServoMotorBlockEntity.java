@@ -29,6 +29,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.item.FallingBlockEntity;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
@@ -191,6 +193,17 @@ public class ServoMotorBlockEntity extends BlockEntity {
 			angle = (angle + DEGREES_PER_TICK) % 360;
 		// Local-player collision is driven from ContraptionInteractionClient (client-only)
 		// so this class never references client types and stays dist-safe.
+
+		// Most entities interpolate toward their server-synced position on the client
+		// (Entity#baseTick), so the server's authoritative collision result is what the
+		// client renders — smooth. FallingBlockEntity is the exception: its tick runs raw
+		// physics every tick and never calls super.tick()/interpolates, so on the client it
+		// free-falls straight through the contraption (whose blocks aren't real world blocks)
+		// and only snaps back when a position packet lands — which reads as jitter. Resolve
+		// it here too so the client prediction stays glued to the platform, matching the
+		// server. (Create gets this for free: its contraption is an entity that runs
+		// collideEntities on both sides.)
+		collide(entity -> entity instanceof FallingBlockEntity || entity instanceof ItemEntity);
 	}
 
 	@Override

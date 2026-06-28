@@ -385,4 +385,23 @@ public final class ContraptionCollider {
 		}
 		return false;
 	}
+
+	public static boolean intersectsShape(VoxelShape localShape, BlockPos localPos, AABB localBB,
+		Matrix3d entityRotation) {
+		if (localShape.isEmpty())
+			return false;
+
+		CollisionList collidableBBs = new CollisionList();
+		localShape.move(localPos.getX(), localPos.getY(), localPos.getZ()).forAllBoxes(new Populate(collidableBBs));
+		if (collidableBBs.size == 0)
+			return false;
+
+		OrientedBB obb = new OrientedBB(localBB.inflate(1.0E-7D));
+		obb.setRotation(entityRotation);
+		for (int bbIdx = 0; bbIdx < collidableBBs.size; ++bbIdx) {
+			if (obb.intersect(collidableBBs, bbIdx, Vec3.ZERO) != null)
+				return true;
+		}
+		return false;
+	}
 }

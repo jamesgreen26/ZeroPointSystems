@@ -11,6 +11,7 @@ import g_mungus.zps.blockentity.ServoMotorBlockEntity;
 import g_mungus.zps.client.renderer.contraption.ContraptionRenderWorld;
 import g_mungus.zps.contraption.Contraption;
 import g_mungus.zps.contraption.ContraptionBlockGetter;
+import g_mungus.zps.contraption.ContraptionPlacementUtil;
 import g_mungus.zps.contraption.ContraptionPlaceContext;
 import g_mungus.zps.contraption.ContraptionSimLevel;
 import g_mungus.zps.contraption.ContraptionTransform;
@@ -315,6 +316,8 @@ public final class ContraptionInteractionClient {
 		ContraptionPlaceContext.Placed placed = ContraptionPlaceContext.resolve(sim, player, hand, stack,
 			hit.localPos(), hit.localFace(), hit.localHit(), transform);
 		if (placed == null) return;
+		if (!ContraptionPlacementUtil.isUnobstructed(mc.level, sim, player, placed.pos(), placed.state(), transform))
+			return;
 
 		CompoundTag beNbt = null;
 		CompoundTag updateTag = null;

@@ -16,6 +16,7 @@ import g_mungus.zps.block.ServoMotorHeadBlock;
 import g_mungus.zps.client.renderer.contraption.ContraptionRenderState;
 import g_mungus.zps.contraption.Contraption;
 import g_mungus.zps.contraption.ContraptionBlockGetter;
+import g_mungus.zps.contraption.ContraptionPlacementUtil;
 import g_mungus.zps.contraption.ContraptionPlaceContext;
 import g_mungus.zps.contraption.ContraptionRotatedEntity;
 import g_mungus.zps.contraption.ContraptionRotationState;
@@ -573,6 +574,8 @@ public class ServoMotorBlockEntity extends BlockEntity {
 
 		BlockPos placePos = placed.pos();
 		BlockState placeState = placed.state();
+		if (!ContraptionPlacementUtil.isUnobstructed(serverLevel, sim, player, placePos, placeState, transform))
+			return false;
 
 		CompoundTag beNbt = null;
 		CompoundTag updateTag = null;

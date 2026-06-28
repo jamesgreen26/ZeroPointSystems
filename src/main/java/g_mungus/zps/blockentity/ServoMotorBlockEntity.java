@@ -233,7 +233,7 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		if (level == null || level.isClientSide)
 			return;
 		if (!suppressRemovalDrops && contraption != null)
-			dropContraptionLoot(null, ItemStack.EMPTY);
+			dropContraptionLoot(ItemStack.EMPTY);
 		contraption = null;
 		running = false;
 	}
@@ -284,33 +284,24 @@ public class ServoMotorBlockEntity extends BlockEntity {
 	/** Destroy the whole motor: drop the motor item and every contraption block, then remove it. */
 	private void breakWholeMotor(ServerPlayer player) {
 		ServerLevel serverLevel = (ServerLevel) level;
-		if (!player.isCreative() && serverLevel.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS)) {
-			ItemStack tool = player.getMainHandItem();
-			// The motor block's own loot (respects correct tool / silk touch).
-			popBlockLoot(serverLevel, getBlockState(), null, worldPosition, player, tool);
-			dropContraptionLoot(player, tool);
-		}
-		// Remove the in-world motor; suppress so onMotorRemoved doesn't drop the contraption again.
-		suppressRemovalDrops = true;
-		contraption = null;
-		running = false;
+		if (serverLevel == null) return;
+		serverLevel.levelEvent(2001, worldPosition, Block.getId(getBlockState()));
 		serverLevel.removeBlock(worldPosition, false);
 	}
 
 	/** Drop the loot of every contraption block except the (unobtainable) head. */
-	private void dropContraptionLoot(@Nullable ServerPlayer player, ItemStack tool) {
+	private void dropContraptionLoot(ItemStack tool) {
 		if (level == null || level.isClientSide || contraption == null)
 			return;
 		ServerLevel serverLevel = (ServerLevel) level;
 		if (!serverLevel.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS))
 			return;
-		if (player != null && player.isCreative())
-			return;
+
 		BlockPos headLocal = headLocalPos();
 		for (var entry : contraption.getBlocks().entrySet()) {
 			if (entry.getKey().equals(headLocal))
 				continue;
-			popBlockLoot(serverLevel, entry.getValue().state(), entry.getValue().nbt(), worldPosition, player, tool);
+			popBlockLoot(serverLevel, entry.getValue().state(), entry.getValue().nbt(), worldPosition, null, tool);
 		}
 	}
 

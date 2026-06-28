@@ -1,5 +1,10 @@
 package g_mungus.zps.blockentity;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
@@ -220,12 +225,13 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		ACTIVE_CLIENT.remove(this);
 	}
 
-	/** A simulation level bound to this motor, so writes/ticks mutate the contraption and re-sync. */
+	/**
+	 * A simulation level bound to this motor: writes/ticks mutate the contraption and mark the BE
+	 * dirty. Callers batch a single {@link #sendData()} after an operation, so a multi-block change
+	 * (e.g. a structural collapse) is one network re-sync.
+	 */
 	private ContraptionSimLevel simLevel() {
-		return new ContraptionSimLevel(level, contraption, () -> {
-			setChanged();
-			sendData();
-		});
+		return new ContraptionSimLevel(level, contraption, this::setChanged);
 	}
 
 	/** Run the contraption's own block-tick queue once (server-side). */
@@ -246,8 +252,8 @@ public class ServoMotorBlockEntity extends BlockEntity {
 
 	/**
 	 * If the falling block at {@code local} has no support directly below it (in local
-	 * space), detach it from the structure and spawn a real {@link FallingBlockEntity} at
-	 * the block's current rotated world position, so it falls in the world and lands on any
+	 * space), detach it from the structure (spawning a real {@link FallingBlockEntity}) and
+	 * run a structural update so the change propagates: it falls in the world and lands on any
 	 * lower platform via the existing falling-block collision in {@link #serverTick()}.
 	 */
 	private void detachFallingBlock(BlockPos local, BlockState state) {
@@ -258,8 +264,20 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		if (!FallingBlock.isFree(belowState))
 			return; // still supported
 
-		// Clear the source cell through the sim level (mutates the contraption + re-syncs).
-		simLevel().setBlock(local, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+		ContraptionSimLevel sim = simLevel();
+		detachBlock(local, state, sim, serverLevel);
+		applyStructureUpdate(sim, serverLevel);
+	}
+
+	/**
+	 * Remove the block at {@code local} through the simulation level — so the standard block update
+	 * fires (e.g. a falling block above it reschedules its fall) — and spawn a real
+	 * {@link FallingBlockEntity} for it at the block's current rotated world position, with the
+	 * contraption's orientation and platform velocity. Does NOT re-sync; callers batch one
+	 * {@link #sendData()}.
+	 */
+	private void detachBlock(BlockPos local, BlockState state, ContraptionSimLevel sim, ServerLevel serverLevel) {
+		sim.setBlock(local, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
 
 		ContraptionTransform transform = ContraptionTransform.ofCurrent(this);
 		// Feet at the cell's bottom-centre: local x/z centred, y at the block's bottom face.
@@ -273,6 +291,60 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		Vec3 worldCenter = transform.localBlockCenterToWorld(local);
 		entity.setDeltaMovement(platformVelocity(worldCenter, running ? DEGREES_PER_TICK : 0f));
 		serverLevel.addFreshEntity(entity);
+	}
+
+	/**
+	 * Structural update after a removal: collapse anything no longer connected to the head, then
+	 * re-sync once. The falling-block re-evaluation is handled by the removal itself going through
+	 * {@link ContraptionSimLevel#setBlock} (which runs the standard block update). Re-invoked when a
+	 * falling block detaches, so collapses cascade.
+	 */
+	private void applyStructureUpdate(ContraptionSimLevel sim, ServerLevel serverLevel) {
+		detachDisconnected(sim, serverLevel);
+		setChanged();
+		sendData();
+	}
+
+	/**
+	 * Detach every block no longer connected to the head (26-way: face, edge or corner contact all
+	 * keep a block attached) as a falling block entity.
+	 */
+	private void detachDisconnected(ContraptionSimLevel sim, ServerLevel serverLevel) {
+		var blocks = contraption.getBlocks();
+		BlockPos head = headLocalPos();
+		if (!blocks.containsKey(head))
+			return;
+
+		Set<BlockPos> connected = new HashSet<>();
+		Deque<BlockPos> stack = new ArrayDeque<>();
+		connected.add(head);
+		stack.push(head);
+		while (!stack.isEmpty()) {
+			BlockPos p = stack.pop();
+			for (int dx = -1; dx <= 1; dx++)
+				for (int dy = -1; dy <= 1; dy++)
+					for (int dz = -1; dz <= 1; dz++) {
+						if (dx == 0 && dy == 0 && dz == 0)
+							continue;
+						BlockPos n = p.offset(dx, dy, dz);
+						if (blocks.containsKey(n) && connected.add(n))
+							stack.push(n);
+					}
+		}
+		if (connected.size() == blocks.size())
+			return; // everything still attached
+
+		// Collect first: detachBlock mutates the block map (and shape updates may cascade-remove).
+		List<BlockPos> disconnected = new ArrayList<>();
+		for (BlockPos p : blocks.keySet())
+			if (!connected.contains(p))
+				disconnected.add(p);
+		for (BlockPos p : disconnected) {
+			StructureBlockInfo info = blocks.get(p);
+			if (info == null)
+				continue; // already removed by a cascading shape update
+			detachBlock(p, info.state(), sim, serverLevel);
+		}
 	}
 
 	// endregion
@@ -352,9 +424,11 @@ public class ServoMotorBlockEntity extends BlockEntity {
 
 		// Break particles + sound (vanilla level event 2001).
 		serverLevel.levelEvent(2001, worldPos, Block.getId(state));
-		contraption.removeBlock(local);
-		setChanged();
-		sendData();
+		// Remove through the sim level so neighbours get the standard block update (unsupported
+		// falling blocks fall), then collapse anything no longer connected to the head. Re-syncs once.
+		ContraptionSimLevel sim = simLevel();
+		sim.setBlock(local, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+		applyStructureUpdate(sim, serverLevel);
 	}
 
 	/** Destroy the whole motor: drop the motor item and every contraption block, then remove it. */

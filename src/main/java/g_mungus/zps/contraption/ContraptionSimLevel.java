@@ -6,7 +6,9 @@ import javax.annotation.Nullable;
 
 import net.createmod.catnip.levelWrappers.WrappedLevel;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.util.profiling.InactiveProfiler;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -15,6 +17,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.redstone.NeighborUpdater;
 import net.minecraft.world.ticks.LevelTickAccess;
 import net.minecraft.world.ticks.LevelTicks;
 import net.minecraft.world.ticks.ScheduledTick;
@@ -78,13 +81,49 @@ public class ContraptionSimLevel extends WrappedLevel {
 
 	@Override
 	public boolean setBlock(BlockPos pos, BlockState state, int flags) {
+		return setBlock(pos, state, flags, 512);
+	}
+
+	@Override
+	public boolean setBlock(BlockPos pos, BlockState state, int flags, int recursionLeft) {
+		BlockState old = getBlockState(pos);
+		if (state == old)
+			return false;
 		if (state.isAir())
 			contraption.removeBlock(pos);
 		else
 			contraption.putBlock(pos, state, null, null);
+
+		// Standard block-update propagation against the contraption (mirrors Level#markAndNotifyBlock,
+		// minus the real-world client/chunk path — the host re-syncs the whole contraption). This is
+		// what lets e.g. a FallingBlock above a removed block reschedule its fall.
+		if ((flags & Block.UPDATE_KNOWN_SHAPE) == 0 && recursionLeft > 0) {
+			int childFlags = flags & ~(Block.UPDATE_NEIGHBORS | Block.UPDATE_SUPPRESS_DROPS);
+			old.updateIndirectNeighbourShapes(this, pos, childFlags, recursionLeft - 1);
+			state.updateNeighbourShapes(this, pos, childFlags, recursionLeft - 1);
+			state.updateIndirectNeighbourShapes(this, pos, childFlags, recursionLeft - 1);
+		}
 		if (onChanged != null)
 			onChanged.run();
 		return true;
+	}
+
+	@Override
+	public void neighborShapeChanged(Direction direction, BlockState neighborState, BlockPos pos, BlockPos neighborPos,
+		int flags, int recursionLevel) {
+		// Level routes this through a CollectingNeighborUpdater, but WrappedLevel constructs Level with
+		// a 0 update budget so it would silently drop the update. Apply it directly instead.
+		NeighborUpdater.executeShapeUpdate(this, direction, neighborState, pos, neighborPos, flags, recursionLevel);
+	}
+
+	@Override
+	public boolean destroyBlock(BlockPos pos, boolean dropBlock, @Nullable Entity entity, int recursionLeft) {
+		// A shape update can destroy an unsupported block (e.g. a torch). Just remove it from the
+		// contraption — skip the real-world drop/effects path, which would spawn entities in the
+		// wrapped level at the local position.
+		if (getBlockState(pos).isAir())
+			return false;
+		return setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL, recursionLeft);
 	}
 
 	@Override

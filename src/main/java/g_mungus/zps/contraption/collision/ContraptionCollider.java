@@ -1,8 +1,11 @@
 package g_mungus.zps.contraption.collision;
 
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+
+import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableFloat;
@@ -46,9 +49,14 @@ public final class ContraptionCollider {
 	 *                      velocity there this tick (for carrying riders).
 	 * @param shouldCollide which nearby entities to resolve this tick (used to split
 	 *                      player vs non-player handling by side).
+	 * @param onLanded      server-side callback invoked when a {@link FallingBlockEntity}
+	 *                      comes to rest on top of a contraption block, with the entity and
+	 *                      the local cell it should occupy; the handler captures it into the
+	 *                      structure. Null on the client (no authoritative capture).
 	 */
 	public static void collideEntities(Level level, Vec3 anchorVec, ContraptionRotationState rotation,
-		Contraption contraption, AABB worldBounds, Function<Vec3, Vec3> contactMotion, Predicate<Entity> shouldCollide) {
+		Contraption contraption, AABB worldBounds, Function<Vec3, Vec3> contactMotion, Predicate<Entity> shouldCollide,
+		@Nullable BiConsumer<Entity, BlockPos> onLanded) {
 		if (contraption == null || contraption.isEmpty())
 			return;
 
@@ -240,6 +248,20 @@ public final class ContraptionCollider {
 			entity.hurtMarked = true;
 
 			if (surfaceCollision.isTrue()) {
+				// A falling block resting on top of a contraption block: capture it into the
+				// structure (it lands like it would on the ground) instead of hovering forever.
+				// Gated to the server, and to the feet cell being empty with a solid contraption
+				// block directly below, so side-brushes don't capture.
+				if (onLanded != null && !level.isClientSide && entity instanceof FallingBlockEntity) {
+					BlockPos landingCell = BlockPos.containing(
+						worldToLocalPos(entityPosition.add(0, 0.05, 0), anchorVec, rotationMatrix, yawOffset));
+					boolean cellEmpty = !contraption.getBlocks().containsKey(landingCell);
+					boolean supportedBelow = contraption.getBlocks().containsKey(landingCell.below());
+					if (cellEmpty && supportedBelow) {
+						onLanded.accept(entity, landingCell);
+						continue;
+					}
+				}
 				entity.fallDistance = 0;
 				boolean canWalk = bounce != 0 || slide == 0;
 				if (canWalk || !rotation.hasVerticalRotation())

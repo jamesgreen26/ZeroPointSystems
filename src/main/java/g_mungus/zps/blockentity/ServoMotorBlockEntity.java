@@ -457,7 +457,33 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		ContraptionRotationState rotation = new ContraptionRotationState(rotationAxis, angle);
 		AABB worldBounds = computeWorldBounds(anchorVec);
 		ContraptionCollider.collideEntities(level, anchorVec, rotation, contraption, worldBounds,
-			this::getContactPointMotion, shouldCollide);
+			this::getContactPointMotion, shouldCollide, this::captureLandedBlock);
+	}
+
+	/**
+	 * Capture a {@link FallingBlockEntity} that has landed on the contraption into the
+	 * structure at {@code localCell}, so it becomes part of the contraption (the inverse of
+	 * {@link #detachFallingBlock}). Server-side; the collider only invokes this when the cell
+	 * is empty and supported below.
+	 */
+	private void captureLandedBlock(Entity entity, BlockPos localCell) {
+		if (contraption == null || !(level instanceof ServerLevel serverLevel)
+			|| !(entity instanceof FallingBlockEntity falling))
+			return;
+		BlockState state = falling.getBlockState();
+		if (state.isAir() || contraption.getBlocks().size() >= Contraption.MAX_BLOCKS)
+			return;
+
+		// Block-entity data from the falling block is dropped for now (sand/gravel/anvils have none).
+		contraption.putBlock(localCell, state, null, null);
+		falling.discard();
+
+		Vec3 worldCenter = ContraptionTransform.ofCurrent(this).localBlockCenterToWorld(localCell);
+		SoundType sound = state.getSoundType();
+		serverLevel.playSound(null, BlockPos.containing(worldCenter), sound.getPlaceSound(), SoundSource.BLOCKS,
+			(sound.getVolume() + 1.0f) / 2.0f, sound.getPitch() * 0.8f);
+		setChanged();
+		sendData();
 	}
 
 	/**

@@ -1,20 +1,19 @@
 package g_mungus.zps.blockentity;
 
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
 import javax.annotation.Nullable;
 
+import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.block.ServoMotorHeadBlock;
 import g_mungus.zps.client.renderer.contraption.ContraptionRenderState;
-import g_mungus.zps.contraption.AssemblyException;
 import g_mungus.zps.contraption.Contraption;
 import g_mungus.zps.contraption.ContraptionPlaceContext;
 import g_mungus.zps.contraption.ContraptionRotationState;
 import g_mungus.zps.contraption.ContraptionSimLevel;
 import g_mungus.zps.contraption.ContraptionTransform;
-import g_mungus.zps.contraption.StructureTransform;
 import g_mungus.zps.contraption.collision.ContraptionCollider;
 import g_mungus.zps.contraption.util.ContraptionMath;
 import g_mungus.zps.mixin.ServerGamePacketListenerImplAccessor;
@@ -66,8 +65,8 @@ public class ServoMotorBlockEntity extends BlockEntity {
 	@Nullable
 	private Contraption contraption;
 	private boolean running;
-	private boolean assembleNextTick;
-	private boolean wasPowered;
+	/** Set while we tear the motor down ourselves so {@link #onMotorRemoved} doesn't double-drop. */
+	private boolean suppressRemovalDrops;
 	private Axis rotationAxis = Axis.Y;
 
 	private float angle;
@@ -109,8 +108,14 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		return running;
 	}
 
-	public void requestToggle() {
-		assembleNextTick = true;
+	/** Number of blocks in the contraption (head included), at least 1, for break-speed scaling. */
+	public int getContraptionBlockCount() {
+		return contraption == null ? 1 : Math.max(1, contraption.getBlocks().size());
+	}
+
+	/** Local position of the head block: the motor's own cell, relative to the anchor in front. */
+	public BlockPos headLocalPos() {
+		return BlockPos.ZERO.relative(getFacing().getOpposite());
 	}
 
 	public float getInterpolatedAngle(float partialTick) {
@@ -146,25 +151,26 @@ public class ServoMotorBlockEntity extends BlockEntity {
 	public void serverTick() {
 		prevAngle = angle;
 
+		// Pre-assembled on placement; lazily seed the head for blocks created another way
+		// (e.g. /setblock) so the contraption always exists.
+		if (contraption == null)
+			initContraption();
+
+		// Spins only while powered; the contraption is permanent either way.
 		boolean powered = level.hasNeighborSignal(worldPosition);
-		if (powered != wasPowered) {
-			wasPowered = powered;
-			assembleNextTick = true;
+		if (powered != running) {
+			running = powered;
+			setChanged();
+			sendData();
 		}
 
-		if (assembleNextTick) {
-			assembleNextTick = false;
-			if (running)
-				disassemble();
-			else
-				assemble();
-		}
-
-		if (!running || contraption == null)
+		if (contraption == null)
 			return;
 
-		angle = (angle + DEGREES_PER_TICK) % 360;
-		// Resolve non-player entities here; players are resolved client-side.
+		if (running)
+			angle = (angle + DEGREES_PER_TICK) % 360;
+		// Resolve non-player entities here (players are resolved client-side). A stopped
+		// contraption is still solid; only the carry motion goes to zero.
 		collide(entity -> !(entity instanceof Player));
 		// Riders stand on blocks that aren't in the world, so keep the server from
 		// kicking them for "floating".
@@ -173,13 +179,16 @@ public class ServoMotorBlockEntity extends BlockEntity {
 
 	public void clientTick() {
 		prevAngle = angle;
-		if (!running || contraption == null) {
+		// Targeting/building/breaking work even while stopped, so track any motor that has a
+		// contraption — not just spinning ones.
+		if (contraption == null) {
 			ACTIVE_CLIENT.remove(this);
 			return;
 		}
 		ACTIVE_CLIENT.add(this);
 
-		angle = (angle + DEGREES_PER_TICK) % 360;
+		if (running)
+			angle = (angle + DEGREES_PER_TICK) % 360;
 		// Local-player collision is driven from ContraptionInteractionClient (client-only)
 		// so this class never references client types and stays dist-safe.
 	}
@@ -194,48 +203,39 @@ public class ServoMotorBlockEntity extends BlockEntity {
 
 	// region assembly
 
-	public void assemble() {
+	/**
+	 * Seed the contraption with just the Servo Motor Head at the motor's own cell (on the
+	 * rotation axis, so it spins in place). The rest of the contraption is built outward off
+	 * the head via in-flight placement. The motor is never disassembled.
+	 */
+	public void initContraption() {
+		if (level == null || level.isClientSide || contraption != null)
+			return;
+
+		Direction facing = getFacing();
+		rotationAxis = facing.getAxis();
+		BlockPos anchor = worldPosition.relative(facing);
+		Contraption next = new Contraption();
+		next.setAnchor(anchor);
+		BlockState headState = ModBlocks.SERVO_MOTOR_HEAD.get().defaultBlockState()
+			.setValue(ServoMotorHeadBlock.FACING, facing);
+		next.putBlock(headLocalPos(), headState, null, null);
+
+		contraption = next;
+		angle = 0;
+		prevAngle = 0;
+		setChanged();
+		sendData();
+	}
+
+	/** Called from the block when the motor is broken: drop every contraption block as items. */
+	public void onMotorRemoved() {
 		if (level == null || level.isClientSide)
 			return;
-
-		BlockPos anchor = worldPosition.relative(getFacing());
-		Contraption next = new Contraption();
-		try {
-			next.assemble(level, anchor, worldPosition);
-		} catch (AssemblyException e) {
-			return;
-		}
-
-		next.removeBlocksFromWorld(level);
-		contraption = next;
-		rotationAxis = getFacing().getAxis();
-		running = true;
-		angle = 0;
-		prevAngle = 0;
-		setChanged();
-		sendData();
-	}
-
-	public void disassemble() {
-		if (level == null || level.isClientSide || !running || contraption == null)
-			return;
-
-		BlockPos anchor = worldPosition.relative(getFacing());
-		StructureTransform transform = new StructureTransform(anchor, rotationAxis, angle);
-		contraption.addBlocksToWorld(level, transform);
-
+		if (!suppressRemovalDrops && contraption != null)
+			dropContraptionLoot(null, ItemStack.EMPTY);
 		contraption = null;
 		running = false;
-		angle = 0;
-		prevAngle = 0;
-		setChanged();
-		sendData();
-	}
-
-	/** Called from the block when the motor is broken so captured blocks aren't lost. */
-	public void onMotorRemoved() {
-		if (running && contraption != null)
-			disassemble();
 	}
 
 	// endregion
@@ -259,22 +259,18 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		if (!inReach(local, player, transform))
 			return;
 
+		// The head coincides with the in-world motor; breaking it tears down the whole motor.
+		if (local.equals(headLocalPos())) {
+			breakWholeMotor(player);
+			return;
+		}
+
 		BlockState state = info.state();
 		BlockPos worldPos = BlockPos.containing(transform.localBlockCenterToWorld(local));
 		ItemStack tool = player.getMainHandItem();
 
 		if (!player.isCreative() && serverLevel.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS)) {
-			BlockEntity be = null;
-			if (info.nbt() != null && state.getBlock() instanceof EntityBlock entityBlock) {
-				be = entityBlock.newBlockEntity(worldPos, state);
-				if (be != null) {
-					be.setLevel(serverLevel);
-					be.loadWithComponents(info.nbt(), serverLevel.registryAccess());
-				}
-			}
-			List<ItemStack> drops = Block.getDrops(state, serverLevel, worldPos, be, player, tool);
-			for (ItemStack drop : drops)
-				Block.popResource(serverLevel, worldPos, drop);
+			popBlockLoot(serverLevel, state, info.nbt(), worldPos, player, tool);
 			state.spawnAfterBreak(serverLevel, worldPos, tool, true);
 		}
 
@@ -283,6 +279,54 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		contraption.removeBlock(local);
 		setChanged();
 		sendData();
+	}
+
+	/** Destroy the whole motor: drop the motor item and every contraption block, then remove it. */
+	private void breakWholeMotor(ServerPlayer player) {
+		ServerLevel serverLevel = (ServerLevel) level;
+		if (!player.isCreative() && serverLevel.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS)) {
+			ItemStack tool = player.getMainHandItem();
+			// The motor block's own loot (respects correct tool / silk touch).
+			popBlockLoot(serverLevel, getBlockState(), null, worldPosition, player, tool);
+			dropContraptionLoot(player, tool);
+		}
+		// Remove the in-world motor; suppress so onMotorRemoved doesn't drop the contraption again.
+		suppressRemovalDrops = true;
+		contraption = null;
+		running = false;
+		serverLevel.removeBlock(worldPosition, false);
+	}
+
+	/** Drop the loot of every contraption block except the (unobtainable) head. */
+	private void dropContraptionLoot(@Nullable ServerPlayer player, ItemStack tool) {
+		if (level == null || level.isClientSide || contraption == null)
+			return;
+		ServerLevel serverLevel = (ServerLevel) level;
+		if (!serverLevel.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS))
+			return;
+		if (player != null && player.isCreative())
+			return;
+		BlockPos headLocal = headLocalPos();
+		for (var entry : contraption.getBlocks().entrySet()) {
+			if (entry.getKey().equals(headLocal))
+				continue;
+			popBlockLoot(serverLevel, entry.getValue().state(), entry.getValue().nbt(), worldPosition, player, tool);
+		}
+	}
+
+	/** Reconstruct any block entity from {@code nbt} and pop the block's drops at {@code worldPos}. */
+	private void popBlockLoot(ServerLevel serverLevel, BlockState state, @Nullable CompoundTag nbt, BlockPos worldPos,
+		@Nullable ServerPlayer player, ItemStack tool) {
+		BlockEntity be = null;
+		if (nbt != null && state.getBlock() instanceof EntityBlock entityBlock) {
+			be = entityBlock.newBlockEntity(worldPos, state);
+			if (be != null) {
+				be.setLevel(serverLevel);
+				be.loadWithComponents(nbt, serverLevel.registryAccess());
+			}
+		}
+		for (ItemStack drop : Block.getDrops(state, serverLevel, worldPos, be, player, tool))
+			Block.popResource(serverLevel, worldPos, drop);
 	}
 
 	/** Place the player's held block into the structure with full vanilla placement context. */
@@ -354,7 +398,7 @@ public class ServoMotorBlockEntity extends BlockEntity {
 	 * free of any client-only type so this BlockEntity class stays dist-safe.
 	 */
 	public void collideWithPlayer(Player player) {
-		if (!running || contraption == null || player == null)
+		if (contraption == null || player == null)
 			return;
 		collide(entity -> entity == player);
 	}
@@ -410,7 +454,6 @@ public class ServoMotorBlockEntity extends BlockEntity {
 
 	private void writeState(CompoundTag tag, HolderLookup.Provider registries) {
 		tag.putBoolean("Running", running);
-		tag.putBoolean("WasPowered", wasPowered);
 		tag.putInt("Axis", rotationAxis.ordinal());
 		tag.putFloat("Angle", angle);
 		if (contraption != null)
@@ -427,7 +470,6 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		float clientPrevAngle = prevAngle;
 
 		running = tag.getBoolean("Running");
-		wasPowered = tag.getBoolean("WasPowered");
 		rotationAxis = Axis.values()[tag.getInt("Axis")];
 
 		if (level != null && level.isClientSide && wasRunningWithContraption && running) {

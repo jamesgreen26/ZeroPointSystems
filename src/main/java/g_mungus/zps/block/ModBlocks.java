@@ -210,6 +210,14 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
 
+    // Unobtainable: no BlockItem, no creative tab, no loot table (like the piston head).
+    public static final DeferredBlock<Block> SERVO_MOTOR_HEAD = BLOCKS.register("servo_motor_head",
+            () -> new ServoMotorHeadBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(3.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+                    .noLootTable()));
+
 
     /// RESOURCE BLOCKS
     public static final DeferredBlock<Block> BAUXITE = BLOCKS.register("bauxite",

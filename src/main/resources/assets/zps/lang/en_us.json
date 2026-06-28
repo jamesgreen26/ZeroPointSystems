@@ -1,5 +1,6 @@
 {
     "block.zps.servo_motor": "Servo Motor",
+    "block.zps.servo_motor_head": "Servo Motor Head",
     "item.zps.servo_motor": "Servo Motor",
     "zps.contraption.too_large": "Structure is too large to assemble",
     "zps.contraption.unloaded_chunk": "Structure reaches into an unloaded chunk at [%s, %s, %s]",

@@ -1,16 +1,11 @@
 package g_mungus.zps.contraption;
 
-import java.util.ArrayDeque;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
 
 import javax.annotation.Nullable;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
@@ -18,10 +13,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
 import net.minecraft.world.phys.AABB;
@@ -80,54 +72,9 @@ public class Contraption {
 		return copy;
 	}
 
-	/**
-	 * Flood-fill outward from the anchor, capturing all connected movable blocks
-	 * (excluding the controller block) into local coordinates.
-	 */
-	public void assemble(Level level, BlockPos anchor, BlockPos controllerPos) throws AssemblyException {
+	/** Set the world pivot (anchor) the local coordinates are relative to. */
+	public void setAnchor(BlockPos anchor) {
 		this.anchor = anchor;
-		blocks.clear();
-		bounds = null;
-
-		Queue<BlockPos> frontier = new ArrayDeque<>();
-		Set<BlockPos> visited = new HashSet<>();
-		frontier.add(anchor);
-
-		while (!frontier.isEmpty()) {
-			BlockPos pos = frontier.poll();
-			if (!visited.add(pos))
-				continue;
-			if (pos.equals(controllerPos))
-				continue;
-			if (!level.isLoaded(pos))
-				throw AssemblyException.unloadedChunk(pos);
-
-			BlockState state = level.getBlockState(pos);
-			if (!BlockMovementChecks.isMovementNecessary(state))
-				continue; // air / boundary: do not capture or expand through
-			if (!BlockMovementChecks.isMovementAllowed(state, level, pos))
-				continue; // unmovable block acts as a wall
-
-			addBlock(level, pos, state);
-			if (blocks.size() > MAX_BLOCKS)
-				throw AssemblyException.tooLarge();
-
-			for (Direction dir : Direction.values())
-				frontier.add(pos.relative(dir));
-		}
-
-		if (blocks.isEmpty())
-			throw AssemblyException.empty();
-	}
-
-	private void addBlock(Level level, BlockPos pos, BlockState state) {
-		BlockPos local = pos.subtract(anchor);
-		BlockEntity be = level.getBlockEntity(pos);
-		CompoundTag nbt = be == null ? null : be.saveWithFullMetadata(level.registryAccess());
-		blocks.put(local, new StructureBlockInfo(local, state, nbt));
-		if (be != null)
-			updateTags.put(local, be.getUpdateTag(level.registryAccess()));
-		expandBounds(local);
 	}
 
 	private void expandBounds(BlockPos local) {
@@ -168,48 +115,6 @@ public class Contraption {
 		updateTags.remove(local);
 		recomputeBounds();
 		return removed;
-	}
-
-	/** Remove all captured blocks from the world (brittle first, then solid). */
-	public void removeBlocksFromWorld(Level level) {
-		for (boolean brittlePass : new boolean[] { true, false }) {
-			for (StructureBlockInfo info : blocks.values()) {
-				BlockPos worldPos = info.pos().offset(anchor);
-				if (BlockMovementChecks.isBrittle(info.state(), level, worldPos) != brittlePass)
-					continue;
-				level.removeBlockEntity(worldPos);
-				level.setBlock(worldPos, Blocks.AIR.defaultBlockState(),
-					Block.UPDATE_MOVE_BY_PISTON | Block.UPDATE_SUPPRESS_DROPS | Block.UPDATE_CLIENTS);
-			}
-		}
-	}
-
-	/** Write all captured blocks back into the world at the transformed positions. */
-	public void addBlocksToWorld(Level level, StructureTransform transform) {
-		for (boolean solidPass : new boolean[] { true, false }) {
-			for (StructureBlockInfo info : blocks.values()) {
-				BlockPos target = transform.apply(info.pos());
-				BlockState state = transform.apply(info.state());
-				boolean solid = !BlockMovementChecks.isBrittle(state, level, target);
-				if (solid != solidPass)
-					continue;
-
-				level.destroyBlock(target, false);
-				level.setBlock(target, state, Block.UPDATE_MOVE_BY_PISTON | Block.UPDATE_ALL);
-
-				CompoundTag data = info.nbt();
-				if (data == null)
-					continue;
-				BlockEntity be = level.getBlockEntity(target);
-				if (be == null)
-					continue;
-				CompoundTag tag = data.copy();
-				tag.putInt("x", target.getX());
-				tag.putInt("y", target.getY());
-				tag.putInt("z", target.getZ());
-				be.loadWithComponents(tag, level.registryAccess());
-			}
-		}
 	}
 
 	public CompoundTag writeNBT() {

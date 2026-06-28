@@ -11,6 +11,7 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
@@ -23,9 +24,10 @@ public class ServoMotorGameTests {
     private static final BlockPos FRONT_POS = MOTOR_POS.east();
 
     @GameTest(template = TEMPLATE)
-    public static void assembleRemovesStructure_disassembleRestoresIt(GameTestHelper helper) {
+    public static void placesPreAssembledWithHeadOnly(GameTestHelper helper) {
         helper.setBlock(MOTOR_POS, ModBlocks.SERVO_MOTOR.get().defaultBlockState()
                 .setValue(ServoMotorBlock.FACING, Direction.EAST));
+        // A block in front must NOT be captured: there is no flood-fill assembly anymore.
         helper.setBlock(FRONT_POS, Blocks.STONE);
 
         BlockEntity be = helper.getBlockEntity(MOTOR_POS);
@@ -34,51 +36,46 @@ public class ServoMotorGameTests {
             return;
         }
 
-        // Assemble: the block in front should be lifted out of the world into the contraption.
-        motor.assemble();
-        helper.assertBlockNotPresent(Blocks.STONE, FRONT_POS);
-        if (!motor.isRunning() || motor.getContraption() == null) {
-            helper.fail("Motor should be running with a contraption after assembly");
+        motor.initContraption();
+        Contraption contraption = motor.getContraption();
+        if (contraption == null) {
+            helper.fail("Motor should be pre-assembled with a contraption");
             return;
         }
-
-        // Disassemble (at angle 0): the block should be written straight back to its origin.
-        motor.disassemble();
+        if (contraption.getBlocks().size() != 1) {
+            helper.fail("Contraption should contain only the head; got " + contraption.getBlocks().size());
+            return;
+        }
+        StructureBlockInfo head = contraption.getBlocks().get(motor.headLocalPos());
+        if (head == null || !head.state().is(ModBlocks.SERVO_MOTOR_HEAD.get())) {
+            helper.fail("Head should sit at the motor's own cell (local " + motor.headLocalPos() + ")");
+            return;
+        }
+        // The block in front stays in the world untouched.
         helper.assertBlockPresent(Blocks.STONE, FRONT_POS);
-        if (motor.isRunning() || motor.getContraption() != null) {
-            helper.fail("Motor should be idle with no contraption after disassembly");
-            return;
-        }
-
         helper.succeed();
     }
 
-    /** The only captured block is the one at the anchor, so it lives at local origin. */
-    private static final BlockPos STONE_LOCAL = BlockPos.ZERO;
-
     /**
-     * Exercises the in-flight editing primitives on the contraption data model
-     * (the server break/place methods wrap these but need a real ServerPlayer,
-     * which can't be mocked in this modpack without crashing broadcasts — those
-     * are verified with runClient). Here we assert add/remove keep the block map
-     * and bounds consistent.
+     * Exercises the in-flight editing primitives on the contraption data model used to build
+     * outward off the head (the server break/place methods wrap these but need a real
+     * ServerPlayer, verified with runClient). Here we assert add/remove keep the block map and
+     * bounds consistent.
      */
     @GameTest(template = TEMPLATE)
     public static void contraptionAddAndRemoveBlocks(GameTestHelper helper) {
         helper.setBlock(MOTOR_POS, ModBlocks.SERVO_MOTOR.get().defaultBlockState()
                 .setValue(ServoMotorBlock.FACING, Direction.EAST));
-        helper.setBlock(FRONT_POS, Blocks.STONE);
         ServoMotorBlockEntity motor = (ServoMotorBlockEntity) helper.getBlockEntity(MOTOR_POS);
-        motor.assemble();
+        motor.initContraption();
 
         Contraption contraption = motor.getContraption();
         if (contraption == null) {
-            helper.fail("Expected a contraption after assembly");
+            helper.fail("Expected a contraption after placement");
             return;
         }
 
-        // Use a local position far from anything else so the bounds effect is unambiguous,
-        // independent of how many connected blocks the flood-fill captured.
+        // Use a local position far from anything else so the bounds effect is unambiguous.
         BlockPos far = new BlockPos(0, 10, 0); // block AABB spans y in [10, 11]
         int before = contraption.getBlocks().size();
 

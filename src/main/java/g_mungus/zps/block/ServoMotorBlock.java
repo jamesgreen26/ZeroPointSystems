@@ -4,10 +4,17 @@ import com.mojang.serialization.MapCodec;
 
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.ServoMotorBlockEntity;
+import java.util.EnumMap;
+import java.util.Map;
+
+import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
@@ -22,8 +29,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.InteractionResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,6 +43,30 @@ public class ServoMotorBlock extends BaseEntityBlock {
 
 	public static final MapCodec<ServoMotorBlock> CODEC = simpleCodec(ServoMotorBlock::new);
 	public static final DirectionProperty FACING = BlockStateProperties.FACING;
+
+	/** The motor occupies the back 3/4 of the cell; the head fills the front 1/4 at the facing end. */
+	private static final Map<Direction, VoxelShape> SHAPES = Util.make(new EnumMap<>(Direction.class), m -> {
+		m.put(Direction.DOWN, Block.box(0, 4, 0, 16, 16, 16));
+		m.put(Direction.UP, Block.box(0, 0, 0, 16, 12, 16));
+		m.put(Direction.NORTH, Block.box(0, 0, 4, 16, 16, 16));
+		m.put(Direction.SOUTH, Block.box(0, 0, 0, 16, 16, 12));
+		m.put(Direction.WEST, Block.box(4, 0, 0, 16, 16, 16));
+		m.put(Direction.EAST, Block.box(0, 0, 0, 12, 16, 16));
+	});
+
+	/** Upper bound on how much the attached contraption can slow breaking the motor/head. */
+	public static final float MAX_BREAK_MULTIPLIER = 10f;
+
+	/**
+	 * Dampen the per-tick break progress by the contraption size: bigger structures break
+	 * slower, but with diminishing growth and a hard cap so they stay breakable.
+	 */
+	public static float scaledDestroyProgress(float base, int count) {
+		if (count <= 1)
+			return base;
+		double multiplier = Math.min(MAX_BREAK_MULTIPLIER, 1.0 + Math.log(count) / Math.log(2));
+		return (float) (base / multiplier);
+	}
 
 	public ServoMotorBlock(Properties properties) {
 		super(properties);
@@ -73,11 +104,33 @@ public class ServoMotorBlock extends BaseEntityBlock {
 	}
 
 	@Override
-	protected @NotNull InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
-		BlockHitResult hit) {
+	protected @NotNull VoxelShape getShape(BlockState state, @NotNull BlockGetter level, @NotNull BlockPos pos,
+		@NotNull CollisionContext context) {
+		return SHAPES.get(state.getValue(FACING));
+	}
+
+	@Override
+	protected @NotNull VoxelShape getCollisionShape(BlockState state, @NotNull BlockGetter level, @NotNull BlockPos pos,
+		@NotNull CollisionContext context) {
+		return SHAPES.get(state.getValue(FACING));
+	}
+
+	@Override
+	public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer,
+		@NotNull ItemStack stack) {
+		super.setPlacedBy(level, pos, state, placer, stack);
+		// Place pre-assembled: seed the contraption with the head straight away.
 		if (!level.isClientSide && level.getBlockEntity(pos) instanceof ServoMotorBlockEntity motor)
-			motor.requestToggle();
-		return InteractionResult.sidedSuccess(level.isClientSide);
+			motor.initContraption();
+	}
+
+	@Override
+	public float getDestroyProgress(BlockState state, @NotNull Player player, @NotNull BlockGetter level,
+		@NotNull BlockPos pos) {
+		float base = super.getDestroyProgress(state, player, level, pos);
+		int count = level.getBlockEntity(pos) instanceof ServoMotorBlockEntity motor
+			? motor.getContraptionBlockCount() : 1;
+		return scaledDestroyProgress(base, count);
 	}
 
 	@Override

@@ -11,6 +11,7 @@ import g_mungus.zps.block.ServoMotorHeadBlock;
 import g_mungus.zps.client.renderer.contraption.ContraptionRenderState;
 import g_mungus.zps.contraption.Contraption;
 import g_mungus.zps.contraption.ContraptionPlaceContext;
+import g_mungus.zps.contraption.ContraptionRotatedEntity;
 import g_mungus.zps.contraption.ContraptionRotationState;
 import g_mungus.zps.contraption.ContraptionSimLevel;
 import g_mungus.zps.contraption.ContraptionTransform;
@@ -264,6 +265,8 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		// Feet at the cell's bottom-centre: local x/z centred, y at the block's bottom face.
 		Vec3 feet = transform.localToWorld(new Vec3(local.getX() + 0.5, local.getY(), local.getZ() + 0.5));
 		FallingBlockEntity entity = FallingBlockEntityInvoker.zps$create(serverLevel, feet.x, feet.y, feet.z, state);
+		// Inherit the contraption's current orientation so the block keeps it while falling.
+		((ContraptionRotatedEntity) entity).zps$setContraptionRotation(transform.angle(), transform.axis());
 		serverLevel.addFreshEntity(entity);
 	}
 

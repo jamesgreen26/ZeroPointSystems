@@ -20,6 +20,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.profiling.InactiveProfiler;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
@@ -309,15 +310,27 @@ public class ContraptionSimServerLevel extends WrappedServerLevel {
 		ContraptionTransform t = getTransform();
 		if (t != null) {
 			Vec3 world = t.localToWorld(entity.position());
-			// Rotate the entity's facing the same way the structure is rotated: turn its look vector,
-			// then read back yaw/pitch (entities have no roll). Velocity is rotated too, so projectiles
-			// keep heading the right way.
-			Vec3 look = ContraptionMath.rotate(Vec3.directionFromRotation(entity.getXRot(), entity.getYRot()),
-				t.angle(), t.axis());
-			double horizontal = Math.sqrt(look.x * look.x + look.z * look.z);
-			float yaw = Mth.wrapDegrees((float) (Mth.atan2(look.z, look.x) * RAD_TO_DEG) - 90.0F);
-			float pitch = Mth.wrapDegrees((float) (-(Mth.atan2(look.y, horizontal) * RAD_TO_DEG)));
-			entity.setDeltaMovement(ContraptionMath.rotate(entity.getDeltaMovement(), t.angle(), t.axis()));
+			Vec3 velocity = ContraptionMath.rotate(entity.getDeltaMovement(), t.angle(), t.axis());
+			entity.setDeltaMovement(velocity);
+			float yaw;
+			float pitch;
+			if (entity instanceof Projectile) {
+				// Projectiles orient to their velocity using the atan2(vx,vz) convention (see Projectile#shoot
+				// / AbstractArrow's spawn recompute). Derive yaw/pitch from the ROTATED velocity in that same
+				// convention so the client's first frame already matches what the projectile computes itself —
+				// the look-vector round-trip below uses the camera convention and would mis-face an arrow.
+				double horizontal = velocity.horizontalDistance();
+				yaw = (float) (Mth.atan2(velocity.x, velocity.z) * RAD_TO_DEG);
+				pitch = (float) (Mth.atan2(velocity.y, horizontal) * RAD_TO_DEG);
+			} else {
+				// Other entities face via the camera convention: rotate the look vector, read back yaw/pitch
+				// (entities have no roll).
+				Vec3 look = ContraptionMath.rotate(
+					Vec3.directionFromRotation(entity.getXRot(), entity.getYRot()), t.angle(), t.axis());
+				double horizontal = Math.sqrt(look.x * look.x + look.z * look.z);
+				yaw = Mth.wrapDegrees((float) (Mth.atan2(look.z, look.x) * RAD_TO_DEG) - 90.0F);
+				pitch = Mth.wrapDegrees((float) (-(Mth.atan2(look.y, horizontal) * RAD_TO_DEG)));
+			}
 			// moveTo also calls setOldPosAndRot, snapping the interpolation history (xo/xOld/yRotO/…) to
 			// the world pose so the client doesn't lerp in from the contraption-local origin (a visible streak).
 			entity.moveTo(world.x, world.y, world.z, yaw, pitch);

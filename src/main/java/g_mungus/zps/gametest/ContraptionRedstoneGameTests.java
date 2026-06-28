@@ -18,6 +18,7 @@ import net.minecraft.world.Container;
 import g_mungus.zps.contraption.ContraptionTransform;
 import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.projectile.Arrow;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
@@ -580,6 +581,38 @@ public class ContraptionRedstoneGameTests {
 		// contraption-local origin); moveTo -> setOldPosAndRot guarantees xOld == getX(), etc.
 		if (item.xOld != item.getX() || item.yOld != item.getY() || item.zOld != item.getZ()) {
 			helper.fail("Spawned entity's old position should be snapped to its world position");
+			return;
+		}
+		helper.succeed();
+	}
+
+	/**
+	 * A projectile (arrow) spawned into the sim level faces its (rotated) velocity using the projectile
+	 * convention, with the rotation history snapped — so it doesn't appear mis-facing on the first
+	 * client frame.
+	 */
+	@GameTest(template = TEMPLATE)
+	public static void spawnedArrowFacesVelocity(GameTestHelper helper) {
+		ServoMotorBlockEntity motor = setupMotor(helper);
+		Contraption c = motor.getContraption();
+		ServerLevel level = (ServerLevel) helper.getLevel();
+
+		ContraptionSimServerLevel sim = new ContraptionSimServerLevel(level, c, null, null,
+			() -> ContraptionTransform.ofCurrent(motor));
+		Vec3 spawnLocal = Vec3.atCenterOf(new BlockPos(0, 1, 0));
+		Arrow arrow = new Arrow(sim, spawnLocal.x, spawnLocal.y, spawnLocal.z, ItemStack.EMPTY, null);
+		arrow.setDeltaMovement(1.0, 0.0, 0.0); // local +X (east)
+		arrow.setYRot(0.0F); // bogus initial facing, must be overridden from velocity
+		arrow.setXRot(0.0F);
+		sim.addFreshEntity(arrow);
+
+		// angle 0 -> rotated velocity is still +X; projectile yaw = atan2(vx, vz) = atan2(1, 0) = 90.
+		if (Math.abs(arrow.getYRot() - 90.0F) > 1.0F) {
+			helper.fail("Arrow should face its velocity (yaw ~90), got " + arrow.getYRot());
+			return;
+		}
+		if (arrow.yRotO != arrow.getYRot() || arrow.xRotO != arrow.getXRot()) {
+			helper.fail("Arrow rotation history should be snapped to its facing");
 			return;
 		}
 		helper.succeed();

@@ -1,14 +1,18 @@
 package g_mungus.zps.contraption;
 
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
 
 import net.createmod.catnip.levelWrappers.WrappedServerLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.profiling.InactiveProfiler;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -16,6 +20,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.ticks.LevelTicks;
 import net.minecraft.world.ticks.ScheduledTick;
 import net.minecraft.world.ticks.TickPriority;
@@ -45,17 +50,29 @@ import net.minecraft.world.ticks.TickPriority;
  */
 public class ContraptionSimServerLevel extends WrappedServerLevel {
 
+	/** The real wrapped level, kept directly because {@link WrappedServerLevel} stubs some methods. */
+	private final ServerLevel realLevel;
 	private final Contraption contraption;
 	/** Notified after a write so the host BlockEntity can re-sync ({@code setChanged}+sync). */
 	@Nullable
 	private final Runnable onChanged;
+	/**
+	 * Supplies the contraption's current world pose, used to play block sounds (which the engine
+	 * emits at LOCAL block coordinates) at their actual, rotated world position. Null when no pose
+	 * is available (e.g. in tests), in which case sounds fall through untransformed.
+	 */
+	@Nullable
+	private final Supplier<ContraptionTransform> transform;
 	/** Own (empty) fluid queue so any stray fluid tick never leaks onto the real level. */
 	private final LevelTicks<Fluid> fluidTicks = new LevelTicks<>(cp -> true, () -> InactiveProfiler.INSTANCE);
 
-	public ContraptionSimServerLevel(ServerLevel level, Contraption contraption, @Nullable Runnable onChanged) {
+	public ContraptionSimServerLevel(ServerLevel level, Contraption contraption, @Nullable Runnable onChanged,
+		@Nullable Supplier<ContraptionTransform> transform) {
 		super(level);
+		this.realLevel = level;
 		this.contraption = contraption;
 		this.onChanged = onChanged;
+		this.transform = transform;
 	}
 
 	public Contraption getContraption() {
@@ -138,6 +155,33 @@ public class ContraptionSimServerLevel extends WrappedServerLevel {
 	@Override
 	public void sendBlockUpdated(BlockPos pos, BlockState oldState, BlockState newState, int flags) {
 		// No-op: the host BlockEntity re-syncs the whole contraption to clients after an operation.
+	}
+
+	/**
+	 * Blocks emit sounds at their (local) coordinates; rotate them into world space so a button
+	 * click, door creak, etc. plays where the block actually is on the contraption. All the
+	 * positional {@code playSound} overloads (BlockPos / no-seed) funnel through this one.
+	 *
+	 * <p>The sound is emitted on the <b>real</b> level: {@link WrappedServerLevel} stubs
+	 * {@code playSound} to a no-op (catnip suppresses sim-level sounds), so calling {@code super}
+	 * would drop it. We pass a {@code null} source player so the interacting player hears it too —
+	 * contraption interactions aren't predicted client-side, so nothing plays it locally.
+	 */
+	@Override
+	public void playSound(@Nullable Player player, double x, double y, double z, SoundEvent sound, SoundSource source,
+		float volume, float pitch) {
+		Vec3 world = transform != null ? transform.get().localToWorld(new Vec3(x, y, z)) : new Vec3(x, y, z);
+		realLevel.playSound(null, world.x, world.y, world.z, sound, source, volume, pitch);
+	}
+
+	/**
+	 * Entity-attached sounds: the entity already lives in world space, so no transform is needed —
+	 * just emit on the real level ({@code super} is a no-op as above).
+	 */
+	@Override
+	public void playSound(@Nullable Player player, Entity entity, SoundEvent sound, SoundSource source, float volume,
+		float pitch) {
+		realLevel.playSound(null, entity, sound, source, volume, pitch);
 	}
 
 	@Override

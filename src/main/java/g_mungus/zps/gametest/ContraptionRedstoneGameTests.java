@@ -51,7 +51,7 @@ public class ContraptionRedstoneGameTests {
 	}
 
 	private static ContraptionSimServerLevel sim(GameTestHelper helper, Contraption c) {
-		return new ContraptionSimServerLevel((ServerLevel) helper.getLevel(), c, null);
+		return new ContraptionSimServerLevel((ServerLevel) helper.getLevel(), c, null, null);
 	}
 
 	/** Insert a block into the structure without firing updates (builds the inert layout). */

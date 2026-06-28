@@ -20,6 +20,7 @@ import g_mungus.zps.networking.ContraptionBreakProgressC2SPacket;
 import g_mungus.zps.networking.ContraptionPlaceC2SPacket;
 import g_mungus.zps.networking.ZPSGamePackets;
 import g_mungus.zps.mixin.MinecraftAccessor;
+import g_mungus.zps.mixin.MultiPlayerGameModeAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
@@ -75,7 +76,6 @@ public final class ContraptionInteractionClient {
 	private static BlockPos breakLocal;
 	private static float destroyProgress;
 	private static int lastSentStage = -1;
-	private static int destroyDelay;
 
 	private static final Map<Integer, RemoteBreak> remoteBreaks = new HashMap<>();
 
@@ -97,7 +97,7 @@ public final class ContraptionInteractionClient {
 		pick(partialTick());
 		if (currentHit == null) return false;
 		// A fresh click acts immediately, mirroring vanilla's startAttack (only the held
-		// path below is throttled by destroyDelay).
+		// path below is throttled by the shared vanilla mining cooldown).
 		progressMining(true);
 		mc.player.swing(InteractionHand.MAIN_HAND);
 		return true;
@@ -231,12 +231,22 @@ public final class ContraptionInteractionClient {
 	private static void progressMining(boolean fresh) {
 		Minecraft mc = Minecraft.getInstance();
 		LocalPlayer player = mc.player;
-		if (player == null || currentHit == null) {
+		if (player == null || currentHit == null || mc.gameMode == null) {
 			resetBreak();
 			return;
 		}
-		// destroyDelay only throttles the held auto-repeat; a fresh click always acts.
-		if (!fresh && destroyDelay > 0) return;
+		// Share vanilla's held-mining cooldown so contraption and world breaks throttle each other
+		// exactly like two regular blocks would: a held break waits ACTION_DELAY ticks after any
+		// break, a fresh click always acts. We count it down here because while we're handling the
+		// contraption vanilla's continueDestroyBlock (which normally decrements it) is suppressed.
+		MultiPlayerGameModeAccessor gameMode = (MultiPlayerGameModeAccessor) mc.gameMode;
+		if (!fresh) {
+			int delay = gameMode.getDestroyDelay();
+			if (delay > 0) {
+				gameMode.setDestroyDelay(delay - 1);
+				return;
+			}
+		}
 
 		ServoMotorBlockEntity motor = currentHit.motor();
 		BlockPos local = currentHit.localPos();
@@ -260,7 +270,7 @@ public final class ContraptionInteractionClient {
 		if (player.getAbilities().instabuild) {
 			sendBreak(motor, local);
 			predictBreak(motor, local);
-			destroyDelay = ACTION_DELAY;
+			gameMode.setDestroyDelay(ACTION_DELAY);
 			resetBreak();
 			return;
 		}
@@ -274,7 +284,7 @@ public final class ContraptionInteractionClient {
 		if (destroyProgress >= 1.0f) {
 			sendBreak(motor, local);
 			predictBreak(motor, local);
-			destroyDelay = ACTION_DELAY;
+			gameMode.setDestroyDelay(ACTION_DELAY);
 			resetBreak();
 		}
 	}
@@ -297,8 +307,6 @@ public final class ContraptionInteractionClient {
 	// region events
 
 	public static void onClientTick(ClientTickEvent.Post event) {
-		if (destroyDelay > 0) destroyDelay--;
-
 		Minecraft mc = Minecraft.getInstance();
 		if (mc.level == null) {
 			currentHit = null;

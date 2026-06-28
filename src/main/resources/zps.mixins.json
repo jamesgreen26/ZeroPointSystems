@@ -9,6 +9,7 @@
     "CommandSuggestionsMixin",
     "MinecraftAccessor",
     "MinecraftMixin",
+    "MultiPlayerGameModeAccessor",
     "PlayerRendererMixin",
     "SelectorDeserializerNotMixin",
     "SoundEngineMixin",

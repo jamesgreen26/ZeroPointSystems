@@ -86,12 +86,22 @@ public class ContraptionPlaceContext extends BlockPlaceContext {
 
 	@Override
 	public Direction getNearestLookingVerticalDirection() {
-		return transform.worldDirToLocal(super.getNearestLookingVerticalDirection());
+		for (Direction world : Direction.orderedByNearest(getPlayer())) {
+			Direction local = transform.worldDirToLocal(world);
+			if (local.getAxis() == Direction.Axis.Y)
+				return local;
+		}
+		return super.getNearestLookingVerticalDirection();
 	}
 
 	@Override
 	public Direction getHorizontalDirection() {
-		return transform.worldDirToLocal(super.getHorizontalDirection());
+		for (Direction world : Direction.orderedByNearest(getPlayer())) {
+			Direction local = transform.worldDirToLocal(world);
+			if (local.getAxis() != Direction.Axis.Y)
+				return local;
+		}
+		return super.getHorizontalDirection();
 	}
 
 	@Override

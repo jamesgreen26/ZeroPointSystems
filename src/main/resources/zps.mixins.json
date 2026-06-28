@@ -24,6 +24,7 @@
     "BlockBehaviourMixin",
     "BlockInWorldMixin",
     "ClientboundCommandsPacketMixin",
+    "FallingBlockEntityInvoker",
     "ItemEntityMixin",
     "LecternBlockEntityMixin",
     "LivingEntityMixin",

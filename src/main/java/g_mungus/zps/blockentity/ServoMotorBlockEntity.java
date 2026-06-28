@@ -16,6 +16,7 @@ import g_mungus.zps.contraption.ContraptionSimLevel;
 import g_mungus.zps.contraption.ContraptionTransform;
 import g_mungus.zps.contraption.collision.ContraptionCollider;
 import g_mungus.zps.contraption.util.ContraptionMath;
+import g_mungus.zps.mixin.FallingBlockEntityInvoker;
 import g_mungus.zps.mixin.ServerGamePacketListenerImplAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -37,7 +38,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.FallingBlock;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -169,6 +172,10 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		if (contraption == null)
 			return;
 
+		// Drive the contraption's own block-tick queue (e.g. falling blocks scheduled by
+		// in-structure placement), kept separate from the outer world's tick queue.
+		tickContraptionBlocks();
+
 		if (running)
 			angle = (angle + DEGREES_PER_TICK) % 360;
 		// Resolve non-player entities here (players are resolved client-side). A stopped
@@ -210,6 +217,54 @@ public class ServoMotorBlockEntity extends BlockEntity {
 	public void setRemoved() {
 		super.setRemoved();
 		ACTIVE_CLIENT.remove(this);
+	}
+
+	/** A simulation level bound to this motor, so writes/ticks mutate the contraption and re-sync. */
+	private ContraptionSimLevel simLevel() {
+		return new ContraptionSimLevel(level, contraption, () -> {
+			setChanged();
+			sendData();
+		});
+	}
+
+	/** Run the contraption's own block-tick queue once (server-side). */
+	private void tickContraptionBlocks() {
+		if (!(level instanceof ServerLevel serverLevel))
+			return;
+		contraption.getBlockTicks().tick(serverLevel.getGameTime(), 65536, this::onContraptionBlockTick);
+	}
+
+	/** Ticker callback: re-validate the cell against the scheduled block, then handle falling blocks. */
+	private void onContraptionBlockTick(BlockPos local, Block block) {
+		StructureBlockInfo info = contraption.getBlocks().get(local);
+		if (info == null || !info.state().is(block))
+			return;
+		if (block instanceof FallingBlock)
+			detachFallingBlock(local, info.state());
+	}
+
+	/**
+	 * If the falling block at {@code local} has no support directly below it (in local
+	 * space), detach it from the structure and spawn a real {@link FallingBlockEntity} at
+	 * the block's current rotated world position, so it falls in the world and lands on any
+	 * lower platform via the existing falling-block collision in {@link #serverTick()}.
+	 */
+	private void detachFallingBlock(BlockPos local, BlockState state) {
+		if (!(level instanceof ServerLevel serverLevel))
+			return;
+		StructureBlockInfo below = contraption.getBlocks().get(local.below());
+		BlockState belowState = below == null ? Blocks.AIR.defaultBlockState() : below.state();
+		if (!FallingBlock.isFree(belowState))
+			return; // still supported
+
+		// Clear the source cell through the sim level (mutates the contraption + re-syncs).
+		simLevel().setBlock(local, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+
+		ContraptionTransform transform = ContraptionTransform.ofCurrent(this);
+		// Feet at the cell's bottom-centre: local x/z centred, y at the block's bottom face.
+		Vec3 feet = transform.localToWorld(new Vec3(local.getX() + 0.5, local.getY(), local.getZ() + 0.5));
+		FallingBlockEntity entity = FallingBlockEntityInvoker.zps$create(serverLevel, feet.x, feet.y, feet.z, state);
+		serverLevel.addFreshEntity(entity);
 	}
 
 	// endregion
@@ -349,9 +404,10 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		if (!inReach(local, player, transform))
 			return false;
 
-		// Read-only overlay exposing the contraption's blocks at their local positions, so
-		// getStateForPlacement sees in-structure neighbours (fences/walls/redstone/stairs).
-		ContraptionSimLevel sim = new ContraptionSimLevel(serverLevel, contraption);
+		// Overlay exposing the contraption's blocks at their local positions, so
+		// getStateForPlacement sees in-structure neighbours (fences/walls/redstone/stairs)
+		// and in-structure side-effects (FallingBlock#onPlace) read/write the contraption.
+		ContraptionSimLevel sim = simLevel();
 		ContraptionPlaceContext.Placed placed =
 			ContraptionPlaceContext.resolve(sim, player, hand, stack, local, localFace, localHit, transform);
 		if (placed == null)
@@ -372,6 +428,11 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		}
 
 		contraption.putBlock(placePos, placeState, beNbt, updateTag);
+		// Run placement side-effects for falling blocks so an unsupported one schedules its
+		// fall into the contraption's tick queue. Gated to FallingBlock to avoid running
+		// unrelated onPlace logic against the simulation level.
+		if (placeState.getBlock() instanceof FallingBlock)
+			placeState.onPlace(sim, placePos, Blocks.AIR.defaultBlockState(), false);
 		if (!player.isCreative())
 			stack.shrink(1);
 
@@ -461,7 +522,7 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		tag.putInt("Axis", rotationAxis.ordinal());
 		tag.putFloat("Angle", angle);
 		if (contraption != null)
-			tag.put("Contraption", contraption.writeNBT());
+			tag.put("Contraption", contraption.writeNBT(level == null ? 0L : level.getGameTime()));
 	}
 
 	private void readState(CompoundTag tag, HolderLookup.Provider registries) {
@@ -486,7 +547,7 @@ public class ServoMotorBlockEntity extends BlockEntity {
 
 		if (tag.contains("Contraption")) {
 			contraption = new Contraption();
-			contraption.readNBT(registries, tag.getCompound("Contraption"));
+			contraption.readNBT(registries, tag.getCompound("Contraption"), level == null ? 0L : level.getGameTime());
 		} else {
 			contraption = null;
 		}

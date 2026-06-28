@@ -64,18 +64,6 @@ public class ContraptionPlaceContext extends BlockPlaceContext {
 		Direction[] local = new Direction[world.length];
 		for (int i = 0; i < world.length; i++)
 			local[i] = transform.worldDirToLocal(world[i]);
-
-		if (replaceClicked)
-			return local;
-
-		Direction opposite = getClickedFace().getOpposite();
-		int i = 0;
-		while (i < local.length && local[i] != opposite)
-			++i;
-		if (i > 0 && i < local.length) {
-			System.arraycopy(local, 0, local, 1, i);
-			local[0] = opposite;
-		}
 		return local;
 	}
 

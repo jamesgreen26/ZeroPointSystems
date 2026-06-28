@@ -10,13 +10,17 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import java.util.List;
+
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.AttachFace;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.util.FakePlayerFactory;
@@ -310,6 +314,40 @@ public class ContraptionRedstoneGameTests {
 			}
 			if (!has(c, lamp, BlockStateProperties.LIT)) {
 				helper.fail("Lamp under the powered wire should be lit");
+				return;
+			}
+			helper.succeed();
+		});
+	}
+
+	/**
+	 * An unsupported falling block (sand) detaches into a real {@link FallingBlockEntity} rather than
+	 * vanishing — the entity inherits the contraption's rotation/velocity (like a split-off group).
+	 */
+	@GameTest(template = TEMPLATE)
+	public static void unsupportedFallingBlockSpawnsEntity(GameTestHelper helper) {
+		ServoMotorBlockEntity motor = setupMotor(helper);
+		Contraption c = motor.getContraption();
+
+		// Sand with air directly below it (unsupported), still 26-connected to the head at (-1,0,0).
+		BlockPos sand = new BlockPos(0, 1, 0);
+		place(helper, c, sand, Blocks.SAND.defaultBlockState());
+		if (!state(c, sand).is(Blocks.SAND)) {
+			helper.fail("Sand should be present before its scheduled fall tick");
+			return;
+		}
+
+		helper.runAfterDelay(3, () -> {
+			motor.serverTick();
+			if (!state(c, sand).isAir()) {
+				helper.fail("Unsupported sand should have detached off the contraption");
+				return;
+			}
+			AABB area = AABB.ofSize(Vec3.atCenterOf(helper.absolutePos(MOTOR_POS)), 24, 24, 24);
+			List<FallingBlockEntity> falling =
+				((ServerLevel) helper.getLevel()).getEntitiesOfClass(FallingBlockEntity.class, area);
+			if (falling.isEmpty()) {
+				helper.fail("A FallingBlockEntity should have spawned for the detached sand");
 				return;
 			}
 			helper.succeed();

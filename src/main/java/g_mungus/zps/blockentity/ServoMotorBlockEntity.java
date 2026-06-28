@@ -271,22 +271,25 @@ public class ServoMotorBlockEntity extends BlockEntity {
 
 	/**
 	 * Ticker callback for a due scheduled block tick: re-validate the cell against the scheduled
-	 * block, run the block's own tick against the simulation level (so repeaters/comparators/
-	 * observers/redstone-torches/button-release behave as in a normal world), then handle falling
-	 * blocks. The {@code state.tick} call is legal because {@code sim} is a real ServerLevel.
+	 * block, then either run custom falling-block handling or the block's own scheduled tick.
 	 */
 	private void onContraptionBlockTick(BlockPos local, Block block, ContraptionSimServerLevel sim,
 		ServerLevel serverLevel) {
 		StructureBlockInfo info = contraption.getBlocks().get(local);
 		if (info == null || !info.state().is(block))
 			return;
+		// Falling blocks (sand/gravel/concrete powder/anvils) get custom handling: if unsupported they
+		// detach into a real FallingBlockEntity that inherits the contraption's rotation and platform
+		// velocity (exactly like a group that splits off). We must NOT run vanilla FallingBlock#tick,
+		// which would instead spawn a plain entity at the local position and drop the block.
+		if (block instanceof FallingBlock) {
+			detachFallingBlock(local, info.state());
+			return;
+		}
+		// Everything else runs its real scheduled tick against the (ServerLevel) sim, so
+		// repeaters/comparators/observers/redstone-torches/button-release behave as in a normal world.
 		info.state().tick(sim, local, serverLevel.getRandom());
-		// A redstone tick (repeater/button-release/observer/…) likely changed the structure; re-sync.
 		simNeedsSync = true;
-		// Re-read: the tick above may have changed or removed the cell.
-		StructureBlockInfo after = contraption.getBlocks().get(local);
-		if (after != null && after.state().is(block) && block instanceof FallingBlock)
-			detachFallingBlock(local, after.state());
 	}
 
 	/**

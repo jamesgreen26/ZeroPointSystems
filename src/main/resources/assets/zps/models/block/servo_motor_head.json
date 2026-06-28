@@ -1,0 +1,22 @@
+{
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "particle": "zps:block/invisible",
+    "invisible": "zps:block/invisible"
+  },
+  "elements": [
+    {
+      "__comment": "Front 1/4 at the facing end (north-authored; matches ServoMotorHeadBlock collision shape). Fully transparent so nothing shows, but provides geometry for the block-breaking crack.",
+      "from": [0, 0, 0],
+      "to": [16, 16, 4],
+      "faces": {
+        "north": { "uv": [0, 0, 16, 16], "texture": "#invisible" },
+        "south": { "uv": [0, 0, 16, 16], "texture": "#invisible" },
+        "east":  { "uv": [0, 0, 4, 16],  "texture": "#invisible" },
+        "west":  { "uv": [0, 0, 4, 16],  "texture": "#invisible" },
+        "up":    { "uv": [0, 0, 16, 4],  "texture": "#invisible" },
+        "down":  { "uv": [0, 0, 16, 4],  "texture": "#invisible" }
+      }
+    }
+  ]
+}

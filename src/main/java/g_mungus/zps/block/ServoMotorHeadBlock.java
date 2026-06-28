@@ -72,6 +72,9 @@ public class ServoMotorHeadBlock extends Block {
 
 	@Override
 	public @NotNull RenderShape getRenderShape(BlockState state) {
+		// Renders a fully-transparent (cutout) model shaped like the collision box: nothing shows,
+		// but it gives the block-breaking crack geometry to draw on. The visible piston-head model
+		// is drawn separately by the Servo Motor's renderer off the block's facing.
 		return RenderShape.MODEL;
 	}
 

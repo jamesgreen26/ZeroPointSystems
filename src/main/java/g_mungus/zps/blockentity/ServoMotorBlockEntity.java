@@ -15,6 +15,7 @@ import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.ServoMotorHeadBlock;
 import g_mungus.zps.client.renderer.contraption.ContraptionRenderState;
 import g_mungus.zps.contraption.Contraption;
+import g_mungus.zps.contraption.ContraptionBlockGetter;
 import g_mungus.zps.contraption.ContraptionPlaceContext;
 import g_mungus.zps.contraption.ContraptionRotatedEntity;
 import g_mungus.zps.contraption.ContraptionRotationState;
@@ -28,12 +29,15 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.particles.BlockParticleOption;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.FallingBlockEntity;
@@ -55,6 +59,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 /**
  * Hosts a {@link Contraption} directly (no separate entity). On toggle it
@@ -453,13 +458,53 @@ public class ServoMotorBlockEntity extends BlockEntity {
 			state.spawnAfterBreak(serverLevel, worldPos, tool, true);
 		}
 
-		// Break particles + sound (vanilla level event 2001).
-		serverLevel.levelEvent(2001, worldPos, Block.getId(state));
+		spawnContraptionBreakEffects(serverLevel, local, state, transform);
 		// Remove through the sim level so neighbours get the standard block update (unsupported
 		// falling blocks fall), then collapse anything no longer connected to the head. Re-syncs once.
 		ContraptionSimLevel sim = simLevel();
 		sim.setBlock(local, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
 		applyStructureUpdate(sim, serverLevel);
+	}
+
+	private void spawnContraptionBreakEffects(ServerLevel serverLevel, BlockPos local, BlockState state,
+		ContraptionTransform transform) {
+		if (contraption == null || state.isAir())
+			return;
+
+		Vec3 worldCenter = transform.localBlockCenterToWorld(local);
+		SoundType sound = state.getSoundType();
+		serverLevel.playSound(null, worldCenter.x, worldCenter.y, worldCenter.z, sound.getBreakSound(),
+			SoundSource.BLOCKS, (sound.getVolume() + 1.0f) / 2.0f, sound.getPitch() * 0.8f);
+
+		BlockParticleOption particle = new BlockParticleOption(ParticleTypes.BLOCK, state);
+		VoxelShape shape = state.getShape(new ContraptionBlockGetter(contraption), local);
+		shape.forAllBoxes((minX, minY, minZ, maxX, maxY, maxZ) -> {
+			double sizeX = Math.min(1.0D, maxX - minX);
+			double sizeY = Math.min(1.0D, maxY - minY);
+			double sizeZ = Math.min(1.0D, maxZ - minZ);
+			int countX = Math.max(2, Mth.ceil(sizeX / 0.25D));
+			int countY = Math.max(2, Mth.ceil(sizeY / 0.25D));
+			int countZ = Math.max(2, Mth.ceil(sizeZ / 0.25D));
+
+			for (int x = 0; x < countX; ++x) {
+				for (int y = 0; y < countY; ++y) {
+					for (int z = 0; z < countZ; ++z) {
+						double relX = ((double) x + 0.5D) / (double) countX;
+						double relY = ((double) y + 0.5D) / (double) countY;
+						double relZ = ((double) z + 0.5D) / (double) countZ;
+						Vec3 localParticle = new Vec3(
+							local.getX() + relX * sizeX + minX,
+							local.getY() + relY * sizeY + minY,
+							local.getZ() + relZ * sizeZ + minZ);
+						Vec3 worldParticle = transform.localToWorld(localParticle);
+						Vec3 velocity = ContraptionMath.rotate(new Vec3(relX - 0.5D, relY - 0.5D, relZ - 0.5D),
+							transform.angle(), transform.axis());
+						serverLevel.sendParticles(particle, worldParticle.x, worldParticle.y, worldParticle.z, 0,
+							velocity.x, velocity.y, velocity.z, 1.0D);
+					}
+				}
+			}
+		});
 	}
 
 	/** Destroy the whole motor: drop the motor item and every contraption block, then remove it. */

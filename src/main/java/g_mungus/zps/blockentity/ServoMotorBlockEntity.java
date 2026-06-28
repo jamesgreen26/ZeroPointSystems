@@ -20,6 +20,7 @@ import g_mungus.zps.contraption.ContraptionPlacementUtil;
 import g_mungus.zps.contraption.ContraptionPlaceContext;
 import g_mungus.zps.contraption.ContraptionRotatedEntity;
 import g_mungus.zps.contraption.ContraptionRotationState;
+import g_mungus.zps.ZPSMod;
 import g_mungus.zps.contraption.ContraptionSimServerLevel;
 import g_mungus.zps.contraption.ContraptionTransform;
 import g_mungus.zps.contraption.collision.ContraptionCollider;
@@ -197,6 +198,9 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		// Drive the contraption's own block-tick queue (falling blocks, and redstone components
 		// like repeaters/observers/button-release), kept separate from the outer world's tick queue.
 		tickContraptionBlocks();
+		// Tick live block entities (furnaces smelt, hoppers move items, …). Any structural change
+		// they make flips simNeedsSync via the sim level's onNeedsSync callback.
+		tickContraptionBlockEntities();
 		if (simNeedsSync) {
 			simNeedsSync = false;
 			sendData();
@@ -256,8 +260,19 @@ public class ServoMotorBlockEntity extends BlockEntity {
 	private ContraptionSimServerLevel simLevel() {
 		if (simLevel == null || simLevel.getContraption() != contraption)
 			simLevel = new ContraptionSimServerLevel((ServerLevel) level, contraption, this::setChanged,
-				() -> ContraptionTransform.ofCurrent(this));
+				() -> simNeedsSync = true, () -> ContraptionTransform.ofCurrent(this));
 		return simLevel;
+	}
+
+	/**
+	 * The live (server-side) block entity at a contraption-local position, or {@code null} if there is
+	 * none. Lazily created and cached by the simulation level. Server-only.
+	 */
+	@Nullable
+	public BlockEntity getContraptionBlockEntity(BlockPos local) {
+		if (contraption == null || !(level instanceof ServerLevel))
+			return null;
+		return simLevel().getBlockEntity(local);
 	}
 
 	/** Run the contraption's own block-tick queue once (server-side). */
@@ -267,6 +282,30 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		ContraptionSimServerLevel sim = simLevel();
 		contraption.getBlockTicks().tick(serverLevel.getGameTime(), 65536,
 			(local, block) -> onContraptionBlockTick(local, block, sim, serverLevel));
+	}
+
+	/**
+	 * Tick the contraption's live block entities once (server-side), so furnaces smelt, hoppers move
+	 * items, brewing stands brew, etc. A misbehaving BE must not kill the motor tick, so each tick is
+	 * isolated. Block-entity-driven structural changes (e.g. a furnace toggling LIT via setBlock) flip
+	 * {@code simNeedsSync} through the sim level, re-syncing the contraption to clients.
+	 */
+	private void tickContraptionBlockEntities() {
+		if (!(level instanceof ServerLevel))
+			return;
+		ContraptionSimServerLevel sim = simLevel();
+		for (ContraptionSimServerLevel.TickingBE ticking : sim.getTickingBlockEntities()) {
+			BlockPos local = ticking.pos();
+			BlockEntity be = ticking.be();
+			BlockState state = sim.getBlockState(local);
+			if (be.isRemoved() || !be.getType().isValid(state))
+				continue;
+			try {
+				ticking.ticker().tick(sim, local, state, be);
+			} catch (Exception e) {
+				ZPSMod.LOGGER.error("Contraption block entity at {} threw while ticking", local, e);
+			}
+		}
 	}
 
 	/**
@@ -489,16 +528,16 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		BlockState state = info.state();
 		BlockPos worldPos = BlockPos.containing(transform.localBlockCenterToWorld(local));
 		ItemStack tool = player.getMainHandItem();
+		ContraptionSimServerLevel sim = simLevel();
 
 		if (!player.isCreative() && serverLevel.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS)) {
-			popBlockLoot(serverLevel, state, info.nbt(), worldPos, player, tool);
+			popBlockLoot(serverLevel, state, liveBlockEntityNbt(sim, local, info), worldPos, player, tool);
 			state.spawnAfterBreak(serverLevel, worldPos, tool, true);
 		}
 
 		spawnContraptionBreakEffects(serverLevel, local, state, transform);
 		// Remove through the sim level so neighbours get the standard block update (unsupported
 		// falling blocks fall), then collapse anything no longer connected to the head. Re-syncs once.
-		ContraptionSimServerLevel sim = simLevel();
 		sim.setBlock(local, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
 		applyStructureUpdate(sim, serverLevel);
 	}
@@ -561,11 +600,25 @@ public class ServoMotorBlockEntity extends BlockEntity {
 			return;
 
 		BlockPos headLocal = headLocalPos();
+		ContraptionSimServerLevel sim = simLevel();
 		for (var entry : contraption.getBlocks().entrySet()) {
 			if (entry.getKey().equals(headLocal))
 				continue;
-			popBlockLoot(serverLevel, entry.getValue().state(), entry.getValue().nbt(), worldPosition, null, tool);
+			popBlockLoot(serverLevel, entry.getValue().state(),
+				liveBlockEntityNbt(sim, entry.getKey(), entry.getValue()), worldPosition, null, tool);
 		}
+	}
+
+	/**
+	 * The freshest block-entity NBT for a contraption cell: the live BE's current state if one is
+	 * loaded (so a broken chest drops its current contents), else the captured {@code beNbt}.
+	 */
+	@Nullable
+	private CompoundTag liveBlockEntityNbt(ContraptionSimServerLevel sim, BlockPos local, StructureBlockInfo info) {
+		BlockEntity live = sim.getBlockEntity(local);
+		if (live != null && level != null)
+			return live.saveWithFullMetadata(level.registryAccess());
+		return info.nbt();
 	}
 
 	/** Reconstruct any block entity from {@code nbt} and pop the block's drops at {@code worldPos}. */
@@ -784,6 +837,10 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		tag.putBoolean("Running", running);
 		tag.putInt("Axis", rotationAxis.ordinal());
 		tag.putFloat("Angle", angle);
+		// Flush live block entities back into the contraption first, so the serialized structure
+		// reflects their current state (smelt progress, container contents, …) for both save and sync.
+		if (simLevel != null && simLevel.getContraption() == contraption)
+			simLevel.flushAllBlockEntityData();
 		if (contraption != null)
 			tag.put("Contraption", contraption.writeNBT(level == null ? 0L : level.getGameTime()));
 	}

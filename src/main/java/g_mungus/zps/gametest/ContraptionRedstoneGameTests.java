@@ -12,10 +12,17 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import java.util.List;
 
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.Container;
+import g_mungus.zps.contraption.ContraptionTransform;
 import net.minecraft.world.entity.item.FallingBlockEntity;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.AttachFace;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -55,7 +62,7 @@ public class ContraptionRedstoneGameTests {
 	}
 
 	private static ContraptionSimServerLevel sim(GameTestHelper helper, Contraption c) {
-		return new ContraptionSimServerLevel((ServerLevel) helper.getLevel(), c, null, null);
+		return new ContraptionSimServerLevel((ServerLevel) helper.getLevel(), c, null, null, null);
 	}
 
 	/** Insert a block into the structure without firing updates (builds the inert layout). */
@@ -412,4 +419,171 @@ public class ContraptionRedstoneGameTests {
 		}
 		helper.succeed();
 	}
+
+	// region live block entities
+
+	/**
+	 * A furnace on the contraption smelts: live block entities are ticked by the motor, so raw iron
+	 * + fuel becomes an iron ingot in the output slot. Drives {@code serverTick} synchronously many
+	 * times (the furnace advances one step per tick) rather than waiting real game ticks.
+	 */
+	@GameTest(template = TEMPLATE)
+	public static void furnaceSmeltsOnContraption(GameTestHelper helper) {
+		ServoMotorBlockEntity motor = setupMotor(helper);
+		Contraption c = motor.getContraption();
+
+		BlockPos furnacePos = new BlockPos(0, 1, 0);
+		place(helper, c, furnacePos, Blocks.FURNACE.defaultBlockState());
+
+		Container furnace = (Container) motor.getContraptionBlockEntity(furnacePos);
+		if (furnace == null) {
+			helper.fail("Furnace should have a live block entity on the contraption");
+			return;
+		}
+		furnace.setItem(0, new ItemStack(Items.RAW_IRON));
+		furnace.setItem(1, new ItemStack(Items.COAL));
+
+		// One smelt is ~200 furnace ticks; pump the motor enough times to finish it.
+		for (int i = 0; i < 220; i++)
+			motor.serverTick();
+
+		ItemStack output = furnace.getItem(2);
+		if (!output.is(Items.IRON_INGOT) || output.getCount() < 1) {
+			helper.fail("Furnace should have smelted an iron ingot; output was " + output);
+			return;
+		}
+		helper.succeed();
+	}
+
+	/** A hopper on the contraption pulls an item out of the chest above it. */
+	@GameTest(template = TEMPLATE)
+	public static void hopperPullsFromChestAbove(GameTestHelper helper) {
+		ServoMotorBlockEntity motor = setupMotor(helper);
+		Contraption c = motor.getContraption();
+
+		BlockPos hopperPos = new BlockPos(0, 1, 0);
+		BlockPos chestPos = new BlockPos(0, 2, 0);
+		place(helper, c, hopperPos, Blocks.HOPPER.defaultBlockState());
+		place(helper, c, chestPos, Blocks.CHEST.defaultBlockState());
+
+		Container chest = (Container) motor.getContraptionBlockEntity(chestPos);
+		Container hopper = (Container) motor.getContraptionBlockEntity(hopperPos);
+		if (chest == null || hopper == null) {
+			helper.fail("Chest and hopper should have live block entities");
+			return;
+		}
+		chest.setItem(0, new ItemStack(Items.DIAMOND));
+
+		// Hopper transfer cooldown is 8 ticks; pump a few more to be safe.
+		for (int i = 0; i < 12; i++)
+			motor.serverTick();
+
+		if (!hopper.getItem(0).is(Items.DIAMOND)) {
+			helper.fail("Hopper should have pulled the diamond from the chest above it");
+			return;
+		}
+		if (!chest.getItem(0).isEmpty()) {
+			helper.fail("Chest should be empty after the hopper pulled its contents");
+			return;
+		}
+		helper.succeed();
+	}
+
+	/** A comparator reads the fullness of a chest on the contraption and powers its output. */
+	@GameTest(template = TEMPLATE)
+	public static void comparatorReadsChest(GameTestHelper helper) {
+		ServoMotorBlockEntity motor = setupMotor(helper);
+		Contraption c = motor.getContraption();
+
+		BlockPos comparator = new BlockPos(0, 1, 0);
+		BlockPos chestPos = new BlockPos(1, 1, 0); // east of the comparator = its input/rear
+		put(c, new BlockPos(0, 0, 0), Blocks.STONE.defaultBlockState());
+		place(helper, c, chestPos, Blocks.CHEST.defaultBlockState());
+		place(helper, c, comparator, Blocks.COMPARATOR.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST));
+
+		Container chest = (Container) motor.getContraptionBlockEntity(chestPos);
+		if (chest == null) {
+			helper.fail("Chest should have a live block entity");
+			return;
+		}
+		chest.setItem(0, new ItemStack(Items.STONE, 64));
+		// Notify neighbours of the container's new output signal (comparator schedules a recompute).
+		BlockEntity chestBE = motor.getContraptionBlockEntity(chestPos);
+		chestBE.setChanged();
+
+		helper.runAfterDelay(2, () -> {
+			motor.serverTick();
+			if (!has(c, comparator, BlockStateProperties.POWERED)) {
+				helper.fail("Comparator should be powered while reading a filled chest");
+				return;
+			}
+			helper.succeed();
+		});
+	}
+
+	/** Live block-entity state survives a save/load round-trip (flush -> writeNBT -> readNBT). */
+	@GameTest(template = TEMPLATE)
+	public static void blockEntityStatePersists(GameTestHelper helper) {
+		ServoMotorBlockEntity motor = setupMotor(helper);
+		Contraption c = motor.getContraption();
+		ServerLevel level = (ServerLevel) helper.getLevel();
+
+		BlockPos chestPos = new BlockPos(0, 1, 0);
+		place(helper, c, chestPos, Blocks.CHEST.defaultBlockState());
+		Container chest = (Container) motor.getContraptionBlockEntity(chestPos);
+		chest.setItem(0, new ItemStack(Items.DIAMOND, 5));
+
+		// getUpdateTag flushes live BEs into the contraption, then serializes it.
+		CompoundTag tag = motor.getUpdateTag(level.registryAccess()).getCompound("Contraption");
+		Contraption reloaded = new Contraption();
+		reloaded.readNBT(level.registryAccess(), tag, level.getGameTime());
+
+		Container reloadedChest = (Container) sim(helper, reloaded).getBlockEntity(chestPos);
+		if (reloadedChest == null || !reloadedChest.getItem(0).is(Items.DIAMOND)
+			|| reloadedChest.getItem(0).getCount() != 5) {
+			helper.fail("Reloaded chest should still contain 5 diamonds");
+			return;
+		}
+		helper.succeed();
+	}
+
+	/**
+	 * An entity a block/block-entity tick spawns into the sim level is redirected to the real outer
+	 * level at the matching rotated world position (e.g. a dispenser's item, smelting XP), instead of
+	 * being orphaned in the untracked sim level.
+	 */
+	@GameTest(template = TEMPLATE)
+	public static void spawnedEntityRedirectedToRealLevel(GameTestHelper helper) {
+		ServoMotorBlockEntity motor = setupMotor(helper);
+		Contraption c = motor.getContraption();
+		ServerLevel level = (ServerLevel) helper.getLevel();
+
+		ContraptionSimServerLevel sim = new ContraptionSimServerLevel(level, c, null, null,
+			() -> ContraptionTransform.ofCurrent(motor));
+		Vec3 spawnLocal = Vec3.atCenterOf(new BlockPos(0, 1, 0));
+		ItemEntity item = new ItemEntity(sim, spawnLocal.x, spawnLocal.y, spawnLocal.z, new ItemStack(Items.DIAMOND));
+		sim.addFreshEntity(item);
+
+		if (item.level() != level) {
+			helper.fail("Spawned entity should have been re-homed to the real level");
+			return;
+		}
+		Vec3 expected = ContraptionTransform.ofCurrent(motor).localToWorld(spawnLocal);
+		AABB area = new AABB(BlockPos.containing(expected)).inflate(1.5);
+		List<ItemEntity> found = level.getEntitiesOfClass(ItemEntity.class, area, e -> e.getItem().is(Items.DIAMOND));
+		if (found.isEmpty()) {
+			helper.fail("Diamond item entity should be in the real level near " + expected);
+			return;
+		}
+		// The interpolation history must be snapped to the world pose (no visible lerp from the
+		// contraption-local origin); moveTo -> setOldPosAndRot guarantees xOld == getX(), etc.
+		if (item.xOld != item.getX() || item.yOld != item.getY() || item.zOld != item.getZ()) {
+			helper.fail("Spawned entity's old position should be snapped to its world position");
+			return;
+		}
+		helper.succeed();
+	}
+
+	// endregion
 }

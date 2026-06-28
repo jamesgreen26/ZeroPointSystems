@@ -99,6 +99,14 @@ public class ContraptionSimServerLevel extends WrappedServerLevel {
 		else
 			contraption.putBlock(pos, state, null, null);
 
+		// Block lifecycle, mirroring LevelChunk#setBlockState on the server: old#onRemove then
+		// new#onPlace, with the new state already written above. This is essential for redstone:
+		// a repeater/comparator toggles POWERED with flag 2 (no neighbour update) and notifies its
+		// output purely through onPlace/onRemove -> updateNeighborsInFront. Skipping it left the
+		// downstream wire's power un-recomputed.
+		old.onRemove(this, pos, state, false);
+		state.onPlace(this, pos, old, false);
+
 		// Standard block-update propagation against the contraption (mirrors Level#markAndNotifyBlock,
 		// minus the real-world client/chunk path — the host re-syncs the whole contraption).
 		if ((flags & Block.UPDATE_KNOWN_SHAPE) == 0 && recursionLeft > 0) {

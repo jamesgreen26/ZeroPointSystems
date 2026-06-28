@@ -612,11 +612,9 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		if (!ContraptionPlacementUtil.placeBlock(serverLevel, sim, contraption, player, stack, placed))
 			return false;
 		placeState = sim.getBlockState(placePos);
-		// Run placement side-effects for falling blocks so an unsupported one schedules its
-		// fall into the contraption's tick queue. Gated to FallingBlock to avoid running
-		// unrelated onPlace logic against the simulation level.
-		if (placeState.getBlock() instanceof FallingBlock)
-			placeState.onPlace(sim, placePos, Blocks.AIR.defaultBlockState(), false);
+		// Placement side-effects (e.g. a FallingBlock scheduling its fall, redstone components
+		// notifying neighbours) now run inside ContraptionSimServerLevel#setBlock via the block
+		// lifecycle, so no explicit onPlace is needed here.
 		if (!player.isCreative())
 			stack.shrink(1);
 

@@ -278,6 +278,44 @@ public class ContraptionRedstoneGameTests {
 		});
 	}
 
+	/** A repeater's output powers an adjacent redstone wire (and a lamp under it). */
+	@GameTest(template = TEMPLATE)
+	public static void repeaterPowersDust(GameTestHelper helper) {
+		ServoMotorBlockEntity motor = setupMotor(helper);
+		Contraption c = motor.getContraption();
+
+		// East-facing repeater: input at its east neighbour, output to its west.
+		BlockPos repeater = new BlockPos(1, 1, 0);
+		BlockPos input = new BlockPos(2, 1, 0);
+		BlockPos dust = new BlockPos(0, 1, 0);   // output side (west)
+		BlockPos lamp = new BlockPos(0, 0, 0);   // dust sits on the lamp
+		put(c, new BlockPos(1, 0, 0), Blocks.STONE.defaultBlockState());
+		put(c, lamp, Blocks.REDSTONE_LAMP.defaultBlockState());
+		put(c, dust, Blocks.REDSTONE_WIRE.defaultBlockState());
+		put(c, repeater, Blocks.REPEATER.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST));
+
+		place(helper, c, input, Blocks.REDSTONE_BLOCK.defaultBlockState());
+
+		helper.runAfterDelay(4, () -> {
+			motor.serverTick();
+			if (!has(c, repeater, BlockStateProperties.POWERED)) {
+				helper.fail("Repeater output should be powered after its delay");
+				return;
+			}
+			int power = state(c, dust).getValue(BlockStateProperties.POWER);
+			if (power <= 0) {
+				helper.fail("Repeater should power the adjacent redstone wire; got power " + power);
+				return;
+			}
+			if (!has(c, lamp, BlockStateProperties.LIT)) {
+				helper.fail("Lamp under the powered wire should be lit");
+				return;
+			}
+			helper.succeed();
+		});
+	}
+
 	/** An observer emits a short power pulse when the block it watches changes. */
 	@GameTest(template = TEMPLATE)
 	public static void observerEmitsPulse(GameTestHelper helper) {

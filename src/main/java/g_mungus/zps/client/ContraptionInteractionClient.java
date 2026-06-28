@@ -241,11 +241,12 @@ public final class ContraptionInteractionClient {
 		// Not holding a placeable block: let vanilla handle item use (eating, bows, etc.).
 		if (hand == null) return false;
 
-		ZPSGamePackets.sendToServer(new ContraptionPlaceC2SPacket(currentHit.motor().getBlockPos(),
-			currentHit.localPos(), currentHit.localFace(), currentHit.localHit(), hand));
 		// Predict the placement locally so the block appears immediately; the authoritative
 		// server sync replaces it a round-trip later (and corrects it if the server disagrees).
-		predictPlacement(player, currentHit, hand);
+		if (!predictPlacement(player, currentHit, hand))
+			return true;
+		ZPSGamePackets.sendToServer(new ContraptionPlaceC2SPacket(currentHit.motor().getBlockPos(),
+			currentHit.localPos(), currentHit.localFace(), currentHit.localHit(), hand));
 		player.swing(hand);
 		// Throttle only the held auto-repeat: vanilla re-fires startUseItem when
 		// rightClickDelay hits 0, while a fresh keyUse.consumeClick() bypasses it.
@@ -303,21 +304,21 @@ public final class ContraptionInteractionClient {
 		stack.applyComponents(blockEntity.collectComponents());
 	}
 
-	private static void predictPlacement(LocalPlayer player, Hit hit, InteractionHand hand) {
+	private static boolean predictPlacement(LocalPlayer player, Hit hit, InteractionHand hand) {
 		Minecraft mc = Minecraft.getInstance();
-		if (mc.level == null) return;
+		if (mc.level == null) return false;
 		ServoMotorBlockEntity motor = hit.motor();
 		Contraption contraption = motor.getContraption();
-		if (contraption == null) return;
+		if (contraption == null) return false;
 
 		ItemStack stack = player.getItemInHand(hand);
 		ContraptionTransform transform = ContraptionTransform.ofCurrent(motor);
 		ContraptionSimLevel sim = new ContraptionSimLevel(mc.level, contraption);
 		ContraptionPlaceContext.Placed placed = ContraptionPlaceContext.resolve(sim, player, hand, stack,
 			hit.localPos(), hit.localFace(), hit.localHit(), transform);
-		if (placed == null) return;
+		if (placed == null) return false;
 		if (!ContraptionPlacementUtil.isUnobstructed(mc.level, sim, player, placed.pos(), placed.state(), transform))
-			return;
+			return false;
 
 		CompoundTag beNbt = null;
 		CompoundTag updateTag = null;
@@ -332,6 +333,7 @@ public final class ContraptionInteractionClient {
 		Contraption predicted = contraption.copy();
 		predicted.putBlock(placed.pos(), placed.state(), beNbt, updateTag);
 		motor.setContraptionClient(predicted);
+		return true;
 	}
 
 	private static void predictBreak(ServoMotorBlockEntity motor, BlockPos local) {

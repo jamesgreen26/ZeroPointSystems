@@ -74,7 +74,12 @@ public final class ContraptionCollider {
 
 			AABB localBB = entityBounds.move(position).inflate(1.0E-7D);
 			OrientedBB obb = new OrientedBB(localBB);
-			obb.setRotation(rotationMatrix);
+			// Orient the entity box without the contraption's yaw, so it shares the
+			// contraption's Y rotation (turns with a turntable) instead of keeping its
+			// world-aligned footprint. The full rotationMatrix is still used for the
+			// position/motion/result transforms. A fresh matrix, so the later
+			// rotationMatrix.transpose() doesn't touch it.
+			obb.setRotation(rotation.asMatrixNoYaw());
 
 			CollisionList collidableBBs = new CollisionList();
 			getPotentiallyCollidedShapes(level, contraption, localBB.expandTowards(motion), new Populate(collidableBBs));

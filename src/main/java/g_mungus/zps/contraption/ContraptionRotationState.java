@@ -37,6 +37,21 @@ public class ContraptionRotationState {
 		return matrix;
 	}
 
+	/**
+	 * World→local rotation EXCLUDING the Y (yaw) component, used as a colliding entity's
+	 * box orientation so it shares the contraption's Y rotation (stays yaw-aligned with a
+	 * turntable instead of keeping its world-aligned footprint). For X/Z-axis contraptions
+	 * this equals {@link #asMatrix()} (no yaw to remove).
+	 */
+	public Matrix3d asMatrixNoYaw() {
+		Matrix3d matrix = new Matrix3d().asIdentity();
+		if (xRotation != 0)
+			matrix.multiply(new Matrix3d().asXRotation(rad(-xRotation)));
+		if (zRotation != 0)
+			matrix.multiply(new Matrix3d().asZRotation(rad(-zRotation)));
+		return matrix;
+	}
+
 	public boolean hasVerticalRotation() {
 		return xRotation != 0 || zRotation != 0;
 	}

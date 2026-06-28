@@ -265,7 +265,7 @@ public class ServoMotorBlockEntity extends BlockEntity {
 			return; // still supported
 
 		ContraptionSimLevel sim = simLevel();
-		detachBlock(local, state, sim, serverLevel);
+		detachBlock(local, state, averagePlatformVelocity(List.of(local)), sim, serverLevel);
 		applyStructureUpdate(sim, serverLevel);
 	}
 
@@ -273,10 +273,11 @@ public class ServoMotorBlockEntity extends BlockEntity {
 	 * Remove the block at {@code local} through the simulation level — so the standard block update
 	 * fires (e.g. a falling block above it reschedules its fall) — and spawn a real
 	 * {@link FallingBlockEntity} for it at the block's current rotated world position, with the
-	 * contraption's orientation and platform velocity. Does NOT re-sync; callers batch one
-	 * {@link #sendData()}.
+	 * contraption's orientation and the given release {@code velocity}. Does NOT re-sync; callers
+	 * batch one {@link #sendData()}.
 	 */
-	private void detachBlock(BlockPos local, BlockState state, ContraptionSimLevel sim, ServerLevel serverLevel) {
+	private void detachBlock(BlockPos local, BlockState state, Vec3 velocity, ContraptionSimLevel sim,
+		ServerLevel serverLevel) {
 		sim.setBlock(local, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
 
 		ContraptionTransform transform = ContraptionTransform.ofCurrent(this);
@@ -285,11 +286,10 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		FallingBlockEntity entity = FallingBlockEntityInvoker.zps$create(serverLevel, feet.x, feet.y, feet.z, state);
 		// Inherit the contraption's current orientation so the block keeps it while falling.
 		((ContraptionRotatedEntity) entity).zps$setContraptionRotation(transform.angle(), transform.axis());
-		// Release it with the platform's velocity at this point so a spinning detach continues
-		// smoothly instead of jerking to a stop. angle hasn't advanced yet this tick, so use the
-		// per-tick spin step directly. Sent to clients in the spawn packet's velocity.
-		Vec3 worldCenter = transform.localBlockCenterToWorld(local);
-		entity.setDeltaMovement(platformVelocity(worldCenter, running ? DEGREES_PER_TICK : 0f));
+		// Release it with the platform velocity (a spinning detach continues smoothly instead of
+		// jerking to a stop); for a multi-block group this is the group average. Sent to clients in
+		// the spawn packet's velocity.
+		entity.setDeltaMovement(velocity);
 		serverLevel.addFreshEntity(entity);
 	}
 
@@ -307,7 +307,9 @@ public class ServoMotorBlockEntity extends BlockEntity {
 
 	/**
 	 * Detach every block no longer connected to the head (26-way: face, edge or corner contact all
-	 * keep a block attached) as a falling block entity.
+	 * keep a block attached) as a falling block entity. Each self-connected sub-group falls off as a
+	 * cohesive unit: all its blocks inherit the group's average platform velocity, so the group
+	 * translates together instead of shearing apart.
 	 */
 	private void detachDisconnected(ContraptionSimLevel sim, ServerLevel serverLevel) {
 		var blocks = contraption.getBlocks();
@@ -315,10 +317,40 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		if (!blocks.containsKey(head))
 			return;
 
+		// Everything 26-connected to the head stays attached.
 		Set<BlockPos> connected = new HashSet<>();
+		connectedGroup(head, blocks.keySet(), connected);
+		if (connected.size() == blocks.size())
+			return;
+
+		Set<BlockPos> disconnected = new HashSet<>();
+		for (BlockPos p : blocks.keySet())
+			if (!connected.contains(p))
+				disconnected.add(p);
+
+		Set<BlockPos> grouped = new HashSet<>();
+		for (BlockPos start : disconnected) {
+			List<BlockPos> group = connectedGroup(start, disconnected, grouped);
+			if (group.isEmpty())
+				continue; // already part of an earlier group
+			Vec3 velocity = averagePlatformVelocity(group);
+			for (BlockPos p : group) {
+				StructureBlockInfo info = blocks.get(p);
+				if (info == null)
+					continue; // already removed by a cascading shape update
+				detachBlock(p, info.state(), velocity, sim, serverLevel);
+			}
+		}
+	}
+
+	/** 26-way connected component of {@code start} within {@code domain}, accumulating into {@code visited}. */
+	private static List<BlockPos> connectedGroup(BlockPos start, Set<BlockPos> domain, Set<BlockPos> visited) {
+		List<BlockPos> group = new ArrayList<>();
+		if (!domain.contains(start) || !visited.add(start))
+			return group;
 		Deque<BlockPos> stack = new ArrayDeque<>();
-		connected.add(head);
-		stack.push(head);
+		group.add(start);
+		stack.push(start);
 		while (!stack.isEmpty()) {
 			BlockPos p = stack.pop();
 			for (int dx = -1; dx <= 1; dx++)
@@ -327,24 +359,23 @@ public class ServoMotorBlockEntity extends BlockEntity {
 						if (dx == 0 && dy == 0 && dz == 0)
 							continue;
 						BlockPos n = p.offset(dx, dy, dz);
-						if (blocks.containsKey(n) && connected.add(n))
+						if (domain.contains(n) && visited.add(n)) {
+							group.add(n);
 							stack.push(n);
+						}
 					}
 		}
-		if (connected.size() == blocks.size())
-			return; // everything still attached
+		return group;
+	}
 
-		// Collect first: detachBlock mutates the block map (and shape updates may cascade-remove).
-		List<BlockPos> disconnected = new ArrayList<>();
-		for (BlockPos p : blocks.keySet())
-			if (!connected.contains(p))
-				disconnected.add(p);
-		for (BlockPos p : disconnected) {
-			StructureBlockInfo info = blocks.get(p);
-			if (info == null)
-				continue; // already removed by a cascading shape update
-			detachBlock(p, info.state(), sim, serverLevel);
-		}
+	/** Average platform velocity over a group of local cells, for releasing it as a cohesive unit. */
+	private Vec3 averagePlatformVelocity(List<BlockPos> group) {
+		ContraptionTransform transform = ContraptionTransform.ofCurrent(this);
+		float spin = running ? DEGREES_PER_TICK : 0f;
+		Vec3 sum = Vec3.ZERO;
+		for (BlockPos p : group)
+			sum = sum.add(platformVelocity(transform.localBlockCenterToWorld(p), spin));
+		return sum.scale(1.0 / group.size());
 	}
 
 	// endregion

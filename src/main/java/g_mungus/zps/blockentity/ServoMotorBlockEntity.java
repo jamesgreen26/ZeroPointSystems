@@ -267,6 +267,11 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		FallingBlockEntity entity = FallingBlockEntityInvoker.zps$create(serverLevel, feet.x, feet.y, feet.z, state);
 		// Inherit the contraption's current orientation so the block keeps it while falling.
 		((ContraptionRotatedEntity) entity).zps$setContraptionRotation(transform.angle(), transform.axis());
+		// Release it with the platform's velocity at this point so a spinning detach continues
+		// smoothly instead of jerking to a stop. angle hasn't advanced yet this tick, so use the
+		// per-tick spin step directly. Sent to clients in the spawn packet's velocity.
+		Vec3 worldCenter = transform.localBlockCenterToWorld(local);
+		entity.setDeltaMovement(platformVelocity(worldCenter, running ? DEGREES_PER_TICK : 0f));
 		serverLevel.addFreshEntity(entity);
 	}
 
@@ -511,15 +516,24 @@ public class ServoMotorBlockEntity extends BlockEntity {
 
 	/** Velocity of the rotating platform at a world point, for carrying riders. */
 	private Vec3 getContactPointMotion(Vec3 worldPos) {
-		Vec3 rel = worldPos.subtract(Vec3.atLowerCornerOf(worldPosition.relative(getFacing())))
-			.subtract(ContraptionMath.CENTER_OF_ORIGIN);
-		float angleDelta = angle - prevAngle;
 		// Carry the rider to where this platform-fixed point will actually be after this
 		// tick's rotation (re-apply the real rotation by +delta), so it lands exactly on
 		// its circle. Using the previous tick's chord instead steps along the tangent each
 		// tick and spirals the rider outward — Create maps through local space for the same
 		// reason (toLocalVector(p,0) -> toGlobalVector(p,1)).
-		return ContraptionMath.rotate(rel, angleDelta, rotationAxis).subtract(rel);
+		return platformVelocity(worldPos, angle - prevAngle);
+	}
+
+	/**
+	 * Platform velocity (blocks/tick) at a world point for an explicit per-tick rotation.
+	 * Used to release a detached falling block with the motion it had on the platform, since
+	 * at detach time (before {@code angle} is advanced this tick) {@code angle - prevAngle}
+	 * is still 0.
+	 */
+	private Vec3 platformVelocity(Vec3 worldPos, float angleDeltaDeg) {
+		Vec3 rel = worldPos.subtract(Vec3.atLowerCornerOf(worldPosition.relative(getFacing())))
+			.subtract(ContraptionMath.CENTER_OF_ORIGIN);
+		return ContraptionMath.rotate(rel, angleDeltaDeg, rotationAxis).subtract(rel);
 	}
 
 	private AABB computeWorldBounds(Vec3 anchorVec) {

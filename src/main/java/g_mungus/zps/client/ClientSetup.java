@@ -9,9 +9,11 @@ import g_mungus.zps.client.model.connected.ConnectedTextureMeta;
 import g_mungus.zps.client.renderer.*;
 import g_mungus.zps.client.screens.CoalBurnerScreen;
 import g_mungus.zps.client.screens.PowerCellScreen;
+import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.entity.ModEntities;
 import g_mungus.zps.item.AddressPadClientHooks;
 import g_mungus.zps.menu.ModMenus;
+import net.createmod.catnip.config.ui.BaseConfigScreen;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
@@ -21,12 +23,18 @@ import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.fml.event.lifecycle.FMLLoadCompleteEvent;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.ModelEvent;
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.common.NeoForge;
+
+import java.util.function.Supplier;
 
 public class ClientSetup {
     private static final ModelResourceLocation ADDRESS_PAD_BER_MODEL =
@@ -120,5 +128,22 @@ public class ClientSetup {
 
             NeoForge.EVENT_BUS.addListener(AddressPadClientHooks::onRenderLevelStage);
         });
+    }
+
+    @SubscribeEvent
+    public static void loadCompleted(FMLLoadCompleteEvent event) {
+
+        ModContainer modContainer = ModList.get()
+                .getModContainerById(ZPSMod.MOD_ID)
+                .orElseThrow(() -> new IllegalStateException("ZPS Mod Container missing after loadCompleted"));
+
+        Supplier<IConfigScreenFactory> configScreen = () ->
+                (mc, previousScreen) -> new BaseConfigScreen(previousScreen, ZPSMod.MOD_ID);
+        modContainer.registerExtensionPoint(IConfigScreenFactory.class, configScreen);
+
+        BaseConfigScreen.setDefaultActionFor(ZPSMod.MOD_ID, base -> base
+                .withButtonLabels("Client Settings", null, "Server Settings")
+                .withSpecs(ZPSConfig.CONFIG_SPEC, null, ZPSConfig.SERVER_CONFIG_SPEC)
+        );
     }
 } 

@@ -5,10 +5,16 @@ import java.util.function.Consumer;
 import g_mungus.zps.contraption.collision.ContraptionCollider;
 import g_mungus.zps.contraption.collision.Matrix3d;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -17,6 +23,40 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 public final class ContraptionPlacementUtil {
 
 	private ContraptionPlacementUtil() {}
+
+	public static boolean placeBlock(Level blockEntityLevel, Level sim, Contraption contraption, Player player,
+		ItemStack stack, ContraptionPlaceContext.Placed placed) {
+		BlockPos pos = placed.pos();
+		BlockState state = placed.state();
+		if (!sim.setBlock(pos, state, Block.UPDATE_ALL))
+			return false;
+
+		BlockState placedState = sim.getBlockState(pos);
+		if (placedState.is(state.getBlock()))
+			placedState.getBlock().setPlacedBy(sim, pos, placedState, player, stack);
+
+		storeBlockEntityData(blockEntityLevel, contraption, pos);
+		return true;
+	}
+
+	private static void storeBlockEntityData(Level level, Contraption contraption, BlockPos pos) {
+		StructureBlockInfo info = contraption.getBlocks().get(pos);
+		if (info == null)
+			return;
+
+		BlockState state = info.state();
+		if (!(state.getBlock() instanceof EntityBlock entityBlock))
+			return;
+
+		BlockEntity be = entityBlock.newBlockEntity(pos, state);
+		if (be == null)
+			return;
+
+		be.setLevel(level);
+		CompoundTag beNbt = be.saveWithFullMetadata(level.registryAccess());
+		CompoundTag updateTag = be.getUpdateTag(level.registryAccess());
+		contraption.putBlock(pos, state, beNbt, updateTag);
+	}
 
 	public static boolean isUnobstructed(Level worldLevel, Level localLevel, Player player, BlockPos localPos,
 		BlockState state, ContraptionTransform transform) {

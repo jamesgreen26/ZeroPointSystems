@@ -4,12 +4,11 @@ import java.util.function.Predicate;
 
 import javax.annotation.Nullable;
 
-import net.createmod.catnip.levelWrappers.WrappedLevel;
+import net.createmod.catnip.levelWrappers.WrappedServerLevel;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.profiling.InactiveProfiler;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -17,41 +16,43 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
-import net.minecraft.world.level.redstone.NeighborUpdater;
-import net.minecraft.world.ticks.LevelTickAccess;
 import net.minecraft.world.ticks.LevelTicks;
 import net.minecraft.world.ticks.ScheduledTick;
 import net.minecraft.world.ticks.TickPriority;
 
 /**
- * A {@link WrappedLevel} that overlays a contraption's captured blocks at their
- * LOCAL positions (air everywhere else). Used as the placement-simulation level so
- * that vanilla {@code getStateForPlacement}/{@code canSurvive} resolve states with
- * the contraption's own blocks as neighbours, and as the level that in-structure
- * block side-effects (e.g. {@code FallingBlock#onPlace}) run against.
+ * Server-side companion to {@link ContraptionSimLevel}: a sim level that overlays a
+ * contraption's captured blocks at their LOCAL positions (air everywhere else), but
+ * backed by catnip's {@link WrappedServerLevel} so it is a <b>genuine {@link ServerLevel}</b>.
  *
- * <p>Reads come from the contraption. Writes and scheduled block ticks are routed
- * into the contraption instead of the wrapped real level: {@link #setBlock} mutates
- * the contraption's block map (and notifies the owner to re-sync), and
- * {@link #getBlockTicks} returns the contraption's own tick queue so scheduled ticks
- * stay separate from the outer world. Works on both sides (client prediction and
- * authoritative server placement); the client passes a {@code null} owner since it
- * never writes or drives ticks.
+ * <p>This is what lets the contraption actually <i>run</i>: because the engine sees a real
+ * {@code ServerLevel}, the inherited {@code Level} machinery — {@code updateNeighborsAt}/
+ * {@code neighborChanged}, the real {@code CollectingNeighborUpdater}, {@code getSignal}, and
+ * {@code BlockState#tick} dispatch — all work natively, reading block state through our
+ * {@link #getBlockState} override and scheduling through our {@link #scheduleTick} override.
+ * So buttons, levers, doors, pressure plates and non-block-entity redstone behave as in a
+ * normal world, with no re-implementation.
+ *
+ * <p>Reads come from the contraption and writes/ticks are routed into it (never the wrapped
+ * real level): {@link #setBlock} mutates the contraption's block map (notifying the owner to
+ * re-sync) and, when {@code UPDATE_NEIGHBORS} is set, propagates a redstone neighbour update;
+ * {@link #getBlockTicks}/{@link #scheduleTick} use the contraption's own persistent tick queue.
+ * Block entities are intentionally unsupported ({@link #getBlockEntity} returns {@code null}).
+ *
+ * <p>Constructing a {@code WrappedServerLevel} builds a full {@code ServerLevel}, so the owner
+ * caches one instance per contraption rather than allocating per tick. Server-only — the client
+ * uses the lightweight {@link ContraptionSimLevel}.
  */
-public class ContraptionSimLevel extends WrappedLevel {
+public class ContraptionSimServerLevel extends WrappedServerLevel {
 
 	private final Contraption contraption;
-	/** Notified after a write so the host BlockEntity can re-sync ({@code setChanged}+sync); null on the client. */
+	/** Notified after a write so the host BlockEntity can re-sync ({@code setChanged}+sync). */
 	@Nullable
 	private final Runnable onChanged;
 	/** Own (empty) fluid queue so any stray fluid tick never leaks onto the real level. */
 	private final LevelTicks<Fluid> fluidTicks = new LevelTicks<>(cp -> true, () -> InactiveProfiler.INSTANCE);
 
-	public ContraptionSimLevel(Level level, Contraption contraption) {
-		this(level, contraption, null);
-	}
-
-	public ContraptionSimLevel(Level level, Contraption contraption, @Nullable Runnable onChanged) {
+	public ContraptionSimServerLevel(ServerLevel level, Contraption contraption, @Nullable Runnable onChanged) {
 		super(level);
 		this.contraption = contraption;
 		this.onChanged = onChanged;
@@ -99,25 +100,21 @@ public class ContraptionSimLevel extends WrappedLevel {
 			contraption.putBlock(pos, state, null, null);
 
 		// Standard block-update propagation against the contraption (mirrors Level#markAndNotifyBlock,
-		// minus the real-world client/chunk path — the host re-syncs the whole contraption). This is
-		// what lets e.g. a FallingBlock above a removed block reschedule its fall.
+		// minus the real-world client/chunk path — the host re-syncs the whole contraption).
 		if ((flags & Block.UPDATE_KNOWN_SHAPE) == 0 && recursionLeft > 0) {
 			int childFlags = flags & ~(Block.UPDATE_NEIGHBORS | Block.UPDATE_SUPPRESS_DROPS);
 			old.updateIndirectNeighbourShapes(this, pos, childFlags, recursionLeft - 1);
 			state.updateNeighbourShapes(this, pos, childFlags, recursionLeft - 1);
 			state.updateIndirectNeighbourShapes(this, pos, childFlags, recursionLeft - 1);
 		}
+		// Redstone: notify the six neighbours that this cell changed. Safe to call here because
+		// we are a real ServerLevel — the inherited CollectingNeighborUpdater queues and bounds
+		// the cascade. This is what lights a lamp next to a placed redstone block, etc.
+		if ((flags & Block.UPDATE_NEIGHBORS) != 0)
+			updateNeighborsAt(pos, state.getBlock());
 		if (onChanged != null)
 			onChanged.run();
 		return true;
-	}
-
-	@Override
-	public void neighborShapeChanged(Direction direction, BlockState neighborState, BlockPos pos, BlockPos neighborPos,
-		int flags, int recursionLevel) {
-		// Level routes this through a CollectingNeighborUpdater, but WrappedLevel constructs Level with
-		// a 0 update budget so it would silently drop the update. Apply it directly instead.
-		NeighborUpdater.executeShapeUpdate(this, direction, neighborState, pos, neighborPos, flags, recursionLevel);
 	}
 
 	@Override
@@ -131,12 +128,17 @@ public class ContraptionSimLevel extends WrappedLevel {
 	}
 
 	@Override
-	public LevelTickAccess<Block> getBlockTicks() {
+	public void sendBlockUpdated(BlockPos pos, BlockState oldState, BlockState newState, int flags) {
+		// No-op: the host BlockEntity re-syncs the whole contraption to clients after an operation.
+	}
+
+	@Override
+	public LevelTicks<Block> getBlockTicks() {
 		return contraption.getBlockTicks();
 	}
 
 	@Override
-	public LevelTickAccess<Fluid> getFluidTicks() {
+	public LevelTicks<Fluid> getFluidTicks() {
 		return fluidTicks;
 	}
 

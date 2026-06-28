@@ -27,6 +27,7 @@ public final class ZPSGamePackets {
         registrar.playToServer(RoboticArmSettingsC2SPacket.TYPE, RoboticArmSettingsC2SPacket.STREAM_CODEC, RoboticArmSettingsC2SPacket::handle);
         registrar.playToServer(ContraptionBreakC2SPacket.TYPE, ContraptionBreakC2SPacket.STREAM_CODEC, ContraptionBreakC2SPacket::handle);
         registrar.playToServer(ContraptionPlaceC2SPacket.TYPE, ContraptionPlaceC2SPacket.STREAM_CODEC, ContraptionPlaceC2SPacket::handle);
+        registrar.playToServer(ContraptionUseC2SPacket.TYPE, ContraptionUseC2SPacket.STREAM_CODEC, ContraptionUseC2SPacket::handle);
         registrar.playToServer(ContraptionBreakProgressC2SPacket.TYPE, ContraptionBreakProgressC2SPacket.STREAM_CODEC, ContraptionBreakProgressC2SPacket::handle);
         registrar.playToClient(ContraptionDestroyStageS2CPacket.TYPE, ContraptionDestroyStageS2CPacket.STREAM_CODEC, ContraptionDestroyStageS2CPacket::handle);
     }

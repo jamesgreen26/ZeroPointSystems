@@ -21,6 +21,7 @@ import g_mungus.zps.contraption.util.ContraptionMath;
 import g_mungus.zps.networking.ContraptionBreakC2SPacket;
 import g_mungus.zps.networking.ContraptionBreakProgressC2SPacket;
 import g_mungus.zps.networking.ContraptionPlaceC2SPacket;
+import g_mungus.zps.networking.ContraptionUseC2SPacket;
 import g_mungus.zps.networking.ZPSGamePackets;
 import g_mungus.zps.mixin.MinecraftAccessor;
 import g_mungus.zps.mixin.MultiPlayerGameModeAccessor;
@@ -40,7 +41,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
@@ -238,8 +238,17 @@ public final class ContraptionInteractionClient {
 		InteractionHand hand = null;
 		if (player.getMainHandItem().getItem() instanceof BlockItem) hand = InteractionHand.MAIN_HAND;
 		else if (player.getOffhandItem().getItem() instanceof BlockItem) hand = InteractionHand.OFF_HAND;
-		// Not holding a placeable block: let vanilla handle item use (eating, bows, etc.).
-		if (hand == null) return false;
+		// Not holding a placeable block: treat the right-click as a block interaction (button, lever,
+		// door, pressure plate, …) on the targeted contraption block. The server runs the block's
+		// vanilla use logic against the simulation level and re-syncs; we don't predict it locally.
+		if (hand == null) {
+			InteractionHand useHand = InteractionHand.MAIN_HAND;
+			ZPSGamePackets.sendToServer(new ContraptionUseC2SPacket(currentHit.motor().getBlockPos(),
+				currentHit.localPos(), currentHit.localFace(), currentHit.localHit(), useHand));
+			player.swing(useHand);
+			((MinecraftAccessor) mc).setRightClickDelay(ACTION_DELAY);
+			return true;
+		}
 
 		// Predict the placement locally so the block appears immediately; the authoritative
 		// server sync replaces it a round-trip later (and corrects it if the server disagrees).
@@ -313,25 +322,16 @@ public final class ContraptionInteractionClient {
 
 		ItemStack stack = player.getItemInHand(hand);
 		ContraptionTransform transform = ContraptionTransform.ofCurrent(motor);
-		ContraptionSimLevel sim = new ContraptionSimLevel(mc.level, contraption);
+		Contraption predicted = contraption.copy();
+		ContraptionSimLevel sim = new ContraptionSimLevel(mc.level, predicted);
 		ContraptionPlaceContext.Placed placed = ContraptionPlaceContext.resolve(sim, player, hand, stack,
 			hit.localPos(), hit.localFace(), hit.localHit(), transform);
 		if (placed == null) return false;
 		if (!ContraptionPlacementUtil.isUnobstructed(mc.level, sim, player, placed.pos(), placed.state(), transform))
 			return false;
 
-		CompoundTag beNbt = null;
-		CompoundTag updateTag = null;
-		if (placed.state().getBlock() instanceof EntityBlock entityBlock) {
-			BlockEntity be = entityBlock.newBlockEntity(placed.pos(), placed.state());
-			if (be != null) {
-				be.setLevel(mc.level);
-				beNbt = be.saveWithFullMetadata(mc.level.registryAccess());
-				updateTag = be.getUpdateTag(mc.level.registryAccess());
-			}
-		}
-		Contraption predicted = contraption.copy();
-		predicted.putBlock(placed.pos(), placed.state(), beNbt, updateTag);
+		if (!ContraptionPlacementUtil.placeBlock(mc.level, sim, predicted, player, stack, placed))
+			return false;
 		motor.setContraptionClient(predicted);
 		return true;
 	}

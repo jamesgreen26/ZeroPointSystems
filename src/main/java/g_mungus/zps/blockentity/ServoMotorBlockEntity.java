@@ -20,7 +20,7 @@ import g_mungus.zps.contraption.ContraptionPlacementUtil;
 import g_mungus.zps.contraption.ContraptionPlaceContext;
 import g_mungus.zps.contraption.ContraptionRotatedEntity;
 import g_mungus.zps.contraption.ContraptionRotationState;
-import g_mungus.zps.contraption.ContraptionSimLevel;
+import g_mungus.zps.contraption.ContraptionSimServerLevel;
 import g_mungus.zps.contraption.ContraptionTransform;
 import g_mungus.zps.contraption.collision.ContraptionCollider;
 import g_mungus.zps.contraption.util.ContraptionMath;
@@ -40,6 +40,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -59,6 +61,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
@@ -92,6 +95,13 @@ public class ServoMotorBlockEntity extends BlockEntity {
 	/** Client-only cache of reconstructed block entities for rendering. */
 	@Nullable
 	private ContraptionRenderState renderState;
+
+	/** Server-only cached simulation level (see {@link #simLevel()}); rebuilt when the contraption changes. */
+	@Nullable
+	private ContraptionSimServerLevel simLevel;
+
+	/** Set when a scheduled block tick mutates the structure, so {@link #serverTick()} re-syncs once. */
+	private boolean simNeedsSync;
 
 	public ServoMotorBlockEntity(BlockPos pos, BlockState state) {
 		super(ModBlockEntities.SERVO_MOTOR.get(), pos, state);
@@ -184,9 +194,13 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		if (contraption == null)
 			return;
 
-		// Drive the contraption's own block-tick queue (e.g. falling blocks scheduled by
-		// in-structure placement), kept separate from the outer world's tick queue.
+		// Drive the contraption's own block-tick queue (falling blocks, and redstone components
+		// like repeaters/observers/button-release), kept separate from the outer world's tick queue.
 		tickContraptionBlocks();
+		if (simNeedsSync) {
+			simNeedsSync = false;
+			sendData();
+		}
 
 		if (running)
 			angle = (angle + DEGREES_PER_TICK) % 360;
@@ -232,28 +246,46 @@ public class ServoMotorBlockEntity extends BlockEntity {
 	}
 
 	/**
-	 * A simulation level bound to this motor: writes/ticks mutate the contraption and mark the BE
-	 * dirty. Callers batch a single {@link #sendData()} after an operation, so a multi-block change
-	 * (e.g. a structural collapse) is one network re-sync.
+	 * The server simulation level bound to this motor's contraption: writes/ticks mutate the
+	 * contraption and mark the BE dirty, and — because it is a real {@link ServerLevel}
+	 * ({@link ContraptionSimServerLevel}) — scheduled ticks and redstone run natively. Callers batch
+	 * a single {@link #sendData()} after an operation, so a multi-block change (e.g. a structural
+	 * collapse) is one network re-sync. Cached (constructing it builds a full ServerLevel) and
+	 * rebuilt when the contraption identity changes. Server-only.
 	 */
-	private ContraptionSimLevel simLevel() {
-		return new ContraptionSimLevel(level, contraption, this::setChanged);
+	private ContraptionSimServerLevel simLevel() {
+		if (simLevel == null || simLevel.getContraption() != contraption)
+			simLevel = new ContraptionSimServerLevel((ServerLevel) level, contraption, this::setChanged);
+		return simLevel;
 	}
 
 	/** Run the contraption's own block-tick queue once (server-side). */
 	private void tickContraptionBlocks() {
 		if (!(level instanceof ServerLevel serverLevel))
 			return;
-		contraption.getBlockTicks().tick(serverLevel.getGameTime(), 65536, this::onContraptionBlockTick);
+		ContraptionSimServerLevel sim = simLevel();
+		contraption.getBlockTicks().tick(serverLevel.getGameTime(), 65536,
+			(local, block) -> onContraptionBlockTick(local, block, sim, serverLevel));
 	}
 
-	/** Ticker callback: re-validate the cell against the scheduled block, then handle falling blocks. */
-	private void onContraptionBlockTick(BlockPos local, Block block) {
+	/**
+	 * Ticker callback for a due scheduled block tick: re-validate the cell against the scheduled
+	 * block, run the block's own tick against the simulation level (so repeaters/comparators/
+	 * observers/redstone-torches/button-release behave as in a normal world), then handle falling
+	 * blocks. The {@code state.tick} call is legal because {@code sim} is a real ServerLevel.
+	 */
+	private void onContraptionBlockTick(BlockPos local, Block block, ContraptionSimServerLevel sim,
+		ServerLevel serverLevel) {
 		StructureBlockInfo info = contraption.getBlocks().get(local);
 		if (info == null || !info.state().is(block))
 			return;
-		if (block instanceof FallingBlock)
-			detachFallingBlock(local, info.state());
+		info.state().tick(sim, local, serverLevel.getRandom());
+		// A redstone tick (repeater/button-release/observer/…) likely changed the structure; re-sync.
+		simNeedsSync = true;
+		// Re-read: the tick above may have changed or removed the cell.
+		StructureBlockInfo after = contraption.getBlocks().get(local);
+		if (after != null && after.state().is(block) && block instanceof FallingBlock)
+			detachFallingBlock(local, after.state());
 	}
 
 	/**
@@ -270,7 +302,7 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		if (!FallingBlock.isFree(belowState))
 			return; // still supported
 
-		ContraptionSimLevel sim = simLevel();
+		ContraptionSimServerLevel sim = simLevel();
 		detachBlock(local, state, averagePlatformVelocity(List.of(local)), sim, serverLevel);
 		applyStructureUpdate(sim, serverLevel);
 	}
@@ -282,7 +314,7 @@ public class ServoMotorBlockEntity extends BlockEntity {
 	 * contraption's orientation and the given release {@code velocity}. Does NOT re-sync; callers
 	 * batch one {@link #sendData()}.
 	 */
-	private void detachBlock(BlockPos local, BlockState state, Vec3 velocity, ContraptionSimLevel sim,
+	private void detachBlock(BlockPos local, BlockState state, Vec3 velocity, ContraptionSimServerLevel sim,
 		ServerLevel serverLevel) {
 		sim.setBlock(local, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
 
@@ -302,10 +334,10 @@ public class ServoMotorBlockEntity extends BlockEntity {
 	/**
 	 * Structural update after a removal: collapse anything no longer connected to the head, then
 	 * re-sync once. The falling-block re-evaluation is handled by the removal itself going through
-	 * {@link ContraptionSimLevel#setBlock} (which runs the standard block update). Re-invoked when a
+	 * {@link ContraptionSimServerLevel#setBlock} (which runs the standard block update). Re-invoked when a
 	 * falling block detaches, so collapses cascade.
 	 */
-	private void applyStructureUpdate(ContraptionSimLevel sim, ServerLevel serverLevel) {
+	private void applyStructureUpdate(ContraptionSimServerLevel sim, ServerLevel serverLevel) {
 		detachDisconnected(sim, serverLevel);
 		setChanged();
 		sendData();
@@ -317,7 +349,7 @@ public class ServoMotorBlockEntity extends BlockEntity {
 	 * cohesive unit: all its blocks inherit the group's average platform velocity, so the group
 	 * translates together instead of shearing apart.
 	 */
-	private void detachDisconnected(ContraptionSimLevel sim, ServerLevel serverLevel) {
+	private void detachDisconnected(ContraptionSimServerLevel sim, ServerLevel serverLevel) {
 		var blocks = contraption.getBlocks();
 		BlockPos head = headLocalPos();
 		if (!blocks.containsKey(head))
@@ -462,7 +494,7 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		spawnContraptionBreakEffects(serverLevel, local, state, transform);
 		// Remove through the sim level so neighbours get the standard block update (unsupported
 		// falling blocks fall), then collapse anything no longer connected to the head. Re-syncs once.
-		ContraptionSimLevel sim = simLevel();
+		ContraptionSimServerLevel sim = simLevel();
 		sim.setBlock(local, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
 		applyStructureUpdate(sim, serverLevel);
 	}
@@ -566,7 +598,7 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		// Overlay exposing the contraption's blocks at their local positions, so
 		// getStateForPlacement sees in-structure neighbours (fences/walls/redstone/stairs)
 		// and in-structure side-effects (FallingBlock#onPlace) read/write the contraption.
-		ContraptionSimLevel sim = simLevel();
+		ContraptionSimServerLevel sim = simLevel();
 		ContraptionPlaceContext.Placed placed =
 			ContraptionPlaceContext.resolve(sim, player, hand, stack, local, localFace, localHit, transform);
 		if (placed == null)
@@ -577,18 +609,9 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		if (!ContraptionPlacementUtil.isUnobstructed(serverLevel, sim, player, placePos, placeState, transform))
 			return false;
 
-		CompoundTag beNbt = null;
-		CompoundTag updateTag = null;
-		if (placeState.getBlock() instanceof EntityBlock entityBlock) {
-			BlockEntity be = entityBlock.newBlockEntity(placePos, placeState);
-			if (be != null) {
-				be.setLevel(serverLevel);
-				beNbt = be.saveWithFullMetadata(serverLevel.registryAccess());
-				updateTag = be.getUpdateTag(serverLevel.registryAccess());
-			}
-		}
-
-		contraption.putBlock(placePos, placeState, beNbt, updateTag);
+		if (!ContraptionPlacementUtil.placeBlock(serverLevel, sim, contraption, player, stack, placed))
+			return false;
+		placeState = sim.getBlockState(placePos);
 		// Run placement side-effects for falling blocks so an unsupported one schedules its
 		// fall into the contraption's tick queue. Gated to FallingBlock to avoid running
 		// unrelated onPlace logic against the simulation level.
@@ -604,6 +627,48 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		setChanged();
 		sendData();
 		return true;
+	}
+
+	/**
+	 * Right-click a block in the structure (buttons, levers, doors, trapdoors, pressure plates, …).
+	 * Runs the block's vanilla use logic against the server simulation level, so its side-effects —
+	 * toggling {@code OPEN}/{@code POWERED}, scheduling the button-release tick, redstone neighbour
+	 * updates, sounds — all happen against the contraption. Mirrors vanilla's right-click order
+	 * (held-item block interaction first, then the block's own use), then re-syncs once.
+	 */
+	public boolean useContraptionBlock(BlockPos local, Direction localFace, Vec3 localHit, ServerPlayer player,
+		InteractionHand hand) {
+		if (level == null || level.isClientSide || contraption == null)
+			return false;
+		StructureBlockInfo info = contraption.getBlocks().get(local);
+		if (info == null)
+			return false;
+
+		ContraptionTransform transform = ContraptionTransform.ofCurrent(this);
+		if (!inReach(local, player, transform))
+			return false;
+
+		ContraptionSimServerLevel sim = simLevel();
+		BlockState state = info.state();
+		BlockHitResult hit = new BlockHitResult(localHit, localFace, local, false);
+		ItemStack stack = player.getItemInHand(hand);
+
+		if (!stack.isEmpty()) {
+			ItemInteractionResult itemResult = state.useItemOn(stack, sim, player, hand, hit);
+			if (itemResult != ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION) {
+				if (itemResult.consumesAction()) {
+					setChanged();
+					sendData();
+				}
+				return itemResult.consumesAction();
+			}
+		}
+		if (state.useWithoutItem(sim, player, hit).consumesAction()) {
+			setChanged();
+			sendData();
+			return true;
+		}
+		return false;
 	}
 
 	// endregion

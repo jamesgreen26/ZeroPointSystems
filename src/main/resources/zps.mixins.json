@@ -11,6 +11,7 @@
     "MinecraftAccessor",
     "MinecraftMixin",
     "MultiPlayerGameModeAccessor",
+    "PlayerMixin",
     "PlayerRendererMixin",
     "SelectorDeserializerNotMixin",
     "SoundEngineMixin",

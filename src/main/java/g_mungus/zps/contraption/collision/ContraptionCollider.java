@@ -366,4 +366,23 @@ public final class ContraptionCollider {
 				collisionShape.forAllBoxes(out);
 		}
 	}
+
+	public static boolean intersectsContraption(Level level, Contraption contraption, AABB localBB,
+		Matrix3d entityRotation) {
+		if (contraption == null || contraption.isEmpty())
+			return false;
+
+		CollisionList collidableBBs = new CollisionList();
+		getPotentiallyCollidedShapes(level, contraption, localBB.inflate(1.0E-7D), new Populate(collidableBBs));
+		if (collidableBBs.size == 0)
+			return false;
+
+		OrientedBB obb = new OrientedBB(localBB.inflate(1.0E-7D));
+		obb.setRotation(entityRotation);
+		for (int bbIdx = 0; bbIdx < collidableBBs.size; ++bbIdx) {
+			if (obb.intersect(collidableBBs, bbIdx, Vec3.ZERO) != null)
+				return true;
+		}
+		return false;
+	}
 }

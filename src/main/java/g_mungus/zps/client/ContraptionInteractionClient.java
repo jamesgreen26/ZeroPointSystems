@@ -14,6 +14,8 @@ import g_mungus.zps.contraption.ContraptionBlockGetter;
 import g_mungus.zps.contraption.ContraptionPlaceContext;
 import g_mungus.zps.contraption.ContraptionSimLevel;
 import g_mungus.zps.contraption.ContraptionTransform;
+import g_mungus.zps.contraption.ContraptionRotationState;
+import g_mungus.zps.contraption.collision.ContraptionCollider;
 import g_mungus.zps.contraption.util.ContraptionMath;
 import g_mungus.zps.networking.ContraptionBreakC2SPacket;
 import g_mungus.zps.networking.ContraptionBreakProgressC2SPacket;
@@ -33,6 +35,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
@@ -40,6 +43,7 @@ import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -89,6 +93,113 @@ public final class ContraptionInteractionClient {
 
 	public static boolean hasTarget() {
 		return currentHit != null;
+	}
+
+	public static Vec3 maybeBackOffFromContraptionEdge(Player player, Vec3 movement, float maxUpStep) {
+		if (player == null || player.level() == null || ServoMotorBlockEntity.ACTIVE_CLIENT.isEmpty())
+			return null;
+		ServoMotorBlockEntity supportMotor = findSupportingContraption(player, maxUpStep);
+		if (supportMotor == null)
+			return null;
+
+		float yaw = supportMotor.getRotationAxis() == Direction.Axis.Y ? supportMotor.getAngle() : 0.0F;
+		Vec3 localMovement = ContraptionMath.rotate(new Vec3(movement.x, 0.0D, movement.z), -yaw, Direction.Axis.Y);
+		double xMovement = localMovement.x;
+		double zMovement = localMovement.z;
+		double step = 0.05D;
+		double signedXStep = Math.signum(xMovement) * step;
+		double signedZStep = Math.signum(zMovement) * step;
+
+		while (xMovement != 0.0D && wouldSlideOff(player, xMovement, 0.0D, maxUpStep, yaw)) {
+			if (Math.abs(xMovement) <= step) {
+				xMovement = 0.0D;
+				break;
+			}
+			xMovement -= signedXStep;
+		}
+		while (zMovement != 0.0D && wouldSlideOff(player, 0.0D, zMovement, maxUpStep, yaw)) {
+			if (Math.abs(zMovement) <= step) {
+				zMovement = 0.0D;
+				break;
+			}
+			zMovement -= signedZStep;
+		}
+		while (xMovement != 0.0D && zMovement != 0.0D && wouldSlideOff(player, xMovement, zMovement, maxUpStep, yaw)) {
+			if (Math.abs(xMovement) <= step)
+				xMovement = 0.0D;
+			else
+				xMovement -= signedXStep;
+			if (Math.abs(zMovement) <= step)
+				zMovement = 0.0D;
+			else
+				zMovement -= signedZStep;
+		}
+
+		Vec3 worldMovement = ContraptionMath.rotate(new Vec3(xMovement, 0.0D, zMovement), yaw, Direction.Axis.Y);
+		return new Vec3(worldMovement.x, movement.y, worldMovement.z);
+	}
+
+	public static boolean isAboveContraptionGround(Player player, float maxUpStep) {
+		return player != null && player.level() != null && findSupportingContraption(player, maxUpStep) != null;
+	}
+
+	private static boolean wouldSlideOff(Player player, double localXMovement, double localZMovement, float fallDistance,
+		float yaw) {
+		Vec3 worldMovement = ContraptionMath.rotate(new Vec3(localXMovement, 0.0D, localZMovement), yaw,
+			Direction.Axis.Y);
+		AABB supportBox = supportBox(player, worldMovement.x, worldMovement.z, fallDistance);
+		return player.level().noCollision(player, supportBox) && !intersectsAnyContraption(player, supportBox);
+	}
+
+	private static ServoMotorBlockEntity findSupportingContraption(Player player, float fallDistance) {
+		AABB supportBox = supportBox(player, 0.0D, 0.0D, fallDistance);
+		for (ServoMotorBlockEntity motor : ServoMotorBlockEntity.ACTIVE_CLIENT) {
+			if (motor.getLevel() != player.level())
+				continue;
+			Contraption contraption = motor.getContraption();
+			if (contraption == null || contraption.isEmpty())
+				continue;
+			ContraptionTransform transform = ContraptionTransform.ofCurrent(motor);
+			AABB localBox = worldBoxToLocalAabb(shrinkSupportBox(supportBox), transform);
+			ContraptionRotationState rotation = new ContraptionRotationState(transform.axis(), transform.angle());
+			if (ContraptionCollider.intersectsContraption(player.level(), contraption, localBox, rotation.asMatrixNoYaw()))
+				return motor;
+		}
+		return null;
+	}
+
+	private static AABB supportBox(Player player, double xMovement, double zMovement, float fallDistance) {
+		AABB bounds = player.getBoundingBox();
+		return new AABB(bounds.minX + xMovement, bounds.minY - (double) fallDistance - 1.0E-5D,
+			bounds.minZ + zMovement, bounds.maxX + xMovement, bounds.minY, bounds.maxZ + zMovement);
+	}
+
+	private static AABB shrinkSupportBox(AABB supportBox) {
+		return supportBox.getXsize() > 0.1D && supportBox.getZsize() > 0.1D
+			? supportBox.inflate(-0.05D, 0.0D, -0.05D)
+			: supportBox;
+	}
+
+	private static boolean intersectsAnyContraption(Player player, AABB worldBox) {
+		for (ServoMotorBlockEntity motor : ServoMotorBlockEntity.ACTIVE_CLIENT) {
+			if (motor.getLevel() != player.level())
+				continue;
+			Contraption contraption = motor.getContraption();
+			if (contraption == null || contraption.isEmpty())
+				continue;
+			ContraptionTransform transform = ContraptionTransform.ofCurrent(motor);
+			AABB localBox = worldBoxToLocalAabb(shrinkSupportBox(worldBox), transform);
+			ContraptionRotationState rotation = new ContraptionRotationState(transform.axis(), transform.angle());
+			if (ContraptionCollider.intersectsContraption(player.level(), contraption, localBox, rotation.asMatrixNoYaw()))
+				return true;
+		}
+		return false;
+	}
+
+	private static AABB worldBoxToLocalAabb(AABB worldBox, ContraptionTransform transform) {
+		Vec3 localCenter = transform.worldToLocal(worldBox.getCenter());
+		return new AABB(localCenter, localCenter)
+			.inflate(worldBox.getXsize() / 2.0D, worldBox.getYsize() / 2.0D, worldBox.getZsize() / 2.0D);
 	}
 
 	public static boolean handleStartAttack() {

@@ -1,7 +1,9 @@
 package g_mungus.zps.client.renderer.contraption;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -28,14 +30,24 @@ public class ContraptionRenderState {
 
 	private final Contraption contraption;
 	private final List<BlockEntity> blockEntities = new ArrayList<>();
+	/** Same reconstructed block entities, keyed by contraption-LOCAL position, for menu resolution. */
+	private final Map<BlockPos, BlockEntity> blockEntitiesByPos = new HashMap<>();
 
 	public ContraptionRenderState(Level level, Contraption contraption) {
 		this.contraption = contraption;
 		for (StructureBlockInfo info : contraption.getBlocks().values()) {
 			BlockEntity be = reconstruct(level, info.state(), info.pos(), contraption.getUpdateTags().get(info.pos()));
-			if (be != null)
+			if (be != null) {
 				blockEntities.add(be);
+				blockEntitiesByPos.put(info.pos(), be);
+			}
 		}
+	}
+
+	/** The reconstructed block entity at a contraption-LOCAL position, or {@code null} if there is none. */
+	@Nullable
+	public BlockEntity getBlockEntity(BlockPos localPos) {
+		return blockEntitiesByPos.get(localPos);
 	}
 
 	/** The contraption this state was built for, so callers can detect changes. */

@@ -11,6 +11,7 @@ import g_mungus.zps.blockentity.ServoMotorBlockEntity;
 import g_mungus.zps.client.renderer.contraption.ContraptionRenderWorld;
 import g_mungus.zps.contraption.Contraption;
 import g_mungus.zps.contraption.ContraptionBlockGetter;
+import g_mungus.zps.contraption.ContraptionMenuContext;
 import g_mungus.zps.contraption.ContraptionPlacementUtil;
 import g_mungus.zps.contraption.ContraptionPlaceContext;
 import g_mungus.zps.contraption.ContraptionSimLevel;
@@ -243,6 +244,10 @@ public final class ContraptionInteractionClient {
 		// vanilla use logic against the simulation level and re-syncs; we don't predict it locally.
 		if (hand == null) {
 			InteractionHand useHand = InteractionHand.MAIN_HAND;
+			// Record the target so a menu this use opens (the block runs against the contraption sim
+			// level, so it hands a contraption-LOCAL pos to openMenu) can resolve its block entity
+			// client-side. See ContraptionMenuContext.
+			ContraptionMenuContext.beginUse(currentHit.motor().getBlockPos(), currentHit.localPos());
 			ZPSGamePackets.sendToServer(new ContraptionUseC2SPacket(currentHit.motor().getBlockPos(),
 				currentHit.localPos(), currentHit.localFace(), currentHit.localHit(), useHand));
 			player.swing(useHand);

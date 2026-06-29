@@ -8,6 +8,8 @@
     "BlockElementMixin",
     "CommandSuggestionsMixin",
     "FallingBlockRendererMixin",
+    "LevelMixin",
+    "MenuTypeMixin",
     "MinecraftAccessor",
     "MinecraftMixin",
     "MultiPlayerGameModeAccessor",
@@ -21,6 +23,7 @@
     "ponder.PonderUIMixin"
   ],
   "mixins": [
+    "AbstractContainerMenuMixin",
     "ArgumentTypeInfosMixin",
     "BlockBehaviourAccessor",
     "BlockBehaviourMixin",

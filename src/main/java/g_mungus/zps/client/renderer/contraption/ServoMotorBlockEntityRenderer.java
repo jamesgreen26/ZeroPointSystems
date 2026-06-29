@@ -21,6 +21,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.PistonType;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
+import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.client.model.data.ModelData;
 
 /**
@@ -133,5 +134,12 @@ public class ServoMotorBlockEntityRenderer implements BlockEntityRenderer<ServoM
 	@Override
 	public int getViewDistance() {
 		return 128;
+	}
+
+	@Override
+	public AABB getRenderBoundingBox(ServoMotorBlockEntity blockEntity) {
+		// The full rotated world bounds of the contraption, so the BER isn't culled when the motor
+		// block leaves the frustum but the spinning structure is still on screen.
+		return blockEntity.getRenderBoundingBox();
 	}
 }

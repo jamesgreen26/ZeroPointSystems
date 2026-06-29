@@ -260,8 +260,16 @@ public class ContraptionSimServerLevel extends WrappedServerLevel {
 		// no longer supports it (the new one, if any, is created lazily by getBlockEntity). A pure
 		// blockstate change on the same BE-bearing block (e.g. a furnace toggling LIT) keeps it.
 		BlockEntity liveBE = blockEntities.get(pos);
-		if (liveBE != null && !liveBE.getType().isValid(state))
-			removeBlockEntity(pos);
+		if (liveBE != null) {
+			if (!liveBE.getType().isValid(state))
+				removeBlockEntity(pos);
+			else
+				// Keep the live BE's cached block state in sync with the structure (mirrors
+				// LevelChunk#setBlockState). Without this, a BE that reads its own state during its tick —
+				// e.g. a script terminal checking POWERED — would see the pre-change state forever, so a
+				// redstone toggle on the contraption would never take effect.
+				liveBE.setBlockState(state);
+		}
 		if (old.hasBlockEntity() || state.hasBlockEntity())
 			tickersDirty = true;
 

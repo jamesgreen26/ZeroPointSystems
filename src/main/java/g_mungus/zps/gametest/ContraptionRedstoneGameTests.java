@@ -3,9 +3,12 @@ package g_mungus.zps.gametest;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.ServoMotorBlock;
+import g_mungus.zps.block.cableNetwork.light_pipe.ScriptTerminalBlock;
 import g_mungus.zps.blockentity.ServoMotorBlockEntity;
+import g_mungus.zps.blockentity.light_pipe.ScriptTerminalBlockEntity;
 import g_mungus.zps.contraption.Contraption;
 import g_mungus.zps.contraption.ContraptionSimServerLevel;
+import g_mungus.zps.networking.ScriptComputerC2SPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
@@ -613,6 +616,78 @@ public class ContraptionRedstoneGameTests {
 		}
 		if (arrow.yRotO != arrow.getYRot() || arrow.xRotO != arrow.getXRot()) {
 			helper.fail("Arrow rotation history should be snapped to its facing");
+			return;
+		}
+		helper.succeed();
+	}
+
+	/**
+	 * A live block entity's cached block state must track structural changes: when a redstone toggle
+	 * flips POWERED through the sim level, the kept block entity instance should report the new state
+	 * (mirrors {@code LevelChunk#setBlockState}). Without this a block entity that reads its own state
+	 * in its tick is frozen on the pre-change value.
+	 */
+	@GameTest(template = TEMPLATE)
+	public static void liveBlockEntityStateRefreshesOnStateChange(GameTestHelper helper) {
+		ServoMotorBlockEntity motor = setupMotor(helper);
+		Contraption c = motor.getContraption();
+
+		BlockPos terminal = new BlockPos(2, 1, 0);
+		put(c, new BlockPos(2, 0, 0), Blocks.STONE.defaultBlockState());
+		put(c, terminal, ModBlocks.SCRIPT_TERMINAL.get().defaultBlockState()
+			.setValue(ScriptTerminalBlock.FACING, Direction.NORTH)
+			.setValue(ScriptTerminalBlock.POWERED, false));
+
+		ContraptionSimServerLevel sim = sim(helper, c);
+		BlockEntity be = sim.getBlockEntity(terminal);
+		if (be == null) {
+			helper.fail("Script terminal should have a live block entity");
+			return;
+		}
+		if (be.getBlockState().getValue(ScriptTerminalBlock.POWERED)) {
+			helper.fail("Terminal should start unpowered");
+			return;
+		}
+
+		sim.setBlock(terminal, be.getBlockState().setValue(ScriptTerminalBlock.POWERED, true), Block.UPDATE_ALL);
+
+		if (!be.getBlockState().getValue(ScriptTerminalBlock.POWERED)) {
+			helper.fail("Live block entity's cached state did not refresh after a sim block-state change");
+			return;
+		}
+		helper.succeed();
+	}
+
+	/**
+	 * A Script Terminal on a contraption dispatches its command once powered: ticking the live block
+	 * entity after a redstone toggle (POWERED) runs the script, so its output text becomes non-blank.
+	 * Regresses the bug where the terminal read a stale POWERED and never dispatched.
+	 */
+	@GameTest(template = TEMPLATE)
+	public static void scriptTerminalDispatchesWhenPoweredOnContraption(GameTestHelper helper) {
+		ServoMotorBlockEntity motor = setupMotor(helper);
+		Contraption c = motor.getContraption();
+
+		BlockPos terminal = new BlockPos(2, 1, 0);
+		put(c, new BlockPos(2, 0, 0), Blocks.STONE.defaultBlockState());
+		put(c, terminal, ModBlocks.SCRIPT_TERMINAL.get().defaultBlockState()
+			.setValue(ScriptTerminalBlock.FACING, Direction.NORTH)
+			.setValue(ScriptTerminalBlock.POWERED, false));
+
+		ContraptionSimServerLevel sim = sim(helper, c);
+		ScriptTerminalBlockEntity be = (ScriptTerminalBlockEntity) sim.getBlockEntity(terminal);
+		if (be == null) {
+			helper.fail("Script terminal should have a live block entity");
+			return;
+		}
+		be.acceptUpdatePacket(new ScriptComputerC2SPacket(terminal, MOTOR_POS, false, 4, "say hi"));
+
+		// Power the terminal through the same sim so its live BE state refreshes, then tick it once.
+		sim.setBlock(terminal, be.getBlockState().setValue(ScriptTerminalBlock.POWERED, true), Block.UPDATE_ALL);
+		be.tick();
+
+		if (be.provideNextDisplayText(1000).isBlank()) {
+			helper.fail("Script terminal did not dispatch its command when powered on a contraption");
 			return;
 		}
 		helper.succeed();

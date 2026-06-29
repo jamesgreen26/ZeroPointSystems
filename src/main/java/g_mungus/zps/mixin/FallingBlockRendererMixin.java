@@ -5,8 +5,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import org.joml.Quaternionf;
+
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
 
 import g_mungus.zps.contraption.ContraptionRotatedEntity;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -27,16 +28,11 @@ public class FallingBlockRendererMixin {
 		MultiBufferSource buffer, int packedLight, CallbackInfo ci) {
 		pose.pushPose();
 		if (entity instanceof ContraptionRotatedEntity rotated) {
-			float angle = rotated.zps$getContraptionAngle();
-			if (angle != 0.0f) {
-				pose.translate(0.0, 0.5, 0.0);
-				switch (rotated.zps$getContraptionAxis()) {
-					case X -> pose.mulPose(Axis.XP.rotationDegrees(angle));
-					case Y -> pose.mulPose(Axis.YP.rotationDegrees(angle));
-					case Z -> pose.mulPose(Axis.ZP.rotationDegrees(angle));
-				}
-				pose.translate(0.0, -0.5, 0.0);
-			}
+			Quaternionf rotation = rotated.zps$getContraptionRotation();
+			// Rotate about the block's own centre; identity (no inherited rotation) is a no-op.
+			pose.translate(0.0, 0.5, 0.0);
+			pose.mulPose(rotation);
+			pose.translate(0.0, -0.5, 0.0);
 		}
 	}
 

@@ -9,7 +9,7 @@ import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
 
-import g_mungus.zps.contraption.util.ContraptionMath;
+import g_mungus.zps.blockentity.ServoMotorBlockEntity;
 import g_mungus.zps.mixin.EntityAccessor;
 import net.createmod.catnip.levelWrappers.WrappedServerLevel;
 import net.minecraft.core.BlockPos;
@@ -65,7 +65,7 @@ import net.minecraft.world.ticks.TickPriority;
  * caches one instance per contraption rather than allocating per tick. Server-only — the client
  * uses the lightweight {@link ContraptionSimLevel}.
  */
-public class ContraptionSimServerLevel extends WrappedServerLevel {
+public class ContraptionSimServerLevel extends WrappedServerLevel implements ContraptionHostLevel {
 
 	private static final double RAD_TO_DEG = 180.0 / Math.PI;
 
@@ -125,6 +125,33 @@ public class ContraptionSimServerLevel extends WrappedServerLevel {
 	/** World position of the host Servo Motor. */
 	public BlockPos getMotorPos() {
 		return motorPos;
+	}
+
+	/**
+	 * The level this sim wraps — the real {@link ServerLevel} for a root contraption, or the PARENT
+	 * sim level when this contraption is itself nested inside another.
+	 */
+	public ServerLevel getRealLevel() {
+		return realLevel;
+	}
+
+	/**
+	 * The genuine, untransformed {@link ServerLevel} at the bottom of any nested-sim chain. Emissions
+	 * already mapped to world space (spawned entities, sounds, level events) must target this — not the
+	 * intermediate {@code realLevel}, which for a nested contraption is the PARENT sim and would
+	 * re-transform them.
+	 */
+	public ServerLevel rootRealLevel() {
+		ServerLevel l = realLevel;
+		while (l instanceof ContraptionSimServerLevel sim)
+			l = sim.realLevel;
+		return l;
+	}
+
+	@Override
+	@Nullable
+	public ServoMotorBlockEntity getContraptionHostMotor() {
+		return realLevel.getBlockEntity(motorPos) instanceof ServoMotorBlockEntity motor ? motor : null;
 	}
 
 	/** The contraption's current world pose, or {@code null} when none is available (e.g. tests). */
@@ -322,11 +349,12 @@ public class ContraptionSimServerLevel extends WrappedServerLevel {
 	 */
 	@Override
 	public boolean addFreshEntity(Entity entity) {
-		((EntityAccessor) entity).zps$setLevel(realLevel);
+		ServerLevel root = rootRealLevel();
+		((EntityAccessor) entity).zps$setLevel(root);
 		ContraptionTransform t = getTransform();
 		if (t != null) {
 			Vec3 world = t.localToWorld(entity.position());
-			Vec3 velocity = ContraptionMath.rotate(entity.getDeltaMovement(), t.angle(), t.axis());
+			Vec3 velocity = t.localDirToWorld(entity.getDeltaMovement());
 			entity.setDeltaMovement(velocity);
 			float yaw;
 			float pitch;
@@ -341,8 +369,7 @@ public class ContraptionSimServerLevel extends WrappedServerLevel {
 			} else {
 				// Other entities face via the camera convention: rotate the look vector, read back yaw/pitch
 				// (entities have no roll).
-				Vec3 look = ContraptionMath.rotate(
-					Vec3.directionFromRotation(entity.getXRot(), entity.getYRot()), t.angle(), t.axis());
+				Vec3 look = t.localDirToWorld(Vec3.directionFromRotation(entity.getXRot(), entity.getYRot()));
 				double horizontal = Math.sqrt(look.x * look.x + look.z * look.z);
 				yaw = Mth.wrapDegrees((float) (Mth.atan2(look.z, look.x) * RAD_TO_DEG) - 90.0F);
 				pitch = Mth.wrapDegrees((float) (-(Mth.atan2(look.y, horizontal) * RAD_TO_DEG)));
@@ -354,7 +381,7 @@ public class ContraptionSimServerLevel extends WrappedServerLevel {
 			// No pose (e.g. tests): still snap the history to the spawn pose so there's no lerp from (0,0,0).
 			entity.moveTo(entity.getX(), entity.getY(), entity.getZ(), entity.getYRot(), entity.getXRot());
 		}
-		return realLevel.addFreshEntity(entity);
+		return root.addFreshEntity(entity);
 	}
 
 	@Override
@@ -393,7 +420,7 @@ public class ContraptionSimServerLevel extends WrappedServerLevel {
 	public void playSound(@Nullable Player player, double x, double y, double z, SoundEvent sound, SoundSource source,
 		float volume, float pitch) {
 		Vec3 world = transform != null ? transform.get().localToWorld(new Vec3(x, y, z)) : new Vec3(x, y, z);
-		realLevel.playSound(null, world.x, world.y, world.z, sound, source, volume, pitch);
+		rootRealLevel().playSound(null, world.x, world.y, world.z, sound, source, volume, pitch);
 	}
 
 	/**
@@ -427,7 +454,7 @@ public class ContraptionSimServerLevel extends WrappedServerLevel {
 			Vec3 world = transform.get().localToWorld(Vec3.atCenterOf(pos));
 			worldPos = BlockPos.containing(world);
 		}
-		realLevel.levelEvent(null, type, worldPos, data);
+		rootRealLevel().levelEvent(null, type, worldPos, data);
 	}
 
 	@Override

@@ -12,12 +12,10 @@ import org.apache.commons.lang3.mutable.MutableFloat;
 import org.apache.commons.lang3.mutable.MutableObject;
 
 import g_mungus.zps.contraption.Contraption;
-import g_mungus.zps.contraption.ContraptionRotationState;
+import g_mungus.zps.contraption.ContraptionTransform;
 import g_mungus.zps.contraption.collision.CollisionList.Populate;
 import g_mungus.zps.contraption.collision.ContinuousOBBCollider.ContinuousSeparationManifold;
-import g_mungus.zps.contraption.util.ContraptionMath;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction.Axis;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -42,8 +40,8 @@ public final class ContraptionCollider {
 	private ContraptionCollider() {}
 
 	/**
-	 * @param anchorVec     world position of the contraption's local origin
-	 *                      (lower corner of the anchor block).
+	 * @param rootLevel     the real world the entities live in (the bottom of any nested-sim chain).
+	 * @param transform     the contraption's (possibly composed/nested) world&lt;-&gt;local pose.
 	 * @param worldBounds   generous world-space AABB enclosing the rotating structure.
 	 * @param contactMotion maps a world point on the structure to the platform's
 	 *                      velocity there this tick (for carrying riders).
@@ -54,43 +52,41 @@ public final class ContraptionCollider {
 	 *                      the local cell it should occupy; the handler captures it into the
 	 *                      structure. Null on the client (no authoritative capture).
 	 */
-	public static void collideEntities(Level level, Vec3 anchorVec, ContraptionRotationState rotation,
+	public static void collideEntities(Level rootLevel, ContraptionTransform transform,
 		Contraption contraption, AABB worldBounds, Function<Vec3, Vec3> contactMotion, Predicate<Entity> shouldCollide,
 		@Nullable BiConsumer<Entity, BlockPos> onLanded) {
 		if (contraption == null || contraption.isEmpty())
 			return;
 
-		Vec3 contraptionMotion = Vec3.ZERO; // the bearing pivot never translates
+		Vec3 contraptionMotion = Vec3.ZERO; // in the contraption's local frame the structure is static
 
-		List<Entity> nearby = level.getEntitiesOfClass(Entity.class, worldBounds.inflate(2).expandTowards(0, 32, 0));
+		List<Entity> nearby = rootLevel.getEntitiesOfClass(Entity.class, worldBounds.inflate(2).expandTowards(0, 32, 0));
 		for (Entity entity : nearby) {
 			if (!entity.isAlive() || entity.isPassenger() || entity.noPhysics)
 				continue;
 			if (!shouldCollide.test(entity))
 				continue;
 
-			Matrix3d rotationMatrix = rotation.asMatrix();
+			Matrix3d rotationMatrix = transform.worldToLocalRotation();
 
 			Vec3 entityPosition = entity.position();
 			AABB entityBounds = entity.getBoundingBox();
 			Vec3 motion = entity.getDeltaMovement();
-			float yawOffset = rotation.getYawOffset();
-			Vec3 position = getWorldToLocalTranslation(entity, anchorVec, rotationMatrix, yawOffset);
+			Vec3 position = getWorldToLocalTranslation(entity, transform);
 
 			motion = motion.subtract(contraptionMotion);
 			motion = rotationMatrix.transform(motion);
 
 			AABB localBB = entityBounds.move(position).inflate(1.0E-7D);
 			OrientedBB obb = new OrientedBB(localBB);
-			// Orient the entity box without the contraption's yaw, so it shares the
+			// Orient the entity box without the contraption's world-Y yaw, so it shares the
 			// contraption's Y rotation (turns with a turntable) instead of keeping its
 			// world-aligned footprint. The full rotationMatrix is still used for the
-			// position/motion/result transforms. A fresh matrix, so the later
-			// rotationMatrix.transpose() doesn't touch it.
-			obb.setRotation(rotation.asMatrixNoYaw());
+			// position/motion/result transforms.
+			obb.setRotation(transform.worldToLocalRotationNoWorldYaw());
 
 			CollisionList collidableBBs = new CollisionList();
-			getPotentiallyCollidedShapes(level, contraption, localBB.expandTowards(motion), new Populate(collidableBBs));
+			getPotentiallyCollidedShapes(rootLevel, contraption, localBB.expandTowards(motion), new Populate(collidableBBs));
 			if (collidableBBs.size == 0)
 				continue;
 
@@ -101,7 +97,7 @@ public final class ContraptionCollider {
 			MutableFloat temporalResponse = new MutableFloat(1);
 			Vec3 obbCenter = obb.getCenter();
 
-			boolean doHorizontalPass = !rotation.hasVerticalRotation();
+			boolean doHorizontalPass = !transform.hasVerticalRotation();
 			for (boolean horizontalPass : new boolean[] { true, false }) {
 				boolean verticalPass = !horizontalPass || !doHorizontalPass;
 
@@ -167,15 +163,11 @@ public final class ContraptionCollider {
 			Vec3 motionResponse = !temporalCollision ? motion
 				: motion.normalize().scale(motion.length() * temporalResponse.getValue());
 
-			rotationMatrix.transpose();
-			motionResponse = rotationMatrix.transform(motionResponse).add(contraptionMotion);
-			totalResponse = rotationMatrix.transform(totalResponse);
-			totalResponse = ContraptionMath.rotate(totalResponse, yawOffset, Axis.Y);
-			collisionNormal = rotationMatrix.transform(collisionNormal);
-			collisionNormal = ContraptionMath.rotate(collisionNormal, yawOffset, Axis.Y).normalize();
-			collisionLocation = rotationMatrix.transform(collisionLocation);
-			collisionLocation = ContraptionMath.rotate(collisionLocation, yawOffset, Axis.Y);
-			rotationMatrix.transpose();
+			Matrix3d localToWorld = transform.localToWorldRotation();
+			motionResponse = localToWorld.transform(motionResponse).add(contraptionMotion);
+			totalResponse = localToWorld.transform(totalResponse);
+			collisionNormal = localToWorld.transform(collisionNormal).normalize();
+			collisionLocation = localToWorld.transform(collisionLocation);
 
 			double bounce = 0;
 			double slide = 0;
@@ -186,13 +178,12 @@ public final class ContraptionCollider {
 				if (temporalCollision)
 					collisionLocation = collisionLocation.add(0, motionResponse.y, 0);
 
-				BlockPos localPos = BlockPos.containing(
-					worldToLocalPos(collisionLocation, anchorVec, rotationMatrix, yawOffset));
+				BlockPos localPos = BlockPos.containing(transform.worldToLocal(collisionLocation));
 				StructureBlockInfo info = contraption.getBlocks().get(localPos);
 				if (info != null) {
 					BlockState blockState = info.state();
 					bounce = getBounceMultiplier(blockState);
-					slide = Math.max(0, blockState.getFriction(level, localPos, entity) - .6f);
+					slide = Math.max(0, blockState.getFriction(rootLevel, localPos, entity) - .6f);
 				}
 			}
 
@@ -227,7 +218,7 @@ public final class ContraptionCollider {
 					entityMotion = entityMotion.multiply(1, 1, 0);
 			}
 
-			if (bounce == 0 && slide > 0 && hasNormal && anyCollision && rotation.hasVerticalRotation()) {
+			if (bounce == 0 && slide > 0 && hasNormal && anyCollision && transform.hasVerticalRotation()) {
 				double slideFactor = collisionNormal.multiply(1, 0, 1).length() * 1.25f;
 				Vec3 motionIn = entityMotionNoTemporal.multiply(0, .9, 0).add(0, -.01f, 0);
 				Vec3 slideNormal = collisionNormal.cross(motionIn.cross(collisionNormal)).normalize();
@@ -252,9 +243,8 @@ public final class ContraptionCollider {
 				// structure (it lands like it would on the ground) instead of hovering forever.
 				// Gated to the server, and to the feet cell being empty with a solid contraption
 				// block directly below, so side-brushes don't capture.
-				if (onLanded != null && !level.isClientSide && entity instanceof FallingBlockEntity) {
-					BlockPos landingCell = BlockPos.containing(
-						worldToLocalPos(entityPosition.add(0, 0.05, 0), anchorVec, rotationMatrix, yawOffset));
+				if (onLanded != null && !rootLevel.isClientSide && entity instanceof FallingBlockEntity) {
+					BlockPos landingCell = BlockPos.containing(transform.worldToLocal(entityPosition.add(0, 0.05, 0)));
 					boolean cellEmpty = !contraption.getBlocks().containsKey(landingCell);
 					boolean supportedBelow = contraption.getBlocks().containsKey(landingCell.below());
 					if (cellEmpty && supportedBelow) {
@@ -264,7 +254,7 @@ public final class ContraptionCollider {
 				}
 				entity.fallDistance = 0;
 				boolean canWalk = bounce != 0 || slide == 0;
-				if (canWalk || !rotation.hasVerticalRotation())
+				if (canWalk || !transform.hasVerticalRotation())
 					if (canWalk)
 						entity.setOnGround(true);
 				if (entity instanceof ItemEntity || entity instanceof FallingBlockEntity)
@@ -295,26 +285,14 @@ public final class ContraptionCollider {
 		return true;
 	}
 
-	public static Vec3 getWorldToLocalTranslation(Entity entity, Vec3 anchorVec, Matrix3d rotationMatrix,
-		float yawOffset) {
+	public static Vec3 getWorldToLocalTranslation(Entity entity, ContraptionTransform transform) {
 		Vec3 entityPosition = entity.position();
 		Vec3 centerY = new Vec3(0, entity.getBoundingBox().getYsize() / 2, 0);
-		Vec3 position = entityPosition;
-		position = position.add(centerY);
-		position = worldToLocalPos(position, anchorVec, rotationMatrix, yawOffset);
+		Vec3 position = entityPosition.add(centerY);
+		position = transform.worldToLocal(position);
 		position = position.subtract(centerY);
 		position = position.subtract(entityPosition);
 		return position;
-	}
-
-	public static Vec3 worldToLocalPos(Vec3 worldPos, Vec3 anchorVec, Matrix3d rotationMatrix, float yawOffset) {
-		Vec3 localPos = worldPos;
-		localPos = localPos.subtract(anchorVec);
-		localPos = localPos.subtract(ContraptionMath.CENTER_OF_ORIGIN);
-		localPos = ContraptionMath.rotate(localPos, -yawOffset, Axis.Y);
-		localPos = rotationMatrix.transform(localPos);
-		localPos = localPos.add(ContraptionMath.CENTER_OF_ORIGIN);
-		return localPos;
 	}
 
 	/** From Entity#collide — clip the requested movement against world block collisions. */

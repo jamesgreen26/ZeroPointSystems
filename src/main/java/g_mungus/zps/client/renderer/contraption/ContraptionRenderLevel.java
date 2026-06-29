@@ -6,10 +6,11 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import dev.engine_room.flywheel.api.visualization.VisualizationLevel;
+import g_mungus.zps.blockentity.ServoMotorBlockEntity;
 import g_mungus.zps.contraption.Contraption;
+import g_mungus.zps.contraption.ContraptionHostLevel;
 import g_mungus.zps.contraption.ContraptionSimLevel;
 import g_mungus.zps.contraption.ContraptionTransform;
-import g_mungus.zps.contraption.util.ContraptionMath;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.world.level.Level;
@@ -39,17 +40,28 @@ import net.minecraft.world.phys.Vec3;
  * reported as visualizable — otherwise Flywheel only considers {@code Minecraft#level} supported and
  * would disable the Flywheel visual path / {@code skipVanillaRender} for contraption block entities.
  */
-public class ContraptionRenderLevel extends ContraptionSimLevel implements VisualizationLevel {
+public class ContraptionRenderLevel extends ContraptionSimLevel implements VisualizationLevel, ContraptionHostLevel {
 
 	private final Map<BlockPos, BlockEntity> blockEntities;
 	@Nullable
 	private final Supplier<ContraptionTransform> transform;
+	/** The motor whose contraption this level hosts, so a nested motor can compose its transform. */
+	@Nullable
+	private final ServoMotorBlockEntity hostMotor;
 
 	public ContraptionRenderLevel(Level level, Contraption contraption,
-		Map<BlockPos, BlockEntity> blockEntities, @Nullable Supplier<ContraptionTransform> transform) {
+		Map<BlockPos, BlockEntity> blockEntities, @Nullable Supplier<ContraptionTransform> transform,
+		@Nullable ServoMotorBlockEntity hostMotor) {
 		super(level, contraption);
 		this.blockEntities = blockEntities;
 		this.transform = transform;
+		this.hostMotor = hostMotor;
+	}
+
+	@Nullable
+	@Override
+	public ServoMotorBlockEntity getContraptionHostMotor() {
+		return hostMotor;
 	}
 
 	@Nullable
@@ -90,7 +102,7 @@ public class ContraptionRenderLevel extends ContraptionSimLevel implements Visua
 		}
 		ContraptionTransform t = transform.get();
 		Vec3 world = t.localToWorld(new Vec3(x, y, z));
-		Vec3 vel = ContraptionMath.rotate(new Vec3(xs, ys, zs), t.angle(), t.axis());
+		Vec3 vel = t.localDirToWorld(new Vec3(xs, ys, zs));
 		getLevel().addParticle(options, world.x, world.y, world.z, vel.x, vel.y, vel.z);
 	}
 }

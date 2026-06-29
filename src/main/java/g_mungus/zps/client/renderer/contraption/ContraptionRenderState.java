@@ -10,6 +10,7 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.blockentity.ServoMotorBlockEntity;
 import g_mungus.zps.contraption.Contraption;
 import g_mungus.zps.contraption.ContraptionTransform;
 import net.minecraft.core.BlockPos;
@@ -47,6 +48,9 @@ public class ContraptionRenderState {
 	private final Level level;
 	@Nullable
 	private final Supplier<ContraptionTransform> transform;
+	/** The motor owning this contraption, handed to the render level so nested motors find their host. */
+	@Nullable
+	private final ServoMotorBlockEntity hostMotor;
 
 	/** The last contraption reconciled against (identity changes on every sync); used as the no-op gate. */
 	@Nullable
@@ -69,10 +73,11 @@ public class ContraptionRenderState {
 	private long structureRevision;
 
 	public ContraptionRenderState(Level level, Contraption contraption,
-		@Nullable Supplier<ContraptionTransform> transform) {
+		@Nullable Supplier<ContraptionTransform> transform, @Nullable ServoMotorBlockEntity hostMotor) {
 		this.level = level;
 		this.transform = transform;
-		this.renderLevel = new ContraptionRenderLevel(level, contraption, blockEntitiesByPos, transform);
+		this.hostMotor = hostMotor;
+		this.renderLevel = new ContraptionRenderLevel(level, contraption, blockEntitiesByPos, transform, hostMotor);
 		this.levelContraption = contraption;
 		reconcile(contraption);
 		this.contraption = contraption;
@@ -182,7 +187,7 @@ public class ContraptionRenderState {
 			// Re-point the host level at the new structure so its block reads stay current, then rebind
 			// every (preserved and newly added) block entity to it.
 			if (levelContraption != next) {
-				renderLevel = new ContraptionRenderLevel(level, next, blockEntitiesByPos, transform);
+				renderLevel = new ContraptionRenderLevel(level, next, blockEntitiesByPos, transform, hostMotor);
 				levelContraption = next;
 			}
 			for (BlockEntity be : blockEntities)

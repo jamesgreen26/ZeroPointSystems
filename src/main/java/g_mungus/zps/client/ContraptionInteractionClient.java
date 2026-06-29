@@ -12,11 +12,11 @@ import g_mungus.zps.client.renderer.contraption.ContraptionRenderWorld;
 import g_mungus.zps.contraption.Contraption;
 import g_mungus.zps.contraption.ContraptionBlockGetter;
 import g_mungus.zps.contraption.ContraptionMenuContext;
+import g_mungus.zps.contraption.ContraptionPath;
 import g_mungus.zps.contraption.ContraptionPlacementUtil;
 import g_mungus.zps.contraption.ContraptionPlaceContext;
 import g_mungus.zps.contraption.ContraptionSimLevel;
 import g_mungus.zps.contraption.ContraptionTransform;
-import g_mungus.zps.contraption.ContraptionRotationState;
 import g_mungus.zps.contraption.collision.ContraptionCollider;
 import g_mungus.zps.contraption.util.ContraptionMath;
 import g_mungus.zps.networking.ContraptionBreakC2SPacket;
@@ -74,7 +74,7 @@ public final class ContraptionInteractionClient {
 	private record Hit(ServoMotorBlockEntity motor, BlockPos localPos, Direction localFace, Vec3 localHit,
 		Vec3 worldHit, ContraptionTransform transform) {}
 
-	private record RemoteBreak(BlockPos motorPos, BlockPos localPos, int stage) {}
+	private record RemoteBreak(ContraptionPath path, BlockPos localPos, int stage) {}
 
 	private static Hit currentHit;
 
@@ -163,8 +163,8 @@ public final class ContraptionInteractionClient {
 				continue;
 			ContraptionTransform transform = ContraptionTransform.ofCurrent(motor);
 			AABB localBox = worldBoxToLocalAabb(shrinkSupportBox(supportBox), transform);
-			ContraptionRotationState rotation = new ContraptionRotationState(transform.axis(), transform.angle());
-			if (ContraptionCollider.intersectsContraption(player.level(), contraption, localBox, rotation.asMatrixNoYaw()))
+			if (ContraptionCollider.intersectsContraption(player.level(), contraption, localBox,
+				transform.worldToLocalRotationNoWorldYaw()))
 				return motor;
 		}
 		return null;
@@ -191,8 +191,8 @@ public final class ContraptionInteractionClient {
 				continue;
 			ContraptionTransform transform = ContraptionTransform.ofCurrent(motor);
 			AABB localBox = worldBoxToLocalAabb(shrinkSupportBox(worldBox), transform);
-			ContraptionRotationState rotation = new ContraptionRotationState(transform.axis(), transform.angle());
-			if (ContraptionCollider.intersectsContraption(player.level(), contraption, localBox, rotation.asMatrixNoYaw()))
+			if (ContraptionCollider.intersectsContraption(player.level(), contraption, localBox,
+				transform.worldToLocalRotationNoWorldYaw()))
 				return true;
 		}
 		return false;
@@ -247,8 +247,9 @@ public final class ContraptionInteractionClient {
 			// Record the target so a menu this use opens (the block runs against the contraption sim
 			// level, so it hands a contraption-LOCAL pos to openMenu) can resolve its block entity
 			// client-side. See ContraptionMenuContext.
-			ContraptionMenuContext.beginUse(currentHit.motor().getBlockPos(), currentHit.localPos());
-			ZPSGamePackets.sendToServer(new ContraptionUseC2SPacket(currentHit.motor().getBlockPos(),
+			ContraptionPath path = ContraptionPath.of(currentHit.motor());
+			ContraptionMenuContext.beginUse(path, currentHit.localPos());
+			ZPSGamePackets.sendToServer(new ContraptionUseC2SPacket(path,
 				currentHit.localPos(), currentHit.localFace(), currentHit.localHit(), useHand));
 			player.swing(useHand);
 			((MinecraftAccessor) mc).setRightClickDelay(ACTION_DELAY);
@@ -259,7 +260,7 @@ public final class ContraptionInteractionClient {
 		// server sync replaces it a round-trip later (and corrects it if the server disagrees).
 		if (!predictPlacement(player, currentHit, hand))
 			return true;
-		ZPSGamePackets.sendToServer(new ContraptionPlaceC2SPacket(currentHit.motor().getBlockPos(),
+		ZPSGamePackets.sendToServer(new ContraptionPlaceC2SPacket(ContraptionPath.of(currentHit.motor()),
 			currentHit.localPos(), currentHit.localFace(), currentHit.localHit(), hand));
 		player.swing(hand);
 		// Throttle only the held auto-repeat: vanilla re-fires startUseItem when
@@ -400,7 +401,7 @@ public final class ContraptionInteractionClient {
 		int stage = Math.min(9, (int) (destroyProgress * 10.0f));
 		if (stage != lastSentStage) {
 			lastSentStage = stage;
-			ZPSGamePackets.sendToServer(new ContraptionBreakProgressC2SPacket(motor.getBlockPos(), local, stage));
+			ZPSGamePackets.sendToServer(new ContraptionBreakProgressC2SPacket(ContraptionPath.of(motor), local, stage));
 		}
 		if (destroyProgress >= 1.0f) {
 			sendBreak(motor, local);
@@ -411,12 +412,12 @@ public final class ContraptionInteractionClient {
 	}
 
 	private static void sendBreak(ServoMotorBlockEntity motor, BlockPos local) {
-		ZPSGamePackets.sendToServer(new ContraptionBreakC2SPacket(motor.getBlockPos(), local));
+		ZPSGamePackets.sendToServer(new ContraptionBreakC2SPacket(ContraptionPath.of(motor), local));
 	}
 
 	private static void resetBreak() {
 		if (breakMotor != null && breakLocal != null && lastSentStage >= 0)
-			ZPSGamePackets.sendToServer(new ContraptionBreakProgressC2SPacket(breakMotor.getBlockPos(), breakLocal, -1));
+			ZPSGamePackets.sendToServer(new ContraptionBreakProgressC2SPacket(ContraptionPath.of(breakMotor), breakLocal, -1));
 		breakMotor = null;
 		breakLocal = null;
 		destroyProgress = 0;
@@ -442,10 +443,23 @@ public final class ContraptionInteractionClient {
 		// this because player movement is client-authoritative).
 		if (mc.player != null) {
 			for (ServoMotorBlockEntity be : ServoMotorBlockEntity.ACTIVE_CLIENT) {
-				if (be.getLevel() == mc.level)
+				if (inClientWorld(be, mc.level))
 					be.collideWithPlayer(mc.player);
 			}
 		}
+	}
+
+	/**
+	 * Whether {@code be} (a root or nested motor) ultimately belongs to {@code clientLevel}: walk up
+	 * its host chain to the root motor and compare. Lets nested contraptions participate in client
+	 * picking and player collision.
+	 */
+	private static boolean inClientWorld(ServoMotorBlockEntity be, net.minecraft.world.level.Level clientLevel) {
+		ServoMotorBlockEntity m = be;
+		ServoMotorBlockEntity host;
+		while ((host = m.hostMotor()) != null)
+			m = host;
+		return m.getLevel() == clientLevel;
 	}
 
 	/**
@@ -518,9 +532,9 @@ public final class ContraptionInteractionClient {
 			event.setCanceled(true);
 	}
 
-	public static void onRemoteDestroyStage(BlockPos motorPos, BlockPos localPos, int breakerId, int stage) {
+	public static void onRemoteDestroyStage(ContraptionPath path, BlockPos localPos, int breakerId, int stage) {
 		if (stage < 0) remoteBreaks.remove(breakerId);
-		else remoteBreaks.put(breakerId, new RemoteBreak(motorPos, localPos, stage));
+		else remoteBreaks.put(breakerId, new RemoteBreak(path, localPos, stage));
 	}
 
 	public static void onRenderLevelStage(RenderLevelStageEvent event) {
@@ -547,7 +561,8 @@ public final class ContraptionInteractionClient {
 			renderCrack(pose, cam, breakMotor, breakLocal, Math.min(9, (int) (destroyProgress * 10f)), crumbling);
 		for (RemoteBreak rb : remoteBreaks.values()) {
 			if (rb.stage() < 0) continue;
-			if (mc.level.getBlockEntity(rb.motorPos()) instanceof ServoMotorBlockEntity m && m.getContraption() != null)
+			ServoMotorBlockEntity m = rb.path().resolve(mc.level);
+			if (m != null && m.getContraption() != null)
 				renderCrack(pose, cam, m, rb.localPos(), Math.min(9, rb.stage()), crumbling);
 		}
 		crumbling.endBatch();
@@ -578,7 +593,7 @@ public final class ContraptionInteractionClient {
 
 		Hit best = null;
 		for (ServoMotorBlockEntity be : ServoMotorBlockEntity.ACTIVE_CLIENT) {
-			if (be.getLevel() != mc.level) continue;
+			if (!inClientWorld(be, mc.level)) continue;
 			Contraption contraption = be.getContraption();
 			if (contraption == null || contraption.isEmpty()) continue;
 

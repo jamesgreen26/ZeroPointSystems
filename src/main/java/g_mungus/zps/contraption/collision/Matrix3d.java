@@ -1,6 +1,8 @@
 package g_mungus.zps.contraption.collision;
 
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
@@ -126,6 +128,19 @@ public class Matrix3d {
 
 	public Matrix3d copy() {
 		return new Matrix3d().add(this);
+	}
+
+	/**
+	 * The rotation this (orthonormal) matrix represents, as a quaternion. Dist-safe (server uses it to
+	 * tag a detached falling block with its inherited contraption orientation). JOML's {@link Matrix3f}
+	 * is column-major, so each {@code mRC} (row R, col C) of this matrix is supplied as that column's row.
+	 */
+	public Quaternionf toQuaternion() {
+		Matrix3f m = new Matrix3f(
+			(float) m00, (float) m10, (float) m20,
+			(float) m01, (float) m11, (float) m21,
+			(float) m02, (float) m12, (float) m22);
+		return m.getNormalizedRotation(new Quaternionf());
 	}
 
 	float[] conversionBuffer = new float[16];

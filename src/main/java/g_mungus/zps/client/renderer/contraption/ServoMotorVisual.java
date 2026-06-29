@@ -170,7 +170,12 @@ public class ServoMotorVisual extends AbstractBlockEntityVisual<ServoMotorBlockE
 	private void setEmbeddingTransform(float partialTick) {
 		float angle = blockEntity.getInterpolatedAngle(partialTick);
 		Direction facing = blockEntity.getFacing();
-		BlockPos vp = getVisualPosition();
+		// A nested motor's embedding is a child of its host's embedding, so its frame is the host
+		// contraption's LOCAL space: translate by the raw parent-local cell (no render-origin offset).
+		// A root motor's embedding sits in the section frame, so use the render-origin-relative position.
+		BlockPos vp = blockEntity.getLevel() instanceof ContraptionRenderLevel
+			? blockEntity.getBlockPos()
+			: getVisualPosition();
 
 		Matrix4f pose = new Matrix4f();
 		pose.translate(vp.getX() + facing.getStepX(), vp.getY() + facing.getStepY(), vp.getZ() + facing.getStepZ());

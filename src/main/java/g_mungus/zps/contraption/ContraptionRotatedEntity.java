@@ -1,20 +1,19 @@
 package g_mungus.zps.contraption;
 
-import net.minecraft.core.Direction;
+import org.joml.Quaternionf;
 
 /**
  * Implemented (via mixin) by entities that can carry a contraption's orientation, so a
  * falling block detached from a rotating contraption keeps that rotation as it falls.
- * The rotation is a single angle (degrees) about one of the contraption's axes, synced
- * to clients and persisted, matching how {@link ContraptionTransform} rotates the
- * structure.
+ * The rotation is a full {@link Quaternionf} (synced and persisted) so it can represent a
+ * nested contraption's <em>composed</em> orientation (a product of rotations about
+ * different axes), not just a single angle about one axis.
  */
 public interface ContraptionRotatedEntity {
 
-	/** Set the inherited rotation (degrees about {@code axis}). */
-	void zps$setContraptionRotation(float angleDeg, Direction.Axis axis);
+	/** Set the inherited orientation (local -&gt; world rotation of the source contraption). */
+	void zps$setContraptionRotation(Quaternionf rotation);
 
-	float zps$getContraptionAngle();
-
-	Direction.Axis zps$getContraptionAxis();
+	/** The inherited orientation, identity if none was set. */
+	Quaternionf zps$getContraptionRotation();
 }

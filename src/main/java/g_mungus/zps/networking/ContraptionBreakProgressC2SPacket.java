@@ -2,6 +2,7 @@ package g_mungus.zps.networking;
 
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.blockentity.ServoMotorBlockEntity;
+import g_mungus.zps.contraption.ContraptionPath;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -17,19 +18,20 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * ({@code stage} 0-9, or -1 to clear). The server rebroadcasts it to nearby
  * players (except the sender) so they see the crack progress too.
  */
-public record ContraptionBreakProgressC2SPacket(BlockPos motorPos, BlockPos localPos, int stage)
+public record ContraptionBreakProgressC2SPacket(ContraptionPath path, BlockPos localPos, int stage)
         implements CustomPacketPayload {
     public static final Type<ContraptionBreakProgressC2SPacket> TYPE =
             new Type<>(ZPSMod.resource("contraption_break_progress"));
     public static final StreamCodec<RegistryFriendlyByteBuf, ContraptionBreakProgressC2SPacket> STREAM_CODEC = new StreamCodec<>() {
         @Override
         public ContraptionBreakProgressC2SPacket decode(RegistryFriendlyByteBuf buffer) {
-            return new ContraptionBreakProgressC2SPacket(buffer.readBlockPos(), buffer.readBlockPos(), buffer.readVarInt());
+            return new ContraptionBreakProgressC2SPacket(ContraptionPath.STREAM_CODEC.decode(buffer),
+                    buffer.readBlockPos(), buffer.readVarInt());
         }
 
         @Override
         public void encode(RegistryFriendlyByteBuf buffer, ContraptionBreakProgressC2SPacket packet) {
-            buffer.writeBlockPos(packet.motorPos);
+            ContraptionPath.STREAM_CODEC.encode(buffer, packet.path);
             buffer.writeBlockPos(packet.localPos);
             buffer.writeVarInt(packet.stage);
         }
@@ -41,11 +43,11 @@ public record ContraptionBreakProgressC2SPacket(BlockPos motorPos, BlockPos loca
         context.enqueueWork(() -> {
             ServerPlayer sender = (ServerPlayer) context.player();
             ServerLevel level = sender.serverLevel();
-            if (!(level.getBlockEntity(packet.motorPos) instanceof ServoMotorBlockEntity)) return;
+            if (packet.path.resolve(level) == null) return;
 
-            Vec3 motorCenter = Vec3.atCenterOf(packet.motorPos);
+            Vec3 motorCenter = Vec3.atCenterOf(packet.path.rootMotorPos());
             ContraptionDestroyStageS2CPacket s2c =
-                    new ContraptionDestroyStageS2CPacket(packet.motorPos, packet.localPos, sender.getId(), packet.stage);
+                    new ContraptionDestroyStageS2CPacket(packet.path, packet.localPos, sender.getId(), packet.stage);
             for (ServerPlayer player : level.players()) {
                 if (player == sender) continue;
                 if (player.position().distanceToSqr(motorCenter) > BROADCAST_RANGE_SQR) continue;

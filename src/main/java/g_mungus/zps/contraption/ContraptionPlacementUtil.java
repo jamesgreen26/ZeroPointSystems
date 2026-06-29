@@ -66,7 +66,7 @@ public final class ContraptionPlacementUtil {
 			return true;
 
 		AABB worldBounds = localShapeWorldBounds(localShape, localPos, transform);
-		Matrix3d entityRotation = new ContraptionRotationState(transform.axis(), transform.angle()).asMatrixNoYaw();
+		Matrix3d entityRotation = transform.worldToLocalRotationNoWorldYaw();
 		for (Entity entity : worldLevel.getEntities((Entity) null, worldBounds,
 			entity -> !entity.isRemoved() && entity.blocksBuilding)) {
 			AABB localEntityBox = worldBoxToLocalAabb(entity.getBoundingBox(), transform);

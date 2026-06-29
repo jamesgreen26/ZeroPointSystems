@@ -35,7 +35,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 public final class ContraptionMenuContext {
 
 	@Nullable
-	private static BlockPos motorPos;
+	private static ContraptionPath path;
 	@Nullable
 	private static BlockPos localPos;
 	private static boolean constructing;
@@ -46,8 +46,8 @@ public final class ContraptionMenuContext {
 	}
 
 	/** Record the contraption block a use was just sent for, so the menu it opens can be resolved. */
-	public static void beginUse(BlockPos motorPos, BlockPos localPos) {
-		ContraptionMenuContext.motorPos = motorPos.immutable();
+	public static void beginUse(ContraptionPath path, BlockPos localPos) {
+		ContraptionMenuContext.path = path;
 		ContraptionMenuContext.localPos = localPos.immutable();
 	}
 
@@ -59,7 +59,7 @@ public final class ContraptionMenuContext {
 	/** End of menu construction (paired with {@link #beginConstruction}); consumes the pending use. */
 	public static void endConstruction() {
 		constructing = false;
-		motorPos = null;
+		path = null;
 		localPos = null;
 	}
 
@@ -70,11 +70,12 @@ public final class ContraptionMenuContext {
 	 */
 	@Nullable
 	public static BlockEntity resolve(Level level, BlockPos pos) {
-		if (resolving || !constructing || localPos == null || motorPos == null || !pos.equals(localPos))
+		if (resolving || !constructing || localPos == null || path == null || !pos.equals(localPos))
 			return null;
 		resolving = true;
 		try {
-			if (level.getBlockEntity(motorPos) instanceof ServoMotorBlockEntity motor) {
+			ServoMotorBlockEntity motor = path.resolve(level);
+			if (motor != null) {
 				ContraptionRenderState renderState = motor.getRenderState();
 				if (renderState != null)
 					return renderState.getBlockEntity(pos);

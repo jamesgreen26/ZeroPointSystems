@@ -16,10 +16,10 @@ import g_mungus.zps.block.ServoMotorHeadBlock;
 import g_mungus.zps.client.renderer.contraption.ContraptionRenderState;
 import g_mungus.zps.contraption.Contraption;
 import g_mungus.zps.contraption.ContraptionBlockGetter;
+import g_mungus.zps.contraption.ContraptionHostLevel;
 import g_mungus.zps.contraption.ContraptionPlacementUtil;
 import g_mungus.zps.contraption.ContraptionPlaceContext;
 import g_mungus.zps.contraption.ContraptionRotatedEntity;
-import g_mungus.zps.contraption.ContraptionRotationState;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.contraption.ContraptionSimServerLevel;
 import g_mungus.zps.contraption.ContraptionTransform;
@@ -155,8 +155,25 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		return angle;
 	}
 
+	/** This motor's intended rotation this tick (used to project carried/release velocity forward). */
+	public float getIntendedSpin() {
+		return running ? DEGREES_PER_TICK : 0f;
+	}
+
 	public Axis getRotationAxis() {
 		return rotationAxis;
+	}
+
+	/**
+	 * The Servo Motor that hosts this one, when this motor is itself a block inside another
+	 * contraption (its level is a {@link ContraptionHostLevel} — the server sim level or the client
+	 * render level). Returns {@code null} for a motor anchored directly in the real world. Drives
+	 * {@link ContraptionTransform} composition for nested contraptions; dist-safe (dispatches on the
+	 * interface, never a client-only type).
+	 */
+	@Nullable
+	public ServoMotorBlockEntity hostMotor() {
+		return level instanceof ContraptionHostLevel host ? host.getContraptionHostMotor() : null;
 	}
 
 	/**
@@ -172,7 +189,7 @@ public class ServoMotorBlockEntity extends BlockEntity {
 			return null;
 		}
 		if (renderState == null)
-			renderState = new ContraptionRenderState(level, contraption, () -> ContraptionTransform.ofCurrent(this));
+			renderState = new ContraptionRenderState(level, contraption, () -> ContraptionTransform.ofCurrent(this), this);
 		else
 			renderState.update(contraption);
 		return renderState;
@@ -286,6 +303,24 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		return simLevel().getBlockEntity(local);
 	}
 
+	/**
+	 * The live Servo Motor reconstructed at contraption-local cell {@code local}, when this motor hosts
+	 * a <em>nested</em> contraption there — or {@code null} if that cell holds no motor. Dist-aware: the
+	 * server uses the sim level's live block entity, the client the render state's. Used to walk a
+	 * {@link g_mungus.zps.contraption.ContraptionPath} down to an innermost nested motor.
+	 */
+	@Nullable
+	public ServoMotorBlockEntity getNestedMotor(BlockPos local) {
+		BlockEntity be;
+		if (level != null && level.isClientSide) {
+			ContraptionRenderState rs = getRenderState();
+			be = rs == null ? null : rs.getBlockEntity(local);
+		} else {
+			be = getContraptionBlockEntity(local);
+		}
+		return be instanceof ServoMotorBlockEntity motor ? motor : null;
+	}
+
 	/** Run the contraption's own block-tick queue once (server-side). */
 	private void tickContraptionBlocks() {
 		if (!(level instanceof ServerLevel serverLevel))
@@ -376,8 +411,9 @@ public class ServoMotorBlockEntity extends BlockEntity {
 		// Feet at the cell's bottom-centre: local x/z centred, y at the block's bottom face.
 		Vec3 feet = transform.localToWorld(new Vec3(local.getX() + 0.5, local.getY(), local.getZ() + 0.5));
 		FallingBlockEntity entity = FallingBlockEntityInvoker.zps$create(serverLevel, feet.x, feet.y, feet.z, state);
-		// Inherit the contraption's current orientation so the block keeps it while falling.
-		((ContraptionRotatedEntity) entity).zps$setContraptionRotation(transform.angle(), transform.axis());
+		// Inherit the contraption's current (composed, for a nested contraption) orientation so the
+		// block keeps it while falling.
+		((ContraptionRotatedEntity) entity).zps$setContraptionRotation(transform.localToWorldRotationQuat());
 		// Release it with the platform velocity (a spinning detach continues smoothly instead of
 		// jerking to a stop); for a multi-block group this is the group average. Sent to clients in
 		// the spawn packet's velocity.
@@ -462,11 +498,11 @@ public class ServoMotorBlockEntity extends BlockEntity {
 
 	/** Average platform velocity over a group of local cells, for releasing it as a cohesive unit. */
 	private Vec3 averagePlatformVelocity(List<BlockPos> group) {
-		ContraptionTransform transform = ContraptionTransform.ofCurrent(this);
-		float spin = running ? DEGREES_PER_TICK : 0f;
+		ContraptionTransform now = ContraptionTransform.ofCurrent(this);
+		ContraptionTransform next = ContraptionTransform.ofIntendedNext(this);
 		Vec3 sum = Vec3.ZERO;
 		for (BlockPos p : group)
-			sum = sum.add(platformVelocity(transform.localBlockCenterToWorld(p), spin));
+			sum = sum.add(next.localBlockCenterToWorld(p).subtract(now.localBlockCenterToWorld(p)));
 		return sum.scale(1.0 / group.size());
 	}
 
@@ -742,11 +778,23 @@ public class ServoMotorBlockEntity extends BlockEntity {
 	// region collision
 
 	private void collide(Predicate<Entity> shouldCollide) {
-		Vec3 anchorVec = Vec3.atLowerCornerOf(worldPosition.relative(getFacing()));
-		ContraptionRotationState rotation = new ContraptionRotationState(rotationAxis, angle);
-		AABB worldBounds = computeWorldBounds(anchorVec);
-		ContraptionCollider.collideEntities(level, anchorVec, rotation, contraption, worldBounds,
+		ContraptionTransform transform = ContraptionTransform.ofCurrent(this);
+		AABB worldBounds = computeWorldBounds(transform);
+		ContraptionCollider.collideEntities(rootRealLevel(), transform, contraption, worldBounds,
 			this::getContactPointMotion, shouldCollide, this::captureLandedBlock);
+	}
+
+	/**
+	 * The genuine outer world the contraption's entities live in. For a root motor this is {@link #level};
+	 * for a nested motor it walks up the host chain (whose intermediate levels are sim/render wrappers
+	 * with no entities of their own). Dist-safe — uses {@link #hostMotor()}, never a wrapper type.
+	 */
+	private Level rootRealLevel() {
+		ServoMotorBlockEntity m = this;
+		ServoMotorBlockEntity host;
+		while ((host = m.hostMotor()) != null)
+			m = host;
+		return m.getLevel();
 	}
 
 	/**
@@ -756,7 +804,7 @@ public class ServoMotorBlockEntity extends BlockEntity {
 	 * is empty and supported below.
 	 */
 	private void captureLandedBlock(Entity entity, BlockPos localCell) {
-		if (contraption == null || !(level instanceof ServerLevel serverLevel)
+		if (contraption == null || !(level instanceof ServerLevel)
 			|| !(entity instanceof FallingBlockEntity falling))
 			return;
 		BlockState state = falling.getBlockState();
@@ -769,7 +817,9 @@ public class ServoMotorBlockEntity extends BlockEntity {
 
 		Vec3 worldCenter = ContraptionTransform.ofCurrent(this).localBlockCenterToWorld(localCell);
 		SoundType sound = state.getSoundType();
-		serverLevel.playSound(null, BlockPos.containing(worldCenter), sound.getPlaceSound(), SoundSource.BLOCKS,
+		// Emit on the real outer world (a nested motor's own level is a sim wrapper that would
+		// re-transform the already-world position).
+		rootRealLevel().playSound(null, BlockPos.containing(worldCenter), sound.getPlaceSound(), SoundSource.BLOCKS,
 			(sound.getVolume() + 1.0f) / 2.0f, sound.getPitch() * 0.8f);
 		setChanged();
 		sendData();
@@ -787,8 +837,8 @@ public class ServoMotorBlockEntity extends BlockEntity {
 	}
 
 	private void keepRidersAfloat() {
-		AABB bounds = computeWorldBounds(Vec3.atLowerCornerOf(worldPosition.relative(getFacing())));
-		for (Player player : level.getEntitiesOfClass(Player.class, bounds)) {
+		AABB bounds = computeWorldBounds(ContraptionTransform.ofCurrent(this));
+		for (Player player : rootRealLevel().getEntitiesOfClass(Player.class, bounds)) {
 			if (player instanceof ServerPlayer serverPlayer) {
 				ServerGamePacketListenerImplAccessor connection =
 					(ServerGamePacketListenerImplAccessor) serverPlayer.connection;
@@ -800,39 +850,35 @@ public class ServoMotorBlockEntity extends BlockEntity {
 
 	/** Velocity of the rotating platform at a world point, for carrying riders. */
 	private Vec3 getContactPointMotion(Vec3 worldPos) {
-		// Carry the rider to where this platform-fixed point will actually be after this
-		// tick's rotation (re-apply the real rotation by +delta), so it lands exactly on
-		// its circle. Using the previous tick's chord instead steps along the tangent each
-		// tick and spirals the rider outward — Create maps through local space for the same
-		// reason (toLocalVector(p,0) -> toGlobalVector(p,1)).
-		return platformVelocity(worldPos, angle - prevAngle);
+		// Carry the rider to where this platform-fixed point will actually be after this tick's
+		// rotation (project the composed pose forward by each motor's intended spin), so it lands
+		// exactly on its circle instead of stepping along the tangent and spiralling outward. The
+		// composition makes a nested rider inherit its parent's angular velocity as well as its own.
+		ContraptionTransform now = ContraptionTransform.ofCurrent(this);
+		ContraptionTransform next = ContraptionTransform.ofIntendedNext(this);
+		return next.localToWorld(now.worldToLocal(worldPos)).subtract(worldPos);
 	}
 
-	/**
-	 * Platform velocity (blocks/tick) at a world point for an explicit per-tick rotation.
-	 * Used to release a detached falling block with the motion it had on the platform, since
-	 * at detach time (before {@code angle} is advanced this tick) {@code angle - prevAngle}
-	 * is still 0.
-	 */
-	private Vec3 platformVelocity(Vec3 worldPos, float angleDeltaDeg) {
-		Vec3 rel = worldPos.subtract(Vec3.atLowerCornerOf(worldPosition.relative(getFacing())))
-			.subtract(ContraptionMath.CENTER_OF_ORIGIN);
-		return ContraptionMath.rotate(rel, angleDeltaDeg, rotationAxis).subtract(rel);
-	}
-
-	private AABB computeWorldBounds(Vec3 anchorVec) {
+	private AABB computeWorldBounds(ContraptionTransform transform) {
 		AABB local = contraption == null ? new AABB(BlockPos.ZERO) : contraption.getBounds();
-		// Radius from the rotation center (anchor block center) to the farthest corner.
-		double r = 0;
+		// Enclose the rotating (possibly nested) structure: transform all 8 local corners to world.
+		double minX = Double.POSITIVE_INFINITY, minY = Double.POSITIVE_INFINITY, minZ = Double.POSITIVE_INFINITY;
+		double maxX = Double.NEGATIVE_INFINITY, maxY = Double.NEGATIVE_INFINITY, maxZ = Double.NEGATIVE_INFINITY;
 		double[] xs = { local.minX, local.maxX };
 		double[] ys = { local.minY, local.maxY };
 		double[] zs = { local.minZ, local.maxZ };
 		for (double x : xs)
 			for (double y : ys)
-				for (double z : zs)
-					r = Math.max(r, new Vec3(x, y, z).subtract(ContraptionMath.CENTER_OF_ORIGIN).length());
-		Vec3 center = anchorVec.add(ContraptionMath.CENTER_OF_ORIGIN);
-		return new AABB(center, center).inflate(r + 1);
+				for (double z : zs) {
+					Vec3 w = transform.localToWorld(new Vec3(x, y, z));
+					minX = Math.min(minX, w.x);
+					minY = Math.min(minY, w.y);
+					minZ = Math.min(minZ, w.z);
+					maxX = Math.max(maxX, w.x);
+					maxY = Math.max(maxY, w.y);
+					maxZ = Math.max(maxZ, w.z);
+				}
+		return new AABB(minX, minY, minZ, maxX, maxY, maxZ).inflate(1);
 	}
 
 	// endregion
@@ -923,7 +969,7 @@ public class ServoMotorBlockEntity extends BlockEntity {
 	public AABB getRenderBoundingBox() {
 		if (contraption == null)
 			return new AABB(worldPosition);
-		return computeWorldBounds(Vec3.atLowerCornerOf(worldPosition.relative(getFacing())));
+		return computeWorldBounds(ContraptionTransform.ofCurrent(this));
 	}
 
 	// endregion

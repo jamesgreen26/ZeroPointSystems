@@ -160,17 +160,21 @@ public class ServoMotorBlockEntity extends BlockEntity {
 	}
 
 	/**
-	 * Client-only: reconstructed block entities of the captured structure, rebuilt
-	 * when the contraption changes. Returns null when nothing is assembled.
+	 * Client-only: the live reconstructed block entities of the captured structure. The render state
+	 * persists across syncs and reconciles its instances in place (the client builds a fresh
+	 * contraption every sync), so block-entity renderers keep their animation state. Returns null when
+	 * nothing is assembled or off-client.
 	 */
 	@Nullable
 	public ContraptionRenderState getRenderState() {
-		if (level == null || contraption == null) {
+		if (level == null || contraption == null || !level.isClientSide) {
 			renderState = null;
 			return null;
 		}
-		if (renderState == null || renderState.getContraption() != contraption)
-			renderState = new ContraptionRenderState(level, contraption);
+		if (renderState == null)
+			renderState = new ContraptionRenderState(level, contraption, () -> ContraptionTransform.ofCurrent(this));
+		else
+			renderState.update(contraption);
 		return renderState;
 	}
 
@@ -228,6 +232,13 @@ public class ServoMotorBlockEntity extends BlockEntity {
 
 		if (running)
 			angle = (angle + DEGREES_PER_TICK) % 360;
+
+		// Client-tick the captured block entities so their renderers animate like normal world BEs
+		// (chest lids, spawner spin, campfire smoke, conduit frames, …).
+		ContraptionRenderState rs = getRenderState();
+		if (rs != null)
+			rs.tick();
+
 		// Local-player collision is driven from ContraptionInteractionClient (client-only)
 		// so this class never references client types and stays dist-safe.
 

@@ -64,6 +64,8 @@ public class ServoMotorVisual extends AbstractBlockEntityVisual<ServoMotorBlockE
 	private TransformedInstance structure;
 	@org.jetbrains.annotations.Nullable
 	private Contraption builtContraption;
+	/** Render-state structure revision the children were built for, so they survive data-only syncs. */
+	private long builtRevision = -1;
 
 	@org.jetbrains.annotations.Nullable
 	private SectionCollector sectionCollector;
@@ -115,6 +117,7 @@ public class ServoMotorVisual extends AbstractBlockEntityVisual<ServoMotorBlockE
 		tickableVisuals.clear();
 
 		ContraptionRenderState renderState = blockEntity.getRenderState();
+		builtRevision = renderState == null ? -1 : renderState.getStructureRevision();
 		if (renderState == null)
 			return;
 
@@ -153,10 +156,15 @@ public class ServoMotorVisual extends AbstractBlockEntityVisual<ServoMotorBlockE
 		float partialTick = ctx.partialTick();
 		setEmbeddingTransform(partialTick);
 		checkAndUpdateLightSections();
-		if (blockEntity.getContraption() != builtContraption) {
+		// The structure model (block geometry) is rebuilt whenever the contraption is re-synced.
+		if (blockEntity.getContraption() != builtContraption)
 			setupStructure();
+		// Child block-entity visuals, however, are rebuilt only on a real structural change, so their
+		// preserved (live, ticking) block-entity instances keep animating across data-only syncs.
+		ContraptionRenderState renderState = blockEntity.getRenderState();
+		long revision = renderState == null ? -1 : renderState.getStructureRevision();
+		if (revision != builtRevision)
 			setupChildren(partialTick);
-		}
 	}
 
 	private void setEmbeddingTransform(float partialTick) {

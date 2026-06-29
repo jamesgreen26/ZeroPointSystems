@@ -2,10 +2,13 @@ package g_mungus.zps.block;
 
 import com.mojang.serialization.MapCodec;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
-import g_mungus.zps.client.screens.RoboticArmClientHooks;
+import g_mungus.zps.contraption.ContraptionSimServerLevel;
+import g_mungus.zps.networking.RoboticArmOpenS2CPacket;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
@@ -67,8 +70,13 @@ public class RoboticArmBlock extends BaseEntityBlock {
     @Override
     protected @NotNull InteractionResult useWithoutItem(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
                                                         @NotNull Player player, @NotNull BlockHitResult hitResult) {
-        if (level.isClientSide) {
-            RoboticArmClientHooks.openRoboticArmScreen(pos);
+        // Server-driven open (like the Script Terminal) so it works both in the world and on a
+        // contraption, where useWithoutItem runs against the server-side sim level. The motor pos lets
+        // the client resolve the live block entity through its host motor.
+        if (!level.isClientSide && player instanceof ServerPlayer serverPlayer
+                && level.getBlockEntity(pos) instanceof RoboticArmBlockEntity) {
+            BlockPos motorPos = level instanceof ContraptionSimServerLevel sim ? sim.getMotorPos() : null;
+            PacketDistributor.sendToPlayer(serverPlayer, new RoboticArmOpenS2CPacket(pos, motorPos));
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }

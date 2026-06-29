@@ -13,6 +13,7 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class RoboticArmScreen extends Screen {
     private static final Component TITLE = Component.literal("Robotic Arm");
@@ -27,13 +28,16 @@ public class RoboticArmScreen extends Screen {
     private static final int TOP_SECTION_Y_OFFSET = -76;
 
     private final BlockPos blockPos;
+    /** Host Servo Motor when the arm rides a contraption, else {@code null}. */
+    private final @Nullable BlockPos motorPos;
     private RetrieveAmountSlider retrieveSlider;
     private Button viewRangeButton;
     private boolean viewRange;
 
-    public RoboticArmScreen(BlockPos blockPos) {
+    public RoboticArmScreen(BlockPos blockPos, @Nullable BlockPos motorPos) {
         super(GameNarrator.NO_TITLE);
         this.blockPos = blockPos;
+        this.motorPos = motorPos;
     }
 
     @Override
@@ -103,7 +107,7 @@ public class RoboticArmScreen extends Screen {
     }
 
     private void sendSettings() {
-        ZPSGamePackets.sendToServer(new RoboticArmSettingsC2SPacket(this.blockPos, this.retrieveSlider.getAmount(), this.viewRange));
+        ZPSGamePackets.sendToServer(new RoboticArmSettingsC2SPacket(this.blockPos, this.motorPos, this.retrieveSlider.getAmount(), this.viewRange));
     }
 
     private Component viewRangeButtonText() {
@@ -111,9 +115,10 @@ public class RoboticArmScreen extends Screen {
     }
 
     private RoboticArmBlockEntity getBlockEntity() {
-        if (this.minecraft == null || this.minecraft.level == null) return null;
-        if (!(this.minecraft.level.getBlockEntity(this.blockPos) instanceof RoboticArmBlockEntity be)) return null;
-        return be;
+        if (ContraptionScreenAccessClient.getBlockEntity(this.motorPos, this.blockPos) instanceof RoboticArmBlockEntity be) {
+            return be;
+        }
+        return null;
     }
 
     private class RetrieveAmountSlider extends AbstractSliderButton {

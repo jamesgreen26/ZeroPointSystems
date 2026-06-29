@@ -35,6 +35,8 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
     private static final Component COMMAND_LABEL = Component.literal("ZPS Script Command");
     protected final @Nullable ScriptComputer computer;
     protected final boolean debug;
+    /** Host Servo Motor when the terminal rides a contraption, else {@code null}. */
+    private @Nullable BlockPos motorPos = null;
     private String initialCommand = null;
     private boolean initialLoop = false;
     private int initialDelay = 4;
@@ -135,7 +137,7 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
         if (computer != null) {
             // Use the current isRepeatMode and delay from the buttons
             int currentDelay = DELAY_VALUES[delayIndex];
-            ZPSGamePackets.sendToServer(new ScriptComputerC2SPacket(computer.getPos(), isRepeatMode, currentDelay, commandEdit.getValue()));
+            ZPSGamePackets.sendToServer(new ScriptComputerC2SPacket(computer.getPos(), motorPos, isRepeatMode, currentDelay, commandEdit.getValue()));
         }
         ValueOfOrLiteralArgumentType.setActiveAddressNames(Set.of());
         if (client != null) client.setScreen(null);
@@ -205,13 +207,14 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
         this.commandSuggestions.render(arg, i, j);
     }
 
-    public static void openWithData(BlockPos pos, String commandData, boolean loop, int delay, Set<ResourceLocation> connectedBlocks) {
+    public static void openWithData(BlockPos pos, @Nullable BlockPos motorPos, String commandData, boolean loop, int delay, Set<ResourceLocation> connectedBlocks) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) return;
 
-        BlockEntity blockEntity = minecraft.level.getBlockEntity(pos);
+        BlockEntity blockEntity = ContraptionScreenAccessClient.getBlockEntity(motorPos, pos);
         if (blockEntity instanceof ScriptComputer scriptComputer) {
             ScriptTerminalScreen screen = new ScriptTerminalScreen(scriptComputer, false);
+            screen.motorPos = motorPos;
             screen.initialCommand = commandData;
             screen.initialLoop = loop;
             screen.initialDelay = delay;

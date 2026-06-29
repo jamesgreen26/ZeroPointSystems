@@ -8,17 +8,20 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
 import java.util.Set;
 
-public record ScriptComputerS2CPacket(BlockPos computerPos, boolean loop, int delay, String contents, Set<ResourceLocation> connectedBlocks) implements CustomPacketPayload {
+/** {@code motorPos} is the host Servo Motor when the terminal rides a contraption, else {@code null}. */
+public record ScriptComputerS2CPacket(BlockPos computerPos, @Nullable BlockPos motorPos, boolean loop, int delay, String contents, Set<ResourceLocation> connectedBlocks) implements CustomPacketPayload {
     public static final Type<ScriptComputerS2CPacket> TYPE = new Type<>(ZPSMod.resource("script_computer_s2c"));
     public static final StreamCodec<RegistryFriendlyByteBuf, ScriptComputerS2CPacket> STREAM_CODEC = new StreamCodec<>() {
         @Override
         public ScriptComputerS2CPacket decode(RegistryFriendlyByteBuf buffer) {
             return new ScriptComputerS2CPacket(
                     buffer.readBlockPos(),
+                    buffer.readBoolean() ? buffer.readBlockPos() : null,
                     buffer.readBoolean(),
                     buffer.readInt(),
                     buffer.readUtf(),
@@ -29,6 +32,10 @@ public record ScriptComputerS2CPacket(BlockPos computerPos, boolean loop, int de
         @Override
         public void encode(RegistryFriendlyByteBuf buffer, ScriptComputerS2CPacket packet) {
             buffer.writeBlockPos(packet.computerPos);
+            buffer.writeBoolean(packet.motorPos != null);
+            if (packet.motorPos != null) {
+                buffer.writeBlockPos(packet.motorPos);
+            }
             buffer.writeBoolean(packet.loop);
             buffer.writeInt(packet.delay);
             buffer.writeUtf(packet.contents);
@@ -37,7 +44,7 @@ public record ScriptComputerS2CPacket(BlockPos computerPos, boolean loop, int de
     };
 
     public static void handle(ScriptComputerS2CPacket packet, IPayloadContext context) {
-        context.enqueueWork(() -> ScriptTerminalScreen.openWithData(packet.computerPos, packet.contents, packet.loop, packet.delay, packet.connectedBlocks));
+        context.enqueueWork(() -> ScriptTerminalScreen.openWithData(packet.computerPos, packet.motorPos, packet.contents, packet.loop, packet.delay, packet.connectedBlocks));
     }
 
     @Override

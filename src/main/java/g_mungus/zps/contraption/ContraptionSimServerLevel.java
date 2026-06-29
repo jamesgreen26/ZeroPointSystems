@@ -72,6 +72,8 @@ public class ContraptionSimServerLevel extends WrappedServerLevel {
 	/** The real wrapped level, kept directly because {@link WrappedServerLevel} stubs some methods. */
 	private final ServerLevel realLevel;
 	private final Contraption contraption;
+	/** World position of the host Servo Motor, so bespoke screens can resolve their BE through it. */
+	private final BlockPos motorPos;
 	/** Notified after a write so the host BlockEntity can mark itself dirty ({@code setChanged}). */
 	@Nullable
 	private final Runnable onChanged;
@@ -105,11 +107,12 @@ public class ContraptionSimServerLevel extends WrappedServerLevel {
 	/** Own (empty) fluid queue so any stray fluid tick never leaks onto the real level. */
 	private final LevelTicks<Fluid> fluidTicks = new LevelTicks<>(cp -> true, () -> InactiveProfiler.INSTANCE);
 
-	public ContraptionSimServerLevel(ServerLevel level, Contraption contraption, @Nullable Runnable onChanged,
-		@Nullable Runnable onNeedsSync, @Nullable Supplier<ContraptionTransform> transform) {
+	public ContraptionSimServerLevel(ServerLevel level, Contraption contraption, BlockPos motorPos,
+		@Nullable Runnable onChanged, @Nullable Runnable onNeedsSync, @Nullable Supplier<ContraptionTransform> transform) {
 		super(level);
 		this.realLevel = level;
 		this.contraption = contraption;
+		this.motorPos = motorPos;
 		this.onChanged = onChanged;
 		this.onNeedsSync = onNeedsSync;
 		this.transform = transform;
@@ -117,6 +120,11 @@ public class ContraptionSimServerLevel extends WrappedServerLevel {
 
 	public Contraption getContraption() {
 		return contraption;
+	}
+
+	/** World position of the host Servo Motor. */
+	public BlockPos getMotorPos() {
+		return motorPos;
 	}
 
 	/** The contraption's current world pose, or {@code null} when none is available (e.g. tests). */
@@ -388,6 +396,30 @@ public class ContraptionSimServerLevel extends WrappedServerLevel {
 	public void playSound(@Nullable Player player, Entity entity, SoundEvent sound, SoundSource source, float volume,
 		float pitch) {
 		realLevel.playSound(null, entity, sound, source, volume, pitch);
+	}
+
+	/**
+	 * Many blocks emit their effects not through {@link #playSound} but through {@code levelEvent} —
+	 * a dispenser's dispense/fail click ({@link net.minecraft.world.level.block.LevelEvent#SOUND_DISPENSER_DISPENSE}/
+	 * {@code SOUND_DISPENSER_FAIL}), wooden doors/trapdoors/fence gates opening and closing, a jukebox
+	 * starting a record, etc. As with {@link #playSound}, {@link WrappedServerLevel} suppresses these on
+	 * the sim level, so they never reach clients. Forward them to the <b>real</b> level at the block's
+	 * actual, rotated world position so the effect plays where the block is on the contraption.
+	 *
+	 * <p>The position is a {@link BlockPos}, so we rotate the block's centre into world space and snap
+	 * back to a block — exact enough for a positional sound/particle. Direction-encoded {@code data}
+	 * (e.g. a dispenser's particle facing) is passed through unchanged: representing the contraption's
+	 * arbitrary rotation as one of six {@link net.minecraft.core.Direction}s isn't possible, so the
+	 * particle trail keeps its local facing while the sound — the point of this fix — lands correctly.
+	 */
+	@Override
+	public void levelEvent(@Nullable Player player, int type, BlockPos pos, int data) {
+		BlockPos worldPos = pos;
+		if (transform != null) {
+			Vec3 world = transform.get().localToWorld(Vec3.atCenterOf(pos));
+			worldPos = BlockPos.containing(world);
+		}
+		realLevel.levelEvent(null, type, worldPos, data);
 	}
 
 	@Override

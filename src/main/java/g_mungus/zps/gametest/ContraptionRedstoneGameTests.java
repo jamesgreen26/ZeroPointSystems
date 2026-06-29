@@ -63,7 +63,7 @@ public class ContraptionRedstoneGameTests {
 	}
 
 	private static ContraptionSimServerLevel sim(GameTestHelper helper, Contraption c) {
-		return new ContraptionSimServerLevel((ServerLevel) helper.getLevel(), c, null, null, null);
+		return new ContraptionSimServerLevel((ServerLevel) helper.getLevel(), c, MOTOR_POS, null, null, null);
 	}
 
 	/** Insert a block into the structure without firing updates (builds the inert layout). */
@@ -560,7 +560,7 @@ public class ContraptionRedstoneGameTests {
 		Contraption c = motor.getContraption();
 		ServerLevel level = (ServerLevel) helper.getLevel();
 
-		ContraptionSimServerLevel sim = new ContraptionSimServerLevel(level, c, null, null,
+		ContraptionSimServerLevel sim = new ContraptionSimServerLevel(level, c, MOTOR_POS, null, null,
 			() -> ContraptionTransform.ofCurrent(motor));
 		Vec3 spawnLocal = Vec3.atCenterOf(new BlockPos(0, 1, 0));
 		ItemEntity item = new ItemEntity(sim, spawnLocal.x, spawnLocal.y, spawnLocal.z, new ItemStack(Items.DIAMOND));
@@ -597,7 +597,7 @@ public class ContraptionRedstoneGameTests {
 		Contraption c = motor.getContraption();
 		ServerLevel level = (ServerLevel) helper.getLevel();
 
-		ContraptionSimServerLevel sim = new ContraptionSimServerLevel(level, c, null, null,
+		ContraptionSimServerLevel sim = new ContraptionSimServerLevel(level, c, MOTOR_POS, null, null,
 			() -> ContraptionTransform.ofCurrent(motor));
 		Vec3 spawnLocal = Vec3.atCenterOf(new BlockPos(0, 1, 0));
 		Arrow arrow = new Arrow(sim, spawnLocal.x, spawnLocal.y, spawnLocal.z, ItemStack.EMPTY, null);

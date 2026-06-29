@@ -6,6 +6,7 @@ import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.blockentity.light_pipe.ScriptTerminalBlockEntity;
 import g_mungus.zps.networking.ScriptComputerS2CPacket;
+import g_mungus.zps.contraption.ContraptionSimServerLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvents;
@@ -220,8 +221,10 @@ public class ScriptTerminalBlock extends CableComponentBlock implements EntityBl
             }
 
             if (arg4 instanceof ServerPlayer serverPlayer) {
+                BlockPos motorPos = arg2 instanceof ContraptionSimServerLevel sim ? sim.getMotorPos() : null;
                 ScriptComputerS2CPacket packet = new ScriptComputerS2CPacket(
                     arg3,
+                    motorPos,
                     scriptComputer.getLoop(),
                     scriptComputer.getDelay(),
                     scriptComputer.getValue(),

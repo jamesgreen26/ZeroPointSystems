@@ -259,7 +259,7 @@ public class ServoMotorBlockEntity extends BlockEntity {
 	 */
 	private ContraptionSimServerLevel simLevel() {
 		if (simLevel == null || simLevel.getContraption() != contraption)
-			simLevel = new ContraptionSimServerLevel((ServerLevel) level, contraption, this::setChanged,
+			simLevel = new ContraptionSimServerLevel((ServerLevel) level, contraption, worldPosition, this::setChanged,
 				() -> simNeedsSync = true, () -> ContraptionTransform.ofCurrent(this));
 		return simLevel;
 	}

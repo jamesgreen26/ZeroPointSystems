@@ -6,6 +6,7 @@ import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.client.model.connected.ConnectedModelLoader;
 import g_mungus.zps.client.model.connected.ConnectedTextureMeta;
+import g_mungus.zps.client.recipebook.ModRecipeBookCategories;
 import g_mungus.zps.client.renderer.*;
 import g_mungus.zps.client.screens.CoalBurnerScreen;
 import g_mungus.zps.client.screens.PowerCellScreen;
@@ -14,6 +15,8 @@ import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.entity.ModEntities;
 import g_mungus.zps.item.AddressPadClientHooks;
 import g_mungus.zps.menu.ModMenus;
+import g_mungus.zps.recipe.ModRecipeBookTypes;
+import g_mungus.zps.recipe.ModRecipes;
 import net.createmod.catnip.config.ui.BaseConfigScreen;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
@@ -29,12 +32,14 @@ import net.neoforged.fml.ModList;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLLoadCompleteEvent;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
+import net.neoforged.neoforge.client.event.RegisterRecipeBookCategoriesEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.common.NeoForge;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 public class ClientSetup {
@@ -95,6 +100,14 @@ public class ClientSetup {
         event.register(ModMenus.COAL_BURNER.get(), CoalBurnerScreen::new);
         event.register(ModMenus.POWER_CELL.get(), PowerCellScreen::new);
         event.register(ModMenus.ROLLING_MILL.get(), RollingMillScreen::new);
+    }
+
+    @SubscribeEvent
+    public static void onRegisterRecipeBookCategories(RegisterRecipeBookCategoriesEvent event) {
+        event.registerAggregateCategory(ModRecipeBookCategories.ROLLING_MILL_SEARCH, List.of(ModRecipeBookCategories.ROLLING_MILL));
+        event.registerBookCategories(ModRecipeBookTypes.ROLLING_MILL,
+                List.of(ModRecipeBookCategories.ROLLING_MILL_SEARCH, ModRecipeBookCategories.ROLLING_MILL));
+        event.registerRecipeCategoryFinder(ModRecipes.ROLLING_TYPE.get(), recipe -> ModRecipeBookCategories.ROLLING_MILL);
     }
 
     @SuppressWarnings({"deprecation", "removal"})

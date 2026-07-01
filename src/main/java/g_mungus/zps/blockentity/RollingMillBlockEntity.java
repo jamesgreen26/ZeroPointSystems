@@ -39,6 +39,8 @@ public class RollingMillBlockEntity extends BlockEntity implements MenuProvider 
 
     private final MillEnergyStorage energyStorage = new MillEnergyStorage();
     private final MillInventory inventory = new MillInventory();
+    /** Capability view: automation may only extract from the output slot, never the ingredient slot. */
+    private final IItemHandler automationHandler = new OutputOnlyExtractionHandler(inventory);
     private final ContainerData dataAccess = new ContainerData() {
         @Override
         public int get(int index) {
@@ -77,7 +79,13 @@ public class RollingMillBlockEntity extends BlockEntity implements MenuProvider 
         super(ModBlockEntities.ROLLING_MILL.get(), pos, state);
     }
 
+    /** Capability handler for hoppers/pipes: extraction is restricted to the output slot. */
     public IItemHandler getItemHandler(@Nullable Direction side) {
+        return automationHandler;
+    }
+
+    /** Unrestricted handler for the GUI, so players can still reclaim ingredients from the input slot. */
+    public IItemHandler getMenuInventory() {
         return inventory;
     }
 
@@ -288,6 +296,48 @@ public class RollingMillBlockEntity extends BlockEntity implements MenuProvider 
             if (slot == INPUT_SLOT) {
                 cachedRecipe = null;
             }
+        }
+    }
+
+    /** Delegating handler that blocks extraction from every slot except the output. */
+    private static class OutputOnlyExtractionHandler implements IItemHandler {
+        private final IItemHandler delegate;
+
+        private OutputOnlyExtractionHandler(IItemHandler delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public int getSlots() {
+            return delegate.getSlots();
+        }
+
+        @Override
+        public @NotNull ItemStack getStackInSlot(int slot) {
+            return delegate.getStackInSlot(slot);
+        }
+
+        @Override
+        public @NotNull ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
+            return delegate.insertItem(slot, stack, simulate);
+        }
+
+        @Override
+        public @NotNull ItemStack extractItem(int slot, int amount, boolean simulate) {
+            if (slot != OUTPUT_SLOT) {
+                return ItemStack.EMPTY;
+            }
+            return delegate.extractItem(slot, amount, simulate);
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return delegate.getSlotLimit(slot);
+        }
+
+        @Override
+        public boolean isItemValid(int slot, @NotNull ItemStack stack) {
+            return delegate.isItemValid(slot, stack);
         }
     }
 

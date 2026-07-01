@@ -2,17 +2,23 @@ package g_mungus.zps.client.screens;
 
 import com.mojang.math.Axis;
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.client.recipebook.RollingMillRecipeBookComponent;
 import g_mungus.zps.menu.RollingMillMenu;
 import g_mungus.zps.util.NumberFormatter;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.recipebook.RecipeBookComponent;
+import net.minecraft.client.gui.screens.recipebook.RecipeUpdateListener;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.Slot;
 import org.jetbrains.annotations.NotNull;
 
-public class RollingMillScreen extends AbstractContainerScreen<RollingMillMenu> {
+public class RollingMillScreen extends AbstractContainerScreen<RollingMillMenu> implements RecipeUpdateListener {
     private static final ResourceLocation TEXTURE = ZPSMod.resource("textures/gui/rolling_mill.png");
     private static final int ENERGY_BAR_X = 153;
     private static final int ENERGY_BAR_Y = 18;
@@ -35,15 +41,51 @@ public class RollingMillScreen extends AbstractContainerScreen<RollingMillMenu> 
     private static final float ROLLER_SPIN_DEGREES_PER_TICK = 9.0F;
     private static final int PLAYER_INVENTORY_SLOT_TOP = 83;
 
+    private final RollingMillRecipeBookComponent recipeBookComponent = new RollingMillRecipeBookComponent();
+    private boolean widthTooNarrow;
+
     public RollingMillScreen(RollingMillMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
     }
 
     @Override
-    public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        super.render(graphics, mouseX, mouseY, partialTick);
-        this.renderTooltip(graphics, mouseX, mouseY);
+    protected void init() {
+        super.init();
+        this.widthTooNarrow = this.width < 379;
+        this.recipeBookComponent.init(this.width, this.height, this.minecraft, this.widthTooNarrow, this.menu);
+        this.leftPos = this.recipeBookComponent.updateScreenPosition(this.width, this.imageWidth);
+        this.addRenderableWidget(new ImageButton(this.leftPos + 20, this.height / 2 - 49, 20, 18,
+                RecipeBookComponent.RECIPE_BUTTON_SPRITES, button -> {
+            this.recipeBookComponent.toggleVisibility();
+            this.leftPos = this.recipeBookComponent.updateScreenPosition(this.width, this.imageWidth);
+            button.setPosition(this.leftPos + 20, this.height / 2 - 49);
+        }));
+        this.titleLabelX = 8;
+    }
 
+    @Override
+    protected void containerTick() {
+        super.containerTick();
+        this.recipeBookComponent.tick();
+    }
+
+    @Override
+    public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        if (this.recipeBookComponent.isVisible() && this.widthTooNarrow) {
+            this.renderBackground(graphics, mouseX, mouseY, partialTick);
+            this.recipeBookComponent.render(graphics, mouseX, mouseY, partialTick);
+        } else {
+            super.render(graphics, mouseX, mouseY, partialTick);
+            this.recipeBookComponent.render(graphics, mouseX, mouseY, partialTick);
+            this.recipeBookComponent.renderGhostRecipe(graphics, this.leftPos, this.topPos, true, partialTick);
+        }
+
+        this.renderTooltip(graphics, mouseX, mouseY);
+        this.renderEnergyTooltip(graphics, mouseX, mouseY);
+        this.recipeBookComponent.renderTooltip(graphics, this.leftPos, this.topPos, mouseX, mouseY);
+    }
+
+    private void renderEnergyTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
         if (isHovering(ENERGY_BAR_X, ENERGY_BAR_Y, ENERGY_BAR_WIDTH, ENERGY_BAR_HEIGHT, mouseX, mouseY)) {
             graphics.renderTooltip(this.font,
                     Component.literal(formatEnergy(menu.getEnergyStored(), menu.getMaxEnergyStored())), mouseX, mouseY);
@@ -126,5 +168,52 @@ public class RollingMillScreen extends AbstractContainerScreen<RollingMillMenu> 
 
     private static String formatEnergy(int stored, int max) {
         return NumberFormatter.formatInt(stored) + " / " + NumberFormatter.formatInt(max) + " FE";
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (this.recipeBookComponent.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
+        return this.widthTooNarrow && this.recipeBookComponent.isVisible()
+                || super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    protected void slotClicked(Slot slot, int slotId, int mouseButton, ClickType type) {
+        super.slotClicked(slot, slotId, mouseButton, type);
+        this.recipeBookComponent.slotClicked(slot);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        return this.recipeBookComponent.keyPressed(keyCode, scanCode, modifiers)
+                || super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    protected boolean hasClickedOutside(double mouseX, double mouseY, int left, int top, int button) {
+        boolean outside = mouseX < left
+                || mouseY < top
+                || mouseX >= left + this.imageWidth
+                || mouseY >= top + this.imageHeight;
+        return this.recipeBookComponent.hasClickedOutside(mouseX, mouseY, this.leftPos, this.topPos,
+                this.imageWidth, this.imageHeight, button) && outside;
+    }
+
+    @Override
+    public boolean charTyped(char codePoint, int modifiers) {
+        return this.recipeBookComponent.charTyped(codePoint, modifiers)
+                || super.charTyped(codePoint, modifiers);
+    }
+
+    @Override
+    public void recipesUpdated() {
+        this.recipeBookComponent.recipesUpdated();
+    }
+
+    @Override
+    public RecipeBookComponent getRecipeBookComponent() {
+        return this.recipeBookComponent;
     }
 }

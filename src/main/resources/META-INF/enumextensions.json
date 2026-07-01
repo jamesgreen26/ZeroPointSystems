@@ -1,0 +1,28 @@
+{
+  "entries": [
+    {
+      "enum": "net/minecraft/world/inventory/RecipeBookType",
+      "name": "ZPS_ROLLING_MILL",
+      "constructor": "()V",
+      "parameters": []
+    },
+    {
+      "enum": "net/minecraft/client/RecipeBookCategories",
+      "name": "ZPS_ROLLING_MILL_SEARCH",
+      "constructor": "(Ljava/util/function/Supplier;)V",
+      "parameters": {
+        "class": "g_mungus/zps/client/recipebook/RollingMillRecipeBookCategoryParameters",
+        "method": "getSearchCategoryIcon"
+      }
+    },
+    {
+      "enum": "net/minecraft/client/RecipeBookCategories",
+      "name": "ZPS_ROLLING_MILL",
+      "constructor": "(Ljava/util/function/Supplier;)V",
+      "parameters": {
+        "class": "g_mungus/zps/client/recipebook/RollingMillRecipeBookCategoryParameters",
+        "method": "getRollingMillCategoryIcon"
+      }
+    }
+  ]
+}

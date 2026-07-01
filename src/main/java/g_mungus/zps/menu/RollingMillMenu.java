@@ -2,22 +2,28 @@ package g_mungus.zps.menu;
 
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.RollingMillBlockEntity;
+import g_mungus.zps.recipe.ModRecipeBookTypes;
+import g_mungus.zps.recipe.RollingRecipe;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.inventory.RecipeBookMenu;
+import net.minecraft.world.inventory.RecipeBookType;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.entity.player.StackedContents;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.SingleRecipeInput;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.items.SlotItemHandler;
 import org.jetbrains.annotations.NotNull;
 
-public class RollingMillMenu extends AbstractContainerMenu {
+public class RollingMillMenu extends RecipeBookMenu<SingleRecipeInput, RollingRecipe> {
     private static final int INPUT_SLOT = 0;
     private static final int OUTPUT_SLOT = 1;
     private static final int MACHINE_SLOT_COUNT = 2;
@@ -45,8 +51,8 @@ public class RollingMillMenu extends AbstractContainerMenu {
         Level level = blockEntity.getLevel();
         this.access = level == null ? ContainerLevelAccess.NULL : ContainerLevelAccess.create(level, blockEntity.getBlockPos());
 
-        this.addSlot(new SlotItemHandler(blockEntity.getItemHandler(null), RollingMillBlockEntity.INPUT_SLOT, 56, 35));
-        this.addSlot(new SlotItemHandler(blockEntity.getItemHandler(null), RollingMillBlockEntity.OUTPUT_SLOT, 116, 35));
+        this.addSlot(new SlotItemHandler(blockEntity.getMenuInventory(), RollingMillBlockEntity.INPUT_SLOT, 56, 35));
+        this.addSlot(new SlotItemHandler(blockEntity.getMenuInventory(), RollingMillBlockEntity.OUTPUT_SLOT, 116, 35));
 
         for (int row = 0; row < 3; ++row) {
             for (int col = 0; col < 9; ++col) {
@@ -127,5 +133,51 @@ public class RollingMillMenu extends AbstractContainerMenu {
 
     public RollingMillBlockEntity getBlockEntity() {
         return blockEntity;
+    }
+
+    @Override
+    public void fillCraftSlotsStackedContents(@NotNull StackedContents stackedContents) {
+        stackedContents.accountStack(this.getSlot(INPUT_SLOT).getItem());
+    }
+
+    @Override
+    public void clearCraftingContent() {
+        this.getSlot(INPUT_SLOT).set(ItemStack.EMPTY);
+    }
+
+    @Override
+    public boolean recipeMatches(@NotNull RecipeHolder<RollingRecipe> recipe) {
+        Level level = this.blockEntity.getLevel();
+        return level != null && recipe.value().matches(new SingleRecipeInput(this.getSlot(INPUT_SLOT).getItem()), level);
+    }
+
+    @Override
+    public int getResultSlotIndex() {
+        return OUTPUT_SLOT;
+    }
+
+    @Override
+    public int getGridWidth() {
+        return 1;
+    }
+
+    @Override
+    public int getGridHeight() {
+        return 1;
+    }
+
+    @Override
+    public int getSize() {
+        return MACHINE_SLOT_COUNT;
+    }
+
+    @Override
+    public RecipeBookType getRecipeBookType() {
+        return ModRecipeBookTypes.ROLLING_MILL;
+    }
+
+    @Override
+    public boolean shouldMoveToInventory(int slot) {
+        return slot == INPUT_SLOT;
     }
 }

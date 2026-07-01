@@ -11,6 +11,7 @@ description = '''
 Advanced solutions delivering unmatched efficiency and flexibility.
 '''
 logoFile = "assets/zps/icon.png"
+enumExtensions = "META-INF/enumextensions.json"
 
 [[mixins]]
 config = "zps.mixins.json"

@@ -34,7 +34,7 @@ public class RollingMillBlockEntity extends BlockEntity implements MenuProvider 
     public static final int INPUT_SLOT = 0;
     public static final int OUTPUT_SLOT = 1;
 
-    private static final int MAX_ENERGY = 16384;
+    private static final int MAX_ENERGY = 8192;
     private static final int MAX_RECEIVE = 512;
 
     private final MillEnergyStorage energyStorage = new MillEnergyStorage();

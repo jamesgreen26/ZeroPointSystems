@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "zps:aluminum_wire",
+    "zps:copper_wire",
+    "zps:gold_wire",
+    "zps:verdite_wire"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "X": {
+      "tag": "c:ingots/aluminum"
+    }
+  },
+  "pattern": [
+    " X",
+    "X "
+  ],
+  "result": {
+    "count": 8,
+    "id": "zps:aluminum_wire"
+  }
+}

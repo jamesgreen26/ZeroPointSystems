@@ -173,6 +173,8 @@ public class ModItems {
             () -> new Item(new Item.Properties()));
     public static final DeferredItem<Item> GOLD_WIRE = ITEMS.register("gold_wire",
             () -> new Item(new Item.Properties()));
+    public static final DeferredItem<Item> ALUMINUM_WIRE = ITEMS.register("aluminum_wire",
+            () -> new Item(new Item.Properties()));
     public static final DeferredItem<Item> VERDITE_WIRE = ITEMS.register("verdite_wire",
             () -> new Item(new Item.Properties()));
 

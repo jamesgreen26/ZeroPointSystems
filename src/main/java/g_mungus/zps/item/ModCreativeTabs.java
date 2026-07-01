@@ -88,6 +88,10 @@ public class ModCreativeTabs {
                         COPPER_NUGGET,
                         LITHIUM_NUGGET,
 
+                        ALUMINUM_WIRE,
+                        COPPER_WIRE,
+                        GOLD_WIRE,
+
 
 //                        SPACE_METAL_PLATE,
                         SPACE_METAL_MESH,
@@ -99,15 +103,15 @@ public class ModCreativeTabs {
 //                        CAPACITOR,
 //                        TRANSISTOR,
 //                        MODULATOR,
-                        COPPER_MAGNETRON,
 //                        GOLD_MAGNETRON,
-                        COPPER_WIRE,
-//                        GOLD_WIRE,
+
 //                        VERDITE_WIRE,
 //                        EMPTY_SPOOL,
 //                        COPPER_SPOOL,
 //                        GOLD_SPOOL,
 //                        VERDITE_SPOOL
+
+                        COPPER_MAGNETRON,
 
                         ENERGY_STORAGE_MODULE,
                         ROBOTIC_ARM_SEGMENT

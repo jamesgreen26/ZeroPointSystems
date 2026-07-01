@@ -32,4 +32,22 @@ public class RollingMillRecipeBookComponent extends RecipeBookComponent {
             this.ghostRecipe.addIngredient(ingredients.getFirst(), slots.get(0).x, slots.get(0).y);
         }
     }
+
+    public boolean hasGhostRecipe() {
+        return this.ghostRecipe.getRecipe() != null && this.ghostRecipe.size() > 0;
+    }
+
+    public boolean isGhostSlot(Slot slot) {
+        if (!hasGhostRecipe()) {
+            return false;
+        }
+
+        for (int i = 0; i < this.ghostRecipe.size(); i++) {
+            if (this.ghostRecipe.get(i).getX() == slot.x && this.ghostRecipe.get(i).getY() == slot.y) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

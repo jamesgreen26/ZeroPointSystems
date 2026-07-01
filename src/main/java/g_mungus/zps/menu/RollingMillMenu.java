@@ -143,6 +143,7 @@ public class RollingMillMenu extends RecipeBookMenu<SingleRecipeInput, RollingRe
     @Override
     public void clearCraftingContent() {
         this.getSlot(INPUT_SLOT).set(ItemStack.EMPTY);
+        this.getSlot(OUTPUT_SLOT).set(ItemStack.EMPTY);
     }
 
     @Override
@@ -178,6 +179,6 @@ public class RollingMillMenu extends RecipeBookMenu<SingleRecipeInput, RollingRe
 
     @Override
     public boolean shouldMoveToInventory(int slot) {
-        return slot == INPUT_SLOT;
+        return slot >= INPUT_SLOT && slot < MACHINE_SLOT_COUNT;
     }
 }

@@ -16,7 +16,10 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
+
+import javax.annotation.Nullable;
 
 public class RollingMillScreen extends AbstractContainerScreen<RollingMillMenu> implements RecipeUpdateListener {
     private static final ResourceLocation TEXTURE = ZPSMod.resource("textures/gui/rolling_mill.png");
@@ -77,12 +80,19 @@ public class RollingMillScreen extends AbstractContainerScreen<RollingMillMenu> 
         } else {
             super.render(graphics, mouseX, mouseY, partialTick);
             this.recipeBookComponent.render(graphics, mouseX, mouseY, partialTick);
-            this.recipeBookComponent.renderGhostRecipe(graphics, this.leftPos, this.topPos, true, partialTick);
+            this.recipeBookComponent.renderGhostRecipe(graphics, this.leftPos, this.topPos, false, partialTick);
         }
 
-        this.renderTooltip(graphics, mouseX, mouseY);
+        this.renderTooltipUnlessGhostSlot(graphics, mouseX, mouseY);
         this.renderEnergyTooltip(graphics, mouseX, mouseY);
         this.recipeBookComponent.renderTooltip(graphics, this.leftPos, this.topPos, mouseX, mouseY);
+    }
+
+    private void renderTooltipUnlessGhostSlot(GuiGraphics graphics, int mouseX, int mouseY) {
+        if (this.hoveredSlot != null && this.recipeBookComponent.isGhostSlot(this.hoveredSlot)) {
+            return;
+        }
+        this.renderTooltip(graphics, mouseX, mouseY);
     }
 
     private void renderEnergyTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -117,6 +127,14 @@ public class RollingMillScreen extends AbstractContainerScreen<RollingMillMenu> 
     protected void renderLabels(@NotNull GuiGraphics graphics, int mouseX, int mouseY) {
         super.renderLabels(graphics, mouseX, mouseY);
         graphics.drawString(this.font, "FE", ENERGY_BAR_X, ENERGY_BAR_Y + ENERGY_BAR_HEIGHT + 4, 0x404040, false);
+    }
+
+    @Override
+    protected void renderSlotContents(GuiGraphics graphics, ItemStack itemStack, Slot slot, @Nullable String countString) {
+        if (this.recipeBookComponent.isGhostSlot(slot)) {
+            return;
+        }
+        super.renderSlotContents(graphics, itemStack, slot, countString);
     }
 
     private void renderRollers(GuiGraphics graphics, float partialTick, int x, int y) {

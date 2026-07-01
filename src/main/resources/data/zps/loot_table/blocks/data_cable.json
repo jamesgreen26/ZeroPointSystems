@@ -6,7 +6,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "zps:light_pipe_cable"
+          "name": "zps:data_cable"
         }
       ],
       "conditions": [
@@ -26,7 +26,7 @@
       "conditions": [
         {
           "condition": "minecraft:block_state_property",
-          "block": "zps:light_pipe_cable",
+          "block": "zps:data_cable",
           "properties": {
             "insulated": "insulation"
           }
@@ -47,7 +47,7 @@
       "conditions": [
         {
           "condition": "minecraft:block_state_property",
-          "block": "zps:light_pipe_cable",
+          "block": "zps:data_cable",
           "properties": {
             "insulated": "catwalk"
           }
@@ -68,7 +68,7 @@
       "conditions": [
         {
           "condition": "minecraft:block_state_property",
-          "block": "zps:light_pipe_cable",
+          "block": "zps:data_cable",
           "properties": {
             "insulated": "grating"
           }

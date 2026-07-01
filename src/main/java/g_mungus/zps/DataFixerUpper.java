@@ -18,5 +18,8 @@ public final class DataFixerUpper {
             ResourceLocation oldId = ResourceLocation.fromNamespaceAndPath(Compat.ZPL_MOD_ID, holder.getId().getPath());
             ModItems.ITEMS.addAlias(oldId, holder.getId());
         });
+
+        ModBlocks.BLOCKS.addAlias(ZPSMod.resource("light_pipe_cable"), ZPSMod.resource("data_cable"));
+        ModItems.ITEMS.addAlias(ZPSMod.resource("light_pipe_cable"), ZPSMod.resource("data_cable"));
     }
 }

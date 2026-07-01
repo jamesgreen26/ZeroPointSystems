@@ -52,7 +52,7 @@ public class ModCreativeTabs {
                         SERIAL_BUS,
                         DENSE_CABLES,
                         CABLE,
-                        LIGHT_PIPE,
+                        DATA_CABLE,
                         CABLE_INSULATION,
 
                         SCRIPT_TERMINAL,

@@ -23,7 +23,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "zps:light_pipe_cable"
+        "recipe": "zps:data_cable"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -37,7 +37,7 @@
   ],
   "rewards": {
     "recipes": [
-      "zps:light_pipe_cable"
+      "zps:data_cable"
     ]
   },
   "sends_telemetry_event": false

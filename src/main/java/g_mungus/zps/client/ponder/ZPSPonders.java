@@ -44,7 +44,7 @@ public class ZPSPonders {
         ).addStoryBoard("octo_controller", ZPSPonderScenes::octoControllerTutorial);
 
         HELPER.forComponents(
-                LIGHT_PIPE,
+                DATA_CABLE,
                 DATA_LECTERN,
                 TEXT_DISPLAY
         ).addStoryBoard("data_cable", ZPSPonderScenes::dataCableTutorial);

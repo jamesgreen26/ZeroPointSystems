@@ -36,7 +36,7 @@ public final class LightPipeGameTests {
     }
 
     private static BlockState lightPipe() {
-        return ModBlocks.LIGHT_PIPE.get().defaultBlockState();
+        return ModBlocks.DATA_CABLE.get().defaultBlockState();
     }
 
     private static BlockState lectern(Direction facing) {

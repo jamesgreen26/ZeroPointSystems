@@ -323,7 +323,7 @@ public class ZPSPonderScenes {
         builder.showBasePlate();
 
         PonderExtras.modifyBlockStates(builder, util, state -> {
-            if (state.is(ModBlocks.LIGHT_PIPE.get()) && (
+            if (state.is(ModBlocks.DATA_CABLE.get()) && (
                     state.getValue(CableBlock.EAST) ||
                     state.getValue(CableBlock.SOUTH)||
                     state.getValue(CableBlock.DOWN))
@@ -335,7 +335,7 @@ public class ZPSPonderScenes {
         });
 
         builder.world().showSection(
-                PonderExtras.selectBlocks(builder, util, ModBlocks.LIGHT_PIPE.get()),
+                PonderExtras.selectBlocks(builder, util, ModBlocks.DATA_CABLE.get()),
                 Direction.UP
         );
 
@@ -345,7 +345,7 @@ public class ZPSPonderScenes {
         builder.overlay().showText(60).text("A minimum setup has an input and output.");
         builder.idle(20);
         builder.world().showSection(util.select().position(4, 1, 2), Direction.DOWN);
-        builder.world().setBlock(new BlockPos(4, 1, 3), ModBlocks.LIGHT_PIPE.get().defaultBlockState().setValue(CableBlock.NORTH, true).setValue(CableBlock.SOUTH, true), false);
+        builder.world().setBlock(new BlockPos(4, 1, 3), ModBlocks.DATA_CABLE.get().defaultBlockState().setValue(CableBlock.NORTH, true).setValue(CableBlock.SOUTH, true), false);
 
         builder.idle(20);
         builder.world().showSection(
@@ -374,7 +374,7 @@ public class ZPSPonderScenes {
 
         builder.world().showSection(PonderExtras.selectBlocks(builder, util,
                 ModBlocks.SCRIPT_TERMINAL.get(),
-                ModBlocks.LIGHT_PIPE.get(),
+                ModBlocks.DATA_CABLE.get(),
                 ModBlocks.SERIAL_BUS.get(),
                 Blocks.WHITE_CONCRETE,
                 Blocks.SNOW_BLOCK
@@ -713,7 +713,7 @@ public class ZPSPonderScenes {
         builder.title("data_transcriber", "Data Transcriber");
 
         builder.world().showSection(PonderExtras.selectBlocks(builder, util,
-                ModBlocks.LIGHT_PIPE.get(),
+                ModBlocks.DATA_CABLE.get(),
                 ModBlocks.DATA_LECTERN.get(),
                 ModBlocks.DATA_TRANSCRIBER.get(),
                 Blocks.LECTERN,

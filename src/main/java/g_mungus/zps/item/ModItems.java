@@ -48,8 +48,8 @@ public class ModItems {
     public static final DeferredItem<Item> CABLE = ITEMS.register("cable",
             () -> new BlockItem(ModBlocks.CABLE.get(), new Item.Properties()));
 
-    public static final DeferredItem<Item> LIGHT_PIPE = ITEMS.register("light_pipe_cable",
-            () -> new BlockItem(ModBlocks.LIGHT_PIPE.get(), new Item.Properties()));
+    public static final DeferredItem<Item> DATA_CABLE = ITEMS.register("data_cable",
+            () -> new BlockItem(ModBlocks.DATA_CABLE.get(), new Item.Properties()));
 
     public static final DeferredItem<Item> SERIAL_BUS = ITEMS.register("serial_bus",
             () -> new BlockItem(ModBlocks.SERIAL_BUS.get(), new Item.Properties()));

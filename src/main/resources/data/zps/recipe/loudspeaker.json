@@ -5,7 +5,7 @@
     "A": { "tag": "c:ingots/space_metal" },
     "B": { "tag": "c:ingots/space_metal" },
     "C": { "tag": "c:ingots/space_metal" },
-    "D": { "item": "zps:light_pipe_cable" },
+    "D": { "item": "zps:data_cable" },
     "E": { "item": "minecraft:repeater" },
     "F": { "item": "minecraft:note_block" },
     "G": { "tag": "c:ingots/space_metal" },

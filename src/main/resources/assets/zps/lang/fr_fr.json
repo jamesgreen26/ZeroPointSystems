@@ -11,7 +11,7 @@
     "block.zps.switch_panel": "Commutateur",
     "block.zps.graduated_lever": "Levier segmenté",
     "block.zps.cable_insulation": "Isolation",
-    "block.zps.light_pipe_cable": "Fibre optique",
+    "block.zps.data_cable": "Câble de données",
     "block.zps.data_lectern": "interface",
     "block.zps.text_display": "Écran LCD",
     "block.zps.data_transcriber": "Transcripteur",
@@ -129,7 +129,7 @@
     "item.zps.switch_panel": "Panneau de switchs",
     "item.zps.graduated_lever": "Levier gradué",
     "item.zps.cable_insulation": "Gaine isolatrice",
-    "item.zps.light_pipe_cable": "Fibre optique",
+    "item.zps.data_cable": "Câble de données",
     "item.zps.data_lectern": "Lecteur de données",
     "item.zps.text_display": "écran",
     "item.zps.radio_transmitter": "Transmetteur Radio",
@@ -343,12 +343,12 @@
     "block.zps.switch_panel.zps_tooltip": "4 leviers pour le prix d'un!\n\n Chaque levier fournit un signal indépendant.",
     "block.zps.graduated_lever.zps_tooltip": "Permet un contrôle précis du signal de redstone.",
 
-    "block.zps.radio_transmitter.zps_tooltip": "Transmits a radio signal with data from a [Light-Pipe Data Cable].\n\nTune the radio frequency with [Shift + Right Click]. Higher frequencies have a longer range and require a taller [Radio Antenna] on top.",
-    "block.zps.radio_receiver.zps_tooltip": "Receives a radio signal and sends the data over a [Light-Pipe Data Cable].\n\nTune the radio frequency with [Shift + Right Click]. Higher frequencies have a longer range and require a taller [Radio Antenna] on top.",
+    "block.zps.radio_transmitter.zps_tooltip": "Transmits a radio signal with data from a [Data Cable].\n\nTune the radio frequency with [Shift + Right Click]. Higher frequencies have a longer range and require a taller [Radio Antenna] on top.",
+    "block.zps.radio_receiver.zps_tooltip": "Receives a radio signal and sends the data over a [Data Cable].\n\nTune the radio frequency with [Shift + Right Click]. Higher frequencies have a longer range and require a taller [Radio Antenna] on top.",
 
-    "block.zps.loudspeaker.zps_tooltip": "Converts messages from a [Light-Pipe Data Cable] into spoken audio.",
+    "block.zps.loudspeaker.zps_tooltip": "Converts messages from a [Data Cable] into spoken audio.",
 
-    "block.zps.data_comparator.zps_tooltip": "Compares signals from two connected [Light-Pipe Data Cables] according to the current mode.\n\n[Equals]: provides Redstone power when data from the two inputs match exactly.\n\n[Contains]: provides Redstone power when data from the first input contains the full data from the second.\n\n[Shift + R-Click] to switch Modes.",
+    "block.zps.data_comparator.zps_tooltip": "Compares signals from two connected [Data Cables] according to the current mode.\n\n[Equals]: provides Redstone power when data from the two inputs match exactly.\n\n[Contains]: provides Redstone power when data from the first input contains the full data from the second.\n\n[Shift + R-Click] to switch Modes.",
 
     "block.zps.dodeca_controller.zps_tooltip": "More... MORE!!",
 

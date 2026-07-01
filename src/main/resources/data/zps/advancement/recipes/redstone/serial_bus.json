@@ -1,11 +1,11 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_light_pipe_cable": {
+    "has_data_cable": {
       "conditions": {
         "items": [
           {
-            "items": "zps:light_pipe_cable"
+            "items": "zps:data_cable"
           }
         ]
       },
@@ -40,7 +40,7 @@
   },
   "requirements": [
     [
-      "has_light_pipe_cable",
+      "has_data_cable",
       "has_ingots_space_metal",
       "has_quartz",
       "has_the_recipe"

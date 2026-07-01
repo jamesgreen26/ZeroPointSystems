@@ -40,7 +40,7 @@
     "mass": 300.0
   },
   {
-    "block": "zps:light_pipe_cable",
+    "block": "zps:data_cable",
     "mass": 15.0
   },
   {
@@ -72,7 +72,7 @@
     "mass": 100
   },
   {
-    "block": "zps:light_pipe_cable",
+    "block": "zps:data_cable",
     "mass": 15
   },
   {

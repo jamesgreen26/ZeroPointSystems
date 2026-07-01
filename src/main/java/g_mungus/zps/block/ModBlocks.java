@@ -8,7 +8,6 @@ import g_mungus.zps.block.datagen.BlockDataGenerator;
 import g_mungus.zps.item.ModItems;
 import g_mungus.zps.mixin.BlockBehaviourAccessor;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.valueproviders.UniformInt;
 import net.minecraft.world.item.BlockItem;
@@ -98,7 +97,7 @@ public class ModBlocks {
                     .strength(1.5f)
                     .requiresCorrectToolForDrops()));
 
-    public static final DeferredBlock<Block> LIGHT_PIPE = BLOCKS.register("light_pipe_cable",
+    public static final DeferredBlock<Block> DATA_CABLE = BLOCKS.register("data_cable",
             () -> new LightPipeCableBlock(cableProperties(2.0f)));
 
     public static final DeferredBlock<Block> DATA_LECTERN = BLOCKS.register("data_lectern",

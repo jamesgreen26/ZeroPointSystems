@@ -2,7 +2,7 @@
   "type": "minecraft:crafting_shaped",
   "category": "functional",
   "key": {
-    "B": { "item": "zps:light_pipe_cable" },
+    "B": { "item": "zps:data_cable" },
     "D": { "tag": "c:ingots/space_metal" },
     "E": { "tag": "c:ingots/space_metal" },
     "F": { "tag": "c:ingots/space_metal" },

@@ -14,7 +14,7 @@
     "block.zps.switch_panel": "Switch Panel",
     "block.zps.graduated_lever": "Graduated Lever",
     "block.zps.cable_insulation": "Cable Insulation",
-    "block.zps.light_pipe_cable": "Light-Pipe Data Cable",
+    "block.zps.data_cable": "Data Cable",
     "block.zps.data_lectern": "Data Lectern",
     "block.zps.text_display": "Text Display",
     "block.zps.data_transcriber": "Data Transcriber",
@@ -149,7 +149,7 @@
     "item.zps.switch_panel": "Switch Panel",
     "item.zps.graduated_lever": "Graduated Lever",
     "item.zps.cable_insulation": "Cable Insulation",
-    "item.zps.light_pipe_cable": "Light-Pipe Data Cable",
+    "item.zps.data_cable": "Data Cable",
     "item.zps.data_lectern": "Data Lectern",
     "item.zps.text_display": "Text Display",
     "item.zps.radio_transmitter": "Radio Transmitter",
@@ -394,14 +394,14 @@
     "block.zps.space_grating_block.zps_tooltip": "Can be placed on cable blocks to prevent connection in new directions.",
 
 
-    "block.zps.radio_transmitter.zps_tooltip": "Transmits a radio signal with data from a [Light-Pipe Data Cable].\n\nTune the radio frequency with [Shift + Right Click]. Higher frequencies have a longer range and require a taller [Radio Antenna] on top.",
-    "block.zps.radio_receiver.zps_tooltip": "Receives a radio signal and sends the data over a [Light-Pipe Data Cable].\n\nTune the radio frequency with [Shift + Right Click]. Higher frequencies have a longer range and require a taller [Radio Antenna] on top.",
+    "block.zps.radio_transmitter.zps_tooltip": "Transmits a radio signal with data from a [Data Cable].\n\nTune the radio frequency with [Shift + Right Click]. Higher frequencies have a longer range and require a taller [Radio Antenna] on top.",
+    "block.zps.radio_receiver.zps_tooltip": "Receives a radio signal and sends the data over a [Data Cable].\n\nTune the radio frequency with [Shift + Right Click]. Higher frequencies have a longer range and require a taller [Radio Antenna] on top.",
 
-    "block.zps.loudspeaker.zps_tooltip": "Converts messages from a [Light-Pipe Data Cable] into spoken audio.",
+    "block.zps.loudspeaker.zps_tooltip": "Converts messages from a [Data Cable] into spoken audio.",
 
-    "block.zps.data_comparator.zps_tooltip": "Compares signals from two connected [Light-Pipe Data Cables] according to the current mode.\n\n[Equals]: provides Redstone power when data from the two inputs match exactly.\n\n[Contains]: provides Redstone power when data from the first input contains the full data from the second.\n\n[Greater Than]: provides Redstone power when both inputs can be parsed as numbers and the first is greater than the second.\n\n[Shift + R-Click] to switch Modes.",
+    "block.zps.data_comparator.zps_tooltip": "Compares signals from two connected [Data Cables] according to the current mode.\n\n[Equals]: provides Redstone power when data from the two inputs match exactly.\n\n[Contains]: provides Redstone power when data from the first input contains the full data from the second.\n\n[Greater Than]: provides Redstone power when both inputs can be parsed as numbers and the first is greater than the second.\n\n[Shift + R-Click] to switch Modes.",
 
-    "block.zps.data_combinator.zps_tooltip": "Combines two [Light-Pipe Data Cable] inputs into one output according to the current mode.\n\n[Back]: output port.\n[Left]: Input A. [Right]: Input B.\n\n[Append]: passthrough behavior for single inputs, and appends Input B to Input A when both are present.\n\n[Replace]: passthrough from Input A unless Input B is present and Input A contains [%s], in which case the first occurrence is replaced with Input B.\n\n[Shift + R-Click] to switch Modes.",
+    "block.zps.data_combinator.zps_tooltip": "Combines two [Data Cable] inputs into one output according to the current mode.\n\n[Back]: output port.\n[Left]: Input A. [Right]: Input B.\n\n[Append]: passthrough behavior for single inputs, and appends Input B to Input A when both are present.\n\n[Replace]: passthrough from Input A unless Input B is present and Input A contains [%s], in which case the first occurrence is replaced with Input B.\n\n[Shift + R-Click] to switch Modes.",
 
     "block.zps.dodeca_controller.zps_tooltip": "More... MORE!!",
     "item.zps.robotic_arm_segment.zps_tooltip": "Used to construct a [Robotic Arm].\n\n[R-Click an Incomplete Arm]: attaches this arm segment to the incomplete robotic arm.",

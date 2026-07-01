@@ -11,11 +11,11 @@
       },
       "trigger": "minecraft:inventory_changed"
     },
-    "has_light_pipe_cable": {
+    "has_data_cable": {
       "conditions": {
         "items": [
           {
-            "items": "zps:light_pipe_cable"
+            "items": "zps:data_cable"
           }
         ]
       },
@@ -51,7 +51,7 @@
   "requirements": [
     [
       "has_ingots_space_metal",
-      "has_light_pipe_cable",
+      "has_data_cable",
       "has_repeater",
       "has_note_block",
       "has_the_recipe"

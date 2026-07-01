@@ -1,11 +1,11 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_gold_ingot": {
+    "has_gold_wire": {
       "conditions": {
         "items": [
           {
-            "items": "minecraft:gold_ingot"
+            "items": "zps:gold_wire"
           }
         ]
       },
@@ -30,7 +30,7 @@
   },
   "requirements": [
     [
-      "has_gold_ingot",
+      "has_gold_wire",
       "has_glass",
       "has_the_recipe"
     ]

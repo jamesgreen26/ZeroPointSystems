@@ -1,11 +1,11 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_aluminum_ingot": {
+    "has_aluminum_wire": {
       "conditions": {
         "items": [
           {
-            "items": "zps:aluminum_ingot"
+            "items": "zps:aluminum_wire"
           }
         ]
       },
@@ -30,7 +30,7 @@
   },
   "requirements": [
     [
-      "has_aluminum_ingot",
+      "has_aluminum_wire",
       "has_space_metal_mesh",
       "has_the_recipe"
     ]

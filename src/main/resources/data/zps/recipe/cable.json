@@ -1,22 +1,17 @@
 {
-  "type": "minecraft:crafting_shaped",
+  "type": "minecraft:crafting_shapeless",
   "category": "functional",
-  "key": {
-    "A": {
-      "item": "zps:aluminum_ingot"
+  "ingredients": [
+    {
+      "item": "zps:aluminum_wire"
     },
-    "B": {
+    {
       "item": "zps:space_metal_mesh"
     }
-  },
-  "pattern": [
-    " B ",
-    "BAB",
-    " B "
   ],
   "result": {
     "id": "zps:cable",
-    "count": 8
+    "count": 2
   },
   "show_notification": true
 }

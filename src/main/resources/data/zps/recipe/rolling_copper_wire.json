@@ -1,0 +1,11 @@
+{
+  "type": "zps:rolling",
+  "ingredient": {
+    "tag": "c:nuggets/copper"
+  },
+  "result": {
+    "id": "zps:copper_wire"
+  },
+  "processTime": 120,
+  "energyPerTick": 32
+}

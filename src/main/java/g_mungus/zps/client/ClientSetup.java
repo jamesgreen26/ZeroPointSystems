@@ -9,6 +9,7 @@ import g_mungus.zps.client.model.connected.ConnectedTextureMeta;
 import g_mungus.zps.client.renderer.*;
 import g_mungus.zps.client.screens.CoalBurnerScreen;
 import g_mungus.zps.client.screens.PowerCellScreen;
+import g_mungus.zps.client.screens.RollingMillScreen;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.entity.ModEntities;
 import g_mungus.zps.item.AddressPadClientHooks;
@@ -93,6 +94,7 @@ public class ClientSetup {
     public static void onRegisterMenuScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenus.COAL_BURNER.get(), CoalBurnerScreen::new);
         event.register(ModMenus.POWER_CELL.get(), PowerCellScreen::new);
+        event.register(ModMenus.ROLLING_MILL.get(), RollingMillScreen::new);
     }
 
     @SuppressWarnings({"deprecation", "removal"})
@@ -112,6 +114,9 @@ public class ClientSetup {
                     .factory(RoboticArmVisual::new)
                     // The BER keeps rendering the held item, debug overlays, and the on-ship fallback
                     .neverSkipVanillaRender()
+                    .apply();
+            SimpleBlockEntityVisualizer.builder(ModBlockEntities.ROLLING_MILL.get())
+                    .factory(RollingMillVisual::new)
                     .apply();
             BlockEntityRenderers.register(ModBlockEntities.POWER_CELL.get(), PowerCellBlockEntityRenderer::new);
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DENSE_CABLE_SEPARATOR.get(), RenderType.cutout());

@@ -71,6 +71,7 @@ public class ModCreativeTabs {
                         CREATIVE_POWER_CELL,
                         POWER_CELL,
                         COAL_BURNER,
+                        ROLLING_MILL,
 
                         BAUXITE,
                         LITHIUM_ORE,

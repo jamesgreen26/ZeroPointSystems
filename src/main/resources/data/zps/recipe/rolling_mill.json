@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "#": {
+      "item": "minecraft:smooth_stone"
+    },
+    "I": {
+      "tag": "c:ingots/space_metal"
+    },
+    "P": {
+      "item": "minecraft:piston"
+    }
+  },
+  "pattern": [
+    "III",
+    "IPI",
+    "###"
+  ],
+  "result": {
+    "id": "zps:rolling_mill",
+    "count": 1
+  },
+  "show_notification": true
+}

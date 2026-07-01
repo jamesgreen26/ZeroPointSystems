@@ -6,6 +6,7 @@ import g_mungus.zps.blockentity.CreativePowerCellBlockEntity;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.PowerCellBlockEntity;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
+import g_mungus.zps.blockentity.RollingMillBlockEntity;
 import g_mungus.zps.client.ClientSetup;
 import g_mungus.zps.client.ponder.ZPSPonderPlugin;
 import g_mungus.zps.client.renderer.ZPSPartialModels;
@@ -21,6 +22,7 @@ import g_mungus.zps.gametest.CableNetworkGameTests;
 import g_mungus.zps.gametest.TextDisplayGameTests;
 import g_mungus.zps.menu.ModMenus;
 import g_mungus.zps.networking.ZPSGamePackets;
+import g_mungus.zps.recipe.ModRecipes;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
@@ -48,6 +50,8 @@ public final class ZPSMod {
         ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
         ModMenus.MENUS.register(modEventBus);
+        ModRecipes.RECIPE_TYPES.register(modEventBus);
+        ModRecipes.RECIPE_SERIALIZERS.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
         ModEntities.ENTITIES.register(modEventBus);
         ModSounds.SOUNDS.register(modEventBus);
@@ -83,6 +87,8 @@ public final class ZPSMod {
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.COAL_BURNER.get(), CoalBurnerBlockEntity::getEnergyStorage);
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.COAL_BURNER.get(), CoalBurnerBlockEntity::getItemHandler);
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.ROBOTIC_ARM.get(), RoboticArmBlockEntity::getEnergyStorage);
+        event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.ROLLING_MILL.get(), RollingMillBlockEntity::getEnergyStorage);
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.ROLLING_MILL.get(), RollingMillBlockEntity::getItemHandler);
         event.registerItem(Capabilities.EnergyStorage.ITEM, (stack, ignored) -> new PoweredToolItem.StackEnergyStorage(stack),
                 ModItems.POWER_DRILL.get(), ModItems.CHAINSAW.get());
     }

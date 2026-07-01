@@ -1,0 +1,11 @@
+{
+  "type": "zps:rolling",
+  "ingredient": {
+    "item": "minecraft:gold_nugget"
+  },
+  "result": {
+    "id": "zps:gold_wire"
+  },
+  "processTime": 120,
+  "energyPerTick": 32
+}

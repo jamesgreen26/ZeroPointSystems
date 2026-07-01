@@ -118,4 +118,9 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(CoalBurnerBlockEntity::new,
                             ModBlocks.COAL_BURNER.get()).build(null));
 
-} 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<RollingMillBlockEntity>> ROLLING_MILL =
+            BLOCK_ENTITIES.register("rolling_mill",
+                    () -> BlockEntityType.Builder.of(RollingMillBlockEntity::new,
+                            ModBlocks.ROLLING_MILL.get()).build(null));
+
+}

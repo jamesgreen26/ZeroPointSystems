@@ -1,0 +1,11 @@
+{
+  "type": "zps:rolling",
+  "ingredient": {
+    "tag": "c:nuggets/aluminum"
+  },
+  "result": {
+    "id": "zps:aluminum_wire"
+  },
+  "processTime": 120,
+  "energyPerTick": 32
+}

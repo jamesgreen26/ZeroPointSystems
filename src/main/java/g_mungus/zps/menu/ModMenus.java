@@ -16,4 +16,7 @@ public class ModMenus {
 
     public static final DeferredHolder<MenuType<?>, MenuType<PowerCellMenu>> POWER_CELL =
             MENUS.register("power_cell", () -> IMenuTypeExtension.create(PowerCellMenu::new));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<RollingMillMenu>> ROLLING_MILL =
+            MENUS.register("rolling_mill", () -> IMenuTypeExtension.create(RollingMillMenu::new));
 }

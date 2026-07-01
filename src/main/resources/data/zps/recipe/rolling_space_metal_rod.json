@@ -1,0 +1,11 @@
+{
+  "type": "zps:rolling",
+  "ingredient": {
+    "tag": "c:ingots/space_metal"
+  },
+  "result": {
+    "id": "zps:space_metal_rod"
+  },
+  "processTime": 200,
+  "energyPerTick": 32
+}

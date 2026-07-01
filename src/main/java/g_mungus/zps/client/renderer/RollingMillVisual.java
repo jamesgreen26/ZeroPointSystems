@@ -11,7 +11,6 @@ import dev.engine_room.flywheel.lib.visual.SimpleDynamicVisual;
 import g_mungus.zps.block.RollingMillBlock;
 import g_mungus.zps.blockentity.RollingMillBlockEntity;
 import net.minecraft.core.Direction;
-import net.minecraft.world.level.Level;
 
 import java.util.function.Consumer;
 
@@ -21,14 +20,9 @@ import java.util.function.Consumer;
  * advances when {@link RollingMillBlockEntity#isWorking()} is true, so idle mills sit still.
  */
 public class RollingMillVisual extends AbstractBlockEntityVisual<RollingMillBlockEntity> implements SimpleDynamicVisual {
-    private static final float DEGREES_PER_TICK = 12.0f;
-
     private final TransformedInstance leftDisc;
     private final TransformedInstance rightDisc;
     private final TransformedInstance[] instances;
-
-    private double spin;
-    private double lastTime;
 
     public RollingMillVisual(VisualizationContext ctx, RollingMillBlockEntity blockEntity, float partialTick) {
         super(ctx, blockEntity, partialTick);
@@ -37,8 +31,7 @@ public class RollingMillVisual extends AbstractBlockEntityVisual<RollingMillBloc
         rightDisc = createDisc();
         instances = new TransformedInstance[]{leftDisc, rightDisc};
 
-        lastTime = gameTime(partialTick);
-        animate();
+        animate(blockEntity.advanceRenderSpin(partialTick));
     }
 
     private TransformedInstance createDisc() {
@@ -47,23 +40,12 @@ public class RollingMillVisual extends AbstractBlockEntityVisual<RollingMillBloc
                 .createInstance();
     }
 
-    private double gameTime(float partialTick) {
-        Level level = blockEntity.getLevel();
-        return (level == null ? 0L : level.getGameTime()) + partialTick;
-    }
-
     @Override
     public void beginFrame(DynamicVisual.Context ctx) {
-        double now = gameTime(ctx.partialTick());
-        if (blockEntity.isWorking()) {
-            spin += (now - lastTime) * DEGREES_PER_TICK;
-        }
-        lastTime = now;
-        animate();
+        animate(blockEntity.advanceRenderSpin(ctx.partialTick()));
     }
 
-    private void animate() {
-        float angle = (float) (spin % 360.0);
+    private void animate(float angle) {
         // The discs poke out the machine's left/right faces; rotate the whole layout 90 deg when the
         // mill faces along X so those faces track the block's facing.
         float facingYaw = blockEntity.getBlockState().getValue(RollingMillBlock.FACING).getAxis() == Direction.Axis.X ? 90.0f : 0.0f;

@@ -81,6 +81,7 @@ public class ClientSetup {
         event.register(PoweredToolItemRenderer.BASE_MODEL);
         event.register(PoweredToolItemRenderer.HEAD_MODEL);
         event.register(ChainsawItemRenderer.BLADE_MODEL);
+        event.register(RollingMillBlockEntityRenderer.ROLLER_MODEL);
     }
 
     @SubscribeEvent
@@ -128,8 +129,11 @@ public class ClientSetup {
                     // The BER keeps rendering the held item, debug overlays, and the on-ship fallback
                     .neverSkipVanillaRender()
                     .apply();
+            BlockEntityRenderers.register(ModBlockEntities.ROLLING_MILL.get(), RollingMillBlockEntityRenderer::new);
             SimpleBlockEntityVisualizer.builder(ModBlockEntities.ROLLING_MILL.get())
                     .factory(RollingMillVisual::new)
+                    // The BER draws the rollers as a fallback when Flywheel's backend is unavailable.
+                    .neverSkipVanillaRender()
                     .apply();
             BlockEntityRenderers.register(ModBlockEntities.POWER_CELL.get(), PowerCellBlockEntityRenderer::new);
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DENSE_CABLE_SEPARATOR.get(), RenderType.cutout());

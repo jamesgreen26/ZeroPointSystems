@@ -75,6 +75,13 @@ public class RollingMillBlockEntity extends BlockEntity implements MenuProvider 
     @Nullable
     private RollingRecipe cachedRecipe;
 
+    /** Degrees the rollers advance per tick while working; shared by the Flywheel visual and the BER fallback. */
+    public static final float ROLLER_DEGREES_PER_TICK = 12.0f;
+    // Client-only render state for the spinning rollers.
+    private double renderSpin;
+    private double lastRenderTime;
+    private boolean renderTimeInitialized;
+
     public RollingMillBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.ROLLING_MILL.get(), pos, state);
     }
@@ -97,6 +104,24 @@ public class RollingMillBlockEntity extends BlockEntity implements MenuProvider 
     public boolean isWorking() {
         BlockState state = getBlockState();
         return state.hasProperty(RollingMillBlock.WORKING) && state.getValue(RollingMillBlock.WORKING);
+    }
+
+    /**
+     * Client-side: advances the roller spin by the time elapsed since the last frame while the mill is
+     * working, then returns the current angle in degrees [0, 360). Called once per frame by whichever
+     * render path is active (the Flywheel visual, or the BER fallback when Flywheel is off).
+     */
+    public float advanceRenderSpin(float partialTick) {
+        double now = (level == null ? 0L : level.getGameTime()) + partialTick;
+        if (!renderTimeInitialized) {
+            lastRenderTime = now;
+            renderTimeInitialized = true;
+        }
+        if (isWorking()) {
+            renderSpin += (now - lastRenderTime) * ROLLER_DEGREES_PER_TICK;
+        }
+        lastRenderTime = now;
+        return (float) (renderSpin % 360.0);
     }
 
     public void serverTick() {

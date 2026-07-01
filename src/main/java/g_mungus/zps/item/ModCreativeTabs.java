@@ -85,6 +85,7 @@ public class ModCreativeTabs {
                         LITHIUM_INGOT,
                         SPACE_METAL_INGOT,
                         ALUMINUM_NUGGET,
+                        COPPER_NUGGET,
                         LITHIUM_NUGGET,
 
 

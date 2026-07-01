@@ -142,6 +142,8 @@ public class ModItems {
             () -> new Item(new Item.Properties()));
     public static final DeferredItem<Item> ALUMINUM_NUGGET = ITEMS.register("aluminum_nugget",
             () -> new Item(new Item.Properties()));
+    public static final DeferredItem<Item> COPPER_NUGGET = ITEMS.register("copper_nugget",
+            () -> new Item(new Item.Properties()));
     public static final DeferredItem<Item> ALUMINUM_BLOCK = ITEMS.register("aluminum_block",
             () -> new BlockItem(ModBlocks.ALUMINUM_BLOCK.get(), new Item.Properties()));
     public static final DeferredItem<Item> RAW_LITHIUM = ITEMS.register("raw_lithium",

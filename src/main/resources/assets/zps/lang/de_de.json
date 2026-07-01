@@ -26,6 +26,7 @@
     "item.zps.power_drill.energy": "Stored: %s / %s FE",
     "item.zps.chainsaw": "Chainsaw",
     "item.zps.chainsaw.energy": "Stored: %s / %s FE",
+    "item.zps.copper_nugget": "Kupfernugget",
 
     "creativetab.zps_tab": "Zero Point Systems",
 

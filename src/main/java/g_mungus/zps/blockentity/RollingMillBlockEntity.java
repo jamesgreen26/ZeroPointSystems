@@ -81,6 +81,8 @@ public class RollingMillBlockEntity extends BlockEntity implements MenuProvider 
     private double renderSpin;
     private double lastRenderTime;
     private boolean renderTimeInitialized;
+    /** Client-only: the ingredient currently in the input slot, synced so particles can show its texture. */
+    private ItemStack clientIngredient = ItemStack.EMPTY;
 
     public RollingMillBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.ROLLING_MILL.get(), pos, state);
@@ -98,6 +100,11 @@ public class RollingMillBlockEntity extends BlockEntity implements MenuProvider 
 
     public IEnergyStorage getEnergyStorage(@Nullable Direction side) {
         return energyStorage;
+    }
+
+    /** Client-side: the ingredient in the input slot, synced from the server so particles can sample its texture. */
+    public ItemStack getClientIngredient() {
+        return clientIngredient;
     }
 
     /** True on both sides: driven by the synced WORKING blockstate so the visual can read it. */
@@ -248,6 +255,10 @@ public class RollingMillBlockEntity extends BlockEntity implements MenuProvider 
     public @NotNull CompoundTag getUpdateTag(HolderLookup.@NotNull Provider registries) {
         CompoundTag tag = super.getUpdateTag(registries);
         tag.putInt("Energy", energyStorage.getEnergyStored());
+        ItemStack input = inventory.getStackInSlot(INPUT_SLOT);
+        if (!input.isEmpty()) {
+            tag.put("Ingredient", input.save(registries));
+        }
         return tag;
     }
 
@@ -257,6 +268,9 @@ public class RollingMillBlockEntity extends BlockEntity implements MenuProvider 
         if (tag.contains("Energy")) {
             energyStorage.setEnergyStoredExact(tag.getInt("Energy"));
         }
+        clientIngredient = tag.contains("Ingredient")
+                ? ItemStack.parseOptional(registries, tag.getCompound("Ingredient"))
+                : ItemStack.EMPTY;
     }
 
     @Override
@@ -320,6 +334,10 @@ public class RollingMillBlockEntity extends BlockEntity implements MenuProvider 
             setChanged();
             if (slot == INPUT_SLOT) {
                 cachedRecipe = null;
+                // Push the new ingredient to clients so the working particles sample the right texture.
+                if (level != null && !level.isClientSide()) {
+                    level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
+                }
             }
         }
     }

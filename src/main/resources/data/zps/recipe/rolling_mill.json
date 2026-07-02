@@ -2,20 +2,17 @@
   "type": "minecraft:crafting_shaped",
   "category": "redstone",
   "key": {
-    "#": {
-      "item": "minecraft:smooth_stone"
-    },
     "I": {
       "tag": "c:ingots/space_metal"
     },
-    "P": {
-      "item": "minecraft:piston"
+    "S": {
+      "item": "minecraft:smooth_stone_slab"
     }
   },
   "pattern": [
-    "III",
-    "IPI",
-    "###"
+    "ISI",
+    "I I",
+    "ISI"
   ],
   "result": {
     "id": "zps:rolling_mill",

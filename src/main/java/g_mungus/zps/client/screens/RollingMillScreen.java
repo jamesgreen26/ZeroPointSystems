@@ -1,6 +1,5 @@
 package g_mungus.zps.client.screens;
 
-import com.mojang.math.Axis;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.client.recipebook.RollingMillRecipeBookComponent;
 import g_mungus.zps.menu.RollingMillMenu;
@@ -41,7 +40,8 @@ public class RollingMillScreen extends AbstractContainerScreen<RollingMillMenu> 
     private static final int ROLLER_SIZE = 48;
     private static final int ROLLER_TEXTURE_U = 200;
     private static final int ROLLER_TEXTURE_V = 0;
-    private static final float ROLLER_SPIN_DEGREES_PER_TICK = 9.0F;
+    private static final int ROLLER_FRAME_COUNT = 4;
+    private static final int ROLLER_TICKS_PER_FRAME = 2;
     private static final int PLAYER_INVENTORY_SLOT_TOP = 83;
 
     private final RollingMillRecipeBookComponent recipeBookComponent = new RollingMillRecipeBookComponent();
@@ -108,7 +108,7 @@ public class RollingMillScreen extends AbstractContainerScreen<RollingMillMenu> 
         int y = this.topPos;
         graphics.blit(TEXTURE, x, y, 0, 0, this.imageWidth, this.imageHeight);
 
-        renderRollers(graphics, partialTick, x, y);
+        renderRollers(graphics, x, y);
 
         int progressWidth = getProgressWidth();
         if (progressWidth > 0) {
@@ -137,35 +137,38 @@ public class RollingMillScreen extends AbstractContainerScreen<RollingMillMenu> 
         super.renderSlotContents(graphics, itemStack, slot, countString);
     }
 
-    private void renderRollers(GuiGraphics graphics, float partialTick, int x, int y) {
-        float angle = isProgressAdvancing() ? getRollerAngle(partialTick) : 0.0F;
+    private void renderRollers(GuiGraphics graphics, int x, int y) {
+        int frame = getRollerFrame();
 
-        renderRoller(graphics, x + ROLLER_X, y + TOP_ROLLER_Y, -angle);
+        renderRoller(graphics, x + ROLLER_X, y + TOP_ROLLER_Y, reverseRollerFrame(frame));
 
         graphics.enableScissor(x + ROLLER_X, y + BOTTOM_ROLLER_Y,
                 x + ROLLER_X + ROLLER_SIZE, y + PLAYER_INVENTORY_SLOT_TOP);
-        renderRoller(graphics, x + ROLLER_X, y + BOTTOM_ROLLER_Y, angle);
+        renderRoller(graphics, x + ROLLER_X, y + BOTTOM_ROLLER_Y, frame);
         graphics.disableScissor();
     }
 
-    private void renderRoller(GuiGraphics graphics, int x, int y, float angle) {
-        graphics.pose().pushPose();
-        graphics.pose().translate(x + ROLLER_SIZE / 2.0F, y + ROLLER_SIZE / 2.0F, 0.0F);
-        graphics.pose().mulPose(Axis.ZP.rotationDegrees(angle));
-        graphics.blit(TEXTURE, -ROLLER_SIZE / 2, -ROLLER_SIZE / 2,
-                ROLLER_TEXTURE_U, ROLLER_TEXTURE_V, ROLLER_SIZE, ROLLER_SIZE);
-        graphics.pose().popPose();
+    private void renderRoller(GuiGraphics graphics, int x, int y, int frame) {
+        graphics.blit(TEXTURE, x, y,
+                ROLLER_TEXTURE_U, ROLLER_TEXTURE_V + frame * ROLLER_SIZE, ROLLER_SIZE, ROLLER_SIZE);
     }
 
     private boolean isProgressAdvancing() {
         return menu.getProgress() > 0 && menu.getMaxProgress() > 0 && menu.getEnergyStored() > 0;
     }
 
-    private float getRollerAngle(float partialTick) {
-        if (this.minecraft == null || this.minecraft.level == null) {
-            return 0.0F;
+    private int getRollerFrame() {
+        if (!isProgressAdvancing()) {
+            return 0;
         }
-        return (this.minecraft.level.getGameTime() + partialTick) * ROLLER_SPIN_DEGREES_PER_TICK;
+        if (this.minecraft == null || this.minecraft.level == null) {
+            return 0;
+        }
+        return (int) ((this.minecraft.level.getGameTime() / ROLLER_TICKS_PER_FRAME) % ROLLER_FRAME_COUNT);
+    }
+
+    private int reverseRollerFrame(int frame) {
+        return (ROLLER_FRAME_COUNT - frame) % ROLLER_FRAME_COUNT;
     }
 
     private int getProgressWidth() {

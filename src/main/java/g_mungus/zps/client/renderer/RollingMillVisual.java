@@ -52,8 +52,8 @@ public class RollingMillVisual extends AbstractBlockEntityVisual<RollingMillBloc
 
         // Two flat (horizontal) discs, staggered in height so they don't intersect, each poking
         // slightly out of a side face. They spin about the vertical (Y) axis, counter-rotating.
-        applyDisc(leftDisc, 0.25f, 0.42f, 0.5f, facingYaw, angle);
-        applyDisc(rightDisc, 0.75f, 0.58f, 0.5f, facingYaw, -angle);
+        applyDisc(leftDisc, 0.25f, 0.5f, 0.5f, facingYaw, angle);
+        applyDisc(rightDisc, 0.75f, 0.5f, 0.5f, facingYaw, -angle);
     }
 
     private void applyDisc(TransformedInstance instance, float cx, float cy, float cz, float facingYaw, float angle) {
@@ -62,9 +62,9 @@ public class RollingMillVisual extends AbstractBlockEntityVisual<RollingMillBloc
                 .translate(0.5f, 0.5f, 0.5f)    // to block centre
                 .rotateYDegrees(facingYaw)      // orient the side positions to facing
                 .translate(-0.5f, -0.5f, -0.5f) // back to unrotated block corner
-                .translate(cx, cy, cz)          // move disc centre to its staggered side position
+                .translate(cx, cy, cz)          // move wheel centre to its staggered side position
                 .rotateYDegrees(angle)          // spin about the vertical disc axis
-                .translate(-0.5f, -0.5f, -0.5f) // model centre (8,8,8) -> origin
+                .translate(0.0f, -0.5f, 0.0f)   // OBJ centre (0,0.5,0) -> origin
                 .setChanged();
     }
 

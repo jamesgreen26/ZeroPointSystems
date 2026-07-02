@@ -206,7 +206,10 @@ public class ModBlocks {
     public static final DeferredBlock<Block> ROLLING_MILL = BLOCKS.register("rolling_mill",
             () -> new RollingMillBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(3.5f)
-                    .requiresCorrectToolForDrops()));
+                    .requiresCorrectToolForDrops()
+                    // Don't occlude light: the BER/visual light for the wheels is sampled at the
+                    // mill's own position, which would otherwise always be pitch black.
+                    .noOcclusion()));
 
 
     /// RESOURCE BLOCKS

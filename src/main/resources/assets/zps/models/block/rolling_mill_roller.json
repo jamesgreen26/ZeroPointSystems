@@ -1,58 +1,12 @@
 {
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "flip_v": true,
+  "emissive_ambient": false,
+  "shade_quads": false,
+  "model": "zps:models/block/rolling_mill/rolling_wheel.obj",
   "textures": {
-    "disc": "minecraft:block/iron_block",
-    "particle": "minecraft:block/iron_block"
-  },
-  "elements": [
-    {
-      "from": [2.8, 6.8, 5.25],
-      "to": [13.2, 9.2, 10.75],
-      "faces": {
-        "north": {"uv": [4, 4, 12, 12], "texture": "#disc"},
-        "south": {"uv": [4, 4, 12, 12], "texture": "#disc"},
-        "east": {"uv": [4, 4, 12, 12], "texture": "#disc"},
-        "west": {"uv": [4, 4, 12, 12], "texture": "#disc"},
-        "up": {"uv": [4, 4, 12, 12], "texture": "#disc"},
-        "down": {"uv": [4, 4, 12, 12], "texture": "#disc"}
-      }
-    },
-    {
-      "from": [5.25, 6.8, 2.8],
-      "to": [10.75, 9.2, 13.2],
-      "faces": {
-        "north": {"uv": [4, 4, 12, 12], "texture": "#disc"},
-        "south": {"uv": [4, 4, 12, 12], "texture": "#disc"},
-        "east": {"uv": [4, 4, 12, 12], "texture": "#disc"},
-        "west": {"uv": [4, 4, 12, 12], "texture": "#disc"},
-        "up": {"uv": [4, 4, 12, 12], "texture": "#disc"},
-        "down": {"uv": [4, 4, 12, 12], "texture": "#disc"}
-      }
-    },
-    {
-      "from": [2.8, 6.8, 5.25],
-      "to": [13.2, 9.2, 10.75],
-      "rotation": {"angle": 45, "axis": "y", "origin": [8, 8, 8]},
-      "faces": {
-        "north": {"uv": [4, 4, 12, 12], "texture": "#disc"},
-        "south": {"uv": [4, 4, 12, 12], "texture": "#disc"},
-        "east": {"uv": [4, 4, 12, 12], "texture": "#disc"},
-        "west": {"uv": [4, 4, 12, 12], "texture": "#disc"},
-        "up": {"uv": [4, 4, 12, 12], "texture": "#disc"},
-        "down": {"uv": [4, 4, 12, 12], "texture": "#disc"}
-      }
-    },
-    {
-      "from": [2.8, 6.8, 5.25],
-      "to": [13.2, 9.2, 10.75],
-      "rotation": {"angle": -45, "axis": "y", "origin": [8, 8, 8]},
-      "faces": {
-        "north": {"uv": [4, 4, 12, 12], "texture": "#disc"},
-        "south": {"uv": [4, 4, 12, 12], "texture": "#disc"},
-        "east": {"uv": [4, 4, 12, 12], "texture": "#disc"},
-        "west": {"uv": [4, 4, 12, 12], "texture": "#disc"},
-        "up": {"uv": [4, 4, 12, 12], "texture": "#disc"},
-        "down": {"uv": [4, 4, 12, 12], "texture": "#disc"}
-      }
-    }
-  ]
+    "particle": "zps:block/rolling_mill/rolling_wheel",
+    "wheel": "zps:block/rolling_mill/rolling_wheel"
+  }
 }

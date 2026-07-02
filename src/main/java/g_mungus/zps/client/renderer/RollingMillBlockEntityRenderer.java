@@ -48,8 +48,8 @@ public class RollingMillBlockEntityRenderer implements BlockEntityRenderer<Rolli
         // Rotate the whole layout 90 deg when the mill faces along X so the discs track the block's facing.
         float facingYaw = blockEntity.getBlockState().getValue(RollingMillBlock.FACING).getAxis() == Direction.Axis.X ? 90.0f : 0.0f;
 
-        renderDisc(rollerModel, poseStack, bufferSource, packedLight, packedOverlay, 0.25f, 0.42f, 0.5f, facingYaw, angle);
-        renderDisc(rollerModel, poseStack, bufferSource, packedLight, packedOverlay, 0.75f, 0.58f, 0.5f, facingYaw, -angle);
+        renderDisc(rollerModel, poseStack, bufferSource, packedLight, packedOverlay, 0.25f, 0.5f, 0.5f, facingYaw, angle);
+        renderDisc(rollerModel, poseStack, bufferSource, packedLight, packedOverlay, 0.75f, 0.5f, 0.5f, facingYaw, -angle);
     }
 
     private void renderDisc(BakedModel model, PoseStack poseStack, MultiBufferSource bufferSource,
@@ -60,8 +60,8 @@ public class RollingMillBlockEntityRenderer implements BlockEntityRenderer<Rolli
         poseStack.translate(-0.5f, -0.5f, -0.5f);   // back to unrotated block corner
         poseStack.translate(cx, cy, cz);            // move disc centre to its staggered side position
         poseStack.mulPose(Axis.YP.rotationDegrees(angle));     // spin about the vertical disc axis
-        // ItemRenderer.render applies its own translate(-0.5, -0.5, -0.5) to centre the model on the
-        // origin, so the spin above pivots on the disc centre -- don't repeat that shift here.
+        // ItemRenderer.render applies translate(-0.5, -0.5, -0.5); the OBJ is centered at x/z 0, y 0.5.
+        poseStack.translate(0.5f, 0.0f, 0.5f);
         itemRenderer.render(
                 MODEL_STACK,
                 ItemDisplayContext.NONE,

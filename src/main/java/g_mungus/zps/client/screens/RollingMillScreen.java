@@ -42,10 +42,15 @@ public class RollingMillScreen extends AbstractContainerScreen<RollingMillMenu> 
     private static final int ROLLER_TEXTURE_V = 0;
     private static final int ROLLER_FRAME_COUNT = 4;
     private static final int ROLLER_TICKS_PER_FRAME = 2;
+    private static final int ROLLER_GRACE_TICKS = 2;
     private static final int PLAYER_INVENTORY_SLOT_TOP = 83;
 
     private final RollingMillRecipeBookComponent recipeBookComponent = new RollingMillRecipeBookComponent();
     private boolean widthTooNarrow;
+
+    private int rollerFrame;
+    private int rollerFrameTimer;
+    private int rollerGraceTimer;
 
     public RollingMillScreen(RollingMillMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -70,6 +75,24 @@ public class RollingMillScreen extends AbstractContainerScreen<RollingMillMenu> 
     protected void containerTick() {
         super.containerTick();
         this.recipeBookComponent.tick();
+        tickRollers();
+    }
+
+    private void tickRollers() {
+        if (isProgressAdvancing()) {
+            this.rollerGraceTimer = ROLLER_GRACE_TICKS;
+        } else if (this.rollerGraceTimer > 0) {
+            this.rollerGraceTimer--;
+        } else {
+            this.rollerFrame = 0;
+            this.rollerFrameTimer = 0;
+            return;
+        }
+
+        if (++this.rollerFrameTimer >= ROLLER_TICKS_PER_FRAME) {
+            this.rollerFrameTimer = 0;
+            this.rollerFrame = (this.rollerFrame + 1) % ROLLER_FRAME_COUNT;
+        }
     }
 
     @Override
@@ -158,13 +181,7 @@ public class RollingMillScreen extends AbstractContainerScreen<RollingMillMenu> 
     }
 
     private int getRollerFrame() {
-        if (!isProgressAdvancing()) {
-            return 0;
-        }
-        if (this.minecraft == null || this.minecraft.level == null) {
-            return 0;
-        }
-        return (int) ((this.minecraft.level.getGameTime() / ROLLER_TICKS_PER_FRAME) % ROLLER_FRAME_COUNT);
+        return this.rollerFrame;
     }
 
     private int reverseRollerFrame(int frame) {

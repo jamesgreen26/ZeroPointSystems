@@ -3,7 +3,7 @@
   "loader": "neoforge:obj",
   "flip_v": true,
   "emissive_ambient": false,
-  "shade_quads": false,
+  "shade_quads": true,
   "model": "zps:models/block/rolling_mill/rolling_wheel.obj",
   "textures": {
     "particle": "zps:block/rolling_mill/rolling_wheel",

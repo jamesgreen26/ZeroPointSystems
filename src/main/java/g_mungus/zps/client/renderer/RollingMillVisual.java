@@ -15,21 +15,21 @@ import net.minecraft.core.Direction;
 import java.util.function.Consumer;
 
 /**
- * Spins the two rolling discs while the mill is actively processing. Each disc sits flat
- * against a side face (axis left-right) and pokes slightly out of the block; rotation only
+ * Spins the two rolling wheels while the mill is actively processing. Each wheel sits in
+ * the upper/lower slot and spins around the block-local front/back axis; rotation only
  * advances when {@link RollingMillBlockEntity#isWorking()} is true, so idle mills sit still.
  */
 public class RollingMillVisual extends AbstractBlockEntityVisual<RollingMillBlockEntity> implements SimpleDynamicVisual {
-    private final TransformedInstance leftDisc;
-    private final TransformedInstance rightDisc;
+    private final TransformedInstance lowerWheel;
+    private final TransformedInstance upperWheel;
     private final TransformedInstance[] instances;
 
     public RollingMillVisual(VisualizationContext ctx, RollingMillBlockEntity blockEntity, float partialTick) {
         super(ctx, blockEntity, partialTick);
 
-        leftDisc = createDisc();
-        rightDisc = createDisc();
-        instances = new TransformedInstance[]{leftDisc, rightDisc};
+        lowerWheel = createDisc();
+        upperWheel = createDisc();
+        instances = new TransformedInstance[]{lowerWheel, upperWheel};
 
         animate(blockEntity.advanceRenderSpin(partialTick));
     }
@@ -46,14 +46,12 @@ public class RollingMillVisual extends AbstractBlockEntityVisual<RollingMillBloc
     }
 
     private void animate(float angle) {
-        // The discs poke out the machine's left/right faces; rotate the whole layout 90 deg when the
-        // mill faces along X so those faces track the block's facing.
+        // Rotate the whole layout 90 deg when the mill faces along X so the wheel axes track the block's facing.
         float facingYaw = blockEntity.getBlockState().getValue(RollingMillBlock.FACING).getAxis() == Direction.Axis.X ? 90.0f : 0.0f;
 
-        // Two flat (horizontal) discs, staggered in height so they don't intersect, each poking
-        // slightly out of a side face. They spin about the vertical (Y) axis, counter-rotating.
-        applyDisc(leftDisc, 0.25f, 0.5f, 0.5f, facingYaw, angle);
-        applyDisc(rightDisc, 0.75f, 0.5f, 0.5f, facingYaw, -angle);
+        // Two wheels stacked in the upper/lower slots, counter-rotating about the block-local Z axis.
+        applyDisc(lowerWheel, 0.5f, 0.25f, 0.5f, facingYaw, angle);
+        applyDisc(upperWheel, 0.5f, 0.75f, 0.5f, facingYaw, -angle);
     }
 
     private void applyDisc(TransformedInstance instance, float cx, float cy, float cz, float facingYaw, float angle) {
@@ -63,7 +61,8 @@ public class RollingMillVisual extends AbstractBlockEntityVisual<RollingMillBloc
                 .rotateYDegrees(facingYaw)      // orient the side positions to facing
                 .translate(-0.5f, -0.5f, -0.5f) // back to unrotated block corner
                 .translate(cx, cy, cz)          // move wheel centre to its staggered side position
-                .rotateYDegrees(angle)          // spin about the vertical disc axis
+                .rotateZDegrees(angle)          // spin about the block-local front/back axis
+                .rotateXDegrees(90.0f)          // OBJ axis (Y) -> block-local Z
                 .translate(0.0f, -0.5f, 0.0f)   // OBJ centre (0,0.5,0) -> origin
                 .setChanged();
     }

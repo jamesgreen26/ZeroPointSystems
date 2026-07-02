@@ -22,7 +22,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Fallback renderer for the spinning rollers when Flywheel's backend is unavailable (e.g. on a ship or
  * with the backend turned off). {@link RollingMillVisual} draws the rollers whenever Flywheel is active,
- * so this BER only kicks in otherwise. The disc layout and spin mirror the visual exactly.
+ * so this BER only kicks in otherwise. The wheel layout and spin mirror the visual exactly.
  */
 public class RollingMillBlockEntityRenderer implements BlockEntityRenderer<RollingMillBlockEntity> {
     public static final ModelResourceLocation ROLLER_MODEL =
@@ -45,11 +45,11 @@ public class RollingMillBlockEntityRenderer implements BlockEntityRenderer<Rolli
 
         BakedModel rollerModel = Minecraft.getInstance().getModelManager().getModel(ROLLER_MODEL);
         float angle = blockEntity.advanceRenderSpin(partialTick);
-        // Rotate the whole layout 90 deg when the mill faces along X so the discs track the block's facing.
+        // Rotate the whole layout 90 deg when the mill faces along X so the wheel axes track the block's facing.
         float facingYaw = blockEntity.getBlockState().getValue(RollingMillBlock.FACING).getAxis() == Direction.Axis.X ? 90.0f : 0.0f;
 
-        renderDisc(rollerModel, poseStack, bufferSource, packedLight, packedOverlay, 0.25f, 0.5f, 0.5f, facingYaw, angle);
-        renderDisc(rollerModel, poseStack, bufferSource, packedLight, packedOverlay, 0.75f, 0.5f, 0.5f, facingYaw, -angle);
+        renderDisc(rollerModel, poseStack, bufferSource, packedLight, packedOverlay, 0.5f, 0.25f, 0.5f, facingYaw, angle);
+        renderDisc(rollerModel, poseStack, bufferSource, packedLight, packedOverlay, 0.5f, 0.75f, 0.5f, facingYaw, -angle);
     }
 
     private void renderDisc(BakedModel model, PoseStack poseStack, MultiBufferSource bufferSource,
@@ -58,8 +58,9 @@ public class RollingMillBlockEntityRenderer implements BlockEntityRenderer<Rolli
         poseStack.translate(0.5f, 0.5f, 0.5f);      // to block centre
         poseStack.mulPose(Axis.YP.rotationDegrees(facingYaw)); // orient the side positions to facing
         poseStack.translate(-0.5f, -0.5f, -0.5f);   // back to unrotated block corner
-        poseStack.translate(cx, cy, cz);            // move disc centre to its staggered side position
-        poseStack.mulPose(Axis.YP.rotationDegrees(angle));     // spin about the vertical disc axis
+        poseStack.translate(cx, cy, cz);            // move wheel centre to its slot position
+        poseStack.mulPose(Axis.ZP.rotationDegrees(angle));     // spin about the block-local front/back axis
+        poseStack.mulPose(Axis.XP.rotationDegrees(90.0f));     // OBJ axis (Y) -> block-local Z
         // ItemRenderer.render applies translate(-0.5, -0.5, -0.5); the OBJ is centered at x/z 0, y 0.5.
         poseStack.translate(0.5f, 0.0f, 0.5f);
         itemRenderer.render(

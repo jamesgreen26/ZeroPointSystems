@@ -11,6 +11,7 @@
     "zps:power_cell",
     "zps:coal_burner",
     "zps:rolling_mill",
+    "zps:assembler",
     "zps:octo_controller",
     "zps:dodeca_controller",
     "zps:cable_insulation",

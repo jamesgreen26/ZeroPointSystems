@@ -8,6 +8,7 @@ import g_mungus.zps.client.model.connected.ConnectedModelLoader;
 import g_mungus.zps.client.model.connected.ConnectedTextureMeta;
 import g_mungus.zps.client.recipebook.ModRecipeBookCategories;
 import g_mungus.zps.client.renderer.*;
+import g_mungus.zps.client.screens.AssemblerScreen;
 import g_mungus.zps.client.screens.CoalBurnerScreen;
 import g_mungus.zps.client.screens.PowerCellScreen;
 import g_mungus.zps.client.screens.RollingMillScreen;
@@ -101,6 +102,7 @@ public class ClientSetup {
         event.register(ModMenus.COAL_BURNER.get(), CoalBurnerScreen::new);
         event.register(ModMenus.POWER_CELL.get(), PowerCellScreen::new);
         event.register(ModMenus.ROLLING_MILL.get(), RollingMillScreen::new);
+        event.register(ModMenus.ASSEMBLER.get(), AssemblerScreen::new);
     }
 
     @SubscribeEvent

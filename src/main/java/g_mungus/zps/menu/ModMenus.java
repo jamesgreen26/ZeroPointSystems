@@ -19,4 +19,7 @@ public class ModMenus {
 
     public static final DeferredHolder<MenuType<?>, MenuType<RollingMillMenu>> ROLLING_MILL =
             MENUS.register("rolling_mill", () -> IMenuTypeExtension.create(RollingMillMenu::new));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<AssemblerMenu>> ASSEMBLER =
+            MENUS.register("assembler", () -> IMenuTypeExtension.create(AssemblerMenu::new));
 }

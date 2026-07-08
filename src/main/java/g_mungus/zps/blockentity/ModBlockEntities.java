@@ -123,4 +123,9 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(RollingMillBlockEntity::new,
                             ModBlocks.ROLLING_MILL.get()).build(null));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AssemblerBlockEntity>> ASSEMBLER =
+            BLOCK_ENTITIES.register("assembler",
+                    () -> BlockEntityType.Builder.of(AssemblerBlockEntity::new,
+                            ModBlocks.ASSEMBLER.get()).build(null));
+
 }

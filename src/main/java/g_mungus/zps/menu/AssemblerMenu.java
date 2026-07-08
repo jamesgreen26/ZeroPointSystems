@@ -1,0 +1,218 @@
+package g_mungus.zps.menu;
+
+import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.blockentity.AssemblerBlockEntity;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.inventory.SimpleContainerData;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.SlotItemHandler;
+import org.jetbrains.annotations.NotNull;
+
+public class AssemblerMenu extends AbstractContainerMenu {
+    // Slot layout (must match the GUI texture and AssemblerScreen). Drawn area is 176x222 (vanilla
+    // double-chest dimensions). Left: 2x6 input buffer; middle: 4x4 grid; below the grid: 4x1 output
+    // bar; energy bar is on the right.
+    public static final int INPUT_LEFT = 8;
+    public static final int INPUT_TOP = 18;
+    public static final int GRID_LEFT = 62;
+    public static final int GRID_TOP = 18;
+    public static final int OUTPUT_LEFT = 62;
+    public static final int OUTPUT_TOP = 108;
+
+    private static final int GHOST_START = 0;
+    private static final int GHOST_END = GHOST_START + AssemblerBlockEntity.PATTERN_SLOTS;        // 25
+    private static final int INPUT_START = GHOST_END;
+    private static final int INPUT_END = INPUT_START + AssemblerBlockEntity.INPUT_SLOTS;           // 43
+    private static final int OUTPUT_START = INPUT_END;
+    private static final int OUTPUT_END = OUTPUT_START + AssemblerBlockEntity.OUTPUT_SLOTS;         // 52
+    private static final int PLAYER_INVENTORY_START = OUTPUT_END;                                   // 52
+    private static final int PLAYER_INVENTORY_END = PLAYER_INVENTORY_START + 27;                    // 79
+    private static final int HOTBAR_START = PLAYER_INVENTORY_END;                                    // 79
+    private static final int HOTBAR_END = HOTBAR_START + 9;                                          // 88
+
+    private static final int PLAYER_INV_LEFT = 8;
+    private static final int PLAYER_INV_TOP = 140;
+    private static final int HOTBAR_TOP = 198;
+
+    private final AssemblerBlockEntity blockEntity;
+    private final ContainerData data;
+    private final ContainerLevelAccess access;
+
+    public AssemblerMenu(int containerId, Inventory inventory, FriendlyByteBuf buffer) {
+        this(containerId, inventory, buffer.readBlockPos());
+    }
+
+    private AssemblerMenu(int containerId, Inventory inventory, BlockPos pos) {
+        this(containerId, inventory, resolveBlockEntity(inventory.player.level(), pos), new SimpleContainerData(2));
+    }
+
+    public AssemblerMenu(int containerId, Inventory inventory, AssemblerBlockEntity blockEntity, ContainerData data) {
+        super(ModMenus.ASSEMBLER.get(), containerId);
+        this.blockEntity = blockEntity;
+        this.data = data;
+        Level level = blockEntity.getLevel();
+        this.access = level == null ? ContainerLevelAccess.NULL : ContainerLevelAccess.create(level, blockEntity.getBlockPos());
+
+        IItemHandler pattern = blockEntity.getPatternInventory();
+        IItemHandler input = blockEntity.getInputInventory();
+        IItemHandler output = blockEntity.getOutputInventory();
+
+        // 5x5 ghost/pattern grid.
+        for (int row = 0; row < AssemblerBlockEntity.GRID_HEIGHT; ++row) {
+            for (int col = 0; col < AssemblerBlockEntity.GRID_WIDTH; ++col) {
+                int index = col + row * AssemblerBlockEntity.GRID_WIDTH;
+                this.addSlot(new GhostSlot(pattern, index, GRID_LEFT + col * 18, GRID_TOP + row * 18));
+            }
+        }
+
+        // 2x6 input buffer (2 columns, 6 rows) on the left.
+        for (int row = 0; row < 6; ++row) {
+            for (int col = 0; col < 2; ++col) {
+                int index = col + row * 2;
+                this.addSlot(new SlotItemHandler(input, index, INPUT_LEFT + col * 18, INPUT_TOP + row * 18));
+            }
+        }
+
+        // 4x1 output bar (extraction only from the GUI) below the grid.
+        for (int col = 0; col < 4; ++col) {
+            this.addSlot(new OutputSlot(output, col, OUTPUT_LEFT + col * 18, OUTPUT_TOP));
+        }
+
+        // Player inventory + hotbar.
+        for (int row = 0; row < 3; ++row) {
+            for (int col = 0; col < 9; ++col) {
+                this.addSlot(new Slot(inventory, col + row * 9 + 9, PLAYER_INV_LEFT + col * 18, PLAYER_INV_TOP + row * 18));
+            }
+        }
+        for (int col = 0; col < 9; ++col) {
+            this.addSlot(new Slot(inventory, col, PLAYER_INV_LEFT + col * 18, HOTBAR_TOP));
+        }
+
+        this.addDataSlots(data);
+    }
+
+    private static AssemblerBlockEntity resolveBlockEntity(Level level, BlockPos pos) {
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof AssemblerBlockEntity assembler) {
+            return assembler;
+        }
+        throw new IllegalStateException("Missing assembler block entity at " + pos);
+    }
+
+    @Override
+    public void clicked(int slotId, int button, @NotNull ClickType clickType, @NotNull Player player) {
+        // Ghost slots stamp a display-only copy of the carried item without consuming it.
+        if (slotId >= GHOST_START && slotId < GHOST_END) {
+            Slot slot = this.slots.get(slotId);
+            ItemStack carried = getCarried();
+            if (carried.isEmpty() || button == 1) {
+                slot.set(ItemStack.EMPTY);
+            } else {
+                slot.set(carried.copyWithCount(1));
+            }
+            return;
+        }
+        super.clicked(slotId, button, clickType, player);
+    }
+
+    @Override
+    public boolean stillValid(@NotNull Player player) {
+        return stillValid(access, player, ModBlocks.ASSEMBLER.get());
+    }
+
+    @Override
+    public @NotNull ItemStack quickMoveStack(@NotNull Player player, int index) {
+        // Ghost slots hold no real items; nothing to shift-move.
+        if (index >= GHOST_START && index < GHOST_END) {
+            return ItemStack.EMPTY;
+        }
+
+        ItemStack result = ItemStack.EMPTY;
+        Slot slot = this.slots.get(index);
+        if (slot.hasItem()) {
+            ItemStack stack = slot.getItem();
+            result = stack.copy();
+
+            if (index >= INPUT_START && index < OUTPUT_END) {
+                // From either buffer back into the player inventory.
+                if (!this.moveItemStackTo(stack, PLAYER_INVENTORY_START, HOTBAR_END, true)) {
+                    return ItemStack.EMPTY;
+                }
+            } else if (index >= PLAYER_INVENTORY_START && index < HOTBAR_END) {
+                // From the player inventory into the input buffer.
+                if (!this.moveItemStackTo(stack, INPUT_START, INPUT_END, false)) {
+                    // Otherwise shuffle between inventory rows and the hotbar.
+                    if (index >= PLAYER_INVENTORY_START && index < PLAYER_INVENTORY_END) {
+                        if (!this.moveItemStackTo(stack, HOTBAR_START, HOTBAR_END, false)) {
+                            return ItemStack.EMPTY;
+                        }
+                    } else if (!this.moveItemStackTo(stack, PLAYER_INVENTORY_START, PLAYER_INVENTORY_END, false)) {
+                        return ItemStack.EMPTY;
+                    }
+                }
+            } else {
+                return ItemStack.EMPTY;
+            }
+
+            if (stack.isEmpty()) {
+                slot.set(ItemStack.EMPTY);
+            } else {
+                slot.setChanged();
+            }
+        }
+
+        return result;
+    }
+
+    public int getEnergyStored() {
+        return data.get(0);
+    }
+
+    public int getMaxEnergyStored() {
+        return data.get(1);
+    }
+
+    public AssemblerBlockEntity getBlockEntity() {
+        return blockEntity;
+    }
+
+    /** Display-only slot: never accepts drag/shift placement or pickup; click handling is done in {@link #clicked}. */
+    private static class GhostSlot extends SlotItemHandler {
+        private GhostSlot(IItemHandler handler, int index, int x, int y) {
+            super(handler, index, x, y);
+        }
+
+        @Override
+        public boolean mayPlace(@NotNull ItemStack stack) {
+            return false;
+        }
+
+        @Override
+        public boolean mayPickup(@NotNull Player player) {
+            return false;
+        }
+    }
+
+    /** Output buffer slot: crafted results only, never accepts manual insertion. */
+    private static class OutputSlot extends SlotItemHandler {
+        private OutputSlot(IItemHandler handler, int index, int x, int y) {
+            super(handler, index, x, y);
+        }
+
+        @Override
+        public boolean mayPlace(@NotNull ItemStack stack) {
+            return false;
+        }
+    }
+}

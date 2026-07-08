@@ -1,6 +1,7 @@
 package g_mungus.zps;
 
 import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.blockentity.AssemblerBlockEntity;
 import g_mungus.zps.blockentity.CoalBurnerBlockEntity;
 import g_mungus.zps.blockentity.CreativePowerCellBlockEntity;
 import g_mungus.zps.blockentity.ModBlockEntities;
@@ -13,6 +14,7 @@ import g_mungus.zps.client.renderer.ZPSPartialModels;
 import g_mungus.zps.compat.Compat;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.entity.ModEntities;
+import g_mungus.zps.gametest.AssemblerGameTests;
 import g_mungus.zps.gametest.EnumPropertyWithAliasesGameTests;
 import g_mungus.zps.gametest.RoboticArmGameTests;
 import g_mungus.zps.gametest.RollingMillGameTests;
@@ -79,6 +81,7 @@ public final class ZPSMod {
         event.register(EnumPropertyWithAliasesGameTests.class);
         event.register(RoboticArmGameTests.class);
         event.register(RollingMillGameTests.class);
+        event.register(AssemblerGameTests.class);
     }
 
     private static void registerCapabilities(RegisterCapabilitiesEvent event) {
@@ -91,6 +94,8 @@ public final class ZPSMod {
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.ROBOTIC_ARM.get(), RoboticArmBlockEntity::getEnergyStorage);
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.ROLLING_MILL.get(), RollingMillBlockEntity::getEnergyStorage);
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.ROLLING_MILL.get(), RollingMillBlockEntity::getItemHandler);
+        event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.ASSEMBLER.get(), AssemblerBlockEntity::getEnergyStorage);
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.ASSEMBLER.get(), AssemblerBlockEntity::getItemHandler);
         event.registerItem(Capabilities.EnergyStorage.ITEM, (stack, ignored) -> new PoweredToolItem.StackEnergyStorage(stack),
                 ModItems.POWER_DRILL.get(), ModItems.CHAINSAW.get());
     }

@@ -211,6 +211,11 @@ public class ModBlocks {
                     // mill's own position, which would otherwise always be pitch black.
                     .noOcclusion()));
 
+    public static final DeferredBlock<Block> ASSEMBLER = BLOCKS.register("assembler",
+            () -> new AssemblerBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(3.5f)
+                    .requiresCorrectToolForDrops()));
+
 
     /// RESOURCE BLOCKS
     public static final DeferredBlock<Block> BAUXITE = BLOCKS.register("bauxite",

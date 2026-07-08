@@ -10,6 +10,10 @@
     "block.zps.power_cell": "Power Cell",
     "block.zps.coal_burner": "Coal Burner",
     "block.zps.rolling_mill": "Rolling Mill",
+    "block.zps.assembler": "Assembler",
+    "gui.zps.assembler.input": "Input",
+    "gui.zps.assembler.crafting": "Crafting",
+    "gui.zps.assembler.output": "Output",
     "block.zps.octo_controller": "Octo-Controller",
     "block.zps.dodeca_controller": "Dodeca-Controller",
     "block.zps.switch_panel": "Switch Panel",
@@ -395,6 +399,7 @@
     "block.zps.power_cell.zps_tooltip": "Stores up to 2.1M FE.\n\nCan be used to charge items that have [Energy Storage].",
     "block.zps.coal_burner.zps_tooltip": "Burns coal fuels to generate FE.\n\nAccepted fuels & burn times:\n- [Coal]: 80 seconds\n- [Charcoal]: 80 seconds\n- [Block of Coal]: 800 seconds",
     "block.zps.rolling_mill.zps_tooltip": "Consumes FE to roll metal.\n\nRolls ingots into rods and nuggets into wire.",
+    "block.zps.assembler.zps_tooltip": "Automated crafting. Set a recipe in the 4x4 ghost grid, load ingredients into the input buffer, and power with redstone to craft into the output buffer.\n\nSupports shaped, shapeless, and (with Create) mechanical crafting recipes. Consumes 256 FE per craft.",
     "block.zps.catwalk.zps_tooltip": "Can be placed on cable blocks to prevent upwards connection.",
     "block.zps.space_grating_block.zps_tooltip": "Can be placed on cable blocks to prevent connection in new directions.",
 

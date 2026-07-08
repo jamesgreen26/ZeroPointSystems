@@ -1,5 +1,6 @@
 package g_mungus.zps.client.screens;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.blockentity.AssemblerBlockEntity;
 import g_mungus.zps.menu.AssemblerMenu;
@@ -11,7 +12,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -140,6 +144,23 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> {
         graphics.drawString(this.font, "FE", ENERGY_BAR_X, ENERGY_BAR_Y - 10, LABEL_COLOR, false);
         graphics.drawString(this.font, this.playerInventoryTitle,
                 this.inventoryLabelX, this.inventoryLabelY, LABEL_COLOR, false);
+    }
+
+    @Override
+    protected void renderSlotContents(@NotNull GuiGraphics graphics, @NotNull ItemStack itemStack, @NotNull Slot slot,
+                                      @Nullable String countString) {
+        // Ghost/pattern cells: render the item at 50% opacity so it reads as a preview, not real contents.
+        if (slot.index < AssemblerBlockEntity.PATTERN_SLOTS && !itemStack.isEmpty()) {
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 0.6F);
+            graphics.renderItem(itemStack, slot.x, slot.y);
+            graphics.flush();
+            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+            RenderSystem.disableBlend();
+            return;
+        }
+        super.renderSlotContents(graphics, itemStack, slot, countString);
     }
 
     private int getEnergyFill() {

@@ -1,6 +1,7 @@
 package g_mungus.zps.client.screens;
 
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.blockentity.AssemblerBlockEntity;
 import g_mungus.zps.menu.AssemblerMenu;
 import g_mungus.zps.util.NumberFormatter;
 import net.minecraft.client.gui.GuiGraphics;
@@ -9,7 +10,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.ClickType;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> {
     private static final ResourceLocation TEXTURE = ZPSMod.resource("textures/gui/assembler.png");
@@ -30,11 +35,69 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> {
 
     private static final int LABEL_COLOR = 0x404040;
 
+    /** Ghost cells already stamped during the current click-drag, so each cell is set only once per drag. */
+    private final Set<Integer> draggedGhostSlots = new HashSet<>();
+
     @Override
     protected void init() {
         super.init();
         this.inventoryLabelX = 8;
         this.inventoryLabelY = 129;
+    }
+
+    /** Menu slot id of the ghost grid cell under the cursor, or -1 if the cursor is not over the grid. */
+    private int ghostSlotAt(double mouseX, double mouseY) {
+        int gx = (int) mouseX - this.leftPos - AssemblerMenu.GRID_LEFT;
+        int gy = (int) mouseY - this.topPos - AssemblerMenu.GRID_TOP;
+        if (gx < 0 || gy < 0) {
+            return -1;
+        }
+        int col = gx / 18;
+        int row = gy / 18;
+        if (col >= AssemblerBlockEntity.GRID_WIDTH || row >= AssemblerBlockEntity.GRID_HEIGHT) {
+            return -1;
+        }
+        // Ghost slots are added first (ids 0..PATTERN_SLOTS-1) in this exact row-major order.
+        return col + row * AssemblerBlockEntity.GRID_WIDTH;
+    }
+
+    /** Stamps the ghost cell via the normal click path (AssemblerMenu#clicked handles it server-side). */
+    private void stampGhost(int slotId, int button) {
+        this.slotClicked(this.menu.slots.get(slotId), slotId, button, ClickType.PICKUP);
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0 || button == 1) {
+            int id = ghostSlotAt(mouseX, mouseY);
+            if (id >= 0) {
+                draggedGhostSlots.clear();
+                draggedGhostSlots.add(id);
+                stampGhost(id, button);
+                return true;
+            }
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (button == 0 || button == 1) {
+            int id = ghostSlotAt(mouseX, mouseY);
+            if (id >= 0) {
+                if (draggedGhostSlots.add(id)) {
+                    stampGhost(id, button);
+                }
+                return true;
+            }
+        }
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        draggedGhostSlots.clear();
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override

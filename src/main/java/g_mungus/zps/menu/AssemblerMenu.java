@@ -169,6 +169,10 @@ public class AssemblerMenu extends RecipeBookMenu<CraftingInput, CraftingRecipe>
      */
     @Override
     public void handlePlacement(boolean placeAll, @NotNull RecipeHolder<?> recipeHolder, @NotNull ServerPlayer player) {
+        // Always start from an empty pattern so no cells from a previous recipe (or manual stamping) can survive,
+        // even if the recipe below contributes fewer cells than were already set.
+        blockEntity.clearPattern();
+
         Recipe<?> recipe = recipeHolder.value();
         List<Ingredient> ingredients = recipe.getIngredients();
         List<Ingredient> grid = new ArrayList<>(Collections.nCopies(AssemblerBlockEntity.PATTERN_SLOTS, Ingredient.EMPTY));

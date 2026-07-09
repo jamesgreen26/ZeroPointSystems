@@ -155,7 +155,9 @@ public class AssemblerBlockEntity extends BlockEntity implements MenuProvider {
 
     /** The item-tag ids an ingredient accepts (empty if it is a concrete-item ingredient). */
     private static List<ResourceLocation> tagIds(@Nullable Ingredient ingredient) {
-        if (ingredient == null) {
+        // Custom (mod) ingredients don't expose vanilla tag values — getValues() throws for them — so treat them
+        // as having no tags. They still match via Ingredient#test and display through getItems().
+        if (ingredient == null || ingredient.isCustom()) {
             return List.of();
         }
         List<ResourceLocation> ids = new ArrayList<>();

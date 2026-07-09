@@ -5,9 +5,13 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.blockentity.AssemblerBlockEntity;
+import g_mungus.zps.item.ModComponents;
 import g_mungus.zps.menu.AssemblerMenu;
 import g_mungus.zps.util.NumberFormatter;
+import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -16,18 +20,24 @@ import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> {
@@ -177,12 +187,51 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> {
     @Override
     protected void renderSlotContents(@NotNull GuiGraphics graphics, @NotNull ItemStack itemStack, @NotNull Slot slot,
                                       @Nullable String countString) {
-        // Ghost/pattern cells: render the item as a translucent preview, not real contents.
+        // Ghost/pattern cells: render the item as a translucent preview, not real contents. Tag cells cycle
+        // their preview through the tag's items (JEI-style).
         if (slot.index < AssemblerBlockEntity.PATTERN_SLOTS && !itemStack.isEmpty()) {
-            renderGhostItem(graphics, itemStack, slot.x, slot.y);
+            renderGhostItem(graphics, displayedGhostStack(itemStack), slot.x, slot.y);
             return;
         }
         super.renderSlotContents(graphics, itemStack, slot, countString);
+    }
+
+    /** For a tag ghost cell, the item currently shown (cycling once per second); otherwise the stack itself. */
+    private ItemStack displayedGhostStack(ItemStack ghost) {
+        List<ResourceLocation> tags = ghost.get(ModComponents.GHOST_INGREDIENT_TAGS.get());
+        if (tags == null || tags.isEmpty()) {
+            return ghost;
+        }
+        List<ItemStack> items = resolveTagItems(tags);
+        if (items.isEmpty()) {
+            return ghost;
+        }
+        int index = (int) ((Util.getMillis() / 1000L) % items.size());
+        return items.get(index);
+    }
+
+    private static List<ItemStack> resolveTagItems(List<ResourceLocation> tagIds) {
+        List<ItemStack> items = new ArrayList<>();
+        for (ResourceLocation id : tagIds) {
+            TagKey<Item> key = TagKey.create(Registries.ITEM, id);
+            BuiltInRegistries.ITEM.getTag(key).ifPresent(named ->
+                    named.forEach(holder -> items.add(new ItemStack(holder))));
+        }
+        return items;
+    }
+
+    @Override
+    protected List<Component> getTooltipFromContainerItem(ItemStack stack) {
+        List<ResourceLocation> tags = stack.get(ModComponents.GHOST_INGREDIENT_TAGS.get());
+        if (tags != null && !tags.isEmpty()) {
+            List<Component> lines = new ArrayList<>(Screen.getTooltipFromItem(this.minecraft, displayedGhostStack(stack)));
+            lines.add(Component.translatable("gui.zps.assembler.tag_ingredient").withStyle(ChatFormatting.YELLOW));
+            for (ResourceLocation id : tags) {
+                lines.add(Component.literal("#" + id).withStyle(ChatFormatting.GRAY));
+            }
+            return lines;
+        }
+        return super.getTooltipFromContainerItem(stack);
     }
 
     /**

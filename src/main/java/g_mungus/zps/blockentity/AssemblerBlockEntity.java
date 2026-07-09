@@ -2,10 +2,12 @@ package g_mungus.zps.blockentity;
 
 import g_mungus.zps.compat.Compat;
 import g_mungus.zps.compat.create.MechanicalCraftingCompat;
+import g_mungus.zps.item.ModComponents;
 import g_mungus.zps.menu.AssemblerMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtOps;
@@ -139,7 +141,30 @@ public class AssemblerBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
         patternIngredients[index] = (ingredient != null && !ingredient.isEmpty()) ? ingredient : null;
-        pattern.setStackInSlot(index, display.isEmpty() ? ItemStack.EMPTY : display.copyWithCount(1));
+        ItemStack cell = display.isEmpty() ? ItemStack.EMPTY : display.copyWithCount(1);
+        // Tag ingredients get a marker component (the tag ids) so the client can cycle the preview and show
+        // a tag tooltip. It rides the normal menu item sync; concrete items get nothing.
+        if (!cell.isEmpty()) {
+            List<ResourceLocation> tags = tagIds(ingredient);
+            if (!tags.isEmpty()) {
+                cell.set(ModComponents.GHOST_INGREDIENT_TAGS.get(), tags);
+            }
+        }
+        pattern.setStackInSlot(index, cell);
+    }
+
+    /** The item-tag ids an ingredient accepts (empty if it is a concrete-item ingredient). */
+    private static List<ResourceLocation> tagIds(@Nullable Ingredient ingredient) {
+        if (ingredient == null) {
+            return List.of();
+        }
+        List<ResourceLocation> ids = new ArrayList<>();
+        for (Ingredient.Value value : ingredient.getValues()) {
+            if (value instanceof Ingredient.TagValue tagValue) {
+                ids.add(tagValue.tag().location());
+            }
+        }
+        return ids;
     }
 
     /** Clears the whole pattern (display items and ingredient matchers). */

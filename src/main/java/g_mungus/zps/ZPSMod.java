@@ -19,6 +19,7 @@ import g_mungus.zps.gametest.EnumPropertyWithAliasesGameTests;
 import g_mungus.zps.gametest.RoboticArmGameTests;
 import g_mungus.zps.gametest.RollingMillGameTests;
 import g_mungus.zps.item.ModCreativeTabs;
+import g_mungus.zps.item.ModComponents;
 import g_mungus.zps.item.ModItems;
 import g_mungus.zps.item.PoweredToolItem;
 import g_mungus.zps.gametest.CableNetworkGameTests;
@@ -52,6 +53,7 @@ public final class ZPSMod {
         ModBlocks.BLOCKS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
+        ModComponents.COMPONENTS.register(modEventBus);
         ModMenus.MENUS.register(modEventBus);
         ModRecipes.RECIPE_TYPES.register(modEventBus);
         ModRecipes.RECIPE_SERIALIZERS.register(modEventBus);

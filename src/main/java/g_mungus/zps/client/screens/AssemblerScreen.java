@@ -3,7 +3,6 @@ package g_mungus.zps.client.screens;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.createmod.ponder.enums.PonderGuiTextures;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.blockentity.AssemblerBlockEntity;
 import g_mungus.zps.item.ModComponents;
@@ -82,6 +81,8 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> impl
     private static final int TRASH_BUTTON_X = 56;
     // The green book that vanilla uses for its recipe-book toggle button (same art as the knowledge book item).
     private static final ItemStack BOOK_ICON = new ItemStack(Items.KNOWLEDGE_BOOK);
+    // Barrier block texture for the clear-pattern (trash) button.
+    private static final ItemStack CLEAR_ICON = new ItemStack(Items.BARRIER);
     private static final Component TOGGLE_PANEL_TOOLTIP = Component.translatable("gui.zps.assembler.toggle_panel");
     private static final Component CLEAR_PATTERN_TOOLTIP = Component.translatable("gui.zps.assembler.clear_pattern");
 
@@ -320,7 +321,7 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> impl
     /** Draws the book (toggle) and trash (clear) icons — icon only, no button background or outline. */
     private void renderPanelButtons(GuiGraphics graphics) {
         graphics.renderItem(BOOK_ICON, this.leftPos + BOOK_BUTTON_X, this.topPos + PANEL_BUTTON_Y);
-        PonderGuiTextures.ICON_CONFIG_DISCARD.render(graphics, this.leftPos + TRASH_BUTTON_X, this.topPos + PANEL_BUTTON_Y);
+        graphics.renderItem(CLEAR_ICON, this.leftPos + TRASH_BUTTON_X, this.topPos + PANEL_BUTTON_Y);
     }
 
     private void renderPanelButtonTooltips(GuiGraphics graphics, int mouseX, int mouseY) {

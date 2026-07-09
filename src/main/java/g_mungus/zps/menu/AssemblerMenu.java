@@ -20,15 +20,16 @@ import net.neoforged.neoforge.items.SlotItemHandler;
 import org.jetbrains.annotations.NotNull;
 
 public class AssemblerMenu extends AbstractContainerMenu {
-    // Slot layout (must match the GUI texture and AssemblerScreen). Drawn area is 176x222 (vanilla
-    // double-chest dimensions). Left: 2x6 input buffer; middle: 4x4 grid; below the grid: 4x1 output
-    // bar; energy bar is on the right.
-    public static final int INPUT_LEFT = 8;
-    public static final int INPUT_TOP = 18;
-    public static final int GRID_LEFT = 62;
-    public static final int GRID_TOP = 18;
-    public static final int OUTPUT_LEFT = 62;
-    public static final int OUTPUT_TOP = 108;
+    // Slot layout (must match the GUI texture and AssemblerScreen). Drawn area is 280x166 (vanilla
+    // villager-menu dimensions). Far left: 5x5 crafting pattern; top right: 4x3 input buffer, a single
+    // enlarged output slot, and the energy meter; bottom right: player inventory.
+    public static final int GRID_LEFT = 8;
+    public static final int GRID_TOP = 34;
+    public static final int INPUT_LEFT = 112;
+    public static final int INPUT_TOP = 16;
+    // Single output slot, centered inside its 26x26 well (item area is 16x16).
+    public static final int OUTPUT_LEFT = 220;
+    public static final int OUTPUT_TOP = 35;
 
     private static final int GHOST_START = 0;
     private static final int GHOST_END = GHOST_START + AssemblerBlockEntity.PATTERN_SLOTS;        // 25
@@ -41,9 +42,9 @@ public class AssemblerMenu extends AbstractContainerMenu {
     private static final int HOTBAR_START = PLAYER_INVENTORY_END;                                    // 79
     private static final int HOTBAR_END = HOTBAR_START + 9;                                          // 88
 
-    private static final int PLAYER_INV_LEFT = 8;
-    private static final int PLAYER_INV_TOP = 140;
-    private static final int HOTBAR_TOP = 198;
+    private static final int PLAYER_INV_LEFT = 112;
+    private static final int PLAYER_INV_TOP = 84;
+    private static final int HOTBAR_TOP = 142;
 
     private final AssemblerBlockEntity blockEntity;
     private final ContainerData data;
@@ -76,18 +77,16 @@ public class AssemblerMenu extends AbstractContainerMenu {
             }
         }
 
-        // 2x6 input buffer (2 columns, 6 rows) on the left.
-        for (int row = 0; row < 6; ++row) {
-            for (int col = 0; col < 2; ++col) {
-                int index = col + row * 2;
+        // 4x3 input buffer (4 columns, 3 rows) on the top right.
+        for (int row = 0; row < 3; ++row) {
+            for (int col = 0; col < 4; ++col) {
+                int index = col + row * 4;
                 this.addSlot(new SlotItemHandler(input, index, INPUT_LEFT + col * 18, INPUT_TOP + row * 18));
             }
         }
 
-        // 4x1 output bar (extraction only from the GUI) below the grid.
-        for (int col = 0; col < 4; ++col) {
-            this.addSlot(new OutputSlot(output, col, OUTPUT_LEFT + col * 18, OUTPUT_TOP));
-        }
+        // Single (enlarged) output slot (extraction only from the GUI).
+        this.addSlot(new OutputSlot(output, 0, OUTPUT_LEFT, OUTPUT_TOP));
 
         // Player inventory + hotbar.
         for (int row = 0; row < 3; ++row) {

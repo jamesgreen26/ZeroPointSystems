@@ -36,11 +36,11 @@ import java.util.List;
  * Supports vanilla shaped/shapeless recipes and (when Create is loaded) Create mechanical crafting.
  */
 public class AssemblerBlockEntity extends BlockEntity implements MenuProvider {
-    public static final int GRID_WIDTH = 4;
-    public static final int GRID_HEIGHT = 4;
-    public static final int PATTERN_SLOTS = GRID_WIDTH * GRID_HEIGHT; // 16
-    public static final int INPUT_SLOTS = 12; // 2x6
-    public static final int OUTPUT_SLOTS = 4; // 4x1
+    public static final int GRID_WIDTH = 5;
+    public static final int GRID_HEIGHT = 5;
+    public static final int PATTERN_SLOTS = GRID_WIDTH * GRID_HEIGHT; // 25
+    public static final int INPUT_SLOTS = 12; // 4x3
+    public static final int OUTPUT_SLOTS = 1; // 1x1
 
     private static final int MAX_ENERGY = 8192;
     private static final int MAX_RECEIVE = 512;
@@ -267,16 +267,25 @@ public class AssemblerBlockEntity extends BlockEntity implements MenuProvider {
         super.loadAdditional(tag, registries);
         energyStorage.setEnergyStoredExact(tag.getInt("Energy"));
         cooldown = tag.getInt("Cooldown");
-        if (tag.contains("Pattern")) {
-            pattern.deserializeNBT(registries, tag.getCompound("Pattern"));
-        }
-        if (tag.contains("Input")) {
-            input.deserializeNBT(registries, tag.getCompound("Input"));
-        }
-        if (tag.contains("Output")) {
-            output.deserializeNBT(registries, tag.getCompound("Output"));
-        }
+        loadFixedSize(pattern, tag, "Pattern", registries);
+        loadFixedSize(input, tag, "Input", registries);
+        loadFixedSize(output, tag, "Output", registries);
         invalidateResult();
+    }
+
+    /**
+     * Deserializes a handler while keeping its current (fixed) slot count, ignoring any stale {@code Size}
+     * saved by an earlier layout. Stacks in slots beyond the current size are dropped. This prevents an
+     * out-of-range crash when the machine's slot counts change between versions.
+     */
+    private static void loadFixedSize(ItemStackHandler handler, CompoundTag tag, String key,
+                                      HolderLookup.Provider registries) {
+        if (!tag.contains(key)) {
+            return;
+        }
+        CompoundTag inv = tag.getCompound(key).copy();
+        inv.remove("Size");
+        handler.deserializeNBT(registries, inv);
     }
 
     @Override

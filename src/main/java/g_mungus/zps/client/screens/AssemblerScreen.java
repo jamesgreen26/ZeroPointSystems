@@ -1,18 +1,28 @@
 package g_mungus.zps.client.screens;
 
+import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.blockentity.AssemblerBlockEntity;
 import g_mungus.zps.menu.AssemblerMenu;
 import g_mungus.zps.util.NumberFormatter;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.Sheets;
+import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -50,6 +60,8 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> {
     }
 
     private static final int LABEL_COLOR = 0x404040;
+    /** Opacity for ghost/pattern preview items. */
+    private static final float GHOST_ALPHA = 0.6F;
 
     /** Ghost cells already stamped during the current click-drag, so each cell is set only once per drag. */
     private final Set<Integer> draggedGhostSlots = new HashSet<>();
@@ -165,18 +177,57 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> {
     @Override
     protected void renderSlotContents(@NotNull GuiGraphics graphics, @NotNull ItemStack itemStack, @NotNull Slot slot,
                                       @Nullable String countString) {
-        // Ghost/pattern cells: render the item at 50% opacity so it reads as a preview, not real contents.
+        // Ghost/pattern cells: render the item as a translucent preview, not real contents.
         if (slot.index < AssemblerBlockEntity.PATTERN_SLOTS && !itemStack.isEmpty()) {
-            RenderSystem.enableBlend();
-            RenderSystem.defaultBlendFunc();
-            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 0.6F);
-            graphics.renderItem(itemStack, slot.x, slot.y);
-            graphics.flush();
-            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-            RenderSystem.disableBlend();
+            renderGhostItem(graphics, itemStack, slot.x, slot.y);
             return;
         }
         super.renderSlotContents(graphics, itemStack, slot, countString);
+    }
+
+    /**
+     * Renders a GUI item at {@link #GHOST_ALPHA} opacity. Unlike a plain {@code renderItem} + shader-color
+     * tint (which only fades flat item models), this also fades block items by routing their opaque cutout
+     * render sheet through the translucent block sheet so the alpha actually blends.
+     */
+    private void renderGhostItem(GuiGraphics graphics, ItemStack stack, int x, int y) {
+        ItemRenderer itemRenderer = this.minecraft.getItemRenderer();
+        BakedModel model = itemRenderer.getModel(stack, this.minecraft.level, this.minecraft.player, 0);
+
+        PoseStack pose = graphics.pose();
+        pose.pushPose();
+        pose.translate(x + 8.0, y + 8.0, 150.0);
+        pose.scale(16.0F, -16.0F, 16.0F);
+
+        boolean flatLight = !model.usesBlockLight();
+        if (flatLight) {
+            Lighting.setupForFlatItems();
+        }
+
+        MultiBufferSource.BufferSource base = graphics.bufferSource();
+        MultiBufferSource translucent = renderType -> base.getBuffer(toTranslucentSheet(renderType));
+
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, GHOST_ALPHA);
+        itemRenderer.render(stack, ItemDisplayContext.GUI, false, pose, translucent,
+                LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, model);
+        graphics.flush();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.disableBlend();
+
+        if (flatLight) {
+            Lighting.setupFor3DItems();
+        }
+        pose.popPose();
+    }
+
+    /** Swaps the opaque block render sheets for the translucent one so block-item alpha blends. */
+    private static RenderType toTranslucentSheet(RenderType renderType) {
+        if (renderType == Sheets.solidBlockSheet() || renderType == Sheets.cutoutBlockSheet()) {
+            return Sheets.translucentCullBlockSheet();
+        }
+        return renderType;
     }
 
     private int getEnergyFill() {

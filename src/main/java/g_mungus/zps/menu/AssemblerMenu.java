@@ -177,19 +177,31 @@ public class AssemblerMenu extends RecipeBookMenu<CraftingInput, CraftingRecipe>
         List<Ingredient> ingredients = recipe.getIngredients();
         List<Ingredient> grid = new ArrayList<>(Collections.nCopies(AssemblerBlockEntity.PATTERN_SLOTS, Ingredient.EMPTY));
 
+        // Determine the recipe's bounding box. Shaped recipes carry their own width/height; shapeless recipes
+        // are packed row-major into a crafting-grid-sized (up to 3 wide) box.
+        int recipeWidth;
+        int recipeHeight;
         if (recipe instanceof ShapedRecipe shaped) {
-            // Shaped: place the w x h block anchored at the pattern's top-left corner.
-            int width = shaped.getWidth();
-            int height = shaped.getHeight();
-            for (int row = 0; row < height && row < AssemblerBlockEntity.GRID_HEIGHT; row++) {
-                for (int col = 0; col < width && col < AssemblerBlockEntity.GRID_WIDTH; col++) {
-                    grid.set(row * AssemblerBlockEntity.GRID_WIDTH + col, ingredients.get(row * width + col));
-                }
-            }
+            recipeWidth = shaped.getWidth();
+            recipeHeight = shaped.getHeight();
         } else {
-            // Shapeless (or other): flow ingredients row-major across the grid.
-            for (int i = 0; i < ingredients.size() && i < grid.size(); i++) {
-                grid.set(i, ingredients.get(i));
+            int count = ingredients.size();
+            recipeWidth = Math.max(1, Math.min(count, 3));
+            recipeHeight = (count + recipeWidth - 1) / recipeWidth;
+        }
+
+        // Center the box in the 5x5 pattern, rounding toward the top-left when it can't sit dead-centre.
+        int placedWidth = Math.min(recipeWidth, AssemblerBlockEntity.GRID_WIDTH);
+        int placedHeight = Math.min(recipeHeight, AssemblerBlockEntity.GRID_HEIGHT);
+        int offsetX = (AssemblerBlockEntity.GRID_WIDTH - placedWidth) / 2;
+        int offsetY = (AssemblerBlockEntity.GRID_HEIGHT - placedHeight) / 2;
+        for (int row = 0; row < placedHeight; row++) {
+            for (int col = 0; col < placedWidth; col++) {
+                int source = row * recipeWidth + col;
+                if (source < ingredients.size()) {
+                    int cell = (row + offsetY) * AssemblerBlockEntity.GRID_WIDTH + (col + offsetX);
+                    grid.set(cell, ingredients.get(source));
+                }
             }
         }
 

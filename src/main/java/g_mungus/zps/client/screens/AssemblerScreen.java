@@ -3,6 +3,7 @@ package g_mungus.zps.client.screens;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.createmod.ponder.enums.PonderGuiTextures;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.blockentity.AssemblerBlockEntity;
 import g_mungus.zps.item.ModComponents;
@@ -32,6 +33,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -62,6 +64,20 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> {
     private static final int ARROW_HEIGHT = 17;
     private static final int ARROW_U = 186;
     private static final int ARROW_V = 180;
+
+    // Only the left blue panel of the texture (up to the black seam before the grey panels) is drawn when the
+    // right side is collapsed.
+    private static final int LEFT_PANEL_WIDTH = 103;
+
+    // Book/trash buttons, centered (relative to leftPos/topPos) in the empty blue space below the pattern grid.
+    // Icons are 16x16, drawn with no background or outline. Left = book (toggle panel), right = trash (clear).
+    private static final int PANEL_BUTTON_SIZE = 16;
+    private static final int PANEL_BUTTON_Y = 135;
+    private static final int BOOK_BUTTON_X = 32;
+    private static final int TRASH_BUTTON_X = 56;
+    private static final ItemStack BOOK_ICON = new ItemStack(Items.WRITABLE_BOOK);
+    private static final Component TOGGLE_PANEL_TOOLTIP = Component.translatable("gui.zps.assembler.toggle_panel");
+    private static final Component CLEAR_PATTERN_TOOLTIP = Component.translatable("gui.zps.assembler.clear_pattern");
 
     public AssemblerScreen(AssemblerMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -97,8 +113,30 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> {
         this.slotClicked(this.menu.slots.get(slotId), slotId, button, ClickType.PICKUP);
     }
 
+    /** True if the cursor is over the given panel button (coordinates relative to the GUI origin). */
+    private boolean overPanelButton(double mouseX, double mouseY, int buttonX) {
+        double x = mouseX - this.leftPos;
+        double y = mouseY - this.topPos;
+        return x >= buttonX && x < buttonX + PANEL_BUTTON_SIZE
+                && y >= PANEL_BUTTON_Y && y < PANEL_BUTTON_Y + PANEL_BUTTON_SIZE;
+    }
+
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0) {
+            if (overPanelButton(mouseX, mouseY, BOOK_BUTTON_X)) {
+                this.menu.toggleRightPanel();
+                playButtonClick();
+                return true;
+            }
+            if (overPanelButton(mouseX, mouseY, TRASH_BUTTON_X)) {
+                if (this.minecraft != null && this.minecraft.gameMode != null) {
+                    this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, AssemblerMenu.BUTTON_CLEAR_PATTERN);
+                }
+                playButtonClick();
+                return true;
+            }
+        }
         if (button == 0 || button == 1) {
             int id = ghostSlotAt(mouseX, mouseY);
             if (id >= 0) {
@@ -109,6 +147,14 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> {
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    private void playButtonClick() {
+        if (this.minecraft != null) {
+            this.minecraft.getSoundManager().play(
+                    net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+                            net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+        }
     }
 
     @Override
@@ -134,8 +180,26 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> {
     @Override
     public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
+        renderPanelButtons(graphics);
         this.renderTooltip(graphics, mouseX, mouseY);
-        renderEnergyTooltip(graphics, mouseX, mouseY);
+        if (!this.menu.isRightPanelCollapsed()) {
+            renderEnergyTooltip(graphics, mouseX, mouseY);
+        }
+        renderPanelButtonTooltips(graphics, mouseX, mouseY);
+    }
+
+    /** Draws the book (toggle) and trash (clear) icons — icon only, no button background or outline. */
+    private void renderPanelButtons(GuiGraphics graphics) {
+        graphics.renderItem(BOOK_ICON, this.leftPos + BOOK_BUTTON_X, this.topPos + PANEL_BUTTON_Y);
+        PonderGuiTextures.ICON_CONFIG_DISCARD.render(graphics, this.leftPos + TRASH_BUTTON_X, this.topPos + PANEL_BUTTON_Y);
+    }
+
+    private void renderPanelButtonTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
+        if (overPanelButton(mouseX, mouseY, BOOK_BUTTON_X)) {
+            graphics.renderTooltip(this.font, TOGGLE_PANEL_TOOLTIP, mouseX, mouseY);
+        } else if (overPanelButton(mouseX, mouseY, TRASH_BUTTON_X)) {
+            graphics.renderTooltip(this.font, CLEAR_PATTERN_TOOLTIP, mouseX, mouseY);
+        }
     }
 
     private void renderEnergyTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -150,7 +214,13 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> {
         int x = this.leftPos;
         int y = this.topPos;
         // Explicit texture dimensions are required so the 512x256 file is not treated as 256x256 (which stretches).
-        graphics.blit(TEXTURE, x, y, 0.0F, 0.0F, this.imageWidth, this.imageHeight, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+        // When collapsed, only the left blue panel is drawn; the right grey panels (and everything on them) are hidden.
+        boolean collapsed = this.menu.isRightPanelCollapsed();
+        int drawWidth = collapsed ? LEFT_PANEL_WIDTH : this.imageWidth;
+        graphics.blit(TEXTURE, x, y, 0.0F, 0.0F, drawWidth, this.imageHeight, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+        if (collapsed) {
+            return;
+        }
 
         int energyFill = getEnergyFill();
         if (energyFill > 0) {
@@ -179,6 +249,10 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> {
         // Section labels replace the machine title. No inventory label.
         graphics.drawString(this.font, Component.translatable("gui.zps.assembler.crafting"),
                 AssemblerMenu.GRID_LEFT, 20, LABEL_COLOR, false);
+        // The input/FE labels sit on the right grey panels, which are hidden when collapsed.
+        if (this.menu.isRightPanelCollapsed()) {
+            return;
+        }
         graphics.drawString(this.font, Component.translatable("gui.zps.assembler.input"),
                 AssemblerMenu.INPUT_LEFT, 6, LABEL_COLOR, false);
         graphics.drawString(this.font, "FE", ENERGY_CENTER_X + 1 - this.font.width("FE") / 2, 6, LABEL_COLOR, false);

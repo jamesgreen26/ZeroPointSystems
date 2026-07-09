@@ -46,9 +46,19 @@ public class AssemblerMenu extends AbstractContainerMenu {
     private static final int PLAYER_INV_TOP = 84;
     private static final int HOTBAR_TOP = 142;
 
+    /** Menu-button id for the clear-pattern (trash) button, routed server-side via {@link #clickMenuButton}. */
+    public static final int BUTTON_CLEAR_PATTERN = 0;
+
     private final AssemblerBlockEntity blockEntity;
     private final ContainerData data;
     private final ContainerLevelAccess access;
+
+    /**
+     * Client-only view state: when {@code true} the right-hand grey panels (input/output/energy and the
+     * player inventory) are hidden. Making those slots inactive keeps rendering, hover, and click hit-testing
+     * consistent. Never synced — purely local GUI toggling.
+     */
+    private boolean rightPanelCollapsed = false;
 
     public AssemblerMenu(int containerId, Inventory inventory, FriendlyByteBuf buffer) {
         this(containerId, inventory, buffer.readBlockPos());
@@ -81,7 +91,7 @@ public class AssemblerMenu extends AbstractContainerMenu {
         for (int row = 0; row < 3; ++row) {
             for (int col = 0; col < 4; ++col) {
                 int index = col + row * 4;
-                this.addSlot(new SlotItemHandler(input, index, INPUT_LEFT + col * 18, INPUT_TOP + row * 18));
+                this.addSlot(new CollapsibleSlotItemHandler(input, index, INPUT_LEFT + col * 18, INPUT_TOP + row * 18));
             }
         }
 
@@ -91,11 +101,11 @@ public class AssemblerMenu extends AbstractContainerMenu {
         // Player inventory + hotbar.
         for (int row = 0; row < 3; ++row) {
             for (int col = 0; col < 9; ++col) {
-                this.addSlot(new Slot(inventory, col + row * 9 + 9, PLAYER_INV_LEFT + col * 18, PLAYER_INV_TOP + row * 18));
+                this.addSlot(new CollapsibleSlot(inventory, col + row * 9 + 9, PLAYER_INV_LEFT + col * 18, PLAYER_INV_TOP + row * 18));
             }
         }
         for (int col = 0; col < 9; ++col) {
-            this.addSlot(new Slot(inventory, col, PLAYER_INV_LEFT + col * 18, HOTBAR_TOP));
+            this.addSlot(new CollapsibleSlot(inventory, col, PLAYER_INV_LEFT + col * 18, HOTBAR_TOP));
         }
 
         this.addDataSlots(data);
@@ -124,6 +134,26 @@ public class AssemblerMenu extends AbstractContainerMenu {
             return;
         }
         super.clicked(slotId, button, clickType, player);
+    }
+
+    @Override
+    public boolean clickMenuButton(@NotNull Player player, int id) {
+        if (id == BUTTON_CLEAR_PATTERN) {
+            blockEntity.clearPattern();
+            return true;
+        }
+        return super.clickMenuButton(player, id);
+    }
+
+    /** Whether the right-hand grey panels are currently hidden (client view state). */
+    public boolean isRightPanelCollapsed() {
+        return rightPanelCollapsed;
+    }
+
+    /** Toggles right-panel visibility and returns the new state (client view state only). */
+    public boolean toggleRightPanel() {
+        rightPanelCollapsed = !rightPanelCollapsed;
+        return rightPanelCollapsed;
     }
 
     @Override
@@ -212,8 +242,8 @@ public class AssemblerMenu extends AbstractContainerMenu {
         }
     }
 
-    /** Output buffer slot: crafted results only, never accepts manual insertion. */
-    private static class OutputSlot extends SlotItemHandler {
+    /** Output buffer slot: crafted results only, never accepts manual insertion. Hidden when collapsed. */
+    private class OutputSlot extends SlotItemHandler {
         private OutputSlot(IItemHandler handler, int index, int x, int y) {
             super(handler, index, x, y);
         }
@@ -221,6 +251,35 @@ public class AssemblerMenu extends AbstractContainerMenu {
         @Override
         public boolean mayPlace(@NotNull ItemStack stack) {
             return false;
+        }
+
+        @Override
+        public boolean isActive() {
+            return !rightPanelCollapsed;
+        }
+    }
+
+    /** Input buffer slot that hides (deactivates) when the right panel is collapsed. */
+    private class CollapsibleSlotItemHandler extends SlotItemHandler {
+        private CollapsibleSlotItemHandler(IItemHandler handler, int index, int x, int y) {
+            super(handler, index, x, y);
+        }
+
+        @Override
+        public boolean isActive() {
+            return !rightPanelCollapsed;
+        }
+    }
+
+    /** Player inventory/hotbar slot that hides (deactivates) when the right panel is collapsed. */
+    private class CollapsibleSlot extends Slot {
+        private CollapsibleSlot(net.minecraft.world.Container container, int index, int x, int y) {
+            super(container, index, x, y);
+        }
+
+        @Override
+        public boolean isActive() {
+            return !rightPanelCollapsed;
         }
     }
 }

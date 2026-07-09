@@ -80,7 +80,8 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> impl
     private static final int PANEL_BUTTON_Y = 135;
     private static final int BOOK_BUTTON_X = 32;
     private static final int TRASH_BUTTON_X = 56;
-    private static final ItemStack BOOK_ICON = new ItemStack(Items.WRITABLE_BOOK);
+    // The green book that vanilla uses for its recipe-book toggle button (same art as the knowledge book item).
+    private static final ItemStack BOOK_ICON = new ItemStack(Items.KNOWLEDGE_BOOK);
     private static final Component TOGGLE_PANEL_TOOLTIP = Component.translatable("gui.zps.assembler.toggle_panel");
     private static final Component CLEAR_PATTERN_TOOLTIP = Component.translatable("gui.zps.assembler.clear_pattern");
 

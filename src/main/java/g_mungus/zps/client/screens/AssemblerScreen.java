@@ -8,6 +8,7 @@ import g_mungus.zps.ZPSMod;
 import g_mungus.zps.blockentity.AssemblerBlockEntity;
 import g_mungus.zps.item.ModComponents;
 import g_mungus.zps.menu.AssemblerMenu;
+import g_mungus.zps.mixin.RecipeBookComponentAccessor;
 import g_mungus.zps.util.NumberFormatter;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
@@ -41,7 +42,6 @@ import net.minecraft.world.item.Items;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -99,21 +99,7 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> impl
     private static final int TAB_WIDTH = 35;
     private static final int TAB_HEIGHT = 27;
 
-    /** Cached handles to {@link RecipeBookComponent}'s private tab state (see repositionRecipeBookTabs). */
-    private static final Field TAB_BUTTONS_FIELD = resolveField("tabButtons");
-    private static final Field SELECTED_TAB_FIELD = resolveField("selectedTab");
-
     private final RecipeBookComponent recipeBook = new RecipeBookComponent();
-
-    private static Field resolveField(String name) {
-        try {
-            Field field = RecipeBookComponent.class.getDeclaredField(name);
-            field.setAccessible(true);
-            return field;
-        } catch (NoSuchFieldException e) {
-            return null;
-        }
-    }
 
     public AssemblerScreen(AssemblerMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -151,36 +137,30 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> impl
      * the tab list and recomputes positions only on init/visibility changes, so we re-apply every frame; the
      * buttons carry their own hitbox, so click detection follows.
      */
-    @SuppressWarnings("unchecked")
     private void repositionRecipeBookTabs() {
-        if (TAB_BUTTONS_FIELD == null) {
-            return;
-        }
-        try {
-            List<RecipeBookTabButton> tabs = (List<RecipeBookTabButton>) TAB_BUTTONS_FIELD.get(this.recipeBook);
-            Object selected = SELECTED_TAB_FIELD == null ? null : SELECTED_TAB_FIELD.get(this.recipeBook);
-            int tabX = this.leftPos + RECIPE_BOOK_X + RecipeBookComponent.IMAGE_WIDTH - TAB_RIGHT_OVERLAP;
+        RecipeBookComponentAccessor accessor = (RecipeBookComponentAccessor) this.recipeBook;
+        List<RecipeBookTabButton> tabs = accessor.getTabButtons();
+        RecipeBookTabButton selected = accessor.getSelectedTab();
+        int tabX = this.leftPos + RECIPE_BOOK_X + RecipeBookComponent.IMAGE_WIDTH - TAB_RIGHT_OVERLAP;
 
-            for (int i = 0; i < tabs.size(); i++) {
-                RecipeBookTabButton tab = tabs.get(i);
-                if (!(tab instanceof RightSideTabButton)) {
-                    // Replace the vanilla button in place, carrying over its category, selection and layout, and
-                    // keep the component's private selectedTab reference pointing at the live instance.
-                    RightSideTabButton replacement = new RightSideTabButton(tab.getCategory());
-                    replacement.visible = tab.visible;
-                    replacement.setStateTriggered(tab.isStateTriggered());
-                    replacement.setPosition(tab.getX(), tab.getY());
-                    tabs.set(i, replacement);
-                    if (selected == tab && SELECTED_TAB_FIELD != null) {
-                        SELECTED_TAB_FIELD.set(this.recipeBook, replacement);
-                    }
-                    tab = replacement;
+        for (int i = 0; i < tabs.size(); i++) {
+            RecipeBookTabButton tab = tabs.get(i);
+            if (!(tab instanceof RightSideTabButton)) {
+                // Replace the vanilla button in place, carrying over its category, selection and layout, and
+                // keep the component's selectedTab reference pointing at the live instance.
+                RightSideTabButton replacement = new RightSideTabButton(tab.getCategory());
+                replacement.visible = tab.visible;
+                replacement.setStateTriggered(tab.isStateTriggered());
+                replacement.setPosition(tab.getX(), tab.getY());
+                tabs.set(i, replacement);
+                if (selected == tab) {
+                    accessor.setSelectedTab(replacement);
                 }
-                if (tab.visible) {
-                    tab.setX(tabX);
-                }
+                tab = replacement;
             }
-        } catch (IllegalAccessException ignored) {
+            if (tab.visible) {
+                tab.setX(tabX);
+            }
         }
     }
 

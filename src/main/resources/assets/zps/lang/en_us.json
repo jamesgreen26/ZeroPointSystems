@@ -14,8 +14,6 @@
     "gui.zps.assembler.input": "Input",
     "gui.zps.assembler.crafting": "Crafting Pattern",
     "gui.zps.assembler.tag_ingredient": "Accepts any item in:",
-    "gui.zps.assembler.toggle_panel": "Toggle panel",
-    "gui.zps.assembler.clear_pattern": "Clear pattern",
     "block.zps.octo_controller": "Octo-Controller",
     "block.zps.dodeca_controller": "Dodeca-Controller",
     "block.zps.switch_panel": "Switch Panel",

@@ -13,6 +13,8 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.RecipeBookCategories;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractButton;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.recipebook.RecipeBookComponent;
@@ -37,7 +39,6 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -73,18 +74,14 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> impl
     // right side is collapsed.
     private static final int LEFT_PANEL_WIDTH = 104;
 
-    // Book/trash buttons, centered (relative to leftPos/topPos) in the empty blue space below the pattern grid.
-    // Icons are 16x16, drawn with no background or outline. Left = book (toggle panel), right = trash (clear).
-    private static final int PANEL_BUTTON_SIZE = 16;
-    private static final int PANEL_BUTTON_Y = 135;
-    private static final int BOOK_BUTTON_X = 32;
-    private static final int TRASH_BUTTON_X = 56;
-    // The green book that vanilla uses for its recipe-book toggle button (same art as the knowledge book item).
-    private static final ItemStack BOOK_ICON = new ItemStack(Items.KNOWLEDGE_BOOK);
-    // Barrier block texture for the clear-pattern (trash) button.
-    private static final ItemStack CLEAR_ICON = new ItemStack(Items.BARRIER);
-    private static final Component TOGGLE_PANEL_TOOLTIP = Component.translatable("gui.zps.assembler.toggle_panel");
-    private static final Component CLEAR_PATTERN_TOOLTIP = Component.translatable("gui.zps.assembler.clear_pattern");
+    // Recipe-book toggle button (custom textures), centered in the empty blue space below the pattern grid. The
+    // highlighted texture is shown while hovered.
+    private static final int RECIPE_BUTTON_WIDTH = 20;
+    private static final int RECIPE_BUTTON_HEIGHT = 18;
+    private static final int RECIPE_BUTTON_X = 42;  // relative to leftPos; centers the button under the grid
+    private static final int RECIPE_BUTTON_Y = 134; // relative to topPos; centers the button in the empty space
+    private static final ResourceLocation RECIPE_BUTTON_TEXTURE = ZPSMod.resource("textures/gui/button.png");
+    private static final ResourceLocation RECIPE_BUTTON_HIGHLIGHTED_TEXTURE = ZPSMod.resource("textures/gui/button_highlighted.png");
 
     // The embedded vanilla recipe book fills the space where the grey panels were: its left edge sits just past
     // the blue panel's seam. The book positions everything from its stored `width`, so we feed init() a width
@@ -118,6 +115,8 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> impl
         this.addWidget(this.recipeBook);
         // init() seeds visibility from saved book data; force it to follow our collapse state instead.
         syncRecipeBookVisibility();
+        // The recipe-book toggle button (custom textures) shows/hides the book.
+        this.addRenderableWidget(new RecipeToggleButton(this.leftPos + RECIPE_BUTTON_X, this.topPos + RECIPE_BUTTON_Y));
     }
 
     /** The width to hand {@link RecipeBookComponent#init} so its 147px book renders at {@code leftPos + RECIPE_BOOK_X}. */
@@ -178,7 +177,7 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> impl
 
     private static final int LABEL_COLOR = 0x404040;
     /** Opacity for ghost/pattern preview items. */
-    private static final float GHOST_ALPHA = 0.6F;
+    private static final float GHOST_ALPHA = 0.65F;
 
     /** Ghost cells already stamped during the current click-drag, so each cell is set only once per drag. */
     private final Set<Integer> draggedGhostSlots = new HashSet<>();
@@ -204,31 +203,8 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> impl
         this.slotClicked(this.menu.slots.get(slotId), slotId, button, ClickType.PICKUP);
     }
 
-    /** True if the cursor is over the given panel button (coordinates relative to the GUI origin). */
-    private boolean overPanelButton(double mouseX, double mouseY, int buttonX) {
-        double x = mouseX - this.leftPos;
-        double y = mouseY - this.topPos;
-        return x >= buttonX && x < buttonX + PANEL_BUTTON_SIZE
-                && y >= PANEL_BUTTON_Y && y < PANEL_BUTTON_Y + PANEL_BUTTON_SIZE;
-    }
-
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0) {
-            if (overPanelButton(mouseX, mouseY, BOOK_BUTTON_X)) {
-                this.menu.toggleRightPanel();
-                syncRecipeBookVisibility();
-                playButtonClick();
-                return true;
-            }
-            if (overPanelButton(mouseX, mouseY, TRASH_BUTTON_X)) {
-                if (this.minecraft != null && this.minecraft.gameMode != null) {
-                    this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, AssemblerMenu.BUTTON_CLEAR_PATTERN);
-                }
-                playButtonClick();
-                return true;
-            }
-        }
         if (this.recipeBook.isVisible() && this.recipeBook.mouseClicked(mouseX, mouseY, button)) {
             this.setFocused(this.recipeBook);
             return true;
@@ -243,14 +219,6 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> impl
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
-    }
-
-    private void playButtonClick() {
-        if (this.minecraft != null) {
-            this.minecraft.getSoundManager().play(
-                    net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
-                            net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
-        }
     }
 
     @Override
@@ -307,28 +275,12 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> impl
             repositionRecipeBookTabs();
             this.recipeBook.render(graphics, mouseX, mouseY, partialTick);
         }
-        renderPanelButtons(graphics);
         this.renderTooltip(graphics, mouseX, mouseY);
         if (!this.menu.isRightPanelCollapsed()) {
             renderEnergyTooltip(graphics, mouseX, mouseY);
         }
-        renderPanelButtonTooltips(graphics, mouseX, mouseY);
         if (this.recipeBook.isVisible()) {
             this.recipeBook.renderTooltip(graphics, this.leftPos, this.topPos, mouseX, mouseY);
-        }
-    }
-
-    /** Draws the book (toggle) and trash (clear) icons — icon only, no button background or outline. */
-    private void renderPanelButtons(GuiGraphics graphics) {
-        graphics.renderItem(BOOK_ICON, this.leftPos + BOOK_BUTTON_X, this.topPos + PANEL_BUTTON_Y);
-        graphics.renderItem(CLEAR_ICON, this.leftPos + TRASH_BUTTON_X, this.topPos + PANEL_BUTTON_Y);
-    }
-
-    private void renderPanelButtonTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
-        if (overPanelButton(mouseX, mouseY, BOOK_BUTTON_X)) {
-            graphics.renderTooltip(this.font, TOGGLE_PANEL_TOOLTIP, mouseX, mouseY);
-        } else if (overPanelButton(mouseX, mouseY, TRASH_BUTTON_X)) {
-            graphics.renderTooltip(this.font, CLEAR_PATTERN_TOOLTIP, mouseX, mouseY);
         }
     }
 
@@ -493,6 +445,40 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> impl
 
     private static String formatEnergy(int stored, int max) {
         return NumberFormatter.formatInt(stored) + " / " + NumberFormatter.formatInt(max) + " FE";
+    }
+
+    /**
+     * Toggles the recipe book, drawing the mod's custom button textures ({@link #RECIPE_BUTTON_TEXTURE} /
+     * {@link #RECIPE_BUTTON_HIGHLIGHTED_TEXTURE}) directly rather than through the GUI sprite atlas. Focus is
+     * never retained, so the highlighted texture only shows while hovered and doesn't linger after a click.
+     */
+    private final class RecipeToggleButton extends AbstractButton {
+        private RecipeToggleButton(int x, int y) {
+            super(x, y, RECIPE_BUTTON_WIDTH, RECIPE_BUTTON_HEIGHT, Component.empty());
+        }
+
+        @Override
+        public void onPress() {
+            AssemblerScreen.this.menu.toggleRightPanel();
+            syncRecipeBookVisibility();
+        }
+
+        @Override
+        protected void renderWidget(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+            ResourceLocation texture = isHoveredOrFocused() ? RECIPE_BUTTON_HIGHLIGHTED_TEXTURE : RECIPE_BUTTON_TEXTURE;
+            graphics.blit(texture, getX(), getY(), 0, 0, this.width, this.height, this.width, this.height);
+        }
+
+        @Override
+        protected void updateWidgetNarration(@NotNull NarrationElementOutput narration) {
+            defaultButtonNarrationText(narration);
+        }
+
+        @Override
+        public void setFocused(boolean focused) {
+            // Never retain focus after a click, so the highlighted texture doesn't linger once the mouse leaves.
+            super.setFocused(false);
+        }
     }
 
     /**

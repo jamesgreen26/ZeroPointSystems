@@ -62,9 +62,6 @@ public class AssemblerMenu extends RecipeBookMenu<CraftingInput, CraftingRecipe>
     private static final int PLAYER_INV_TOP = 84;
     private static final int HOTBAR_TOP = 142;
 
-    /** Menu-button id for the clear-pattern (trash) button, routed server-side via {@link #clickMenuButton}. */
-    public static final int BUTTON_CLEAR_PATTERN = 0;
-
     private final AssemblerBlockEntity blockEntity;
     private final ContainerData data;
     private final ContainerLevelAccess access;
@@ -150,15 +147,6 @@ public class AssemblerMenu extends RecipeBookMenu<CraftingInput, CraftingRecipe>
             return;
         }
         super.clicked(slotId, button, clickType, player);
-    }
-
-    @Override
-    public boolean clickMenuButton(@NotNull Player player, int id) {
-        if (id == BUTTON_CLEAR_PATTERN) {
-            blockEntity.clearPattern();
-            return true;
-        }
-        return super.clickMenuButton(player, id);
     }
 
     /**

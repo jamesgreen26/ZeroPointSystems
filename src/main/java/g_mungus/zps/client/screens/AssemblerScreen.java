@@ -23,9 +23,9 @@ import java.util.Set;
 public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> {
     private static final ResourceLocation TEXTURE = ZPSMod.resource("textures/gui/assembler.png");
 
-    private static final int ENERGY_BAR_X = 152;
+    private static final int ENERGY_BAR_X = 153;
     private static final int ENERGY_BAR_Y = 35;
-    private static final int ENERGY_BAR_WIDTH = 11;
+    private static final int ENERGY_BAR_WIDTH = 10;
     private static final int ENERGY_BAR_HEIGHT = 72;
     private static final int ENERGY_COLOR = 0xFF2380A8;
 

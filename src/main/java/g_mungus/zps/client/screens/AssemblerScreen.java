@@ -31,6 +31,17 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> {
     private static final int ENERGY_BAR_WIDTH = 10;
     private static final int ENERGY_BAR_HEIGHT = 54;
     private static final int ENERGY_COLOR = 0xFF2380A8;
+    /** Center of the energy well (256..266) for centering the FE label. */
+    private static final int ENERGY_CENTER_X = 261;
+
+    // Progress arrow: empty arrow is baked into the GUI at (ARROW_X, ARROW_Y); the filled sprite lives
+    // in the texture's free area at (ARROW_U, ARROW_V) and is blitted left-to-right by progress.
+    private static final int ARROW_X = 186;
+    private static final int ARROW_Y = 34;
+    private static final int ARROW_WIDTH = 24;
+    private static final int ARROW_HEIGHT = 17;
+    private static final int ARROW_U = 186;
+    private static final int ARROW_V = 180;
 
     public AssemblerScreen(AssemblerMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -125,6 +136,20 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> {
             graphics.fill(x + ENERGY_BAR_X, fillTop,
                     x + ENERGY_BAR_X + ENERGY_BAR_WIDTH, y + ENERGY_BAR_Y + ENERGY_BAR_HEIGHT, ENERGY_COLOR);
         }
+
+        int progressWidth = getProgressWidth();
+        if (progressWidth > 0) {
+            graphics.blit(TEXTURE, x + ARROW_X, y + ARROW_Y, (float) ARROW_U, (float) ARROW_V,
+                    progressWidth, ARROW_HEIGHT, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+        }
+    }
+
+    private int getProgressWidth() {
+        int max = menu.getMaxProgress();
+        if (max <= 0) {
+            return 0;
+        }
+        return Mth.clamp(menu.getProgress() * ARROW_WIDTH / max, 0, ARROW_WIDTH);
     }
 
     @Override
@@ -134,9 +159,7 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> {
                 AssemblerMenu.GRID_LEFT, 20, LABEL_COLOR, false);
         graphics.drawString(this.font, Component.translatable("gui.zps.assembler.input"),
                 AssemblerMenu.INPUT_LEFT, 6, LABEL_COLOR, false);
-        graphics.drawString(this.font, Component.translatable("gui.zps.assembler.output"),
-                213, 21, LABEL_COLOR, false);
-        graphics.drawString(this.font, "FE", ENERGY_BAR_X - 4, 6, LABEL_COLOR, false);
+        graphics.drawString(this.font, "FE", ENERGY_CENTER_X - this.font.width("FE") / 2, 6, LABEL_COLOR, false);
     }
 
     @Override

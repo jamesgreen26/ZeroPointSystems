@@ -13,7 +13,6 @@
     "block.zps.assembler": "Assembler",
     "gui.zps.assembler.input": "Input",
     "gui.zps.assembler.crafting": "Crafting Pattern",
-    "gui.zps.assembler.output": "Output",
     "block.zps.octo_controller": "Octo-Controller",
     "block.zps.dodeca_controller": "Dodeca-Controller",
     "block.zps.switch_panel": "Switch Panel",

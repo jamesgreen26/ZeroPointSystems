@@ -45,8 +45,8 @@ public class AssemblerBlockEntity extends BlockEntity implements MenuProvider {
     private static final int MAX_ENERGY = 8192;
     private static final int MAX_RECEIVE = 512;
     private static final int ENERGY_PER_CRAFT = 256;
-    /** Ticks between craft attempts while powered. */
-    private static final int CRAFT_COOLDOWN = 20;
+    /** Ticks the progress arrow takes to fill before a craft completes (front-loaded delay). */
+    private static final int PROCESS_TIME = 20;
 
     private final AssemblerEnergyStorage energyStorage = new AssemblerEnergyStorage();
     /** Display-only recipe template; never holds real inventory. Synced to the client via the container. */
@@ -62,24 +62,29 @@ public class AssemblerBlockEntity extends BlockEntity implements MenuProvider {
             return switch (index) {
                 case 0 -> energyStorage.getEnergyStored();
                 case 1 -> energyStorage.getMaxEnergyStored();
+                case 2 -> progress;
+                case 3 -> PROCESS_TIME;
                 default -> 0;
             };
         }
 
         @Override
         public void set(int index, int value) {
-            if (index == 0) {
-                energyStorage.setEnergyStoredExact(value);
+            switch (index) {
+                case 0 -> energyStorage.setEnergyStoredExact(value);
+                case 2 -> progress = value;
+                default -> {
+                }
             }
         }
 
         @Override
         public int getCount() {
-            return 2;
+            return 4;
         }
     };
 
-    private int cooldown;
+    private int progress;
     /** Cached crafting result for the current pattern; null means "not yet resolved" for the pattern. */
     @Nullable
     private ItemStack cachedResult;
@@ -115,27 +120,49 @@ public class AssemblerBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
         if (!level.hasNeighborSignal(worldPosition)) {
-            cooldown = 0;
+            resetProgress();
             return;
         }
-        if (cooldown > 0) {
-            cooldown--;
+
+        ItemStack result = getResult();
+        int[] reserved = (result == null || result.isEmpty()) ? null : reserveIngredients();
+        boolean craftable = reserved != null && insertResult(result, true);
+        if (!craftable) {
+            resetProgress();
             return;
         }
-        cooldown = CRAFT_COOLDOWN;
-        tryCraft();
+        if (energyStorage.getEnergyStored() < ENERGY_PER_CRAFT) {
+            return; // Out of power: hold progress, wait for energy.
+        }
+
+        progress++;
+        if (progress >= PROCESS_TIME) {
+            // Commit: pull the reserved ingredients, deposit the result, consume energy.
+            for (int slot = 0; slot < input.getSlots(); slot++) {
+                if (reserved[slot] > 0) {
+                    input.extractItem(slot, reserved[slot], false);
+                }
+            }
+            insertResult(result, false);
+            energyStorage.consume(ENERGY_PER_CRAFT);
+            progress = 0;
+        }
+        setChanged();
     }
 
-    private void tryCraft() {
-        if (energyStorage.getEnergyStored() < ENERGY_PER_CRAFT) {
-            return;
+    private void resetProgress() {
+        if (progress != 0) {
+            progress = 0;
+            setChanged();
         }
-        ItemStack result = getResult();
-        if (result == null || result.isEmpty()) {
-            return;
-        }
+    }
 
-        // Reserve one matching input item per non-empty pattern cell.
+    /**
+     * Reserves one matching input item per non-empty pattern cell, returning the per-slot reservation
+     * counts, or {@code null} if any required ingredient is missing from the input buffer.
+     */
+    @Nullable
+    private int[] reserveIngredients() {
         int[] reserved = new int[input.getSlots()];
         for (int i = 0; i < pattern.getSlots(); i++) {
             ItemStack needed = pattern.getStackInSlot(i);
@@ -143,23 +170,10 @@ public class AssemblerBlockEntity extends BlockEntity implements MenuProvider {
                 continue;
             }
             if (!reserveOne(needed, reserved)) {
-                return; // Missing an ingredient; nothing crafted.
+                return null;
             }
         }
-
-        if (!insertResult(result, true)) {
-            return; // No room in the output buffer.
-        }
-
-        // Commit: pull the reserved ingredients, deposit the result, consume energy.
-        for (int slot = 0; slot < input.getSlots(); slot++) {
-            if (reserved[slot] > 0) {
-                input.extractItem(slot, reserved[slot], false);
-            }
-        }
-        insertResult(result, false);
-        energyStorage.consume(ENERGY_PER_CRAFT);
-        setChanged();
+        return reserved;
     }
 
     /** Marks one more unit of a slot matching {@code needed} as reserved; false if none is available. */
@@ -256,7 +270,7 @@ public class AssemblerBlockEntity extends BlockEntity implements MenuProvider {
     protected void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.saveAdditional(tag, registries);
         tag.putInt("Energy", energyStorage.getEnergyStored());
-        tag.putInt("Cooldown", cooldown);
+        tag.putInt("Progress", progress);
         tag.put("Pattern", pattern.serializeNBT(registries));
         tag.put("Input", input.serializeNBT(registries));
         tag.put("Output", output.serializeNBT(registries));
@@ -266,7 +280,7 @@ public class AssemblerBlockEntity extends BlockEntity implements MenuProvider {
     protected void loadAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.loadAdditional(tag, registries);
         energyStorage.setEnergyStoredExact(tag.getInt("Energy"));
-        cooldown = tag.getInt("Cooldown");
+        progress = tag.getInt("Progress");
         loadFixedSize(pattern, tag, "Pattern", registries);
         loadFixedSize(input, tag, "Input", registries);
         loadFixedSize(output, tag, "Output", registries);

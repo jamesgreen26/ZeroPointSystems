@@ -55,7 +55,7 @@ public class AssemblerMenu extends AbstractContainerMenu {
     }
 
     private AssemblerMenu(int containerId, Inventory inventory, BlockPos pos) {
-        this(containerId, inventory, resolveBlockEntity(inventory.player.level(), pos), new SimpleContainerData(2));
+        this(containerId, inventory, resolveBlockEntity(inventory.player.level(), pos), new SimpleContainerData(4));
     }
 
     public AssemblerMenu(int containerId, Inventory inventory, AssemblerBlockEntity blockEntity, ContainerData data) {
@@ -180,6 +180,14 @@ public class AssemblerMenu extends AbstractContainerMenu {
 
     public int getMaxEnergyStored() {
         return data.get(1);
+    }
+
+    public int getProgress() {
+        return data.get(2);
+    }
+
+    public int getMaxProgress() {
+        return data.get(3);
     }
 
     public AssemblerBlockEntity getBlockEntity() {

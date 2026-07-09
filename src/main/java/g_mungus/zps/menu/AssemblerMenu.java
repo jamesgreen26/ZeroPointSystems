@@ -195,7 +195,12 @@ public class AssemblerMenu extends RecipeBookMenu<CraftingInput, CraftingRecipe>
 
     @Override
     public void fillCraftSlotsStackedContents(@NotNull StackedContents itemHelper) {
-        // The template grid holds no real items; only the player inventory (added by the recipe book) counts.
+        // Count the assembler's input buffer (the items it actually crafts from) toward the recipe book's
+        // "craftable" detection, alongside the player inventory the book already accounts for.
+        IItemHandler input = blockEntity.getInputInventory();
+        for (int i = 0; i < input.getSlots(); i++) {
+            itemHelper.accountSimpleStack(input.getStackInSlot(i));
+        }
     }
 
     @Override

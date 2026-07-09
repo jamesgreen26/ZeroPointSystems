@@ -72,7 +72,7 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> impl
 
     // Only the left blue panel of the texture (up to the black seam before the grey panels) is drawn when the
     // right side is collapsed.
-    private static final int LEFT_PANEL_WIDTH = 103;
+    private static final int LEFT_PANEL_WIDTH = 104;
 
     // Book/trash buttons, centered (relative to leftPos/topPos) in the empty blue space below the pattern grid.
     // Icons are 16x16, drawn with no background or outline. Left = book (toggle panel), right = trash (clear).

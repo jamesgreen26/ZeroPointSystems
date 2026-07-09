@@ -44,7 +44,8 @@ public class AssemblerBlockEntity extends BlockEntity implements MenuProvider {
 
     private static final int MAX_ENERGY = 8192;
     private static final int MAX_RECEIVE = 512;
-    private static final int ENERGY_PER_CRAFT = 256;
+    /** FE drawn each tick while the machine is actively working, like the rolling mill. */
+    private static final int ENERGY_PER_TICK = 16;
     /** Ticks the progress arrow takes to fill before a craft completes (front-loaded delay). */
     private static final int PROCESS_TIME = 20;
 
@@ -131,20 +132,20 @@ public class AssemblerBlockEntity extends BlockEntity implements MenuProvider {
             resetProgress();
             return;
         }
-        if (energyStorage.getEnergyStored() < ENERGY_PER_CRAFT) {
+        if (energyStorage.getEnergyStored() < ENERGY_PER_TICK) {
             return; // Out of power: hold progress, wait for energy.
         }
 
+        energyStorage.consume(ENERGY_PER_TICK);
         progress++;
         if (progress >= PROCESS_TIME) {
-            // Commit: pull the reserved ingredients, deposit the result, consume energy.
+            // Commit: pull the reserved ingredients, deposit the result.
             for (int slot = 0; slot < input.getSlots(); slot++) {
                 if (reserved[slot] > 0) {
                     input.extractItem(slot, reserved[slot], false);
                 }
             }
             insertResult(result, false);
-            energyStorage.consume(ENERGY_PER_CRAFT);
             progress = 0;
         }
         setChanged();

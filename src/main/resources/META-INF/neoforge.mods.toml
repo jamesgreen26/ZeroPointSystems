@@ -6,7 +6,7 @@ license = "MIT"
 modId = "zps"
 version = "${version}"
 displayName = "Zero Point Systems"
-authors = "G_Mungus, Quoissant, Cosmos, PacificCyan"
+authors = "G_Mungus, Quoissant, Cosmos, PacificCyan, RainyAtrium"
 description = '''
 Advanced solutions delivering unmatched efficiency and flexibility.
 '''

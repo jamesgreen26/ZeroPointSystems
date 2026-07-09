@@ -7,7 +7,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.RegistryOps;
 import net.minecraft.world.Containers;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
@@ -16,6 +20,7 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingInput;
+import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -27,12 +32,13 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * Automated crafting machine. A 5x5 ghost "pattern" grid defines a recipe; when the block is powered
  * by redstone, matching ingredients are pulled from the input buffer, the recipe is crafted, and the
- * result is deposited in the output buffer. Each craft consumes a fixed {@link #ENERGY_PER_CRAFT} FE.
+ * result is deposited in the output buffer. Working draws {@link #ENERGY_PER_TICK} FE per tick.
  * Supports vanilla shaped/shapeless recipes and (when Create is loaded) Create mechanical crafting.
  */
 public class AssemblerBlockEntity extends BlockEntity implements MenuProvider {
@@ -52,6 +58,13 @@ public class AssemblerBlockEntity extends BlockEntity implements MenuProvider {
     private final AssemblerEnergyStorage energyStorage = new AssemblerEnergyStorage();
     /** Display-only recipe template; never holds real inventory. Synced to the client via the container. */
     private final ItemStackHandler pattern = new PatternInventory();
+    /**
+     * Authoritative per-cell matcher, parallel to the display {@link #pattern}. A non-null entry (set by the
+     * {@code set_recipe} command from a recipe's {@link Ingredient}) matches input via {@link Ingredient#test}
+     * — preserving item tags. A {@code null} entry means "match the display item exactly" (manual editing).
+     * Server-side only; never synced.
+     */
+    private final Ingredient[] patternIngredients = new Ingredient[PATTERN_SLOTS];
     private final ItemStackHandler input = new BufferInventory(INPUT_SLOTS);
     private final ItemStackHandler output = new BufferInventory(OUTPUT_SLOTS);
     /** Capability view for automation: insert into the input buffer, extract from the output buffer. */
@@ -116,6 +129,42 @@ public class AssemblerBlockEntity extends BlockEntity implements MenuProvider {
         return output;
     }
 
+    /**
+     * Sets a single pattern cell. A {@code null} ingredient means "match the display item exactly" (manual
+     * editing, preserving components); a non-null ingredient enables tag-aware matching via
+     * {@link Ingredient#test}. Called by the menu (manual stamping) and the {@code set_recipe} command.
+     */
+    public void setPatternCell(int index, @Nullable Ingredient ingredient, ItemStack display) {
+        if (index < 0 || index >= PATTERN_SLOTS) {
+            return;
+        }
+        patternIngredients[index] = (ingredient != null && !ingredient.isEmpty()) ? ingredient : null;
+        pattern.setStackInSlot(index, display.isEmpty() ? ItemStack.EMPTY : display.copyWithCount(1));
+    }
+
+    /** Clears the whole pattern (display items and ingredient matchers). */
+    public void clearPattern() {
+        for (int i = 0; i < PATTERN_SLOTS; i++) {
+            setPatternCell(i, null, ItemStack.EMPTY);
+        }
+    }
+
+    /**
+     * Replaces the entire pattern from a 25-cell (row-major 5x5) list of ingredients, clearing whatever was
+     * there. Empty ingredients clear the cell; non-empty ones are stored for tag-aware matching and display
+     * their first representative item. Used by the {@code set_recipe} command.
+     */
+    public void setPattern(List<Ingredient> grid) {
+        for (int i = 0; i < PATTERN_SLOTS; i++) {
+            Ingredient ingredient = i < grid.size() ? grid.get(i) : null;
+            if (ingredient == null || ingredient.isEmpty() || ingredient.getItems().length == 0) {
+                setPatternCell(i, null, ItemStack.EMPTY);
+            } else {
+                setPatternCell(i, ingredient, ingredient.getItems()[0]);
+            }
+        }
+    }
+
     public void serverTick() {
         if (level == null || level.isClientSide()) {
             return;
@@ -165,25 +214,34 @@ public class AssemblerBlockEntity extends BlockEntity implements MenuProvider {
     @Nullable
     private int[] reserveIngredients() {
         int[] reserved = new int[input.getSlots()];
-        for (int i = 0; i < pattern.getSlots(); i++) {
-            ItemStack needed = pattern.getStackInSlot(i);
-            if (needed.isEmpty()) {
+        for (int i = 0; i < PATTERN_SLOTS; i++) {
+            if (pattern.getStackInSlot(i).isEmpty()) {
                 continue;
             }
-            if (!reserveOne(needed, reserved)) {
+            if (!reserveOne(i, reserved)) {
                 return null;
             }
         }
         return reserved;
     }
 
-    /** Marks one more unit of a slot matching {@code needed} as reserved; false if none is available. */
-    private boolean reserveOne(ItemStack needed, int[] reserved) {
+    /**
+     * Reserves one input item matching pattern cell {@code index}; false if none is available. A tag-aware
+     * ingredient (from {@code set_recipe}) matches via {@link Ingredient#test}; otherwise the display item
+     * is matched exactly (component-sensitive).
+     */
+    private boolean reserveOne(int index, int[] reserved) {
+        Ingredient ingredient = patternIngredients[index];
+        ItemStack display = pattern.getStackInSlot(index);
         for (int slot = 0; slot < input.getSlots(); slot++) {
             ItemStack stack = input.getStackInSlot(slot);
-            if (!stack.isEmpty()
-                    && ItemStack.isSameItemSameComponents(stack, needed)
-                    && stack.getCount() - reserved[slot] > 0) {
+            if (stack.isEmpty() || stack.getCount() - reserved[slot] <= 0) {
+                continue;
+            }
+            boolean matches = ingredient != null
+                    ? ingredient.test(stack)
+                    : ItemStack.isSameItemSameComponents(stack, display);
+            if (matches) {
                 reserved[slot]++;
                 return true;
             }
@@ -273,8 +331,26 @@ public class AssemblerBlockEntity extends BlockEntity implements MenuProvider {
         tag.putInt("Energy", energyStorage.getEnergyStored());
         tag.putInt("Progress", progress);
         tag.put("Pattern", pattern.serializeNBT(registries));
+        tag.put("PatternIngredients", savePatternIngredients(registries));
         tag.put("Input", input.serializeNBT(registries));
         tag.put("Output", output.serializeNBT(registries));
+    }
+
+    /** Serializes only the non-null (tag-aware) pattern ingredients, keyed by slot. */
+    private ListTag savePatternIngredients(HolderLookup.Provider registries) {
+        RegistryOps<Tag> ops = registries.createSerializationContext(NbtOps.INSTANCE);
+        ListTag list = new ListTag();
+        for (int i = 0; i < PATTERN_SLOTS; i++) {
+            Ingredient ingredient = patternIngredients[i];
+            if (ingredient == null || ingredient.isEmpty()) {
+                continue;
+            }
+            CompoundTag entry = new CompoundTag();
+            entry.putInt("Slot", i);
+            entry.put("Ingredient", Ingredient.CODEC.encodeStart(ops, ingredient).getOrThrow());
+            list.add(entry);
+        }
+        return list;
     }
 
     @Override
@@ -283,9 +359,29 @@ public class AssemblerBlockEntity extends BlockEntity implements MenuProvider {
         energyStorage.setEnergyStoredExact(tag.getInt("Energy"));
         progress = tag.getInt("Progress");
         loadFixedSize(pattern, tag, "Pattern", registries);
+        loadPatternIngredients(tag, registries);
         loadFixedSize(input, tag, "Input", registries);
         loadFixedSize(output, tag, "Output", registries);
         invalidateResult();
+    }
+
+    /** Restores the tag-aware ingredient matchers; absent entries default to exact display-item matching. */
+    private void loadPatternIngredients(CompoundTag tag, HolderLookup.Provider registries) {
+        Arrays.fill(patternIngredients, null);
+        if (!tag.contains("PatternIngredients")) {
+            return;
+        }
+        RegistryOps<Tag> ops = registries.createSerializationContext(NbtOps.INSTANCE);
+        ListTag list = tag.getList("PatternIngredients", Tag.TAG_COMPOUND);
+        for (int i = 0; i < list.size(); i++) {
+            CompoundTag entry = list.getCompound(i);
+            int slot = entry.getInt("Slot");
+            if (slot < 0 || slot >= PATTERN_SLOTS) {
+                continue;
+            }
+            Ingredient.CODEC.parse(ops, entry.get("Ingredient")).result()
+                    .ifPresent(ingredient -> patternIngredients[slot] = ingredient);
+        }
     }
 
     /**

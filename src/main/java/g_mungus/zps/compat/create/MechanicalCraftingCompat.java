@@ -67,4 +67,13 @@ public final class MechanicalCraftingCompat {
         Optional<RecipeHolder<CraftingRecipe>> found = AllRecipeTypes.MECHANICAL_CRAFTING.find(input, level);
         return found.map(holder -> holder.value().assemble(input, registries)).orElse(null);
     }
+
+    /**
+     * All Create mechanical crafting recipes. Each {@code MechanicalCraftingRecipe} is a vanilla
+     * {@link net.minecraft.world.item.crafting.ShapedRecipe}, so callers can read its ingredients/width/
+     * height through the vanilla API without linking any Create type.
+     */
+    public static List<RecipeHolder<CraftingRecipe>> mechanicalCraftingRecipes(Level level) {
+        return level.getRecipeManager().getAllRecipesFor(AllRecipeTypes.MECHANICAL_CRAFTING.getType());
+    }
 }

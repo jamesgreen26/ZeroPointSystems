@@ -3,17 +3,27 @@ package g_mungus.zps.gametest;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.AssemblerBlockEntity;
+import g_mungus.zps.commands.content.AssemblerRecipeSupport;
+import g_mungus.zps.commands.content.executors.AssemblerRecipeCommand;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
+
+import java.util.Set;
 
 @GameTestHolder(ZPSMod.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -112,5 +122,107 @@ public class AssemblerGameTests {
 
     private static IItemHandlerModifiable modifiable(IItemHandler handler) {
         return (IItemHandlerModifiable) handler;
+    }
+
+    // ---- set_recipe command ----
+
+    private static final ResourceLocation CRAFTING_TABLE = ResourceLocation.withDefaultNamespace("crafting_table");
+    private static final ResourceLocation OAK_PLANKS = ResourceLocation.withDefaultNamespace("oak_planks");
+
+    /** set_recipe fills from a tag recipe (crafting table = 2x2 #planks) and the tag is preserved: a
+     * different member of the tag (spruce) from the input buffer still crafts. */
+    @GameTest(template = TEMPLATE)
+    public static void setRecipePreservesTags(GameTestHelper helper) {
+        AssemblerBlockEntity assembler = place(helper);
+        int result = AssemblerRecipeCommand.setRecipe(helper.getLevel(), helper.absolutePos(POS), CRAFTING_TABLE.toString());
+        if (result != 1) {
+            helper.fail("set_recipe crafting_table returned " + result);
+        }
+        assembler.getEnergyStorage(null).receiveEnergy(512, false);
+        // The #planks display representative is oak; feed spruce, a different member of the same tag.
+        modifiable(assembler.getInputInventory()).setStackInSlot(0, new ItemStack(Items.SPRUCE_PLANKS, 4));
+        helper.setBlock(REDSTONE_POS, Blocks.REDSTONE_BLOCK);
+        helper.runAfterDelay(25, () -> {
+            ItemStack out = assembler.getOutputInventory().getStackInSlot(0);
+            if (!ItemStack.isSameItem(out, Items.CRAFTING_TABLE.getDefaultInstance())) {
+                helper.fail("tag recipe did not accept spruce planks; output=" + out);
+            }
+            helper.succeed();
+        });
+    }
+
+    /** The fulfillable filter includes real crafting recipes and excludes special/dynamic ones. */
+    @GameTest(template = TEMPLATE)
+    public static void setRecipeFulfillableFilter(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Set<ResourceLocation> ids = AssemblerRecipeSupport.fulfillableIds(level);
+        if (!ids.contains(CRAFTING_TABLE)) {
+            helper.fail("fulfillable set is missing crafting_table");
+        }
+        level.getRecipeManager().getAllRecipesFor(RecipeType.CRAFTING).stream()
+                .filter(h -> h.value().getIngredients().isEmpty()
+                        || h.value().getIngredients().stream().allMatch(Ingredient::isEmpty))
+                .findFirst()
+                .ifPresent(special -> {
+                    if (AssemblerRecipeSupport.isFulfillable(special.value()) || ids.contains(special.id())) {
+                        helper.fail("special recipe " + special.id() + " should not be fulfillable");
+                    }
+                });
+        helper.succeed();
+    }
+
+    /** Setting a new recipe clears the previous pattern (crafting table = 4 cells → oak planks = 1 cell). */
+    @GameTest(template = TEMPLATE)
+    public static void setRecipeClearsPrevious(GameTestHelper helper) {
+        AssemblerBlockEntity assembler = place(helper);
+        BlockPos pos = helper.absolutePos(POS);
+        AssemblerRecipeCommand.setRecipe(helper.getLevel(), pos, CRAFTING_TABLE.toString());
+        AssemblerRecipeCommand.setRecipe(helper.getLevel(), pos, OAK_PLANKS.toString());
+        int filled = filledPatternCells(assembler);
+        if (filled != 1) {
+            helper.fail("expected 1 filled pattern cell after re-setting recipe, got " + filled);
+        }
+        helper.succeed();
+    }
+
+    /** An unknown / non-fulfillable recipe id returns 0 and leaves the pattern untouched. */
+    @GameTest(template = TEMPLATE)
+    public static void setRecipeRejectsUnknown(GameTestHelper helper) {
+        AssemblerBlockEntity assembler = place(helper);
+        BlockPos pos = helper.absolutePos(POS);
+        AssemblerRecipeCommand.setRecipe(helper.getLevel(), pos, CRAFTING_TABLE.toString());
+        int result = AssemblerRecipeCommand.setRecipe(helper.getLevel(), pos, "minecraft:this_recipe_does_not_exist");
+        if (result != 0) {
+            helper.fail("unknown recipe should return 0, got " + result);
+        }
+        int filled = filledPatternCells(assembler);
+        if (filled != 4) {
+            helper.fail("pattern should be untouched (4 cells) after a rejected recipe, got " + filled);
+        }
+        helper.succeed();
+    }
+
+    /** The tag-aware ingredients are serialized to NBT under "PatternIngredients". */
+    @GameTest(template = TEMPLATE)
+    public static void setRecipeSerializesIngredients(GameTestHelper helper) {
+        AssemblerBlockEntity assembler = place(helper);
+        AssemblerRecipeCommand.setRecipe(helper.getLevel(), helper.absolutePos(POS), CRAFTING_TABLE.toString());
+        CompoundTag tag = assembler.saveWithoutMetadata(helper.getLevel().registryAccess());
+        int size = tag.getList("PatternIngredients", Tag.TAG_COMPOUND).size();
+        if (size != 4) {
+            helper.fail("expected 4 serialized pattern ingredients, got " + size);
+        }
+        helper.succeed();
+    }
+
+    private static int filledPatternCells(AssemblerBlockEntity assembler) {
+        IItemHandler pattern = assembler.getPatternInventory();
+        int filled = 0;
+        for (int i = 0; i < pattern.getSlots(); i++) {
+            if (!pattern.getStackInSlot(i).isEmpty()) {
+                filled++;
+            }
+        }
+        return filled;
     }
 }

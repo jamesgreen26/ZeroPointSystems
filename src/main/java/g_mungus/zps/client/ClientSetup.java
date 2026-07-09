@@ -30,6 +30,7 @@ import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
+import g_mungus.zps.commands.content.arguments.AssemblerRecipeArgument;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLLoadCompleteEvent;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
@@ -117,6 +118,8 @@ public class ClientSetup {
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
+            // Lets the (common-side) recipe argument reach the client's synced recipe manager for suggestions.
+            AssemblerRecipeArgument.setClientLevelSupplier(() -> net.minecraft.client.Minecraft.getInstance().level);
             EntityRenderers.register(ModEntities.OCTO_MOUNTING.get(), OctoMountingRenderer::new);
             EntityRenderers.register(ModEntities.DODECA_MOUNTING.get(), DodecaMountingRenderer::new);
             BlockEntityRenderers.register(ModBlockEntities.GRADUATED_LEVER.get(), GraduatedLeverBlockEntityRenderer::new);

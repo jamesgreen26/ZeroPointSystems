@@ -111,14 +111,15 @@ public class AssemblerMenu extends AbstractContainerMenu {
 
     @Override
     public void clicked(int slotId, int button, @NotNull ClickType clickType, @NotNull Player player) {
-        // Ghost slots stamp a display-only copy of the carried item without consuming it.
+        // Ghost slots stamp a display-only copy of the carried item without consuming it. Routed through
+        // the block entity so the parallel ingredient matcher stays in sync (manual = null = exact match).
         if (slotId >= GHOST_START && slotId < GHOST_END) {
-            Slot slot = this.slots.get(slotId);
             ItemStack carried = getCarried();
+            int patternIndex = slotId - GHOST_START;
             if (carried.isEmpty() || button == 1) {
-                slot.set(ItemStack.EMPTY);
+                blockEntity.setPatternCell(patternIndex, null, ItemStack.EMPTY);
             } else {
-                slot.set(carried.copyWithCount(1));
+                blockEntity.setPatternCell(patternIndex, null, carried);
             }
             return;
         }

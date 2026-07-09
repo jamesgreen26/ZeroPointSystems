@@ -11,9 +11,13 @@ import g_mungus.zps.menu.AssemblerMenu;
 import g_mungus.zps.util.NumberFormatter;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
+import net.minecraft.client.RecipeBookCategories;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.recipebook.RecipeBookComponent;
+import net.minecraft.client.gui.screens.recipebook.RecipeBookTabButton;
+import net.minecraft.client.gui.screens.recipebook.RecipeUpdateListener;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -37,12 +41,13 @@ import net.minecraft.world.item.Items;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> {
+public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> implements RecipeUpdateListener {
     private static final ResourceLocation TEXTURE = ZPSMod.resource("textures/gui/assembler.png");
     // The texture file is 512x256 (vanilla villager-menu size); the drawn GUI area is 280x166.
     private static final int TEXTURE_WIDTH = 512;
@@ -79,10 +84,114 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> {
     private static final Component TOGGLE_PANEL_TOOLTIP = Component.translatable("gui.zps.assembler.toggle_panel");
     private static final Component CLEAR_PATTERN_TOOLTIP = Component.translatable("gui.zps.assembler.clear_pattern");
 
+    // The embedded vanilla recipe book fills the space where the grey panels were: its left edge sits just past
+    // the blue panel's seam. The book positions everything from its stored `width`, so we feed init() a width
+    // that lands the 147px book at leftPos + RECIPE_BOOK_X (see recipeBookVirtualWidth). Category tabs, which
+    // vanilla draws on the book's left, are moved to the right edge each frame (repositionRecipeBookTabs).
+    private static final int RECIPE_BOOK_X = 104;
+    private static final int RECIPE_BOOK_X_OFFSET = 86; // RecipeBookComponent's fixed xOffset when not width-constrained.
+    private static final int TAB_RIGHT_OVERLAP = 5;     // Pulls the tabs left so their flat edge tucks under the book.
+
+    // Right-facing tab backgrounds: the vanilla sprite mirrored in shape, re-shaded for the GUI's top-left
+    // light so the highlight stays on top and the protruding right/bottom edges read as shadow.
+    private static final ResourceLocation TAB_TEXTURE = ZPSMod.resource("textures/gui/recipe_tab.png");
+    private static final ResourceLocation TAB_SELECTED_TEXTURE = ZPSMod.resource("textures/gui/recipe_tab_selected.png");
+    private static final int TAB_WIDTH = 35;
+    private static final int TAB_HEIGHT = 27;
+
+    /** Cached handles to {@link RecipeBookComponent}'s private tab state (see repositionRecipeBookTabs). */
+    private static final Field TAB_BUTTONS_FIELD = resolveField("tabButtons");
+    private static final Field SELECTED_TAB_FIELD = resolveField("selectedTab");
+
+    private final RecipeBookComponent recipeBook = new RecipeBookComponent();
+
+    private static Field resolveField(String name) {
+        try {
+            Field field = RecipeBookComponent.class.getDeclaredField(name);
+            field.setAccessible(true);
+            return field;
+        } catch (NoSuchFieldException e) {
+            return null;
+        }
+    }
+
     public AssemblerScreen(AssemblerMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
         this.imageWidth = 280;
         this.imageHeight = 166;
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+        // Feed a virtual screen width so the book lands to the right of the blue panel, and the real height so
+        // its top aligns with topPos. widthTooNarrow is forced false so the book keeps its side-by-side layout.
+        this.recipeBook.init(recipeBookVirtualWidth(), this.height, this.minecraft, false, this.menu);
+        this.addWidget(this.recipeBook);
+        // init() seeds visibility from saved book data; force it to follow our collapse state instead.
+        syncRecipeBookVisibility();
+    }
+
+    /** The width to hand {@link RecipeBookComponent#init} so its 147px book renders at {@code leftPos + RECIPE_BOOK_X}. */
+    private int recipeBookVirtualWidth() {
+        // book x = (width - 147) / 2 - xOffset  ==>  width = 2 * (leftPos + RECIPE_BOOK_X + xOffset) + 147
+        return 2 * (this.leftPos + RECIPE_BOOK_X + RECIPE_BOOK_X_OFFSET) + RecipeBookComponent.IMAGE_WIDTH;
+    }
+
+    /** Drives the recipe book's visibility from the panel-collapsed state (they are always shown together). */
+    private void syncRecipeBookVisibility() {
+        if (this.recipeBook.isVisible() != this.menu.isRightPanelCollapsed()) {
+            this.recipeBook.toggleVisibility();
+        }
+    }
+
+    /**
+     * Moves the category tab buttons from the book's left edge (vanilla default) to its right edge, and swaps
+     * each vanilla button for a {@link RightSideTabButton} that draws a right-facing background. Vanilla rebuilds
+     * the tab list and recomputes positions only on init/visibility changes, so we re-apply every frame; the
+     * buttons carry their own hitbox, so click detection follows.
+     */
+    @SuppressWarnings("unchecked")
+    private void repositionRecipeBookTabs() {
+        if (TAB_BUTTONS_FIELD == null) {
+            return;
+        }
+        try {
+            List<RecipeBookTabButton> tabs = (List<RecipeBookTabButton>) TAB_BUTTONS_FIELD.get(this.recipeBook);
+            Object selected = SELECTED_TAB_FIELD == null ? null : SELECTED_TAB_FIELD.get(this.recipeBook);
+            int tabX = this.leftPos + RECIPE_BOOK_X + RecipeBookComponent.IMAGE_WIDTH - TAB_RIGHT_OVERLAP;
+
+            for (int i = 0; i < tabs.size(); i++) {
+                RecipeBookTabButton tab = tabs.get(i);
+                if (!(tab instanceof RightSideTabButton)) {
+                    // Replace the vanilla button in place, carrying over its category, selection and layout, and
+                    // keep the component's private selectedTab reference pointing at the live instance.
+                    RightSideTabButton replacement = new RightSideTabButton(tab.getCategory());
+                    replacement.visible = tab.visible;
+                    replacement.setStateTriggered(tab.isStateTriggered());
+                    replacement.setPosition(tab.getX(), tab.getY());
+                    tabs.set(i, replacement);
+                    if (selected == tab && SELECTED_TAB_FIELD != null) {
+                        SELECTED_TAB_FIELD.set(this.recipeBook, replacement);
+                    }
+                    tab = replacement;
+                }
+                if (tab.visible) {
+                    tab.setX(tabX);
+                }
+            }
+        } catch (IllegalAccessException ignored) {
+        }
+    }
+
+    @Override
+    public void recipesUpdated() {
+        this.recipeBook.recipesUpdated();
+    }
+
+    @Override
+    public @NotNull RecipeBookComponent getRecipeBookComponent() {
+        return this.recipeBook;
     }
 
     private static final int LABEL_COLOR = 0x404040;
@@ -126,6 +235,7 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> {
         if (button == 0) {
             if (overPanelButton(mouseX, mouseY, BOOK_BUTTON_X)) {
                 this.menu.toggleRightPanel();
+                syncRecipeBookVisibility();
                 playButtonClick();
                 return true;
             }
@@ -136,6 +246,10 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> {
                 playButtonClick();
                 return true;
             }
+        }
+        if (this.recipeBook.isVisible() && this.recipeBook.mouseClicked(mouseX, mouseY, button)) {
+            this.setFocused(this.recipeBook);
+            return true;
         }
         if (button == 0 || button == 1) {
             int id = ghostSlotAt(mouseX, mouseY);
@@ -178,14 +292,48 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> {
     }
 
     @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (this.recipeBook.isVisible() && this.recipeBook.keyPressed(keyCode, scanCode, modifiers)) {
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean charTyped(char codePoint, int modifiers) {
+        if (this.recipeBook.isVisible() && this.recipeBook.charTyped(codePoint, modifiers)) {
+            return true;
+        }
+        return super.charTyped(codePoint, modifiers);
+    }
+
+    @Override
+    protected boolean hasClickedOutside(double mouseX, double mouseY, int guiLeft, int guiTop, int mouseButton) {
+        boolean outsideGui = super.hasClickedOutside(mouseX, mouseY, guiLeft, guiTop, mouseButton);
+        if (this.recipeBook.isVisible()) {
+            // Keep clicks on the book (which spills past the GUI's right edge) from closing the screen.
+            return outsideGui && this.recipeBook.hasClickedOutside(
+                    mouseX, mouseY, this.leftPos, this.topPos, this.imageWidth, this.imageHeight, mouseButton);
+        }
+        return outsideGui;
+    }
+
+    @Override
     public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
+        if (this.recipeBook.isVisible()) {
+            repositionRecipeBookTabs();
+            this.recipeBook.render(graphics, mouseX, mouseY, partialTick);
+        }
         renderPanelButtons(graphics);
         this.renderTooltip(graphics, mouseX, mouseY);
         if (!this.menu.isRightPanelCollapsed()) {
             renderEnergyTooltip(graphics, mouseX, mouseY);
         }
         renderPanelButtonTooltips(graphics, mouseX, mouseY);
+        if (this.recipeBook.isVisible()) {
+            this.recipeBook.renderTooltip(graphics, this.leftPos, this.topPos, mouseX, mouseY);
+        }
     }
 
     /** Draws the book (toggle) and trash (clear) icons — icon only, no button background or outline. */
@@ -363,5 +511,41 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> {
 
     private static String formatEnergy(int stored, int max) {
         return NumberFormatter.formatInt(stored) + " / " + NumberFormatter.formatInt(max) + " FE";
+    }
+
+    /**
+     * A recipe-book category tab that draws a purpose-made right-facing background (see {@link #TAB_TEXTURE})
+     * instead of the vanilla left-facing sprite, so the shading matches the GUI's light source. Reimplements
+     * {@link #renderWidget} because vanilla draws its sprite and icon together; the selected-state "pop" is
+     * flipped to push outward to the right, and icons are nudged into the protruding (visible) half of the tab.
+     */
+    private static final class RightSideTabButton extends RecipeBookTabButton {
+        private static final int SELECTED_POP = 2;
+
+        private RightSideTabButton(RecipeBookCategories category) {
+            super(category);
+        }
+
+        @Override
+        public void renderWidget(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+            ResourceLocation texture = this.isStateTriggered ? TAB_SELECTED_TEXTURE : TAB_TEXTURE;
+            int x = this.getX() + (this.isStateTriggered ? SELECTED_POP : 0);
+            RenderSystem.disableDepthTest();
+            graphics.blit(texture, x, this.getY(), 0, 0, TAB_WIDTH, TAB_HEIGHT, TAB_WIDTH, TAB_HEIGHT);
+            RenderSystem.enableDepthTest();
+            renderIcon(graphics, x);
+        }
+
+        /** Draws the category icon(s) centred in the tab's protruding (right) half. */
+        private void renderIcon(GuiGraphics graphics, int x) {
+            List<ItemStack> icons = this.getCategory().getIconItems();
+            int y = this.getY() + 5;
+            if (icons.size() == 1) {
+                graphics.renderFakeItem(icons.get(0), x + 11, y);
+            } else if (icons.size() == 2) {
+                graphics.renderFakeItem(icons.get(0), x + 5, y);
+                graphics.renderFakeItem(icons.get(1), x + 16, y);
+            }
+        }
     }
 }

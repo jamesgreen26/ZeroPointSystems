@@ -4,22 +4,38 @@ import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.AssemblerBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.entity.player.StackedContents;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.inventory.RecipeBookMenu;
+import net.minecraft.world.inventory.RecipeBookType;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.CraftingInput;
+import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.SlotItemHandler;
 import org.jetbrains.annotations.NotNull;
 
-public class AssemblerMenu extends AbstractContainerMenu {
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+public class AssemblerMenu extends RecipeBookMenu<CraftingInput, CraftingRecipe> {
+    /** Menu index of the output slot (after the 25 pattern + 12 input slots). */
+    private static final int RESULT_SLOT_INDEX = AssemblerBlockEntity.PATTERN_SLOTS + AssemblerBlockEntity.INPUT_SLOTS;
+
     // Slot layout (must match the GUI texture and AssemblerScreen). Drawn area is 280x166 (vanilla
     // villager-menu dimensions). Far left: 5x5 crafting pattern; top right: 4x3 input buffer, a single
     // enlarged output slot, and the energy meter; bottom right: player inventory.
@@ -143,6 +159,84 @@ public class AssemblerMenu extends AbstractContainerMenu {
             return true;
         }
         return super.clickMenuButton(player, id);
+    }
+
+    /**
+     * Called server-side when a recipe is clicked in the embedded recipe book. The assembler's grid is a
+     * display-only template, so — unlike a vanilla crafting menu — we do NOT move real items into slots
+     * (which is what {@code ServerPlaceRecipe} would do). Instead we translate the recipe's ingredients into
+     * ghost pattern cells, mirroring the {@code set_recipe} command's behaviour.
+     */
+    @Override
+    public void handlePlacement(boolean placeAll, @NotNull RecipeHolder<?> recipeHolder, @NotNull ServerPlayer player) {
+        Recipe<?> recipe = recipeHolder.value();
+        List<Ingredient> ingredients = recipe.getIngredients();
+        List<Ingredient> grid = new ArrayList<>(Collections.nCopies(AssemblerBlockEntity.PATTERN_SLOTS, Ingredient.EMPTY));
+
+        if (recipe instanceof ShapedRecipe shaped) {
+            // Shaped: place the w x h block anchored at the pattern's top-left corner.
+            int width = shaped.getWidth();
+            int height = shaped.getHeight();
+            for (int row = 0; row < height && row < AssemblerBlockEntity.GRID_HEIGHT; row++) {
+                for (int col = 0; col < width && col < AssemblerBlockEntity.GRID_WIDTH; col++) {
+                    grid.set(row * AssemblerBlockEntity.GRID_WIDTH + col, ingredients.get(row * width + col));
+                }
+            }
+        } else {
+            // Shapeless (or other): flow ingredients row-major across the grid.
+            for (int i = 0; i < ingredients.size() && i < grid.size(); i++) {
+                grid.set(i, ingredients.get(i));
+            }
+        }
+
+        blockEntity.setPattern(grid);
+        broadcastChanges();
+    }
+
+    @Override
+    public void fillCraftSlotsStackedContents(@NotNull StackedContents itemHelper) {
+        // The template grid holds no real items; only the player inventory (added by the recipe book) counts.
+    }
+
+    @Override
+    public void clearCraftingContent() {
+        blockEntity.clearPattern();
+    }
+
+    @Override
+    public boolean recipeMatches(@NotNull RecipeHolder<CraftingRecipe> recipe) {
+        // Templates aren't tracked against vanilla recipes; never treat one as already-placed.
+        return false;
+    }
+
+    @Override
+    public int getResultSlotIndex() {
+        return RESULT_SLOT_INDEX;
+    }
+
+    @Override
+    public int getGridWidth() {
+        return AssemblerBlockEntity.GRID_WIDTH;
+    }
+
+    @Override
+    public int getGridHeight() {
+        return AssemblerBlockEntity.GRID_HEIGHT;
+    }
+
+    @Override
+    public int getSize() {
+        return AssemblerBlockEntity.PATTERN_SLOTS;
+    }
+
+    @Override
+    public @NotNull RecipeBookType getRecipeBookType() {
+        return RecipeBookType.CRAFTING;
+    }
+
+    @Override
+    public boolean shouldMoveToInventory(int slotIndex) {
+        return false;
     }
 
     /** Whether the right-hand grey panels are currently hidden (client view state). */

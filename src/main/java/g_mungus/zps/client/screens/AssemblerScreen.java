@@ -159,7 +159,7 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> {
                 AssemblerMenu.GRID_LEFT, 20, LABEL_COLOR, false);
         graphics.drawString(this.font, Component.translatable("gui.zps.assembler.input"),
                 AssemblerMenu.INPUT_LEFT, 6, LABEL_COLOR, false);
-        graphics.drawString(this.font, "FE", ENERGY_CENTER_X - this.font.width("FE") / 2, 6, LABEL_COLOR, false);
+        graphics.drawString(this.font, "FE", ENERGY_CENTER_X + 1 - this.font.width("FE") / 2, 6, LABEL_COLOR, false);
     }
 
     @Override

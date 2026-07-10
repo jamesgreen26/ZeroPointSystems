@@ -79,6 +79,7 @@ public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE
     };
     private int lastSyncedLevel = -1;
     private int lastSentClientEnergy = Integer.MIN_VALUE;
+    private int lastComparatorOutput = -1;
     private float clientSmoothedFill = 0.0f;
     private long lastHudInfoRequestTick = Long.MIN_VALUE;
     private int hudInfo;
@@ -100,6 +101,7 @@ public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE
     public void serverTick() {
         chargeItem();
         updateFillLevel();
+        updateComparatorOutput();
     }
 
     public static boolean isChargeable(ItemStack stack) {
@@ -149,6 +151,15 @@ public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE
 
     public int getMaxEnergyStored() {
         return energyStorage.getMaxEnergyStored();
+    }
+
+    public int getComparatorOutputSignal() {
+        long energyStored = energyStorage.getEnergyStored();
+        long maxEnergy = energyStorage.getMaxEnergyStored();
+        if (energyStored <= 0 || maxEnergy <= 0) {
+            return 0;
+        }
+        return (int) Math.min(15, Math.ceil((energyStored * 15.0D) / maxEnergy));
     }
 
     private void chargeItem() {
@@ -231,7 +242,22 @@ public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE
     private void onEnergyChanged() {
         setChanged();
         updateFillLevel();
+        updateComparatorOutput();
         syncToClient();
+    }
+
+    private void updateComparatorOutput() {
+        if (level == null || level.isClientSide()) {
+            return;
+        }
+
+        int comparatorOutput = getComparatorOutputSignal();
+        if (comparatorOutput == lastComparatorOutput) {
+            return;
+        }
+
+        lastComparatorOutput = comparatorOutput;
+        level.updateNeighborsAt(worldPosition, getBlockState().getBlock());
     }
 
     private void updateFillLevel() {

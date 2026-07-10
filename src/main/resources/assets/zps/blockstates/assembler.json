@@ -1,8 +1,6 @@
 {
   "variants": {
-    "facing=north": { "model": "zps:block/assembler" },
-    "facing=east": { "model": "zps:block/assembler", "y": 90 },
-    "facing=south": { "model": "zps:block/assembler", "y": 180 },
-    "facing=west": { "model": "zps:block/assembler", "y": 270 }
+    "powered=false": { "model": "zps:block/assembler_unlit" },
+    "powered=true": { "model": "zps:block/assembler_lit" }
   }
 }

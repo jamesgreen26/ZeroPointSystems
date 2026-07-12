@@ -79,7 +79,7 @@ public class RollingMillScreen extends AbstractContainerScreen<RollingMillMenu> 
     }
 
     private void tickRollers() {
-        if (isProgressAdvancing()) {
+        if (menu.getBlockEntity().isWorking()) {
             this.rollerGraceTimer = ROLLER_GRACE_TICKS;
         } else if (this.rollerGraceTimer > 0) {
             this.rollerGraceTimer--;
@@ -174,10 +174,6 @@ public class RollingMillScreen extends AbstractContainerScreen<RollingMillMenu> 
     private void renderRoller(GuiGraphics graphics, int x, int y, int frame) {
         graphics.blit(TEXTURE, x, y,
                 ROLLER_TEXTURE_U, ROLLER_TEXTURE_V + frame * ROLLER_SIZE, ROLLER_SIZE, ROLLER_SIZE);
-    }
-
-    private boolean isProgressAdvancing() {
-        return menu.getProgress() > 0 && menu.getMaxProgress() > 0 && menu.getEnergyStored() > 0;
     }
 
     private int getRollerFrame() {

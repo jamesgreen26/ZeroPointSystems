@@ -1,8 +1,8 @@
 {
   "type": "create:item_application",
-  "conditions": [
+  "neoforge:conditions": [
     {
-      "type": "c:mod_loaded",
+      "type": "neoforge:mod_loaded",
       "modid": "create"
     }
   ],

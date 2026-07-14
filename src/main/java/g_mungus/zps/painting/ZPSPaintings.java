@@ -12,7 +12,4 @@ public class ZPSPaintings {
 
     public static final RegistryObject<PaintingVariant> QUASAR = PAINTING_VARIANTS.register("quasar",
             () -> new PaintingVariant(48, 48));
-
-    public static final RegistryObject<PaintingVariant> LOGO = PAINTING_VARIANTS.register("logo",
-            () -> new PaintingVariant(64, 64));
 }

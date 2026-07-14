@@ -308,8 +308,6 @@
     "painting.zps.quasar.title": "Quasar",
     "painting.zps.quasar.author": "PacificCyan",
 
-    "painting.zps.logo.title": "Zero Point Systems",
-    "painting.zps.logo.author": "G_Mungus",
 
     "creativetab.zps_tab": "Zero Point Systems",
 
@@ -395,6 +393,9 @@
     "block.zps.switch_panel.zps_tooltip": "4 levers in 1!\n\nEach switch controls one of the four outputs. Connects with [Dense Cables].",
     "block.zps.graduated_lever.zps_tooltip": "Allows precise control of a redstone signal.\n\nInteract with the upper or lower half of the block to increase or decrease signal strength. Connects with [Cable].",
     "block.zps.power_cell.zps_tooltip": "Stores up to 2.1M FE.\n\nCan be used to charge items that have [Energy Storage].",
+    "block.zps.bauxite.zps_tooltip": "A source of [Aluminum].\n\nFound underground between [Y32] and [Y128], most commonly near [Y80].",
+    "block.zps.lithium_ore.zps_tooltip": "A source of [Lithium].\n\nGenerates anywhere above [Y0].",
+    "block.zps.deepslate_lithium_ore.zps_tooltip": "A source of [Lithium].\n\nGenerates anywhere below [Y0].",
     "block.zps.rolling_mill.zps_tooltip": "Consumes FE to roll metal.\n\nRolls ingots into rods and nuggets into wire.",
     "block.zps.coal_burner.zps_tooltip": "Burns coal fuels to generate FE.\n\nAccepted fuels & burn times:\n- [Coal]: 80 seconds\n- [Charcoal]: 80 seconds\n- [Block of Coal]: 800 seconds",
     "block.zps.catwalk.zps_tooltip": "Can be placed on cable blocks to prevent upwards connection.",

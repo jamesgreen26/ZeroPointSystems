@@ -1,6 +1,8 @@
 package g_mungus.zps.client.screens;
 
+import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.blockentity.AssemblerBlockEntity;
 import g_mungus.zps.menu.AssemblerMenu;
@@ -9,6 +11,13 @@ import g_mungus.zps.util.NumberFormatter;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.RecipeBookCategories;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.Sheets;
+import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
@@ -25,7 +34,9 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
@@ -34,7 +45,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> implements RecipeUpdateListener {
+public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> implements RecipeUpdateListener, GhostSlotRenderer {
+    /** Opacity for ghost/pattern preview items. */
+    private static final float GHOST_ALPHA = 0.65F;
     private static final ResourceLocation TEXTURE = ZPSMod.resource("textures/gui/assembler.png");
     // The texture file is 512x256 (vanilla villager-menu size); the drawn GUI area is 280x166.
     private static final int TEXTURE_WIDTH = 512;
@@ -323,6 +336,62 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> impl
         graphics.drawString(this.font, Component.translatable("gui.zps.assembler.input"),
                 AssemblerMenu.INPUT_LEFT, 6, LABEL_COLOR, false);
         graphics.drawString(this.font, "FE", ENERGY_CENTER_X + 1 - this.font.width("FE") / 2, 6, LABEL_COLOR, false);
+    }
+
+    @Override
+    public boolean zps$renderGhostSlot(GuiGraphics graphics, Slot slot) {
+        // Pattern cells (added first, ids 0..PATTERN_SLOTS-1) are rendered as translucent previews rather
+        // than real contents. Tag cells cycle their preview through the tag's items (JEI-style).
+        if (slot.index < AssemblerBlockEntity.PATTERN_SLOTS && !slot.getItem().isEmpty()) {
+            renderGhostItem(graphics, displayedGhostStack(slot.getItem()), slot.x, slot.y);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Renders a GUI item at {@link #GHOST_ALPHA} opacity. Unlike a plain {@code renderItem} + shader-color
+     * tint (which only fades flat item models), this also fades block items by routing their opaque cutout
+     * render sheet through the translucent block sheet so the alpha actually blends.
+     */
+    private void renderGhostItem(GuiGraphics graphics, ItemStack stack, int x, int y) {
+        ItemRenderer itemRenderer = this.minecraft.getItemRenderer();
+        BakedModel model = itemRenderer.getModel(stack, this.minecraft.level, this.minecraft.player, 0);
+
+        PoseStack pose = graphics.pose();
+        pose.pushPose();
+        pose.translate(x + 8.0, y + 8.0, 150.0);
+        pose.scale(16.0F, -16.0F, 16.0F);
+
+        boolean flatLight = !model.usesBlockLight();
+        if (flatLight) {
+            Lighting.setupForFlatItems();
+        }
+
+        MultiBufferSource.BufferSource base = graphics.bufferSource();
+        MultiBufferSource translucent = renderType -> base.getBuffer(toTranslucentSheet(renderType));
+
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, GHOST_ALPHA);
+        itemRenderer.render(stack, ItemDisplayContext.GUI, false, pose, translucent,
+                LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, model);
+        graphics.flush();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.disableBlend();
+
+        if (flatLight) {
+            Lighting.setupFor3DItems();
+        }
+        pose.popPose();
+    }
+
+    /** Swaps the opaque block render sheets for the translucent one so block-item alpha blends. */
+    private static RenderType toTranslucentSheet(RenderType renderType) {
+        if (renderType == Sheets.solidBlockSheet() || renderType == Sheets.cutoutBlockSheet()) {
+            return Sheets.translucentCullBlockSheet();
+        }
+        return renderType;
     }
 
     /** For a tag ghost cell, the item currently shown (cycling once per second); otherwise the stack itself. */

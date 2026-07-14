@@ -32,6 +32,8 @@ public class AddressPadListScreen extends Screen {
 
     public static final ResourceLocation PONDER_WIDGETS_LOC = ResourceLocation.fromNamespaceAndPath("ponder", "textures/gui/widgets.png");
     private static final ResourceLocation BACKGROUND_TEXTURE = ResourceLocation.fromNamespaceAndPath("zps", "textures/gui/address_pad_list_panel.png");
+    private static final ResourceLocation COPY_ICON_TEXTURE = ResourceLocation.fromNamespaceAndPath("zps", "textures/special/copy_icon.png");
+    private static final ResourceLocation PASTE_ICON_TEXTURE = ResourceLocation.fromNamespaceAndPath("zps", "textures/special/paste_icon.png");
     private static final int ROW_HEIGHT = 12;
     private static final int LIST_PANEL_WIDTH = 212;
     private static final int LIST_PANEL_HORIZONTAL_PADDING = 16;
@@ -69,10 +71,10 @@ public class AddressPadListScreen extends Screen {
         int columnX = this.panelX + LIST_PANEL_WIDTH + 8;
         int topY = this.listStartY;
 
-        this.copyButton = this.addRenderableWidget(Button.builder(Component.literal("C"), button -> copyEntries())
+        this.copyButton = this.addRenderableWidget(Button.builder(CommonComponents.EMPTY, button -> copyEntries())
                 .bounds(columnX, topY, buttonSize, buttonSize)
                 .build());
-        this.pasteButton = this.addRenderableWidget(Button.builder(Component.literal("V"), button -> pasteEntries())
+        this.pasteButton = this.addRenderableWidget(Button.builder(CommonComponents.EMPTY, button -> pasteEntries())
                 .bounds(columnX, topY + (buttonSize + spacing), buttonSize, buttonSize)
                 .build());
         this.clearButton = this.addRenderableWidget(Button.builder(CommonComponents.EMPTY, button -> clearEntries())
@@ -118,6 +120,8 @@ public class AddressPadListScreen extends Screen {
         }
 
         super.render(graphics, mouseX, mouseY, partialTick);
+        graphics.blit(COPY_ICON_TEXTURE, this.copyButton.getX() + 2, this.copyButton.getY() + 2, 0, 0, 16, 16, 16, 16);
+        graphics.blit(PASTE_ICON_TEXTURE, this.pasteButton.getX() + 2, this.pasteButton.getY() + 2, 0, 0, 16, 16, 16, 16);
         PonderGuiTextures.ICON_CONFIG_DISCARD.render(graphics, this.clearButton.getX() + 2, this.clearButton.getY() + 2);
         PonderGuiTextures.ICON_DISABLE.render(graphics, this.closeButton.getX() + 2, this.closeButton.getY() + 2);
 

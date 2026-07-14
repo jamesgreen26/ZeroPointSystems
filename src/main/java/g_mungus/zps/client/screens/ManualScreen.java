@@ -4,6 +4,7 @@ import g_mungus.zps.manual.ManualDocumentLoader;
 import g_mungus.zps.manual.ManualSection;
 import g_mungus.zps.manual.markdown.ManualDocument;
 import g_mungus.zps.manual.render.ManualContentLayout;
+import net.createmod.ponder.enums.PonderGuiTextures;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.GameNarrator;
 import net.minecraft.client.Minecraft;
@@ -97,7 +98,7 @@ public class ManualScreen extends Screen {
             this.addRenderableWidget(button);
         }
 
-        this.closeButton = this.addRenderableWidget(Button.builder(Component.literal("X"), button -> this.onClose())
+        this.closeButton = this.addRenderableWidget(Button.builder(CommonComponents.EMPTY, button -> this.onClose())
             .bounds(this.frameLeft() + this.frameWidth() - 24, this.frameTop() + 6, 18, 18)
             .build());
     }
@@ -279,6 +280,7 @@ public class ManualScreen extends Screen {
 
         this.renderContent(graphics, mouseX, mouseY);
         super.render(graphics, mouseX, mouseY, partialTick);
+        PonderGuiTextures.ICON_DISABLE.render(graphics, this.closeButton.getX() + 1, this.closeButton.getY() + 1);
 
         if (this.isMouseOverContent(mouseX, mouseY)) {
             final Style style = this.getStyleAt(mouseX, mouseY);

@@ -15,8 +15,6 @@ import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-import java.util.List;
-
 public interface RadioBlockEntity {
     void cycleFrequencies();
     int getRadioFrequency();
@@ -24,14 +22,15 @@ public interface RadioBlockEntity {
 
     boolean hasEnoughAntennas();
 
-    List<Integer> FREQUENCIES = List.of(5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80);
+    int MIN_FREQUENCY = 1;
+    int MAX_FREQUENCY = 64;
     TagKey<Block> ANTENNAE = TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "antennae"));
 
     default int getRequiredAntennaStrength() {
         return (int)((getRadioFrequency() / 20.0) + 1.5);
     }
 
-    void setFrequencyIndex(int frequencyIndex);
+    void setFrequency(int frequency);
 
     @Mod.EventBusSubscriber
     class Subscriber {

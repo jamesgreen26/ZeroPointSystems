@@ -5,7 +5,6 @@ import g_mungus.zps.commands.api_impl.arguments.ValueOfOrLiteralArgumentType;
 import g_mungus.zps.commands.api_impl.arguments.ValueOfOrLiteralArgumentTypeInfo;
 import g_mungus.zps.commands.content.arguments.AssemblerRecipeArgument;
 import g_mungus.zps.commands.content.arguments.BlockPosListArgument;
-import g_mungus.zps.commands.content.arguments.RadioFrequencyArgument;
 import g_mungus.zps.compat.genesis.CelestialArgument;
 import net.minecraft.commands.synchronization.ArgumentTypeInfo;
 import net.minecraft.commands.synchronization.ArgumentTypeInfos;
@@ -33,13 +32,6 @@ public class ArgumentTypeInfosMixin {
                 "zps:block_pos_list",
                 BlockPosListArgument.class,
                 SingletonArgumentInfo.contextFree(BlockPosListArgument::blockPosList)
-        );
-
-        register(
-                arg,
-                "zps:radio_frequency",
-                RadioFrequencyArgument.class,
-                RadioFrequencyArgument.INFO
         );
 
         register(

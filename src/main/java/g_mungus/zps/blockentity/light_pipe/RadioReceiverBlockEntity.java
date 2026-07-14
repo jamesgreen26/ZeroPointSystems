@@ -23,7 +23,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class RadioReceiverBlockEntity extends NetworkTerminalImpl implements LightPipeDataSender, RadioBlockEntity {
 
-    private int radioFrequencyIndex = 0;
+    private int radioFrequency = MIN_FREQUENCY;
     private String currentDisplayText = "";
     private int antennas = 0;
     private static final int tickFrequency = 8;
@@ -103,7 +103,7 @@ public class RadioReceiverBlockEntity extends NetworkTerminalImpl implements Lig
 
     @Override
     public int getRadioFrequency() {
-        return FREQUENCIES.get(radioFrequencyIndex);
+        return radioFrequency;
     }
 
 
@@ -124,14 +124,14 @@ public class RadioReceiverBlockEntity extends NetworkTerminalImpl implements Lig
 
     @Override
     public void cycleFrequencies() {
-        radioFrequencyIndex = (radioFrequencyIndex + 1) % FREQUENCIES.size();
+        radioFrequency = radioFrequency % MAX_FREQUENCY + 1;
         updateClient();
     }
 
     @Override
-    public void setFrequencyIndex(int frequencyIndex) {
-        assert frequencyIndex > -1 && frequencyIndex < 16;
-        radioFrequencyIndex = frequencyIndex;
+    public void setFrequency(int frequency) {
+        assert frequency >= MIN_FREQUENCY && frequency <= MAX_FREQUENCY;
+        radioFrequency = frequency;
         updateClient();
     }
 
@@ -186,7 +186,7 @@ public class RadioReceiverBlockEntity extends NetworkTerminalImpl implements Lig
     protected void saveAdditional(@NotNull CompoundTag tag) {
         super.saveAdditional(tag);
         tag.putString("DisplayText", currentDisplayText);
-        tag.putInt("RadioFrequencyIndex", radioFrequencyIndex);
+        tag.putInt("RadioFrequency", radioFrequency);
         tag.putInt("AntennaStrength", antennas);
     }
 
@@ -194,7 +194,9 @@ public class RadioReceiverBlockEntity extends NetworkTerminalImpl implements Lig
     public void load(@NotNull CompoundTag tag) {
         super.load(tag);
         currentDisplayText = tag.getString("DisplayText");
-        radioFrequencyIndex = tag.getInt("RadioFrequencyIndex");
+        if (tag.contains("RadioFrequency")) {
+            radioFrequency = tag.getInt("RadioFrequency");
+        }
         antennas = tag.getInt("AntennaStrength");
         if (level instanceof ServerLevel) {
             updateAntennaStrength(level);

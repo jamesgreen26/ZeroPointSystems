@@ -3,6 +3,7 @@ package g_mungus.zps.commands.content;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.BookHolder;
+import g_mungus.zps.blockentity.light_pipe.RadioBlockEntity;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptContext;
 import g_mungus.zps.commands.api.ScriptGetter;
@@ -116,6 +117,20 @@ public class ZPSScriptGetters {
                     return 0;
                 },
                 Set.of(ZPSMod.resource("robotic_arm"))
+        ));
+
+        event.register(ScriptGetter.withBlocks(
+                "frequency",
+                Integer.class,
+                ResourceLocation.parse("zps:int"),
+                scriptContext -> {
+                    BlockEntity be = scriptContext.level().getBlockEntity(scriptContext.pos());
+                    if (be instanceof RadioBlockEntity radio) {
+                        return radio.getRadioFrequency();
+                    }
+                    return 0;
+                },
+                Set.of(ZPSMod.resource("radio_transmitter"), ZPSMod.resource("radio_receiver"))
         ));
     }
 }

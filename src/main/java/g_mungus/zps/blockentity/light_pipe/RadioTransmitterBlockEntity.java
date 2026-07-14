@@ -27,13 +27,13 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
     }
 
     private String currentDisplayText = "";
-    private int radioFrequencyIndex = 0;
+    private int radioFrequency = MIN_FREQUENCY;
     private int antennas = 0;
 
     @Override
     public void cycleFrequencies() {
         clearTransmission();
-        radioFrequencyIndex = (radioFrequencyIndex + 1) % FREQUENCIES.size();
+        radioFrequency = radioFrequency % MAX_FREQUENCY + 1;
         setChanged();
         updateTransmission();
 
@@ -41,10 +41,10 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
     }
 
     @Override
-    public void setFrequencyIndex(int frequencyIndex) {
-        assert frequencyIndex > -1 && frequencyIndex < 16;
+    public void setFrequency(int frequency) {
+        assert frequency >= MIN_FREQUENCY && frequency <= MAX_FREQUENCY;
         clearTransmission();
-        radioFrequencyIndex = frequencyIndex;
+        radioFrequency = frequency;
         setChanged();
         updateTransmission();
 
@@ -53,7 +53,7 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
 
     @Override
     public int getRadioFrequency() {
-        return FREQUENCIES.get(radioFrequencyIndex);
+        return radioFrequency;
     }
 
     public void updateTransmission() {
@@ -161,7 +161,7 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
     protected void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.saveAdditional(tag, registries);
         tag.putString("DisplayText", currentDisplayText);
-        tag.putInt("RadioFrequencyIndex", radioFrequencyIndex);
+        tag.putInt("RadioFrequency", radioFrequency);
         tag.putInt("AntennaStrength", antennas);
     }
 
@@ -169,7 +169,9 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
     protected void loadAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.loadAdditional(tag, registries);
         currentDisplayText = tag.getString("DisplayText");
-        radioFrequencyIndex = tag.getInt("RadioFrequencyIndex");
+        if (tag.contains("RadioFrequency")) {
+            radioFrequency = tag.getInt("RadioFrequency");
+        }
         antennas = tag.getInt("AntennaStrength");
         if (level instanceof ServerLevel) {
             updateAntennaStrength(level);

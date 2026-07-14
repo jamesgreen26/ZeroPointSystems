@@ -9,7 +9,7 @@ import g_mungus.zps.commands.api.ScriptExecutor;
 import g_mungus.zps.commands.content.executors.AssemblerRecipeCommand;
 import g_mungus.zps.commands.content.executors.RoboticArmItemCommand;
 import g_mungus.zps.commands.content.arguments.AssemblerRecipeArgument;
-import g_mungus.zps.commands.content.arguments.RadioFrequencyArgument;
+import g_mungus.zps.blockentity.light_pipe.RadioBlockEntity;
 import g_mungus.zps.commands.content.executors.SetFrequencyCommand;
 import g_mungus.zps.commands.content.executors.SetRedstoneCommand;
 import g_mungus.zps.commands.content.executors.SetPageCommand;
@@ -72,11 +72,11 @@ public class ZPSScriptExecutors {
                 "set_frequency",
                 Integer.class,
                 ResourceLocation.parse("zps:int"),
-                RadioFrequencyArgument.radioFrequency(),
-                (frequencyIndex, context) -> SetFrequencyCommand.setFrequency(
+                IntegerArgumentType.integer(RadioBlockEntity.MIN_FREQUENCY, RadioBlockEntity.MAX_FREQUENCY),
+                (frequency, context) -> SetFrequencyCommand.setFrequency(
                         context.commandSource().getLevel(),
                         context.pos(),
-                        frequencyIndex
+                        frequency
                 ),
                 Set.of(ZPSMod.resource("radio_transmitter"), ZPSMod.resource("radio_receiver"))
         ));

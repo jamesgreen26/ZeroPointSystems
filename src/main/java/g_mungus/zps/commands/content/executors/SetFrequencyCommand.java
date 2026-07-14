@@ -7,12 +7,12 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 
 public class SetFrequencyCommand {
 
-    public static int setFrequency(ServerLevel serverLevel, BlockPos pos, int frequencyIndex) {
+    public static int setFrequency(ServerLevel serverLevel, BlockPos pos, int frequency) {
         BlockEntity blockEntity = serverLevel.getBlockEntity(pos);
 
         if (blockEntity instanceof RadioBlockEntity radio) {
-            if (frequencyIndex > -1 && frequencyIndex < 16) {
-                radio.setFrequencyIndex(frequencyIndex);
+            if (frequency >= RadioBlockEntity.MIN_FREQUENCY && frequency <= RadioBlockEntity.MAX_FREQUENCY) {
+                radio.setFrequency(frequency);
                 return 1;
             }
         }

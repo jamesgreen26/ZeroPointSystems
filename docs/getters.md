@@ -89,6 +89,23 @@ if transfer_count < 16 set_transfer_count 16
 
 ---
 
+## Radio Transmitter / Radio Receiver
+
+The following getter requires the target block to be a `Radio Transmitter` or `Radio Receiver`.
+
+| Getter      | Output | Description                                                       |
+|-------------|--------|-------------------------------------------------------------------|
+| `frequency` | Int    | The radio channel the block is tuned to (an integer from 1 to 64). |
+
+Examples:
+
+```
+if frequency == 10 set_redstone 15
+set_frequency value_of(frequency + 1)
+```
+
+---
+
 ## Additional Getters
 
 - [Sable](sable.md) — `sublevel`

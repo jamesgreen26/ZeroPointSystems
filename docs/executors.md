@@ -52,12 +52,12 @@ The following command requires the target block to be a `Radio Transmitter` or `
 
 | Executor        | Argument      | Description                                   |
 |-----------------|---------------|-----------------------------------------------|
-| `set_frequency` | `<frequency>` | Sets the radio channel the block is tuned to. |
+| `set_frequency` | `<frequency>` | Sets the radio channel the block is tuned to (an integer from 1 to 64). |
 
 Example:
 
 ```
-set_frequency 10KHz
+set_frequency 10
 ```
 
 ---

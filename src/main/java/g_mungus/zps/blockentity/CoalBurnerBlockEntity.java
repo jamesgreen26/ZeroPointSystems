@@ -106,7 +106,47 @@ public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGenerato
             setChanged();
         }
 
+        pushEnergyToAdjacentBlocks();
         updateLitState(wasBurning || burnTime > 0);
+    }
+
+    private void pushEnergyToAdjacentBlocks() {
+        if (level == null || level.isClientSide() || energyStorage.getEnergyStored() <= 0) {
+            return;
+        }
+
+        int remainingOutput = MAX_OUTPUT;
+        for (Direction side : Direction.values()) {
+            if (remainingOutput <= 0 || energyStorage.getEnergyStored() <= 0) {
+                break;
+            }
+
+            BlockPos targetPos = worldPosition.relative(side);
+            BlockEntity target = level.getBlockEntity(targetPos);
+            if (target == null) {
+                continue;
+            }
+
+            IEnergyStorage targetEnergy = target.getCapability(ForgeCapabilities.ENERGY, side.getOpposite()).resolve().orElse(null);
+            if (targetEnergy == null || !targetEnergy.canReceive()) {
+                continue;
+            }
+
+            int available = energyStorage.extractEnergy(remainingOutput, true);
+            int accepted = targetEnergy.receiveEnergy(available, true);
+            int transfer = Math.min(available, accepted);
+            if (transfer <= 0) {
+                continue;
+            }
+
+            int extracted = energyStorage.extractEnergy(transfer, false);
+            int received = targetEnergy.receiveEnergy(extracted, false);
+            if (received < extracted) {
+                energyStorage.refundEnergy(extracted - received);
+            }
+            remainingOutput -= received;
+            setChanged();
+        }
     }
 
     private void consumeFuel() {
@@ -254,6 +294,10 @@ public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGenerato
 
         private void setEnergyStoredExact(int energy) {
             this.energy = Math.max(0, Math.min(this.capacity, energy));
+        }
+
+        private void refundEnergy(int amount) {
+            energy += Math.min(Math.max(0, amount), capacity - energy);
         }
     }
 }

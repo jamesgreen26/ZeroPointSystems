@@ -3,7 +3,7 @@
   "category": "redstone",
   "key": {
     "B": {
-      "item": "zps:light_pipe_cable"
+      "item": "zps:data_cable"
     },
     "D": {
       "tag": "forge:ingots/space_metal"

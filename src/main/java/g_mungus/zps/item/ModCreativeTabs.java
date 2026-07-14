@@ -47,7 +47,7 @@ public class ModCreativeTabs {
                         SERIAL_BUS,
                         DENSE_CABLES,
                         CABLE,
-                        LIGHT_PIPE,
+                        DATA_CABLE,
                         CABLE_INSULATION,
 
                         SCRIPT_TERMINAL,
@@ -80,7 +80,12 @@ public class ModCreativeTabs {
                         LITHIUM_INGOT,
                         SPACE_METAL_INGOT,
                         ALUMINUM_NUGGET,
+                        COPPER_NUGGET,
                         LITHIUM_NUGGET,
+
+                        ALUMINUM_WIRE,
+                        COPPER_WIRE,
+                        GOLD_WIRE,
 
 
 //                        SPACE_METAL_PLATE,
@@ -93,15 +98,15 @@ public class ModCreativeTabs {
 //                        CAPACITOR,
 //                        TRANSISTOR,
 //                        MODULATOR,
-                        COPPER_MAGNETRON,
 //                        GOLD_MAGNETRON,
-                        COPPER_WIRE,
-//                        GOLD_WIRE,
+
 //                        VERDITE_WIRE,
 //                        EMPTY_SPOOL,
 //                        COPPER_SPOOL,
 //                        GOLD_SPOOL,
 //                        VERDITE_SPOOL
+
+                        COPPER_MAGNETRON,
 
                         ENERGY_STORAGE_MODULE,
                         ROBOTIC_ARM_SEGMENT

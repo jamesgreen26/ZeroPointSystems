@@ -23,7 +23,7 @@
     },
     {
       "type": "match_state",
-      "block": "zps:light_pipe_cable",
+      "block": "zps:data_cable",
       "properties": {
         "insulated": "grating"
       }

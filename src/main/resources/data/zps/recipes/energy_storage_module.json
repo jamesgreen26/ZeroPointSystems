@@ -9,7 +9,7 @@
       "item": "zps:space_metal_mesh"
     },
     "R": {
-      "item": "zps:space_metal_rod"
+      "item": "zps:space_metal_ingot"
     }
   },
   "pattern": [
@@ -18,8 +18,8 @@
     "RM "
   ],
   "result": {
-    "item": "zps:energy_storage_module",
-    "count": 1
+    "count": 1,
+    "item": "zps:energy_storage_module"
   },
   "show_notification": true
 }

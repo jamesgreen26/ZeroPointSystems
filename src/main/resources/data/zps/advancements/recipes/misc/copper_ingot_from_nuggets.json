@@ -1,12 +1,12 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_copper_ingot": {
+    "has_copper_nugget": {
       "conditions": {
         "items": [
           {
             "items": [
-              "minecraft:copper_ingot"
+              "zps:copper_nugget"
             ]
           }
         ]
@@ -15,20 +15,20 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "zps:copper_wire"
+        "recipe": "zps:copper_ingot_from_nuggets"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
   },
   "requirements": [
     [
-      "has_copper_ingot",
+      "has_copper_nugget",
       "has_the_recipe"
     ]
   ],
   "rewards": {
     "recipes": [
-      "zps:copper_wire"
+      "zps:copper_ingot_from_nuggets"
     ]
   },
   "sends_telemetry_event": false

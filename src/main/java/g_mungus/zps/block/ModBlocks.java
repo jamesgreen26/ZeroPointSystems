@@ -98,7 +98,7 @@ public class ModBlocks {
                     .strength(1.5f)
                     .requiresCorrectToolForDrops()));
 
-    public static final RegistryObject<Block> LIGHT_PIPE = BLOCKS.register("light_pipe_cable",
+    public static final RegistryObject<Block> DATA_CABLE = BLOCKS.register("data_cable",
             () -> new LightPipeCableBlock(cableProperties(2.0f)));
 
     public static final RegistryObject<Block> DATA_LECTERN = BLOCKS.register("data_lectern",

@@ -1,17 +1,17 @@
 {
   "type": "minecraft:crafting_shapeless",
-  "category": "functional",
+  "category": "redstone",
   "ingredients": [
     {
-      "item": "zps:aluminum_wire"
+      "item": "zps:gold_wire"
     },
     {
-      "item": "zps:space_metal_mesh"
+      "item": "minecraft:glass"
     }
   ],
   "result": {
     "count": 2,
-    "item": "zps:cable"
+    "item": "zps:data_cable"
   },
   "show_notification": true
 }

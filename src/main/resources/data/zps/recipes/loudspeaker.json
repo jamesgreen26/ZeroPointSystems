@@ -12,7 +12,7 @@
       "tag": "forge:ingots/space_metal"
     },
     "D": {
-      "item": "zps:light_pipe_cable"
+      "item": "zps:data_cable"
     },
     "E": {
       "item": "minecraft:repeater"

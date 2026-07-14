@@ -9,7 +9,7 @@
       "tag": "forge:ingots/space_metal"
     },
     "C": {
-      "item": "zps:light_pipe_cable"
+      "item": "zps:data_cable"
     },
     "G": {
       "item": "minecraft:tinted_glass"

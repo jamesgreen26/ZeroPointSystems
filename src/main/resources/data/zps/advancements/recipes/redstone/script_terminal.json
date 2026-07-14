@@ -23,12 +23,12 @@
       },
       "trigger": "minecraft:inventory_changed"
     },
-    "has_light_pipe_cable": {
+    "has_data_cable": {
       "conditions": {
         "items": [
           {
             "items": [
-              "zps:light_pipe_cable"
+              "zps:data_cable"
             ]
           }
         ]
@@ -58,7 +58,7 @@
     [
       "has_ingots_space_metal",
       "has_tinted_glass",
-      "has_light_pipe_cable",
+      "has_data_cable",
       "has_observer",
       "has_the_recipe"
     ]

@@ -24,7 +24,7 @@ public class ZPSPonderTags {
         helper.addToTag(CAN_INSULATE)
                 .add(CABLE.getId())
                 .add(DENSE_CABLES.getId())
-                .add(LIGHT_PIPE.getId())
+                .add(DATA_CABLE.getId())
                 .add(STEPUP_TRANSFORMER.getId())
                 .add(STEPDOWN_TRANSFORMER.getId())
                 .add(REDSTONE_CONVERTER.getId())

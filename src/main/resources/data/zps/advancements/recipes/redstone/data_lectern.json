@@ -25,12 +25,12 @@
       },
       "trigger": "minecraft:inventory_changed"
     },
-    "has_light_pipe_cable": {
+    "has_data_cable": {
       "conditions": {
         "items": [
           {
             "items": [
-              "zps:light_pipe_cable"
+              "zps:data_cable"
             ]
           }
         ]
@@ -48,7 +48,7 @@
     [
       "has_space_plating",
       "has_space_plating_slab",
-      "has_light_pipe_cable",
+      "has_data_cable",
       "has_the_recipe"
     ]
   ],

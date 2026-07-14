@@ -50,8 +50,8 @@ public class ModItems {
     public static final RegistryObject<Item> CABLE = ITEMS.register("cable",
             () -> new BlockItem(ModBlocks.CABLE.get(), new Item.Properties()));
 
-    public static final RegistryObject<Item> LIGHT_PIPE = ITEMS.register("light_pipe_cable",
-            () -> new BlockItem(ModBlocks.LIGHT_PIPE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> DATA_CABLE = ITEMS.register("data_cable",
+            () -> new BlockItem(ModBlocks.DATA_CABLE.get(), new Item.Properties()));
 
     public static final RegistryObject<Item> SERIAL_BUS = ITEMS.register("serial_bus",
             () -> new BlockItem(ModBlocks.SERIAL_BUS.get(), new Item.Properties()));
@@ -144,6 +144,8 @@ public class ModItems {
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> ALUMINUM_NUGGET = ITEMS.register("aluminum_nugget",
             () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> COPPER_NUGGET = ITEMS.register("copper_nugget",
+            () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> ALUMINUM_BLOCK = ITEMS.register("aluminum_block",
             () -> new BlockItem(ModBlocks.ALUMINUM_BLOCK.get(), new Item.Properties()));
     public static final RegistryObject<Item> RAW_LITHIUM = ITEMS.register("raw_lithium",
@@ -172,6 +174,8 @@ public class ModItems {
     public static final RegistryObject<Item> COPPER_WIRE = ITEMS.register("copper_wire",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> GOLD_WIRE = ITEMS.register("gold_wire",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> ALUMINUM_WIRE = ITEMS.register("aluminum_wire",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> VERDITE_WIRE = ITEMS.register("verdite_wire",
             () -> new Item(new Item.Properties()));

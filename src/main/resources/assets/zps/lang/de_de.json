@@ -8,7 +8,7 @@
     "block.zps.redstone_converter": "Redstone Konvektor",
     "block.zps.octo_controller": "Octo Controller",
     "block.zps.dodeca_controller": "Dodeca Controller",
-    "block.zps.light_pipe_cable": "Lichtwellen-Kabel",
+    "block.zps.data_cable": "Datenkabel",
     "block.zps.data_lectern": "Skript-Sender",
 
     "item.zps.cable": "Kabel",
@@ -20,12 +20,14 @@
     "item.zps.redstone_converter": "Redstone Konvektor",
     "item.zps.octo_controller": "Octo Controller",
     "item.zps.dodeca_controller": "Dodeca Controller",
-    "item.zps.light_pipe_cable": "Lichtwellen-Kabel",
+    "item.zps.data_cable": "Datenkabel",
     "item.zps.data_lectern": "Skript-Sender",
     "item.zps.power_drill": "Power Drill",
     "item.zps.power_drill.energy": "Stored: %s / %s FE",
     "item.zps.chainsaw": "Chainsaw",
     "item.zps.chainsaw.energy": "Stored: %s / %s FE",
+    "item.zps.copper_nugget": "Kupfernugget",
+    "item.zps.aluminum_wire": "Aluminiumdraht",
 
     "creativetab.zps_tab": "Zero Point Systems",
 

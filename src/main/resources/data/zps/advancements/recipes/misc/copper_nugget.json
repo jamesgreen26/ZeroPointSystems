@@ -1,11 +1,13 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_ingots_space_metal": {
+    "has_copper_ingot": {
       "conditions": {
         "items": [
           {
-            "tag": "forge:ingots/space_metal"
+            "items": [
+              "minecraft:copper_ingot"
+            ]
           }
         ]
       },
@@ -13,20 +15,20 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "zps:space_metal_rod"
+        "recipe": "zps:copper_nugget"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
   },
   "requirements": [
     [
-      "has_ingots_space_metal",
+      "has_copper_ingot",
       "has_the_recipe"
     ]
   ],
   "rewards": {
     "recipes": [
-      "zps:space_metal_rod"
+      "zps:copper_nugget"
     ]
   },
   "sends_telemetry_event": false

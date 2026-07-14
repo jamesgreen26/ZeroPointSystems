@@ -16,4 +16,7 @@ public class ModMenus {
 
     public static final RegistryObject<MenuType<PowerCellMenu>> POWER_CELL =
             MENUS.register("power_cell", () -> IForgeMenuType.create(PowerCellMenu::new));
+
+    public static final RegistryObject<MenuType<RollingMillMenu>> ROLLING_MILL =
+            MENUS.register("rolling_mill", () -> IForgeMenuType.create(RollingMillMenu::new));
 }

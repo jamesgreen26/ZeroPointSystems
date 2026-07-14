@@ -6,9 +6,11 @@ import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.client.model.connected.ConnectedModelLoader;
 import g_mungus.zps.client.model.connected.ConnectedTextureMeta;
+import g_mungus.zps.client.recipebook.ModRecipeBookCategories;
 import g_mungus.zps.client.renderer.*;
 import g_mungus.zps.client.screens.CoalBurnerScreen;
 import g_mungus.zps.client.screens.PowerCellScreen;
+import g_mungus.zps.client.screens.RollingMillScreen;
 import g_mungus.zps.entity.ModEntities;
 import g_mungus.zps.item.AddressPadClientHooks;
 import g_mungus.zps.menu.ModMenus;
@@ -70,6 +72,7 @@ public class ClientSetup {
         event.register(PoweredToolItemRenderer.BASE_MODEL);
         event.register(PoweredToolItemRenderer.HEAD_MODEL);
         event.register(ChainsawItemRenderer.BLADE_MODEL);
+        event.register(RollingMillBlockEntityRenderer.ROLLER_MODEL);
     }
 
     @SubscribeEvent
@@ -92,6 +95,7 @@ public class ClientSetup {
             EntityRenderers.register(ModEntities.DODECA_MOUNTING.get(), DodecaMountingRenderer::new);
             MenuScreens.register(ModMenus.COAL_BURNER.get(), CoalBurnerScreen::new);
             MenuScreens.register(ModMenus.POWER_CELL.get(), PowerCellScreen::new);
+            MenuScreens.register(ModMenus.ROLLING_MILL.get(), RollingMillScreen::new);
             BlockEntityRenderers.register(ModBlockEntities.GRADUATED_LEVER.get(), GraduatedLeverBlockEntityRenderer::new);
             BlockEntityRenderers.register(ModBlockEntities.DATA_LECTERN.get(), DataLecternBlockEntityRenderer::new);
             BlockEntityRenderers.register(ModBlockEntities.SCRIPT_TERMINAL.get(), ScriptTerminalBlockEntityRenderer::new);
@@ -104,6 +108,14 @@ public class ClientSetup {
                     // The BER keeps rendering the held item, debug overlays, and the on-ship fallback
                     .neverSkipVanillaRender()
                     .apply();
+            BlockEntityRenderers.register(ModBlockEntities.ROLLING_MILL.get(), RollingMillBlockEntityRenderer::new);
+            SimpleBlockEntityVisualizer.builder(ModBlockEntities.ROLLING_MILL.get())
+                    .factory(RollingMillVisual::new)
+                    // The BER draws the rollers as a fallback when Flywheel's backend is unavailable.
+                    .neverSkipVanillaRender()
+                    .apply();
+            // Force-initialise the extended RecipeBookCategories enum values so the recipe book tab is populated.
+            ModRecipeBookCategories.ROLLING_MILL.getClass();
             BlockEntityRenderers.register(ModBlockEntities.POWER_CELL.get(), PowerCellBlockEntityRenderer::new);
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DENSE_CABLE_SEPARATOR.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DATA_CABLE.get(), RenderType.translucent());

@@ -110,6 +110,9 @@ public class ModItems {
     public static final RegistryObject<Item> COAL_BURNER = ITEMS.register("coal_burner",
             () -> new BlockItem(ModBlocks.COAL_BURNER.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> ROLLING_MILL = ITEMS.register("rolling_mill",
+            () -> new BlockItem(ModBlocks.ROLLING_MILL.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> ENERGY_STORAGE_MODULE = ITEMS.register("energy_storage_module",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<PowerDrillItem> POWER_DRILL = ITEMS.register("power_drill",

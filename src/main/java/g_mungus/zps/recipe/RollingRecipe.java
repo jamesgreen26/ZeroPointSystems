@@ -1,0 +1,90 @@
+package g_mungus.zps.recipe;
+
+import net.minecraft.core.NonNullList;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.Container;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.level.Level;
+import org.jetbrains.annotations.NotNull;
+
+/**
+ * A "rolling" recipe: a single input item is transformed into a single result over
+ * {@link #processTime} ticks while the Rolling Mill drains {@link #energyPerTick} FE each tick.
+ * Used for ingot -> rod and nugget -> wire transforms.
+ */
+public class RollingRecipe implements Recipe<Container> {
+    private final ResourceLocation id;
+    private final Ingredient ingredient;
+    private final ItemStack result;
+    private final int processTime;
+    private final int energyPerTick;
+
+    public RollingRecipe(ResourceLocation id, Ingredient ingredient, ItemStack result, int processTime, int energyPerTick) {
+        this.id = id;
+        this.ingredient = ingredient;
+        this.result = result;
+        this.processTime = processTime;
+        this.energyPerTick = energyPerTick;
+    }
+
+    public Ingredient ingredient() {
+        return ingredient;
+    }
+
+    public ItemStack result() {
+        return result;
+    }
+
+    public int processTime() {
+        return processTime;
+    }
+
+    public int energyPerTick() {
+        return energyPerTick;
+    }
+
+    @Override
+    public boolean matches(Container input, @NotNull Level level) {
+        return ingredient.test(input.getItem(0));
+    }
+
+    @Override
+    public @NotNull ItemStack assemble(@NotNull Container input, @NotNull RegistryAccess registries) {
+        return result.copy();
+    }
+
+    @Override
+    public boolean canCraftInDimensions(int width, int height) {
+        return true;
+    }
+
+    @Override
+    public @NotNull NonNullList<Ingredient> getIngredients() {
+        return NonNullList.of(Ingredient.EMPTY, ingredient);
+    }
+
+    @Override
+    public @NotNull ItemStack getResultItem(@NotNull RegistryAccess registries) {
+        return result;
+    }
+
+    @Override
+    public @NotNull RecipeSerializer<?> getSerializer() {
+        return ModRecipes.ROLLING_SERIALIZER.get();
+    }
+
+    @Override
+    public @NotNull RecipeType<?> getType() {
+        return ModRecipes.ROLLING_TYPE.get();
+    }
+
+    @Override
+    public @NotNull ResourceLocation getId() {
+        return id;
+    }
+}

@@ -1,0 +1,11 @@
+{
+  "type": "zps:rolling",
+  "ingredient": {
+    "tag": "forge:ingots/space_metal"
+  },
+  "result": {
+    "item": "zps:space_metal_rod"
+  },
+  "processTime": 200,
+  "energyPerTick": 32
+}

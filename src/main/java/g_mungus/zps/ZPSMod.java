@@ -9,12 +9,15 @@ import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.entity.ModEntities;
 import g_mungus.zps.gametest.EnumPropertyWithAliasesGameTests;
 import g_mungus.zps.gametest.RoboticArmGameTests;
+import g_mungus.zps.gametest.RollingMillGameTests;
 import g_mungus.zps.item.ModCreativeTabs;
 import g_mungus.zps.item.ModItems;
 import g_mungus.zps.gametest.CableNetworkGameTests;
 import g_mungus.zps.gametest.TextDisplayGameTests;
 import g_mungus.zps.menu.ModMenus;
 import g_mungus.zps.networking.ZPSGamePackets;
+import g_mungus.zps.recipe.ModRecipeBookTypes;
+import g_mungus.zps.recipe.ModRecipes;
 import g_mungus.zps.painting.ZPSPaintings;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
@@ -44,6 +47,8 @@ public final class ZPSMod {
         ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
         ModMenus.MENUS.register(modEventBus);
+        ModRecipes.RECIPE_TYPES.register(modEventBus);
+        ModRecipes.RECIPE_SERIALIZERS.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
         ModEntities.ENTITIES.register(modEventBus);
         ModSounds.SOUNDS.register(modEventBus);
@@ -55,6 +60,11 @@ public final class ZPSMod {
 
         DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> ZPSPonderPlugin::registerPlugin);
         DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> ZPSPartialModels::init);
+
+        // Force-initialise the extended vanilla RecipeBookType enum values during mod construction, so the
+        // IExtensibleEnum#create hooks run before the recipe book is used.
+        //noinspection ResultOfMethodCallIgnored
+        ModRecipeBookTypes.ROLLING_MILL.getClass();
 
         Compat.onModInit(modEventBus);
     }
@@ -72,5 +82,6 @@ public final class ZPSMod {
         event.register(CableNetworkGameTests.class);
         event.register(EnumPropertyWithAliasesGameTests.class);
         event.register(RoboticArmGameTests.class);
+        event.register(RollingMillGameTests.class);
     }
 }

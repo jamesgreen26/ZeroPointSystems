@@ -1,0 +1,67 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "forge:composite",
+  "textures": {
+    "particle": "zps:block/rolling_mill"
+  },
+  "children": {
+    "body": {
+      "parent": "zps:block/rolling_mill"
+    },
+    "lower_wheel": {
+      "parent": "zps:block/rolling_mill_roller",
+      "transform": {
+        "matrix": [
+          [
+            1,
+            0,
+            0,
+            0.5
+          ],
+          [
+            0,
+            0,
+            -1,
+            -0.75
+          ],
+          [
+            0,
+            1,
+            0,
+            0
+          ]
+        ]
+      }
+    },
+    "upper_wheel": {
+      "parent": "zps:block/rolling_mill_roller",
+      "transform": {
+        "matrix": [
+          [
+            1,
+            0,
+            0,
+            0.5
+          ],
+          [
+            0,
+            0,
+            -1,
+            -0.25
+          ],
+          [
+            0,
+            1,
+            0,
+            0
+          ]
+        ]
+      }
+    }
+  },
+  "item_render_order": [
+    "body",
+    "lower_wheel",
+    "upper_wheel"
+  ]
+}

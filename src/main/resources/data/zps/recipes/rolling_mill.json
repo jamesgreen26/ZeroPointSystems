@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "I": {
+      "tag": "forge:ingots/space_metal"
+    },
+    "S": {
+      "item": "minecraft:smooth_stone_slab"
+    }
+  },
+  "pattern": [
+    "ISI",
+    "I I",
+    "ISI"
+  ],
+  "result": {
+    "count": 1,
+    "item": "zps:rolling_mill"
+  },
+  "show_notification": true
+}

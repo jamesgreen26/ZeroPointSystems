@@ -39,6 +39,20 @@ public class PowerCellBlock extends BaseEntityBlock {
         return RenderShape.MODEL;
     }
 
+    @Override
+    public boolean hasAnalogOutputSignal(@NotNull BlockState state) {
+        return true;
+    }
+
+    @Override
+    public int getAnalogOutputSignal(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos) {
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof PowerCellBlockEntity powerCell) {
+            return powerCell.getComparatorOutputSignal();
+        }
+        return 0;
+    }
+
     @Nullable
     @Override
     public BlockEntity newBlockEntity(@NotNull BlockPos pos, @NotNull BlockState state) {

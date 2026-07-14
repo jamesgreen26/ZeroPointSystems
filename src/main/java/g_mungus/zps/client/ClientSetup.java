@@ -7,6 +7,10 @@ import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.client.model.connected.ConnectedModelLoader;
 import g_mungus.zps.client.model.connected.ConnectedTextureMeta;
 import g_mungus.zps.client.recipebook.ModRecipeBookCategories;
+import g_mungus.zps.recipe.ModRecipeBookTypes;
+import g_mungus.zps.recipe.ModRecipes;
+import net.minecraftforge.client.event.RegisterRecipeBookCategoriesEvent;
+import java.util.List;
 import g_mungus.zps.client.renderer.*;
 import g_mungus.zps.client.screens.CoalBurnerScreen;
 import g_mungus.zps.client.screens.PowerCellScreen;
@@ -77,6 +81,22 @@ public class ClientSetup {
         event.register(RollingMillBlockEntityRenderer.ROLLER_MODEL);
     }
 
+    /**
+     * Registers the rolling mill's custom recipe book tab categories with Forge, so the vanilla recipe
+     * book can build tabs for our {@link ModRecipeBookTypes#ROLLING_MILL} type (without this the tab list
+     * is empty and opening the book throws). This also referencing {@link ModRecipeBookCategories} forces
+     * its extended enum values to be created.
+     */
+    @SubscribeEvent
+    public static void onRegisterRecipeBookCategories(RegisterRecipeBookCategoriesEvent event) {
+        event.registerBookCategories(ModRecipeBookTypes.ROLLING_MILL,
+                List.of(ModRecipeBookCategories.ROLLING_MILL_SEARCH, ModRecipeBookCategories.ROLLING_MILL));
+        event.registerAggregateCategory(ModRecipeBookCategories.ROLLING_MILL_SEARCH,
+                List.of(ModRecipeBookCategories.ROLLING_MILL));
+        event.registerRecipeCategoryFinder(ModRecipes.ROLLING_TYPE.get(),
+                recipe -> ModRecipeBookCategories.ROLLING_MILL);
+    }
+
     @SubscribeEvent
     public static void onModifyBakingResult(ModelEvent.ModifyBakingResult event) {
         BakedModel powerDrillModel = event.getModels().get(POWER_DRILL_MODEL);
@@ -119,8 +139,6 @@ public class ClientSetup {
                     // The BER draws the rollers as a fallback when Flywheel's backend is unavailable.
                     .neverSkipVanillaRender()
                     .apply();
-            // Force-initialise the extended RecipeBookCategories enum values so the recipe book tab is populated.
-            ModRecipeBookCategories.ROLLING_MILL.getClass();
             BlockEntityRenderers.register(ModBlockEntities.POWER_CELL.get(), PowerCellBlockEntityRenderer::new);
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DENSE_CABLE_SEPARATOR.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DATA_CABLE.get(), RenderType.translucent());

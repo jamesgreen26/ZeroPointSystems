@@ -11,6 +11,8 @@ import g_mungus.zps.client.renderer.*;
 import g_mungus.zps.client.screens.CoalBurnerScreen;
 import g_mungus.zps.client.screens.PowerCellScreen;
 import g_mungus.zps.client.screens.RollingMillScreen;
+import g_mungus.zps.client.screens.AssemblerScreen;
+import g_mungus.zps.commands.content.arguments.AssemblerRecipeArgument;
 import g_mungus.zps.entity.ModEntities;
 import g_mungus.zps.item.AddressPadClientHooks;
 import g_mungus.zps.menu.ModMenus;
@@ -96,6 +98,9 @@ public class ClientSetup {
             MenuScreens.register(ModMenus.COAL_BURNER.get(), CoalBurnerScreen::new);
             MenuScreens.register(ModMenus.POWER_CELL.get(), PowerCellScreen::new);
             MenuScreens.register(ModMenus.ROLLING_MILL.get(), RollingMillScreen::new);
+            MenuScreens.register(ModMenus.ASSEMBLER.get(), AssemblerScreen::new);
+            // The set_recipe argument suggests recipe ids client-side (script terminal) against the synced level.
+            AssemblerRecipeArgument.setClientLevelSupplier(() -> net.minecraft.client.Minecraft.getInstance().level);
             BlockEntityRenderers.register(ModBlockEntities.GRADUATED_LEVER.get(), GraduatedLeverBlockEntityRenderer::new);
             BlockEntityRenderers.register(ModBlockEntities.DATA_LECTERN.get(), DataLecternBlockEntityRenderer::new);
             BlockEntityRenderers.register(ModBlockEntities.SCRIPT_TERMINAL.get(), ScriptTerminalBlockEntityRenderer::new);

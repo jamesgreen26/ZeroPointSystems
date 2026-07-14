@@ -3,6 +3,7 @@ package g_mungus.zps.mixin;
 import com.mojang.brigadier.arguments.ArgumentType;
 import g_mungus.zps.commands.api_impl.arguments.ValueOfOrLiteralArgumentType;
 import g_mungus.zps.commands.api_impl.arguments.ValueOfOrLiteralArgumentTypeInfo;
+import g_mungus.zps.commands.content.arguments.AssemblerRecipeArgument;
 import g_mungus.zps.commands.content.arguments.BlockPosListArgument;
 import g_mungus.zps.commands.content.arguments.RadioFrequencyArgument;
 import g_mungus.zps.compat.genesis.CelestialArgument;
@@ -49,5 +50,12 @@ public class ArgumentTypeInfosMixin {
         );
 
         register(arg, "zps:celestial", CelestialArgument.class, CelestialArgument.INFO);
+
+        register(
+                arg,
+                "zps:recipe",
+                AssemblerRecipeArgument.class,
+                AssemblerRecipeArgument.INFO
+        );
     }
 }

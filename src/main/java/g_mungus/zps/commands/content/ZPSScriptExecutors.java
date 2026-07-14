@@ -7,6 +7,8 @@ import g_mungus.zps.blockentity.RoboticArmBlockEntity;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptExecutor;
 import g_mungus.zps.commands.content.executors.RoboticArmItemCommand;
+import g_mungus.zps.commands.content.executors.AssemblerRecipeCommand;
+import g_mungus.zps.commands.content.arguments.AssemblerRecipeArgument;
 import g_mungus.zps.commands.content.arguments.RadioFrequencyArgument;
 import g_mungus.zps.commands.content.executors.SetFrequencyCommand;
 import g_mungus.zps.commands.content.executors.SetRedstoneCommand;
@@ -152,6 +154,21 @@ public class ZPSScriptExecutors {
                         targetPos
                 ),
                 Set.of(ZPSMod.resource("robotic_arm"))
+        ));
+
+        event.register(new ScriptExecutor<>(
+                "set_recipe",
+                String.class,
+                ResourceLocation.parse("zps:string"),
+                AssemblerRecipeArgument.recipe(),
+                ResourceLocation.class,
+                (id, context) -> id.toString(),
+                (recipeId, context) -> AssemblerRecipeCommand.setRecipe(
+                        context.level(),
+                        context.pos(),
+                        recipeId
+                ),
+                Set.of(ZPSMod.resource("assembler"))
         ));
 
         event.register(ScriptExecutor.simpleWithBlocks(

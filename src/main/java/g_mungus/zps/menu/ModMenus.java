@@ -19,4 +19,7 @@ public class ModMenus {
 
     public static final RegistryObject<MenuType<RollingMillMenu>> ROLLING_MILL =
             MENUS.register("rolling_mill", () -> IForgeMenuType.create(RollingMillMenu::new));
+
+    public static final RegistryObject<MenuType<AssemblerMenu>> ASSEMBLER =
+            MENUS.register("assembler", () -> IForgeMenuType.create(AssemblerMenu::new));
 }

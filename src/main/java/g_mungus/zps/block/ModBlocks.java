@@ -209,6 +209,11 @@ public class ModBlocks {
                     .strength(3.5f)
                     .requiresCorrectToolForDrops()));
 
+    public static final RegistryObject<Block> ASSEMBLER = BLOCKS.register("assembler",
+            () -> new AssemblerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.5f)
+                    .requiresCorrectToolForDrops()));
+
 
     /// RESOURCE BLOCKS
     public static final RegistryObject<Block> BAUXITE = BLOCKS.register("bauxite",

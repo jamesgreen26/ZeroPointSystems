@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "powered=false": {
+      "model": "zps:block/assembler_unlit"
+    },
+    "powered=true": {
+      "model": "zps:block/assembler_lit"
+    }
+  }
+}

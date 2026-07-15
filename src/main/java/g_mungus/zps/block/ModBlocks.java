@@ -207,7 +207,8 @@ public class ModBlocks {
     public static final RegistryObject<Block> ROLLING_MILL = BLOCKS.register("rolling_mill",
             () -> new RollingMillBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.5f)
-                    .requiresCorrectToolForDrops()));
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
 
     public static final RegistryObject<Block> ASSEMBLER = BLOCKS.register("assembler",
             () -> new AssemblerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)

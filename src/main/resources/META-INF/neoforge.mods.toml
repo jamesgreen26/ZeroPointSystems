@@ -8,7 +8,7 @@ version = "${version}"
 displayName = "Zero Point Systems"
 authors = "G_Mungus, Quoissant, Cosmos, PacificCyan, RainyAtrium"
 description = '''
-Advanced solutions delivering unmatched efficiency and flexibility.
+A tech mod with computers, radios, production machines, and control systems.
 '''
 logoFile = "assets/zps/icon.png"
 enumExtensions = "META-INF/enumextensions.json"

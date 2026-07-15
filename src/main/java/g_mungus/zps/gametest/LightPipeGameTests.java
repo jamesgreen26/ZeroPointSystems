@@ -235,6 +235,147 @@ public final class LightPipeGameTests {
     }
 
     @GameTest(template = TEMPLATE)
+    public static void dataCombinator_chainedCombinatorsPropagateToDownstreamOutput(GameTestHelper helper) {
+        // Upstream combinator at (2,1,3) facing EAST -> output feeds the downstream combinator to its east.
+        //   input A (north wing) = lectern (2,1,2), input B (south wing) = lectern (2,1,4)
+        // Downstream combinator at (3,1,3) facing NORTH -> output (north) feeds the display at (3,1,2).
+        //   input A (west wing) = upstream combinator (2,1,3), input B (east wing) = lectern (4,1,3)
+        BlockPos outputPos = new BlockPos(3, 1, 2);
+        BlockPos downstreamPos = new BlockPos(3, 1, 3);
+        BlockPos upstreamPos = new BlockPos(2, 1, 3);
+        BlockPos upstreamInputAPos = new BlockPos(2, 1, 2);
+        BlockPos upstreamInputBPos = new BlockPos(2, 1, 4);
+        BlockPos downstreamInputBPos = new BlockPos(4, 1, 3);
+
+        helper.setBlock(outputPos, display(Direction.NORTH));
+        helper.setBlock(downstreamPos, combinator(Direction.NORTH, DataCombinator.CombineMode.append));
+        helper.setBlock(upstreamPos, combinator(Direction.EAST, DataCombinator.CombineMode.append));
+        helper.setBlock(upstreamInputAPos, lectern(Direction.NORTH));
+        helper.setBlock(upstreamInputBPos, lectern(Direction.SOUTH));
+        helper.setBlock(downstreamInputBPos, lectern(Direction.EAST));
+
+        setWritableBook(helper, upstreamInputAPos, "foo");
+        setWritableBook(helper, upstreamInputBPos, "bar");
+        setWritableBook(helper, downstreamInputBPos, "baz");
+
+        // upstream = "foo" + "bar" = "foobar"; downstream = "foobar" + "baz" = "foobarbaz"
+        String actual = displayText(helper, outputPos);
+        if (!"foobarbaz".equals(actual)) {
+            helper.fail("Expected chained combinator output \"foobarbaz\", got \"" + actual + "\"");
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void dataCombinator_chainedCombinatorUpdatesPropagateOnUpstreamInputChange(GameTestHelper helper) {
+        BlockPos outputPos = new BlockPos(3, 1, 2);
+        BlockPos downstreamPos = new BlockPos(3, 1, 3);
+        BlockPos upstreamPos = new BlockPos(2, 1, 3);
+        BlockPos upstreamInputAPos = new BlockPos(2, 1, 2);
+        BlockPos upstreamInputBPos = new BlockPos(2, 1, 4);
+        BlockPos downstreamInputBPos = new BlockPos(4, 1, 3);
+
+        helper.setBlock(outputPos, display(Direction.NORTH));
+        helper.setBlock(downstreamPos, combinator(Direction.NORTH, DataCombinator.CombineMode.append));
+        helper.setBlock(upstreamPos, combinator(Direction.EAST, DataCombinator.CombineMode.append));
+        helper.setBlock(upstreamInputAPos, lectern(Direction.NORTH));
+        helper.setBlock(upstreamInputBPos, lectern(Direction.SOUTH));
+        helper.setBlock(downstreamInputBPos, lectern(Direction.EAST));
+
+        setWritableBook(helper, upstreamInputAPos, "foo");
+        setWritableBook(helper, upstreamInputBPos, "bar");
+        setWritableBook(helper, downstreamInputBPos, "baz");
+
+        if (!"foobarbaz".equals(displayText(helper, outputPos))) {
+            helper.fail("Expected initial chained combinator output \"foobarbaz\", got \"" + displayText(helper, outputPos) + "\"");
+            return;
+        }
+
+        // Changing an upstream input must propagate all the way through to the downstream output.
+        setWritableBook(helper, upstreamInputAPos, "QUX");
+        helper.succeedWhen(() -> {
+            String actual = displayText(helper, outputPos);
+            if (!"QUXbarbaz".equals(actual)) {
+                helper.fail("Expected updated chained combinator output \"QUXbarbaz\", got \"" + actual + "\"");
+            }
+        });
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void dataCombinator_reTriggeredInputReExecutesDownstreamSerialBus(GameTestHelper helper) {
+        // lectern -> combinator -> serial bus -> target block.
+        // Re-sending the same input produces an identical combined output, but the serial
+        // bus must still re-execute its command. The combinator therefore has to forward
+        // on every input trigger, not only when its output text changes.
+        BlockPos targetPos = new BlockPos(3, 1, 2);
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        BlockPos combinatorPos = new BlockPos(3, 1, 4);
+        BlockPos inputPos = new BlockPos(2, 1, 4);
+
+        helper.setBlock(targetPos, Blocks.STONE.defaultBlockState());
+        helper.setBlock(serialBusPos, serialBus(Direction.NORTH));
+        helper.setBlock(combinatorPos, combinator(Direction.NORTH, DataCombinator.CombineMode.append));
+        helper.setBlock(inputPos, lectern(Direction.WEST));
+
+        setWritableBook(helper, inputPos, "set_redstone 9");
+
+        int afterFirst = SetRedstoneCommand.getRedstonePowerAt(helper.getLevel(), helper.absolutePos(targetPos));
+        if (afterFirst != 9) {
+            helper.fail("Expected combinator-fed serial bus to set redstone 9, got " + afterFirst);
+            return;
+        }
+
+        // Clear the target, then re-send the identical input. The combined output does not
+        // change, so a change-only combinator would leave the target at 0; a correct one
+        // re-fires the serial bus and restores 9.
+        SetRedstoneCommand.setRedstone(helper.getLevel(), helper.absolutePos(targetPos), 0);
+        setWritableBook(helper, inputPos, "set_redstone 9");
+
+        helper.succeedWhen(() -> {
+            int actual = SetRedstoneCommand.getRedstonePowerAt(helper.getLevel(), helper.absolutePos(targetPos));
+            if (actual != 9) {
+                helper.fail("Expected re-triggered input to re-execute serial bus (redstone 9), got " + actual);
+            }
+        });
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void dataCombinator_feedbackCycleDoesNotStackOverflow(GameTestHelper helper) {
+        // Wire two combinators into a feedback cycle: A.out -> B.inA, B.out -> A.inA.
+        //   combinatorA (2,1,2) facing SOUTH: out -> cable (2,1,3), inA (east) -> cable (3,1,2),
+        //                                      inB (west) -> lectern (1,1,2)
+        //   combinatorB (3,1,3) facing NORTH: out -> cable (3,1,2), inA (west) -> cable (2,1,3)
+        // Seeding the cycle from the lectern must settle without recursing forever.
+        BlockPos combinatorAPos = new BlockPos(2, 1, 2);
+        BlockPos combinatorBPos = new BlockPos(3, 1, 3);
+        BlockPos aOutToBInCable = new BlockPos(2, 1, 3);
+        BlockPos bOutToAInCable = new BlockPos(3, 1, 2);
+        BlockPos seedPos = new BlockPos(1, 1, 2);
+        BlockPos observerPos = new BlockPos(4, 1, 2);
+
+        helper.setBlock(combinatorAPos, combinator(Direction.SOUTH, DataCombinator.CombineMode.append));
+        helper.setBlock(combinatorBPos, combinator(Direction.NORTH, DataCombinator.CombineMode.append));
+        helper.setBlock(aOutToBInCable, lightPipe());
+        helper.setBlock(bOutToAInCable, lightPipe());
+        helper.setBlock(seedPos, lectern(Direction.WEST));
+        helper.setBlock(observerPos, display(Direction.EAST));
+
+        // If the re-entrancy guard is missing, this synchronous propagation recurses until
+        // it throws StackOverflowError, failing the test.
+        setWritableBook(helper, seedPos, "X");
+
+        // The observer hangs off combinator B's output cable, so seeing the seed there proves
+        // the cycle actually propagated (A -> B) rather than being silently disconnected.
+        String observed = displayText(helper, observerPos);
+        if (!observed.contains("X")) {
+            helper.fail("Expected feedback cycle to propagate seed through the combinators, observed \"" + observed + "\"");
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
     public static void dataComparator_equalsModePowersLampForMatchingInputs(GameTestHelper helper) {
         BlockPos lampPos = new BlockPos(3, 1, 2);
         BlockPos comparatorPos = new BlockPos(3, 1, 3);

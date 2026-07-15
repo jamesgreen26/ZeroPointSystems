@@ -20,12 +20,20 @@ public class DataCombinatorBlockEntity extends NetworkTerminalImpl implements Li
     private String textB = "";
     private String outputText = "";
 
+    /// Re-entrancy guard: prevents a chain (or cycle) of combinators from recursing
+    /// back into this combinator's own {@link #updateSignal} and overflowing the stack.
+    private boolean updating = false;
+
     public DataCombinatorBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.DATA_COMBINATOR.get(), pos, state);
     }
 
     @Override
     public void acceptText(int channel, String message) {
+        // Force propagation even when the combined output is unchanged: a re-trigger of the
+        // same input must re-fire downstream side effects (e.g. a serial bus re-executing its
+        // command). Loop/stack safety comes from the re-entrancy guard in updateSignal, not
+        // from suppressing repeat values here.
         if (channel == Channels.TRIPLE_A) {
             textA = message;
             refreshOutput(true);
@@ -69,12 +77,25 @@ public class DataCombinatorBlockEntity extends NetworkTerminalImpl implements Li
 
     @Override
     public void updateSignal(Level level) {
-        for (NetworkNode terminal : getTerminals(Channels.TRIPLE_C)) {
-            BlockEntity be = level.getBlockEntity(terminal.pos());
-            int channel = terminal.channel();
-            if (be instanceof LightPipeDataReceiver.Text receiver && !(receiver instanceof DataCombinatorBlockEntity)) {
-                receiver.acceptText(channel, outputText.substring(0, Math.min(outputText.length(), receiver.getMaxLength())));
+        // Guard against re-entrancy: a downstream combinator we push to may (through a
+        // chain or cycle) end up calling this combinator's updateSignal again. Because
+        // input propagation is forced (see acceptText), this guard is the sole protection
+        // against a cycle recursing forever and overflowing the stack. Each combinator's
+        // updateSignal runs at most once per outermost propagation, bounding recursion
+        // depth to the number of combinators in the network.
+        if (updating) return;
+        updating = true;
+        try {
+            for (NetworkNode terminal : getTerminals(Channels.TRIPLE_C)) {
+                if (terminal.pos().equals(getBlockPos())) continue;
+                BlockEntity be = level.getBlockEntity(terminal.pos());
+                int channel = terminal.channel();
+                if (be instanceof LightPipeDataReceiver.Text receiver) {
+                    receiver.acceptText(channel, outputText.substring(0, Math.min(outputText.length(), receiver.getMaxLength())));
+                }
             }
+        } finally {
+            updating = false;
         }
     }
 

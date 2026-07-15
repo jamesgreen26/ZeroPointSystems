@@ -3,6 +3,7 @@ package g_mungus.zps.client.screens;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import org.joml.Matrix4f;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.blockentity.AssemblerBlockEntity;
 import g_mungus.zps.menu.AssemblerMenu;
@@ -361,10 +362,15 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> impl
         PoseStack pose = graphics.pose();
         pose.pushPose();
         pose.translate(x + 8.0, y + 8.0, 150.0);
-        pose.scale(16.0F, -16.0F, 16.0F);
+        // Match vanilla GuiGraphics#renderItem: flip Y on the pose matrix only (leaving the normal matrix
+        // intact) then scale uniformly. Collapsing this into scale(16, -16, 16) would also flip the normals,
+        // which inverts the directional lighting on 3D/block item models (they appear lit from below).
+        pose.mulPoseMatrix(new Matrix4f().scaling(1.0F, -1.0F, 1.0F));
+        pose.scale(16.0F, 16.0F, 16.0F);
 
         boolean flatLight = !model.usesBlockLight();
         if (flatLight) {
+            graphics.flush();
             Lighting.setupForFlatItems();
         }
 

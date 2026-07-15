@@ -95,8 +95,10 @@ public class RollingMillScreen extends AbstractContainerScreen<RollingMillMenu> 
 
     @Override
     public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        // 1.20.1's AbstractContainerScreen#render doesn't draw the dimmed backdrop itself (unlike 1.21),
+        // so draw it here before anything else.
+        this.renderBackground(graphics);
         if (this.recipeBookComponent.isVisible() && this.widthTooNarrow) {
-            this.renderBackground(graphics);
             this.recipeBookComponent.render(graphics, mouseX, mouseY, partialTick);
         } else {
             super.render(graphics, mouseX, mouseY, partialTick);

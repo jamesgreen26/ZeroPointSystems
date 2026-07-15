@@ -21,7 +21,9 @@ public final class ModManuals {
         if (Compat.isCreateLoaded()) {
             sections.add(new ManualSection("create", "create.md", Component.translatable("zps.manual.create")));
         }
-        sections.add(new ManualSection("genesis", "genesis.md", Component.translatable("zps.manual.genesis")));
+        if (Compat.isGenesisLoaded()) {
+            sections.add(new ManualSection("genesis", "genesis.md", Component.translatable("zps.manual.genesis")));
+        }
         if (Compat.isVSLoaded()) {
             sections.add(new ManualSection("valkyrien_skies", "valkyrien_skies.md", Component.translatable("zps.manual.valkyrien_skies")));
         }

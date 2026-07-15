@@ -58,6 +58,8 @@ public final class ZPSMod {
         // Register common setup event
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(ZPSMod::registerGameTests);
+        // Registry aliases for in-place renames (must run during registration, before registries lock).
+        modEventBus.addListener(DataFixerUpper::registerRenameAliases);
 
         DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> ZPSPonderPlugin::registerPlugin);
         DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> ZPSPartialModels::init);

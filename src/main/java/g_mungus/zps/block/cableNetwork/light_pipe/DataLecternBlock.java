@@ -177,7 +177,7 @@ public class DataLecternBlock extends LecternBlock implements EntityBlock, Cable
     }
 
     @Override
-    protected InteractionResult useWithoutItem(BlockState arg, Level arg2, BlockPos arg3, Player arg4, BlockHitResult arg6) {
+    protected @NotNull InteractionResult useWithoutItem(BlockState arg, Level arg2, BlockPos arg3, Player arg4, BlockHitResult arg6) {
         if (arg.getValue(HAS_BOOK)) {
             if (!arg2.isClientSide) {
                 if (Compat.isCreateDeployer(arg4) && arg4.getMainHandItem().isEmpty()) {
@@ -192,8 +192,12 @@ public class DataLecternBlock extends LecternBlock implements EntityBlock, Cable
                             arg4.getInventory().add(itemStack);
                         }
                     }
+                    this.openScreen(arg2, arg3, arg4);
+                } else if (arg4.isSecondaryUseActive()) {
+                    this.takeBook(arg2, arg3, arg4);
+                } else {
+                    this.openScreen(arg2, arg3, arg4);
                 }
-                this.openScreen(arg2, arg3, arg4);
             }
 
             return InteractionResult.sidedSuccess(arg2.isClientSide);
@@ -222,6 +226,18 @@ public class DataLecternBlock extends LecternBlock implements EntityBlock, Cable
         if (blockEntity instanceof DataLecternBlockEntity transmitterBlockEntity) {
             arg3.openMenu(transmitterBlockEntity);
             arg3.awardStat(Stats.INTERACT_WITH_LECTERN);
+        }
+    }
+
+    private void takeBook(Level level, BlockPos pos, Player player) {
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof DataLecternBlockEntity transmitter) {
+            ItemStack itemStack = transmitter.getBook().copy();
+            transmitter.clearContent();
+            transmitter.onBookItemRemove();
+            player.getInventory().placeItemBackInInventory(itemStack);
+            level.playSound(null, pos, SoundEvents.BOOK_PUT, SoundSource.BLOCKS, 1.0F, 1.0F);
+            player.awardStat(Stats.INTERACT_WITH_LECTERN);
         }
     }
 

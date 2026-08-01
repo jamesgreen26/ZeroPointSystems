@@ -68,6 +68,7 @@ public class ZPSCommands {
                                         .getChild(Paths.EXECUTORS),
                                 context -> {
                                     ZPSScriptCommandSource source = new ZPSScriptCommandSource(context.getSource().source);
+                                    source.setCommandInput(context.getInput());
                                     source.setPos(BlockPosArgument.getBlockPos(context, "position"));
                                     return List.of(context.getSource().withSource(source));
                                 }, false

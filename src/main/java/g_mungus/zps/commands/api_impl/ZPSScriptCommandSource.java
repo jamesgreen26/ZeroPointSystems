@@ -24,9 +24,13 @@ public class ZPSScriptCommandSource implements CommandSource {
     public Supplier<Integer> execute = null;
     public Class<?> executeType = null;
     private Map<String, BlockPos> availableAddresses = Collections.emptyMap();
+    private @Nullable String commandInput;
 
     public ZPSScriptCommandSource(@Nullable CommandSource delegate) {
         this.delegate = delegate;
+        if (delegate instanceof ZPSScriptCommandSource scriptCommandSource) {
+            this.commandInput = scriptCommandSource.commandInput;
+        }
     }
 
     @Override
@@ -69,6 +73,14 @@ public class ZPSScriptCommandSource implements CommandSource {
 
     public @Nullable BlockPos resolveAddress(String name) {
         return availableAddresses.get(name);
+    }
+
+    public void setCommandInput(String commandInput) {
+        this.commandInput = commandInput;
+    }
+
+    public @Nullable String getCommandInput() {
+        return commandInput;
     }
 
     @ApiStatus.Internal

@@ -3,7 +3,11 @@ package g_mungus.zps.commands.api_impl;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.ArgumentType;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.context.ParsedCommandNode;
+import com.mojang.brigadier.context.StringRange;
 import com.mojang.brigadier.tree.CommandNode;
+import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.ScriptContext;
 import g_mungus.zps.commands.api.ScriptExecutor;
 import g_mungus.zps.commands.api.ScriptGetter;
@@ -143,6 +147,7 @@ public class CommandTreeBuilder {
                 }
                 return List.of(context.getSource());
             } catch (Exception e) {
+                logCommandException(context, "mapper argument", mapper.displayName(), e);
                 throw new RuntimeException(e);
             }
         }, false);
@@ -162,6 +167,7 @@ public class CommandTreeBuilder {
                 }
                 return List.of(context.getSource());
             } catch (Exception e) {
+                logCommandException(context, "mapper", mapper.displayName(), e);
                 throw new RuntimeException(e);
             }
         }, false).build());
@@ -379,6 +385,7 @@ public class CommandTreeBuilder {
                 }
                 return List.of(context.getSource());
             } catch (Exception e) {
+                logCommandException(context, "value_of mapper argument", mapper.displayName(), e);
                 throw new RuntimeException(e);
             }
         }, false);
@@ -399,6 +406,7 @@ public class CommandTreeBuilder {
                         }
                         return List.of(context.getSource());
                     } catch (Exception e) {
+                        logCommandException(context, "value_of mapper", mapper.displayName(), e);
                         throw new RuntimeException(e);
                     }
                 }, false);
@@ -408,6 +416,39 @@ public class CommandTreeBuilder {
     private record ScriptContextImpl(CommandSourceStack commandSource, BlockPos pos, ServerLevel level) implements ScriptContext {}
 
     private record ScriptContextWithArgumentImpl<T>(T argumentValue, BlockPos pos, ServerLevel level, CommandSourceStack commandSource) implements ScriptContext.WithArgument<T> { }
+
+    private static void logCommandException(CommandContext<CommandSourceStack> context, String phase, String commandPart, Exception exception) {
+        String input = context.getInput();
+        String fullCommand = input;
+        if (context.getSource().source instanceof ZPSScriptCommandSource source && source.getCommandInput() != null) {
+            fullCommand = source.getCommandInput();
+        }
+        String location = formatCommandLocation(input, getLastNodeRange(context));
+        if (fullCommand.equals(input)) {
+            ZPSMod.LOGGER.error("Script command failed while evaluating {} '{}'\nCommand: {}\nLocation:\n{}",
+                    phase, commandPart, fullCommand, location, exception);
+        } else {
+            ZPSMod.LOGGER.error("Script command failed while evaluating {} '{}'\nCommand: {}\nEvaluating: {}\nLocation:\n{}",
+                    phase, commandPart, fullCommand, input, location, exception);
+        }
+    }
+
+    private static StringRange getLastNodeRange(CommandContext<CommandSourceStack> context) {
+        List<ParsedCommandNode<CommandSourceStack>> nodes = context.getNodes();
+        if (!nodes.isEmpty()) {
+            return nodes.getLast().getRange();
+        }
+        return context.getRange();
+    }
+
+    private static String formatCommandLocation(String input, StringRange range) {
+        if (input == null || input.isEmpty()) {
+            return "<empty command>";
+        }
+        int start = Math.max(0, Math.min(input.length(), range.getStart()));
+        int end = Math.max(start + 1, Math.min(input.length(), range.getEnd()));
+        return input + "\n" + " ".repeat(start) + "^".repeat(Math.max(1, end - start));
+    }
 
     private static Object resolveAddressReference(Object rawArg, ZPSScriptCommandSource source) {
         if (rawArg instanceof AddressReference addressReference) {

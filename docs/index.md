@@ -161,3 +161,33 @@ set_redstone value_of(pos y - 50)
 The expression inside can be any getter → mapper chain, so long as it returns the required argument type.
 
 ---
+
+## Expression Aliases
+
+Use `#def <name> = <expression>` at the top of a script to give a reusable name to a getter → mapper chain:
+
+```
+#def first_line = read_page get_line 1
+
+write_page value_of(first_line)
+```
+
+Alias names may contain letters, digits, and `_`, and cannot start with a digit.
+
+Declarations are read from the top of the script. Blank lines are ignored while reading declarations, and the first nonblank line that does not start with `#` ends the declaration section.
+
+Aliases may reference aliases declared earlier:
+
+```
+#def line_1 = read_page get_line 1
+#def line_2 = read_page get_line 2
+#def combined = line_2 + "\n" + value_of(line_1)
+
+write_page value_of(combined)
+```
+
+Later aliases with the same name replace earlier aliases for following declarations and commands.
+
+Alias bodies must start with a getter or an earlier alias, then may continue with mappers.
+
+---

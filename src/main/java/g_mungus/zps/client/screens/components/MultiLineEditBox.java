@@ -1,7 +1,6 @@
 package g_mungus.zps.client.screens.components;
 
 import java.util.Objects;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -67,7 +66,7 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 	@Nullable
 	private Consumer<String> responder;
 	private Predicate<String> filter = Objects::nonNull;
-	private BiFunction<String, Integer, FormattedCharSequence> formatter = (string, integer) -> FormattedCharSequence.forward(string, Style.EMPTY);
+	private LineFormatter formatter = (string, integer, lineIndex) -> FormattedCharSequence.forward(string, Style.EMPTY);
 	@Nullable
 	private Component hint;
 
@@ -87,8 +86,13 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 		this.responder = consumer;
 	}
 
-	public void setFormatter(BiFunction<String, Integer, FormattedCharSequence> biFunction) {
-		this.formatter = biFunction;
+	public void setFormatter(LineFormatter formatter) {
+		this.formatter = formatter;
+	}
+
+	@FunctionalInterface
+	public interface LineFormatter {
+		FormattedCharSequence apply(String visibleText, int displayPos, int lineIndex);
 	}
 
 	public void tick() {
@@ -560,7 +564,7 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 
 				arg.drawString(
 						this.font,
-						this.formatter.apply(clipped, this.displayPos),
+						this.formatter.apply(clipped, this.displayPos, lineIdx),
 						startX,
 						y,
 						textColor

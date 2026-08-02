@@ -8,6 +8,8 @@ import g_mungus.zps.block.cableNetwork.light_pipe.ScriptTerminalBlock;
 import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.NetworkTerminalImpl;
+import g_mungus.zps.commands.api_impl.ValueOfDispatchers;
+import g_mungus.zps.commands.api_impl.aliases.ScriptAliases;
 import g_mungus.zps.item.AddressPadItem;
 import g_mungus.zps.networking.ScriptComputerC2SPacket;
 import g_mungus.zps.util.BookComponents;
@@ -34,9 +36,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -145,13 +147,16 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
     private boolean wasPowered = false;
     private int head = 0;
     private int tickDelay = 0;
+    private String lastParsedCommandsText = null;
+    private ScriptAliases.ParsedScript lastParsedScript = null;
 
     public void tick() {
         BlockState blockState = getBlockState();
         if (!(blockState.getBlock() instanceof ScriptTerminalBlock) || level == null) return;
         boolean powered = blockState.getValue(ScriptTerminalBlock.POWERED);
 
-        List<String> commands = Arrays.stream(allCommands.split("\n")).filter(it -> !it.isBlank()).toList();
+        ScriptAliases.ParsedScript parsedScript = getParsedScript();
+        List<String> commands = parsedScript.commands();
 
         if (head >= commands.size()) head = 0;
         if (powered && !wasPowered) tickDelay = 0;
@@ -162,7 +167,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
             if (tickDelay <= 0) {
                 String command = commands.get(head);
                 if (command.startsWith("/")) command = command.substring(1);
-                processCommand(command);
+                processCommand(command, parsedScript.aliases());
                 head++;
             } else {
                 tickDelay--;
@@ -189,15 +194,39 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         return out;
     }
 
-    private void processCommand(String command) {
+    private ScriptAliases.ParsedScript getParsedScript() {
+        if (!allCommands.equals(lastParsedCommandsText) || lastParsedScript == null) {
+            lastParsedCommandsText = allCommands;
+            lastParsedScript = ScriptAliases.parse(allCommands);
+        }
+        return lastParsedScript;
+    }
+
+    private void clearParsedScriptCache() {
+        lastParsedCommandsText = null;
+        lastParsedScript = null;
+    }
+
+    private void processCommand(String command, Map<String, ScriptAliases.AliasDefinition> aliases) {
         if (command.startsWith("wait ")) {
             executeWaitCommand(command);
             clearOutput();
         } else {
-            currentCommand = resolveAddresses(resolveCoordinates(command, level, worldPosition, getBlockState()));
+            String resolvedCommand = ScriptAliases.resolveCommandExpressions(command, aliases, this::canParseBooleanExpression);
+            currentCommand = resolveAddresses(resolveCoordinates(resolvedCommand, level, worldPosition, getBlockState()));
             updateSignal(level);
             tickDelay = delay - 1; // delay value from GUI (2t, 4t, 8t, or 16t)
         }
+    }
+
+    private boolean canParseBooleanExpression(String expression) {
+        if (!(level instanceof ServerLevel serverLevel)) return false;
+        var dispatcher = ValueOfDispatchers.get(ResourceLocation.parse("zps:boolean"));
+        if (dispatcher == null) return false;
+
+        var parseResults = dispatcher.parse(expression + " " + ValueOfDispatchers.TERMINAL_LITERAL,
+                createTerminalCommandSourceStack(serverLevel, worldPosition, getBlockState()));
+        return !parseResults.getReader().canRead() && parseResults.getExceptions().isEmpty();
     }
 
     private String resolveAddresses(String command) {
@@ -220,23 +249,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
     /// mostly just visible for testing
     public static String resolveCoordinates(String command, Level level, BlockPos worldPosition, BlockState blockState) {
         if (!(level instanceof ServerLevel serverLevel)) return command;
-        Direction direction = blockState.getValue(ScriptTerminalBlock.FACING);
-        CommandSourceStack sourceStack = new CommandSourceStack(
-                new CommandSource() {
-                    @Override public void sendSystemMessage(@NotNull Component arg) {}
-                    @Override public boolean acceptsSuccess() { return false; }
-                    @Override public boolean acceptsFailure() { return false; }
-                    @Override public boolean shouldInformAdmins() { return false; }
-                },
-                Vec3.atCenterOf(worldPosition),
-                new Vec2(0.0F, direction.getOpposite().toYRot()),
-                serverLevel,
-                2,
-                "zps:script_terminal",
-                Component.literal("zps:script_terminal"),
-                serverLevel.getServer(),
-                null
-        );
+        CommandSourceStack sourceStack = createTerminalCommandSourceStack(serverLevel, worldPosition, blockState);
 
         // Tokenize by splitting on ( ) and spaces, preserving separators so they
         // can be reconstructed around any resolved coordinate triplets.
@@ -284,6 +297,26 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         return result.toString();
     }
 
+    private static CommandSourceStack createTerminalCommandSourceStack(ServerLevel serverLevel, BlockPos worldPosition, BlockState blockState) {
+        Direction direction = blockState.getValue(ScriptTerminalBlock.FACING);
+        return new CommandSourceStack(
+                new CommandSource() {
+                    @Override public void sendSystemMessage(@NotNull Component arg) {}
+                    @Override public boolean acceptsSuccess() { return false; }
+                    @Override public boolean acceptsFailure() { return false; }
+                    @Override public boolean shouldInformAdmins() { return false; }
+                },
+                Vec3.atCenterOf(worldPosition),
+                new Vec2(0.0F, direction.getOpposite().toYRot()),
+                serverLevel,
+                2,
+                "zps:script_terminal",
+                Component.literal("zps:script_terminal"),
+                serverLevel.getServer(),
+                null
+        );
+    }
+
     private void clearOutput() {
         if (!currentCommand.isEmpty()) {
             currentCommand = "";
@@ -311,6 +344,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         loop = packet.loop();
         delay = packet.delay();
         head = 0;
+        clearParsedScriptCache();
         setChanged();
 
         if (level != null && !level.isClientSide) {
@@ -374,6 +408,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
     protected void loadAdditional(net.minecraft.nbt.@NotNull CompoundTag tag, net.minecraft.core.HolderLookup.@NotNull Provider registries) {
         super.loadAdditional(tag, registries);
         allCommands = tag.getString("AllCommands");
+        clearParsedScriptCache();
         loop = tag.getBoolean("Loop");
         delay = tag.getInt("Delay");
         wasPowered = tag.getBoolean("WasPowered");
@@ -413,6 +448,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
     @Override
     public void handleUpdateTag(net.minecraft.nbt.CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
         allCommands = tag.getString("AllCommands");
+        clearParsedScriptCache();
         loop = tag.getBoolean("Loop");
         delay = tag.getInt("Delay");
         wasPowered = tag.getBoolean("WasPowered");

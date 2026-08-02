@@ -1,23 +1,31 @@
 package g_mungus.zps.commands.api_impl.arguments;
 
+import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.arguments.ArgumentType;
+import com.mojang.brigadier.builder.ArgumentBuilder;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.context.StringRange;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestion;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+import com.mojang.brigadier.tree.CommandNode;
+import g_mungus.zps.commands.api_impl.TypeKeys;
 import g_mungus.zps.commands.api_impl.ValueOfDispatchers;
 import g_mungus.zps.commands.api_impl.ZPSScriptCommandSource;
-import net.createmod.catnip.annotations.ClientOnly;
+import g_mungus.zps.commands.api_impl.aliases.ScriptAliases;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.resources.ResourceLocation;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
@@ -29,6 +37,8 @@ public class ValueOfOrLiteralArgumentType<A> implements ArgumentType<Object> {
     private static final Pattern ADDRESS_TOKEN = Pattern.compile("^@([A-Za-z0-9._]+)");
 
     private static volatile Set<String> activeAddressNames = Set.of(); // modified clientside only!!!
+    private static volatile Set<String> activeExpressionAliasNames = Set.of(); // modified clientside only!!!
+    private static volatile Map<String, ScriptAliases.AliasDefinition> activeExpressionAliases = Map.of(); // modified clientside only!!!
 
     private final ArgumentType<A> wrappedType;
     private final ResourceLocation targetTypeKey;
@@ -53,6 +63,139 @@ public class ValueOfOrLiteralArgumentType<A> implements ArgumentType<Object> {
     /// Only call this clientside!!
     public static void setActiveAddressNames(Collection<String> addressNames) {
         activeAddressNames = Set.copyOf(addressNames);
+    }
+
+    /// Only call this clientside!!
+    public static void setActiveExpressionAliasNames(Collection<String> aliasNames) {
+        activeExpressionAliasNames = Set.copyOf(aliasNames);
+        activeExpressionAliases = Map.of();
+    }
+
+    /// Only call this clientside!!
+    public static void setActiveExpressionAliases(Map<String, ScriptAliases.AliasDefinition> aliases) {
+        activeExpressionAliases = Map.copyOf(aliases);
+        activeExpressionAliasNames = Set.copyOf(aliases.keySet());
+    }
+
+    public static boolean isActiveExpressionAliasName(String aliasName) {
+        return activeExpressionAliasNames.contains(aliasName);
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static <S> CommandDispatcher<S> valueOfDispatcherWithActiveExpressionAliases(ResourceLocation targetTypeKey, S source) {
+        return valueOfDispatcherWithExpressionAliases(targetTypeKey, activeExpressionAliases, source);
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static <S> CommandDispatcher<S> valueOfDispatcherWithExpressionAliases(
+            ResourceLocation targetTypeKey,
+            Map<String, ScriptAliases.AliasDefinition> aliases,
+            S source
+    ) {
+        CommandDispatcher<S> dispatcher = (CommandDispatcher<S>) ValueOfDispatchers.get(targetTypeKey);
+        if (dispatcher == null || aliases.isEmpty()) {
+            return dispatcher;
+        }
+
+        CommandDispatcher<S> copy = copyDispatcher(dispatcher);
+        for (ScriptAliases.AliasDefinition alias : aliases.values()) {
+            ResourceLocation outputType = inferAliasOutputType(alias, source);
+            if (outputType == null) {
+                continue;
+            }
+            CommandNode<S> aliasDestination = findNode(copy.getRoot(), "have-" + outputType);
+            if (aliasDestination != null) {
+                copy.getRoot().addChild(
+                        LiteralArgumentBuilder.<S>literal(alias.name())
+                                .redirect(aliasDestination)
+                                .build()
+                );
+            }
+        }
+        return copy;
+    }
+
+    @Nullable
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static <S> ResourceLocation inferAliasOutputType(ScriptAliases.AliasDefinition alias, S source) {
+        String expression = ScriptAliases.resolveExpression(alias.expression(), alias.visibleAliases());
+        for (ResourceLocation typeKey : TypeKeys.TYPE_KEY_TO_CLASS.keySet()) {
+            var dispatcher = ValueOfDispatchers.get(typeKey);
+            if (dispatcher == null) {
+                continue;
+            }
+            try {
+                var rawDispatcher = (CommandDispatcher) dispatcher;
+                var parse = rawDispatcher.parse(expression + " " + ValueOfDispatchers.TERMINAL_LITERAL, source);
+                if (!parse.getReader().canRead() && parse.getExceptions().isEmpty()) {
+                    return typeKey;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return null;
+    }
+
+    private static <S> CommandDispatcher<S> copyDispatcher(CommandDispatcher<S> original) {
+        CommandDispatcher<S> copy = new CommandDispatcher<>();
+        Map<CommandNode<S>, CommandNode<S>> copiedNodes = new IdentityHashMap<>();
+        copiedNodes.put(original.getRoot(), copy.getRoot());
+        for (CommandNode<S> child : original.getRoot().getChildren()) {
+            copy.getRoot().addChild(copyNode(child, copiedNodes));
+        }
+        return copy;
+    }
+
+    private static <S> CommandNode<S> copyNode(
+            CommandNode<S> original,
+            Map<CommandNode<S>, CommandNode<S>> copiedNodes
+    ) {
+        CommandNode<S> existing = copiedNodes.get(original);
+        if (existing != null) {
+            return existing;
+        }
+
+        ArgumentBuilder<S, ?> builder = original.createBuilder();
+        if (original.getRedirect() != null) {
+            builder.forward(
+                    copyNode(original.getRedirect(), copiedNodes),
+                    original.getRedirectModifier(),
+                    original.isFork()
+            );
+        }
+
+        CommandNode<S> copy = builder.build();
+        copiedNodes.put(original, copy);
+        for (CommandNode<S> child : original.getChildren()) {
+            copy.addChild(copyNode(child, copiedNodes));
+        }
+        return copy;
+    }
+
+    @Nullable
+    private static <S> CommandNode<S> findNode(CommandNode<S> root, String name) {
+        Set<CommandNode<S>> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        return findNode(root, name, visited);
+    }
+
+    @Nullable
+    private static <S> CommandNode<S> findNode(CommandNode<S> node, String name, Set<CommandNode<S>> visited) {
+        if (!visited.add(node)) {
+            return null;
+        }
+        if (node.getName().equals(name)) {
+            return node;
+        }
+        for (CommandNode<S> child : node.getChildren()) {
+            CommandNode<S> found = findNode(child, name, visited);
+            if (found != null) {
+                return found;
+            }
+        }
+        if (node.getRedirect() != null) {
+            return findNode(node.getRedirect(), name, visited);
+        }
+        return null;
     }
 
     @Override
@@ -123,11 +266,11 @@ public class ValueOfOrLiteralArgumentType<A> implements ArgumentType<Object> {
 
             if (remaining.startsWith(VALUE_OF_PREFIX)) {
                 String innerRemaining = remaining.substring(VALUE_OF_PREFIX.length());
-                var innerDispatcher = ValueOfDispatchers.get(targetTypeKey);
+                var innerDispatcher = valueOfDispatcherWithActiveExpressionAliases(targetTypeKey, context.getSource());
                 if (innerDispatcher != null) {
                     try {
                         @SuppressWarnings("rawtypes")
-                        var rawDispatcher = (com.mojang.brigadier.CommandDispatcher) innerDispatcher;
+                        var rawDispatcher = (CommandDispatcher) innerDispatcher;
                         var parseResults = rawDispatcher.parse(innerRemaining, context.getSource());
                         return rawDispatcher.getCompletionSuggestions(parseResults, innerRemaining.length())
                                 .thenApply(suggestions -> translateInnerSuggestions(builder, innerRemaining, (Suggestions) suggestions, context.getSource()));
@@ -226,13 +369,13 @@ public class ValueOfOrLiteralArgumentType<A> implements ArgumentType<Object> {
     }
 
     private boolean canCloseValueOf(String innerRemaining, Object source) {
-        var innerDispatcher = ValueOfDispatchers.get(targetTypeKey);
+        var innerDispatcher = valueOfDispatcherWithActiveExpressionAliases(targetTypeKey, source);
         if (innerDispatcher == null || innerRemaining.isBlank()) {
             return false;
         }
 
         @SuppressWarnings("rawtypes")
-        var rawDispatcher = (com.mojang.brigadier.CommandDispatcher) innerDispatcher;
+        var rawDispatcher = (CommandDispatcher) innerDispatcher;
         String completedExpression = innerRemaining.stripTrailing();
         var parseResults = rawDispatcher.parse(completedExpression + " " + ValueOfDispatchers.TERMINAL_LITERAL, source);
         return !parseResults.getReader().canRead() && parseResults.getExceptions().isEmpty();

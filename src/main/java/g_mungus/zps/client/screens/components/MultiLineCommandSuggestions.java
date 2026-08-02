@@ -62,8 +62,10 @@ public class MultiLineCommandSuggestions {
     private static final String ARGUMENT_PLACEHOLDER = "%s";
     private static final ResourceLocation BOOLEAN_TYPE = ResourceLocation.parse("zps:boolean");
     private static final Style UNPARSED_STYLE = Style.EMPTY.withColor(ChatFormatting.RED);
-    private static final Style EXECUTOR_STYLE = Style.EMPTY.withColor(0xF5A97F);
-    private static final Style GETTER_STYLE = Style.EMPTY.withColor(0xC792EA);
+    public static final int EXECUTOR_COLOR = 0xF5A97F;
+    public static final int GETTER_COLOR = 0xC792EA;
+    private static final Style EXECUTOR_STYLE = Style.EMPTY.withColor(EXECUTOR_COLOR);
+    private static final Style GETTER_STYLE = Style.EMPTY.withColor(GETTER_COLOR);
     private static final Style MAPPER_STYLE = Style.EMPTY.withColor(0x4C99C9);
     private static final Style ARGUMENT_STYLE = Style.EMPTY.withColor(0x79F1A3);
     private static final Style DEFAULT_STYLE = Style.EMPTY.withColor(ChatFormatting.GRAY);

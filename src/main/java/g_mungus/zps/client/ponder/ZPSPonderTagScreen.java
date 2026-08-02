@@ -3,6 +3,9 @@ package g_mungus.zps.client.ponder;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import g_mungus.zps.client.screens.components.MultiLineCommandSuggestions;
+import g_mungus.zps.networking.ExecutorBlocksS2CPacket;
+import g_mungus.zps.networking.GetterBlocksS2CPacket;
 import net.createmod.catnip.gui.NavigatableSimiScreen;
 import net.createmod.catnip.gui.ScreenOpener;
 import net.createmod.catnip.gui.UIRenderHelper;
@@ -18,9 +21,13 @@ import net.createmod.ponder.foundation.ui.AbstractPonderScreen;
 import net.createmod.ponder.foundation.ui.PonderButton;
 import net.createmod.ponder.foundation.ui.PonderTagScreen;
 import net.createmod.ponder.foundation.ui.PonderUI;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.Rect2i;
+import net.minecraft.network.chat.CommonComponents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.CreativeModeTabs;
@@ -30,10 +37,12 @@ import net.minecraft.world.level.ItemLike;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class ZPSPonderTagScreen extends AbstractPonderScreen {
     private static final int ITEM_CELL_WIDTH = 28;
@@ -53,11 +62,14 @@ public class ZPSPonderTagScreen extends AbstractPonderScreen {
 
     private final List<PonderButton> itemButtons = new ArrayList<>();
     private final List<Integer> itemButtonBaseY = new ArrayList<>();
+    private final Map<PonderButton, ResourceLocation> itemButtonKeys = new HashMap<>();
     private int itemScroll;
     private int maxItemScroll;
     private boolean draggingScrollbar;
     private int scrollbarDragOffset;
     private ItemStack hoveredItem = ItemStack.EMPTY;
+    @Nullable
+    private ResourceLocation hoveredItemKey;
 
     public ZPSPonderTagScreen(ResourceLocation tag) {
         this(PonderIndex.getTagAccess().getRegisteredTag(tag));
@@ -73,9 +85,12 @@ public class ZPSPonderTagScreen extends AbstractPonderScreen {
 
         itemButtons.clear();
         itemButtonBaseY.clear();
+        itemButtonKeys.clear();
         itemScroll = 0;
         draggingScrollbar = false;
         scrollbarDragOffset = 0;
+        hoveredItem = ItemStack.EMPTY;
+        hoveredItemKey = null;
 
         items.clear();
         PonderIndex.getTagAccess()
@@ -133,6 +148,7 @@ public class ZPSPonderTagScreen extends AbstractPonderScreen {
 
             itemButtons.add(button);
             itemButtonBaseY.add(y);
+            itemButtonKeys.put(button, entry.key);
             addRenderableWidget(button);
         }
 
@@ -156,6 +172,7 @@ public class ZPSPonderTagScreen extends AbstractPonderScreen {
             }
 
             addRenderableWidget(button);
+            itemButtonKeys.put(button, registryName);
         }
 
         updateItemButtonPositions();
@@ -172,6 +189,7 @@ public class ZPSPonderTagScreen extends AbstractPonderScreen {
         PonderUI.ponderTicks++;
 
         hoveredItem = ItemStack.EMPTY;
+        hoveredItemKey = null;
         Window window = minecraft.getWindow();
         int mouseX = (int) (this.minecraft.mouseHandler.xpos() * window.getGuiScaledWidth() / window.getScreenWidth());
         int mouseY = (int) (this.minecraft.mouseHandler.ypos() * window.getGuiScaledHeight() / window.getScreenHeight());
@@ -181,6 +199,7 @@ public class ZPSPonderTagScreen extends AbstractPonderScreen {
             }
             if (child instanceof PonderButton button && button.isMouseOver(mouseX, mouseY)) {
                 hoveredItem = button.getItem();
+                hoveredItemKey = itemButtonKeys.get(button);
             }
         }
     }
@@ -305,7 +324,9 @@ public class ZPSPonderTagScreen extends AbstractPonderScreen {
         poseStack.translate(0, 0, 200);
 
         if (!hoveredItem.isEmpty()) {
-            graphics.renderTooltip(font, hoveredItem, mouseX, mouseY);
+            List<Component> tooltip = new ArrayList<>(Screen.getTooltipFromItem(minecraft, hoveredItem));
+            appendScriptCommandTooltips(tooltip);
+            graphics.renderTooltip(font, tooltip, hoveredItem.getTooltipImage(), hoveredItem, mouseX, mouseY);
         }
 
         poseStack.popPose();
@@ -389,6 +410,40 @@ public class ZPSPonderTagScreen extends AbstractPonderScreen {
     public void removed() {
         super.removed();
         hoveredItem = ItemStack.EMPTY;
+        hoveredItemKey = null;
+    }
+
+    private void appendScriptCommandTooltips(List<Component> tooltip) {
+        if (!tag.getId().equals(ZPSPonderTags.HAS_SCRIPT_CAPS) || hoveredItemKey == null) {
+            return;
+        }
+
+        List<String> executorNames = getSortedNames(ExecutorBlocksS2CPacket.command_names_by_block.getOrDefault(hoveredItemKey, Set.of()));
+        List<String> getterNames = getSortedNames(GetterBlocksS2CPacket.getter_names_by_block.getOrDefault(hoveredItemKey, Set.of()));
+
+        if (executorNames.isEmpty() && getterNames.isEmpty()) {
+            return;
+        }
+
+        tooltip.add(CommonComponents.EMPTY);
+        appendCommandGroup(tooltip, "Executors", executorNames, MultiLineCommandSuggestions.EXECUTOR_COLOR);
+        appendCommandGroup(tooltip, "Getters", getterNames, MultiLineCommandSuggestions.GETTER_COLOR);
+    }
+
+    private static List<String> getSortedNames(Collection<String> names) {
+        return names.stream()
+                .sorted(String::compareTo)
+                .toList();
+    }
+
+    private static void appendCommandGroup(List<Component> tooltip, String title, List<String> names, int color) {
+        if (names.isEmpty()) {
+            return;
+        }
+
+        tooltip.add(Component.literal(title).withStyle(ChatFormatting.GRAY));
+        names.forEach(name -> tooltip.add(Component.literal("  " + name)
+                .withStyle(style -> style.withColor(color))));
     }
 
     private void sortItemsByCreativeSearchOrder() {

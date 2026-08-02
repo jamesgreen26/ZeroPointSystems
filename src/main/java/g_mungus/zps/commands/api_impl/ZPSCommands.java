@@ -40,7 +40,10 @@ import net.minecraftforge.registries.ForgeRegistries;
 import javax.annotation.Nullable;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -226,26 +229,34 @@ public class ZPSCommands {
                 .filter(Objects::nonNull)
                 .collect(java.util.stream.Collectors.toSet());
 
-        List<ResourceLocation> allAssociatedBlocks = Registry.EXECUTORS.stream()
+        Map<ResourceLocation, List<String>> executorNamesByBlock = new HashMap<>();
+        Registry.EXECUTORS.stream()
                 .filter(e -> e.associatedBlocks() != null)
-                .flatMap(e -> e.associatedBlocks().stream())
-                .filter(blocksWithItems::contains)
-                .toList();
+                .forEach(executor -> executor.associatedBlocks().stream()
+                        .filter(blocksWithItems::contains)
+                        .forEach(block -> executorNamesByBlock
+                                .computeIfAbsent(block, ignored -> new ArrayList<>())
+                                .add(executor.displayName())));
+        executorNamesByBlock.values().forEach(names -> names.sort(String::compareTo));
 
         ZPSGamePackets.INSTANCE.send(
                 PacketDistributor.PLAYER.with(() -> player),
-                new ExecutorBlocksS2CPacket(allAssociatedBlocks)
+                new ExecutorBlocksS2CPacket(executorNamesByBlock)
         );
 
-        List<ResourceLocation> allAssociatedGetterBlocks = Registry.GETTERS.stream()
+        Map<ResourceLocation, List<String>> getterNamesByBlock = new HashMap<>();
+        Registry.GETTERS.stream()
                 .filter(g -> g.associatedBlocks() != null)
-                .flatMap(g -> g.associatedBlocks().stream())
-                .filter(blocksWithItems::contains)
-                .toList();
+                .forEach(getter -> getter.associatedBlocks().stream()
+                        .filter(blocksWithItems::contains)
+                        .forEach(block -> getterNamesByBlock
+                                .computeIfAbsent(block, ignored -> new ArrayList<>())
+                                .add(getter.displayName())));
+        getterNamesByBlock.values().forEach(names -> names.sort(String::compareTo));
 
         ZPSGamePackets.INSTANCE.send(
                 PacketDistributor.PLAYER.with(() -> player),
-                new GetterBlocksS2CPacket(allAssociatedGetterBlocks)
+                new GetterBlocksS2CPacket(getterNamesByBlock)
         );
     }
 

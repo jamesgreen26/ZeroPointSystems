@@ -5,6 +5,7 @@ import com.google.common.collect.Multimap;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.simibubi.create.Create;
 import com.simibubi.create.foundation.blockEntity.SmartBlockEntity;
 import com.simibubi.create.foundation.blockEntity.behaviour.filtering.FilteringBehaviour;
@@ -102,6 +103,18 @@ public class CreateScriptCommands {
         if (!filterBlocks.isEmpty()) {
             event.register(getFilterExecutor("set_filter", Set.copyOf(filterBlocks), event));
         }
+        event.register(ScriptExecutor.simpleWithBlocks(
+                "set_display_text",
+                String.class,
+                ZPSMod.resource("string"),
+                StringArgumentType.string(),
+                (text, context) -> SetDisplayTextCommand.setDisplayText(
+                        context.level(),
+                        context.pos(),
+                        text
+                ),
+                Set.of(Create.asResource("display_link"))
+        ));
     }
 
     private static @NotNull ScriptExecutor<Integer, Integer> getIntExecutor(String displayName, ScrollValueBehaviour scrollValueBehaviour, Set<ResourceLocation> associatedBlocks) {

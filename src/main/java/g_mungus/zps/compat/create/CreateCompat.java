@@ -16,6 +16,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.TickTask;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -28,6 +30,8 @@ public class CreateCompat {
 
     public static final RegistryEntry<DisplaySource, SerialBusDisplayLinkSource> SERIAL_BUS_SOURCE =
             REG.displaySource("serial_bus", SerialBusDisplayLinkSource::new).register();
+    public static final RegistryEntry<DisplaySource, SerialBusManualDisplayLinkSource> SERIAL_BUS_MANUAL_SOURCE =
+            REG.displaySource("serial_bus_manual", SerialBusManualDisplayLinkSource::new).register();
     public static final RegistryEntry<DisplayTarget, DataLecternDisplayTarget> DATA_LECTERN_TARGET =
             REG.displayTarget("data_lectern", DataLecternDisplayTarget::new).register();
 
@@ -40,6 +44,7 @@ public class CreateCompat {
     private static void onCommonSetup(FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
             DisplaySource.BY_BLOCK_ENTITY.add(ModBlockEntities.SERIAL_BUS.get(), SERIAL_BUS_SOURCE.get());
+            DisplaySource.BY_BLOCK_ENTITY.add(ModBlockEntities.SERIAL_BUS.get(), SERIAL_BUS_MANUAL_SOURCE.get());
             DisplayTarget.BY_BLOCK_ENTITY.register(ModBlockEntities.DATA_LECTERN.get(), DATA_LECTERN_TARGET.get());
         });
     }
@@ -52,8 +57,19 @@ public class CreateCompat {
         }));
     }
 
+    public static boolean isActiveSerialBusDisplayLinkSource(Level level, BlockPos displayLinkPos, BlockPos serialBusPos) {
+        BlockEntity blockEntity = level.getBlockEntity(displayLinkPos);
+        if (!(blockEntity instanceof DisplayLinkBlockEntity displayLink) || displayLink.isRemoved()) {
+            return false;
+        }
+
+        return displayLink.getSourcePosition().equals(serialBusPos)
+                && displayLink.activeSource == SERIAL_BUS_SOURCE.get();
+    }
+
     public static void registerPonderTagEntries(@NotNull PonderTagRegistrationHelper<ResourceLocation> helper) {
         helper.addToTag(AllCreatePonderTags.DISPLAY_SOURCES).add(ZPSMod.resource("serial_bus"));
+        helper.addToTag(AllCreatePonderTags.DISPLAY_SOURCES).add(ZPSMod.resource("serial_bus_manual"));
         helper.addToTag(AllCreatePonderTags.DISPLAY_TARGETS).add(ZPSMod.resource("data_lectern"));
     }
 

@@ -27,6 +27,7 @@
     "LivingEntityMixin",
     "ServerLevelMixin",
     "StructureTemplateMixin",
+    "create.DisplayLinkBlockEntityMixin",
     "create.GoggleInfoExtension",
     "create.ManualApplicationRecipeMixin",
     "create.ScrollValueBehaviourAccessor",

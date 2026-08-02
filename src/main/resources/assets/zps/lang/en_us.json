@@ -418,7 +418,8 @@
     "sounds.zps.static": "Static hisses",
     "sounds.zps.arm_move": "Robotic arm moves",
 
-    "zps.display_source.serial_bus": "Serial Bus Data",
+    "zps.display_source.serial_bus": "Raw Input Data",
+    "zps.display_source.serial_bus_manual": "Stored Display Text",
 
     "gui.recipebook.toggleRecipes.rollable": "Rollable"
 }

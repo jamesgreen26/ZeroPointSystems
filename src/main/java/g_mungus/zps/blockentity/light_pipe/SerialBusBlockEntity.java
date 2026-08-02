@@ -3,6 +3,7 @@ package g_mungus.zps.blockentity.light_pipe;
 import g_mungus.zps.block.cableNetwork.TransformerBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.commands.api_impl.ZPSCommands;
+import g_mungus.zps.compat.Compat;
 import g_mungus.zps.compat.create.CreateCompat;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
@@ -25,8 +26,8 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver {
 
     @Override
     public void acceptText(int channel, String message) {
-        boolean isFacingDisplayLink = isFacingDisplayLink();
-        if (!isFacingDisplayLink) {
+        boolean suppressCommand = shouldSuppressCommandsForDisplayLink();
+        if (!suppressCommand) {
             executeCommand(message);
         }
         if (!message.equals(currentDisplayText)) {
@@ -42,7 +43,7 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver {
                 );
             }
         }
-        if (isFacingDisplayLink && level instanceof ServerLevel serverLevel) {
+        if (suppressCommand && level instanceof ServerLevel serverLevel) {
             CreateCompat.tickDisplayLinkSource(serverLevel, getAffectedBlockPos());
         }
     }
@@ -55,9 +56,10 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver {
         }
     }
 
-    @SuppressWarnings("deprecation")
-    private boolean isFacingDisplayLink() {
-        return level != null && level.getBlockState(getAffectedBlockPos()).getBlock().builtInRegistryHolder().key().location().toString().equals("create:display_link");
+    private boolean shouldSuppressCommandsForDisplayLink() {
+        return level != null
+                && Compat.isCreateLoaded()
+                && CreateCompat.isActiveSerialBusDisplayLinkSource(level, getAffectedBlockPos(), getBlockPos());
     }
 
     public String getCurrentText() {

@@ -24,7 +24,7 @@ public class SerialBusDisplayLinkSource extends DisplaySource {
         if (maxRows <= 0 || maxCols <= 0)
             return List.of();
 
-        String text = serialBus.getCurrentText();
+        String text = getText(context, serialBus);
         if (text == null || text.isEmpty())
             return List.of();
 
@@ -57,5 +57,9 @@ public class SerialBusDisplayLinkSource extends DisplaySource {
     @Override
     public boolean shouldPassiveReset() {
         return false;
+    }
+
+    protected String getText(DisplayLinkContext context, SerialBusBlockEntity serialBus) {
+        return serialBus.getCurrentText();
     }
 }

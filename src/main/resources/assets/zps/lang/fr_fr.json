@@ -351,7 +351,6 @@
 
     "sounds.zps.keystroke": "Le clavier claque",
     "sounds.zps.static": "Des parasites sifflent",
-    "sounds.zps.arm_move": "Le bras robotique bouge",
+    "sounds.zps.arm_move": "Le bras robotique bouge"
 
-    "zps.display_source.serial_bus": "Serial Bus Data"
 }

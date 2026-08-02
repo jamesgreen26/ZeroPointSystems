@@ -23,12 +23,17 @@ import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ZPSPonderTagScreen extends AbstractPonderScreen {
     private static final int ITEM_CELL_WIDTH = 28;
@@ -83,6 +88,8 @@ public class ZPSPonderTagScreen extends AbstractPonderScreen {
         if (!tag.getMainItem().isEmpty()) {
             items.removeIf(entry -> entry.item == tag.getMainItem().getItem());
         }
+
+        sortItemsByCreativeSearchOrder();
 
         int columns = getColumnCount();
         int rowCount = Math.max(1, (int) Math.ceil(items.size() / (double) columns));
@@ -382,6 +389,20 @@ public class ZPSPonderTagScreen extends AbstractPonderScreen {
     public void removed() {
         super.removed();
         hoveredItem = ItemStack.EMPTY;
+    }
+
+    private void sortItemsByCreativeSearchOrder() {
+        Map<Item, Integer> searchOrder = new HashMap<>();
+        int index = 0;
+        for (ItemStack stack : CreativeModeTabs.searchTab().getSearchTabDisplayItems()) {
+            searchOrder.putIfAbsent(stack.getItem(), index);
+            index++;
+        }
+
+        int missingOrder = searchOrder.size();
+        items.sort(Comparator
+                .comparingInt((ItemEntry entry) -> searchOrder.getOrDefault(entry.item.asItem(), missingOrder))
+                .thenComparing(entry -> entry.key.toString()));
     }
 
     private int getColumnCount() {

@@ -124,6 +124,7 @@ dependencies {
             prefer project.sable_companion_version
         }
     }
+    compileOnly("dev.ryanhcode.sable:sable-common-${project.minecraft_version}:${project.sable_version}") { transitive = false }
 
     implementation(files('libs/jsapi.jar', 'libs/freetts.jar'))
     additionalRuntimeClasspath(files('libs/jsapi.jar', 'libs/freetts.jar'))

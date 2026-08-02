@@ -1,6 +1,7 @@
 package g_mungus.zps.compat;
 
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
@@ -46,5 +47,13 @@ public class ClientCompat {
             }
         }
         return pos;
+    }
+
+    /// Unwraps optional moving-grid sound delegates back to the original sound instance.
+    public static SoundInstance unwrapMovingSound(SoundInstance instance) {
+        if (Compat.isSableLoaded()) {
+            return SableClientCompat.unwrapMovingSound(instance);
+        }
+        return instance;
     }
 }

@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Set;
 
 public class ScriptTerminalScreen extends PonderCompatibleScreen {
-    private static final ItemStack MANUAL_BUTTON_ICON = new ItemStack(Items.BOOK);
+    private static final ItemStack MANUAL_BUTTON_ICON = new ItemStack(Items.KNOWLEDGE_BOOK);
 
     private static final Component SET_COMMAND_LABEL = Component.literal("Script Terminal");
     private static final Component COMMAND_LABEL = Component.literal("ZPS Script Command");

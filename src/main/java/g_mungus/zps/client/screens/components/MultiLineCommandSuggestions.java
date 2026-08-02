@@ -34,6 +34,7 @@ import g_mungus.zps.commands.api_impl.ValueOfDispatchers;
 import g_mungus.zps.commands.api_impl.TypeKeys;
 import g_mungus.zps.commands.api_impl.ZPSCommands;
 import g_mungus.zps.commands.api_impl.aliases.ScriptAliases;
+import g_mungus.zps.commands.api_impl.arguments.OverloadedExecutorArgumentType;
 import g_mungus.zps.commands.api_impl.arguments.ValueOfExpression;
 import g_mungus.zps.commands.api_impl.arguments.ValueOfOrLiteralArgumentType;
 import net.minecraft.ChatFormatting;
@@ -199,22 +200,28 @@ public class MultiLineCommandSuggestions {
         for (var suggestion : list) {
             String command = suggestion.getText();
 
-            Set<ResourceLocation> associatedBlocks = null;
+            boolean knownCommand = false;
+            boolean appliesToConnectedBlocks = false;
 
-            ScriptExecutor<?,?> executor = ZPSCommands.getExecutor(command);
-            if (executor != null) {
-                associatedBlocks = executor.associatedBlocks();
+            for (ScriptExecutor<?, ?> executor : ZPSCommands.getExecutors(command)) {
+                knownCommand = true;
+                Set<ResourceLocation> associatedBlocks = executor.associatedBlocks();
+                if (associatedBlocks == null || associatedBlocks.stream().anyMatch(connectedBlocks::contains)) {
+                    appliesToConnectedBlocks = true;
+                    break;
+                }
             }
 
-            ScriptGetter<?> getter = ZPSCommands.getGetter(command);
-            if (getter != null) {
-                associatedBlocks = getter.associatedBlocks();
+            if (!appliesToConnectedBlocks) {
+                ScriptGetter<?> getter = ZPSCommands.getGetter(command);
+                if (getter != null) {
+                    knownCommand = true;
+                    Set<ResourceLocation> associatedBlocks = getter.associatedBlocks();
+                    appliesToConnectedBlocks = associatedBlocks == null || associatedBlocks.stream().anyMatch(connectedBlocks::contains);
+                }
             }
 
-            if (
-                associatedBlocks == null ||
-                associatedBlocks.stream().anyMatch(connectedBlocks::contains)
-            ) {
+            if (!knownCommand || appliesToConnectedBlocks) {
                 output.add(suggestion);
             }
         }
@@ -240,6 +247,7 @@ public class MultiLineCommandSuggestions {
         this.commandUsage.clear();
         int currentLineNumber = getCurrentLineNumber();
         ValueOfOrLiteralArgumentType.setActiveExpressionAliases(aliasesBeforeLine(currentLineNumber));
+        OverloadedExecutorArgumentType.setActiveConnectedBlocks(connectedBlocks);
 
         StringReader stringReader = new StringReader(currentLine);
         boolean bl = stringReader.canRead() && stringReader.peek() == '/';

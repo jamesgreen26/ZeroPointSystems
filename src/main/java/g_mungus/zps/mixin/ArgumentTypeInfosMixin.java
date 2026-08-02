@@ -1,6 +1,8 @@
 package g_mungus.zps.mixin;
 
 import com.mojang.brigadier.arguments.ArgumentType;
+import g_mungus.zps.commands.api_impl.arguments.OverloadedExecutorArgumentType;
+import g_mungus.zps.commands.api_impl.arguments.OverloadedExecutorArgumentTypeInfo;
 import g_mungus.zps.commands.api_impl.arguments.ValueOfOrLiteralArgumentType;
 import g_mungus.zps.commands.api_impl.arguments.ValueOfOrLiteralArgumentTypeInfo;
 import g_mungus.zps.commands.content.arguments.AssemblerRecipeArgument;
@@ -45,6 +47,13 @@ public class ArgumentTypeInfosMixin {
                 "zps:value_of_or_literal",
                 (Class<? extends ValueOfOrLiteralArgumentType<?>>) (Class<?>) ValueOfOrLiteralArgumentType.class,
                 ValueOfOrLiteralArgumentTypeInfo.INSTANCE
+        );
+
+        register(
+                arg,
+                "zps:overloaded_executor",
+                OverloadedExecutorArgumentType.class,
+                OverloadedExecutorArgumentTypeInfo.INSTANCE
         );
     }
 }

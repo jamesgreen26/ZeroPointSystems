@@ -18,15 +18,18 @@ import g_mungus.zps.commands.api_impl.arguments.ValueOfOrLiteralArgumentType;
 import g_mungus.zps.commands.api_impl.arguments.ZPSArgument;
 import g_mungus.zps.commands.api_impl.arguments.ArgumentPlaceholder;
 import g_mungus.zps.commands.api_impl.arguments.AddressReference;
+import g_mungus.zps.commands.api_impl.arguments.OverloadedExecutorArgumentType;
 import g_mungus.zps.commands.api_impl.arguments.ZPSLiteral;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.coordinates.Coordinates;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.BiFunction;
@@ -207,9 +210,20 @@ public class CommandTreeBuilder {
     public void buildExecutors() {
         CommandNode<CommandSourceStack> booleanMapperNode = getOrCreateMapperNode("have-" + ResourceLocation.parse("zps:boolean") + "-need-" + ResourceLocation.parse("zps:boolean"));
 
+        Map<String, List<ScriptExecutor<?, ?>>> executorsByName = new LinkedHashMap<>();
         for (var executor : Registry.EXECUTORS) {
-            addExecutorBranch(executor, executors, false);
-            addExecutorBranch(executor, booleanMapperNode, true);
+            executorsByName.computeIfAbsent(executor.displayName(), ignored -> new ArrayList<>()).add(executor);
+        }
+
+        for (var executorGroup : executorsByName.values()) {
+            if (executorGroup.size() == 1) {
+                ScriptExecutor<?, ?> executor = executorGroup.getFirst();
+                addExecutorBranch(executor, executors, false);
+                addExecutorBranch(executor, booleanMapperNode, true);
+            } else {
+                addOverloadedExecutorBranch(executorGroup, executors, false);
+                addOverloadedExecutorBranch(executorGroup, booleanMapperNode, true);
+            }
         }
     }
 
@@ -229,17 +243,7 @@ public class CommandTreeBuilder {
                 }
                 if (source.predicate.test(source.predicateValue)) {
                     Object rawArg = context.getArgument(argumentKey, Object.class);
-                    if (rawArg instanceof ArgumentPlaceholder) {
-                        throw new IllegalArgumentException("Argument placeholder %s must be replaced before execution");
-                    }
-                    if (rawArg instanceof ValueOfExpression<?> expr) {
-                        rawArg = expr.evaluate(commandSource, source.getPos());
-                    }
-                    rawArg = resolveAddressReference(rawArg, source);
-                    rawArg = coerceArgument(rawArg, typed.argumentClass(), commandSource);
-                    ScriptContext executorContext = new ScriptContextImpl(commandSource, source.getPos(), commandSource.getLevel());
-                    I mappedValue = typed.argumentMapper().apply((A) rawArg, executorContext);
-                    return typed.function().apply(mappedValue, executorContext);
+                    return executeExecutor(typed, rawArg, commandSource, source);
 
                 }
             }
@@ -255,17 +259,7 @@ public class CommandTreeBuilder {
                     if (matched && source.execute == null) {
                         source.execute = () -> {
                             Object rawArg = context.getArgument(argumentKey, Object.class);
-                            if (rawArg instanceof ArgumentPlaceholder) {
-                                throw new IllegalArgumentException("Argument placeholder %s must be replaced before execution");
-                            }
-                            if (rawArg instanceof ValueOfExpression<?> expr) {
-                                rawArg = expr.evaluate(context.getSource(), source.getPos());
-                            }
-                            rawArg = resolveAddressReference(rawArg, source);
-                            rawArg = coerceArgument(rawArg, typed.argumentClass(), context.getSource());
-                            ScriptContext executorContext = new ScriptContextImpl(context.getSource(), source.getPos(), context.getSource().getLevel());
-                            I mappedValue = typed.argumentMapper().apply((A) rawArg, executorContext);
-                            return typed.function().apply(mappedValue, executorContext);
+                            return executeExecutor(typed, rawArg, context.getSource(), source);
                         };
                     }
                 }
@@ -274,6 +268,97 @@ public class CommandTreeBuilder {
         }
 
         parentNode.addChild(new ZPSLiteral.Builder<CommandSourceStack>(typed.displayName()).then(builtArgument).build());
+    }
+
+    private void addOverloadedExecutorBranch(List<ScriptExecutor<?, ?>> executorGroup, CommandNode<CommandSourceStack> parentNode, boolean isConditional) {
+        String displayName = executorGroup.getFirst().displayName();
+        String argumentKey = "zps:argument_" + String.format("%06d", argumentIndex++) + ":" + displayName + "_overload";
+
+        ZPSArgument.Builder<CommandSourceStack, OverloadedExecutorArgumentType.ParsedOverloads> argumentBuilder =
+                ZPSArgument.Builder.argument(argumentKey, new OverloadedExecutorArgumentType(executorGroup));
+
+        var builtArgument = argumentBuilder.executes(context -> {
+            CommandSourceStack commandSource = context.getSource();
+            if (commandSource.source instanceof ZPSScriptCommandSource source) {
+                if (source.execute != null) {
+                    return source.execute.get();
+                }
+                if (source.predicate.test(source.predicateValue)) {
+                    OverloadedExecutorArgumentType.ParsedOverloads parsed =
+                            context.getArgument(argumentKey, OverloadedExecutorArgumentType.ParsedOverloads.class);
+                    return executeOverloadedExecutor(parsed, commandSource, source);
+                }
+            }
+            return 0;
+        });
+
+        if (isConditional) {
+            builtArgument.then((new ZPSLiteral.Builder<CommandSourceStack>("else")).forward(executors, context -> {
+                if (context.getSource().source instanceof ZPSScriptCommandSource source) {
+                    boolean matched = source.predicate.test(source.predicateValue);
+                    source.predicate = source.predicate.cycle();
+
+                    if (matched && source.execute == null) {
+                        source.execute = () -> {
+                            OverloadedExecutorArgumentType.ParsedOverloads parsed =
+                                    context.getArgument(argumentKey, OverloadedExecutorArgumentType.ParsedOverloads.class);
+                            return executeOverloadedExecutor(parsed, context.getSource(), source);
+                        };
+                    }
+                }
+                return List.of(context.getSource());
+            }, false));
+        }
+
+        parentNode.addChild(new ZPSLiteral.Builder<CommandSourceStack>(displayName).then(builtArgument).build());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <I, A> int executeExecutor(ScriptExecutor<?, ?> executor, Object rawArg, CommandSourceStack commandSource, ZPSScriptCommandSource source) {
+        ScriptExecutor<I, A> typed = (ScriptExecutor<I, A>) executor;
+        if (rawArg instanceof ArgumentPlaceholder) {
+            throw new IllegalArgumentException("Argument placeholder %s must be replaced before execution");
+        }
+        if (rawArg instanceof ValueOfExpression<?> expr) {
+            rawArg = expr.evaluate(commandSource, source.getPos());
+        }
+        rawArg = resolveAddressReference(rawArg, source);
+        rawArg = coerceArgument(rawArg, typed.argumentClass(), commandSource);
+        ScriptContext executorContext = new ScriptContextImpl(commandSource, source.getPos(), commandSource.getLevel());
+        I mappedValue = typed.argumentMapper().apply((A) rawArg, executorContext);
+        return typed.function().apply(mappedValue, executorContext);
+    }
+
+    private static int executeOverloadedExecutor(OverloadedExecutorArgumentType.ParsedOverloads parsed, CommandSourceStack commandSource, ZPSScriptCommandSource source) {
+        ResourceLocation targetBlock = targetBlockKey(commandSource, source.getPos());
+
+        for (OverloadedExecutorArgumentType.ParsedExecutorArgument parsedArgument : parsed.arguments()) {
+            ScriptExecutor<?, ?> executor = parsedArgument.executor();
+            if (executor != null && appliesToTargetBlock(executor, targetBlock, true)) {
+                return executeExecutor(executor, parsedArgument.rawArgument(), commandSource, source);
+            }
+        }
+
+        for (OverloadedExecutorArgumentType.ParsedExecutorArgument parsedArgument : parsed.arguments()) {
+            ScriptExecutor<?, ?> executor = parsedArgument.executor();
+            if (executor != null && appliesToTargetBlock(executor, targetBlock, false)) {
+                return executeExecutor(executor, parsedArgument.rawArgument(), commandSource, source);
+            }
+        }
+
+        return 0;
+    }
+
+    private static boolean appliesToTargetBlock(ScriptExecutor<?, ?> executor, @Nullable ResourceLocation targetBlock, boolean requireExplicitMatch) {
+        Set<ResourceLocation> associatedBlocks = executor.associatedBlocks();
+        if (associatedBlocks == null) {
+            return !requireExplicitMatch;
+        }
+        return targetBlock != null && associatedBlocks.contains(targetBlock);
+    }
+
+    private static @Nullable ResourceLocation targetBlockKey(CommandSourceStack commandSource, BlockPos pos) {
+        return BuiltInRegistries.BLOCK.getKey(commandSource.getLevel().getBlockState(pos).getBlock());
     }
 
     public void buildValueOfDispatchers() {

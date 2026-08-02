@@ -5,14 +5,14 @@ import g_mungus.zps.commands.api.ScriptGetter;
 import g_mungus.zps.commands.api.ScriptMapper;
 import g_mungus.zps.commands.api.ScriptNode;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 class Registry {
 
-    static Set<ScriptExecutor<?, ?>> EXECUTORS = new HashSet<>();
-    static Set<ScriptGetter<?>> GETTERS = new HashSet<>();
-    static Set<ScriptMapper<?, ?>> MAPPERS = new HashSet<>();
+    static Set<ScriptExecutor<?, ?>> EXECUTORS = new LinkedHashSet<>();
+    static Set<ScriptGetter<?>> GETTERS = new LinkedHashSet<>();
+    static Set<ScriptMapper<?, ?>> MAPPERS = new LinkedHashSet<>();
 
 
     static void clear() {

@@ -16,6 +16,7 @@
     "ponder.NavigatableSimiScreenAccessor",
     "ponder.NavigatableSimiScreenMixin",
     "ponder.PonderTagRegistryMixin",
+    "ponder.ScreenOpenerMixin",
     "ponder.PonderUIMixin"
   ],
   "mixins": [

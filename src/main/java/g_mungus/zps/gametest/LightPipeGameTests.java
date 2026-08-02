@@ -1,5 +1,7 @@
 package g_mungus.zps.gametest;
 
+import com.simibubi.create.AllBlocks;
+import com.simibubi.create.content.redstone.displayLink.DisplayLinkBlockEntity;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.TransformerBlock;
@@ -7,7 +9,10 @@ import g_mungus.zps.block.cableNetwork.light_pipe.DataCombinator;
 import g_mungus.zps.block.cableNetwork.light_pipe.DataLecternBlock;
 import g_mungus.zps.block.cableNetwork.light_pipe.TextDisplayBlock;
 import g_mungus.zps.blockentity.light_pipe.DataLecternBlockEntity;
+import g_mungus.zps.blockentity.light_pipe.SerialBusBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
+import g_mungus.zps.compat.create.CreateCompat;
+import g_mungus.zps.compat.create.DisplayLinkManualTextAccessor;
 import g_mungus.zps.commands.content.executors.SetRedstoneCommand;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -18,6 +23,7 @@ import net.minecraft.nbt.StringTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.DirectionalBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.gametest.GameTestHolder;
@@ -70,6 +76,11 @@ public final class LightPipeGameTests {
                 .setValue(TransformerBlock.FACING, facing);
     }
 
+    private static BlockState displayLink(Direction facing) {
+        return AllBlocks.DISPLAY_LINK.getDefaultState()
+                .setValue(DirectionalBlock.FACING, facing);
+    }
+
     private static DataLecternBlockEntity lecternEntity(GameTestHelper helper, BlockPos relPos) {
         BlockEntity blockEntity = helper.getBlockEntity(relPos);
         if (!(blockEntity instanceof DataLecternBlockEntity lectern)) {
@@ -86,6 +97,24 @@ public final class LightPipeGameTests {
             return null;
         }
         return display;
+    }
+
+    private static SerialBusBlockEntity serialBusEntity(GameTestHelper helper, BlockPos relPos) {
+        BlockEntity blockEntity = helper.getBlockEntity(relPos);
+        if (!(blockEntity instanceof SerialBusBlockEntity serialBus)) {
+            helper.fail("Expected serial bus block entity at " + relPos + ", got " + blockEntity);
+            return null;
+        }
+        return serialBus;
+    }
+
+    private static DisplayLinkBlockEntity displayLinkEntity(GameTestHelper helper, BlockPos relPos) {
+        BlockEntity blockEntity = helper.getBlockEntity(relPos);
+        if (!(blockEntity instanceof DisplayLinkBlockEntity displayLink)) {
+            helper.fail("Expected display link block entity at " + relPos + ", got " + blockEntity);
+            return null;
+        }
+        return displayLink;
     }
 
     private static void setWritableBook(GameTestHelper helper, BlockPos relPos, String... pages) {
@@ -288,6 +317,103 @@ public final class LightPipeGameTests {
         String observed = displayText(helper, observerPos);
         if (!observed.contains("X")) {
             helper.fail("Expected feedback cycle to propagate seed through the combinators, observed \"" + observed + "\"");
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_setDisplayTextUpdatesManualDisplayText(GameTestHelper helper) {
+        BlockPos displayLinkPos = new BlockPos(3, 1, 2);
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        BlockPos cablePos = new BlockPos(3, 1, 4);
+        BlockPos senderPos = new BlockPos(3, 1, 5);
+
+        helper.setBlock(displayLinkPos, displayLink(Direction.NORTH));
+        helper.setBlock(serialBusPos, serialBus(Direction.NORTH));
+        helper.setBlock(cablePos, lightPipe());
+        helper.setBlock(senderPos, lectern(Direction.SOUTH));
+
+        DisplayLinkBlockEntity displayLinkEntity = displayLinkEntity(helper, displayLinkPos);
+        if (displayLinkEntity == null) {
+            return;
+        }
+        displayLinkEntity.activeSource = CreateCompat.SERIAL_BUS_MANUAL_SOURCE.get();
+
+        setWritableBook(helper, senderPos, "set_display_text \"manual text\"");
+
+        SerialBusBlockEntity serialBus = serialBusEntity(helper, serialBusPos);
+        if (serialBus == null) {
+            return;
+        }
+        if (!"set_display_text \"manual text\"".equals(serialBus.getCurrentText())) {
+            helper.fail("Expected serial bus to keep received command text for the default display source");
+            return;
+        }
+        BlockEntity displayLink = helper.getBlockEntity(displayLinkPos);
+        if (!(displayLink instanceof DisplayLinkManualTextAccessor accessor)) {
+            helper.fail("Expected display link to expose manual text accessor, got " + displayLink);
+            return;
+        }
+        if (!"manual text".equals(accessor.zps$getManualDisplayText())) {
+            helper.fail("Expected set_display_text to update display link manual text, got \"" + accessor.zps$getManualDisplayText() + "\"");
+            return;
+        }
+
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_passiveDisplaySourceSuppressesScriptCommands(GameTestHelper helper) {
+        BlockPos displayLinkPos = new BlockPos(3, 1, 2);
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        BlockPos cablePos = new BlockPos(3, 1, 4);
+        BlockPos senderPos = new BlockPos(3, 1, 5);
+
+        helper.setBlock(displayLinkPos, displayLink(Direction.NORTH));
+        helper.setBlock(serialBusPos, serialBus(Direction.NORTH));
+        helper.setBlock(cablePos, lightPipe());
+        helper.setBlock(senderPos, lectern(Direction.SOUTH));
+
+        DisplayLinkBlockEntity displayLinkEntity = displayLinkEntity(helper, displayLinkPos);
+        if (displayLinkEntity == null) {
+            return;
+        }
+        displayLinkEntity.activeSource = CreateCompat.SERIAL_BUS_SOURCE.get();
+
+        setWritableBook(helper, senderPos, "set_redstone 9");
+
+        int stored = SetRedstoneCommand.getRedstonePowerAt(helper.getLevel(), helper.absolutePos(displayLinkPos));
+        if (stored != 0) {
+            helper.fail("Expected passive Serial Bus display source to suppress script command execution, got redstone " + stored);
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_displayLinkNotFacingBusDoesNotSuppressScriptCommands(GameTestHelper helper) {
+        BlockPos displayLinkPos = new BlockPos(3, 1, 2);
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        BlockPos cablePos = new BlockPos(3, 1, 4);
+        BlockPos senderPos = new BlockPos(3, 1, 5);
+
+        helper.setBlock(displayLinkPos, displayLink(Direction.SOUTH));
+        helper.setBlock(serialBusPos, serialBus(Direction.NORTH));
+        helper.setBlock(cablePos, lightPipe());
+        helper.setBlock(senderPos, lectern(Direction.SOUTH));
+
+        DisplayLinkBlockEntity displayLinkEntity = displayLinkEntity(helper, displayLinkPos);
+        if (displayLinkEntity == null) {
+            return;
+        }
+        displayLinkEntity.activeSource = CreateCompat.SERIAL_BUS_SOURCE.get();
+
+        setWritableBook(helper, senderPos, "set_redstone 9");
+
+        int stored = SetRedstoneCommand.getRedstonePowerAt(helper.getLevel(), helper.absolutePos(displayLinkPos));
+        if (stored != 9) {
+            helper.fail("Expected display link not sourcing from serial bus to allow script command execution, got redstone " + stored);
             return;
         }
         helper.succeed();

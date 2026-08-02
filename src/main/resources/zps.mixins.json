@@ -31,6 +31,7 @@
     "StructureTemplateMixin",
     "WritableBookMixin",
     "WrittenBookMixin",
+    "create.DisplayLinkBlockEntityMixin",
     "create.GoggleInfoExtension",
     "create.ManualApplicationRecipeMixin",
     "create.ScrollValueBehaviourAccessor",

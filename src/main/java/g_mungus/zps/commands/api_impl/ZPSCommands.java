@@ -175,12 +175,18 @@ public class ZPSCommands {
 
     @Nullable
     public static ScriptExecutor<?, ?> getExecutor(String key) {
+        List<ScriptExecutor<?, ?>> executors = getExecutors(key);
+        return executors.isEmpty() ? null : executors.getFirst();
+    }
+
+    public static List<ScriptExecutor<?, ?>> getExecutors(String key) {
+        List<ScriptExecutor<?, ?>> executors = new ArrayList<>();
         for (var executor : Registry.EXECUTORS) {
             if (executor.displayName().equals(key)) {
-                return executor;
+                executors.add(executor);
             }
         }
-        return null;
+        return executors;
     }
 
     @Nullable
@@ -237,7 +243,10 @@ public class ZPSCommands {
                         .forEach(block -> executorNamesByBlock
                                 .computeIfAbsent(block, ignored -> new ArrayList<>())
                                 .add(executor.displayName())));
-        executorNamesByBlock.values().forEach(names -> names.sort(String::compareTo));
+        executorNamesByBlock.replaceAll((block, names) -> names.stream()
+                .distinct()
+                .sorted(String::compareTo)
+                .toList());
 
         ZPSGamePackets.INSTANCE.send(
                 PacketDistributor.PLAYER.with(() -> player),

@@ -6,6 +6,7 @@ import g_mungus.zps.client.ponder.api.custom_screen_in_ponder_scene.PonderCompat
 import g_mungus.zps.client.screens.components.MultiLineEditBox;
 import g_mungus.zps.client.screens.components.MultiLineCommandSuggestions;
 import g_mungus.zps.client.screens.components.ScriptDispatcherProvider;
+import g_mungus.zps.commands.api_impl.aliases.ScriptAliases;
 import g_mungus.zps.commands.api_impl.arguments.ValueOfOrLiteralArgumentType;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.manual.ModManuals;
@@ -138,12 +139,14 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
             ZPSGamePackets.INSTANCE.sendToServer(new ScriptComputerC2SPacket(computer.getPos(), isRepeatMode, currentDelay, commandEdit.getValue()));
         }
         ValueOfOrLiteralArgumentType.setActiveAddressNames(Set.of());
+        ValueOfOrLiteralArgumentType.setActiveExpressionAliasNames(Set.of());
         if (client != null) client.setScreen(null);
     }
 
     @Override
     public void onClose() {
         ValueOfOrLiteralArgumentType.setActiveAddressNames(Set.of());
+        ValueOfOrLiteralArgumentType.setActiveExpressionAliasNames(Set.of());
         super.onClose();
     }
 
@@ -296,6 +299,11 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
 
     private void refreshActiveAddresses() {
         ValueOfOrLiteralArgumentType.setActiveAddressNames(this.computer != null ? this.computer.getAvailableAddressNames() : Set.of());
+        if (this.commandEdit == null) {
+            ValueOfOrLiteralArgumentType.setActiveExpressionAliasNames(Set.of());
+        } else {
+            ValueOfOrLiteralArgumentType.setActiveExpressionAliases(ScriptAliases.parse(this.commandEdit.getValue()).aliases());
+        }
     }
 
     private record TerminalDraft(String command, int cursorPosition, boolean repeatMode, int delayIndex) {

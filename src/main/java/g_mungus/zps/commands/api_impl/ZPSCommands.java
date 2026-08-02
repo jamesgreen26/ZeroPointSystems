@@ -200,6 +200,20 @@ public class ZPSCommands {
         return null;
     }
 
+    public static boolean isGetterName(String key) {
+        return getGetter(key) != null;
+    }
+
+    public static boolean isMapperName(String key) {
+        return getMapper(key) != null;
+    }
+
+    public static Set<String> getterNames() {
+        return Registry.GETTERS.stream()
+                .map(ScriptGetter::displayName)
+                .collect(java.util.stream.Collectors.toSet());
+    }
+
 
     @SubscribeEvent
     public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {

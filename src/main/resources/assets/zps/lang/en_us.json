@@ -385,6 +385,12 @@
     "zps.ponder.tag.can_insulate": "Blocks that can be Insulated",
     "zps.ponder.tag.can_insulate.description": "Components or Blocks which can have Cable Insulation applied to them, which prevents the block from connecting in new directions.",
 
+    "zps.ponder.tag.cable_components": "Cable Components",
+    "zps.ponder.tag.cable_components.description": "Blocks that carry or use cable signals.",
+
+    "zps.ponder.tag.data_cable_components": "Data Cable Components",
+    "zps.ponder.tag.data_cable_components.description": "Blocks that send or receive messages through Data Cables.",
+
     "zps.ponder.tag.has_script_caps": "Blocks with Script Capabilities",
     "zps.ponder.tag.has_script_caps.description": "Blocks which have extra Script Capabilities beyond the default 'set_redstone' command.",
 

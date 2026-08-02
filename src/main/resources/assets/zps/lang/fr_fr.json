@@ -332,6 +332,12 @@
     "zps.ponder.tag.can_insulate": "Blocks pouvant être isolés",
     "zps.ponder.tag.can_insulate.description": "Composants pouvant avoir des gaines sur eux pour empêcher les connexions de câbles sur certains côtés.",
 
+    "zps.ponder.tag.cable_components": "Composants de câble",
+    "zps.ponder.tag.cable_components.description": "Blocs qui transportent ou utilisent des signaux de câble.",
+
+    "zps.ponder.tag.data_cable_components": "Composants de câble de données",
+    "zps.ponder.tag.data_cable_components.description": "Blocs qui envoient ou reçoivent des messages avec les câbles de données.",
+
     "zps.ponder.tag.has_script_caps": "Blocs avec des capacités de script",
     "zps.ponder.tag.has_script_caps.description": "Blocs pouvant exécuter des commandes autrement qu'avec 'set_redstone'.",
 

@@ -217,7 +217,7 @@ public class CommandTreeBuilder {
 
         for (var executorGroup : executorsByName.values()) {
             if (executorGroup.size() == 1) {
-                ScriptExecutor<?, ?> executor = executorGroup.getFirst();
+                ScriptExecutor<?, ?> executor = executorGroup.get(0);
                 addExecutorBranch(executor, executors, false);
                 addExecutorBranch(executor, booleanMapperNode, true);
             } else {
@@ -271,7 +271,7 @@ public class CommandTreeBuilder {
     }
 
     private void addOverloadedExecutorBranch(List<ScriptExecutor<?, ?>> executorGroup, CommandNode<CommandSourceStack> parentNode, boolean isConditional) {
-        String displayName = executorGroup.getFirst().displayName();
+        String displayName = executorGroup.get(0).displayName();
         String argumentKey = "zps:argument_" + String.format("%06d", argumentIndex++) + ":" + displayName + "_overload";
 
         ZPSArgument.Builder<CommandSourceStack, OverloadedExecutorArgumentType.ParsedOverloads> argumentBuilder =
@@ -521,7 +521,7 @@ public class CommandTreeBuilder {
     private static StringRange getLastNodeRange(CommandContext<CommandSourceStack> context) {
         List<ParsedCommandNode<CommandSourceStack>> nodes = context.getNodes();
         if (!nodes.isEmpty()) {
-            return nodes.getLast().getRange();
+            return nodes.get(nodes.size() - 1).getRange();
         }
         return context.getRange();
     }

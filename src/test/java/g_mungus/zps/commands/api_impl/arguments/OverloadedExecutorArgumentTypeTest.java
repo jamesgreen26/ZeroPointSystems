@@ -52,8 +52,8 @@ public class OverloadedExecutorArgumentTypeTest {
 
         assertEquals(2, reader.getCursor(), "Parser should advance past the accepted argument");
         assertEquals(1, parsed.arguments().size());
-        assertSame(INT_EXECUTOR, parsed.arguments().getFirst().executor());
-        assertEquals(12, parsed.arguments().getFirst().rawArgument());
+        assertSame(INT_EXECUTOR, parsed.arguments().get(0).executor());
+        assertEquals(12, parsed.arguments().get(0).rawArgument());
     }
 
     @Test

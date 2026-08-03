@@ -306,7 +306,7 @@ public final class ScriptAliases {
 
     private static String firstExpressionToken(String text) {
         List<Token> tokens = expressionTokens(text);
-        return tokens.isEmpty() ? null : tokens.getFirst().text();
+        return tokens.isEmpty() ? null : tokens.get(0).text();
     }
 
     private static Token firstRootAliasToken(String text) {

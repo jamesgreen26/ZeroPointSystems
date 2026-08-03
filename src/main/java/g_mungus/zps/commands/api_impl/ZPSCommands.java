@@ -176,7 +176,7 @@ public class ZPSCommands {
     @Nullable
     public static ScriptExecutor<?, ?> getExecutor(String key) {
         List<ScriptExecutor<?, ?>> executors = getExecutors(key);
-        return executors.isEmpty() ? null : executors.getFirst();
+        return executors.isEmpty() ? null : executors.get(0);
     }
 
     public static List<ScriptExecutor<?, ?>> getExecutors(String key) {

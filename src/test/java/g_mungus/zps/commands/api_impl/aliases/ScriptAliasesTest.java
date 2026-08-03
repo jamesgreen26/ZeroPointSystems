@@ -25,7 +25,7 @@ public class ScriptAliasesTest {
 
         assertEquals(2, parsed.definitions().size());
         assertEquals(1, parsed.commands().size());
-        assertEquals("write_page value_of(line_1)", parsed.commands().getFirst());
+        assertEquals("write_page value_of(line_1)", parsed.commands().get(0));
         assertTrue(parsed.diagnostics().isEmpty());
     }
 
@@ -52,7 +52,7 @@ public class ScriptAliasesTest {
 
         assertTrue(parsed.aliases().isEmpty());
         assertEquals(1, parsed.diagnostics().size());
-        assertTrue(parsed.diagnostics().getFirst().message().contains("conflicts"));
+        assertTrue(parsed.diagnostics().get(0).message().contains("conflicts"));
     }
 
     @Test
@@ -61,7 +61,7 @@ public class ScriptAliasesTest {
 
         assertTrue(parsed.aliases().isEmpty());
         assertEquals(1, parsed.diagnostics().size());
-        assertTrue(parsed.diagnostics().getFirst().message().contains("must start"));
+        assertTrue(parsed.diagnostics().get(0).message().contains("must start"));
     }
 
     @Test

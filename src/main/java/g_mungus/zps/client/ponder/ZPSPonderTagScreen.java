@@ -12,7 +12,6 @@ import net.createmod.catnip.gui.UIRenderHelper;
 import net.createmod.catnip.gui.element.BoxElement;
 import net.createmod.catnip.gui.widget.BoxWidget;
 import net.createmod.catnip.lang.ClientFontHelper;
-import net.createmod.catnip.registry.RegisteredObjectsHelper;
 import net.createmod.ponder.Ponder;
 import net.createmod.ponder.foundation.PonderChapter;
 import net.createmod.ponder.foundation.PonderIndex;
@@ -34,6 +33,7 @@ import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -96,7 +96,7 @@ public class ZPSPonderTagScreen extends AbstractPonderScreen {
         PonderIndex.getTagAccess()
                 .getItems(tag)
                 .stream()
-                .map(key -> new ItemEntry(RegisteredObjectsHelper.getItemOrBlock(key), key))
+                .map(key -> new ItemEntry(getItemOrBlock(key), key))
                 .filter(entry -> entry.item != null)
                 .forEach(items::add);
 
@@ -153,7 +153,10 @@ public class ZPSPonderTagScreen extends AbstractPonderScreen {
         }
 
         if (!tag.getMainItem().isEmpty()) {
-            ResourceLocation registryName = RegisteredObjectsHelper.getKeyOrThrow(tag.getMainItem().getItem());
+            ResourceLocation registryName = ForgeRegistries.ITEMS.getKey(tag.getMainItem().getItem());
+            if (registryName == null) {
+                return;
+            }
 
             PonderButton button = new PonderButton(itemCenterX - gridWidth / 2 - 48, itemCenterY - 10)
                     .showing(tag.getMainItem());
@@ -259,7 +262,7 @@ public class ZPSPonderTagScreen extends AbstractPonderScreen {
                 .render(graphics);
 
         poseStack.translate(0, 0, 100);
-        ClientFontHelper.drawSplitString(graphics, poseStack, font, description, x, y, descriptionWidth, UIRenderHelper.COLOR_TEXT.getFirst().getRGB());
+        ClientFontHelper.drawSplitString(poseStack, font, description, x, y, descriptionWidth, UIRenderHelper.COLOR_TEXT.getFirst().getRGB());
         poseStack.popPose();
     }
 
@@ -334,13 +337,13 @@ public class ZPSPonderTagScreen extends AbstractPonderScreen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
         if (maxItemScroll > 0 && isMouseOverItemArea(mouseX, mouseY)) {
-            setItemScroll(itemScroll - (int) Math.signum(scrollY) * ITEM_ROW_STRIDE);
+            setItemScroll(itemScroll - (int) Math.signum(delta) * ITEM_ROW_STRIDE);
             return true;
         }
 
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        return super.mouseScrolled(mouseX, mouseY, delta);
     }
 
     @Override
@@ -444,6 +447,15 @@ public class ZPSPonderTagScreen extends AbstractPonderScreen {
         tooltip.add(Component.literal(title).withStyle(ChatFormatting.GRAY));
         names.forEach(name -> tooltip.add(Component.literal("  " + name)
                 .withStyle(style -> style.withColor(color))));
+    }
+
+    @Nullable
+    private static ItemLike getItemOrBlock(ResourceLocation key) {
+        Item item = ForgeRegistries.ITEMS.getValue(key);
+        if (item != null) {
+            return item;
+        }
+        return ForgeRegistries.BLOCKS.getValue(key);
     }
 
     private void sortItemsByCreativeSearchOrder() {

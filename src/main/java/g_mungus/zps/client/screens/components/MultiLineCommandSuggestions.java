@@ -916,9 +916,14 @@ public class MultiLineCommandSuggestions {
         String[] lines = this.input.getValue().split("\n", -1);
         String fullLine = lineNumber >= 0 && lineNumber < lines.length ? lines[lineNumber] : string;
 
+        // The visible window must stay inside 'fullLine': the scroll offset can outrun a short
+        // line, and 'fullLine' may be stale relative to the string handed to us by the widget.
+        int visibleStart = Mth.clamp(i, 0, fullLine.length());
+        int visibleLength = Math.min(string.length(), fullLine.length() - visibleStart);
+
         // Parse the full line
         if (lineNumber >= 0 && isLeadingAliasDefinitionLine(lineNumber, fullLine)) {
-            return formatAliasDefinitionLine(fullLine, i, string.length(), lineNumber);
+            return formatAliasDefinitionLine(fullLine, visibleStart, visibleLength, lineNumber);
         }
 
         // Parse the full line
@@ -939,7 +944,7 @@ public class MultiLineCommandSuggestions {
                         : dispatcherProvider.get();
                 ParseResults<SharedSuggestionProvider> lineParseResults = commandDispatcher.parse(stringReader, this.minecraft.player.connection.getSuggestionsProvider());
 
-                return formatText(lineParseResults, fullLine, i, string.length(), expressionAliases);
+                return formatText(lineParseResults, fullLine, visibleStart, visibleLength, expressionAliases);
             } catch (Exception e) {
                 // If parsing fails, return unformatted
                 return FormattedCharSequence.forward(string, Style.EMPTY);
@@ -1126,7 +1131,7 @@ public class MultiLineCommandSuggestions {
         // Mark any remaining unparsed text as invalid
         if (parseResults.getReader().canRead()) {
             int n = Math.max(parseResults.getReader().getCursor() - visibleStart, 0);
-            if (n < visibleLength) {
+            if (n >= cursor && n < visibleLength) {
                 list.add(FormattedCharSequence.forward(fullText.substring(visibleStart + cursor, visibleStart + n), DEFAULT_STYLE));
                 if (isArgumentPlaceholderAt(fullText, parseResults.getReader().getCursor())) {
                     int o = Math.min(n + ARGUMENT_PLACEHOLDER.length(), visibleLength);

@@ -564,7 +564,7 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 
 				arg.drawString(
 						this.font,
-						this.formatter.apply(clipped, this.displayPos, lineIdx),
+						this.formatter.apply(clipped, scrollOffset, lineIdx),
 						startX,
 						y,
 						textColor

@@ -61,6 +61,8 @@ public class MultiLineCommandSuggestions {
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("(\\s+)");
     private static final Pattern ALIAS_NAME_PATTERN = Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
     private static final String ARGUMENT_PLACEHOLDER = "%s";
+    private static final String ALIAS_NAME_USAGE = "<alias>";
+    private static final String EXPECTED_EQUALS_MESSAGE = "Expected '=' after alias name";
     private static final ResourceLocation BOOLEAN_TYPE = ResourceLocation.parse("zps:boolean");
     private static final Style UNPARSED_STYLE = Style.EMPTY.withColor(ChatFormatting.RED);
     public static final int EXECUTOR_COLOR = 0xF5A97F;
@@ -255,7 +257,8 @@ public class MultiLineCommandSuggestions {
             stringReader.skip();
         }
 
-        if (isLeadingAliasDefinitionLine(currentLineNumber, currentLine)) {
+        if (isLeadingAliasDefinitionLine(currentLineNumber, currentLine)
+                || isAliasDefinitionPrefixLine(currentLineNumber, currentLine)) {
             updateAliasDefinitionInfo(currentLine, lineCursorPos, currentLineNumber);
             return;
         }
@@ -343,6 +346,15 @@ public class MultiLineCommandSuggestions {
         return ScriptAliases.startsWithDefinitionKeyword(line) && !hasEarlierExecutableLine(lineNumber);
     }
 
+    private boolean isAliasDefinitionPrefixLine(int lineNumber, String line) {
+        String stripped = line.stripLeading();
+        return isDefinitionKeywordPrefix(stripped) && !hasEarlierExecutableLine(lineNumber);
+    }
+
+    private static boolean isDefinitionKeywordPrefix(String strippedLine) {
+        return strippedLine.startsWith("#") && "#def".startsWith(strippedLine);
+    }
+
     private boolean hasEarlierExecutableLine(int lineNumber) {
         String[] lines = this.input.getValue().split("\n", -1);
         for (int i = 0; i < lineNumber && i < lines.length; i++) {
@@ -367,6 +379,8 @@ public class MultiLineCommandSuggestions {
                     this.commandUsage.add(FormattedCharSequence.forward(diagnostic.message(), UNPARSED_STYLE));
                 }
             }
+        } else if (hasTextInsteadOfEquals(currentLine)) {
+            this.commandUsage.add(FormattedCharSequence.forward(EXPECTED_EQUALS_MESSAGE, UNPARSED_STYLE));
         }
 
         this.pendingSuggestions = aliasDefinitionSuggestions(currentLine, lineCursorPos, currentLineNumber);
@@ -378,8 +392,17 @@ public class MultiLineCommandSuggestions {
     }
 
     private void updateAliasDefinitionUsageInfo(String currentLine, int lineCursorPos, int currentLineNumber) {
+        if (this.pendingSuggestions == null || !this.pendingSuggestions.join().isEmpty()) {
+            return;
+        }
+
+        if (isCursorInAliasNamePosition(currentLine, lineCursorPos)) {
+            addAliasNameUsageHint(currentLine, currentLineNumber);
+            return;
+        }
+
         AliasExpressionParse aliasParse = bestAliasExpressionParse(currentLine, lineCursorPos, currentLineNumber);
-        if (aliasParse == null || this.pendingSuggestions == null || !this.pendingSuggestions.join().isEmpty()) {
+        if (aliasParse == null) {
             return;
         }
 
@@ -411,12 +434,110 @@ public class MultiLineCommandSuggestions {
         this.commandUsageWidth = width;
     }
 
+    private boolean isCursorInAliasNamePosition(String currentLine, int lineCursorPos) {
+        int nameStart = aliasNameStart(currentLine);
+        if (nameStart == -1 || lineCursorPos < nameStart || isCursorInEqualsPosition(currentLine, lineCursorPos)) {
+            return false;
+        }
+        int equals = currentLine.indexOf('=');
+        return equals == -1 || lineCursorPos <= equals;
+    }
+
+    private static boolean isCursorInEqualsPosition(String currentLine, int lineCursorPos) {
+        int nameEnd = aliasNameEnd(currentLine);
+        return nameEnd != -1
+                && nameEnd < currentLine.length()
+                && Character.isWhitespace(currentLine.charAt(nameEnd))
+                && lineCursorPos > nameEnd;
+    }
+
+    private void addAliasNameUsageHint(String currentLine, int currentLineNumber) {
+        boolean positionUsage = this.commandUsage.isEmpty();
+        this.commandUsage.add(FormattedCharSequence.forward(ALIAS_NAME_USAGE, DEFAULT_STYLE));
+        if (!positionUsage) {
+            return;
+        }
+
+        int width = this.font.width(ALIAS_NAME_USAGE);
+        int absoluteStart = getLineStartPosition(currentLineNumber) + aliasNameStart(currentLine);
+        this.commandUsagePosition = Mth.clamp(this.input.getScreenX(absoluteStart), 0, this.input.getScreenX(0) + this.input.getInnerWidth() - width);
+        this.commandUsageWidth = width;
+    }
+
+    /** Index where the alias name begins, or -1 if the {@code #def} keyword is not yet followed by whitespace. */
+    private static int aliasNameStart(String line) {
+        int cursor = 0;
+        while (cursor < line.length() && Character.isWhitespace(line.charAt(cursor))) {
+            cursor++;
+        }
+        if (!line.startsWith("#def", cursor)) {
+            return -1;
+        }
+
+        cursor += "#def".length();
+        if (cursor >= line.length() || !Character.isWhitespace(line.charAt(cursor))) {
+            return -1;
+        }
+        while (cursor < line.length() && Character.isWhitespace(line.charAt(cursor))) {
+            cursor++;
+        }
+        return cursor;
+    }
+
+    /** Index just past the alias name, or -1 if no valid name has been typed yet. */
+    private static int aliasNameEnd(String line) {
+        int nameStart = aliasNameStart(line);
+        if (nameStart == -1) {
+            return -1;
+        }
+
+        Matcher nameMatcher = ALIAS_NAME_PATTERN.matcher(line);
+        nameMatcher.region(nameStart, line.length());
+        return nameMatcher.lookingAt() ? nameMatcher.end() : -1;
+    }
+
+    /**
+     * Index where the {@code =} belongs: the first non-whitespace character after a whitespace-terminated
+     * alias name, or the end of the line when only whitespace follows. -1 when the name is not terminated.
+     */
+    private static int equalsSlotStart(String line) {
+        int nameEnd = aliasNameEnd(line);
+        if (nameEnd == -1 || nameEnd >= line.length() || !Character.isWhitespace(line.charAt(nameEnd))) {
+            return -1;
+        }
+
+        int cursor = nameEnd;
+        while (cursor < line.length() && Character.isWhitespace(line.charAt(cursor))) {
+            cursor++;
+        }
+        return cursor;
+    }
+
+    /** True when something other than {@code =} has been typed where the {@code =} belongs. */
+    private static boolean hasTextInsteadOfEquals(String line) {
+        if (line.indexOf('=') != -1) {
+            return false;
+        }
+        int equalsSlot = equalsSlotStart(line);
+        return equalsSlot != -1 && equalsSlot < line.length();
+    }
+
     private CompletableFuture<Suggestions> aliasDefinitionSuggestions(String currentLine, int lineCursorPos, int currentLineNumber) {
         int equals = currentLine.indexOf('=');
         if (equals == -1 || lineCursorPos <= equals) {
-            if ("#def".startsWith(currentLine.stripLeading())) {
-                SuggestionsBuilder builder = new SuggestionsBuilder(currentLine, 0);
+            String stripped = currentLine.stripLeading();
+            if (isDefinitionKeywordPrefix(stripped)) {
+                int keywordStart = currentLine.length() - stripped.length();
+                SuggestionsBuilder builder = new SuggestionsBuilder(currentLine, keywordStart);
                 builder.suggest("#def ");
+                return builder.buildFuture();
+            }
+
+            // Only whitespace after the name: the '=' still has to be typed.
+            int equalsSlot = equalsSlotStart(currentLine);
+            if (equals == -1 && equalsSlot >= currentLine.length() && isCursorInEqualsPosition(currentLine, lineCursorPos)) {
+                SuggestionsBuilder builder = new SuggestionsBuilder(currentLine, equalsSlot);
+                builder.suggest("= ");
                 return builder.buildFuture();
             }
             return Suggestions.empty();
@@ -890,6 +1011,13 @@ public class MultiLineCommandSuggestions {
 
         int equals = fullLine.indexOf('=', cursor);
         if (equals == -1) {
+            int unexpectedStart = cursor;
+            while (unexpectedStart < fullLine.length() && Character.isWhitespace(fullLine.charAt(unexpectedStart))) {
+                unexpectedStart++;
+            }
+            if (unexpectedStart < fullLine.length()) {
+                spans.add(new HighlightSpan(StringRange.between(unexpectedStart, fullLine.length()), UNPARSED_STYLE));
+            }
             return;
         }
 

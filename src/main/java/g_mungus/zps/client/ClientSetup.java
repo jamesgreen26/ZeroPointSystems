@@ -7,10 +7,14 @@ import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.client.model.connected.ConnectedModelLoader;
 import g_mungus.zps.client.model.connected.ConnectedTextureMeta;
 import g_mungus.zps.client.recipebook.ModRecipeBookCategories;
+import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.recipe.ModRecipeBookTypes;
 import g_mungus.zps.recipe.ModRecipes;
+import net.createmod.catnip.config.ui.BaseConfigScreen;
+import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.client.event.RegisterRecipeBookCategoriesEvent;
 import java.util.List;
+
 import g_mungus.zps.client.renderer.*;
 import g_mungus.zps.client.screens.CoalBurnerScreen;
 import g_mungus.zps.client.screens.PowerCellScreen;
@@ -34,9 +38,12 @@ import net.minecraftforge.client.event.ModelEvent;
 import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModContainer;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.event.lifecycle.FMLLoadCompleteEvent;
 
 @Mod.EventBusSubscriber(value = Dist.CLIENT, modid = ZPSMod.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class ClientSetup {
@@ -154,5 +161,22 @@ public class ClientSetup {
 
             MinecraftForge.EVENT_BUS.addListener(AddressPadClientHooks::onRenderLevelStage);
         });
+    }
+
+    @SubscribeEvent
+    public static void loadCompleted(FMLLoadCompleteEvent event) {
+
+        ModContainer modContainer = ModList.get()
+                .getModContainerById(ZPSMod.MOD_ID)
+                .orElseThrow(() -> new IllegalStateException("ZPS Mod Container missing after loadCompleted"));
+
+        modContainer.registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
+                () -> new ConfigScreenHandler.ConfigScreenFactory(
+                        (mc, previousScreen) -> new BaseConfigScreen(previousScreen, ZPSMod.MOD_ID)));
+
+        BaseConfigScreen.setDefaultActionFor(ZPSMod.MOD_ID, base -> base
+                .withButtonLabels("Client Settings", null, "Server Settings")
+                .withSpecs(ZPSConfig.CONFIG_SPEC, null, ZPSConfig.SERVER_CONFIG_SPEC)
+        );
     }
 } 

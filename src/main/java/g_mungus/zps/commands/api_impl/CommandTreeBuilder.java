@@ -20,6 +20,7 @@ import g_mungus.zps.commands.api_impl.arguments.ArgumentPlaceholder;
 import g_mungus.zps.commands.api_impl.arguments.AddressReference;
 import g_mungus.zps.commands.api_impl.arguments.OverloadedExecutorArgumentType;
 import g_mungus.zps.commands.api_impl.arguments.ZPSLiteral;
+import g_mungus.zps.config.ZPSConfig;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.coordinates.Coordinates;
 import net.minecraft.core.BlockPos;
@@ -150,8 +151,7 @@ public class CommandTreeBuilder {
                 }
                 return List.of(context.getSource());
             } catch (Exception e) {
-                logCommandException(context, "mapper argument", mapper.displayName(), e);
-                throw new RuntimeException(e);
+                throw wrapCommandException(context, "mapper argument", mapper.displayName(), e);
             }
         }, false);
 
@@ -170,8 +170,7 @@ public class CommandTreeBuilder {
                 }
                 return List.of(context.getSource());
             } catch (Exception e) {
-                logCommandException(context, "mapper", mapper.displayName(), e);
-                throw new RuntimeException(e);
+                throw wrapCommandException(context, "mapper", mapper.displayName(), e);
             }
         }, false).build());
     }
@@ -470,8 +469,7 @@ public class CommandTreeBuilder {
                 }
                 return List.of(context.getSource());
             } catch (Exception e) {
-                logCommandException(context, "value_of mapper argument", mapper.displayName(), e);
-                throw new RuntimeException(e);
+                throw wrapCommandException(context, "value_of mapper argument", mapper.displayName(), e);
             }
         }, false);
         inputNode.addChild(new ZPSLiteral.Builder<CommandSourceStack>(mapper.displayName()).then(builtArgument).build());
@@ -491,8 +489,7 @@ public class CommandTreeBuilder {
                         }
                         return List.of(context.getSource());
                     } catch (Exception e) {
-                        logCommandException(context, "value_of mapper", mapper.displayName(), e);
-                        throw new RuntimeException(e);
+                        throw wrapCommandException(context, "value_of mapper", mapper.displayName(), e);
                     }
                 }, false);
         inputNode.addChild(mapperBuilder.build());
@@ -502,19 +499,53 @@ public class CommandTreeBuilder {
 
     private record ScriptContextWithArgumentImpl<T>(T argumentValue, BlockPos pos, ServerLevel level, CommandSourceStack commandSource) implements ScriptContext.WithArgument<T> { }
 
-    private static void logCommandException(CommandContext<CommandSourceStack> context, String phase, String commandPart, Exception exception) {
+    private static RuntimeException wrapCommandException(CommandContext<CommandSourceStack> context, String phase, String commandPart, Exception exception) {
+        if (logCommandException(context, phase, commandPart, exception)) {
+            return new LoggedScriptCommandException(exception);
+        }
+        return new RuntimeException(exception);
+    }
+
+    private static boolean logCommandException(CommandContext<CommandSourceStack> context, String phase, String commandPart, Exception exception) {
+        if (ZPSConfig.getScriptCommandFailureBehavior() != ZPSConfig.ScriptCommandFailureBehavior.LOG) return false;
+
         String input = context.getInput();
         String fullCommand = input;
         if (context.getSource().source instanceof ZPSScriptCommandSource source && source.getCommandInput() != null) {
             fullCommand = source.getCommandInput();
         }
         String location = formatCommandLocation(input, getLastNodeRange(context));
+        String reason = describeException(exception);
         if (fullCommand.equals(input)) {
-            ZPSMod.LOGGER.error("Script command failed while evaluating {} '{}'\nCommand: {}\nLocation:\n{}",
-                    phase, commandPart, fullCommand, location, exception);
+            ZPSMod.LOGGER.error("Script command failed while evaluating {} '{}'\nCommand: {}\nLocation:\n{}\nReason: {}",
+                    phase, commandPart, fullCommand, location, reason);
         } else {
-            ZPSMod.LOGGER.error("Script command failed while evaluating {} '{}'\nCommand: {}\nEvaluating: {}\nLocation:\n{}",
-                    phase, commandPart, fullCommand, input, location, exception);
+            ZPSMod.LOGGER.error("Script command failed while evaluating {} '{}'\nCommand: {}\nEvaluating: {}\nLocation:\n{}\nReason: {}",
+                    phase, commandPart, fullCommand, input, location, reason);
+        }
+        return true;
+    }
+
+    private static String describeException(Exception exception) {
+        String message = exception.getMessage();
+        if (message == null || message.isBlank()) {
+            return exception.getClass().getSimpleName();
+        }
+        return message;
+    }
+
+    public static boolean isLoggedScriptCommandException(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof LoggedScriptCommandException) return true;
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    public static class LoggedScriptCommandException extends RuntimeException {
+        public LoggedScriptCommandException(Throwable cause) {
+            super(cause);
         }
     }
 

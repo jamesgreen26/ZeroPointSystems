@@ -29,13 +29,26 @@ public class ZPSConfig {
         DESTROY
     }
 
+    public enum ScriptCommandFailureBehavior {
+        FAIL_SILENTLY,
+        LOG
+    }
+
     private static ForgeConfigSpec.EnumValue<ConverterOverpowerBehavior> converterOverpowerBehavior;
+    private static ForgeConfigSpec.EnumValue<ScriptCommandFailureBehavior> scriptCommandFailureBehavior;
 
     public static ConverterOverpowerBehavior getConverterOverpowerBehavior() {
         try {
             return converterOverpowerBehavior.get();
         } catch (Exception ignored) { }
         return ConverterOverpowerBehavior.DESTROY;
+    }
+
+    public static ScriptCommandFailureBehavior getScriptCommandFailureBehavior() {
+        try {
+            return scriptCommandFailureBehavior.get();
+        } catch (Exception ignored) { }
+        return ScriptCommandFailureBehavior.FAIL_SILENTLY;
     }
 
     public static final ForgeConfigSpec SERVER_CONFIG_SPEC = buildServerConfig();
@@ -47,6 +60,11 @@ public class ZPSConfig {
                          "EXPLODE: destroys the converter with an explosion",
                          "DESTROY: removes the converter and emits smoke particles (default)")
                 .defineEnum("ConverterOverpowerBehavior", ConverterOverpowerBehavior.DESTROY);
+        scriptCommandFailureBehavior = builder
+                .comment("What happens when a script terminal command fails.",
+                         "FAIL_SILENTLY: suppresses failure logs and ignores failed commands (default)",
+                         "LOG: logs a concise command failure message and ignores the failed command")
+                .defineEnum("ScriptCommandFailureBehavior", ScriptCommandFailureBehavior.FAIL_SILENTLY);
         return builder.build();
     }
 }

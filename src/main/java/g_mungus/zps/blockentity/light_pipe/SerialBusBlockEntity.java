@@ -1,10 +1,13 @@
 package g_mungus.zps.blockentity.light_pipe;
 
+import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.cableNetwork.TransformerBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
+import g_mungus.zps.commands.api_impl.CommandTreeBuilder;
 import g_mungus.zps.commands.api_impl.ZPSCommands;
 import g_mungus.zps.compat.Compat;
 import g_mungus.zps.compat.create.CreateCompat;
+import g_mungus.zps.config.ZPSConfig;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
@@ -52,8 +55,30 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver {
         if (level instanceof ServerLevel serverLevel) {
             String command = message.startsWith("/") ? message.substring(1) : message;
             command = ZPSCommands.Paths.SCRIPT + getPosArgument() + command;
-            serverLevel.getServer().getCommands().performPrefixedCommand(createCommandSourceStack(serverLevel), command);
+            CommandSourceStack sourceStack = createCommandSourceStack(serverLevel);
+            executeCommand(serverLevel, sourceStack, command);
         }
+    }
+
+    private void executeCommand(ServerLevel serverLevel, CommandSourceStack sourceStack, String command) {
+        try {
+            var commands = serverLevel.getServer().getCommands();
+            var parseResults = commands.getDispatcher().parse(command, sourceStack);
+            commands.getDispatcher().execute(parseResults);
+        } catch (Exception e) {
+            if (ZPSConfig.getScriptCommandFailureBehavior() == ZPSConfig.ScriptCommandFailureBehavior.LOG
+                    && !CommandTreeBuilder.isLoggedScriptCommandException(e)) {
+                ZPSMod.LOGGER.error("Script command failed\nCommand: /{}\nReason: {}", command, describeException(e));
+            }
+        }
+    }
+
+    private static String describeException(Exception exception) {
+        String message = exception.getMessage();
+        if (message == null || message.isBlank()) {
+            return exception.getClass().getSimpleName();
+        }
+        return message;
     }
 
     private boolean shouldSuppressCommandsForDisplayLink() {

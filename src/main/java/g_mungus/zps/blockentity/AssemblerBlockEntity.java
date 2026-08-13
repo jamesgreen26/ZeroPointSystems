@@ -6,6 +6,7 @@ import com.google.gson.JsonParser;
 import g_mungus.zps.compat.Compat;
 import g_mungus.zps.compat.create.MechanicalCraftingCompat;
 import g_mungus.zps.menu.AssemblerMenu;
+import g_mungus.zps.recipe.ModRecipes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
@@ -46,7 +47,8 @@ import java.util.List;
  * Automated crafting machine. A 5x5 ghost "pattern" grid defines a recipe; when the block is powered
  * by redstone, matching ingredients are pulled from the input buffer, the recipe is crafted, and the
  * result is deposited in the output buffer. Working draws {@link #ENERGY_PER_TICK} FE per tick.
- * Supports vanilla shaped/shapeless recipes and (when Create is loaded) Create mechanical crafting.
+ * Supports {@code zps:shaped_5x5} recipes, vanilla shaped/shapeless recipes, and (when Create is loaded)
+ * Create mechanical crafting.
  */
 public class AssemblerBlockEntity extends BlockEntity implements MenuProvider {
     public static final int GRID_WIDTH = 5;
@@ -382,6 +384,15 @@ public class AssemblerBlockEntity extends BlockEntity implements MenuProvider {
         }
 
         CraftingContainer craftingContainer = new TransientCraftingContainer(DUMMY_MENU, GRID_WIDTH, GRID_HEIGHT, grid);
+        // Purpose-built 5x5 recipes win over vanilla ones covering the same pattern.
+        ItemStack shaped5x5 = level.getRecipeManager()
+                .getRecipeFor(ModRecipes.SHAPED_5X5_TYPE.get(), craftingContainer, level)
+                .map(recipe -> recipe.assemble(craftingContainer, level.registryAccess()))
+                .orElse(ItemStack.EMPTY);
+        if (!shaped5x5.isEmpty()) {
+            return shaped5x5;
+        }
+
         ItemStack vanilla = level.getRecipeManager()
                 .getRecipeFor(RecipeType.CRAFTING, craftingContainer, level)
                 .map(recipe -> recipe.assemble(craftingContainer, level.registryAccess()))

@@ -2,6 +2,7 @@ package g_mungus.zps.menu;
 
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.AssemblerBlockEntity;
+import g_mungus.zps.commands.content.AssemblerRecipeSupport;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
@@ -21,7 +22,6 @@ import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.items.IItemHandler;
@@ -165,18 +165,10 @@ public class AssemblerMenu extends RecipeBookMenu<CraftingInput, CraftingRecipe>
         List<Ingredient> ingredients = recipe.getIngredients();
         List<Ingredient> grid = new ArrayList<>(Collections.nCopies(AssemblerBlockEntity.PATTERN_SLOTS, Ingredient.EMPTY));
 
-        // Determine the recipe's bounding box. Shaped recipes carry their own width/height; shapeless recipes
-        // are packed row-major into a crafting-grid-sized (up to 3 wide) box.
-        int recipeWidth;
-        int recipeHeight;
-        if (recipe instanceof ShapedRecipe shaped) {
-            recipeWidth = shaped.getWidth();
-            recipeHeight = shaped.getHeight();
-        } else {
-            int count = ingredients.size();
-            recipeWidth = Math.max(1, Math.min(count, 3));
-            recipeHeight = (count + recipeWidth - 1) / recipeWidth;
-        }
+        // Determine the recipe's bounding box (shared with the set_recipe command so the two never diverge).
+        int[] size = AssemblerRecipeSupport.dimensions(recipe);
+        int recipeWidth = size[0];
+        int recipeHeight = size[1];
 
         // Center the box in the 5x5 pattern, rounding toward the top-left when it can't sit dead-centre.
         int placedWidth = Math.min(recipeWidth, AssemblerBlockEntity.GRID_WIDTH);

@@ -14,6 +14,8 @@
     "gui.zps.assembler.input": "Input",
     "gui.zps.assembler.crafting": "Crafting Pattern",
     "gui.zps.assembler.tag_ingredient": "Accepts any item in:",
+    "gui.zps.jei.shaped_5x5": "5x5 Crafting",
+    "gui.zps.jei.transfer_unsupported": "The Assembler can't lay out this recipe.",
     "block.zps.octo_controller": "Octo-Controller",
     "block.zps.dodeca_controller": "Dodeca-Controller",
     "block.zps.switch_panel": "Switch Panel",

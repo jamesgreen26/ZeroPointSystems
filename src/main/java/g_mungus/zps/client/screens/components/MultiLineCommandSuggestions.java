@@ -543,12 +543,15 @@ public class MultiLineCommandSuggestions {
             return Suggestions.empty();
         }
 
+        // Never skip whitespace past the cursor: with the cursor inside the run of spaces after the '='
+        // the expression is still empty and starts where the cursor is.
+        int cursor = Math.min(lineCursorPos, currentLine.length());
         int expressionStart = equals + 1;
-        while (expressionStart < currentLine.length() && Character.isWhitespace(currentLine.charAt(expressionStart))) {
+        while (expressionStart < cursor && Character.isWhitespace(currentLine.charAt(expressionStart))) {
             expressionStart++;
         }
 
-        String typedExpression = currentLine.substring(expressionStart, Math.min(lineCursorPos, currentLine.length()));
+        String typedExpression = currentLine.substring(expressionStart, cursor);
         List<Suggestion> suggestions = new ArrayList<>();
 
         assert this.minecraft.player != null;
@@ -599,13 +602,14 @@ public class MultiLineCommandSuggestions {
             return null;
         }
 
+        int cursor = Math.min(lineCursorPos, currentLine.length());
         int expressionStart = equals + 1;
-        while (expressionStart < currentLine.length() && Character.isWhitespace(currentLine.charAt(expressionStart))) {
+        while (expressionStart < cursor && Character.isWhitespace(currentLine.charAt(expressionStart))) {
             expressionStart++;
         }
 
-        int expressionCursor = Math.max(0, Math.min(lineCursorPos, currentLine.length()) - expressionStart);
-        String typedExpression = currentLine.substring(expressionStart, Math.min(lineCursorPos, currentLine.length()));
+        int expressionCursor = cursor - expressionStart;
+        String typedExpression = currentLine.substring(expressionStart, cursor);
 
         assert this.minecraft.player != null;
         SharedSuggestionProvider source = this.minecraft.player.connection.getSuggestionsProvider();

@@ -14,8 +14,9 @@ public class ServerLevelMixin {
 
     @Inject(method = "sendBlockUpdated", at = @At("HEAD"))
     private void sendBlockUpdatedMixin(BlockPos arg, BlockState arg2, BlockState arg3, int i, CallbackInfo ci) {
-        if (!arg2.getBlock().equals(arg3.getBlock())) {
-            SetRedstoneCommand.setRedstone((ServerLevel) (Object)this, arg, 0);
+        ServerLevel serverLevel = (ServerLevel) (Object)this;
+        if (!arg2.getBlock().equals(arg3.getBlock()) && SetRedstoneCommand.getRedstonePowerAt(serverLevel, arg) != 0) {
+            SetRedstoneCommand.setRedstone(serverLevel, arg, 0);
         }
     }
 }

@@ -16,6 +16,7 @@ import g_mungus.zps.compat.Compat;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.entity.ModEntities;
 import g_mungus.zps.gametest.AssemblerGameTests;
+import g_mungus.zps.gametest.BrushableBlockGameTests;
 import g_mungus.zps.gametest.ImpactPistonGameTests;
 import g_mungus.zps.gametest.EnumPropertyWithAliasesGameTests;
 import g_mungus.zps.gametest.RoboticArmGameTests;
@@ -87,6 +88,7 @@ public final class ZPSMod {
         event.register(RollingMillGameTests.class);
         event.register(AssemblerGameTests.class);
         event.register(ImpactPistonGameTests.class);
+        event.register(BrushableBlockGameTests.class);
     }
 
     private static void registerCapabilities(RegisterCapabilitiesEvent event) {

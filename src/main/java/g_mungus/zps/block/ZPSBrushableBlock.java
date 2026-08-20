@@ -93,6 +93,9 @@ public class ZPSBrushableBlock extends BrushableBlock {
      * Vanilla plays destroy particles and a {@code BLOCK_DESTROY} game event here, which is what
      * makes a failed landing look like the block was smashed. Regular sand inherits {@code
      * Fallable}'s empty default and simply drops its item; match sand.
+     *
+     * <p>The drop itself is swapped for {@link #getTurnsInto()} by {@code FallingBlockEntityMixin},
+     * since the buried payload is already lost by the time a landing fails.
      */
     @Override
     public void onBrokenAfterFall(@NotNull Level level, @NotNull BlockPos pos,

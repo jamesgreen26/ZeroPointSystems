@@ -12,14 +12,19 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BrushableBlockEntity;
 import net.minecraft.world.level.block.piston.MovingPistonBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+
+import java.util.List;
 
 /**
  * Covers {@code ZPSBrushableBlock} plus the two piston mixins: vanilla suspicious sand and gravel
@@ -37,6 +42,13 @@ public class BrushableBlockGameTests {
     /** Sand starts on ABOVE_SUPPORT and lands on SUPPORT once the support is pulled. */
     private static final BlockPos SUPPORT = new BlockPos(3, 2, 3);
     private static final BlockPos ABOVE_SUPPORT = new BlockPos(3, 3, 3);
+
+    /** Somewhere on the floor to place and break a block. */
+    private static final BlockPos BREAK_POS = new BlockPos(3, 2, 3);
+
+    /** Carpet is not replaceable, so a block landing on it cannot be placed and drops instead. */
+    private static final BlockPos CARPET_POS = new BlockPos(5, 2, 3);
+    private static final BlockPos HIGH_DROP_POS = new BlockPos(5, 4, 3);
 
     private static final BlockPos PISTON_POS = new BlockPos(1, 2, 3);
     private static final BlockPos PUSHED_FROM = new BlockPos(2, 2, 3);
@@ -107,6 +119,42 @@ public class BrushableBlockGameTests {
     }
 
     /**
+     * Vanilla ships these blocks with an empty loot table, so breaking one by hand yields nothing.
+     * They should drop what they brush into, the same as breaking ordinary sand or gravel.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void breakByHand_dropsSand(GameTestHelper helper) {
+        assertBreakDrops(helper, Blocks.SUSPICIOUS_SAND, Items.SAND);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void breakByHand_dropsGravel(GameTestHelper helper) {
+        assertBreakDrops(helper, Blocks.SUSPICIOUS_GRAVEL, Items.GRAVEL);
+    }
+
+    /**
+     * A landing can still fail — here onto a carpet, which is not replaceable. The payload is gone
+     * by then, so the drop should be plain sand rather than a hollow suspicious sand item.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void failedLanding_dropsTurnsIntoItem(GameTestHelper helper) {
+        helper.setBlock(CARPET_POS, Blocks.WHITE_CARPET);
+        helper.setBlock(HIGH_DROP_POS, Blocks.SUSPICIOUS_SAND);
+        bury(helper, HIGH_DROP_POS, Items.DIAMOND);
+
+        helper.startSequence()
+                .thenIdle(SETTLE_TICKS)
+                .thenExecute(() -> {
+                    if (helper.getLevel().getBlockState(helper.absolutePos(CARPET_POS)).getBlock()
+                            != Blocks.WHITE_CARPET) {
+                        helper.fail("Expected the landing to fail and leave the carpet in place");
+                    }
+                    assertDropped(helper, CARPET_POS, Items.SAND);
+                })
+                .thenSucceed();
+    }
+
+    /**
      * {@code PistonMovingBlockEntity#getUpdateTag} is {@code saveCustomOnly}, so anything persisted
      * in {@code saveAdditional} is broadcast to every client watching the chunk. The payload must be
      * stripped from the update tag while still being saved to disk.
@@ -141,6 +189,31 @@ public class BrushableBlockGameTests {
             helper.fail("Buried loot is not persisted: " + MOVED_BE_KEY + " is missing from saveWithoutMetadata");
         }
         helper.succeed();
+    }
+
+    private static void assertBreakDrops(GameTestHelper helper, Block block, Item expected) {
+        helper.setBlock(BREAK_POS, block);
+        // GameTestHelper#destroyBlock passes dropBlock = false, so go through the level directly.
+        helper.getLevel().destroyBlock(helper.absolutePos(BREAK_POS), true);
+
+        helper.startSequence()
+                .thenIdle(2)
+                .thenExecute(() -> assertDropped(helper, BREAK_POS, expected))
+                .thenSucceed();
+    }
+
+    /** Scans for a dropped item stack near a position, in absolute coordinates. */
+    private static void assertDropped(GameTestHelper helper, BlockPos relativePos, Item expected) {
+        BlockPos absolute = helper.absolutePos(relativePos);
+        AABB search = new AABB(absolute).inflate(3.0);
+        List<ItemEntity> items = helper.getLevel().getEntitiesOfClass(ItemEntity.class, search);
+        for (ItemEntity item : items) {
+            if (item.getItem().is(expected)) {
+                return;
+            }
+        }
+        helper.fail("Expected a dropped " + expected + " near " + relativePos
+                + ", found " + items.stream().map(e -> e.getItem().toString()).toList());
     }
 
     private static BlockState facingEast(BlockState state) {

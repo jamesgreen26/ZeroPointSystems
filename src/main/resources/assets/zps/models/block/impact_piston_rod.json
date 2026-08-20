@@ -1,0 +1,35 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "zps:block/impact_piston/rod",
+    "rod": "zps:block/impact_piston/rod"
+  },
+  "elements": [
+    {
+      "name": "rod",
+      "from": [6, 4, 6],
+      "to": [10, 15, 10],
+      "faces": {
+        "north": { "uv": [6, 1, 10, 12], "texture": "#rod" },
+        "east": { "uv": [6, 1, 10, 12], "texture": "#rod" },
+        "south": { "uv": [6, 1, 10, 12], "texture": "#rod" },
+        "west": { "uv": [6, 1, 10, 12], "texture": "#rod" },
+        "up": { "uv": [6, 6, 10, 10], "texture": "#rod" },
+        "down": { "uv": [6, 6, 10, 10], "texture": "#rod" }
+      }
+    },
+    {
+      "name": "anvil_head",
+      "from": [4, 2, 4],
+      "to": [12, 4, 12],
+      "faces": {
+        "north": { "uv": [4, 12, 12, 14], "texture": "#rod" },
+        "east": { "uv": [4, 12, 12, 14], "texture": "#rod" },
+        "south": { "uv": [4, 12, 12, 14], "texture": "#rod" },
+        "west": { "uv": [4, 12, 12, 14], "texture": "#rod" },
+        "up": { "uv": [4, 4, 12, 12], "texture": "#rod" },
+        "down": { "uv": [4, 4, 12, 12], "texture": "#rod" }
+      }
+    }
+  ]
+}

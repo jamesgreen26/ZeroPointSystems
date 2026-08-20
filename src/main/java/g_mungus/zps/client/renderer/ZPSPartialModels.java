@@ -10,6 +10,8 @@ public final class ZPSPartialModels {
             PartialModel.of(ZPSMod.resource("block/robotic_arm_swivel_base"));
     public static final PartialModel ROLLING_MILL_ROLLER =
             PartialModel.of(ZPSMod.resource("block/rolling_mill_roller"));
+    public static final PartialModel IMPACT_PISTON_ROD =
+            PartialModel.of(ZPSMod.resource("block/impact_piston_rod"));
 
     private ZPSPartialModels() {
     }

@@ -25,5 +25,11 @@
     "sounds": [
       "zps:arm_move"
     ]
+  },
+  "impact_thunk": {
+    "subtitle": "sounds.zps.impact_thunk",
+    "sounds": [
+      "zps:impact_thunk"
+    ]
   }
 }

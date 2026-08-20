@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "powered=false": { "model": "zps:block/impact_piston_unlit" },
+    "powered=true": { "model": "zps:block/impact_piston_lit" }
+  }
+}

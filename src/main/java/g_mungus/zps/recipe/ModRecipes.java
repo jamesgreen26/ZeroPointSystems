@@ -35,4 +35,16 @@ public class ModRecipes {
 
     public static final DeferredHolder<RecipeSerializer<?>, Shaped5x5RecipeSerializer> SHAPED_5X5_SERIALIZER =
             RECIPE_SERIALIZERS.register("shaped_5x5", Shaped5x5RecipeSerializer::new);
+
+    /** Block-to-block transforms driven by the Impact Piston, with chance-weighted outcomes. */
+    public static final DeferredHolder<RecipeType<?>, RecipeType<ImpactRecipe>> IMPACT_TYPE =
+            RECIPE_TYPES.register("impact", () -> new RecipeType<ImpactRecipe>() {
+                @Override
+                public String toString() {
+                    return "zps:impact";
+                }
+            });
+
+    public static final DeferredHolder<RecipeSerializer<?>, ImpactRecipeSerializer> IMPACT_SERIALIZER =
+            RECIPE_SERIALIZERS.register("impact", ImpactRecipeSerializer::new);
 }

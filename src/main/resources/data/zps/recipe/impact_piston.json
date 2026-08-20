@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "I": {
+      "tag": "c:ingots/space_metal"
+    },
+    "A": {
+      "item": "minecraft:anvil"
+    },
+    "P": {
+      "item": "minecraft:piston"
+    }
+  },
+  "pattern": [
+    "IAI",
+    "IPI",
+    "I I"
+  ],
+  "result": {
+    "id": "zps:impact_piston",
+    "count": 1
+  },
+  "show_notification": true
+}

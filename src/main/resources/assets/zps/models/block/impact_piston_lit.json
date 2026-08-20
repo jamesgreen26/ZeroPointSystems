@@ -1,0 +1,6 @@
+{
+  "parent": "zps:block/impact_piston_unlit",
+  "textures": {
+    "frame": "zps:block/impact_piston/frame_lit"
+  }
+}

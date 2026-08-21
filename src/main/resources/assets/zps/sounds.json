@@ -29,7 +29,7 @@
   "impact_thunk": {
     "subtitle": "sounds.zps.impact_thunk",
     "sounds": [
-      "zps:impact_thunk"
+      "minecraft:mob/irongolem/damage1"
     ]
   }
 }

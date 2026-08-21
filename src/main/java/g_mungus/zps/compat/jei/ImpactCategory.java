@@ -32,13 +32,13 @@ public class ImpactCategory implements IRecipeCategory<RecipeHolder<ImpactRecipe
     public static final RecipeType<RecipeHolder<ImpactRecipe>> TYPE =
             RecipeType.createRecipeHolderType(ZPSMod.resource("impact"));
 
-    private static final int SLOT_SIZE = 18;
+    private static final int SLOT_SIZE = 22;
     private static final int SLOT_Y = 4;
     private static final int CHANCE_HEIGHT = 10;
     private static final int HEIGHT = SLOT_Y + SLOT_SIZE + CHANCE_HEIGHT;
     private static final int INPUT_X = 3;
-    private static final int ARROW_GAP = 28;
-    private static final int OUTPUTS_X = INPUT_X + SLOT_SIZE + ARROW_GAP;
+    private static final int ARROW_GAP = 32;
+    private static final int OUTPUTS_X = INPUT_X + SLOT_SIZE + ARROW_GAP + 4;
     /** Outputs are laid out in a row, so the width grows with the number of possible results. */
     private static final int MAX_OUTPUTS_SHOWN = 4;
 
@@ -99,7 +99,7 @@ public class ImpactCategory implements IRecipeCategory<RecipeHolder<ImpactRecipe
         List<ImpactResult> results = recipe.results();
         for (int i = 0; i < results.size(); i++) {
             builder.addSlot(RecipeIngredientRole.OUTPUT, OUTPUTS_X + (i * SLOT_SIZE), SLOT_Y)
-                    .setOutputSlotBackground()
+                    .setStandardSlotBackground()
                     .addItemStack(new ItemStack(results.get(i).block().value()));
         }
     }

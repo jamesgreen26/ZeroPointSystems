@@ -3,6 +3,7 @@ package g_mungus.zps.gametest;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.ImpactPistonBlockEntity;
+import g_mungus.zps.item.ModItems;
 import g_mungus.zps.recipe.ImpactInput;
 import g_mungus.zps.recipe.ImpactRecipe;
 import g_mungus.zps.recipe.ImpactResult;
@@ -13,8 +14,12 @@ import net.minecraft.core.HolderSet;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.ItemTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -23,7 +28,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BrushableBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.common.Tags;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
@@ -104,6 +108,10 @@ public class ImpactPistonGameTests {
                 .thenSucceed();
     }
 
+    /** What the cobblestone recipe may bury: copper, aluminum and iron nuggets, nothing else. */
+    private static final TagKey<Item> RESOURCES_IN_COBBLESTONE = TagKey.create(
+            Registries.ITEM, ResourceLocation.fromNamespaceAndPath("zps", "resources_in_cobblestone"));
+
     /**
      * The shipped cobblestone recipe must actually be a 9:1 gravel / suspicious gravel split with a
      * nugget buried in the rare outcome. Guards the data files and the recipe codec together.
@@ -131,11 +139,16 @@ public class ImpactPistonGameTests {
                     return Ingredient.EMPTY;
                 });
         if (!buried.test(new ItemStack(Items.IRON_NUGGET))) {
-            helper.fail("Buried item should accept iron nuggets (the c:nuggets tag)");
+            helper.fail("Buried item should accept iron nuggets (the " + RESOURCES_IN_COBBLESTONE.location() + " tag)");
+        }
+        // The point of the narrower tag: c:nuggets would sweep in every other mod's nuggets too.
+        if (buried.test(new ItemStack(ModItems.LITHIUM_NUGGET.get()))) {
+            helper.fail("Buried item should not accept lithium nuggets: " + RESOURCES_IN_COBBLESTONE.location()
+                    + " is deliberately narrower than c:nuggets");
         }
         for (ItemStack candidate : buried.getItems()) {
-            if (!candidate.is(Tags.Items.NUGGETS)) {
-                helper.fail("Buried candidate " + candidate + " is outside the c:nuggets tag");
+            if (!candidate.is(RESOURCES_IN_COBBLESTONE)) {
+                helper.fail("Buried candidate " + candidate + " is outside the " + RESOURCES_IN_COBBLESTONE.location() + " tag");
             }
         }
         helper.succeed();

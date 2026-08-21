@@ -3,6 +3,6 @@
   "ingredient": "minecraft:cobblestone",
   "results": [
     { "block": "minecraft:gravel", "weight": 9 },
-    { "block": "minecraft:suspicious_gravel", "weight": 1, "buried_item": { "tag": "c:nuggets" } }
+    { "block": "minecraft:suspicious_gravel", "weight": 1, "buried_item": { "tag": "zps:resources_in_cobblestone" } }
   ]
 }

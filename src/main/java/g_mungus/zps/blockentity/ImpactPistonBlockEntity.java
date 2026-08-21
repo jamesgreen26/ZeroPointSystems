@@ -20,6 +20,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BrushableBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -225,20 +226,29 @@ public class ImpactPistonBlockEntity extends BlockEntity {
             return;
         }
         strike = false;
-        playThunk(IMPACT_VOLUME, IMPACT_PITCH);
 
         BlockPos below = worldPosition.below();
         BlockState struck = level.getBlockState(below);
+
+        // Re-resolve: the block below may have changed while the rod was in the air. The outcome has
+        // to be picked before the effects fire, since a recipe that leaves nothing behind sounds
+        // like the block shattering rather than like the rod bottoming out.
+        ImpactRecipe recipe = resolveRecipe(struck);
+        ImpactResult result = recipe == null ? null : recipe.pick(level.random);
+        BlockState replacement = result == null ? null : result.block().value().defaultBlockState();
+
+        if (replacement != null && replacement.isAir()) {
+            playBreakSound(below, struck);
+        } else {
+            playThunk(IMPACT_VOLUME, IMPACT_PITCH);
+        }
         spawnImpactParticles(struck);
 
-        // Re-resolve: the block below may have changed while the rod was in the air.
-        ImpactRecipe recipe = resolveRecipe(struck);
-        if (recipe == null) {
+        if (result == null) {
             return;
         }
 
-        ImpactResult result = recipe.pick(level.random);
-        level.setBlockAndUpdate(below, result.block().value().defaultBlockState());
+        level.setBlockAndUpdate(below, replacement);
         result.buriedItem().ifPresent(buried -> buryRandomItem(below, buried));
         invalidateRecipeCache();
     }
@@ -268,6 +278,13 @@ public class ImpactPistonBlockEntity extends BlockEntity {
         brushable.setChanged();
         BlockState state = level.getBlockState(pos);
         level.sendBlockUpdated(pos, state, state, Block.UPDATE_ALL);
+    }
+
+    /** The struck block's own break sound, at the volume and pitch vanilla uses when a block is destroyed. */
+    private void playBreakSound(BlockPos pos, BlockState struck) {
+        SoundType soundType = struck.getSoundType(level, pos, null);
+        level.playSound(null, pos, soundType.getBreakSound(), SoundSource.BLOCKS,
+                (soundType.getVolume() + 1.0f) / 2.0f, soundType.getPitch() * 0.8f);
     }
 
     private void playThunk(float volume, float pitch) {

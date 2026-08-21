@@ -3,6 +3,7 @@ package g_mungus.zps.block;
 import com.mojang.serialization.MapCodec;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.SiftBlockEntity;
+import g_mungus.zps.entity.Siftable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
@@ -52,6 +53,9 @@ public class SiftBlock extends BaseEntityBlock {
     private static final VoxelShape MESH = Block.box(-1.0, 7.0, -1.0, 17.0, 9.0, 17.0);
 
     private static final AABB MESH_BOUNDS = MESH.bounds();
+
+    /** Half the block's height: an entity only sifts once its centre has sunk past this. */
+    private static final double BLOCK_MID_Y = 0.5;
 
     /** Frame plus the mesh, so the middle of the sift still highlights and can be clicked. */
     private static final VoxelShape OUTLINE = Shapes.or(FRAME, MESH);
@@ -120,6 +124,12 @@ public class SiftBlock extends BaseEntityBlock {
     protected void entityInside(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos, Entity entity) {
         if (!entity.getBoundingBox().intersects(MESH_BOUNDS.move(pos)) || entity instanceof LivingEntity) {
             return;
+        }
+
+        if (entity.getBoundingBox().getCenter().y < pos.getY() + BLOCK_MID_Y
+                && entity instanceof Siftable siftable && !level.isClientSide()
+                && level.getBlockEntity(pos) instanceof SiftBlockEntity sift) {
+            siftable.sift(sift.getInventory());
         }
 
         entity.makeStuckInBlock(state, new Vec3(0.75, 0.75, 0.75));

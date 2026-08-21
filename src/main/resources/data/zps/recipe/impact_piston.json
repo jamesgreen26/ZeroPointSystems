@@ -3,19 +3,19 @@
   "category": "redstone",
   "key": {
     "I": {
-      "tag": "c:ingots/space_metal"
+      "item": "zps:space_metal_mesh"
     },
     "A": {
-      "item": "minecraft:anvil"
+      "item": "minecraft:iron_block"
     },
-    "P": {
-      "item": "minecraft:piston"
+    "M": {
+      "item": "zps:copper_magnetron"
     }
   },
   "pattern": [
     "IAI",
-    "IPI",
-    "I I"
+    "IAI",
+    "IMI"
   ],
   "result": {
     "id": "zps:impact_piston",

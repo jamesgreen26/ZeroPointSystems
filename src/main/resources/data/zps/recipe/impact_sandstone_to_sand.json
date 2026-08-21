@@ -1,0 +1,8 @@
+{
+  "type": "zps:impact",
+  "ingredient": "minecraft:sandstone",
+  "results": [
+    { "block": "minecraft:sand", "weight": 9 },
+    { "block": "minecraft:suspicious_sand", "weight": 1, "buried_item": { "tag": "zps:resources_in_sandstone" } }
+  ]
+}

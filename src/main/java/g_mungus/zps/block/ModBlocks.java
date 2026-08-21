@@ -9,6 +9,7 @@ import g_mungus.zps.item.ModItems;
 import g_mungus.zps.mixin.BlockBehaviourAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.valueproviders.UniformInt;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -17,6 +18,9 @@ import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.material.PushReaction;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -232,6 +236,26 @@ public class ModBlocks {
 
 
     /// RESOURCE BLOCKS
+    /**
+     * Vanilla suspicious sand, in red. Behaves exactly like the vanilla block — same strength,
+     * sounds and brushing — but brushes out into red sand. Buried by the Impact Piston's red
+     * sandstone recipe.
+     *
+     * <p>{@link ZPSBrushableBlock} rather than {@link BrushableBlock} so it survives falling and
+     * piston movement with its payload, matching the two vanilla blocks that
+     * {@code BlocksMixin} swaps out. {@code ZPSMod} additionally registers it as a valid block for
+     * {@code BlockEntityType.BRUSHABLE_BLOCK}, without which its block entity would be discarded
+     * on chunk load.
+     */
+    public static final DeferredBlock<Block> SUSPICIOUS_RED_SAND = BLOCKS.register("suspicious_red_sand",
+            () -> new ZPSBrushableBlock(Blocks.RED_SAND, SoundEvents.BRUSH_SAND, SoundEvents.BRUSH_SAND_COMPLETED,
+                    BlockBehaviour.Properties.of()
+                            .mapColor(MapColor.COLOR_ORANGE)
+                            .instrument(NoteBlockInstrument.SNARE)
+                            .strength(0.25f)
+                            .sound(SoundType.SUSPICIOUS_SAND)
+                            .pushReaction(PushReaction.DESTROY)));
+
     public static final DeferredBlock<Block> BAUXITE = BLOCKS.register("bauxite",
             () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.ANDESITE)
                     .sound(SoundType.NETHERRACK)

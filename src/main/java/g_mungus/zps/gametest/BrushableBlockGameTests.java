@@ -19,6 +19,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.entity.BrushableBlockEntity;
 import net.minecraft.world.level.block.piston.MovingPistonBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -137,6 +138,37 @@ public class BrushableBlockGameTests {
     @GameTest(template = TEMPLATE)
     public static void breakByHand_dropsGravel(GameTestHelper helper) {
         assertBreakDrops(helper, Blocks.SUSPICIOUS_GRAVEL, Items.GRAVEL);
+    }
+
+    /**
+     * The modded suspicious block has to be a legal host for vanilla's brushable block entity: a
+     * block entity whose type does not list its block is discarded on chunk load, taking the buried
+     * loot with it. Guards the {@code BlockEntityTypeAddBlocksEvent} wiring in {@code ZPSMod}.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void redSand_isValidBrushableHostAndRetainsBuriedItem(GameTestHelper helper) {
+        helper.setBlock(SUPPORT, Blocks.STONE);
+        helper.setBlock(ABOVE_SUPPORT, ModBlocks.SUSPICIOUS_RED_SAND.get());
+
+        BlockState state = helper.getBlockState(ABOVE_SUPPORT);
+        if (!BlockEntityType.BRUSHABLE_BLOCK.isValid(state)) {
+            helper.fail("BlockEntityType.BRUSHABLE_BLOCK does not accept " + state.getBlock()
+                    + "; its block entity would be dropped on chunk load");
+        }
+
+        bury(helper, ABOVE_SUPPORT, Items.DIAMOND);
+
+        helper.startSequence()
+                .thenExecute(() -> helper.setBlock(SUPPORT, Blocks.AIR))
+                .thenIdle(SETTLE_TICKS)
+                .thenExecute(() -> assertBuried(helper, SUPPORT, Items.DIAMOND))
+                .thenSucceed();
+    }
+
+    /** Like the vanilla pair, breaking it by hand yields the block it brushes into. */
+    @GameTest(template = TEMPLATE)
+    public static void redSand_breakByHand_dropsRedSand(GameTestHelper helper) {
+        assertBreakDrops(helper, ModBlocks.SUSPICIOUS_RED_SAND.get(), Items.RED_SAND);
     }
 
     /**

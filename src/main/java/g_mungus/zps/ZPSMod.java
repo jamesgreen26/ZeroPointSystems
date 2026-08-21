@@ -10,6 +10,8 @@ import g_mungus.zps.blockentity.PowerCellBlockEntity;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
 import g_mungus.zps.blockentity.RollingMillBlockEntity;
 import g_mungus.zps.blockentity.SiftBlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.neoforged.neoforge.event.BlockEntityTypeAddBlocksEvent;
 import g_mungus.zps.client.ClientSetup;
 import g_mungus.zps.client.ponder.ZPSPonderPlugin;
 import g_mungus.zps.client.renderer.ZPSPartialModels;
@@ -67,6 +69,7 @@ public final class ZPSMod {
         modEventBus.addListener(ZPSGamePackets::register);
         modEventBus.addListener(ZPSMod::registerGameTests);
         modEventBus.addListener(ZPSMod::registerCapabilities);
+        modEventBus.addListener(ZPSMod::addBrushableBlocks);
 
         if (dist == Dist.CLIENT) {
             ZPSPonderPlugin.registerPlugin();
@@ -90,6 +93,14 @@ public final class ZPSMod {
         event.register(AssemblerGameTests.class);
         event.register(ImpactPistonGameTests.class);
         event.register(BrushableBlockGameTests.class);
+    }
+
+    /**
+     * Vanilla's brushable block entity only accepts the two blocks it ships with, and an invalid
+     * pairing is dropped on chunk load — taking the buried loot with it.
+     */
+    private static void addBrushableBlocks(BlockEntityTypeAddBlocksEvent event) {
+        event.modify(BlockEntityType.BRUSHABLE_BLOCK, ModBlocks.SUSPICIOUS_RED_SAND.get());
     }
 
     private static void registerCapabilities(RegisterCapabilitiesEvent event) {

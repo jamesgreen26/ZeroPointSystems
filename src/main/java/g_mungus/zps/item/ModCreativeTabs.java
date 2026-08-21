@@ -76,6 +76,8 @@ public class ModCreativeTabs {
                         IMPACT_PISTON,
                         SIFT,
 
+                        SUSPICIOUS_RED_SAND,
+
                         BAUXITE,
                         LITHIUM_ORE,
                         DEEPSLATE_LITHIUM_ORE,

@@ -117,6 +117,9 @@ public class ModItems {
     public static final DeferredItem<Item> IMPACT_PISTON = ITEMS.register("impact_piston",
             () -> new BlockItem(ModBlocks.IMPACT_PISTON.get(), new Item.Properties()));
 
+    public static final DeferredItem<Item> SIFT = ITEMS.register("sift",
+            () -> new BlockItem(ModBlocks.SIFT.get(), new Item.Properties()));
+
     public static final DeferredItem<Item> ENERGY_STORAGE_MODULE = ITEMS.register("energy_storage_module",
             () -> new Item(new Item.Properties()));
     public static final DeferredItem<PowerDrillItem> POWER_DRILL = ITEMS.register("power_drill",

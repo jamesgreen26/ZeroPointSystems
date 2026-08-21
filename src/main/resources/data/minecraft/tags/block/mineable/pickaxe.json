@@ -13,6 +13,7 @@
     "zps:rolling_mill",
     "zps:assembler",
     "zps:impact_piston",
+    "zps:sift",
     "zps:octo_controller",
     "zps:dodeca_controller",
     "zps:cable_insulation",

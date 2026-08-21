@@ -224,6 +224,12 @@ public class ModBlocks {
                     // which would otherwise always be pitch black.
                     .noOcclusion()));
 
+    public static final DeferredBlock<Block> SIFT = BLOCKS.register("sift",
+            () -> new SiftBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(3.5f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+
 
     /// RESOURCE BLOCKS
     public static final DeferredBlock<Block> BAUXITE = BLOCKS.register("bauxite",

@@ -12,6 +12,7 @@ import g_mungus.zps.client.screens.AssemblerScreen;
 import g_mungus.zps.client.screens.CoalBurnerScreen;
 import g_mungus.zps.client.screens.PowerCellScreen;
 import g_mungus.zps.client.screens.RollingMillScreen;
+import g_mungus.zps.client.screens.SiftScreen;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.entity.ModEntities;
 import g_mungus.zps.item.AddressPadClientHooks;
@@ -105,6 +106,7 @@ public class ClientSetup {
         event.register(ModMenus.POWER_CELL.get(), PowerCellScreen::new);
         event.register(ModMenus.ROLLING_MILL.get(), RollingMillScreen::new);
         event.register(ModMenus.ASSEMBLER.get(), AssemblerScreen::new);
+        event.register(ModMenus.SIFT.get(), SiftScreen::new);
     }
 
     @SubscribeEvent

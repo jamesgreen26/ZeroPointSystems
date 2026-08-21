@@ -74,6 +74,7 @@ public class ModCreativeTabs {
                         ROLLING_MILL,
                         ASSEMBLER,
                         IMPACT_PISTON,
+                        SIFT,
 
                         BAUXITE,
                         LITHIUM_ORE,

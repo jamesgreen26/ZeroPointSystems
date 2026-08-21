@@ -133,4 +133,9 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(ImpactPistonBlockEntity::new,
                             ModBlocks.IMPACT_PISTON.get()).build(null));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SiftBlockEntity>> SIFT =
+            BLOCK_ENTITIES.register("sift",
+                    () -> BlockEntityType.Builder.of(SiftBlockEntity::new,
+                            ModBlocks.SIFT.get()).build(null));
+
 }

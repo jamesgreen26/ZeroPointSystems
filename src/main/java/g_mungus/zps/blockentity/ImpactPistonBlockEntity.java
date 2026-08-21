@@ -65,8 +65,15 @@ public class ImpactPistonBlockEntity extends BlockEntity {
     public static final int FALL_TICKS = 3;
     /** Drawn every tick the rod is being raised. The fall is gravity, and free. */
     public static final int ENERGY_PER_TICK = 64;
-    /** Blocks the rod rises above the machine at the top of its stroke. */
-    public static final float ROD_TRAVEL = 1.0f;
+    /**
+     * Blocks the rod rises above the machine at the top of its stroke.
+     *
+     * <p>Capped so the rod's foot never clears the body: the rod model starts one pixel up
+     * (y=1) and the body is a full cube (top face at y=16), so any travel above 15/16 opens a
+     * visible gap under the rod. Backed off one further pixel to 14/16 so the foot stays buried
+     * in the body rather than sitting coplanar with its top face, which would z-fight.
+     */
+    public static final float ROD_TRAVEL = 14.0f / 16.0f;
 
     private static final int ENERGY_SYNC_INTERVAL_TICKS = 20;
     private static final float IMPACT_VOLUME = 1.0f;

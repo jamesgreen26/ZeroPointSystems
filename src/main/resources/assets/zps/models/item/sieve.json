@@ -1,5 +1,5 @@
 {
-	"parent": "zps:block/sift",
+	"parent": "zps:block/sieve",
 	"display": {
 		"gui": {
 			"rotation": [30, 225, 0],

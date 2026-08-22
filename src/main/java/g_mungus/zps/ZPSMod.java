@@ -9,7 +9,7 @@ import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.PowerCellBlockEntity;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
 import g_mungus.zps.blockentity.RollingMillBlockEntity;
-import g_mungus.zps.blockentity.SiftBlockEntity;
+import g_mungus.zps.blockentity.SieveBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.neoforge.event.BlockEntityTypeAddBlocksEvent;
 import g_mungus.zps.client.ClientSetup;
@@ -115,7 +115,7 @@ public final class ZPSMod {
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.ROLLING_MILL.get(), RollingMillBlockEntity::getItemHandler);
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.ASSEMBLER.get(), AssemblerBlockEntity::getEnergyStorage);
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.ASSEMBLER.get(), AssemblerBlockEntity::getItemHandler);
-        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.SIFT.get(), SiftBlockEntity::getItemHandler);
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.SIEVE.get(), SieveBlockEntity::getItemHandler);
         // The Impact Piston has no inventory: energy only.
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.IMPACT_PISTON.get(), ImpactPistonBlockEntity::getEnergyStorage);
         event.registerItem(Capabilities.EnergyStorage.ITEM, (stack, ignored) -> new PoweredToolItem.StackEnergyStorage(stack),

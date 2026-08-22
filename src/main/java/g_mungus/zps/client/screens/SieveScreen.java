@@ -1,6 +1,6 @@
 package g_mungus.zps.client.screens;
 
-import g_mungus.zps.menu.SiftMenu;
+import g_mungus.zps.menu.SieveMenu;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
@@ -9,11 +9,11 @@ import net.minecraft.world.entity.player.Inventory;
 import org.jetbrains.annotations.NotNull;
 
 /** Borrows the vanilla hopper GUI wholesale: same texture, same five-slot row. */
-public class SiftScreen extends AbstractContainerScreen<SiftMenu> {
+public class SieveScreen extends AbstractContainerScreen<SieveMenu> {
     private static final ResourceLocation TEXTURE =
             ResourceLocation.withDefaultNamespace("textures/gui/container/hopper.png");
 
-    public SiftScreen(SiftMenu menu, Inventory inventory, Component title) {
+    public SieveScreen(SieveMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
         this.imageHeight = 133;
         this.inventoryLabelY = this.imageHeight - 94;

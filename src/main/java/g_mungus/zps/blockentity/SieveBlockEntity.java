@@ -1,6 +1,6 @@
 package g_mungus.zps.blockentity;
 
-import g_mungus.zps.menu.SiftMenu;
+import g_mungus.zps.menu.SieveMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -20,15 +20,15 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Holds the sift's contents. Five slots, laid out like a hopper's; no processing yet.
+ * Holds the sieve's contents. Five slots, laid out like a hopper's; no processing yet.
  */
-public class SiftBlockEntity extends BlockEntity implements MenuProvider {
+public class SieveBlockEntity extends BlockEntity implements MenuProvider {
     public static final int SLOT_COUNT = 5;
 
-    private final ItemStackHandler inventory = new SiftInventory();
+    private final ItemStackHandler inventory = new SieveInventory();
 
-    public SiftBlockEntity(BlockPos pos, BlockState state) {
-        super(ModBlockEntities.SIFT.get(), pos, state);
+    public SieveBlockEntity(BlockPos pos, BlockState state) {
+        super(ModBlockEntities.SIEVE.get(), pos, state);
     }
 
     /** Capability view for hoppers and pipes; the same handler the GUI edits. */
@@ -68,16 +68,16 @@ public class SiftBlockEntity extends BlockEntity implements MenuProvider {
 
     @Override
     public @NotNull Component getDisplayName() {
-        return Component.translatable("block.zps.sift");
+        return Component.translatable("block.zps.sieve");
     }
 
     @Override
     public @Nullable AbstractContainerMenu createMenu(int containerId, @NotNull Inventory inventory, @NotNull Player player) {
-        return new SiftMenu(containerId, inventory, this);
+        return new SieveMenu(containerId, inventory, this);
     }
 
-    private class SiftInventory extends ItemStackHandler {
-        private SiftInventory() {
+    private class SieveInventory extends ItemStackHandler {
+        private SieveInventory() {
             super(SLOT_COUNT);
         }
 

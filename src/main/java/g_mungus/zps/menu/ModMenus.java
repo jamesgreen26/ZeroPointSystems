@@ -23,6 +23,6 @@ public class ModMenus {
     public static final DeferredHolder<MenuType<?>, MenuType<AssemblerMenu>> ASSEMBLER =
             MENUS.register("assembler", () -> IMenuTypeExtension.create(AssemblerMenu::new));
 
-    public static final DeferredHolder<MenuType<?>, MenuType<SiftMenu>> SIFT =
-            MENUS.register("sift", () -> IMenuTypeExtension.create(SiftMenu::new));
+    public static final DeferredHolder<MenuType<?>, MenuType<SieveMenu>> SIEVE =
+            MENUS.register("sieve", () -> IMenuTypeExtension.create(SieveMenu::new));
 }

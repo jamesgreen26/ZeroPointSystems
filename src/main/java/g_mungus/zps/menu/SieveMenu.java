@@ -1,7 +1,7 @@
 package g_mungus.zps.menu;
 
 import g_mungus.zps.block.ModBlocks;
-import g_mungus.zps.blockentity.SiftBlockEntity;
+import g_mungus.zps.blockentity.SieveBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
@@ -16,38 +16,38 @@ import net.neoforged.neoforge.items.SlotItemHandler;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Five slots in a row, positioned to match the vanilla hopper GUI texture that {@code SiftScreen} draws.
+ * Five slots in a row, positioned to match the vanilla hopper GUI texture that {@code SieveScreen} draws.
  */
-public class SiftMenu extends AbstractContainerMenu {
-    private static final int SIFT_START = 0;
-    private static final int SIFT_END = SIFT_START + SiftBlockEntity.SLOT_COUNT;                 // 5
-    private static final int PLAYER_INVENTORY_START = SIFT_END;                                  // 5
+public class SieveMenu extends AbstractContainerMenu {
+    private static final int SIEVE_START = 0;
+    private static final int SIEVE_END = SIEVE_START + SieveBlockEntity.SLOT_COUNT;                 // 5
+    private static final int PLAYER_INVENTORY_START = SIEVE_END;                                  // 5
     private static final int PLAYER_INVENTORY_END = PLAYER_INVENTORY_START + 27;                 // 32
     private static final int HOTBAR_START = PLAYER_INVENTORY_END;                                // 32
     private static final int HOTBAR_END = HOTBAR_START + 9;                                      // 41
 
     // Hopper layout: the row of five sits at y 20, the player inventory below it at y 51 / 109.
-    private static final int SIFT_ROW_LEFT = 44;
-    private static final int SIFT_ROW_TOP = 20;
+    private static final int SIEVE_ROW_LEFT = 44;
+    private static final int SIEVE_ROW_TOP = 20;
     private static final int PLAYER_INV_LEFT = 8;
     private static final int PLAYER_INV_TOP = 51;
     private static final int HOTBAR_TOP = 109;
 
-    private final SiftBlockEntity blockEntity;
+    private final SieveBlockEntity blockEntity;
     private final ContainerLevelAccess access;
 
-    public SiftMenu(int containerId, Inventory inventory, FriendlyByteBuf buffer) {
+    public SieveMenu(int containerId, Inventory inventory, FriendlyByteBuf buffer) {
         this(containerId, inventory, resolveBlockEntity(inventory.player.level(), buffer.readBlockPos()));
     }
 
-    public SiftMenu(int containerId, Inventory inventory, SiftBlockEntity blockEntity) {
-        super(ModMenus.SIFT.get(), containerId);
+    public SieveMenu(int containerId, Inventory inventory, SieveBlockEntity blockEntity) {
+        super(ModMenus.SIEVE.get(), containerId);
         this.blockEntity = blockEntity;
         Level level = blockEntity.getLevel();
         this.access = level == null ? ContainerLevelAccess.NULL : ContainerLevelAccess.create(level, blockEntity.getBlockPos());
 
-        for (int slot = 0; slot < SiftBlockEntity.SLOT_COUNT; ++slot) {
-            this.addSlot(new SlotItemHandler(blockEntity.getInventory(), slot, SIFT_ROW_LEFT + slot * 18, SIFT_ROW_TOP));
+        for (int slot = 0; slot < SieveBlockEntity.SLOT_COUNT; ++slot) {
+            this.addSlot(new SlotItemHandler(blockEntity.getInventory(), slot, SIEVE_ROW_LEFT + slot * 18, SIEVE_ROW_TOP));
         }
 
         for (int row = 0; row < 3; ++row) {
@@ -61,17 +61,17 @@ public class SiftMenu extends AbstractContainerMenu {
         }
     }
 
-    private static SiftBlockEntity resolveBlockEntity(Level level, BlockPos pos) {
+    private static SieveBlockEntity resolveBlockEntity(Level level, BlockPos pos) {
         BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (blockEntity instanceof SiftBlockEntity sift) {
-            return sift;
+        if (blockEntity instanceof SieveBlockEntity sieve) {
+            return sieve;
         }
-        throw new IllegalStateException("Missing sift block entity at " + pos);
+        throw new IllegalStateException("Missing sieve block entity at " + pos);
     }
 
     @Override
     public boolean stillValid(@NotNull Player player) {
-        return stillValid(access, player, ModBlocks.SIFT.get());
+        return stillValid(access, player, ModBlocks.SIEVE.get());
     }
 
     @Override
@@ -82,11 +82,11 @@ public class SiftMenu extends AbstractContainerMenu {
             ItemStack stack = slot.getItem();
             result = stack.copy();
 
-            if (index >= SIFT_START && index < SIFT_END) {
+            if (index >= SIEVE_START && index < SIEVE_END) {
                 if (!this.moveItemStackTo(stack, PLAYER_INVENTORY_START, HOTBAR_END, true)) {
                     return ItemStack.EMPTY;
                 }
-            } else if (!this.moveItemStackTo(stack, SIFT_START, SIFT_END, false)) {
+            } else if (!this.moveItemStackTo(stack, SIEVE_START, SIEVE_END, false)) {
                 // Otherwise shuffle between the inventory rows and the hotbar.
                 if (index >= PLAYER_INVENTORY_START && index < PLAYER_INVENTORY_END) {
                     if (!this.moveItemStackTo(stack, HOTBAR_START, HOTBAR_END, false)) {
@@ -107,7 +107,7 @@ public class SiftMenu extends AbstractContainerMenu {
         return result;
     }
 
-    public SiftBlockEntity getBlockEntity() {
+    public SieveBlockEntity getBlockEntity() {
         return blockEntity;
     }
 }

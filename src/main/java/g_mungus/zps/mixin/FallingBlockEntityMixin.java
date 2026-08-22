@@ -34,7 +34,7 @@ import java.util.List;
  * <p>Covers all three drop sites in {@code tick} — placement refused, destination not replaceable,
  * and the fell-too-long timeout — since the payload is lost in every one of them.
  *
- * <p>Also makes falling blocks {@link Siftable}: dropping a suspicious block through a sift's mesh
+ * <p>Also makes falling blocks {@link Siftable}: dropping a suspicious block through a sieve's mesh
  * unearths its buried loot and leaves plain sand or gravel still falling.
  */
 @Mixin(FallingBlockEntity.class)
@@ -55,9 +55,9 @@ public class FallingBlockEntityMixin implements Siftable {
     }
 
     /**
-     * Sifting a falling suspicious block empties its payload into the sift, then swaps the entity
+     * Sieveing a falling suspicious block empties its payload into the sieve, then swaps the entity
      * for one carrying the block it brushes into, still falling at the same speed. Anything the
-     * sift cannot hold spills onto the ground.
+     * sieve cannot hold spills onto the ground.
      */
     @Override
     public void sift(IItemHandler inventory) {

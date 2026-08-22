@@ -2,7 +2,7 @@ package g_mungus.zps.block;
 
 import com.mojang.serialization.MapCodec;
 import g_mungus.zps.blockentity.ModBlockEntities;
-import g_mungus.zps.blockentity.SiftBlockEntity;
+import g_mungus.zps.blockentity.SieveBlockEntity;
 import g_mungus.zps.entity.Siftable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
@@ -31,15 +31,15 @@ import org.jetbrains.annotations.Nullable;
  * A sieve pan holding five stacks. No processing yet: the inventory is storage only.
  *
  * <p>Only the frame collides; the mesh in the middle is pass-through, so anything landing on the
- * sift drops into the block below.
+ * sieve drops into the block below.
  *
  * <p>The frame rails are taken straight from the model, which means they reach past the block cube
  * into the four neighbouring blocks. Collision lookups only visit blocks intersecting the entity's
- * own bounding box, so an entity standing over a rail but clear of the sift's own column can miss
+ * own bounding box, so an entity standing over a rail but clear of the sieve's own column can miss
  * it.
  */
-public class SiftBlock extends BaseEntityBlock {
-    private static final MapCodec<SiftBlock> CODEC = simpleCodec(SiftBlock::new);
+public class SieveBlock extends BaseEntityBlock {
+    private static final MapCodec<SieveBlock> CODEC = simpleCodec(SieveBlock::new);
 
     /** The four rails, straight out of the model — they overhang the block cube on every side. */
     private static final VoxelShape FRAME = Shapes.or(
@@ -49,18 +49,18 @@ public class SiftBlock extends BaseEntityBlock {
             Block.box(17.0, 4.0, -1.0, 20.0, 12.0, 20.0)
     );
 
-    /** The sieve plate itself, the part an entity has to touch for the sift to act on it. */
+    /** The sieve plate itself, the part an entity has to touch for the sieve to act on it. */
     private static final VoxelShape MESH = Block.box(-1.0, 7.0, -1.0, 17.0, 9.0, 17.0);
 
     private static final AABB MESH_BOUNDS = MESH.bounds();
 
-    /** Half the block's height: an entity only sifts once its centre has sunk past this. */
+    /** Half the block's height: an entity only sieves once its centre has sunk past this. */
     private static final double BLOCK_MID_Y = 0.5;
 
-    /** Frame plus the mesh, so the middle of the sift still highlights and can be clicked. */
+    /** Frame plus the mesh, so the middle of the sieve still highlights and can be clicked. */
     private static final VoxelShape OUTLINE = Shapes.or(FRAME, MESH);
 
-    public SiftBlock(Properties properties) {
+    public SieveBlock(Properties properties) {
         super(properties);
     }
 
@@ -71,7 +71,7 @@ public class SiftBlock extends BaseEntityBlock {
 
     @Override
     public @Nullable BlockEntity newBlockEntity(@NotNull BlockPos pos, @NotNull BlockState state) {
-        return ModBlockEntities.SIFT.get().create(pos, state);
+        return ModBlockEntities.SIEVE.get().create(pos, state);
     }
 
     @Override
@@ -84,8 +84,8 @@ public class SiftBlock extends BaseEntityBlock {
                                                        @NotNull Player player, @NotNull BlockHitResult hit) {
         if (!level.isClientSide()) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof SiftBlockEntity sift && player instanceof ServerPlayer serverPlayer) {
-                serverPlayer.openMenu(sift, pos);
+            if (blockEntity instanceof SieveBlockEntity sieve && player instanceof ServerPlayer serverPlayer) {
+                serverPlayer.openMenu(sieve, pos);
             }
         }
         return InteractionResult.sidedSuccess(level.isClientSide());
@@ -96,8 +96,8 @@ public class SiftBlock extends BaseEntityBlock {
                          @NotNull BlockState newState, boolean movedByPiston) {
         if (!state.is(newState.getBlock())) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof SiftBlockEntity sift) {
-                sift.dropContents();
+            if (blockEntity instanceof SieveBlockEntity sieve) {
+                sieve.dropContents();
             }
         }
         super.onRemove(state, level, pos, newState, movedByPiston);
@@ -128,8 +128,8 @@ public class SiftBlock extends BaseEntityBlock {
 
         if (entity.getBoundingBox().getCenter().y < pos.getY() + BLOCK_MID_Y
                 && entity instanceof Siftable siftable && !level.isClientSide()
-                && level.getBlockEntity(pos) instanceof SiftBlockEntity sift) {
-            siftable.sift(sift.getInventory());
+                && level.getBlockEntity(pos) instanceof SieveBlockEntity sieve) {
+            siftable.sift(sieve.getInventory());
         }
 
         entity.makeStuckInBlock(state, new Vec3(0.75, 0.75, 0.75));

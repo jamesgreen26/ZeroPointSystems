@@ -6,7 +6,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "zps:sift"
+          "name": "zps:sieve"
         }
       ],
       "conditions": [

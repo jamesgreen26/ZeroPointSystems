@@ -2,8 +2,8 @@
 	"texture_size": [32, 32],
 	"render_type": "minecraft:cutout",
 	"textures": {
-		"0": "zps:block/sift",
-		"particle": "zps:block/sift"
+		"0": "zps:block/sieve",
+		"particle": "zps:block/sieve"
 	},
 	"elements": [
 		{

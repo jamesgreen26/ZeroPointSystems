@@ -1,0 +1,31 @@
+{
+  "type": "create:mechanical_crafting",
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "create"
+    }
+  ],
+  "accept_mirrored": false,
+  "category": "misc",
+  "key": {
+    "I": {
+      "item": "zps:space_metal_ingot"
+    },
+    "S": {
+      "item": "minecraft:string"
+    }
+  },
+  "pattern": [
+    " III ",
+    "ISSSI",
+    "ISSSI",
+    "ISSSI",
+    " III "
+  ],
+  "result": {
+    "id": "zps:sieve",
+    "count": 1
+  },
+  "show_notification": false
+}

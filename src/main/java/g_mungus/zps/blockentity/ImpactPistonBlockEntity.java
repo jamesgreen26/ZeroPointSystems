@@ -39,9 +39,10 @@ import org.jetbrains.annotations.Nullable;
  * the machine to a {@link Phase#FALLING} stroke that always completes, whatever happens to the
  * redstone signal in the meantime.
  *
- * <p>Only the four animation fields plus stored energy are synced, and only on phase transitions,
- * so a running piston sends roughly two packets per stroke rather than one per tick. Both render
- * paths reconstruct the rod position from those fields via {@link #rodOffset}.
+ * <p>Only the four animation fields plus stored energy are synced. The animation fields change on
+ * phase transitions, but stored energy is pushed the moment it changes — like the Robotic Arm — so
+ * the screen's energy bar tracks charging and draining as it happens. Both render paths reconstruct
+ * the rod position from those fields via {@link #rodOffset}.
  */
 public class ImpactPistonBlockEntity extends BlockEntity {
     public enum Phase {
@@ -76,7 +77,6 @@ public class ImpactPistonBlockEntity extends BlockEntity {
      */
     public static final float ROD_TRAVEL = 14.0f / 16.0f;
 
-    private static final int ENERGY_SYNC_INTERVAL_TICKS = 20;
     private static final float IMPACT_VOLUME = 1.0f;
     private static final float IMPACT_PITCH = 0.8f;
     private static final float DRY_DROP_VOLUME = 0.4f;
@@ -97,9 +97,6 @@ public class ImpactPistonBlockEntity extends BlockEntity {
     private ImpactRecipe cachedRecipe;
     @Nullable
     private BlockState cachedRecipeState;
-
-    private int lastSentClientEnergy = -1;
-    private long lastEnergySyncTick = Long.MIN_VALUE;
 
     public ImpactPistonBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.IMPACT_PISTON.get(), pos, state);
@@ -184,7 +181,6 @@ public class ImpactPistonBlockEntity extends BlockEntity {
             return;
         }
         energyStorage.consume(ENERGY_PER_TICK);
-        syncEnergyPeriodically();
 
         if (phase == Phase.HELD) {
             beginRaise(phaseStartOffset);
@@ -212,8 +208,6 @@ public class ImpactPistonBlockEntity extends BlockEntity {
         this.phaseStartTick = level.getGameTime();
         setChanged();
         level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_ALL);
-        lastSentClientEnergy = energyStorage.getEnergyStored();
-        lastEnergySyncTick = level.getGameTime();
     }
 
     /** The rod has landed: fire the effects, and convert the block below if this was a work stroke. */
@@ -331,20 +325,12 @@ public class ImpactPistonBlockEntity extends BlockEntity {
         cachedRecipeState = null;
     }
 
-    /** Keeps the screen's energy bar roughly current without sending a packet every tick. */
-    private void syncEnergyPeriodically() {
-        int energy = energyStorage.getEnergyStored();
-        if (energy == lastSentClientEnergy) {
-            return;
-        }
-        long gameTime = level.getGameTime();
-        if (lastEnergySyncTick != Long.MIN_VALUE && gameTime - lastEnergySyncTick < ENERGY_SYNC_INTERVAL_TICKS) {
-            return;
-        }
-        lastSentClientEnergy = energy;
-        lastEnergySyncTick = gameTime;
+    /** Pushes the new energy level to watching clients so the screen's bar stays live. */
+    private void onEnergyChanged() {
         setChanged();
-        level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_ALL);
+        }
     }
 
     /** The rod rises a full block above the machine, so it must not be culled with the base block. */
@@ -408,15 +394,29 @@ public class ImpactPistonBlockEntity extends BlockEntity {
         }
     }
 
-    private static class PistonEnergyStorage extends EnergyStorage {
+    private class PistonEnergyStorage extends EnergyStorage {
         private PistonEnergyStorage() {
             super(ENERGY_CAPACITY, MAX_RECEIVE, 0);
         }
 
-        private void consume(int amount) {
-            energy = Math.max(0, energy - amount);
+        @Override
+        public int receiveEnergy(int maxReceive, boolean simulate) {
+            int received = super.receiveEnergy(maxReceive, simulate);
+            if (received > 0 && !simulate) {
+                onEnergyChanged();
+            }
+            return received;
         }
 
+        private void consume(int amount) {
+            int before = energy;
+            energy = Math.max(0, energy - amount);
+            if (energy != before) {
+                onEnergyChanged();
+            }
+        }
+
+        /** Silent on purpose: this is the load/sync path, where an update is already in flight. */
         private void setEnergyStoredExact(int value) {
             energy = Math.max(0, Math.min(capacity, value));
         }

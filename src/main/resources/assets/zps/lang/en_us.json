@@ -409,7 +409,7 @@
     "block.zps.coal_burner.zps_tooltip": "Burns coal fuels to generate FE.\n\nAccepted fuels & burn times:\n- [Coal]: 80 seconds\n- [Charcoal]: 80 seconds\n- [Block of Coal]: 800 seconds",
     "block.zps.rolling_mill.zps_tooltip": "Consumes FE to roll metal.\n\nRolls ingots into rods and nuggets into wire.",
     "block.zps.assembler.zps_tooltip": "Consumes FE to craft items in a [5x5 crafting grid].\n\nConsumes 16 FE/t while crafting, and works only when receiving a Redstone signal.",
-    "block.zps.impact_piston.zps_tooltip": "Consumes FE to slam a heavy rod into the block underneath.\n\nCracks bricks and pulverises cobblestone into gravel.\n\nConsumes 64 FE/t while raising the rod, and works only when receiving a Redstone signal.",
+    "block.zps.impact_piston.zps_tooltip": "Consumes FE to slam a heavy rod into the block underneath.\n\nConsumes 64 FE/t while raising the rod, and works only when receiving a Redstone signal.",
     "block.zps.catwalk.zps_tooltip": "Can be placed on cable blocks to prevent upwards connection.",
     "block.zps.space_grating_block.zps_tooltip": "Can be placed on cable blocks to prevent connection in new directions.",
 

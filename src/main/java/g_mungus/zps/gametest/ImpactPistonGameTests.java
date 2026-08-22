@@ -19,6 +19,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
+import net.minecraft.util.valueproviders.IntProvider;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -113,8 +114,9 @@ public class ImpactPistonGameTests {
             Registries.ITEM, ResourceLocation.fromNamespaceAndPath("zps", "resources_in_cobblestone"));
 
     /**
-     * The shipped cobblestone recipe must actually be a 9:1 gravel / suspicious gravel split with a
-     * nugget buried in the rare outcome. Guards the data files and the recipe codec together.
+     * The shipped cobblestone recipe must actually be a 19:1 gravel / suspicious gravel split with
+     * one or two nuggets buried in the rare outcome. Guards the data files and the recipe codec
+     * together.
      */
     @GameTest(template = TEMPLATE)
     public static void cobblestoneRecipe_isWeightedWithBuriedNugget(GameTestHelper helper) {
@@ -126,8 +128,8 @@ public class ImpactPistonGameTests {
 
         ImpactResult gravel = outcomeFor(helper, results, Blocks.GRAVEL);
         ImpactResult suspicious = outcomeFor(helper, results, Blocks.SUSPICIOUS_GRAVEL);
-        if (gravel.weight() != 9 || suspicious.weight() != 1) {
-            helper.fail("Expected a 9:1 gravel/suspicious split, got " + gravel.weight() + ":" + suspicious.weight());
+        if (gravel.weight() != 19 || suspicious.weight() != 1) {
+            helper.fail("Expected a 19:1 gravel/suspicious split, got " + gravel.weight() + ":" + suspicious.weight());
         }
         if (!gravel.buriedItem().isEmpty()) {
             helper.fail("Plain gravel should have nothing buried in it");
@@ -150,6 +152,14 @@ public class ImpactPistonGameTests {
             if (!candidate.is(RESOURCES_IN_COBBLESTONE)) {
                 helper.fail("Buried candidate " + candidate + " is outside the " + RESOURCES_IN_COBBLESTONE.location() + " tag");
             }
+        }
+
+        IntProvider count = suspicious.count();
+        if (count.getMinValue() != 1 || count.getMaxValue() != 2) {
+            helper.fail("Expected 1 to 2 nuggets buried, got " + count.getMinValue() + " to " + count.getMaxValue());
+        }
+        if (gravel.count().getMaxValue() != 1) {
+            helper.fail("Plain gravel buries nothing, so its count should stay at the default 1");
         }
         helper.succeed();
     }

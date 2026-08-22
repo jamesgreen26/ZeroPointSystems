@@ -3,6 +3,8 @@
   "ingredient": "minecraft:sandstone",
   "results": [
     { "block": "minecraft:sand", "weight": 19 },
-    { "block": "minecraft:suspicious_sand", "weight": 1, "buried_item": { "tag": "zps:resources_in_sandstone" } }
+    { "block": "minecraft:suspicious_sand", "weight": 1,
+      "buried_item": { "tag": "zps:resources_in_sandstone" },
+      "count": { "type": "minecraft:uniform", "min_inclusive": 1, "max_inclusive": 2 } }
   ]
 }

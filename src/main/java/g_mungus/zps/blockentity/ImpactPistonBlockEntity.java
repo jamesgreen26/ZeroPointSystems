@@ -16,6 +16,7 @@ import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
+import net.minecraft.util.valueproviders.IntProvider;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
@@ -243,16 +244,20 @@ public class ImpactPistonBlockEntity extends BlockEntity {
         }
 
         level.setBlockAndUpdate(below, replacement);
-        result.buriedItem().ifPresent(buried -> buryRandomItem(below, buried));
+        result.buriedItem().ifPresent(buried -> buryRandomItem(below, buried, result.count()));
         invalidateRecipeCache();
     }
 
-    private void buryRandomItem(BlockPos pos, Ingredient buried) {
+    private void buryRandomItem(BlockPos pos, Ingredient buried, IntProvider count) {
         ItemStack[] candidates = buried.getItems();
         if (candidates.length == 0) {
             return;
         }
-        buryItem(level, pos, candidates[level.random.nextInt(candidates.length)].copy());
+        ItemStack stack = candidates[level.random.nextInt(candidates.length)].copy();
+        // A brushable block hands its stack straight to the player, so an oversized count would
+        // otherwise pop out an unstackable pile. Clamp to what the item can actually hold.
+        stack.setCount(Math.min(count.sample(level.random), stack.getMaxStackSize()));
+        buryItem(level, pos, stack);
     }
 
     /**

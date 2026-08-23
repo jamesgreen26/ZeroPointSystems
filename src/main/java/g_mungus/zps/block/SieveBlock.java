@@ -20,10 +20,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.phys.shapes.CollisionContext;
-import net.minecraft.world.phys.shapes.EntityCollisionContext;
-import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.world.phys.shapes.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,6 +56,8 @@ public class SieveBlock extends BaseEntityBlock {
 
     /** Frame plus the mesh, so the middle of the sieve still highlights and can be clicked. */
     private static final VoxelShape OUTLINE = Shapes.or(FRAME, MESH);
+
+    private static final VoxelShape OUTLINE_CONTAINED = Shapes.join(OUTLINE, Shapes.block(), BooleanOp.AND);
 
     public SieveBlock(Properties properties) {
         super(properties);
@@ -114,10 +113,10 @@ public class SieveBlock extends BaseEntityBlock {
                                                  @NotNull BlockPos pos, @NotNull CollisionContext context) {
         if (context instanceof EntityCollisionContext entityCollisionContext
                 && entityCollisionContext.getEntity() instanceof LivingEntity) {
-            return OUTLINE;
+            return OUTLINE_CONTAINED;
         }
 
-        return FRAME;
+        return Shapes.empty();
     }
 
     @Override

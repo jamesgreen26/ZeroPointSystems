@@ -26,11 +26,14 @@ import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BrushableBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.energy.EnergyStorage;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Set;
 
 /**
  * Drives the Impact Piston's rod and applies {@code zps:impact} recipes to the block beneath it.
@@ -85,6 +88,9 @@ public class ImpactPistonBlockEntity extends BlockEntity {
     private static final float ANVIL_BREAK_PITCH = 1.0f;
     private static final float DRY_DROP_VOLUME = 0.4f;
     private static final float DRY_DROP_PITCH = 0.6f;
+
+    /** Property value types {@link #orientLike} treats as orientation worth carrying over. */
+    private static final Set<Class<?>> ORIENTATION_TYPES = Set.of(Direction.class, Direction.Axis.class);
     private static final int IMPACT_BLOCK_PARTICLES = 24;
     private static final int IMPACT_CRIT_PARTICLES = 8;
 
@@ -233,7 +239,7 @@ public class ImpactPistonBlockEntity extends BlockEntity {
         // like the block shattering rather than like the rod bottoming out.
         ImpactRecipe recipe = resolveRecipe(struck);
         ImpactResult result = recipe == null ? null : recipe.pick(level.random);
-        BlockState replacement = result == null ? null : result.block().value().defaultBlockState();
+        BlockState replacement = result == null ? null : orientLike(result.block().value().defaultBlockState(), struck);
 
         if (replacement != null && replacement.isAir()) {
             playBreakSound(below, struck);
@@ -249,6 +255,27 @@ public class ImpactPistonBlockEntity extends BlockEntity {
         level.setBlockAndUpdate(below, replacement);
         result.buriedItem().ifPresent(buried -> buryRandomItem(below, buried, result.count()));
         invalidateRecipeCache();
+    }
+
+    /**
+     * Carries every orientation property the struck block and its replacement share over to the
+     * replacement, so a west-facing anvil stays west-facing after the rod chips it and an
+     * east-west pillar stays east-west after it cracks. Properties are equal only when their legal
+     * values match as well as their name, so a shared property can always take the value it held on
+     * the struck block.
+     */
+    private static BlockState orientLike(BlockState replacement, BlockState struck) {
+        for (Property<?> property : struck.getProperties()) {
+            if (ORIENTATION_TYPES.contains(property.getValueClass()) && replacement.hasProperty(property)) {
+                replacement = copyProperty(replacement, struck, property);
+            }
+        }
+        return replacement;
+    }
+
+    /** Ties the property's value type back together, which {@code Property<?>} alone cannot express. */
+    private static <T extends Comparable<T>> BlockState copyProperty(BlockState replacement, BlockState struck, Property<T> property) {
+        return replacement.setValue(property, struck.getValue(property));
     }
 
     private void buryRandomItem(BlockPos pos, Ingredient buried, IntProvider count) {

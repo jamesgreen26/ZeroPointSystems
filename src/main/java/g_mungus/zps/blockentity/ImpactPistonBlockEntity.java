@@ -42,7 +42,8 @@ import java.util.Set;
  * ({@link Phase#RAISING}) over {@link #RAISE_TICKS}; losing power freezes it in place
  * ({@link Phase#HELD}) so a resumed stroke still costs a full {@link #RAISE_TICKS}. Reaching the top commits
  * the machine to a {@link Phase#FALLING} stroke that always completes, whatever happens to the
- * redstone signal in the meantime.
+ * redstone signal in the meantime. A stroke that converts the block below is followed by
+ * {@link #COOLDOWN_TICKS} ticks parked at the bottom before the next raise begins.
  *
  * <p>Only the four animation fields plus stored energy are synced. The animation fields change on
  * phase transitions, but stored energy is pushed the moment it changes — like the Robotic Arm — so
@@ -70,6 +71,12 @@ public class ImpactPistonBlockEntity extends BlockEntity {
     public static final int RAISE_TICKS = 20;
     /** Ticks the rod takes to fall from the top of its stroke. */
     public static final int FALL_TICKS = 3;
+    /**
+     * Ticks the machine sits idle after a strike that actually converted a block, before it starts
+     * winching again. Keeps back-to-back conversions reading as separate blows rather than one
+     * continuous grind.
+     */
+    public static final int COOLDOWN_TICKS = 4;
     /** Drawn every tick the rod is being raised. The fall is gravity, and free. */
     public static final int ENERGY_PER_TICK = 64;
     /**
@@ -102,6 +109,8 @@ public class ImpactPistonBlockEntity extends BlockEntity {
     private float phaseDuration;
     /** Server-only: true when the current fall is a work stroke rather than a powered-down retraction. */
     private boolean strike;
+    /** Server-only: ticks left of the post-conversion pause. The rod is parked at the bottom throughout. */
+    private int cooldown;
 
     @Nullable
     private ImpactRecipe cachedRecipe;
@@ -170,6 +179,13 @@ public class ImpactPistonBlockEntity extends BlockEntity {
             if (level.getGameTime() - phaseStartTick >= phaseDuration) {
                 land();
             }
+            return;
+        }
+
+        if (cooldown > 0) {
+            // Recovering from a strike. The rod is already down, so there is nothing to retract and
+            // nothing to spend; it just waits, powered or not.
+            cooldown--;
             return;
         }
 
@@ -255,6 +271,8 @@ public class ImpactPistonBlockEntity extends BlockEntity {
         level.setBlockAndUpdate(below, replacement);
         result.buriedItem().ifPresent(buried -> buryRandomItem(below, buried, result.count()));
         invalidateRecipeCache();
+        cooldown = COOLDOWN_TICKS;
+        setChanged();
     }
 
     /**
@@ -405,6 +423,7 @@ public class ImpactPistonBlockEntity extends BlockEntity {
         super.saveAdditional(tag, registries);
         writeState(tag);
         tag.putBoolean("Strike", strike);
+        tag.putInt("Cooldown", cooldown);
     }
 
     @Override
@@ -412,6 +431,7 @@ public class ImpactPistonBlockEntity extends BlockEntity {
         super.loadAdditional(tag, registries);
         readState(tag);
         strike = tag.getBoolean("Strike");
+        cooldown = tag.getInt("Cooldown");
     }
 
     @Override

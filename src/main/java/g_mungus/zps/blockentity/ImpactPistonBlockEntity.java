@@ -21,6 +21,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BrushableBlockEntity;
@@ -80,6 +81,8 @@ public class ImpactPistonBlockEntity extends BlockEntity {
 
     private static final float IMPACT_VOLUME = 1.0f;
     private static final float IMPACT_PITCH = 0.8f;
+    private static final float ANVIL_BREAK_VOLUME = 1.0f;
+    private static final float ANVIL_BREAK_PITCH = 1.0f;
     private static final float DRY_DROP_VOLUME = 0.4f;
     private static final float DRY_DROP_PITCH = 0.6f;
     private static final int IMPACT_BLOCK_PARTICLES = 24;
@@ -279,8 +282,19 @@ public class ImpactPistonBlockEntity extends BlockEntity {
         level.sendBlockUpdated(pos, state, state, Block.UPDATE_ALL);
     }
 
-    /** The struck block's own break sound, at the volume and pitch vanilla uses when a block is destroyed. */
+    /**
+     * The struck block's own break sound, at the volume and pitch vanilla uses when a block is
+     * destroyed, except where a block earns a sound of its own.
+     */
     private void playBreakSound(BlockPos pos, BlockState struck) {
+        // A damaged anvil shattering under the rod is the vanilla "anvil worn out" moment, not a
+        // block being mined, so it gets the single clang trimmed out of that sound instead of the
+        // generic metal break.
+        if (struck.is(Blocks.DAMAGED_ANVIL) && level != null) {
+            level.playSound(null, pos, ModSounds.IMPACT_ANVIL_BREAK.get(), SoundSource.BLOCKS,
+                    ANVIL_BREAK_VOLUME, ANVIL_BREAK_PITCH);
+            return;
+        }
         SoundType soundType = struck.getSoundType(level, pos, null);
         level.playSound(null, pos, soundType.getBreakSound(), SoundSource.BLOCKS,
                 (soundType.getVolume() + 1.0f) / 2.0f, soundType.getPitch() * 0.8f);

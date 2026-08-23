@@ -1,0 +1,7 @@
+{
+  "type": "zps:impact",
+  "ingredient": "minecraft:anvil",
+  "results": [
+    { "block": "minecraft:chipped_anvil" }
+  ]
+}

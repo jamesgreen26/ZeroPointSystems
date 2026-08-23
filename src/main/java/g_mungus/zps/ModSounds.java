@@ -12,6 +12,7 @@ public class ModSounds {
     public static DeferredHolder<SoundEvent, SoundEvent> STATIC = registerSoundEvent("static");
     public static DeferredHolder<SoundEvent, SoundEvent> ARM_MOVE = registerSoundEvent("arm_move");
     public static DeferredHolder<SoundEvent, SoundEvent> IMPACT_THUNK = registerSoundEvent("impact_thunk");
+    public static DeferredHolder<SoundEvent, SoundEvent> IMPACT_ANVIL_BREAK = registerSoundEvent("impact_anvil_break");
 
     private static DeferredHolder<SoundEvent, SoundEvent> registerSoundEvent(String name) {
         return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, name)));

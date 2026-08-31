@@ -13,9 +13,10 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 
-public class OctoMountingEntity extends Entity {
+public class OctoMountingEntity extends Entity implements StandingVehicleEntity {
     public OctoControllerBlockEntity blockEntity = null;
     public boolean isController = false;
     public Vec3i offset = Vec3i.ZERO;
@@ -130,5 +131,10 @@ public class OctoMountingEntity extends Entity {
         } else {
              return null;
         }
+    }
+
+    @Override
+    public @NotNull Vec3 getPassengerRidingPosition(@NotNull Entity p_294938_) {
+        return super.getPassengerRidingPosition(p_294938_).add(0, 0.1, 0);
     }
 }

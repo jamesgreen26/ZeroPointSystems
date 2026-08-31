@@ -7,6 +7,7 @@
   "client": [
     "BlockElementMixin",
     "CommandSuggestionsMixin",
+    "PlayerModelMixin",
     "PlayerRendererMixin",
     "RecipeBookComponentAccessor",
     "SelectorDeserializerNotMixin",
@@ -14,8 +15,8 @@
     "ponder.NavigatableSimiScreenAccessor",
     "ponder.NavigatableSimiScreenMixin",
     "ponder.PonderTagRegistryMixin",
-    "ponder.ScreenOpenerMixin",
-    "ponder.PonderUIMixin"
+    "ponder.PonderUIMixin",
+    "ponder.ScreenOpenerMixin"
   ],
   "mixins": [
     "ArgumentTypeInfosMixin",

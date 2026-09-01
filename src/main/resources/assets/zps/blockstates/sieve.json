@@ -1,5 +1,25 @@
 {
-  "variants": {
-    "": { "model": "zps:block/sieve" }
-  }
+  "multipart": [
+    { "apply": { "model": "zps:block/sieve_center" } },
+    { "when": { "north": "false", "west": "false" }, "apply": { "model": "zps:block/sieve_north_west" } },
+    { "when": { "north": "false", "east": "false" }, "apply": { "model": "zps:block/sieve_north_east" } },
+    { "when": { "south": "false", "east": "false" }, "apply": { "model": "zps:block/sieve_south_east" } },
+    { "when": { "south": "false", "west": "false" }, "apply": { "model": "zps:block/sieve_south_west" } },
+    { "when": { "north": "false", "inner_nw": "false", "inner_ne": "false" }, "apply": { "model": "zps:block/sieve_north" } },
+    { "when": { "north": "false", "inner_nw": "false", "inner_ne": "true" }, "apply": { "model": "zps:block/sieve_north_inner_east" } },
+    { "when": { "north": "false", "inner_nw": "true", "inner_ne": "false" }, "apply": { "model": "zps:block/sieve_north_inner_west" } },
+    { "when": { "north": "false", "inner_nw": "true", "inner_ne": "true" }, "apply": { "model": "zps:block/sieve_north_inner_both" } },
+    { "when": { "east": "false", "inner_ne": "false", "inner_se": "false" }, "apply": { "model": "zps:block/sieve_east" } },
+    { "when": { "east": "false", "inner_ne": "false", "inner_se": "true" }, "apply": { "model": "zps:block/sieve_east_inner_south" } },
+    { "when": { "east": "false", "inner_ne": "true", "inner_se": "false" }, "apply": { "model": "zps:block/sieve_east_inner_north" } },
+    { "when": { "east": "false", "inner_ne": "true", "inner_se": "true" }, "apply": { "model": "zps:block/sieve_east_inner_both" } },
+    { "when": { "south": "false", "inner_sw": "false", "inner_se": "false" }, "apply": { "model": "zps:block/sieve_south" } },
+    { "when": { "south": "false", "inner_sw": "false", "inner_se": "true" }, "apply": { "model": "zps:block/sieve_south_inner_east" } },
+    { "when": { "south": "false", "inner_sw": "true", "inner_se": "false" }, "apply": { "model": "zps:block/sieve_south_inner_west" } },
+    { "when": { "south": "false", "inner_sw": "true", "inner_se": "true" }, "apply": { "model": "zps:block/sieve_south_inner_both" } },
+    { "when": { "west": "false", "inner_nw": "false", "inner_sw": "false" }, "apply": { "model": "zps:block/sieve_west" } },
+    { "when": { "west": "false", "inner_nw": "false", "inner_sw": "true" }, "apply": { "model": "zps:block/sieve_west_inner_south" } },
+    { "when": { "west": "false", "inner_nw": "true", "inner_sw": "false" }, "apply": { "model": "zps:block/sieve_west_inner_north" } },
+    { "when": { "west": "false", "inner_nw": "true", "inner_sw": "true" }, "apply": { "model": "zps:block/sieve_west_inner_both" } }
+  ]
 }

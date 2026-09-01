@@ -41,12 +41,16 @@ import org.jetbrains.annotations.Nullable;
  * because that neighbour's own centre already covers the same space. Adjacent sieves read as one
  * continuous pan with no doubled rails down the seam.
  *
- * <p>Where the array turns a concave corner — one side exposed, the side beside it connected, and a
- * sieve on the diagonal between them — two exposed runs meet and their rails would cross. The
- * {@code inner_*} properties mark those corners so the two runs can miter instead. Walking the
- * outline north west→east, east north→south, south east→west, west south→north, the run that starts
- * at such a corner claims the join and gives up a pixel so it stops on the inner corner line; the
- * run that ends there yields the whole four pixel band, and a pixel of its mesh lip.
+ * <p>Wherever a sieve sits on the diagonal and the two sides beside it do not both connect, exposed
+ * runs meet at a concave corner and their rails would cross. The {@code inner_*} properties mark
+ * those corners so the runs can miter instead. Walking the outline north west→east, east
+ * north→south, south east→west, west south→north, the run that starts at such a corner claims the
+ * join and gives up a pixel so it stops on the inner corner line; the run that ends there yields
+ * the whole four pixel band, and a pixel of its mesh lip.
+ *
+ * <p>With one side connected the array simply turns back on itself and the corner carries a single
+ * join. With neither connected the two pans cross at the diagonal: the corner carries two joins,
+ * one on each side of the crossing, and the outside corner piece gives way to them.
  *
  * <p>Collision lookups only visit blocks intersecting the entity's own bounding box, so an entity
  * standing over a rail but clear of the sieve's own column can miss it.
@@ -143,10 +147,10 @@ public class SieveBlock extends BaseEntityBlock {
             if (!east) shape = Shapes.or(shape, eastEdge(innerNorthEast, innerSouthEast));
             if (!south) shape = Shapes.or(shape, southEdge(innerSouthWest, innerSouthEast));
             if (!west) shape = Shapes.or(shape, westEdge(innerNorthWest, innerSouthWest));
-            if (!north && !west) shape = Shapes.or(shape, CORNER_NORTH_WEST);
-            if (!north && !east) shape = Shapes.or(shape, CORNER_NORTH_EAST);
-            if (!south && !east) shape = Shapes.or(shape, CORNER_SOUTH_EAST);
-            if (!south && !west) shape = Shapes.or(shape, CORNER_SOUTH_WEST);
+            if (!north && !west && !innerNorthWest) shape = Shapes.or(shape, CORNER_NORTH_WEST);
+            if (!north && !east && !innerNorthEast) shape = Shapes.or(shape, CORNER_NORTH_EAST);
+            if (!south && !east && !innerSouthEast) shape = Shapes.or(shape, CORNER_SOUTH_EAST);
+            if (!south && !west && !innerSouthWest) shape = Shapes.or(shape, CORNER_SOUTH_WEST);
 
             OUTLINES[mask] = shape.optimize();
         }
@@ -230,10 +234,19 @@ public class SieveBlock extends BaseEntityBlock {
                 .setValue(EAST, east)
                 .setValue(SOUTH, south)
                 .setValue(WEST, west)
-                .setValue(INNER_NORTH_WEST, north != west && connectsTo(level.getBlockState(pos.north().west())))
-                .setValue(INNER_NORTH_EAST, north != east && connectsTo(level.getBlockState(pos.north().east())))
-                .setValue(INNER_SOUTH_EAST, south != east && connectsTo(level.getBlockState(pos.south().east())))
-                .setValue(INNER_SOUTH_WEST, south != west && connectsTo(level.getBlockState(pos.south().west())));
+                .setValue(INNER_NORTH_WEST, isInner(level, pos.north().west(), north, west))
+                .setValue(INNER_NORTH_EAST, isInner(level, pos.north().east(), north, east))
+                .setValue(INNER_SOUTH_EAST, isInner(level, pos.south().east(), south, east))
+                .setValue(INNER_SOUTH_WEST, isInner(level, pos.south().west(), south, west));
+    }
+
+    /**
+     * A corner is inner whenever a sieve sits on the diagonal and the two sides do not both
+     * connect. With one side connected the array turns back on itself and the corner carries a
+     * single join; with neither, the two pans cross at the diagonal and it carries two.
+     */
+    private boolean isInner(BlockGetter level, BlockPos diagonal, boolean sideA, boolean sideB) {
+        return !(sideA && sideB) && connectsTo(level.getBlockState(diagonal));
     }
 
     /** Sieves only ever join up with other sieves. */

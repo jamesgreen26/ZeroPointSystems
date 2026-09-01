@@ -117,6 +117,15 @@ public class ModItems {
     public static final DeferredItem<Item> IMPACT_PISTON = ITEMS.register("impact_piston",
             () -> new BlockItem(ModBlocks.IMPACT_PISTON.get(), new Item.Properties()));
 
+    public static final DeferredItem<Item> VAPORIZER = ITEMS.register("vaporizer",
+            () -> new BlockItem(ModBlocks.VAPORIZER.get(), new Item.Properties()));
+
+    public static final DeferredItem<Item> VENT = ITEMS.register("vent",
+            () -> new BlockItem(ModBlocks.VENT.get(), new Item.Properties()));
+
+    public static final DeferredItem<Item> GAS_DUCT = ITEMS.register("gas_duct",
+            () -> new BlockItem(ModBlocks.GAS_DUCT.get(), new Item.Properties()));
+
     public static final DeferredItem<Item> SIEVE = ITEMS.register("sieve",
             () -> new BlockItem(ModBlocks.SIEVE.get(), new Item.Properties()));
 

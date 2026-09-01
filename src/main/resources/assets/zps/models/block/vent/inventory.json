@@ -1,0 +1,159 @@
+{
+  "textures": {
+    "duct": "zps:block/aluminum_block",
+    "particle": "zps:block/aluminum_block"
+  },
+  "elements": [
+    {
+      "name": "panel",
+      "from": [
+        0,
+        12,
+        0
+      ],
+      "to": [
+        16,
+        16,
+        16
+      ],
+      "faces": {
+        "up": {
+          "texture": "#duct",
+          "cullface": "up"
+        },
+        "north": {
+          "texture": "#duct",
+          "cullface": "north"
+        },
+        "east": {
+          "texture": "#duct",
+          "cullface": "east"
+        },
+        "south": {
+          "texture": "#duct",
+          "cullface": "south"
+        },
+        "west": {
+          "texture": "#duct",
+          "cullface": "west"
+        },
+        "down": {
+          "texture": "#duct"
+        }
+      }
+    },
+    {
+      "name": "core",
+      "from": [
+        3,
+        4,
+        3
+      ],
+      "to": [
+        13,
+        12,
+        13
+      ],
+      "faces": {
+        "north": {
+          "texture": "#duct"
+        },
+        "east": {
+          "texture": "#duct"
+        },
+        "south": {
+          "texture": "#duct"
+        },
+        "west": {
+          "texture": "#duct"
+        },
+        "up": {
+          "texture": "#duct"
+        },
+        "down": {
+          "texture": "#duct"
+        }
+      }
+    },
+    {
+      "name": "arm_down",
+      "from": [
+        3,
+        0,
+        3
+      ],
+      "to": [
+        13,
+        4,
+        13
+      ],
+      "faces": {
+        "north": {
+          "texture": "#duct"
+        },
+        "east": {
+          "texture": "#duct"
+        },
+        "south": {
+          "texture": "#duct"
+        },
+        "west": {
+          "texture": "#duct"
+        },
+        "down": {
+          "texture": "#duct"
+        }
+      }
+    }
+  ],
+  "display": {
+    "gui": {
+      "rotation": [
+        30,
+        135,
+        0
+      ],
+      "scale": [
+        0.625,
+        0.625,
+        0.625
+      ]
+    },
+    "fixed": {
+      "scale": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    "thirdperson_righthand": {
+      "rotation": [
+        75,
+        45,
+        0
+      ],
+      "translation": [
+        0,
+        2.5,
+        0
+      ],
+      "scale": [
+        0.375,
+        0.375,
+        0.375
+      ]
+    },
+    "ground": {
+      "translation": [
+        0,
+        3,
+        0
+      ],
+      "scale": [
+        0.25,
+        0.25,
+        0.25
+      ]
+    }
+  }
+}

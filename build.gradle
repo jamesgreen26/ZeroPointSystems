@@ -90,6 +90,11 @@ repositories {
     }
     maven { url = "https://maven.bawnorton.com/releases" }
     maven {
+        name = "Kotlin for Forge"
+        url = "https://thedarkcolour.github.io/KotlinForForge/"
+        content { includeGroup "thedarkcolour" }
+    }
+    maven {
         name = "RyanHCode Maven"
         url = "https://maven.ryanhcode.dev/releases"
     }
@@ -129,6 +134,51 @@ dependencies {
     implementation(files('libs/jsapi.jar', 'libs/freetts.jar'))
     additionalRuntimeClasspath(files('libs/jsapi.jar', 'libs/freetts.jar'))
     implementation(files('libs/Registrate-MC1.21-1.3.0+62.jar'))
+
+    jarJar(implementation("org.valkyrienskies.kelvin:kelvin:1.21.1-0.5.0+ff53045953")) {
+        version {
+            strictly "[1.21.1-0.5.0+ff53045953,)"
+            prefer "1.21.1-0.5.0+ff53045953"
+        }
+    }
+    jarJar(implementation("dev.architectury:architectury-neoforge:13.0.6")) {
+        version {
+            strictly "[13.0.6,)"
+            prefer "13.0.6"
+        }
+    }
+    additionalRuntimeClasspath("thedarkcolour:kotlinforforge-neoforge:5.8.0")
+
+    jarJar(implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.14.0")) {
+        version {
+            strictly "[2.14.0,)"
+            prefer "2.14.0"
+        }
+    }
+    jarJar(implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.14.0")) {
+        version {
+            strictly "[2.14.0,)"
+            prefer "2.14.0"
+        }
+    }
+    jarJar(implementation("com.fasterxml.jackson.core:jackson-databind:2.14.0")) {
+        version {
+            strictly "[2.14.0,)"
+            prefer "2.14.0"
+        }
+    }
+    jarJar(implementation("com.fasterxml.jackson.core:jackson-core:2.14.0")) {
+        version {
+            strictly "[2.14.0,)"
+            prefer "2.14.0"
+        }
+    }
+    jarJar(implementation("com.fasterxml.jackson.core:jackson-annotations:2.14.0")) {
+        version {
+            strictly "[2.14.0,)"
+            prefer "2.14.0"
+        }
+    }
 
     implementation("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
 

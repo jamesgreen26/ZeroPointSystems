@@ -10,6 +10,9 @@ import g_mungus.zps.client.recipebook.ModRecipeBookCategories;
 import g_mungus.zps.client.renderer.*;
 import g_mungus.zps.client.screens.AssemblerScreen;
 import g_mungus.zps.client.screens.CoalBurnerScreen;
+import g_mungus.zps.client.debug.GasPressureOverlay;
+import g_mungus.zps.client.screens.VaporizerScreen;
+import g_mungus.zps.gas.ModParticles;
 import g_mungus.zps.client.screens.PowerCellScreen;
 import g_mungus.zps.client.screens.RollingMillScreen;
 import g_mungus.zps.client.screens.SieveScreen;
@@ -20,6 +23,7 @@ import g_mungus.zps.menu.ModMenus;
 import g_mungus.zps.recipe.ModRecipeBookTypes;
 import g_mungus.zps.recipe.ModRecipes;
 import net.createmod.catnip.config.ui.BaseConfigScreen;
+import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
@@ -35,12 +39,14 @@ import g_mungus.zps.commands.content.arguments.AssemblerRecipeArgument;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLLoadCompleteEvent;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
+import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
 import net.neoforged.neoforge.client.event.RegisterRecipeBookCategoriesEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.common.NeoForge;
+import org.valkyrienskies.kelvin.impl.client.particle.DefaultGasParticleProvider;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -101,8 +107,15 @@ public class ClientSetup {
     }
 
     @SubscribeEvent
+    public static void onRegisterParticleProviders(RegisterParticleProvidersEvent event) {
+        // Kelvin's own gas particle renderer, driven by our sprite set.
+        event.registerSpriteSet(ModParticles.FLUX.get(), DefaultGasParticleProvider::new);
+    }
+
+    @SubscribeEvent
     public static void onRegisterMenuScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenus.COAL_BURNER.get(), CoalBurnerScreen::new);
+        event.register(ModMenus.VAPORIZER.get(), VaporizerScreen::new);
         event.register(ModMenus.POWER_CELL.get(), PowerCellScreen::new);
         event.register(ModMenus.ROLLING_MILL.get(), RollingMillScreen::new);
         event.register(ModMenus.ASSEMBLER.get(), AssemblerScreen::new);
@@ -122,7 +135,7 @@ public class ClientSetup {
     public static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
             // Lets the (common-side) recipe argument reach the client's synced recipe manager for suggestions.
-            AssemblerRecipeArgument.setClientLevelSupplier(() -> net.minecraft.client.Minecraft.getInstance().level);
+            AssemblerRecipeArgument.setClientLevelSupplier(() -> Minecraft.getInstance().level);
             EntityRenderers.register(ModEntities.OCTO_MOUNTING.get(), OctoMountingRenderer::new);
             EntityRenderers.register(ModEntities.DODECA_MOUNTING.get(), DodecaMountingRenderer::new);
             BlockEntityRenderers.register(ModBlockEntities.GRADUATED_LEVER.get(), GraduatedLeverBlockEntityRenderer::new);
@@ -163,6 +176,8 @@ public class ClientSetup {
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.CATWALK.get(), RenderType.cutout());
 
             NeoForge.EVENT_BUS.addListener(AddressPadClientHooks::onRenderLevelStage);
+            NeoForge.EVENT_BUS.addListener(GasPressureOverlay::onRenderLevelStage);
+            NeoForge.EVENT_BUS.addListener(GasPressureOverlay::onPlayerTick);
         });
     }
 

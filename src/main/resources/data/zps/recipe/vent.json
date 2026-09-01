@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "M": {
+      "item": "zps:space_metal_mesh"
+    },
+    "P": {
+      "item": "zps:space_metal_pipe"
+    },
+    "I": {
+      "item": "zps:space_metal_ingot"
+    }
+  },
+  "pattern": [
+    "MMM",
+    "IPI"
+  ],
+  "result": {
+    "id": "zps:vent",
+    "count": 1
+  }
+}

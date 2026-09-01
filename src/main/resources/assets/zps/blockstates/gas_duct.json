@@ -1,0 +1,82 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "OR": [
+          {"north": "connection|leak"},
+          {"east": "connection|leak"},
+          {"south": "connection|leak"},
+          {"west": "connection|leak"}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/gas_duct/core_horizontal"
+      }
+    },
+    {
+      "when": {
+        "north": "none",
+        "east": "none",
+        "south": "none",
+        "west": "none"
+      },
+      "apply": {
+        "model": "zps:block/gas_duct/core_vertical"
+      }
+    },
+    {
+      "when": {
+        "north": "connection|leak"
+      },
+      "apply": {
+        "model": "zps:block/gas_duct/arm_horizontal"
+      }
+    },
+    {
+      "when": {
+        "east": "connection|leak"
+      },
+      "apply": {
+        "model": "zps:block/gas_duct/arm_horizontal",
+        "y": 90,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "south": "connection|leak"
+      },
+      "apply": {
+        "model": "zps:block/gas_duct/arm_horizontal",
+        "y": 180,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "west": "connection|leak"
+      },
+      "apply": {
+        "model": "zps:block/gas_duct/arm_horizontal",
+        "y": 270,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "up": "connection|leak"
+      },
+      "apply": {
+        "model": "zps:block/gas_duct/arm_up"
+      }
+    },
+    {
+      "when": {
+        "down": "connection|leak"
+      },
+      "apply": {
+        "model": "zps:block/gas_duct/arm_down"
+      }
+    }
+  ]
+}

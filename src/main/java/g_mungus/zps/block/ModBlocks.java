@@ -5,6 +5,9 @@ import g_mungus.zps.block.cableNetwork.*;
 import g_mungus.zps.block.cableNetwork.light_pipe.*;
 import g_mungus.zps.block.cableNetwork.properties.InsulationType;
 import g_mungus.zps.block.datagen.BlockDataGenerator;
+import g_mungus.zps.block.gas.DuctBlock;
+import g_mungus.zps.block.gas.VentBlock;
+import g_mungus.zps.block.gas.VaporizerBlock;
 import g_mungus.zps.item.ModItems;
 import g_mungus.zps.mixin.BlockBehaviourAccessor;
 import net.minecraft.core.BlockPos;
@@ -226,6 +229,23 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     // Don't occlude light: the rod's light is sampled at the piston's own position,
                     // which would otherwise always be pitch black.
+                    .noOcclusion()));
+
+    public static final DeferredBlock<Block> VAPORIZER = BLOCKS.register("vaporizer",
+            () -> new VaporizerBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(3.5f)
+                    .requiresCorrectToolForDrops()));
+
+    public static final DeferredBlock<Block> VENT = BLOCKS.register("vent",
+            () -> new VentBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+
+    public static final DeferredBlock<Block> GAS_DUCT = BLOCKS.register("gas_duct",
+            () -> new DuctBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
                     .noOcclusion()));
 
     public static final DeferredBlock<Block> SIEVE = BLOCKS.register("sieve",

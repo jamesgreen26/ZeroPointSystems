@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "P": {
+      "item": "zps:space_metal_pipe"
+    },
+    "I": {
+      "item": "zps:space_metal_ingot"
+    }
+  },
+  "pattern": [
+    "IPI"
+  ],
+  "result": {
+    "id": "zps:gas_duct",
+    "count": 4
+  }
+}

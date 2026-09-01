@@ -2,6 +2,9 @@ package g_mungus.zps.blockentity;
 
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.blockentity.gas.DuctBlockEntity;
+import g_mungus.zps.blockentity.gas.VentBlockEntity;
+import g_mungus.zps.blockentity.gas.VaporizerBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.*;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -12,6 +15,21 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public class ModBlockEntities {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
         DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, ZPSMod.MOD_ID);
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<VaporizerBlockEntity>> VAPORIZER =
+        BLOCK_ENTITIES.register("vaporizer",
+            () -> BlockEntityType.Builder.of(VaporizerBlockEntity::new,
+                ModBlocks.VAPORIZER.get()).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<VentBlockEntity>> VENT =
+        BLOCK_ENTITIES.register("vent",
+            () -> BlockEntityType.Builder.of(VentBlockEntity::new,
+                ModBlocks.VENT.get()).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DuctBlockEntity>> DUCT =
+        BLOCK_ENTITIES.register("duct",
+            () -> BlockEntityType.Builder.of(DuctBlockEntity::new,
+                ModBlocks.GAS_DUCT.get()).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<RedstoneConverterBlockEntity>> REDSTONE_CONVERTER =
         BLOCK_ENTITIES.register("redstone_converter",

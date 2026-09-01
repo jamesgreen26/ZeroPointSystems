@@ -21,6 +21,9 @@ public final class ZPSGamePackets {
         registrar.playToClient(ExecutorBlocksS2CPacket.TYPE, ExecutorBlocksS2CPacket.STREAM_CODEC, ExecutorBlocksS2CPacket::handle);
         registrar.playToClient(GetterBlocksS2CPacket.TYPE, GetterBlocksS2CPacket.STREAM_CODEC, GetterBlocksS2CPacket::handle);
         registrar.playToClient(HudInfoS2CPacket.TYPE, HudInfoS2CPacket.STREAM_CODEC, HudInfoS2CPacket::handle);
+        registrar.playToClient(GasNodeSyncS2CPacket.TYPE, GasNodeSyncS2CPacket.STREAM_CODEC, GasNodeSyncS2CPacket::handle);
+        registrar.playToServer(RequestGasDebugC2SPacket.TYPE, RequestGasDebugC2SPacket.STREAM_CODEC, RequestGasDebugC2SPacket::handle);
+        registrar.playToClient(GasDebugS2CPacket.TYPE, GasDebugS2CPacket.STREAM_CODEC, GasDebugS2CPacket::handle);
         registrar.playToServer(AddressPadAddPositionC2SPacket.TYPE, AddressPadAddPositionC2SPacket.STREAM_CODEC, AddressPadAddPositionC2SPacket::handle);
         registrar.playToServer(AddressPadRemovePositionC2SPacket.TYPE, AddressPadRemovePositionC2SPacket.STREAM_CODEC, AddressPadRemovePositionC2SPacket::handle);
         registrar.playToServer(AddressPadSetEntriesC2SPacket.TYPE, AddressPadSetEntriesC2SPacket.STREAM_CODEC, AddressPadSetEntriesC2SPacket::handle);

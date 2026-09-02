@@ -1,8 +1,7 @@
 package g_mungus.zps.block.gas;
 
 import g_mungus.zps.block.gas.core.GasEdgeProposal;
-import g_mungus.zps.block.gas.core.GasNetworkComponent;
-import g_mungus.zps.block.gas.core.KNodeBlockImpl;
+import g_mungus.zps.block.gas.core.GasNodeBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.gas.VaporizerBlockEntity;
 import net.minecraft.core.BlockPos;
@@ -39,7 +38,7 @@ import java.util.HashSet;
  * <p>It is a tank node rather than a pipe: a real volume that fills with gas. It offers a
  * connection on one face only — the outlet it points at — so Flux has a single, deliberate way out.
  */
-public class VaporizerBlock extends KNodeBlockImpl implements EntityBlock, GasNetworkComponent {
+public class VaporizerBlock extends GasNodeBlock implements EntityBlock {
 
     private static final double RADIUS = 0.125;
     private static final double HALF_LENGTH = 0.25;
@@ -56,7 +55,6 @@ public class VaporizerBlock extends KNodeBlockImpl implements EntityBlock, GasNe
      */
     public static final double MAX_PRESSURE = 4_000_000.0;
     public static final double MAX_TEMPERATURE = 1478.0;
-    private static final double HEAT_CONDUCTIVITY = 1687.5;
     private static final double HEAT_CAPACITY = 449.0;
 
     public VaporizerBlock(Properties properties) {
@@ -95,7 +93,7 @@ public class VaporizerBlock extends KNodeBlockImpl implements EntityBlock, GasNe
     @Override
     public @NotNull DuctNode createNode(@NotNull DuctNodePos pos) {
         return new TankDuctNode(pos, NodeBehaviorType.TANK, new HashSet<>(), VOLUME, MAX_PRESSURE,
-                MAX_TEMPERATURE, HEAT_CONDUCTIVITY, HEAT_CAPACITY, 1.0);
+                MAX_TEMPERATURE, HEAT_CAPACITY, 1.0);
     }
 
     /** Offers a connection on its outlet face only. */

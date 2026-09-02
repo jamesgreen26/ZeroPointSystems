@@ -4,7 +4,7 @@ import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.gas.core.DuctConnectionType;
 import g_mungus.zps.block.gas.core.GasEdgeNegotiator;
-import g_mungus.zps.block.gas.core.KNodeBlock;
+import g_mungus.zps.block.gas.core.GasNodeBlock;
 import g_mungus.zps.blockentity.gas.core.GasNodeBlockEntity;
 import g_mungus.zps.gas.ModGases;
 import net.minecraft.core.BlockPos;
@@ -38,11 +38,11 @@ public class DuctGameTests {
     }
 
     private static DuctConnectionType south(GameTestHelper helper, BlockPos pos) {
-        return helper.getBlockState(pos).getValue(KNodeBlock.SOUTH_CONNECTION);
+        return helper.getBlockState(pos).getValue(GasNodeBlock.SOUTH_CONNECTION);
     }
 
     private static DuctConnectionType north(GameTestHelper helper, BlockPos pos) {
-        return helper.getBlockState(pos).getValue(KNodeBlock.NORTH_CONNECTION);
+        return helper.getBlockState(pos).getValue(GasNodeBlock.NORTH_CONNECTION);
     }
 
     private static DuctNodePos node(GameTestHelper helper, BlockPos relative) {
@@ -291,7 +291,7 @@ public class DuctGameTests {
         helper.setBlock(FIRST, ModBlocks.GAS_DUCT.get().defaultBlockState());
         // Force one face open without needing an explosion, so the test is about the leak itself.
         BlockState leaking = helper.getBlockState(FIRST)
-                .setValue(KNodeBlock.SOUTH_CONNECTION, DuctConnectionType.LEAK);
+                .setValue(GasNodeBlock.SOUTH_CONNECTION, DuctConnectionType.LEAK);
         helper.setBlock(FIRST, leaking);
 
         KelvinMod.INSTANCE.forceGetKelvin()

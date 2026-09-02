@@ -4,8 +4,7 @@ import g_mungus.zps.block.gas.core.DuctConnectionType;
 import g_mungus.zps.block.gas.core.DuctGeometry;
 import g_mungus.zps.block.gas.core.GasEdgeNegotiator;
 import g_mungus.zps.block.gas.core.GasEdgeProposal;
-import g_mungus.zps.block.gas.core.GasNetworkComponent;
-import g_mungus.zps.block.gas.core.KNodeBlockImpl;
+import g_mungus.zps.block.gas.core.GasNodeBlock;
 import g_mungus.zps.block.gas.core.LeakyPipeDuctNode;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.gas.DuctBlockEntity;
@@ -40,8 +39,8 @@ import org.valkyrienskies.kelvin.api.DuctNodePos;
  * neighbour is blown up: the pipe end stays open and bleeds gas into the world until something is
  * put back against it.
  */
-public class DuctBlock extends KNodeBlockImpl
-        implements EntityBlock, GasNetworkComponent, LeakyPipeDuctNode.DuctBlockFaces {
+public class DuctBlock extends GasNodeBlock
+        implements EntityBlock, LeakyPipeDuctNode.DuctBlockFaces {
 
     /** Bore of a duct, in metres; Kelvin's own default pipe radius. */
     private static final double RADIUS = 0.125;
@@ -51,7 +50,6 @@ public class DuctBlock extends KNodeBlockImpl
     private static final double VOLUME = 1.0;
     private static final double MAX_PRESSURE = 16_375_049.0;
     private static final double MAX_TEMPERATURE = 1478.0;
-    private static final double HEAT_CONDUCTIVITY = 1687.5;
     private static final double HEAT_CAPACITY = 449.0;
 
     public DuctBlock(Properties properties) {
@@ -82,8 +80,7 @@ public class DuctBlock extends KNodeBlockImpl
 
     @Override
     public @NotNull DuctNode createNode(@NotNull DuctNodePos pos) {
-        return new LeakyPipeDuctNode(pos, VOLUME, MAX_PRESSURE, MAX_TEMPERATURE,
-                HEAT_CONDUCTIVITY, HEAT_CAPACITY);
+        return new LeakyPipeDuctNode(pos, VOLUME, MAX_PRESSURE, MAX_TEMPERATURE, HEAT_CAPACITY);
     }
 
     @Override

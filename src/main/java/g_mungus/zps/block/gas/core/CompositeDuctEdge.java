@@ -143,11 +143,6 @@ public class CompositeDuctEdge implements DuctEdge, ApertureEdge {
         this.aperture = aperture;
     }
 
-    @Override
-    public void setTargetAperture(double newAperture) {
-        ApertureEdge.DefaultImpls.setTargetAperture(this, newAperture);
-    }
-
     // --- persistence -----------------------------------------------------------------------
 
     @Override

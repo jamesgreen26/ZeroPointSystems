@@ -33,11 +33,6 @@ public class OneWayCompositeDuctEdge extends CompositeDuctEdge implements OneWay
     }
 
     @Override
-    public void invert() {
-        OneWayEdge.DefaultImpls.invert(this);
-    }
-
-    @Override
     public @NotNull CompoundTag serialize(@NotNull CompoundTag tag) {
         super.serialize(tag);
         tag.putBoolean("Reversed", reversed);

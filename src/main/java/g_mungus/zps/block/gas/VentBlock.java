@@ -4,8 +4,7 @@ import g_mungus.zps.block.gas.core.DuctConnectionType;
 import g_mungus.zps.block.gas.core.DuctGeometry;
 import g_mungus.zps.block.gas.core.GasEdgeNegotiator;
 import g_mungus.zps.block.gas.core.GasEdgeProposal;
-import g_mungus.zps.block.gas.core.GasNetworkComponent;
-import g_mungus.zps.block.gas.core.KNodeBlockImpl;
+import g_mungus.zps.block.gas.core.GasNodeBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.gas.VentBlockEntity;
 import net.minecraft.core.BlockPos;
@@ -56,7 +55,7 @@ import java.util.Map;
  * <p>A redstone signal shuts it. The node keeps filling and its pressure keeps climbing — the
  * outlet is simply closed until the signal drops.
  */
-public class VentBlock extends KNodeBlockImpl implements EntityBlock, GasNetworkComponent {
+public class VentBlock extends GasNodeBlock implements EntityBlock {
 
     /** The side the panel sits on and gas leaves by. Never joins the network. */
     public static final DirectionProperty FACING = BlockStateProperties.FACING;
@@ -143,7 +142,7 @@ public class VentBlock extends KNodeBlockImpl implements EntityBlock, GasNetwork
     @Override
     public @NotNull DuctNode createNode(@NotNull DuctNodePos pos) {
         return new PipeDuctNode(pos, NodeBehaviorType.PIPE, new HashSet<>(),
-                VOLUME, MAX_PRESSURE, MAX_TEMPERATURE, 1687.5, 449.0);
+                VOLUME, MAX_PRESSURE, MAX_TEMPERATURE, 449.0);
     }
 
     /** Joins on every face except the one it vents from. */

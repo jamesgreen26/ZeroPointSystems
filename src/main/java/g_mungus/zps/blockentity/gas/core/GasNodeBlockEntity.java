@@ -21,10 +21,11 @@ import org.valkyrienskies.kelvin.api.DuctNetwork;
 import org.valkyrienskies.kelvin.api.DuctNodePos;
 import org.valkyrienskies.kelvin.api.GasType;
 import org.valkyrienskies.kelvin.util.INodeBlock;
+import org.valkyrienskies.kelvin.util.INodeBlockEntity;
 import org.valkyrienskies.kelvin.util.KelvinExtensions;
 
 import java.util.EnumSet;
-import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Base for every block entity that is a node on the Kelvin gas network.
@@ -39,7 +40,7 @@ import java.util.HashMap;
  * is enough to reproduce the same edge. This is why we do not need Clockwork's parallel
  * {@code edgeData} map of serialized edges.
  */
-public abstract class GasNodeBlockEntity extends BlockEntity implements KNodeBlockEntity {
+public abstract class GasNodeBlockEntity extends BlockEntity implements INodeBlockEntity {
 
     /** How often node state is pushed to nearby clients, in ticks. */
     private static final int SYNC_INTERVAL = 10;
@@ -116,9 +117,9 @@ public abstract class GasNodeBlockEntity extends BlockEntity implements KNodeBlo
     }
 
     /** The gases present at this node, by mass. Server only. */
-    public HashMap<GasType, Double> getGases() {
+    public Map<GasType, Double> getGases() {
         if (level == null || level.isClientSide()) {
-            return new HashMap<>();
+            return Map.of();
         }
         return KelvinMod.INSTANCE.forceGetKelvin().getGasMassAt(getDuctNodePosition());
     }

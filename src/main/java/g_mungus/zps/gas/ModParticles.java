@@ -23,7 +23,15 @@ public final class ModParticles {
     public static final DeferredRegister<ParticleType<?>> PARTICLE_TYPES =
             DeferredRegister.create(Registries.PARTICLE_TYPE, ZPSMod.MOD_ID);
 
-    /** Reuses Kelvin's gas particle, so ZPS gases look like every other gas. */
+    /**
+     * Reuses Kelvin's gas particle, so ZPS gases look like every other gas.
+     *
+     * <p>The particle type carries the gas density, which drives the particle's buoyancy — flux is
+     * far lighter than air, so it rises hard. Not a method reference: the density parameter has a
+     * Kotlin default, so the class exposes both a no-arg and a one-arg constructor and
+     * {@code DefaultGasParticleType::new} is ambiguous.
+     */
     public static final DeferredHolder<ParticleType<?>, DefaultGasParticle.DefaultGasParticleType> FLUX =
-            PARTICLE_TYPES.register("flux", DefaultGasParticle.DefaultGasParticleType::new);
+            PARTICLE_TYPES.register("flux",
+                    () -> new DefaultGasParticle.DefaultGasParticleType((float) ModGases.FLUX_DENSITY));
 }

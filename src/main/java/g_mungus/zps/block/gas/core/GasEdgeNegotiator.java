@@ -68,7 +68,7 @@ public final class GasEdgeNegotiator {
             return;
         }
         BlockState state = level.getBlockState(pos);
-        if (!(state.getBlock() instanceof GasNetworkComponent self)) {
+        if (!(state.getBlock() instanceof GasNodeBlock self)) {
             return;
         }
 
@@ -95,7 +95,7 @@ public final class GasEdgeNegotiator {
      * something changed, so the neighbour updates this triggers settle instead of recurring.
      */
     private static void refreshConnectionState(Level level, BlockPos pos, BlockState state) {
-        if (!(state.getBlock() instanceof KNodeBlockImpl block)) {
+        if (!(state.getBlock() instanceof GasNodeBlock block)) {
             return;
         }
         BlockState updated = block.getConnectedState(level, state, pos);
@@ -132,7 +132,7 @@ public final class GasEdgeNegotiator {
 
     // --- per-face negotiation --------------------------------------------------------------
 
-    private static void updateFace(Level level, DuctNetwork<?> kelvin, GasNetworkComponent self,
+    private static void updateFace(Level level, DuctNetwork<?> kelvin, GasNodeBlock self,
                                    BlockPos pos, DuctNodePos selfNode, Direction direction) {
         BlockPos neighborPos = pos.relative(direction);
         BlockState neighborState = level.getBlockState(neighborPos);
@@ -150,7 +150,7 @@ public final class GasEdgeNegotiator {
         }
 
         GasEdgeProposal merged;
-        if (neighborState.getBlock() instanceof GasNetworkComponent neighbor) {
+        if (neighborState.getBlock() instanceof GasNodeBlock neighbor) {
             if (!neighbor.getDuctStandard().equals(self.getDuctStandard())) {
                 dropEdge(level, kelvin, pos, selfNode, direction);
                 return;
@@ -261,7 +261,7 @@ public final class GasEdgeNegotiator {
      * connection state and to answer Kelvin's cross-mod {@code canConnectTo}.
      */
     public static boolean wouldConnect(BlockGetter level, BlockPos pos, Direction direction) {
-        if (!(level.getBlockState(pos).getBlock() instanceof GasNetworkComponent self)) {
+        if (!(level.getBlockState(pos).getBlock() instanceof GasNodeBlock self)) {
             return false;
         }
         if (self.proposeEdge(level, pos, direction) == null) {
@@ -271,7 +271,7 @@ public final class GasEdgeNegotiator {
         BlockPos neighborPos = pos.relative(direction);
         BlockState neighborState = level.getBlockState(neighborPos);
 
-        if (neighborState.getBlock() instanceof GasNetworkComponent neighbor) {
+        if (neighborState.getBlock() instanceof GasNodeBlock neighbor) {
             return neighbor.getDuctStandard().equals(self.getDuctStandard())
                     && neighbor.proposeEdge(level, neighborPos, direction.getOpposite()) != null;
         }

@@ -17,13 +17,20 @@ public final class ModGases {
     }
 
     /**
+     * Flux density at STP, in kg/m^3. A compile-time constant so {@link ModParticles} can read it
+     * for the particle's buoyancy without triggering this class's initializer — {@code ModGases}
+     * already depends on {@code ModParticles}, and a runtime read would close that cycle.
+     */
+    public static final double FLUX_DENSITY = 0.0899;
+
+    /**
      * Fusion fuel, vaporized from blue ice and lithium. Hydrogen-like: very light, very high heat
      * capacity. These are placeholder figures — the design doc still owns picking real ones.
      */
     public static final GasType FLUX = new GasType(
             "Flux",
             ZPSMod.resource("flux"),
-            0.0899,   // density at STP, kg/m^3
+            FLUX_DENSITY,
             0.88e-5,  // dynamic viscosity, kg/(m*s)
             14.30,    // specific heat capacity, J/(K*g)
             0.18,     // thermal conductivity, W/(m*K)

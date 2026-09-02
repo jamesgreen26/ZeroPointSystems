@@ -28,9 +28,9 @@ public class LeakyPipeDuctNode extends PipeDuctNode implements ILeakNode {
     private static final double MAX_LEAK_RATIO = 0.6;
 
     public LeakyPipeDuctNode(DuctNodePos pos, double volume, double maxPressure,
-                             double maxTemperature, double heatConductivity, double heatCapacity) {
+                             double maxTemperature, double heatCapacity) {
         super(pos, NodeBehaviorType.PIPE, new HashSet<DuctEdge>(), volume, maxPressure,
-                maxTemperature, heatConductivity, heatCapacity);
+                maxTemperature, heatCapacity);
     }
 
     @Override

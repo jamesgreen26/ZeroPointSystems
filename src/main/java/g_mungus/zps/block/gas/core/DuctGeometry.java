@@ -38,12 +38,12 @@ public final class DuctGeometry {
         ARMS.put(Direction.DOWN, Block.box(3, 0, 3, 13, 4, 13));
         ARMS.put(Direction.UP, Block.box(3, 12, 3, 13, 16, 13));
 
-        PROPERTIES.put(Direction.NORTH, KNodeBlock.NORTH_CONNECTION);
-        PROPERTIES.put(Direction.SOUTH, KNodeBlock.SOUTH_CONNECTION);
-        PROPERTIES.put(Direction.EAST, KNodeBlock.EAST_CONNECTION);
-        PROPERTIES.put(Direction.WEST, KNodeBlock.WEST_CONNECTION);
-        PROPERTIES.put(Direction.UP, KNodeBlock.UP_CONNECTION);
-        PROPERTIES.put(Direction.DOWN, KNodeBlock.DOWN_CONNECTION);
+        PROPERTIES.put(Direction.NORTH, GasNodeBlock.NORTH_CONNECTION);
+        PROPERTIES.put(Direction.SOUTH, GasNodeBlock.SOUTH_CONNECTION);
+        PROPERTIES.put(Direction.EAST, GasNodeBlock.EAST_CONNECTION);
+        PROPERTIES.put(Direction.WEST, GasNodeBlock.WEST_CONNECTION);
+        PROPERTIES.put(Direction.UP, GasNodeBlock.UP_CONNECTION);
+        PROPERTIES.put(Direction.DOWN, GasNodeBlock.DOWN_CONNECTION);
     }
 
     private DuctGeometry() {

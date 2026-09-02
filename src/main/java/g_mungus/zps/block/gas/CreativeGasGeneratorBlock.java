@@ -1,8 +1,7 @@
 package g_mungus.zps.block.gas;
 
 import g_mungus.zps.block.gas.core.GasEdgeProposal;
-import g_mungus.zps.block.gas.core.GasNetworkComponent;
-import g_mungus.zps.block.gas.core.KNodeBlockImpl;
+import g_mungus.zps.block.gas.core.GasNodeBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
 import g_mungus.zps.client.screens.CreativeGasGeneratorClientHooks;
@@ -40,7 +39,7 @@ import java.util.HashSet;
  * The ducts hanging off it keep their normal limits — bursting a line you over-pressurised is
  * exactly the feedback this block exists to give.
  */
-public class CreativeGasGeneratorBlock extends KNodeBlockImpl implements EntityBlock, GasNetworkComponent {
+public class CreativeGasGeneratorBlock extends GasNodeBlock implements EntityBlock {
 
     /** Bore and half-length of a connection, matching a plain duct so the geometry lines up. */
     private static final double RADIUS = 0.125;
@@ -48,7 +47,6 @@ public class CreativeGasGeneratorBlock extends KNodeBlockImpl implements EntityB
 
     /** The internal volume, in cubic metres — a duct's, so pressure reads on the same scale. */
     public static final double VOLUME = 1.0;
-    private static final double HEAT_CONDUCTIVITY = 1687.5;
     private static final double HEAT_CAPACITY = 449.0;
 
     public CreativeGasGeneratorBlock(Properties properties) {
@@ -61,7 +59,7 @@ public class CreativeGasGeneratorBlock extends KNodeBlockImpl implements EntityB
     @Override
     public @NotNull DuctNode createNode(@NotNull DuctNodePos pos) {
         return new TankDuctNode(pos, NodeBehaviorType.TANK, new HashSet<>(), VOLUME,
-                Double.MAX_VALUE, Double.MAX_VALUE, HEAT_CONDUCTIVITY, HEAT_CAPACITY, 1.0);
+                Double.MAX_VALUE, Double.MAX_VALUE, HEAT_CAPACITY, 1.0);
     }
 
     /** Offers a plain connection on every face, and imposes nothing on it. */

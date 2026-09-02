@@ -1,0 +1,22 @@
+{
+  "input_gasses": {
+    "zps:flux": {
+      "unit": "kg",
+      "amount": 1.0
+    }
+  },
+  "result_gasses": {
+    "vs_clockwork:aether": {
+      "unit": "kg",
+      "amount": 0.95
+    }
+  },
+  "requirements": {
+    "kelvin:min_temperature": 50000.0,
+    "kelvin:inhibited_by": {
+      "gas": "vs_clockwork:aether",
+      "ratio": 0.25
+    }
+  },
+  "energy": 5.0E9
+}

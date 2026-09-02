@@ -49,6 +49,8 @@ import g_mungus.zps.gametest.DripstoneGameTests;
 import g_mungus.zps.gametest.PowderSnowCauldronGameTests;
 import g_mungus.zps.gametest.SnowGolemGameTests;
 import g_mungus.zps.gametest.DuctGameTests;
+import g_mungus.zps.gametest.DuctTravelGameTests;
+import g_mungus.zps.gametest.DuctTravelSableGameTests;
 import g_mungus.zps.gametest.GasEdgeGameTests;
 import g_mungus.zps.gametest.ReactorWallApertureGameTests;
 import g_mungus.zps.gametest.VentGameTests;
@@ -129,6 +131,8 @@ public final class ZPSMod {
         event.register(DuctGameTests.class);
         event.register(VentGameTests.class);
         event.register(CreativeGasGeneratorGameTests.class);
+        event.register(DuctTravelGameTests.class);
+        event.register(DuctTravelSableGameTests.class);
         event.register(VaporizerGameTests.class);
         event.register(FusionReactorGameTests.class);
         event.register(ReactorWallApertureGameTests.class);

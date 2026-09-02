@@ -59,6 +59,8 @@ import net.neoforged.neoforge.client.event.RegisterRecipeBookCategoriesEvent;
 import net.neoforged.neoforge.client.event.RegisterClientTooltipComponentFactoriesEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
@@ -98,6 +100,15 @@ public class ClientSetup {
     }
 
     @SubscribeEvent
+    public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
+        // Above the hotbar rather than over it: the player is still in the world while inside a duct.
+        event.registerAbove(VanillaGuiLayers.HOTBAR, ZPSMod.resource("duct_travel"),
+                DuctTravelOverlay.INSTANCE);
+        // Over everything, HUD included: the transition takes the whole screen, not just the world.
+        event.registerAboveAll(ZPSMod.resource("duct_travel_fade"), DuctTravelFade.INSTANCE);
+    }
+
+    @SubscribeEvent
     public static void onRegisterGeometryLoaders(ModelEvent.RegisterGeometryLoaders event) {
         event.register(ConnectedModelLoader.ID, ConnectedModelLoader.INSTANCE);
     }
@@ -119,6 +130,8 @@ public class ClientSetup {
             ClientReactors.invalidateMeshes();
             ReactorGlowElement.releaseAll();
         });
+        // The duct rider's helmet model is baked from the entity model set, which a reload rebuilds.
+        event.registerReloadListener((ResourceManagerReloadListener) resourceManager -> DuctTravelClientHooks.clearBakedModels());
     }
 
     /** The item models carry the face overlay on tint index 0, shown in its unpowered colour. */
@@ -200,6 +213,7 @@ public class ClientSetup {
             AssemblerRecipeArgument.setClientLevelSupplier(() -> Minecraft.getInstance().level);
             EntityRenderers.register(ModEntities.OCTO_MOUNTING.get(), OctoMountingRenderer::new);
             EntityRenderers.register(ModEntities.DODECA_MOUNTING.get(), DodecaMountingRenderer::new);
+            EntityRenderers.register(ModEntities.DUCT_TRAVEL.get(), DuctTravelRenderer::new);
             BlockEntityRenderers.register(ModBlockEntities.GRADUATED_LEVER.get(), GraduatedLeverBlockEntityRenderer::new);
             BlockEntityRenderers.register(ModBlockEntities.DATA_LECTERN.get(), DataLecternBlockEntityRenderer::new);
             BlockEntityRenderers.register(ModBlockEntities.SCRIPT_TERMINAL.get(), ScriptTerminalBlockEntityRenderer::new);
@@ -258,6 +272,10 @@ public class ClientSetup {
             NeoForge.EVENT_BUS.addListener(TractorBeamRenderer::onRenderLevelStage);
             NeoForge.EVENT_BUS.addListener(ReactorGlowPreviews::onLoggingOut);
             NeoForge.EVENT_BUS.addListener(ReactorGlowElement::onLoggingOut);
+            NeoForge.EVENT_BUS.addListener(DuctTravelClientHooks::onRenderPlayer);
+            NeoForge.EVENT_BUS.addListener(DuctTravelClientHooks::onRenderHand);
+            NeoForge.EVENT_BUS.addListener(DuctTravelClientHooks::onPlayerTick);
+            NeoForge.EVENT_BUS.addListener(DuctTravelSounds::onPlaySound);
         });
     }
 

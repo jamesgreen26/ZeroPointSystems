@@ -45,6 +45,13 @@ public class VSCompat {
     }
 
     /// Only call after verifying that VS is loaded.
+    /// True when pos is in the shipyard but no ship manages it.
+    static boolean isOrphanedShipyardPos(Level level, BlockPos pos) {
+        return VSGameUtilsKt.isBlockInShipyard(level, pos)
+                && VSGameUtilsKt.getShipManagingPos(level, pos) == null;
+    }
+
+    /// Only call after verifying that VS is loaded.
     /// Transforms pos (in the ship-space of the ship managing anchorPos) into world coordinates.
     /// anchorPos resolves the ship, so positions outside the ship's strict bounds still transform
     /// correctly. Returns pos unchanged if anchorPos is not on a ship.

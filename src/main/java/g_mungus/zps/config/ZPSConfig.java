@@ -95,6 +95,12 @@ public class ZPSConfig {
     private static ModConfigSpec.EnumValue<ConverterOverpowerBehavior> converterOverpowerBehavior;
     private static ModConfigSpec.EnumValue<ScriptCommandFailureBehavior> scriptCommandFailureBehavior;
     private static ModConfigSpec.ConfigValue<List<? extends String>> gasEdgeForeignBlocklist;
+    private static ModConfigSpec.ConfigValue<Boolean> ductTravel;
+    private static final boolean ductTravelDefault = true;
+    private static ModConfigSpec.ConfigValue<Integer> ductTravelMaxNodes;
+    private static final int ductTravelMaxNodesDefault = 4096;
+    private static ModConfigSpec.ConfigValue<Double> ductTravelSpeed;
+    private static final double ductTravelSpeedDefault = 0.4;
 
     /**
      * Blocks from other mods that author their own Kelvin gas edges. ZPS never creates an edge to
@@ -110,6 +116,30 @@ public class ZPSConfig {
             return gasEdgeForeignBlocklist.get().contains(id);
         } catch (Exception ignored) { }
         return gasEdgeForeignBlocklistDefault.contains(id);
+    }
+
+    /** Whether players can climb into a vent and travel the duct run. */
+    public static boolean ductTravelEnabled() {
+        try {
+            return ductTravel.get();
+        } catch (Exception ignored) { }
+        return ductTravelDefault;
+    }
+
+    /** How many blocks one search for reachable vents will walk before giving up. */
+    public static int ductTravelMaxNodes() {
+        try {
+            return ductTravelMaxNodes.get();
+        } catch (Exception ignored) { }
+        return ductTravelMaxNodesDefault;
+    }
+
+    /** How fast a player crawls between vents, in blocks per tick. */
+    public static double ductTravelBlocksPerTick() {
+        try {
+            return ductTravelSpeed.get();
+        } catch (Exception ignored) { }
+        return ductTravelSpeedDefault;
     }
 
     public static ConverterOverpowerBehavior getConverterOverpowerBehavior() {
@@ -353,6 +383,20 @@ public class ZPSConfig {
                 .comment("Players within this many blocks of a reactor earn its advancements.")
                 .defineInRange("AdvancementRadius", REACTOR_ADVANCEMENT_RADIUS_DEFAULT, 1, 256);
         builder.pop();
+
+        ductTravel = builder
+                .comment("Whether players can climb into a Vent and travel between every other",
+                         "Vent on the same connected duct run.")
+                .define("DuctTravel", ductTravelDefault);
+        ductTravelMaxNodes = builder
+                .comment("How many blocks the search for reachable Vents walks before it gives up.",
+                         "Raise it for very large duct networks; lower it if entering a vent stutters.")
+                .defineInRange("DuctTravelMaxNodes", ductTravelMaxNodesDefault, 64, 65_536);
+        ductTravelSpeed = builder
+                .comment("How fast a player crawls between two Vents, in blocks per tick.",
+                         "The screen is held black for the length of the journey, so lower values",
+                         "make distant Vents a slower way to travel and nearby ones barely a pause.")
+                .defineInRange("DuctTravelBlocksPerTick", ductTravelSpeedDefault, 0.05, 64.0);
         return builder.build();
     }
 }

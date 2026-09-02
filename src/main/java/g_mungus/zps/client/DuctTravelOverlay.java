@@ -1,0 +1,56 @@
+package g_mungus.zps.client;
+
+import g_mungus.zps.entity.DuctTravelEntity;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.LayeredDraw;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+
+import java.util.List;
+
+/**
+ * The readout drawn while a player is inside a duct: which vent they are peeking out of, how many
+ * there are on this run, and how to work it.
+ *
+ * <p>Deliberately a strip above the hotbar rather than a screen. The player is still in the world
+ * and still turning their head; taking the mouse away to pick a destination would break that.
+ */
+public final class DuctTravelOverlay implements LayeredDraw.Layer {
+
+    public static final DuctTravelOverlay INSTANCE = new DuctTravelOverlay();
+
+    private static final int PANEL_BOTTOM_MARGIN = 76;
+    private static final int TITLE_COLOR = 0xFFE9F4FF;
+
+    private DuctTravelOverlay() {
+    }
+
+    @Override
+    public void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
+        Minecraft minecraft = Minecraft.getInstance();
+        LocalPlayer player = minecraft.player;
+
+        if (player == null
+                || minecraft.options.hideGui
+                || !(player.getVehicle() instanceof DuctTravelEntity)
+                || DuctTravelClientState.isEmpty()) {
+            return;
+        }
+
+        List<BlockPos> destinations = DuctTravelClientState.destinations();
+        int selected = Math.clamp(DuctTravelClientState.selected(), 0, destinations.size() - 1);
+        Component title = Component.translatable("zps.duct.hud.title",
+                selected + 1, destinations.size());
+
+        Font font = minecraft.font;
+        int centerX = graphics.guiWidth() / 2;
+        int top = graphics.guiHeight() - PANEL_BOTTOM_MARGIN;
+
+
+        graphics.drawCenteredString(font, title, centerX, top, TITLE_COLOR);
+    }
+}

@@ -2,6 +2,7 @@ package g_mungus.zps.compat;
 
 import dev.ryanhcode.sable.companion.SableCompanion;
 import dev.ryanhcode.sable.companion.SubLevelAccess;
+import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.companion.math.BoundingBox3d;
 import dev.ryanhcode.sable.companion.math.BoundingBox3dc;
 import dev.ryanhcode.sable.companion.math.BoundingBox3ic;
@@ -193,6 +194,16 @@ public final class SableCompat {
         SubLevelAccess subLevel = SableCompanion.INSTANCE.getContaining(level, anchorPos.getCenter());
         if (subLevel == null) return worldPos;
         return subLevel.logicalPose().transformPositionInverse(worldPos);
+    }
+
+    /// Only call after verifying that Sable is loaded.
+    /// True when pos is in the plot grid but no sublevel holds that plot: one has been removed,
+    /// and Sable has not yet cleared what it left behind.
+    static boolean isOrphanedPlotPos(Level level, BlockPos pos) {
+        SubLevelContainer container = SubLevelContainer.getContainer(level);
+        return container != null
+                && container.inBounds(pos)
+                && SableCompanion.INSTANCE.getContaining(level, pos) == null;
     }
 
     /// Only call after verifying that Sable is loaded.

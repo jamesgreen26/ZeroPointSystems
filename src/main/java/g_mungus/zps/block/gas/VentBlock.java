@@ -4,9 +4,16 @@ import g_mungus.zps.block.gas.core.GasEdgeProposal;
 import g_mungus.zps.block.gas.core.GasNodeBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.gas.VentBlockEntity;
+import g_mungus.zps.config.ZPSConfig;
+import g_mungus.zps.entity.DuctTravelEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -128,6 +135,43 @@ public class VentBlock extends GasNodeBlock implements EntityBlock {
     /** Whether the outlet is currently closed. */
     public static boolean isShut(BlockState state) {
         return state.hasProperty(POWERED) && state.getValue(POWERED);
+    }
+
+    // --- duct travel ------------------------------------------------------------------------
+
+    /**
+     * Climb in. Only from the front: the plate is the opening, and the face behind it is the pipe
+     * joint with nothing to get into.
+     *
+     * <p>A shut vent is shut to people as well as to gas, which turns the redstone input this
+     * block already had into a lock on the duct run behind it.
+     *
+     * <p>Not while sneaking: sneaking is how a rider climbs back out, so vanilla would eject them
+     * on the very next tick and the click would read as having done nothing.
+     */
+    @Override
+    protected @NotNull InteractionResult useWithoutItem(@NotNull BlockState state, @NotNull Level level,
+                                                        @NotNull BlockPos pos, @NotNull Player player,
+                                                        @NotNull BlockHitResult hit) {
+        if (!ZPSConfig.ductTravelEnabled()
+                || hit.getDirection() != state.getValue(FACING)
+                || player.isSpectator()
+                || player.isShiftKeyDown()
+                || player.isPassenger()) {
+            return super.useWithoutItem(state, level, pos, player, hit);
+        }
+
+        if (level.isClientSide()) {
+            return InteractionResult.SUCCESS;
+        }
+        if (isShut(state)) {
+            player.displayClientMessage(Component.translatable("zps.duct.sealed"), true);
+            return InteractionResult.CONSUME;
+        }
+
+        return DuctTravelEntity.enter((ServerLevel) level, pos, player)
+                ? InteractionResult.CONSUME
+                : InteractionResult.PASS;
     }
 
     // --- gas network ------------------------------------------------------------------------

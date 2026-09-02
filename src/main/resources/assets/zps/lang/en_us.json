@@ -552,6 +552,12 @@
     "sounds.zps.impact_anvil_break": "Anvil shatters",
     "sounds.zps.reactor_hum": "Reactor hums",
 
+    "zps.duct.sealed": "The vent is sealed shut.",
+    "zps.duct.hud.title": "Vent %s / %s",
+    "zps.duct.hud.entry": "%s, %s, %s \u00b7 where you got in",
+    "zps.duct.hud.destination": "%s, %s, %s \u00b7 %sm from entry",
+    "zps.duct.hud.hint": "[%s]/[%s] cycle \u00b7 [%s] climb out",
+
     "zps.display_source.serial_bus": "Raw Input Data",
     "zps.display_source.serial_bus_manual": "Stored Display Text",
     "zps.display_source.reactor_status": "Reactor Status",

@@ -254,6 +254,7 @@ public class ModBlocks {
 
     public static final DeferredBlock<Block> VENT = BLOCKS.register("vent",
             () -> new VentBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .sound(SoundType.NETHERITE_BLOCK)
                     .strength(2.0f)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
@@ -266,6 +267,7 @@ public class ModBlocks {
 
     public static final DeferredBlock<Block> GAS_DUCT = BLOCKS.register("gas_duct",
             () -> new DuctBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .sound(SoundType.NETHERITE_BLOCK)
                     .strength(2.0f)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));

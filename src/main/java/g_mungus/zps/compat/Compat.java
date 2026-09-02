@@ -101,6 +101,20 @@ public class Compat {
         return pos;
     }
 
+    /// True when pos lies in the region a grid mod keeps for its grids (the VS shipyard, Sable's
+    /// plots) but no grid owns it any more: a ship or sublevel has gone, and whatever is still at
+    /// pos is a leftover with no place in the world. False in the world proper, on a live grid,
+    /// or when no grid mod is present.
+    public static boolean isOrphanedGridPos(Level level, BlockPos pos) {
+        if (isVSLoaded()) {
+            return VSCompat.isOrphanedShipyardPos(level, pos);
+        }
+        if (isSableLoaded()) {
+            return SableCompat.isOrphanedPlotPos(level, pos);
+        }
+        return false;
+    }
+
     /// The moving grid (VS ship or Sable sublevel) that pos belongs to, or null when pos is in the
     /// world proper or no grid mod is present.
     public static @Nullable GridSpace gridOf(Level level, BlockPos pos) {

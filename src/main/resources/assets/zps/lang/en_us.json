@@ -16,6 +16,7 @@
     "block.zps.vaporizer": "Vaporizer",
     "block.zps.vent": "Vent",
     "block.zps.gas_duct": "Gas Duct",
+    "block.zps.creative_gas_generator": "Creative Gas Generator",
     "block.zps.suspicious_red_sand": "Suspicious Red Sand",
     "gui.zps.assembler.input": "Input",
     "gui.zps.assembler.crafting": "Crafting Pattern",

@@ -126,6 +126,9 @@ public class ModItems {
     public static final DeferredItem<Item> GAS_DUCT = ITEMS.register("gas_duct",
             () -> new BlockItem(ModBlocks.GAS_DUCT.get(), new Item.Properties()));
 
+    public static final DeferredItem<Item> CREATIVE_GAS_GENERATOR = ITEMS.register("creative_gas_generator",
+            () -> new BlockItem(ModBlocks.CREATIVE_GAS_GENERATOR.get(), new Item.Properties().rarity(Rarity.EPIC)));
+
     public static final DeferredItem<Item> SIEVE = ITEMS.register("sieve",
             () -> new BlockItem(ModBlocks.SIEVE.get(), new Item.Properties()));
 

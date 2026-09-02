@@ -2,6 +2,7 @@ package g_mungus.zps.blockentity;
 
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
 import g_mungus.zps.blockentity.gas.DuctBlockEntity;
 import g_mungus.zps.blockentity.gas.VentBlockEntity;
 import g_mungus.zps.blockentity.gas.VaporizerBlockEntity;
@@ -30,6 +31,11 @@ public class ModBlockEntities {
         BLOCK_ENTITIES.register("duct",
             () -> BlockEntityType.Builder.of(DuctBlockEntity::new,
                 ModBlocks.GAS_DUCT.get()).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CreativeGasGeneratorBlockEntity>> CREATIVE_GAS_GENERATOR =
+        BLOCK_ENTITIES.register("creative_gas_generator",
+            () -> BlockEntityType.Builder.of(CreativeGasGeneratorBlockEntity::new,
+                ModBlocks.CREATIVE_GAS_GENERATOR.get()).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<RedstoneConverterBlockEntity>> REDSTONE_CONVERTER =
         BLOCK_ENTITIES.register("redstone_converter",

@@ -78,6 +78,7 @@ public class ModCreativeTabs {
                         VAPORIZER,
                         VENT,
                         GAS_DUCT,
+                        CREATIVE_GAS_GENERATOR,
 
                         SUSPICIOUS_RED_SAND,
 

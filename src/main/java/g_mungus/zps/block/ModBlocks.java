@@ -5,6 +5,7 @@ import g_mungus.zps.block.cableNetwork.*;
 import g_mungus.zps.block.cableNetwork.light_pipe.*;
 import g_mungus.zps.block.cableNetwork.properties.InsulationType;
 import g_mungus.zps.block.datagen.BlockDataGenerator;
+import g_mungus.zps.block.gas.CreativeGasGeneratorBlock;
 import g_mungus.zps.block.gas.DuctBlock;
 import g_mungus.zps.block.gas.VentBlock;
 import g_mungus.zps.block.gas.VaporizerBlock;
@@ -247,6 +248,12 @@ public class ModBlocks {
                     .strength(2.0f)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
+
+    public static final DeferredBlock<Block> CREATIVE_GAS_GENERATOR = BLOCKS.register("creative_gas_generator",
+            () -> new CreativeGasGeneratorBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .sound(SoundType.NETHERITE_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()));
 
     public static final DeferredBlock<Block> SIEVE = BLOCKS.register("sieve",
             () -> new SieveBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)

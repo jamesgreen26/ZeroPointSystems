@@ -32,6 +32,7 @@ import g_mungus.zps.gametest.CableNetworkGameTests;
 import g_mungus.zps.blockentity.gas.VaporizerBlockEntity;
 import g_mungus.zps.gas.ModGases;
 import g_mungus.zps.gas.ModParticles;
+import g_mungus.zps.gametest.CreativeGasGeneratorGameTests;
 import g_mungus.zps.gametest.DuctGameTests;
 import g_mungus.zps.gametest.GasEdgeGameTests;
 import g_mungus.zps.gametest.VaporizerGameTests;
@@ -104,6 +105,7 @@ public final class ZPSMod {
         event.register(GasEdgeGameTests.class);
         event.register(DuctGameTests.class);
         event.register(VaporizerGameTests.class);
+        event.register(CreativeGasGeneratorGameTests.class);
     }
 
     /**

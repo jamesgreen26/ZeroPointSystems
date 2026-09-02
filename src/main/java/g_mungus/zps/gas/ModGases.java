@@ -1,6 +1,7 @@
 package g_mungus.zps.gas;
 
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.compat.Compat;
 import org.valkyrienskies.kelvin.api.GasType;
 import org.valkyrienskies.kelvin.impl.registry.GasTypeRegistry;
 
@@ -30,6 +31,8 @@ public final class ModGases {
             1.4,      // adiabatic index
             GasType.Companion.getPLACEHOLDER_ICON());
 
+    public static final GasType AETHER = Compat.getOrCreateAetherGas();
+
     /**
      * Registers ZPS's gases with Kelvin. Safe to call during mod construction — {@code
      * GasTypeRegistry} is a plain map, and the particle picker resolves its type lazily.
@@ -41,5 +44,9 @@ public final class ModGases {
      */
     public static void register() {
         GasTypeRegistry.INSTANCE.register(FLUX, new LazyGasParticlePicker(ModParticles.FLUX));
+
+        if (!Compat.isClockworkLoaded()) {
+            GasTypeRegistry.INSTANCE.register(AETHER);
+        }
     }
 }

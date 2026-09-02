@@ -217,6 +217,9 @@ dependencies {
     compileOnly("org.valkyrienskies.core:api:1.1.0+b714ef303e") { transitive = false }
     compileOnly("org.joml:joml-primitives:1.10.0")
     compileOnlyApi("maven.modrinth:valkyrien-skies:1.20.1-forge-2.4.10")
+    // No 1.21.1 build of Clockwork exists yet. Compiling against the 1.20.1 jar is enough to see
+    // its API; the version only has to match at runtime, and at runtime this is never on the path.
+    compileOnlyApi("maven.modrinth:create-clockwork:1.20.1-forge-0.5.6")
 }
 
 test {

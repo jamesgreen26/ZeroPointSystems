@@ -17,6 +17,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
+import org.valkyrienskies.kelvin.api.GasType;
 
 @EventBusSubscriber(modid = ZPSMod.MOD_ID)
 public class Compat {
@@ -45,6 +46,8 @@ public class Compat {
     }
 
     public static boolean isSableLoaded() { return ModList.get().isLoaded("sable"); }
+
+    public static boolean isClockworkLoaded() { return ModList.get().isLoaded("vs_clockwork"); }
 
     public static BlockPos toWorldPos(ServerLevel level, BlockPos pos) {
         if (isVSLoaded()) {
@@ -110,6 +113,24 @@ public class Compat {
     public static void onModInit(IEventBus modEventBus) {
         if (isCreateLoaded()) {
             CreateCompat.init(modEventBus);
+        }
+    }
+
+    public static GasType getOrCreateAetherGas() {
+        if (isClockworkLoaded()) {
+            return ClockworkCompat.getAetherGas();
+        } else {
+            return new GasType(
+                    "Aether",
+                    ResourceLocation.fromNamespaceAndPath("vs_clockwork", "aether"),
+                    0.166,
+                    1.96e-5,
+                    5.1832,
+                    0.151,
+                    79.4,
+                    1.66,
+                    ResourceLocation.fromNamespaceAndPath("kelvin", "textures/icons/helium.png")
+            );
         }
     }
 }

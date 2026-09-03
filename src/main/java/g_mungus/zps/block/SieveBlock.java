@@ -3,6 +3,7 @@ package g_mungus.zps.block;
 import com.mojang.serialization.MapCodec;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.SieveBlockEntity;
+import g_mungus.zps.compat.Compat;
 import g_mungus.zps.entity.Siftable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -32,8 +33,10 @@ import org.jetbrains.annotations.Nullable;
 /**
  * A sieve pan holding five stacks. No processing yet: the inventory is storage only.
  *
- * <p>Only the frame collides; the mesh in the middle is pass-through, so anything landing on the
- * sieve drops into the block below.
+ * <p>Living entities stand on the mesh; everything else falls through it, so anything landing on the
+ * sieve drops into the block below and is sifted on the way. The frame rails hang outside the
+ * block's own cube and are clipped out of the collision shape, so the mesh is all that ever
+ * collides.
  *
  * <p>The pan is wider than its block: the frame rails hang four pixels past the cube on every side
  * and the mesh a further pixel. Sieves therefore connect to each other — each block draws only the
@@ -336,20 +339,34 @@ public class SieveBlock extends BaseEntityBlock {
     public @NotNull VoxelShape getCollisionShape(@NotNull BlockState state, @NotNull BlockGetter level,
                                                  @NotNull BlockPos pos, @NotNull CollisionContext context) {
         if (context instanceof EntityCollisionContext entityCollisionContext
-                && entityCollisionContext.getEntity() instanceof LivingEntity) {
-            return OUTLINE_CONTAINED;
+                && entityCollisionContext.getEntity() != null
+                && !(entityCollisionContext.getEntity() instanceof LivingEntity)) {
+            return Shapes.empty();
         }
 
-        return Shapes.empty();
+        return OUTLINE_CONTAINED;
     }
 
     @Override
     protected void entityInside(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos, Entity entity) {
-        if (!entity.getBoundingBox().intersects(MESH_BOUNDS.move(pos)) || entity instanceof LivingEntity) {
+        if (entity instanceof LivingEntity) {
             return;
         }
 
-        if (entity.getBoundingBox().getCenter().y < pos.getY() + BLOCK_MID_Y
+        // Valkyrien Skies calls this with a shipyard pos while leaving the entity in world space, so
+        // the entity has to be brought into the sieve's own grid before either test below means
+        // anything; off a ship the transform is the identity. Two axis aligned boxes intersect
+        // exactly when one of them, grown by the other's half extents, contains the other's centre,
+        // so this is the same test as before in the world.
+        Vec3 centre = Compat.toLocalSpaceOf(level, pos, entity.getBoundingBox().getCenter());
+        double halfWidth = entity.getBbWidth() / 2.0;
+        double halfHeight = entity.getBbHeight() / 2.0;
+
+        if (!MESH_BOUNDS.move(pos).inflate(halfWidth, halfHeight, halfWidth).contains(centre)) {
+            return;
+        }
+
+        if (centre.y < pos.getY() + BLOCK_MID_Y
                 && entity instanceof Siftable siftable && !level.isClientSide()
                 && level.getBlockEntity(pos) instanceof SieveBlockEntity sieve) {
             siftable.sift(sieve.getInventory());

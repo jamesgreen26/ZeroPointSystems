@@ -1,0 +1,10 @@
+{
+  "type": "zps:impact",
+  "ingredient": "minecraft:cobblestone",
+  "results": [
+    { "block": "minecraft:gravel", "weight": 19 },
+    { "block": "minecraft:suspicious_gravel", "weight": 1,
+      "buried_item": { "tag": "zps:resources_in_cobblestone" },
+      "count": { "type": "minecraft:uniform", "value": { "min_inclusive": 1, "max_inclusive": 2 } } }
+  ]
+}

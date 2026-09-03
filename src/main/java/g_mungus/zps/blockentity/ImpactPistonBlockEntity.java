@@ -1,0 +1,507 @@
+package g_mungus.zps.blockentity;
+
+import g_mungus.zps.ModSounds;
+import g_mungus.zps.recipe.ImpactInput;
+import g_mungus.zps.recipe.ImpactRecipe;
+import g_mungus.zps.recipe.ImpactResult;
+import g_mungus.zps.recipe.ModRecipes;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.particles.BlockParticleOption;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
+import net.minecraft.util.valueproviders.IntProvider;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BrushableBlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.world.phys.AABB;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.energy.EnergyStorage;
+import net.minecraftforge.energy.IEnergyStorage;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Set;
+
+/**
+ * Drives the Impact Piston's rod and applies {@code zps:impact} recipes to the block beneath it.
+ *
+ * <p>The stroke is a three-state machine. While powered and fed, the rod winches steadily upward
+ * ({@link Phase#RAISING}) over {@link #RAISE_TICKS}; losing power freezes it in place
+ * ({@link Phase#HELD}) so a resumed stroke still costs a full {@link #RAISE_TICKS}. Reaching the top commits
+ * the machine to a {@link Phase#FALLING} stroke that always completes, whatever happens to the
+ * redstone signal in the meantime. A stroke that converts the block below is followed by
+ * {@link #COOLDOWN_TICKS} ticks parked at the bottom before the next raise begins.
+ *
+ * <p>Only the four animation fields plus stored energy are synced. The animation fields change on
+ * phase transitions, but stored energy is pushed the moment it changes — like the Robotic Arm — so
+ * the screen's energy bar tracks charging and draining as it happens. Both render paths reconstruct
+ * the rod position from those fields via {@link #rodOffset}.
+ */
+public class ImpactPistonBlockEntity extends BlockEntity {
+    public enum Phase {
+        /** Rod parked at {@code phaseStartOffset}: either idle at the bottom, or stalled mid-stroke. */
+        HELD,
+        RAISING,
+        FALLING;
+
+        private static final Phase[] VALUES = values();
+
+        static Phase byOrdinal(int ordinal) {
+            return ordinal >= 0 && ordinal < VALUES.length ? VALUES[ordinal] : HELD;
+        }
+    }
+
+    public static final int ENERGY_CAPACITY = 8192;
+    private static final int MAX_RECEIVE = 512;
+
+    /** Ticks of powered operation to winch the rod to the top of its stroke. */
+    public static final int RAISE_TICKS = 20;
+    /** Ticks the rod takes to fall from the top of its stroke. */
+    public static final int FALL_TICKS = 3;
+    /**
+     * Ticks the machine sits idle after a strike that actually converted a block, before it starts
+     * winching again. Keeps back-to-back conversions reading as separate blows rather than one
+     * continuous grind.
+     */
+    public static final int COOLDOWN_TICKS = 4;
+    /** Drawn every tick the rod is being raised. The fall is gravity, and free. */
+    public static final int ENERGY_PER_TICK = 64;
+    /**
+     * Blocks the rod rises above the machine at the top of its stroke.
+     *
+     * <p>Capped so the rod's foot never clears the body: the rod model starts one pixel up
+     * (y=1) and the body is a full cube (top face at y=16), so any travel above 15/16 opens a
+     * visible gap under the rod. Backed off one further pixel to 14/16 so the foot stays buried
+     * in the body rather than sitting coplanar with its top face, which would z-fight.
+     */
+    public static final float ROD_TRAVEL = 14.0f / 16.0f;
+
+    private static final float IMPACT_VOLUME = 1.0f;
+    private static final float IMPACT_PITCH = 0.8f;
+    private static final float ANVIL_BREAK_VOLUME = 1.0f;
+    private static final float ANVIL_BREAK_PITCH = 1.0f;
+    private static final float DRY_DROP_VOLUME = 0.4f;
+    private static final float DRY_DROP_PITCH = 0.6f;
+
+    /** Property value types {@link #orientLike} treats as orientation worth carrying over. */
+    private static final Set<Class<?>> ORIENTATION_TYPES = Set.of(Direction.class, Direction.Axis.class);
+    private static final int IMPACT_BLOCK_PARTICLES = 24;
+    private static final int IMPACT_CRIT_PARTICLES = 8;
+
+    private final PistonEnergyStorage energyStorage = new PistonEnergyStorage();
+    private final LazyOptional<IEnergyStorage> energyCap = LazyOptional.of(() -> energyStorage);
+
+    private Phase phase = Phase.HELD;
+    private long phaseStartTick;
+    private float phaseStartOffset;
+    private float phaseDuration;
+    /** Server-only: true when the current fall is a work stroke rather than a powered-down retraction. */
+    private boolean strike;
+    /** Server-only: ticks left of the post-conversion pause. The rod is parked at the bottom throughout. */
+    private int cooldown;
+
+    @Nullable
+    private ImpactRecipe cachedRecipe;
+    @Nullable
+    private BlockState cachedRecipeState;
+
+    public ImpactPistonBlockEntity(BlockPos pos, BlockState state) {
+        super(ModBlockEntities.IMPACT_PISTON.get(), pos, state);
+    }
+
+    public IEnergyStorage getEnergyStorage() {
+        return energyStorage;
+    }
+
+    public int getEnergyStored() {
+        return energyStorage.getEnergyStored();
+    }
+
+    public int getMaxEnergyStored() {
+        return energyStorage.getMaxEnergyStored();
+    }
+
+    /**
+     * How far the rod sits above its resting position, from 0 (down) to 1 (fully raised). Shared by
+     * the Flywheel visual and the BER fallback; the client passes a partial-tick-adjusted elapsed.
+     */
+    public static float rodOffset(Phase phase, float startOffset, float duration, float elapsed) {
+        if (phase == Phase.HELD) {
+            return Mth.clamp(startOffset, 0.0f, 1.0f);
+        }
+        float t = duration <= 0.0f ? 1.0f : Mth.clamp(elapsed / duration, 0.0f, 1.0f);
+        return phase == Phase.RAISING
+                // A steady winch: linear, so a stroke interrupted and resumed still costs a full raise time.
+                ? startOffset + (1.0f - startOffset) * t
+                // Gravity: accelerating, so the landing reads as a slam rather than a descent.
+                : startOffset * (1.0f - t * t);
+    }
+
+    /** Client-side rod position for the current frame. */
+    public float getRodOffset(float partialTick) {
+        if (level == null) {
+            return phaseStartOffset;
+        }
+        float elapsed = (float) (level.getGameTime() - phaseStartTick) + partialTick;
+        return rodOffset(phase, phaseStartOffset, phaseDuration, elapsed);
+    }
+
+    public Phase getPhase() {
+        return phase;
+    }
+
+    private float currentOffset() {
+        if (level == null) {
+            return phaseStartOffset;
+        }
+        return rodOffset(phase, phaseStartOffset, phaseDuration, level.getGameTime() - phaseStartTick);
+    }
+
+    public void serverTick() {
+        if (level == null || level.isClientSide()) {
+            return;
+        }
+
+        if (phase == Phase.FALLING) {
+            // The fall is committed once started, and gravity costs nothing.
+            if (level.getGameTime() - phaseStartTick >= phaseDuration) {
+                land();
+            }
+            return;
+        }
+
+        if (cooldown > 0) {
+            // Recovering from a strike. The rod is already down, so there is nothing to retract and
+            // nothing to spend; it just waits, powered or not.
+            cooldown--;
+            return;
+        }
+
+        if (!level.hasNeighborSignal(worldPosition) || getActiveRecipe() == null) {
+            float offset = currentOffset();
+            if (offset > 0.0f) {
+                beginFall(offset, false);
+            } else if (phase != Phase.HELD) {
+                setPhase(Phase.HELD, 0.0f, 0.0f);
+            }
+            return;
+        }
+
+        if (energyStorage.getEnergyStored() < ENERGY_PER_TICK) {
+            // Out of power: freeze the rod where it is so the stroke resumes rather than restarting.
+            if (phase != Phase.HELD) {
+                setPhase(Phase.HELD, currentOffset(), 0.0f);
+            }
+            return;
+        }
+        energyStorage.consume(ENERGY_PER_TICK);
+
+        if (phase == Phase.HELD) {
+            beginRaise(phaseStartOffset);
+        } else if (level.getGameTime() - phaseStartTick >= phaseDuration) {
+            beginFall(1.0f, true);
+        }
+    }
+
+    private void beginRaise(float fromOffset) {
+        setPhase(Phase.RAISING, fromOffset, RAISE_TICKS * (1.0f - fromOffset));
+    }
+
+    private void beginFall(float fromOffset, boolean strike) {
+        this.strike = strike;
+        setPhase(Phase.FALLING, fromOffset, FALL_TICKS * fromOffset);
+    }
+
+    private void setPhase(Phase phase, float startOffset, float duration) {
+        if (level == null) {
+            return;
+        }
+        this.phase = phase;
+        this.phaseStartOffset = Mth.clamp(startOffset, 0.0f, 1.0f);
+        this.phaseDuration = duration;
+        this.phaseStartTick = level.getGameTime();
+        setChanged();
+        level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_ALL);
+    }
+
+    /** The rod has landed: fire the effects, and convert the block below if this was a work stroke. */
+    private void land() {
+        setPhase(Phase.HELD, 0.0f, 0.0f);
+
+        if (!strike) {
+            // A rod that fell because the machine lost power still lands, but it lands limply.
+            playThunk(DRY_DROP_VOLUME, DRY_DROP_PITCH);
+            return;
+        }
+        strike = false;
+
+        BlockPos below = worldPosition.below();
+        BlockState struck = level.getBlockState(below);
+
+        // Re-resolve: the block below may have changed while the rod was in the air. The outcome has
+        // to be picked before the effects fire, since a recipe that leaves nothing behind sounds
+        // like the block shattering rather than like the rod bottoming out.
+        ImpactRecipe recipe = resolveRecipe(struck);
+        ImpactResult result = recipe == null ? null : recipe.pick(level.random);
+        BlockState replacement = result == null ? null : orientLike(result.block().value().defaultBlockState(), struck);
+
+        if (replacement != null && replacement.isAir()) {
+            playBreakSound(below, struck);
+        } else {
+            playThunk(IMPACT_VOLUME, IMPACT_PITCH);
+        }
+        spawnImpactParticles(struck);
+
+        if (result == null) {
+            return;
+        }
+
+        level.setBlockAndUpdate(below, replacement);
+        result.buriedItem().ifPresent(buried -> buryRandomItem(below, buried, result.count()));
+        invalidateRecipeCache();
+        cooldown = COOLDOWN_TICKS;
+        setChanged();
+    }
+
+    /**
+     * Carries every orientation property the struck block and its replacement share over to the
+     * replacement, so a west-facing anvil stays west-facing after the rod chips it and an
+     * east-west pillar stays east-west after it cracks. Properties are equal only when their legal
+     * values match as well as their name, so a shared property can always take the value it held on
+     * the struck block.
+     */
+    private static BlockState orientLike(BlockState replacement, BlockState struck) {
+        for (Property<?> property : struck.getProperties()) {
+            if (ORIENTATION_TYPES.contains(property.getValueClass()) && replacement.hasProperty(property)) {
+                replacement = copyProperty(replacement, struck, property);
+            }
+        }
+        return replacement;
+    }
+
+    /** Ties the property's value type back together, which {@code Property<?>} alone cannot express. */
+    private static <T extends Comparable<T>> BlockState copyProperty(BlockState replacement, BlockState struck, Property<T> property) {
+        return replacement.setValue(property, struck.getValue(property));
+    }
+
+    private void buryRandomItem(BlockPos pos, Ingredient buried, IntProvider count) {
+        ItemStack[] candidates = buried.getItems();
+        if (candidates.length == 0) {
+            return;
+        }
+        ItemStack stack = candidates[level.random.nextInt(candidates.length)].copy();
+        // A brushable block hands its stack straight to the player, so an oversized count would
+        // otherwise pop out an unstackable pile. Clamp to what the item can actually hold.
+        stack.setCount(Math.min(count.sample(level.random), stack.getMaxStackSize()));
+        buryItem(level, pos, stack);
+    }
+
+    /**
+     * Stuffs {@code stack} into the block at {@code pos}, if it is brushable. A no-op otherwise.
+     *
+     * <p>{@code BrushableBlockEntity} keeps its held stack under an {@code item} tag, which it reads
+     * back whenever no loot table is set, so this needs no accessor into its private state.
+     */
+    public static void buryItem(Level level, BlockPos pos, ItemStack stack) {
+        if (!(level.getBlockEntity(pos) instanceof BrushableBlockEntity brushable)) {
+            return;
+        }
+        CompoundTag tag = new CompoundTag();
+        tag.put("item", stack.save(new CompoundTag()));
+        brushable.load(tag);
+        brushable.setChanged();
+        BlockState state = level.getBlockState(pos);
+        level.sendBlockUpdated(pos, state, state, Block.UPDATE_ALL);
+    }
+
+    /**
+     * The struck block's own break sound, at the volume and pitch vanilla uses when a block is
+     * destroyed, except where a block earns a sound of its own.
+     */
+    private void playBreakSound(BlockPos pos, BlockState struck) {
+        // A damaged anvil shattering under the rod is the vanilla "anvil worn out" moment, not a
+        // block being mined, so it gets the single clang trimmed out of that sound instead of the
+        // generic metal break.
+        if (struck.is(Blocks.DAMAGED_ANVIL) && level != null) {
+            level.playSound(null, pos, ModSounds.IMPACT_ANVIL_BREAK.get(), SoundSource.BLOCKS,
+                    ANVIL_BREAK_VOLUME, ANVIL_BREAK_PITCH);
+            return;
+        }
+        SoundType soundType = struck.getSoundType(level, pos, null);
+        level.playSound(null, pos, soundType.getBreakSound(), SoundSource.BLOCKS,
+                (soundType.getVolume() + 1.0f) / 2.0f, soundType.getPitch() * 0.8f);
+    }
+
+    private void playThunk(float volume, float pitch) {
+        level.playSound(null, worldPosition, ModSounds.IMPACT_THUNK.get(), SoundSource.BLOCKS, volume, pitch);
+    }
+
+    private void spawnImpactParticles(BlockState struck) {
+        if (!(level instanceof ServerLevel serverLevel) || struck.isAir()) {
+            return;
+        }
+        // Debris sprays sideways from the seam between the rod and the block it just hit.
+        double x = worldPosition.getX() + 0.5;
+        double y = worldPosition.getY();
+        double z = worldPosition.getZ() + 0.5;
+        serverLevel.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, struck),
+                x, y, z, IMPACT_BLOCK_PARTICLES, 0.35, 0.05, 0.35, 0.15);
+        serverLevel.sendParticles(ParticleTypes.CRIT, x, y, z, IMPACT_CRIT_PARTICLES, 0.3, 0.05, 0.3, 0.1);
+    }
+
+    @Nullable
+    private ImpactRecipe getActiveRecipe() {
+        return resolveRecipe(level.getBlockState(worldPosition.below()));
+    }
+
+    @Nullable
+    private ImpactRecipe resolveRecipe(BlockState state) {
+        if (state.isAir()) {
+            invalidateRecipeCache();
+            return null;
+        }
+        if (state.equals(cachedRecipeState)) {
+            return cachedRecipe;
+        }
+        cachedRecipeState = state;
+        cachedRecipe = level.getRecipeManager()
+                .getRecipeFor(ModRecipes.IMPACT_TYPE.get(), new ImpactInput(state), level)
+                .orElse(null);
+        return cachedRecipe;
+    }
+
+    private void invalidateRecipeCache() {
+        cachedRecipe = null;
+        cachedRecipeState = null;
+    }
+
+    /** Pushes the new energy level to watching clients so the screen's bar stays live. */
+    private void onEnergyChanged() {
+        setChanged();
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_ALL);
+        }
+    }
+
+    /** The rod rises a full block above the machine, so it must not be culled with the base block. */
+    @Override
+    public @NotNull AABB getRenderBoundingBox() {
+        return new AABB(worldPosition).expandTowards(0.0, ROD_TRAVEL, 0.0);
+    }
+
+    private void writeState(CompoundTag tag) {
+        tag.putByte("Phase", (byte) phase.ordinal());
+        tag.putLong("PhaseStartTick", phaseStartTick);
+        tag.putFloat("PhaseStartOffset", phaseStartOffset);
+        tag.putFloat("PhaseDuration", phaseDuration);
+        tag.putInt("Energy", energyStorage.getEnergyStored());
+    }
+
+    private void readState(CompoundTag tag) {
+        phase = Phase.byOrdinal(tag.getByte("Phase"));
+        phaseStartTick = tag.getLong("PhaseStartTick");
+        phaseStartOffset = tag.getFloat("PhaseStartOffset");
+        phaseDuration = tag.getFloat("PhaseDuration");
+        energyStorage.setEnergyStoredExact(tag.getInt("Energy"));
+    }
+
+    @Override
+    protected void saveAdditional(@NotNull CompoundTag tag) {
+        super.saveAdditional(tag);
+        writeState(tag);
+        tag.putBoolean("Strike", strike);
+        tag.putInt("Cooldown", cooldown);
+    }
+
+    @Override
+    public void load(@NotNull CompoundTag tag) {
+        super.load(tag);
+        readState(tag);
+        strike = tag.getBoolean("Strike");
+        cooldown = tag.getInt("Cooldown");
+    }
+
+    @Override
+    public @NotNull CompoundTag getUpdateTag() {
+        CompoundTag tag = super.getUpdateTag();
+        writeState(tag);
+        return tag;
+    }
+
+    @Override
+    public void handleUpdateTag(@NotNull CompoundTag tag) {
+        super.handleUpdateTag(tag);
+        readState(tag);
+    }
+
+    @Override
+    public @Nullable ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override
+    public void onDataPacket(@NotNull Connection net, @NotNull ClientboundBlockEntityDataPacket pkt) {
+        CompoundTag tag = pkt.getTag();
+        if (tag != null) {
+            handleUpdateTag(tag);
+        }
+    }
+
+    @Override
+    public @NotNull <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
+        // The Impact Piston has no inventory: energy only.
+        if (cap == ForgeCapabilities.ENERGY) {
+            return energyCap.cast();
+        }
+        return super.getCapability(cap, side);
+    }
+
+    @Override
+    public void invalidateCaps() {
+        super.invalidateCaps();
+        energyCap.invalidate();
+    }
+
+    private class PistonEnergyStorage extends EnergyStorage {
+        private PistonEnergyStorage() {
+            super(ENERGY_CAPACITY, MAX_RECEIVE, 0);
+        }
+
+        @Override
+        public int receiveEnergy(int maxReceive, boolean simulate) {
+            int received = super.receiveEnergy(maxReceive, simulate);
+            if (received > 0 && !simulate) {
+                onEnergyChanged();
+            }
+            return received;
+        }
+
+        private void consume(int amount) {
+            int before = energy;
+            energy = Math.max(0, energy - amount);
+            if (energy != before) {
+                onEnergyChanged();
+            }
+        }
+
+        /** Silent on purpose: this is the load/sync path, where an update is already in flight. */
+        private void setEnergyStoredExact(int value) {
+            energy = Math.max(0, Math.min(capacity, value));
+        }
+    }
+}

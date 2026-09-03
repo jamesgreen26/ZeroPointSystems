@@ -3,6 +3,7 @@ package g_mungus.zps.compat.jei;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.compat.Compat;
 import g_mungus.zps.item.ModItems;
+import g_mungus.zps.recipe.ImpactRecipe;
 import g_mungus.zps.recipe.ModRecipes;
 import g_mungus.zps.recipe.RollingRecipe;
 import g_mungus.zps.recipe.Shaped5x5Recipe;
@@ -53,7 +54,8 @@ public class ZPSJeiPlugin implements IModPlugin {
         IGuiHelper guiHelper = registration.getJeiHelpers().getGuiHelper();
         registration.addRecipeCategories(
                 new RollingMillCategory(guiHelper),
-                new Shaped5x5Category(guiHelper));
+                new Shaped5x5Category(guiHelper),
+                new ImpactCategory(guiHelper));
     }
 
     @Override
@@ -67,11 +69,14 @@ public class ZPSJeiPlugin implements IModPlugin {
         registration.addRecipes(RollingMillCategory.TYPE, recipes);
         List<Shaped5x5Recipe> shaped5x5 = recipeManager.getAllRecipesFor(ModRecipes.SHAPED_5X5_TYPE.get());
         registration.addRecipes(Shaped5x5Category.TYPE, shaped5x5);
+        List<ImpactRecipe> impact = recipeManager.getAllRecipesFor(ModRecipes.IMPACT_TYPE.get());
+        registration.addRecipes(ImpactCategory.TYPE, impact);
     }
 
     @Override
     public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
         registration.addRecipeCatalyst(new ItemStack(ModItems.ROLLING_MILL.get()), RollingMillCategory.TYPE);
+        registration.addRecipeCatalyst(new ItemStack(ModItems.IMPACT_PISTON.get()), ImpactCategory.TYPE);
 
         // The assembler is a workstation for its own 5x5 recipes and vanilla crafting, plus Create's
         // mechanical and automated shaped crafting categories when Create is present.

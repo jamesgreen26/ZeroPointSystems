@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "I": {
+      "item": "zps:space_metal_mesh"
+    },
+    "A": {
+      "item": "minecraft:iron_block"
+    },
+    "M": {
+      "item": "zps:copper_magnetron"
+    }
+  },
+  "pattern": [
+    "IAI",
+    "IAI",
+    "IMI"
+  ],
+  "result": {
+    "count": 1,
+    "item": "zps:impact_piston"
+  },
+  "show_notification": true
+}

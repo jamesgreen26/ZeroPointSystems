@@ -86,6 +86,7 @@ public class ClientSetup {
         event.register(PoweredToolItemRenderer.HEAD_MODEL);
         event.register(ChainsawItemRenderer.BLADE_MODEL);
         event.register(RollingMillBlockEntityRenderer.ROLLER_MODEL);
+        event.register(ImpactPistonBlockEntityRenderer.ROD_MODEL);
     }
 
     /**
@@ -144,6 +145,12 @@ public class ClientSetup {
             SimpleBlockEntityVisualizer.builder(ModBlockEntities.ROLLING_MILL.get())
                     .factory(RollingMillVisual::new)
                     // The BER draws the rollers as a fallback when Flywheel's backend is unavailable.
+                    .neverSkipVanillaRender()
+                    .apply();
+            BlockEntityRenderers.register(ModBlockEntities.IMPACT_PISTON.get(), ImpactPistonBlockEntityRenderer::new);
+            SimpleBlockEntityVisualizer.builder(ModBlockEntities.IMPACT_PISTON.get())
+                    .factory(ImpactPistonVisual::new)
+                    // The BER draws the rod as a fallback when Flywheel's backend is unavailable.
                     .neverSkipVanillaRender()
                     .apply();
             BlockEntityRenderers.register(ModBlockEntities.POWER_CELL.get(), PowerCellBlockEntityRenderer::new);

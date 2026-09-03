@@ -25,5 +25,17 @@
     "sounds": [
       "zps:arm_move"
     ]
+  },
+  "impact_anvil_break": {
+    "subtitle": "sounds.zps.impact_anvil_break",
+    "sounds": [
+      "zps:impact_anvil_break"
+    ]
+  },
+  "impact_thunk": {
+    "subtitle": "sounds.zps.impact_thunk",
+    "sounds": [
+      "minecraft:mob/irongolem/damage1"
+    ]
   }
 }

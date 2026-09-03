@@ -1,0 +1,7 @@
+{
+  "type": "zps:impact",
+  "ingredient": "minecraft:deepslate_tiles",
+  "results": [
+    { "block": "minecraft:cracked_deepslate_tiles" }
+  ]
+}

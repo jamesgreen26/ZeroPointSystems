@@ -1,0 +1,7 @@
+{
+  "type": "zps:impact",
+  "ingredient": "#forge:glass",
+  "results": [
+    { "block": "minecraft:air" }
+  ]
+}

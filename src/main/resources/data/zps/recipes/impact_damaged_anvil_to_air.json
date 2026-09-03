@@ -1,0 +1,7 @@
+{
+  "type": "zps:impact",
+  "ingredient": "minecraft:damaged_anvil",
+  "results": [
+    { "block": "minecraft:air" }
+  ]
+}

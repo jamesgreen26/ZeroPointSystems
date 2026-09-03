@@ -68,6 +68,7 @@ public class ModCreativeTabs {
                         COAL_BURNER,
                         ROLLING_MILL,
                         ASSEMBLER,
+                        IMPACT_PISTON,
 
                         BAUXITE,
                         LITHIUM_ORE,

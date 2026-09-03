@@ -1,0 +1,7 @@
+{
+  "type": "zps:impact",
+  "ingredient": "minecraft:stone_bricks",
+  "results": [
+    { "block": "minecraft:cracked_stone_bricks" }
+  ]
+}

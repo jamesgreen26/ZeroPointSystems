@@ -11,6 +11,8 @@ public class ModSounds {
     public static final RegistryObject<SoundEvent> KEYSTROKE = registerSoundEvent("keystroke");
     public static final RegistryObject<SoundEvent> STATIC = registerSoundEvent("static");
     public static final RegistryObject<SoundEvent> ARM_MOVE = registerSoundEvent("arm_move");
+    public static final RegistryObject<SoundEvent> IMPACT_THUNK = registerSoundEvent("impact_thunk");
+    public static final RegistryObject<SoundEvent> IMPACT_ANVIL_BREAK = registerSoundEvent("impact_anvil_break");
 
     private static RegistryObject<SoundEvent> registerSoundEvent(String name) {
         return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, name)));

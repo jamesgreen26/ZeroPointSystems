@@ -215,6 +215,14 @@ public class ModBlocks {
                     .strength(3.5f)
                     .requiresCorrectToolForDrops()));
 
+    public static final RegistryObject<Block> IMPACT_PISTON = BLOCKS.register("impact_piston",
+            () -> new ImpactPistonBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.5f)
+                    .requiresCorrectToolForDrops()
+                    // Don't occlude light: the rod's light is sampled at the piston's own position,
+                    // which would otherwise always be pitch black.
+                    .noOcclusion()));
+
 
     /// RESOURCE BLOCKS
     public static final RegistryObject<Block> BAUXITE = BLOCKS.register("bauxite",

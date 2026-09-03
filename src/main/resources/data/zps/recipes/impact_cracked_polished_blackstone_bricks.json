@@ -1,0 +1,7 @@
+{
+  "type": "zps:impact",
+  "ingredient": "minecraft:polished_blackstone_bricks",
+  "results": [
+    { "block": "minecraft:cracked_polished_blackstone_bricks" }
+  ]
+}

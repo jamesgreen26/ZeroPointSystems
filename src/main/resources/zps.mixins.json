@@ -38,7 +38,8 @@
     "create.GoggleInfoExtension",
     "create.ManualApplicationRecipeMixin",
     "create.ScrollValueBehaviourAccessor",
-    "ponder.ConfigBaseMixin"
+    "ponder.ConfigBaseMixin",
+    "sable.SubLevelEntityCollisionMixin"
   ],
   "injectors": {
     "defaultRequire": 1

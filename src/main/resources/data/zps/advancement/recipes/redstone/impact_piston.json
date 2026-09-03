@@ -1,31 +1,31 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_ingots_space_metal": {
+    "has_iron_block": {
       "conditions": {
         "items": [
           {
-            "items": "#c:ingots/space_metal"
+            "items": "minecraft:iron_block"
           }
         ]
       },
       "trigger": "minecraft:inventory_changed"
     },
-    "has_anvil": {
+    "has_space_metal_mesh": {
       "conditions": {
         "items": [
           {
-            "items": "minecraft:anvil"
+            "items": "zps:space_metal_mesh"
           }
         ]
       },
       "trigger": "minecraft:inventory_changed"
     },
-    "has_piston": {
+    "has_copper_magnetron": {
       "conditions": {
         "items": [
           {
-            "items": "minecraft:piston"
+            "items": "zps:copper_magnetron"
           }
         ]
       },
@@ -40,9 +40,9 @@
   },
   "requirements": [
     [
-      "has_ingots_space_metal",
-      "has_anvil",
-      "has_piston",
+      "has_iron_block",
+      "has_space_metal_mesh",
+      "has_copper_magnetron",
       "has_the_recipe"
     ]
   ],

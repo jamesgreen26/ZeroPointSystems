@@ -109,7 +109,7 @@ public class ImpactPistonGameTests {
                 .thenSucceed();
     }
 
-    /** What the cobblestone recipe may bury: copper, aluminum and iron nuggets, nothing else. */
+    /** What the cobblestone recipe may bury: copper, lithium and iron nuggets, nothing else. */
     private static final TagKey<Item> RESOURCES_IN_COBBLESTONE = TagKey.create(
             Registries.ITEM, ResourceLocation.fromNamespaceAndPath("zps", "resources_in_cobblestone"));
 
@@ -144,8 +144,8 @@ public class ImpactPistonGameTests {
             helper.fail("Buried item should accept iron nuggets (the " + RESOURCES_IN_COBBLESTONE.location() + " tag)");
         }
         // The point of the narrower tag: c:nuggets would sweep in every other mod's nuggets too.
-        if (buried.test(new ItemStack(ModItems.LITHIUM_NUGGET.get()))) {
-            helper.fail("Buried item should not accept lithium nuggets: " + RESOURCES_IN_COBBLESTONE.location()
+        if (buried.test(new ItemStack(ModItems.ALUMINUM_NUGGET.get()))) {
+            helper.fail("Buried item should not accept aluminum nuggets: " + RESOURCES_IN_COBBLESTONE.location()
                     + " is deliberately narrower than c:nuggets");
         }
         for (ItemStack candidate : buried.getItems()) {

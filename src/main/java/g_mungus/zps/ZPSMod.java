@@ -11,6 +11,7 @@ import g_mungus.zps.gametest.EnumPropertyWithAliasesGameTests;
 import g_mungus.zps.gametest.RoboticArmGameTests;
 import g_mungus.zps.gametest.RollingMillGameTests;
 import g_mungus.zps.gametest.AssemblerGameTests;
+import g_mungus.zps.gametest.BrushableBlockGameTests;
 import g_mungus.zps.gametest.ImpactPistonGameTests;
 import g_mungus.zps.item.ModCreativeTabs;
 import g_mungus.zps.item.ModItems;
@@ -89,5 +90,6 @@ public final class ZPSMod {
         event.register(RollingMillGameTests.class);
         event.register(AssemblerGameTests.class);
         event.register(ImpactPistonGameTests.class);
+        event.register(BrushableBlockGameTests.class);
     }
 }

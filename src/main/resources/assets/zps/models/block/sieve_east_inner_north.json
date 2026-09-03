@@ -1,0 +1,57 @@
+{
+	"texture_size": [32, 32],
+	"render_type": "minecraft:cutout",
+	"ambientocclusion": false,
+	"textures": {
+		"0": "zps:block/sieve",
+		"particle": "zps:block/sieve"
+	},
+	"elements": [
+		{
+			"from": [17, 4, 1],
+			"to": [20, 12, 16],
+			"faces": {
+				"north": {
+					"uv": [9, 0, 10.5, 4],
+					"texture": "#0"
+				},
+				"east": {
+					"uv": [2, 10.5, 9.5, 14.5],
+					"texture": "#0"
+				},
+				"south": {
+					"uv": [9, 5, 10.5, 9],
+					"texture": "#0"
+				},
+				"west": {
+					"uv": [12, 2, 16, 9.5],
+					"rotation": 90,
+					"texture": "#0"
+				},
+				"up": {
+					"uv": [12, 9.5, 10.5, 2],
+					"texture": "#0"
+				},
+				"down": {
+					"uv": [2, 9, 9.5, 10.5],
+					"rotation": 90,
+					"texture": "#0"
+				}
+			}
+		},
+		{
+			"from": [16, 7, 0],
+			"to": [17, 9, 16],
+			"faces": {
+				"up": {
+					"uv": [0.5, 8.5, 0, 0.5],
+					"texture": "#0"
+				},
+				"down": {
+					"uv": [0.5, 0.5, 0, 8.5],
+					"texture": "#0"
+				}
+			}
+		}
+	]
+}

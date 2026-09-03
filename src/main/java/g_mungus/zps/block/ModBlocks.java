@@ -219,6 +219,12 @@ public class ModBlocks {
                     .strength(3.5f)
                     .requiresCorrectToolForDrops()));
 
+    public static final RegistryObject<Block> SIEVE = BLOCKS.register("sieve",
+            () -> new SieveBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.5f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+
     public static final RegistryObject<Block> IMPACT_PISTON = BLOCKS.register("impact_piston",
             () -> new ImpactPistonBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.5f)

@@ -1,0 +1,22 @@
+{
+  "type": "zps:shaped_5x5",
+  "key": {
+    "I": {
+      "item": "zps:space_metal_ingot"
+    },
+    "S": {
+      "item": "minecraft:string"
+    }
+  },
+  "pattern": [
+    " III ",
+    "ISSSI",
+    "ISSSI",
+    "ISSSI",
+    " III "
+  ],
+  "result": {
+    "count": 1,
+    "item": "zps:sieve"
+  }
+}

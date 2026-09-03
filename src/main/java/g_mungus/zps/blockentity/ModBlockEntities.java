@@ -133,5 +133,10 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(ImpactPistonBlockEntity::new,
                             ModBlocks.IMPACT_PISTON.get()).build(null));
 
+    public static final RegistryObject<BlockEntityType<SieveBlockEntity>> SIEVE =
+            BLOCK_ENTITIES.register("sieve",
+                    () -> BlockEntityType.Builder.of(SieveBlockEntity::new,
+                            ModBlocks.SIEVE.get()).build(null));
+
 }
 

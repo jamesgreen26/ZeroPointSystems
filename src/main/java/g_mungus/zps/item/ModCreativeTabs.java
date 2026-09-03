@@ -69,6 +69,7 @@ public class ModCreativeTabs {
                         ROLLING_MILL,
                         ASSEMBLER,
                         IMPACT_PISTON,
+                        SIEVE,
 
                         SUSPICIOUS_RED_SAND,
 

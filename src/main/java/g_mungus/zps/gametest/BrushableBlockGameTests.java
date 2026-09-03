@@ -4,6 +4,7 @@ import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.MovedBlockEntityHolder;
 import g_mungus.zps.blockentity.ImpactPistonBlockEntity;
+import g_mungus.zps.blockentity.SieveBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
@@ -12,6 +13,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -50,6 +52,10 @@ public class BrushableBlockGameTests {
     /** Carpet is not replaceable, so a block landing on it cannot be placed and drops instead. */
     private static final BlockPos CARPET_POS = new BlockPos(5, 2, 3);
     private static final BlockPos HIGH_DROP_POS = new BlockPos(5, 4, 3);
+
+    /** A sieve on the floor, with the drop starting in the air layer above it. */
+    private static final BlockPos SIEVE_POS = new BlockPos(3, 2, 3);
+    private static final BlockPos SIEVE_DROP_POS = new BlockPos(3, 3, 3);
 
     private static final BlockPos PISTON_POS = new BlockPos(1, 2, 3);
     private static final BlockPos PUSHED_FROM = new BlockPos(2, 2, 3);
@@ -219,6 +225,50 @@ public class BrushableBlockGameTests {
             helper.fail("Buried loot is not persisted: " + MOVED_BE_KEY + " is missing from saveWithoutMetadata");
         }
         helper.succeed();
+    }
+
+    /**
+     * Dropping a suspicious block through a sieve unearths the payload into the sieve's inventory and
+     * leaves plain sand falling in its place. Also covers {@code FallingBlockEntityInvoker}, which
+     * has no other caller.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void sift_unearthsBuriedLoot(GameTestHelper helper) {
+        helper.setBlock(SIEVE_POS, ModBlocks.SIEVE.get());
+
+        FallingBlockEntity falling = FallingBlockEntity.fall(
+                helper.getLevel(), helper.absolutePos(SIEVE_DROP_POS), Blocks.SUSPICIOUS_SAND.defaultBlockState());
+        CompoundTag payload = new CompoundTag();
+        payload.put("item", new ItemStack(Items.DIAMOND).save(new CompoundTag()));
+        falling.blockData = payload;
+
+        helper.startSequence()
+                .thenIdle(SETTLE_TICKS)
+                .thenExecute(() -> assertSifted(helper, SIEVE_POS, Items.DIAMOND))
+                // The payload is gone, so what falls on through is ordinary sand. It cannot replace
+                // the sieve it lands in, so it drops as an item.
+                .thenExecute(() -> assertDropped(helper, SIEVE_POS, Items.SAND))
+                .thenSucceed();
+    }
+
+    /** Fails unless the sieve at the given position holds the expected item. */
+    private static void assertSifted(GameTestHelper helper, BlockPos relativePos, Item expected) {
+        if (!(helper.getBlockEntity(relativePos) instanceof SieveBlockEntity sieve)) {
+            helper.fail("Expected a sieve block entity at " + relativePos);
+            return;
+        }
+
+        List<ItemStack> contents = new java.util.ArrayList<>();
+        for (int slot = 0; slot < sieve.getInventory().getSlots(); slot++) {
+            ItemStack stack = sieve.getInventory().getStackInSlot(slot);
+            if (!stack.isEmpty()) {
+                contents.add(stack);
+            }
+        }
+
+        if (contents.stream().noneMatch(stack -> stack.is(expected))) {
+            helper.fail("Expected the sieve to hold " + expected + ", found " + contents);
+        }
     }
 
     private static void assertBreakDrops(GameTestHelper helper, Block block, Item expected) {

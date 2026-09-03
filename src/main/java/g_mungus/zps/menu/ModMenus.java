@@ -22,4 +22,7 @@ public class ModMenus {
 
     public static final RegistryObject<MenuType<AssemblerMenu>> ASSEMBLER =
             MENUS.register("assembler", () -> IForgeMenuType.create(AssemblerMenu::new));
+
+    public static final RegistryObject<MenuType<SieveMenu>> SIEVE =
+            MENUS.register("sieve", () -> IForgeMenuType.create(SieveMenu::new));
 }

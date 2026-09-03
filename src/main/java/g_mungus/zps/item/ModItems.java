@@ -119,6 +119,9 @@ public class ModItems {
     public static final RegistryObject<Item> IMPACT_PISTON = ITEMS.register("impact_piston",
             () -> new BlockItem(ModBlocks.IMPACT_PISTON.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> SIEVE = ITEMS.register("sieve",
+            () -> new BlockItem(ModBlocks.SIEVE.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> SUSPICIOUS_RED_SAND = ITEMS.register("suspicious_red_sand",
             () -> new BlockItem(ModBlocks.SUSPICIOUS_RED_SAND.get(), new Item.Properties()));
 

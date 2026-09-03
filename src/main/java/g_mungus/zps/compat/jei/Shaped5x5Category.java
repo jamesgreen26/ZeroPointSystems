@@ -5,6 +5,7 @@ import g_mungus.zps.blockentity.AssemblerBlockEntity;
 import g_mungus.zps.item.ModItems;
 import g_mungus.zps.recipe.Shaped5x5Recipe;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
+import mezz.jei.api.gui.builder.IRecipeSlotBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.helpers.IGuiHelper;
@@ -82,17 +83,25 @@ public class Shaped5x5Category implements IRecipeCategory<Shaped5x5Recipe> {
         // Centre patterns smaller than 5x5 in the grid, matching how the Assembler lays them out.
         int offsetX = (AssemblerBlockEntity.GRID_WIDTH - width) / 2;
         int offsetY = (AssemblerBlockEntity.GRID_HEIGHT - height) / 2;
-        for (int row = 0; row < height; row++) {
-            for (int col = 0; col < width; col++) {
-                Ingredient ingredient = ingredients.get(col + row * width);
-                if (ingredient.isEmpty()) {
+        // Every cell of the grid gets a slot, empty ones included: the blanks are part of the recipe
+        // (the Assembler wants those cells clear), so the whole 5x5 is drawn rather than just the
+        // filled cells.
+        for (int row = 0; row < AssemblerBlockEntity.GRID_HEIGHT; row++) {
+            for (int col = 0; col < AssemblerBlockEntity.GRID_WIDTH; col++) {
+                IRecipeSlotBuilder slot = builder.addSlot(RecipeIngredientRole.INPUT,
+                                GRID_LEFT + col * SLOT + 1,
+                                GRID_TOP + row * SLOT + 1)
+                        .setStandardSlotBackground();
+
+                int patternCol = col - offsetX;
+                int patternRow = row - offsetY;
+                if (patternCol < 0 || patternCol >= width || patternRow < 0 || patternRow >= height) {
                     continue;
                 }
-                builder.addSlot(RecipeIngredientRole.INPUT,
-                                GRID_LEFT + (col + offsetX) * SLOT + 1,
-                                GRID_TOP + (row + offsetY) * SLOT + 1)
-                        .setStandardSlotBackground()
-                        .addIngredients(ingredient);
+                Ingredient ingredient = ingredients.get(patternCol + patternRow * width);
+                if (!ingredient.isEmpty()) {
+                    slot.addIngredients(ingredient);
+                }
             }
         }
         builder.addSlot(RecipeIngredientRole.OUTPUT, OUTPUT_LEFT, (HEIGHT - SLOT) / 2 + 1)

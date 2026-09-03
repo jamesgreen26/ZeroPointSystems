@@ -23,6 +23,7 @@
     "ArgumentTypeInfosMixin",
     "BlockBehaviourAccessor",
     "BlockBehaviourMixin",
+    "BlockEntityTypeAccessor",
     "BlockInWorldMixin",
     "BlocksMixin",
     "ClientboundCommandsPacketMixin",

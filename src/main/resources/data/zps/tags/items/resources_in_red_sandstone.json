@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:gold_nugget",
+    "zps:copper_nugget"
+  ]
+}

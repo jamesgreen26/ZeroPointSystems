@@ -9,6 +9,7 @@ import g_mungus.zps.item.ModItems;
 import g_mungus.zps.mixin.BlockBehaviourAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.BlockGetter;
@@ -16,6 +17,9 @@ import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.material.PushReaction;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
@@ -225,6 +229,21 @@ public class ModBlocks {
 
 
     /// RESOURCE BLOCKS
+    /**
+     * Vanilla suspicious sand, in red. Behaves exactly like the vanilla block — same strength,
+     * sounds and brushing — but brushes out into red sand. Buried by the Impact Piston's red
+     * sandstone recipe.
+     */
+    public static final RegistryObject<Block> SUSPICIOUS_RED_SAND = BLOCKS.register("suspicious_red_sand",
+            () -> new ZPSBrushableBlock(Blocks.RED_SAND,
+                    BlockBehaviour.Properties.of()
+                            .mapColor(MapColor.COLOR_ORANGE)
+                            .instrument(NoteBlockInstrument.SNARE)
+                            .strength(0.25f)
+                            .sound(SoundType.SUSPICIOUS_SAND)
+                            .pushReaction(PushReaction.DESTROY),
+                    SoundEvents.BRUSH_SAND, SoundEvents.BRUSH_SAND_COMPLETED));
+
     public static final RegistryObject<Block> BAUXITE = BLOCKS.register("bauxite",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.ANDESITE)
                     .sound(SoundType.NETHERRACK)

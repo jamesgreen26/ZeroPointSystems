@@ -70,6 +70,8 @@ public class ModCreativeTabs {
                         ASSEMBLER,
                         IMPACT_PISTON,
 
+                        SUSPICIOUS_RED_SAND,
+
                         BAUXITE,
                         LITHIUM_ORE,
                         DEEPSLATE_LITHIUM_ORE,

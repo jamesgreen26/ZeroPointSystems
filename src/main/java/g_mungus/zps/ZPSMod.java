@@ -22,7 +22,10 @@ import g_mungus.zps.networking.ZPSGamePackets;
 import g_mungus.zps.recipe.ModRecipeBookTypes;
 import g_mungus.zps.recipe.ModRecipes;
 import g_mungus.zps.painting.ZPSPaintings;
+import g_mungus.zps.mixin.BlockEntityTypeAccessor;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.DistExecutor;
@@ -33,6 +36,9 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.event.RegisterGameTestsEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Mod(ZPSMod.MOD_ID)
 public final class ZPSMod {
@@ -80,6 +86,18 @@ public final class ZPSMod {
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         ZPSGamePackets.register();
+        event.enqueueWork(ZPSMod::addBrushableBlocks);
+    }
+
+    /**
+     * Vanilla's brushable block entity only accepts the two blocks it ships with, and an invalid
+     * pairing is dropped on chunk load — taking the buried loot with it.
+     */
+    private static void addBrushableBlocks() {
+        BlockEntityTypeAccessor accessor = (BlockEntityTypeAccessor) BlockEntityType.BRUSHABLE_BLOCK;
+        Set<Block> validBlocks = new HashSet<>(accessor.zps$getValidBlocks());
+        validBlocks.add(ModBlocks.SUSPICIOUS_RED_SAND.get());
+        accessor.zps$setValidBlocks(Set.copyOf(validBlocks));
     }
 
     private static void registerGameTests(RegisterGameTestsEvent event) {

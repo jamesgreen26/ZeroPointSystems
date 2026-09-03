@@ -12,6 +12,7 @@
     "block.zps.rolling_mill": "Rolling Mill",
     "block.zps.assembler": "Assembler",
     "block.zps.impact_piston": "Impact Piston",
+    "block.zps.suspicious_red_sand": "Suspicious Red Sand",
     "gui.zps.assembler.input": "Input",
     "gui.zps.assembler.crafting": "Crafting Pattern",
     "gui.zps.assembler.tag_ingredient": "Accepts any item in:",

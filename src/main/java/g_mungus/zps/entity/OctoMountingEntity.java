@@ -17,7 +17,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 
-public class OctoMountingEntity extends Entity {
+public class OctoMountingEntity extends Entity implements StandingVehicleEntity {
     public OctoControllerBlockEntity blockEntity = null;
     public boolean isController = false;
     public Vec3i offset = Vec3i.ZERO;
@@ -137,5 +137,14 @@ public class OctoMountingEntity extends Entity {
     @Override
     public @NotNull Packet<ClientGamePacketListener> getAddEntityPacket() {
         return new ClientboundAddEntityPacket(this);
+    }
+
+    /**
+     * Nudges a standing passenger up slightly, so their feet rest on the controller rather than
+     * sinking into it. {@code StandingVehicleEntity} keeps them upright; this places them.
+     */
+    @Override
+    public double getPassengersRidingOffset() {
+        return super.getPassengersRidingOffset() - 0.025;
     }
 }

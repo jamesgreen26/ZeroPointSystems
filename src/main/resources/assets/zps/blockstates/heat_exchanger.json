@@ -1,10 +1,10 @@
 {
   "variants": {
     "facing=north": {"model": "zps:block/heat_exchanger"},
-    "facing=east": {"model": "zps:block/heat_exchanger", "y": 90, "uvlock": true},
-    "facing=south": {"model": "zps:block/heat_exchanger", "y": 180, "uvlock": true},
-    "facing=west": {"model": "zps:block/heat_exchanger", "y": 270, "uvlock": true},
-    "facing=down": {"model": "zps:block/heat_exchanger", "x": 90, "uvlock": true},
-    "facing=up": {"model": "zps:block/heat_exchanger", "x": 270, "uvlock": true}
+    "facing=east": {"model": "zps:block/heat_exchanger", "y": 90},
+    "facing=south": {"model": "zps:block/heat_exchanger", "y": 180},
+    "facing=west": {"model": "zps:block/heat_exchanger", "y": 270},
+    "facing=down": {"model": "zps:block/heat_exchanger", "x": 90},
+    "facing=up": {"model": "zps:block/heat_exchanger", "x": 270}
   }
 }

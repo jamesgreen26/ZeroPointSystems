@@ -287,6 +287,7 @@ public class ModBlocks {
             () -> new HeatExchangerBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(3.5f)
                     .requiresCorrectToolForDrops()
+                    .noOcclusion()
                     .pushReaction(PushReaction.BLOCK)));
 
     public static final DeferredBlock<Block> SIEVE = BLOCKS.register("sieve",

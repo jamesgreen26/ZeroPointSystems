@@ -124,7 +124,7 @@ public class ZPSConfig {
     private static ModConfigSpec.ConfigValue<Integer> reactorAdvancementRadius;
 
     public static final double REACTOR_IGNITION_TEMPERATURE_K_DEFAULT = 50_000.0;
-    public static final double REACTOR_MELT_TEMPERATURE_K_DEFAULT = 100_000.0;
+    public static final double REACTOR_MELT_TEMPERATURE_K_DEFAULT = 200_000.0;
     public static final double REACTOR_WALL_HEAT_CAPACITY_DEFAULT = 150.0;
     public static final int REACTOR_MAX_INTERIOR_EXTENT_DEFAULT = 14;
     public static final int EXCHANGER_FE_PER_TICK_DEFAULT = 4096;

@@ -37,9 +37,9 @@ public class CreativeGasGeneratorBlockEntity extends GasNodeBlockEntity {
     public static final double MIN_TEMPERATURE = 1.0;
 
     /**
-     * A vaporizer running flat out makes about this much per tick. Anything much higher bursts a
-     * plain duct within seconds, which is a thing this block should let you do on purpose, not by
-     * default the moment it is placed.
+     * A modest trickle, on the order of what one machine puts out per tick. Anything much higher
+     * bursts a plain duct within seconds, which is a thing this block should let you do on purpose,
+     * not by default the moment it is placed.
      */
     private static final double DEFAULT_RATE = 0.0025;
     private static final double DEFAULT_TEMPERATURE = 300.0;

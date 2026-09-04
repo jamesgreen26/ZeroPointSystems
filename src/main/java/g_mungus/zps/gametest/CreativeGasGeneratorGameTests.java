@@ -109,8 +109,8 @@ public class CreativeGasGeneratorGameTests {
 
     @GameTest(template = TEMPLATE, timeoutTicks = 200)
     public static void gasReachesADuctOnAnyFace(GameTestHelper helper) {
-        // Up: the one face the vaporizer's single outlet could never be pointed at without
-        // rotating the machine, so it proves the six-sided proposal rather than a lucky default.
+        // Up, rather than a horizontal face: a single-outlet machine like the vent could never
+        // offer it without being turned, so it proves the six-sided proposal, not a lucky default.
         BlockPos duct = GENERATOR.relative(Direction.UP);
 
         CreativeGasGeneratorBlockEntity generator = place(helper);

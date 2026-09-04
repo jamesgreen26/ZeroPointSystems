@@ -31,7 +31,7 @@ import org.valkyrienskies.kelvin.util.INodeBlock;
  * <p>That agreement is what Kelvin lacks: {@link INodeBlock#canConnectTo} can only answer yes or no,
  * with no way to say what the connection should do. Clockwork works around that by making its duct
  * block the sole author of every edge; here any two of these can agree directly, so a vent bolted
- * straight onto a vaporizer connects with no duct in between.
+ * straight onto a gas source connects with no duct in between.
  */
 public abstract class GasNodeBlock extends Block implements INodeBlock {
 

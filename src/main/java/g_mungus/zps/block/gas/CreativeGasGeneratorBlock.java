@@ -30,8 +30,8 @@ import java.util.HashSet;
  * A creative source of gas: emits a chosen gas, at a chosen rate, at a chosen temperature, out of
  * every face.
  *
- * <p>It is a tank node like the vaporizer, but unlike the vaporizer it offers a connection on all
- * six faces, so a duct run can be hung off it in any direction without thinking about orientation.
+ * <p>Unlike the vent, which takes a single fixed face, it offers a connection on all six, so a duct
+ * run can be hung off it in any direction without thinking about orientation.
  *
  * <p>Its node is given no pressure or temperature ceiling at all. Kelvin ruptures a node whose
  * pressure passes {@code maxPressure} and destroys one whose walls pass {@code maxTemperature}, so

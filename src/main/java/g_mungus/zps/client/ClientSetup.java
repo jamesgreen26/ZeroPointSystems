@@ -11,7 +11,6 @@ import g_mungus.zps.client.renderer.*;
 import g_mungus.zps.client.screens.AssemblerScreen;
 import g_mungus.zps.client.screens.CoalBurnerScreen;
 import g_mungus.zps.client.debug.GasPressureOverlay;
-import g_mungus.zps.client.screens.VaporizerScreen;
 import g_mungus.zps.gas.ModParticles;
 import g_mungus.zps.client.screens.PowerCellScreen;
 import g_mungus.zps.client.screens.RollingMillScreen;
@@ -115,7 +114,6 @@ public class ClientSetup {
     @SubscribeEvent
     public static void onRegisterMenuScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenus.COAL_BURNER.get(), CoalBurnerScreen::new);
-        event.register(ModMenus.VAPORIZER.get(), VaporizerScreen::new);
         event.register(ModMenus.POWER_CELL.get(), PowerCellScreen::new);
         event.register(ModMenus.ROLLING_MILL.get(), RollingMillScreen::new);
         event.register(ModMenus.ASSEMBLER.get(), AssemblerScreen::new);

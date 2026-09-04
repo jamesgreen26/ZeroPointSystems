@@ -29,13 +29,12 @@ import g_mungus.zps.item.ModComponents;
 import g_mungus.zps.item.ModItems;
 import g_mungus.zps.item.PoweredToolItem;
 import g_mungus.zps.gametest.CableNetworkGameTests;
-import g_mungus.zps.blockentity.gas.VaporizerBlockEntity;
 import g_mungus.zps.gas.ModGases;
 import g_mungus.zps.gas.ModParticles;
 import g_mungus.zps.gametest.CreativeGasGeneratorGameTests;
 import g_mungus.zps.gametest.DuctGameTests;
 import g_mungus.zps.gametest.GasEdgeGameTests;
-import g_mungus.zps.gametest.VaporizerGameTests;
+import g_mungus.zps.gametest.VentGameTests;
 import g_mungus.zps.gametest.TextDisplayGameTests;
 import g_mungus.zps.menu.ModMenus;
 import g_mungus.zps.networking.ZPSGamePackets;
@@ -104,7 +103,7 @@ public final class ZPSMod {
         event.register(BrushableBlockGameTests.class);
         event.register(GasEdgeGameTests.class);
         event.register(DuctGameTests.class);
-        event.register(VaporizerGameTests.class);
+        event.register(VentGameTests.class);
         event.register(CreativeGasGeneratorGameTests.class);
     }
 
@@ -121,8 +120,6 @@ public final class ZPSMod {
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.POWER_CELL.get(), PowerCellBlockEntity::getItemHandler);
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.CREATIVE_POWER_CELL.get(), CreativePowerCellBlockEntity::getEnergyStorage);
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.CREATIVE_POWER_CELL.get(), CreativePowerCellBlockEntity::getItemHandler);
-        event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.VAPORIZER.get(), VaporizerBlockEntity::getEnergyStorage);
-        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.VAPORIZER.get(), (be, side) -> be.getInventory());
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.COAL_BURNER.get(), CoalBurnerBlockEntity::getEnergyStorage);
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.COAL_BURNER.get(), CoalBurnerBlockEntity::getItemHandler);
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.ROBOTIC_ARM.get(), RoboticArmBlockEntity::getEnergyStorage);

@@ -48,15 +48,4 @@ public class ModRecipes {
     public static final DeferredHolder<RecipeSerializer<?>, ImpactRecipeSerializer> IMPACT_SERIALIZER =
             RECIPE_SERIALIZERS.register("impact", ImpactRecipeSerializer::new);
 
-    /** Items into gas, run by the Vaporizer. */
-    public static final DeferredHolder<RecipeType<?>, RecipeType<VaporizingRecipe>> VAPORIZING_TYPE =
-            RECIPE_TYPES.register("vaporizing", () -> new RecipeType<VaporizingRecipe>() {
-                @Override
-                public String toString() {
-                    return "zps:vaporizing";
-                }
-            });
-
-    public static final DeferredHolder<RecipeSerializer<?>, VaporizingRecipeSerializer> VAPORIZING_SERIALIZER =
-            RECIPE_SERIALIZERS.register("vaporizing", VaporizingRecipeSerializer::new);
 }

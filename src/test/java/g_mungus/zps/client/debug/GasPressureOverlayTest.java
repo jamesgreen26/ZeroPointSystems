@@ -40,8 +40,8 @@ public class GasPressureOverlayTest {
 
     @Test
     void theRampSeparatesOrdinaryWorkingPressures() {
-        // A vaporizer batch is around 0.9 MPa and its buffer stalls near 3.6 MPa. On a linear ramp
-        // against a 16 MPa ceiling those would be almost the same colour.
+        // A machine's batch lands around 0.9 MPa and a buffer stalls near 3.6 MPa. On a linear
+        // ramp against a 16 MPa ceiling those would be almost the same colour.
         int oneBatch = GasPressureOverlay.colourFor(919_000.0);
         int nearlyFull = GasPressureOverlay.colourFor(3_600_000.0);
 

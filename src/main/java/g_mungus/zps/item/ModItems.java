@@ -126,11 +126,11 @@ public class ModItems {
     public static final DeferredItem<Item> CREATIVE_GAS_GENERATOR = ITEMS.register("creative_gas_generator",
             () -> new BlockItem(ModBlocks.CREATIVE_GAS_GENERATOR.get(), new Item.Properties().rarity(Rarity.EPIC)));
 
-    public static final DeferredItem<Item> REACTOR_CASING = ITEMS.register("reactor_casing",
-            () -> new BlockItem(ModBlocks.REACTOR_CASING.get(), new Item.Properties()));
+    public static final DeferredItem<Item> REINFORCED_PLATING = ITEMS.register("reinforced_plating",
+            () -> new BlockItem(ModBlocks.REINFORCED_PLATING.get(), new Item.Properties()));
 
-    public static final DeferredItem<Item> REACTOR_WINDOW = ITEMS.register("reactor_window",
-            () -> new BlockItem(ModBlocks.REACTOR_WINDOW.get(), new Item.Properties()));
+    public static final DeferredItem<Item> REINFORCED_GLASS = ITEMS.register("reinforced_glass",
+            () -> new BlockItem(ModBlocks.REINFORCED_GLASS.get(), new Item.Properties()));
 
     public static final DeferredItem<Item> FUEL_INJECTOR = ITEMS.register("fuel_injector",
             () -> new BlockItem(ModBlocks.FUEL_INJECTOR.get(), new Item.Properties()));

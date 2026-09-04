@@ -1,8 +1,8 @@
 {
   "replace": false,
   "values": [
-    "zps:reactor_casing",
-    "zps:reactor_window",
+    "zps:reinforced_plating",
+    "zps:reinforced_glass",
     "zps:fuel_injector",
     "zps:exhaust_port",
     "zps:heat_exchanger"

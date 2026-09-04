@@ -6,7 +6,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "zps:reactor_casing"
+          "name": "zps:reinforced_glass"
         }
       ],
       "conditions": [

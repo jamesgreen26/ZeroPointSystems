@@ -107,11 +107,11 @@ public class FusionReactorGameTests {
     }
 
     /**
-     * Build the shell, casing everywhere except where {@code overrides} says otherwise. The
+     * Build the shell, plating everywhere except where {@code overrides} says otherwise. The
      * overrides go in first so the reactor forms once, complete.
      */
     private static void buildShell(GameTestHelper helper, Map<BlockPos, BlockState> overrides) {
-        BlockState casing = ModBlocks.REACTOR_CASING.get().defaultBlockState();
+        BlockState plating = ModBlocks.REINFORCED_PLATING.get().defaultBlockState();
         for (Map.Entry<BlockPos, BlockState> override : overrides.entrySet()) {
             helper.setBlock(override.getKey(), override.getValue());
         }
@@ -120,7 +120,7 @@ public class FusionReactorGameTests {
                     || pos.getY() == MIN.getY() || pos.getY() == MAX.getY()
                     || pos.getZ() == MIN.getZ() || pos.getZ() == MAX.getZ();
             if (edge && !overrides.containsKey(pos)) {
-                helper.setBlock(pos, casing);
+                helper.setBlock(pos, plating);
             }
         }
     }
@@ -180,7 +180,7 @@ public class FusionReactorGameTests {
     public static void resealingRegistersAgain(GameTestHelper helper) {
         buildShell(helper);
         helper.setBlock(WEST_WALL, Blocks.AIR.defaultBlockState());
-        helper.setBlock(WEST_WALL, ModBlocks.REACTOR_CASING.get().defaultBlockState());
+        helper.setBlock(WEST_WALL, ModBlocks.REINFORCED_PLATING.get().defaultBlockState());
 
         Reactor reactor = reactorAt(helper, WEST_WALL);
         helper.assertTrue(reactor.wallCount() == SMALL_WALLS, "The rebuilt reactor should be whole");
@@ -192,10 +192,10 @@ public class FusionReactorGameTests {
         buildShell(helper);
         Reactor before = reactorAt(helper, WEST_WALL);
 
-        // A slab of casing against the whole west face, one block out.
+        // A slab of plating against the whole west face, one block out.
         for (int y = MIN.getY(); y <= MAX.getY(); y++) {
             for (int z = MIN.getZ(); z <= MAX.getZ(); z++) {
-                helper.setBlock(new BlockPos(MIN.getX() - 1, y, z), ModBlocks.REACTOR_CASING.get().defaultBlockState());
+                helper.setBlock(new BlockPos(MIN.getX() - 1, y, z), ModBlocks.REINFORCED_PLATING.get().defaultBlockState());
             }
         }
 
@@ -367,7 +367,7 @@ public class FusionReactorGameTests {
         helper.runAfterDelay(5, () -> {
             int missing = 0;
             for (long wall : reactor.walls()) {
-                if (!helper.getLevel().getBlockState(BlockPos.of(wall)).is(ModBlocks.REACTOR_CASING.get())) {
+                if (!helper.getLevel().getBlockState(BlockPos.of(wall)).is(ModBlocks.REINFORCED_PLATING.get())) {
                     missing++;
                 }
             }

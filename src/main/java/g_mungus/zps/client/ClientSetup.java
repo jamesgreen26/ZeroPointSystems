@@ -166,7 +166,7 @@ public class ClientSetup {
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.SERIAL_BUS.get(), RenderType.translucent());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.RADIO_ANTENNA.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DATA_TRANSCRIBER.get(), RenderType.cutout());
-            ItemBlockRenderTypes.setRenderLayer(ModBlocks.REACTOR_WINDOW.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(ModBlocks.REINFORCED_GLASS.get(), RenderType.translucent());
 
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.SPACE_SCAFFOLD.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.SPACE_TRUSS.get(), RenderType.cutout());

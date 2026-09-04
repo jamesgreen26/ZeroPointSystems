@@ -2,7 +2,7 @@
   "parent": "zps:reactor_ignited",
   "display": {
     "icon": {
-      "id": "zps:reactor_casing"
+      "id": "zps:reinforced_plating"
     },
     "title": {
       "translate": "advancement.zps.reactor_meltdown.title"

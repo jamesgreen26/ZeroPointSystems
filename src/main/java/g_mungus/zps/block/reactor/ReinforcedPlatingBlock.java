@@ -3,14 +3,14 @@ package g_mungus.zps.block.reactor;
 import g_mungus.zps.reactor.ReactorWallBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.TransparentBlock;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 
-/** Reactor wall you can see through. Same stats as casing; only the rendering differs. */
-public class ReactorWindowBlock extends TransparentBlock implements ReactorWallBlock {
+/** Plain reactor wall. Most of any shell. */
+public class ReinforcedPlatingBlock extends Block implements ReactorWallBlock {
 
-    public ReactorWindowBlock(Properties properties) {
+    public ReinforcedPlatingBlock(Properties properties) {
         super(properties);
     }
 

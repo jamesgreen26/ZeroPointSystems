@@ -11,8 +11,8 @@ import g_mungus.zps.block.gas.VentBlock;
 import g_mungus.zps.block.reactor.ExhaustPortBlock;
 import g_mungus.zps.block.reactor.FuelInjectorBlock;
 import g_mungus.zps.block.reactor.HeatExchangerBlock;
-import g_mungus.zps.block.reactor.ReactorCasingBlock;
-import g_mungus.zps.block.reactor.ReactorWindowBlock;
+import g_mungus.zps.block.reactor.ReinforcedPlatingBlock;
+import g_mungus.zps.block.reactor.ReinforcedGlassBlock;
 import g_mungus.zps.item.ModItems;
 import g_mungus.zps.mixin.BlockBehaviourAccessor;
 import net.minecraft.core.BlockPos;
@@ -256,14 +256,14 @@ public class ModBlocks {
 
     // Fusion reactor wall blocks. Pistons must not move them: the cavity they seal is tracked by
     // position, and a moved block would leave a phantom wall behind.
-    public static final DeferredBlock<Block> REACTOR_CASING = BLOCKS.register("reactor_casing",
-            () -> new ReactorCasingBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+    public static final DeferredBlock<Block> REINFORCED_PLATING = BLOCKS.register("reinforced_plating",
+            () -> new ReinforcedPlatingBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(3.5f)
                     .requiresCorrectToolForDrops()
                     .pushReaction(PushReaction.BLOCK)));
 
-    public static final DeferredBlock<Block> REACTOR_WINDOW = BLOCKS.register("reactor_window",
-            () -> new ReactorWindowBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+    public static final DeferredBlock<Block> REINFORCED_GLASS = BLOCKS.register("reinforced_glass",
+            () -> new ReinforcedGlassBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(3.5f)
                     .requiresCorrectToolForDrops()
                     .pushReaction(PushReaction.BLOCK)

@@ -1,0 +1,29 @@
+{
+  "parent": "zps:root",
+  "display": {
+    "icon": {
+      "id": "zps:heat_exchanger"
+    },
+    "title": {
+      "translate": "advancement.zps.reactor_ignited.title"
+    },
+    "description": {
+      "color": "#4C99C9",
+      "translate": "advancement.zps.reactor_ignited.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "ignited": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "ignited"
+    ]
+  ]
+}

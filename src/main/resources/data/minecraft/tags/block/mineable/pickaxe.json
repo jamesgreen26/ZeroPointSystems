@@ -53,6 +53,11 @@
     "zps:caution_block",
     "zps:radiation_caution_block",
     "zps:void_caution_block",
+    "zps:reactor_casing",
+    "zps:reactor_window",
+    "zps:fuel_injector",
+    "zps:exhaust_port",
+    "zps:heat_exchanger",
     "#zps:space_plating"
   ]
 }

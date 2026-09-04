@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "zps:block/aluminum_block",
+    "north": "zps:block/dense_cables_end",
+    "south": "zps:block/aluminum_block",
+    "east": "zps:block/aluminum_block",
+    "west": "zps:block/aluminum_block",
+    "up": "zps:block/aluminum_block",
+    "down": "zps:block/aluminum_block"
+  }
+}

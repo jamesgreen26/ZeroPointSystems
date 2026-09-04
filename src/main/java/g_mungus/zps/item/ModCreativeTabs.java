@@ -78,6 +78,11 @@ public class ModCreativeTabs {
                         VENT,
                         GAS_DUCT,
                         CREATIVE_GAS_GENERATOR,
+                        REACTOR_CASING,
+                        REACTOR_WINDOW,
+                        FUEL_INJECTOR,
+                        EXHAUST_PORT,
+                        HEAT_EXCHANGER,
 
                         SUSPICIOUS_RED_SAND,
 

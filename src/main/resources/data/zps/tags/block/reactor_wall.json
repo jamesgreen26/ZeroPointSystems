@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "zps:reactor_casing",
+    "zps:reactor_window",
+    "zps:fuel_injector",
+    "zps:exhaust_port",
+    "zps:heat_exchanger"
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "parent": "zps:reactor_ignited",
+  "display": {
+    "icon": {
+      "id": "zps:reactor_casing"
+    },
+    "title": {
+      "translate": "advancement.zps.reactor_meltdown.title"
+    },
+    "description": {
+      "color": "#4C99C9",
+      "translate": "advancement.zps.reactor_meltdown.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "melted": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "melted"
+    ]
+  ]
+}

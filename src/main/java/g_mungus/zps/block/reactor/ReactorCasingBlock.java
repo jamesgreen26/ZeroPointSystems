@@ -1,0 +1,34 @@
+package g_mungus.zps.block.reactor;
+
+import g_mungus.zps.reactor.ReactorWallBlock;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.NotNull;
+
+/** Plain reactor wall. Most of any shell. */
+public class ReactorCasingBlock extends Block implements ReactorWallBlock {
+
+    public ReactorCasingBlock(Properties properties) {
+        super(properties);
+    }
+
+    @Override
+    protected void onPlace(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
+                           @NotNull BlockState oldState, boolean moved) {
+        super.onPlace(state, level, pos, oldState, moved);
+        if (!oldState.is(this)) {
+            ReactorWallBlock.onPlaced(level, pos);
+        }
+    }
+
+    @Override
+    protected void onRemove(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
+                            @NotNull BlockState newState, boolean moved) {
+        if (!newState.is(this)) {
+            ReactorWallBlock.onRemoved(level, pos);
+        }
+        super.onRemove(state, level, pos, newState, moved);
+    }
+}

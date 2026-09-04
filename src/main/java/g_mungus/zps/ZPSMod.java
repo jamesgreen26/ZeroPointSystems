@@ -10,6 +10,7 @@ import g_mungus.zps.blockentity.PowerCellBlockEntity;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
 import g_mungus.zps.blockentity.RollingMillBlockEntity;
 import g_mungus.zps.blockentity.SieveBlockEntity;
+import g_mungus.zps.blockentity.reactor.HeatExchangerBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.neoforge.event.BlockEntityTypeAddBlocksEvent;
 import g_mungus.zps.client.ClientSetup;
@@ -32,6 +33,7 @@ import g_mungus.zps.gametest.CableNetworkGameTests;
 import g_mungus.zps.gas.ModGases;
 import g_mungus.zps.gas.ModParticles;
 import g_mungus.zps.gametest.CreativeGasGeneratorGameTests;
+import g_mungus.zps.gametest.FusionReactorGameTests;
 import g_mungus.zps.gametest.DuctGameTests;
 import g_mungus.zps.gametest.GasEdgeGameTests;
 import g_mungus.zps.gametest.VentGameTests;
@@ -105,6 +107,7 @@ public final class ZPSMod {
         event.register(DuctGameTests.class);
         event.register(VentGameTests.class);
         event.register(CreativeGasGeneratorGameTests.class);
+        event.register(FusionReactorGameTests.class);
     }
 
     /**
@@ -130,6 +133,8 @@ public final class ZPSMod {
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.SIEVE.get(), SieveBlockEntity::getItemHandler);
         // The Impact Piston has no inventory: energy only.
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.IMPACT_PISTON.get(), ImpactPistonBlockEntity::getEnergyStorage);
+        // The Heat Exchanger only exposes FE on its outer face; the block entity checks the side.
+        event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.HEAT_EXCHANGER.get(), HeatExchangerBlockEntity::getEnergyStorage);
         event.registerItem(Capabilities.EnergyStorage.ITEM, (stack, ignored) -> new PoweredToolItem.StackEnergyStorage(stack),
                 ModItems.POWER_DRILL.get(), ModItems.CHAINSAW.get());
     }

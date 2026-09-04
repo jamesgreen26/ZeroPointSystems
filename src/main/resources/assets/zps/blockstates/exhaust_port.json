@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "facing=north": {"model": "zps:block/exhaust_port"},
+    "facing=east": {"model": "zps:block/exhaust_port", "y": 90, "uvlock": true},
+    "facing=south": {"model": "zps:block/exhaust_port", "y": 180, "uvlock": true},
+    "facing=west": {"model": "zps:block/exhaust_port", "y": 270, "uvlock": true},
+    "facing=down": {"model": "zps:block/exhaust_port", "x": 90, "uvlock": true},
+    "facing=up": {"model": "zps:block/exhaust_port", "x": 270, "uvlock": true}
+  }
+}

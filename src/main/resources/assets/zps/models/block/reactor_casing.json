@@ -1,6 +1,8 @@
 {
+  "loader": "zps:model",
+  "type": "connecting",
   "parent": "minecraft:block/cube_all",
   "textures": {
-    "all": "zps:block/aluminum_block"
+    "all": "zps:block/reinforced_plating"
   }
 }

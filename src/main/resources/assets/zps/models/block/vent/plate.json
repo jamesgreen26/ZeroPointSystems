@@ -1,0 +1,21 @@
+{
+  "textures": {
+    "duct": "zps:block/aluminum_block",
+    "particle": "zps:block/aluminum_block"
+  },
+  "elements": [
+    {
+      "name": "plate",
+      "from": [0, 0, 13],
+      "to": [16, 16, 16],
+      "faces": {
+        "north": {"texture": "#duct"},
+        "south": {"texture": "#duct", "cullface": "south"},
+        "east": {"texture": "#duct", "cullface": "east"},
+        "west": {"texture": "#duct", "cullface": "west"},
+        "up": {"texture": "#duct", "cullface": "up"},
+        "down": {"texture": "#duct", "cullface": "down"}
+      }
+    }
+  ]
+}

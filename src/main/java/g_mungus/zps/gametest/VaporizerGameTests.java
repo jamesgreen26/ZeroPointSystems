@@ -267,16 +267,16 @@ public class VaporizerGameTests {
     }
 
     @GameTest(template = TEMPLATE)
-    public static void ventJoinsOnAnySideButTheOneItVentsFrom(GameTestHelper helper) {
-        // The vent points up, so its whole rim is live — including the north face the vaporizer's
-        // outlet is pressed against. The old exhaust only ever accepted on its back.
+    public static void ventJoinsOnItsInletAlone(GameTestHelper helper) {
+        // The vent points up, so its inlet is the face underneath — not the north face the
+        // vaporizer's outlet is pressed against, live though that face used to be.
         placeVaporizer(helper, Direction.SOUTH);
         helper.setBlock(VENT, ModBlocks.VENT.get().defaultBlockState()
                 .setValue(DirectionalBlock.FACING, Direction.UP));
 
         if (KelvinMod.INSTANCE.forceGetKelvin()
-                .getEdgeBetween(node(helper, VAPORIZER), node(helper, VENT)) == null) {
-            helper.fail("The vent refused a face that is not the one it vents from");
+                .getEdgeBetween(node(helper, VAPORIZER), node(helper, VENT)) != null) {
+            helper.fail("The vent connected on a face that is not its inlet");
         }
         helper.succeed();
     }

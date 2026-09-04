@@ -29,7 +29,6 @@ import org.valkyrienskies.kelvin.impl.registry.GasParticlePickerRegistry;
 public final class GasJet {
 
     private static final int MAX_PARTICLES_PER_CALL = 32;
-    public static final double DEFAULT_RADIUS = 0.3;
 
     private GasJet() {
     }

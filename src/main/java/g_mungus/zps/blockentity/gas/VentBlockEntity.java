@@ -31,6 +31,16 @@ public class VentBlockEntity extends GasNodeBlockEntity {
     private static final double MASS_PER_PARTICLE = 0.01;
 
     /**
+     * Where the plate's outer face sits along {@link VentBlock#FACING}, measured from the block
+     * centre. The plate is pushed back against the inlet, so its mouth is behind the centre and the
+     * offset is negative — spawning at the centre would leave the jet starting in mid-air, well
+     * clear of the block it is supposed to be coming out of.
+     */
+    private static final double MOUTH_OFFSET = VentBlock.PLATE_THICKNESS / 16.0 - 0.5;
+    /** Mouth radius: the plate is a full block face, so the jet spreads across most of one. */
+    private static final double MOUTH_RADIUS = 0.4;
+
+    /**
      * Gas vented per tick, averaged over a sync window. This — not the mass at the node — is what
      * the jet draws: the vent empties its node every single tick, so the residue is always zero
      * and a jet drawn from it would never appear.
@@ -131,6 +141,6 @@ public class VentBlockEntity extends GasNodeBlockEntity {
 
         GasJet.spawn(level, getDuctNodePosition(), ModGases.FLUX,
                 Vec3.atCenterOf(worldPosition), facing, speed,
-                rate / MASS_PER_PARTICLE, GasJet.DEFAULT_RADIUS, 0.3);
+                rate / MASS_PER_PARTICLE, MOUTH_RADIUS, MOUTH_OFFSET);
     }
 }

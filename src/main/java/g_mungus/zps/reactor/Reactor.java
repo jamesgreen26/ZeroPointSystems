@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import org.jetbrains.annotations.Nullable;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import org.valkyrienskies.kelvin.api.DuctNodePos;
 
 import java.util.ArrayList;
@@ -42,6 +43,12 @@ public final class Reactor {
 
     /** Chamber contents read from disk, applied once the node exists again. */
     private @Nullable CompoundTag savedChamber;
+
+    /** Heat last sent to clients; not persisted, so a reload resends. */
+    private float lastSentHeat = -1f;
+
+    /** The cavity as a shape, built on first use. */
+    private @Nullable VoxelShape shape;
 
     // FE moved by the exchangers, for the debug readout. Rolled over every tick.
     private int feInThisTick;
@@ -84,6 +91,14 @@ public final class Reactor {
 
     public LongList walls() {
         return walls;
+    }
+
+    /** The cavity as a whole-block shape in world coordinates. */
+    public VoxelShape shape() {
+        if (shape == null) {
+            shape = CavityShapes.fromCells(interior);
+        }
+        return shape;
     }
 
     /** The interior cell the chamber's Kelvin node sits at. */
@@ -192,6 +207,14 @@ public final class Reactor {
 
     @Nullable CompoundTag savedChamber() {
         return savedChamber;
+    }
+
+    float lastSentHeat() {
+        return lastSentHeat;
+    }
+
+    void setLastSentHeat(float heat) {
+        lastSentHeat = heat;
     }
 
     public void recordFeIn(int fe) {

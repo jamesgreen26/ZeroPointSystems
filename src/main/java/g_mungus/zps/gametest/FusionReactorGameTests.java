@@ -10,6 +10,10 @@ import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
 import g_mungus.zps.blockentity.reactor.HeatExchangerBlockEntity;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.gas.ModGases;
+import g_mungus.zps.networking.VoxelShapeStreamCodec;
+import g_mungus.zps.reactor.CavityShapes;
+import io.netty.buffer.Unpooled;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import g_mungus.zps.reactor.Reactor;
 import g_mungus.zps.reactor.ReactorChamberNode;
 import g_mungus.zps.reactor.ReactorFailures;
@@ -588,5 +592,31 @@ public class FusionReactorGameTests {
                     "The exchanger HUD should show FE pulled out of it, reported " + exchanger.getInfo());
             helper.succeed();
         });
+    }
+
+    // --- shape sync ---------------------------------------------------------------------------
+
+    /** The cavity survives the trip to the client: same cells, same open faces, same host. */
+    @GameTest(template = TEMPLATE)
+    public static void cavityShapeRoundTrips(GameTestHelper helper) {
+        buildShell(helper);
+        Reactor reactor = reactorAt(helper, WEST_WALL);
+        VoxelShape shape = reactor.shape();
+
+        var buffer = Unpooled.buffer();
+        VoxelShapeStreamCodec.INSTANCE.encode(buffer, shape);
+        int bytes = buffer.readableBytes();
+        VoxelShape decoded = VoxelShapeStreamCodec.INSTANCE.decode(buffer);
+
+        helper.assertTrue(CavityShapes.isSupported(decoded), "The decoded shape should be a bit grid");
+        helper.assertTrue(CavityShapes.cellCount(decoded) == 27, "27 cells expected, got " + CavityShapes.cellCount(decoded));
+        helper.assertTrue(CavityShapes.lowestCell(decoded).equals(reactor.host()),
+                "Host should agree on both sides, got " + CavityShapes.lowestCell(decoded));
+        helper.assertTrue(decoded.bounds().equals(shape.bounds()), "Bounds should match");
+        int[] faces = {0};
+        CavityShapes.forAllFaces(decoded, (direction, x, y, z) -> faces[0]++);
+        helper.assertTrue(faces[0] == SMALL_WALLS, "A 3x3x3 cavity has 54 open faces, got " + faces[0]);
+        helper.assertTrue(bytes < 200, "A small cavity should be compact on the wire, was " + bytes + " bytes");
+        helper.succeed();
     }
 }

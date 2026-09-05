@@ -11,6 +11,7 @@ import g_mungus.zps.client.renderer.*;
 import g_mungus.zps.client.screens.AssemblerScreen;
 import g_mungus.zps.client.screens.CoalBurnerScreen;
 import g_mungus.zps.client.debug.GasPressureOverlay;
+import g_mungus.zps.client.reactor.ClientReactors;
 import g_mungus.zps.gas.ModParticles;
 import g_mungus.zps.client.screens.PowerCellScreen;
 import g_mungus.zps.client.screens.RollingMillScreen;
@@ -177,6 +178,10 @@ public class ClientSetup {
             NeoForge.EVENT_BUS.addListener(AddressPadClientHooks::onRenderLevelStage);
             NeoForge.EVENT_BUS.addListener(GasPressureOverlay::onRenderLevelStage);
             NeoForge.EVENT_BUS.addListener(GasPressureOverlay::onPlayerTick);
+            NeoForge.EVENT_BUS.addListener(ClientReactors::onChunkUnload);
+            NeoForge.EVENT_BUS.addListener(ClientReactors::onLevelUnload);
+            NeoForge.EVENT_BUS.addListener(ClientReactors::onLoggingOut);
+            NeoForge.EVENT_BUS.addListener(ClientReactors::onClientTick);
         });
     }
 

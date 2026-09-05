@@ -11,6 +11,18 @@ public class ZPSConfig {
     private static ModConfigSpec.ConfigValue<Boolean> terminalKeyboardSounds;
     private static final boolean terminalKeyboardSoundsDefault = true;
 
+    private static ModConfigSpec.ConfigValue<Boolean> reactorGlow;
+    private static final boolean reactorGlowDefault = true;
+
+    /** Whether to draw the volumetric glow inside fusion reactors. */
+    public static boolean showReactorGlow() {
+        boolean result = reactorGlowDefault;
+        try {
+            result = reactorGlow.get();
+        } catch (Exception ignored) { }
+        return result;
+    }
+
     /**
      * Null outside a development environment: the option is not written to the config at all, so
      * it cannot be switched on in a released build.
@@ -41,6 +53,9 @@ public class ZPSConfig {
     private static ModConfigSpec buildConfig() {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
         terminalKeyboardSounds = builder.define("TerminalKeyboardSounds", terminalKeyboardSoundsDefault);
+        reactorGlow = builder
+                .comment("Draw the glowing plasma inside fusion reactors. Needs Flywheel's backend on.")
+                .define("ReactorGlow", reactorGlowDefault);
         if (!FMLLoader.isProduction()) {
             gasPressureOverlay = builder
                     .comment("Debug: tint every gas node with a colour for its pressure,",

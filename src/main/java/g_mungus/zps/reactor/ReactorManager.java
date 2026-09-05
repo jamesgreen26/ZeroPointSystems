@@ -195,6 +195,7 @@ public final class ReactorManager extends SavedData {
         }
         ensureNode(level, reactor);
         setDirty();
+        ReactorSync.sendShape(level, reactor, currentHeat(level, reactor));
         ZPSMod.LOGGER.debug("Reactor {} sealed at {}: {} m^3, {} walls, compactness {}",
                 reactor.id(), reactor.host(), reactor.volume(), reactor.wallCount(), reactor.compactness());
     }
@@ -204,6 +205,7 @@ public final class ReactorManager extends SavedData {
         if (reactors.remove(reactor.id()) == null) {
             return;
         }
+        ReactorSync.sendRemoved(level, reactor);
         for (long wall : reactor.walls()) {
             IntList ids = byWall.get(wall);
             if (ids != null) {
@@ -273,6 +275,7 @@ public final class ReactorManager extends SavedData {
             double pressure = kelvin.getPressureAt(host);
             boolean lit = temperature >= ignition;
             reactor.setLit(lit);
+            syncHeat(level, reactor, temperature);
 
             if (lit && !reactor.hasIgnited()) {
                 reactor.markIgnited();
@@ -287,6 +290,27 @@ public final class ReactorManager extends SavedData {
         }
         // Chamber contents change every tick, and they are part of what gets saved.
         setDirty();
+    }
+
+    /** Tell nearby clients how hot the chamber is, on a slow cadence and only when it moved. */
+    private static void syncHeat(ServerLevel level, Reactor reactor, double temperature) {
+        if (level.getGameTime() % ReactorSync.STATE_SYNC_INTERVAL != 0) {
+            return;
+        }
+        float heat = ReactorSync.heatOf(temperature);
+        if (Math.abs(heat - reactor.lastSentHeat()) > ReactorSync.HEAT_EPSILON) {
+            reactor.setLastSentHeat(heat);
+            ReactorSync.sendState(level, reactor, heat);
+        }
+    }
+
+    /** The reactor's heat right now, or zero if its chamber is not in the simulation. */
+    public float currentHeat(ServerLevel level, Reactor reactor) {
+        DuctNodePos host = reactor.hostNodePos(level);
+        if (!(kelvin().getNodeAt(host) instanceof ReactorChamberNode)) {
+            return 0f;
+        }
+        return ReactorSync.heatOf(kelvin().getTemperatureAt(host));
     }
 
     public static double aetherFraction(Map<GasType, Double> masses) {

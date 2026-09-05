@@ -20,6 +20,8 @@
   ],
   "mixins": [
     "ArgumentTypeInfosMixin",
+    "ArrayVoxelShapeAccessor",
+    "BitSetDiscreteVoxelShapeAccessor",
     "BlockBehaviourAccessor",
     "BlockBehaviourMixin",
     "BlockInWorldMixin",
@@ -34,6 +36,7 @@
     "PistonMovingBlockEntityMixin",
     "ServerLevelMixin",
     "StructureTemplateMixin",
+    "VoxelShapeAccessor",
     "create.DisplayLinkBlockEntityMixin",
     "create.GoggleInfoExtension",
     "create.ManualApplicationRecipeMixin",

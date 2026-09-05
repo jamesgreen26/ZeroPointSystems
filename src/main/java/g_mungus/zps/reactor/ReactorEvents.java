@@ -5,6 +5,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.level.ChunkWatchEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 /**
@@ -21,6 +22,21 @@ public final class ReactorEvents {
     static void onLevelTick(LevelTickEvent.Pre event) {
         if (event.getLevel() instanceof ServerLevel level) {
             ReactorManager.get(level).tick(level);
+        }
+    }
+
+    /**
+     * A player has just been sent a chunk: hand them every reactor hosted in it, so the glow
+     * appears when they arrive. {@code Sent} rather than {@code Watch}, so the shape arrives after
+     * the chunk data it refers to.
+     */
+    @SubscribeEvent
+    static void onChunkSent(ChunkWatchEvent.Sent event) {
+        ReactorManager manager = ReactorManager.get(event.getLevel());
+        for (Reactor reactor : manager.all()) {
+            if (ReactorSync.hostChunk(reactor).equals(event.getPos())) {
+                ReactorSync.sendShapeTo(event.getPlayer(), reactor, manager.currentHeat(event.getLevel(), reactor));
+            }
         }
     }
 

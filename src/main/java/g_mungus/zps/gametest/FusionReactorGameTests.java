@@ -7,10 +7,12 @@ import g_mungus.zps.block.reactor.HeatExchangerBlock;
 import g_mungus.zps.block.reactor.ReactorGasWallBlock;
 import g_mungus.zps.blockentity.PowerCellBlockEntity;
 import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
+import g_mungus.zps.blockentity.reactor.HeatExchangerBlockEntity;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.gas.ModGases;
 import g_mungus.zps.reactor.Reactor;
 import g_mungus.zps.reactor.ReactorChamberNode;
+import g_mungus.zps.reactor.ReactorFailures;
 import g_mungus.zps.reactor.ReactorManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -56,6 +58,11 @@ public class FusionReactorGameTests {
     /** Middle of the east wall, and the block just outside it. */
     private static final BlockPos EAST_WALL = new BlockPos(7, 3, 5);
     private static final BlockPos OUTSIDE_EAST = EAST_WALL.east();
+    /** Two spots on the north wall, and the blocks just outside them. */
+    private static final BlockPos NORTH_WALL_A = new BlockPos(5, 3, 3);
+    private static final BlockPos NORTH_WALL_B = new BlockPos(4, 3, 3);
+    private static final BlockPos OUTSIDE_NORTH_A = NORTH_WALL_A.north();
+    private static final BlockPos OUTSIDE_NORTH_B = NORTH_WALL_B.north();
 
     private static final int SMALL_WALLS = 54;
     private static final double EPSILON = 1e-9;
@@ -424,6 +431,162 @@ public class FusionReactorGameTests {
             helper.assertTrue(Math.abs(kelvin().getTemperatureAt(host) - temperatureBefore) < 1.0,
                     "The temperature should be back, was " + kelvin().getTemperatureAt(host));
             helper.assertTrue(reactor.wallCount() == SMALL_WALLS, "Geometry should be back");
+            helper.succeed();
+        });
+    }
+
+    // --- reported bugs, kept failing until fixed ------------------------------------------------
+
+    private static IEnergyStorage energyAt(GameTestHelper helper, BlockPos relative, Direction side) {
+        BlockEntity blockEntity = helper.getBlockEntity(relative);
+        IEnergyStorage energy = helper.getLevel().getCapability(Capabilities.EnergyStorage.BLOCK,
+                helper.absolutePos(relative), blockEntity.getBlockState(), blockEntity, side);
+        if (energy == null) {
+            helper.fail("No energy storage at " + relative + " on side " + side);
+            throw new IllegalStateException();
+        }
+        return energy;
+    }
+
+    private static double chamberTemperature(GameTestHelper helper) {
+        return kelvin().getTemperatureAt(node(helper, HOST));
+    }
+
+    /**
+     * Bug: after melting through the shell and patching the hole, a heater exchanger on a
+     * Creative Power Cell never heats the rebuilt chamber until the block is replaced.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 500)
+    public static void heaterRecoversAfterMeltAndPatch(GameTestHelper helper) {
+        buildShell(helper, Map.of(WEST_WALL,
+                facing(ModBlocks.HEAT_EXCHANGER.get().defaultBlockState(), Direction.WEST)));
+        helper.setBlock(OUTSIDE_WEST, ModBlocks.CREATIVE_POWER_CELL.get().defaultBlockState());
+
+        helper.runAfterDelay(160, () -> {
+            helper.assertTrue(chamberTemperature(helper) >= ZPSConfig.exchangerHeatingCutoffK() - 1000.0,
+                    "The heater should have brought the chamber to the cutoff first, was " + chamberTemperature(helper));
+            // Then it runs hard for a while, well past the cutoff, before it gets away from us.
+            setChamberTemperature(helper, 90_000.0);
+        });
+        helper.runAfterDelay(200, () -> {
+            Reactor reactor = reactorAt(helper, WEST_WALL);
+
+            // Melt through a plain wall on the far side, then patch it.
+            ReactorFailures.breach(helper.getLevel(), reactor, helper.absolutePos(EAST_WALL), true);
+            helper.assertTrue(manager(helper).reactorsAt(helper.absolutePos(WEST_WALL)).isEmpty(),
+                    "The breach should have taken the reactor apart");
+            helper.assertTrue(!helper.getBlockState(EAST_WALL).is(ModBlocks.REINFORCED_PLATING.get()),
+                    "The breached wall should be gone");
+            helper.setBlock(EAST_WALL, ModBlocks.REINFORCED_PLATING.get().defaultBlockState());
+
+            reactorAt(helper, WEST_WALL);
+            helper.assertTrue(chamberTemperature(helper) < 1000.0,
+                    "The patched reactor should start cold, was " + chamberTemperature(helper));
+        });
+        helper.runAfterDelay(340, () -> {
+            double temperature = chamberTemperature(helper);
+            helper.assertTrue(temperature > 5000.0,
+                    "The heater should be heating the patched reactor again, chamber is at " + temperature);
+            helper.succeed();
+        });
+    }
+
+    /**
+     * The same failure without the melt: a heater exchanger on a Creative Power Cell sits next
+     * to a chamber that runs well past the cutoff, then the chamber cools. It must heat again.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 400)
+    public static void heaterResumesAfterChamberCools(GameTestHelper helper) {
+        buildShell(helper, Map.of(WEST_WALL,
+                facing(ModBlocks.HEAT_EXCHANGER.get().defaultBlockState(), Direction.WEST)));
+        helper.setBlock(OUTSIDE_WEST, ModBlocks.CREATIVE_POWER_CELL.get().defaultBlockState());
+
+        // Well past the cutoff, the way a hard-running reactor is; the cell cannot take FE back.
+        helper.runAfterDelay(5, () -> setChamberTemperature(helper, 90_000.0));
+        helper.runAfterDelay(60, () -> setChamberTemperature(helper, 300.0));
+        helper.runAfterDelay(160, () -> {
+            double temperature = chamberTemperature(helper);
+            helper.assertTrue(temperature > 5000.0,
+                    "The heater should be heating the cooled chamber again, chamber is at " + temperature);
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Bug: a reactor that is plainly producing power reports itself as not running. Sampled
+     * every tick over a steady-state window: it must never claim to be stalled or cold while
+     * the exchangers are delivering FE every tick.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 300)
+    public static void readoutReportsRunningWhileProducing(GameTestHelper helper) {
+        BlockState exchangerNorth = facing(ModBlocks.HEAT_EXCHANGER.get().defaultBlockState(), Direction.NORTH);
+        Map<BlockPos, BlockState> overrides = new HashMap<>();
+        overrides.put(WEST_WALL, facing(ModBlocks.FUEL_INJECTOR.get().defaultBlockState(), Direction.WEST));
+        overrides.put(EAST_WALL, facing(ModBlocks.EXHAUST_PORT.get().defaultBlockState(), Direction.EAST));
+        overrides.put(NORTH_WALL_A, exchangerNorth);
+        overrides.put(NORTH_WALL_B, exchangerNorth);
+        buildShell(helper, overrides);
+        // Fuel in, ash out, power out: the whole loop, sized so the exchangers keep up.
+        placeGenerator(helper, OUTSIDE_WEST, 0.0008, 300.0);
+        helper.setBlock(OUTSIDE_EAST, facing(ModBlocks.VENT.get().defaultBlockState(), Direction.EAST));
+        helper.setBlock(OUTSIDE_NORTH_A, ModBlocks.POWER_CELL.get().defaultBlockState());
+        helper.setBlock(OUTSIDE_NORTH_B, ModBlocks.POWER_CELL.get().defaultBlockState());
+        setChamberTemperature(helper, 60_000.0);
+
+        int windowStart = 120;
+        int windowLength = 40;
+        int[] runningTicks = {0};
+        int[] outputTicks = {0};
+        int[] energyAtStart = {0};
+        helper.runAtTickTime(windowStart - 1, () ->
+                energyAtStart[0] = energyAt(helper, OUTSIDE_NORTH_A, Direction.SOUTH).getEnergyStored());
+        for (int tick = windowStart; tick < windowStart + windowLength; tick++) {
+            helper.runAtTickTime(tick, () -> {
+                Reactor reactor = reactorAt(helper, WEST_WALL);
+                if (reactor.isRunning()) {
+                    runningTicks[0]++;
+                }
+                if (reactor.feOutLastTick() > 0) {
+                    outputTicks[0]++;
+                }
+            });
+        }
+        helper.runAtTickTime(windowStart + windowLength, () -> {
+            int gained = energyAt(helper, OUTSIDE_NORTH_A, Direction.SOUTH).getEnergyStored() - energyAtStart[0];
+            helper.assertTrue(gained > 0, "The power cell should be charging, so the reactor is plainly working");
+            helper.assertTrue(chamberTemperature(helper) >= ZPSConfig.reactorIgnitionTemperatureK(),
+                    "The chamber should be above ignition, was " + chamberTemperature(helper));
+            helper.assertTrue(outputTicks[0] == windowLength,
+                    "FE out should be reported every tick, was on " + outputTicks[0] + " of " + windowLength);
+            helper.assertTrue(runningTicks[0] == windowLength,
+                    "A producing reactor should report running every tick, did on " + runningTicks[0] + " of " + windowLength);
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Bug: FE pulled out of an exchanger by a consumer that extracts, the way a Step-Up
+     * Transformer does, is never counted, so the readout and the HUD show zero output.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void readoutCountsEnergyPulledFromExchanger(GameTestHelper helper) {
+        buildShell(helper, Map.of(NORTH_WALL_A,
+                facing(ModBlocks.HEAT_EXCHANGER.get().defaultBlockState(), Direction.NORTH)));
+        setChamberTemperature(helper, 90_000.0);
+
+        int[] pulled = {0};
+        for (int tick = 5; tick < 30; tick++) {
+            helper.runAtTickTime(tick, () -> pulled[0] += energyAt(helper, NORTH_WALL_A, Direction.NORTH)
+                    .extractEnergy(ZPSConfig.exchangerFePerTick(), false));
+        }
+        helper.runAtTickTime(30, () -> {
+            helper.assertTrue(pulled[0] > 0, "Pulling from the exchanger should yield FE");
+            Reactor reactor = reactorAt(helper, NORTH_WALL_A);
+            HeatExchangerBlockEntity exchanger = (HeatExchangerBlockEntity) helper.getBlockEntity(NORTH_WALL_A);
+            helper.assertTrue(reactor.feOutLastTick() > 0,
+                    "The reactor should count FE pulled out of its exchanger, reported " + reactor.feOutLastTick());
+            helper.assertTrue(exchanger.getInfo() > 0,
+                    "The exchanger HUD should show FE pulled out of it, reported " + exchanger.getInfo());
             helper.succeed();
         });
     }

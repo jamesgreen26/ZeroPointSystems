@@ -39,7 +39,6 @@ public final class Reactor {
 
     private boolean ignitedOnce;
     private boolean lit;
-    private boolean stalled;
 
     /** Chamber contents read from disk, applied once the node exists again. */
     private @Nullable CompoundTag savedChamber;
@@ -177,19 +176,8 @@ public final class Reactor {
         return lit;
     }
 
-    /** Lit but choked on Aether. */
-    public boolean isStalled() {
-        return stalled;
-    }
-
-    /** Lit and not stalled: the reaction can fire. */
-    public boolean isRunning() {
-        return lit && !stalled;
-    }
-
-    void setThermalState(boolean lit, boolean stalled) {
+    void setLit(boolean lit) {
         this.lit = lit;
-        this.stalled = stalled;
     }
 
     @Nullable CompoundTag takeSavedChamber() {

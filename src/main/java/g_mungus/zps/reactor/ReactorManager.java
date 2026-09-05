@@ -272,7 +272,7 @@ public final class ReactorManager extends SavedData {
             double temperature = kelvin.getTemperatureAt(host);
             double pressure = kelvin.getPressureAt(host);
             boolean lit = temperature >= ignition;
-            reactor.setThermalState(lit, lit && aetherFraction(kelvin.getGasMassAt(host)) > stallRatio());
+            reactor.setLit(lit);
 
             if (lit && !reactor.hasIgnited()) {
                 reactor.markIgnited();
@@ -287,11 +287,6 @@ public final class ReactorManager extends SavedData {
         }
         // Chamber contents change every tick, and they are part of what gets saved.
         setDirty();
-    }
-
-    /** The Aether limit the reaction's datapack definition stalls at. */
-    private static double stallRatio() {
-        return 0.25;
     }
 
     public static double aetherFraction(Map<GasType, Double> masses) {

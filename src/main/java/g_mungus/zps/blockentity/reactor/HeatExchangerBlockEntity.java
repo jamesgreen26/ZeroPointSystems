@@ -9,15 +9,11 @@ import g_mungus.zps.reactor.ReactorChamberNode;
 import g_mungus.zps.reactor.ReactorManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.energy.EnergyStorage;
 import net.neoforged.neoforge.energy.IEnergyStorage;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.valkyrienskies.kelvin.KelvinMod;
 import org.valkyrienskies.kelvin.api.DuctNetwork;
@@ -26,26 +22,26 @@ import org.valkyrienskies.kelvin.api.DuctNodePos;
 /**
  * Chamber heat to FE and back. 1 FE is 1 kJ.
  *
- * <p>Mode follows the outside world: if anything pushed FE in since the last tick, the exchanger
- * is heating and pours its buffer into the chamber. Otherwise it is generating, drawing chamber
- * heat into the buffer and pushing that out of its outer face. Both are capped per tick.
+ * <p>There is no buffer: FE pushed in becomes chamber heat on the spot, and FE pulled out comes
+ * straight from chamber heat. Each tick the exchanger also offers what the chamber can spare to
+ * whatever is on its outer face. Both directions are capped per tick.
  *
- * <p>Two temperature limits keep the reactor alive. Generation stops at a floor a little above
+ * <p>Two temperature limits keep the reactor alive. Nothing is drawn below a floor a little above
  * ignition, so the exchangers never pull a running chamber down to where one cold dose of fuel
- * quenches it. Heating stops at a cutoff, so a big power source cannot cook the chamber past
- * melting on its own.
+ * quenches it. Nothing is accepted above a cutoff, so a big power source cannot cook the chamber
+ * past melting on its own.
  */
 public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGeneratorBE {
 
     private static final double JOULES_PER_FE = 1000.0;
 
-    private final ExchangerEnergyStorage energyStorage = new ExchangerEnergyStorage();
+    private final IEnergyStorage energyStorage = new ChamberEnergyStorage();
 
-    private boolean receivedThisTick;
-    private boolean heating;
-    /** The chamber is at or past the heating cutoff, so FE is refused. */
-    private boolean chamberTooHot;
-    private int outputLastTick;
+    // FE moved so far this tick, against the per-tick caps, and the finished figures for last tick.
+    private int inThisTick;
+    private int outThisTick;
+    private int inLastTick;
+    private int outLastTick;
 
     private int hudInfo;
     private long lastHudInfoRequestTick = Long.MIN_VALUE;
@@ -65,96 +61,88 @@ public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGener
         return getBlockState().getValue(HeatExchangerBlock.FACING);
     }
 
-    /** True while FE is being converted to heat rather than the other way round. */
+    /** True while FE was coming in last tick rather than going out. */
     public boolean isHeating() {
-        return heating;
+        return inLastTick > 0;
     }
 
     /** The reactor this exchanger serves, or null if it is not facing into one. */
-    public Reactor reactor(ServerLevel serverLevel) {
+    public @Nullable Reactor reactor(ServerLevel serverLevel) {
         return ReactorManager.get(serverLevel).reactorServedBy(worldPosition, facing());
+    }
+
+    /** The chamber this exchanger touches, or null if there is none to touch. */
+    private @Nullable Chamber chamber() {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return null;
+        }
+        Reactor reactor = reactor(serverLevel);
+        if (reactor == null) {
+            return null;
+        }
+        DuctNetwork<?> kelvin = KelvinMod.INSTANCE.forceGetKelvin();
+        DuctNodePos host = reactor.hostNodePos(serverLevel);
+        return kelvin.getNodeAt(host) instanceof ReactorChamberNode ? new Chamber(reactor, kelvin, host) : null;
+    }
+
+    private record Chamber(Reactor reactor, DuctNetwork<?> kelvin, DuctNodePos host) {
+        double temperature() {
+            return kelvin.getTemperatureAt(host);
+        }
+
+        double heatCapacity() {
+            return kelvin.getNodeHeatCapacity(host);
+        }
+
+        void addHeat(double joules) {
+            kelvin.modHeatEnergy(host, joules);
+        }
     }
 
     // --- work ---------------------------------------------------------------------------------
 
     public void serverTick() {
-        if (!(level instanceof ServerLevel serverLevel)) {
-            return;
-        }
-        boolean received = receivedThisTick;
-        receivedThisTick = false;
-        outputLastTick = 0;
-
-        Reactor reactor = reactor(serverLevel);
-        DuctNetwork<?> kelvin = KelvinMod.INSTANCE.forceGetKelvin();
-        DuctNodePos host = reactor == null ? null : reactor.hostNodePos(serverLevel);
-        if (host == null || !(kelvin.getNodeAt(host) instanceof ReactorChamberNode)) {
-            heating = false;
-            chamberTooHot = false;
-            return;
-        }
-
-        double temperature = kelvin.getTemperatureAt(host);
-        chamberTooHot = temperature >= ZPSConfig.exchangerHeatingCutoffK();
-        int perTick = ZPSConfig.exchangerFePerTick();
-
-        if (received) {
-            heating = true;
-            int fe = energyStorage.drain(perTick);
-            if (fe > 0) {
-                kelvin.modHeatEnergy(host, fe * JOULES_PER_FE);
-                reactor.recordFeIn(fe);
-                setChanged();
-            }
-            return;
-        }
-
-        heating = false;
-        double surplus = (temperature - ZPSConfig.exchangerGenerationFloorK()) * kelvin.getNodeHeatCapacity(host);
-        if (surplus > 0) {
-            int fe = (int) Math.min(Math.min(perTick, energyStorage.room()), surplus / JOULES_PER_FE);
-            if (fe > 0) {
-                kelvin.modHeatEnergy(host, -fe * JOULES_PER_FE);
-                energyStorage.fill(fe);
-                setChanged();
-            }
-        }
-        outputLastTick = pushEnergy(perTick);
-        if (outputLastTick > 0) {
-            reactor.recordFeOut(outputLastTick);
-        }
+        inLastTick = inThisTick;
+        outLastTick = outThisTick;
+        inThisTick = 0;
+        outThisTick = 0;
+        pushEnergy();
     }
 
-    /** Offer buffered FE to whatever is on the outer face. Returns what it took. */
-    private int pushEnergy(int limit) {
-        if (level == null || energyStorage.getEnergyStored() <= 0) {
-            return 0;
+    /** Offer what the chamber can spare to whatever is on the outer face. */
+    private void pushEnergy() {
+        if (level == null) {
+            return;
         }
         Direction side = facing();
         BlockPos targetPos = worldPosition.relative(side);
         BlockEntity target = level.getBlockEntity(targetPos);
         if (target == null) {
-            return 0;
+            return;
         }
         IEnergyStorage targetEnergy = level.getCapability(Capabilities.EnergyStorage.BLOCK,
                 targetPos, target.getBlockState(), target, side.getOpposite());
         if (targetEnergy == null || !targetEnergy.canReceive()) {
-            return 0;
+            return;
         }
 
-        int available = energyStorage.extractEnergy(limit, true);
+        int available = energyStorage.extractEnergy(Integer.MAX_VALUE, true);
         int accepted = targetEnergy.receiveEnergy(available, true);
         int transfer = Math.min(available, accepted);
         if (transfer <= 0) {
-            return 0;
+            return;
         }
         int extracted = energyStorage.extractEnergy(transfer, false);
         int received = targetEnergy.receiveEnergy(extracted, false);
         if (received < extracted) {
-            energyStorage.fill(extracted - received);
+            // Put back what the neighbour would not take after all.
+            Chamber chamber = chamber();
+            if (chamber != null) {
+                chamber.addHeat((extracted - received) * JOULES_PER_FE);
+                chamber.reactor().recordFeOut(received - extracted);
+            }
+            outThisTick -= extracted - received;
         }
-        setChanged();
-        return received;
     }
 
     // --- HUD ----------------------------------------------------------------------------------
@@ -174,64 +162,88 @@ public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGener
         hudInfo = info;
     }
 
+    /** FE that left through the outer face last tick, pushed or pulled. */
     @Override
     public Integer getInfo() {
         if (level != null && !level.isClientSide()) {
-            return outputLastTick;
+            return outLastTick;
         }
         return hudInfo;
     }
 
-    // --- persistence --------------------------------------------------------------------------
-
-    @Override
-    protected void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
-        super.saveAdditional(tag, registries);
-        tag.put("Energy", energyStorage.serializeNBT(registries));
-        tag.putBoolean("Heating", heating);
-    }
-
-    @Override
-    protected void loadAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
-        super.loadAdditional(tag, registries);
-        if (tag.contains("Energy")) {
-            energyStorage.deserializeNBT(registries, tag.get("Energy"));
-        }
-        heating = tag.getBoolean("Heating");
-    }
-
     // --- storage ------------------------------------------------------------------------------
 
-    private class ExchangerEnergyStorage extends EnergyStorage {
-        private ExchangerEnergyStorage() {
-            super(ZPSConfig.exchangerBufferFe(), ZPSConfig.exchangerFePerTick(), ZPSConfig.exchangerFePerTick());
+    /**
+     * The chamber's heat, seen as an energy storage from the outer face. Nothing is stored here;
+     * every call goes straight through to Kelvin.
+     */
+    private class ChamberEnergyStorage implements IEnergyStorage {
+
+        /** FE the chamber could give up right now, within this tick's cap. */
+        private int spare(Chamber chamber) {
+            double surplus = (chamber.temperature() - ZPSConfig.exchangerGenerationFloorK()) * chamber.heatCapacity();
+            int cap = ZPSConfig.exchangerFePerTick() - outThisTick;
+            return (int) Math.max(0, Math.min(cap, surplus / JOULES_PER_FE));
+        }
+
+        /** FE the chamber could take right now, within this tick's cap. */
+        private int room(Chamber chamber) {
+            if (chamber.temperature() >= ZPSConfig.exchangerHeatingCutoffK()) {
+                return 0;
+            }
+            return Math.max(0, ZPSConfig.exchangerFePerTick() - inThisTick);
         }
 
         @Override
         public int receiveEnergy(int toReceive, boolean simulate) {
-            if (chamberTooHot) {
+            Chamber chamber = chamber();
+            if (chamber == null || toReceive <= 0) {
                 return 0;
             }
-            int received = super.receiveEnergy(toReceive, simulate);
-            if (!simulate && received > 0) {
-                receivedThisTick = true;
-                setChanged();
+            int fe = Math.min(toReceive, room(chamber));
+            if (fe > 0 && !simulate) {
+                chamber.addHeat(fe * JOULES_PER_FE);
+                chamber.reactor().recordFeIn(fe);
+                inThisTick += fe;
             }
-            return received;
+            return fe;
         }
 
-        int room() {
-            return capacity - energy;
+        @Override
+        public int extractEnergy(int toExtract, boolean simulate) {
+            Chamber chamber = chamber();
+            if (chamber == null || toExtract <= 0) {
+                return 0;
+            }
+            int fe = Math.min(toExtract, spare(chamber));
+            if (fe > 0 && !simulate) {
+                chamber.addHeat(-fe * JOULES_PER_FE);
+                chamber.reactor().recordFeOut(fe);
+                outThisTick += fe;
+            }
+            return fe;
         }
 
-        int drain(int amount) {
-            int drained = Math.min(Math.max(0, amount), energy);
-            energy -= drained;
-            return drained;
+        /** What could be pulled right now; there is nothing actually held. */
+        @Override
+        public int getEnergyStored() {
+            Chamber chamber = chamber();
+            return chamber == null ? 0 : spare(chamber);
         }
 
-        void fill(int amount) {
-            energy += Math.min(Math.max(0, amount), capacity - energy);
+        @Override
+        public int getMaxEnergyStored() {
+            return ZPSConfig.exchangerFePerTick();
+        }
+
+        @Override
+        public boolean canExtract() {
+            return true;
+        }
+
+        @Override
+        public boolean canReceive() {
+            return true;
         }
     }
 }

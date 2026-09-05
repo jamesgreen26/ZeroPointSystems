@@ -115,10 +115,8 @@ public class ReactorDebugCommand {
             }
         }
 
-        lines.add(String.format("  %s%s%s, ignited before: %s",
+        lines.add(String.format("  %s, ignited before: %s",
                 reactor.isLit() ? "lit" : "cold",
-                reactor.isStalled() ? ", stalled" : "",
-                reactor.isRunning() ? ", running" : "",
                 reactor.hasIgnited()));
         lines.add(String.format("  FE last tick: in %d, out %d", reactor.feInLastTick(), reactor.feOutLastTick()));
 

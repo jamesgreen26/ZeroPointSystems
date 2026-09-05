@@ -513,12 +513,11 @@ public class FusionReactorGameTests {
     }
 
     /**
-     * Bug: a reactor that is plainly producing power reports itself as not running. Sampled
-     * every tick over a steady-state window: it must never claim to be stalled or cold while
-     * the exchangers are delivering FE every tick.
+     * A reactor that is plainly producing power, sampled every tick over a steady-state window:
+     * it must read as lit and show FE out on every one of them.
      */
     @GameTest(template = TEMPLATE, timeoutTicks = 300)
-    public static void readoutReportsRunningWhileProducing(GameTestHelper helper) {
+    public static void readoutReportsLitWhileProducing(GameTestHelper helper) {
         BlockState exchangerNorth = facing(ModBlocks.HEAT_EXCHANGER.get().defaultBlockState(), Direction.NORTH);
         Map<BlockPos, BlockState> overrides = new HashMap<>();
         overrides.put(WEST_WALL, facing(ModBlocks.FUEL_INJECTOR.get().defaultBlockState(), Direction.WEST));
@@ -535,7 +534,7 @@ public class FusionReactorGameTests {
 
         int windowStart = 120;
         int windowLength = 40;
-        int[] runningTicks = {0};
+        int[] litTicks = {0};
         int[] outputTicks = {0};
         int[] energyAtStart = {0};
         helper.runAtTickTime(windowStart - 1, () ->
@@ -543,8 +542,8 @@ public class FusionReactorGameTests {
         for (int tick = windowStart; tick < windowStart + windowLength; tick++) {
             helper.runAtTickTime(tick, () -> {
                 Reactor reactor = reactorAt(helper, WEST_WALL);
-                if (reactor.isRunning()) {
-                    runningTicks[0]++;
+                if (reactor.isLit()) {
+                    litTicks[0]++;
                 }
                 if (reactor.feOutLastTick() > 0) {
                     outputTicks[0]++;
@@ -558,8 +557,8 @@ public class FusionReactorGameTests {
                     "The chamber should be above ignition, was " + chamberTemperature(helper));
             helper.assertTrue(outputTicks[0] == windowLength,
                     "FE out should be reported every tick, was on " + outputTicks[0] + " of " + windowLength);
-            helper.assertTrue(runningTicks[0] == windowLength,
-                    "A producing reactor should report running every tick, did on " + runningTicks[0] + " of " + windowLength);
+            helper.assertTrue(litTicks[0] == windowLength,
+                    "A producing reactor should read as lit every tick, did on " + litTicks[0] + " of " + windowLength);
             helper.succeed();
         });
     }

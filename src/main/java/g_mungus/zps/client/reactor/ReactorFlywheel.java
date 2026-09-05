@@ -89,6 +89,8 @@ public final class ReactorFlywheel {
             .transparency(Transparency.LIGHTNING)
             .writeMask(WriteMask.COLOR)
             .depthTest(DepthTest.LEQUAL)
+            // The coat lies on the wall planes; this pulls it in front of the opaque wall's depth.
+            .polygonOffset(true)
             .backfaceCulling(false)
             .useOverlay(false)
             .useLight(false)
@@ -99,17 +101,13 @@ public final class ReactorFlywheel {
             .build();
 
     /**
-     * How far the coat sits off the wall, in blocks. Enough that it never fights the glass for
-     * depth, little enough that it reads as the wall itself glowing. The instance shader trims
-     * face edges to the same distance, so keep {@code INSET} in {@code instance/reactor_cell.vert}
-     * equal to this.
-     */
-    private static final float INSET = 0.03f;
-
-    /**
-     * Six unit faces just inside the cell's six sides. Each carries the outward normal of the
+     * Six unit faces exactly on the cell's six sides. Each carries the outward normal of the
      * side it lines, which is how the vertex shader tells which face it is drawing; faces not
      * against a wall are collapsed there.
+     *
+     * <p>On the wall plane itself, not inset from it: that way two faces meeting at any edge,
+     * concave or convex, share exactly that edge with no overlap and no gap. The material's
+     * polygon offset keeps them in front of the opaque wall in the depth test.
      */
     public static final Model MODEL = new SingleMeshModel(coatMesh(), MATERIAL);
 
@@ -118,8 +116,8 @@ public final class ReactorFlywheel {
         PosTexNormalVertexView view = new PosTexNormalVertexView();
         view.load(block);
 
-        float lo = INSET;
-        float hi = 1f - INSET;
+        float lo = 0f;
+        float hi = 1f;
         int v = 0;
         // Down (y = 0 side) and up (y = 1 side).
         v = quad(view, v, 0f, lo, 0f, 0f, lo, 1f, 1f, lo, 1f, 1f, lo, 0f, 0f, -1f, 0f);

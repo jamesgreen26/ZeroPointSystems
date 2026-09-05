@@ -1,5 +1,5 @@
-// One wall-touching cell of a fusion reactor. The mesh is a unit cube of six faces just inside
-// the cell's sides; the instance says which of those sides are actually against a wall, and the
+// One wall-touching cell of a fusion reactor. The mesh is a unit cube of six faces on the cell's
+// sides; the instance says which of those sides are actually against a wall, and the
 // rest are collapsed to a point so they never rasterise.
 //
 // The fragment stage needs the whole reactor's bounding box, its heat and its noise phase, which
@@ -23,30 +23,13 @@ float zps_faceDepth(uvec2 depths, uint bit) {
     return float((word >> (8u * (index & 3u))) & 255u);
 }
 
-// Must match ReactorFlywheel.INSET, the distance the mesh already sits off its own wall.
-const float INSET = 0.03;
-
-// Pull a face's edge in to the inset where the side beyond that edge is also a wall. Otherwise two
-// faces meeting at an edge both run past each other's plane and the strip between them is drawn
-// twice. Where the side beyond is open cavity the edge stays on the cell boundary, meeting the
-// next cell's face exactly.
-float zps_trim(float m, uint faces, uint negativeBit, uint positiveBit) {
-    if (m < 0.5 && (faces & negativeBit) != 0u) return INSET;
-    if (m > 0.5 && (faces & positiveBit) != 0u) return 1.0 - INSET;
-    return m;
-}
-
 void flw_instanceVertex(in FlwInstance i) {
-    vec3 n = flw_vertexNormal;
-    uint bit = zps_faceBit(n);
+    uint bit = zps_faceBit(flw_vertexNormal);
     bool onWall = (i.faces & bit) != 0u;
 
-    vec3 m = flw_vertexPos.xyz;
-    if (abs(n.x) < 0.5) m.x = zps_trim(m.x, i.faces, 16u, 32u);
-    if (abs(n.y) < 0.5) m.y = zps_trim(m.y, i.faces, 1u, 2u);
-    if (abs(n.z) < 0.5) m.z = zps_trim(m.z, i.faces, 4u, 8u);
-
-    flw_vertexPos.xyz = onWall ? m + i.pos : i.pos;
+    // Faces sit exactly on the cell's sides, so at every edge two faces share a line and nothing
+    // else: no strip drawn twice at a concave edge, no notch left open at a convex one.
+    flw_vertexPos.xyz = onWall ? flw_vertexPos.xyz + i.pos : i.pos;
 
     flw_vertexColor = vec4(i.boxMin, i.params.x);                                  // box min, heat
     flw_vertexTexCoord = i.boxMax.xy;                                              // box max x, y

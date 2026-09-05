@@ -2,19 +2,15 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "M": {
-      "item": "zps:space_metal_mesh"
-    },
-    "P": {
-      "item": "zps:space_metal_pipe"
+    "B": {
+      "item": "minecraft:iron_bars"
     },
     "I": {
-      "item": "zps:space_metal_ingot"
+      "item": "zps:aluminum_ingot"
     }
   },
   "pattern": [
-    "MMM",
-    "IPI"
+    "IBI"
   ],
   "result": {
     "id": "zps:vent",

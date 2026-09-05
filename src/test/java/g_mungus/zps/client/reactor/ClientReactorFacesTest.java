@@ -65,4 +65,38 @@ public class ClientReactorFacesTest {
         assertEquals(bit(Direction.DOWN) | bit(Direction.NORTH) | bit(Direction.WEST), masks.get(BlockPos.asLong(10, -5, 7)));
         assertEquals(bit(Direction.UP) | bit(Direction.SOUTH) | bit(Direction.EAST), masks.get(BlockPos.asLong(11, -4, 8)));
     }
+
+    private static int depth(long packed, Direction direction) {
+        return (int) ((packed >>> (8 * direction.ordinal())) & 0xFF);
+    }
+
+    @Test
+    void singleCellIsOneDeepEveryWay() {
+        BitSetDiscreteVoxelShape grid = new BitSetDiscreteVoxelShape(1, 1, 1);
+        grid.fill(0, 0, 0);
+        long packed = ClientReactor.faceDepths(grid, BlockPos.ZERO, 0, 0, 0);
+        for (Direction direction : Direction.values()) {
+            assertEquals(1, depth(packed, direction));
+        }
+    }
+
+    @Test
+    void cubeCornerSeesTheWholeCubeBehindItsWalls() {
+        long packed = ClientReactor.faceDepths(cube(3), new BlockPos(5, 5, 5), 5, 5, 5);
+        assertEquals(3, depth(packed, Direction.DOWN), "the floor face looks up through three cells");
+        assertEquals(3, depth(packed, Direction.WEST));
+        assertEquals(1, depth(packed, Direction.UP), "the top side has only this cell beneath it");
+    }
+
+    @Test
+    void depthStopsAtTheFirstGap() {
+        // A 1x1x5 tunnel with the middle cell missing: from the far end, two cells then a wall.
+        BitSetDiscreteVoxelShape grid = new BitSetDiscreteVoxelShape(5, 1, 1);
+        grid.fill(0, 0, 0);
+        grid.fill(1, 0, 0);
+        grid.fill(3, 0, 0);
+        grid.fill(4, 0, 0);
+        long packed = ClientReactor.faceDepths(grid, BlockPos.ZERO, 0, 0, 0);
+        assertEquals(2, depth(packed, Direction.WEST));
+    }
 }

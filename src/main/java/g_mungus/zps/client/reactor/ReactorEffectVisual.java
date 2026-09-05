@@ -21,8 +21,13 @@ import net.minecraft.world.phys.AABB;
  */
 public final class ReactorEffectVisual extends AbstractVisual implements EffectVisual<ReactorEffect>, SimpleTickableVisual {
 
-    /** Fraction of the remaining gap closed each tick. */
-    private static final float SMOOTHING = 0.15f;
+    /**
+     * Fraction of the remaining gap closed each tick, and the most the heat may move in one tick.
+     * Together they turn the server's ten-tick steps, and a sputtering reactor's swings, into a
+     * slow glide: a jump of one full ignition takes about a second and a half to show.
+     */
+    private static final float SMOOTHING = 0.08f;
+    private static final float MAX_STEP = 0.035f;
     /** Heat changes smaller than this are not worth rewriting every cell. */
     private static final float WRITE_EPSILON = 1f / 256f;
     /** Below this the glow is invisible; the cells are hidden so they cost nothing. */
@@ -40,6 +45,8 @@ public final class ReactorEffectVisual extends AbstractVisual implements EffectV
         Vec3i origin = renderOrigin();
         long[] positions = reactor.cells();
         int[] faces = reactor.faces();
+        int[] depthsLow = reactor.depthsLow();
+        int[] depthsHigh = reactor.depthsHigh();
         float heat = reactor.displayHeat();
         AABB bounds = reactor.shape().bounds();
         float seed = seed(reactor.id());
@@ -59,6 +66,8 @@ public final class ReactorEffectVisual extends AbstractVisual implements EffectV
             cell.maxY = (float) (bounds.maxY - origin.getY());
             cell.maxZ = (float) (bounds.maxZ - origin.getZ());
             cell.faces = faces[i];
+            cell.depthsLow = depthsLow[i];
+            cell.depthsHigh = depthsHigh[i];
             cell.intensity = heat;
             cell.seed = seed;
             cells[i] = cell;
@@ -79,7 +88,8 @@ public final class ReactorEffectVisual extends AbstractVisual implements EffectV
     public void tick(TickableVisual.Context context) {
         float target = reactor.targetHeat();
         float display = reactor.displayHeat();
-        display += (target - display) * SMOOTHING;
+        float step = (target - display) * SMOOTHING;
+        display += Math.max(-MAX_STEP, Math.min(MAX_STEP, step));
         if (Math.abs(target - display) < WRITE_EPSILON / 4) {
             display = target;
         }

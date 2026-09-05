@@ -41,6 +41,7 @@ public final class ReactorFlywheel {
             .vector("boxMax", FloatRepr.FLOAT, 3)
             .vector("params", FloatRepr.FLOAT, 2)
             .scalar("faces", UnsignedIntegerRepr.UNSIGNED_INT)
+            .vector("depths", UnsignedIntegerRepr.UNSIGNED_INT, 2)
             .build();
 
     // Offsets come from the layout so the writer can never drift from the GLSL struct.
@@ -49,6 +50,7 @@ public final class ReactorFlywheel {
     private static final int BOX_MAX = LAYOUT.asMap().get("boxMax").byteOffset();
     private static final int PARAMS = LAYOUT.asMap().get("params").byteOffset();
     private static final int FACES = LAYOUT.asMap().get("faces").byteOffset();
+    private static final int DEPTHS = LAYOUT.asMap().get("depths").byteOffset();
 
     public static final InstanceType<ReactorCellInstance> INSTANCE_TYPE = SimpleInstanceType.builder(ReactorCellInstance::new)
             .layout(LAYOUT)
@@ -65,6 +67,8 @@ public final class ReactorFlywheel {
                 MemoryUtil.memPutFloat(ptr + PARAMS, instance.intensity);
                 MemoryUtil.memPutFloat(ptr + PARAMS + 4, instance.seed);
                 MemoryUtil.memPutInt(ptr + FACES, instance.faces);
+                MemoryUtil.memPutInt(ptr + DEPTHS, instance.depthsLow);
+                MemoryUtil.memPutInt(ptr + DEPTHS + 4, instance.depthsHigh);
             })
             .vertexShader(ZPSMod.resource("instance/reactor_cell.vert"))
             .cullShader(ZPSMod.resource("instance/cull/reactor_cell.glsl"))
@@ -96,7 +100,9 @@ public final class ReactorFlywheel {
 
     /**
      * How far the coat sits off the wall, in blocks. Enough that it never fights the glass for
-     * depth, little enough that it reads as the wall itself glowing.
+     * depth, little enough that it reads as the wall itself glowing. The instance shader trims
+     * face edges to the same distance, so keep {@code INSET} in {@code instance/reactor_cell.vert}
+     * equal to this.
      */
     private static final float INSET = 0.03f;
 

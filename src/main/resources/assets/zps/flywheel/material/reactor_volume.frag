@@ -4,9 +4,10 @@
 //
 // Every fragment lies on the cavity's inner surface. For the faces on the far side of the cavity
 // from the camera, that fragment is exactly where the eye's ray leaves the cavity; where it entered
-// is where the ray crossed the reactor's bounding box, or the eye itself when it is inside. The
-// fragment marches that segment through a scrolling noise field and adds a hot core from how close
-// the ray passes to the centre. Near faces draw nothing, so each pixel gets the volume once.
+// is bounded by the reactor's bounding box, by how deep the cavity runs behind this face, and by
+// the eye itself when it is inside. The fragment marches that segment through a scrolling noise
+// field and adds a hot core from how close the ray passes to the centre. Near faces draw nothing,
+// so each pixel gets the volume once.
 //
 // Nothing here depends on which cell or face the fragment belongs to: only on where it is, where
 // the camera is, and per-reactor constants. That is what keeps neighbouring quads seamless.
@@ -22,7 +23,14 @@ const float BASE_DENSITY = 0.25;
 /** How quickly the plasma builds up along the ray, per block. */
 const float EXTINCTION = 0.55;
 /** Width, in blocks, of the clear band along the walls. */
-const float WALL_GAP = 0.6;
+const float WALL_GAP = 0.4;
+/**
+ * How much the core follows the cavity's box rather than a sphere: 0 is round, 1 is the box's
+ * own shape.
+ */
+const float SHAPE_CONFORMITY = 0.5;
+/** How far past a face's own cavity depth the march may reach at a glancing angle, in blocks. */
+const float DEPTH_SLACK = 0.5;
 /** Brightness of the core at the centre, and how sharply it falls off. */
 const float CORE_STRENGTH = 1.6;
 const float CORE_POWER = 2.5;
@@ -42,7 +50,8 @@ void flw_materialFragment() {
     vec3 boxMin = flw_vertexColor.rgb;
     float heat = flw_vertexColor.a;
     vec3 boxMax = vec3(flw_vertexTexCoord, flw_vertexLight.x);
-    float seed = flw_vertexLight.y;
+    float depth = floor(flw_vertexLight.y);
+    float seed = fract(flw_vertexLight.y);
 
     if (heat < CUTOFF) {
         flw_fragColor = vec4(0.0);
@@ -56,12 +65,18 @@ void flw_materialFragment() {
     vec3 dir = toExit / max(exitDistance, 1e-4);
 
     // Near faces have their wall behind the camera's side; the far faces carry the volume.
-    if (dot(normalize(flw_vertexNormal), dir) < 0.0) {
+    vec3 normal = normalize(flw_vertexNormal);
+    float facing = dot(normal, dir);
+    if (facing < 0.0) {
         flw_fragColor = vec4(0.0);
         return;
     }
 
-    float entryDistance = clamp(zps_boxEntry(eye, dir, boxMin, boxMax), 0.0, exitDistance);
+    // The ray is inside the cavity from where it crossed the box, but no further back than the
+    // cavity actually runs behind this face, so concave shapes do not glow through their walls.
+    float entryDistance = zps_boxEntry(eye, dir, boxMin, boxMax);
+    float slab = (depth + DEPTH_SLACK) / max(facing, 0.2);
+    entryDistance = clamp(max(entryDistance, exitDistance - slab), 0.0, exitDistance);
     float pathLength = exitDistance - entryDistance;
     if (pathLength < 1e-4) {
         flw_fragColor = vec4(0.0);
@@ -93,7 +108,10 @@ void flw_materialFragment() {
     // The core: how close the ray passes to the centre, within the part of it that is inside.
     float along = clamp(dot(centre - eye, dir), entryDistance, exitDistance);
     vec3 nearest = eye + dir * along;
-    float coreDistance = length((nearest - centre) / max(halfSize, vec3(0.5)));
+    vec3 q = abs(nearest - centre) / max(halfSize, vec3(0.5));
+    float round = length(q);
+    float boxy = max(max(q.x, q.y), q.z);
+    float coreDistance = mix(round, boxy, SHAPE_CONFORMITY);
     float core = CORE_STRENGTH * pow(max(0.0, 1.0 - coreDistance), CORE_POWER);
 
     // Below ignition a hot ember; at and past it, plasma that whitens and then goes electric blue.

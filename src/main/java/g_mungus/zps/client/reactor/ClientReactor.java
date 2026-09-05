@@ -24,6 +24,12 @@ public final class ClientReactor {
     private final long[] cells;
     /** For each of {@link #cells}, a bit per {@link Direction} ordinal set where that face is a wall. */
     private final int[] faces;
+    /**
+     * For each of {@link #cells}, how far the cavity runs back from each face, in blocks, one byte
+     * per {@link Direction} ordinal: directions 0..3 in {@code depthsLow}, 4..5 in {@code depthsHigh}.
+     */
+    private final int[] depthsLow;
+    private final int[] depthsHigh;
     private final ReactorEffect effect;
 
     /** What the server last said, over ignition temperature. */
@@ -36,12 +42,20 @@ public final class ClientReactor {
         this.shape = shape;
         this.host = CavityShapes.lowestCell(shape);
         Long2IntMap masks = faceMasks(shape);
+        DiscreteVoxelShape grid = CavityShapes.grid(shape);
+        BlockPos origin = CavityShapes.origin(shape);
         this.cells = new long[masks.size()];
         this.faces = new int[masks.size()];
+        this.depthsLow = new int[masks.size()];
+        this.depthsHigh = new int[masks.size()];
         int n = 0;
         for (Long2IntMap.Entry entry : masks.long2IntEntrySet()) {
-            cells[n] = entry.getLongKey();
+            long cell = entry.getLongKey();
+            cells[n] = cell;
             faces[n] = entry.getIntValue();
+            long packed = faceDepths(grid, origin, BlockPos.getX(cell), BlockPos.getY(cell), BlockPos.getZ(cell));
+            depthsLow[n] = (int) packed;
+            depthsHigh[n] = (int) (packed >>> 32);
             n++;
         }
         this.targetHeat = heat;
@@ -65,6 +79,34 @@ public final class ClientReactor {
         return masks;
     }
 
+    /**
+     * How far the cavity runs back from each face of a cell: for the face on side {@code d},
+     * the number of consecutive cells from this one heading away from {@code d}, this one included.
+     * Packed a byte per {@link Direction} ordinal into a long, capped at 255.
+     */
+    static long faceDepths(DiscreteVoxelShape grid, BlockPos origin, int x, int y, int z) {
+        long packed = 0;
+        for (Direction direction : Direction.values()) {
+            Direction inward = direction.getOpposite();
+            int depth = 0;
+            int cx = x - origin.getX(), cy = y - origin.getY(), cz = z - origin.getZ();
+            while (depth < 255 && isFull(grid, cx, cy, cz)) {
+                depth++;
+                cx += inward.getStepX();
+                cy += inward.getStepY();
+                cz += inward.getStepZ();
+            }
+            packed |= (long) depth << (8 * direction.ordinal());
+        }
+        return packed;
+    }
+
+    private static boolean isFull(DiscreteVoxelShape grid, int x, int y, int z) {
+        return x >= 0 && y >= 0 && z >= 0
+                && x < grid.getSize(Direction.Axis.X) && y < grid.getSize(Direction.Axis.Y) && z < grid.getSize(Direction.Axis.Z)
+                && grid.isFull(x, y, z);
+    }
+
     public int id() {
         return id;
     }
@@ -80,6 +122,14 @@ public final class ClientReactor {
 
     public int[] faces() {
         return faces;
+    }
+
+    public int[] depthsLow() {
+        return depthsLow;
+    }
+
+    public int[] depthsHigh() {
+        return depthsHigh;
     }
 
     public ReactorEffect effect() {

@@ -23,6 +23,8 @@ public final class ReactorCellInstance extends AbstractInstance {
     public float seed;
     /** Bit per {@link net.minecraft.core.Direction} ordinal, set where that face is against a wall. */
     public int faces;
+    /** Cavity depth behind each face in blocks, a byte per direction ordinal: 0..3 low, 4..5 high. */
+    public int depthsLow, depthsHigh;
 
     public ReactorCellInstance(InstanceType<?> type, InstanceHandle handle) {
         super(type, handle);

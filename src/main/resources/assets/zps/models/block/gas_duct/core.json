@@ -1,21 +1,23 @@
 {
-  "textures": {
-    "duct": "zps:block/aluminum_block",
-    "particle": "zps:block/aluminum_block"
-  },
-  "elements": [
-    {
-      "name": "core",
-      "from": [4, 4, 4],
-      "to": [12, 12, 12],
-      "faces": {
-        "north": {"uv": [4, 4, 12, 12], "texture": "#duct"},
-        "east": {"uv": [4, 4, 12, 12], "texture": "#duct"},
-        "south": {"uv": [4, 4, 12, 12], "texture": "#duct"},
-        "west": {"uv": [4, 4, 12, 12], "texture": "#duct"},
-        "up": {"uv": [4, 4, 12, 12], "texture": "#duct"},
-        "down": {"uv": [4, 4, 12, 12], "texture": "#duct"}
-      }
-    }
-  ]
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"texture_size": [32, 32],
+	"textures": {
+		"0": "zps:block/gas_duct",
+		"particle": "zps:block/gas_duct"
+	},
+	"elements": [
+		{
+			"from": [4, 4, 4],
+			"to": [12, 12, 12],
+			"faces": {
+				"north": {"uv": [0, 2, 4, 6], "texture": "#0"},
+				"east": {"uv": [0, 2, 4, 6], "texture": "#0"},
+				"south": {"uv": [0, 2, 4, 6], "texture": "#0"},
+				"west": {"uv": [0, 2, 4, 6], "texture": "#0"},
+				"up": {"uv": [4, 6, 0, 2], "texture": "#0"},
+				"down": {"uv": [4, 2, 0, 6], "texture": "#0"}
+			}
+		}
+	]
 }

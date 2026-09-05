@@ -1,13 +1,13 @@
 package g_mungus.zps.blockentity;
 
+import g_mungus.zps.util.TickAverage;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class StepDownTransformerBlockEntity extends NetworkTerminalImpl implements EnergyTransferBE {
-    private static final long STALE_TRANSFER_TICKS = 2;
 
     private long refreshTick = Long.MIN_VALUE;
-    private long lastTransferUpdateTick = Long.MIN_VALUE;
+    private final TickAverage transferAverage = new TickAverage(HUD_AVERAGE_WINDOW_TICKS);
     private int hudInfo;
 
     public StepDownTransformerBlockEntity(BlockPos pos, BlockState state) {
@@ -15,12 +15,7 @@ public class StepDownTransformerBlockEntity extends NetworkTerminalImpl implemen
     }
 
     public void updateTransferRate(int info, long gameTime) {
-        if (lastTransferUpdateTick == gameTime) {
-            hudInfo += info;
-        } else {
-            hudInfo = info;
-        }
-        lastTransferUpdateTick = gameTime;
+        transferAverage.record(info, gameTime);
     }
 
     @Override
@@ -41,9 +36,7 @@ public class StepDownTransformerBlockEntity extends NetworkTerminalImpl implemen
     @Override
     public Integer getInfo() {
         if (level != null && !level.isClientSide) {
-            if (lastTransferUpdateTick == Long.MIN_VALUE || level.getGameTime() - lastTransferUpdateTick > STALE_TRANSFER_TICKS) {
-                return 0;
-            }
+            return transferAverage.average(level.getGameTime());
         }
 
         return hudInfo;

@@ -2,6 +2,7 @@ package g_mungus.zps.blockentity;
 
 import g_mungus.zps.block.CoalBurnerBlock;
 import g_mungus.zps.menu.CoalBurnerMenu;
+import g_mungus.zps.util.TickAverage;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -67,6 +68,7 @@ public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGenerato
     private int burnTime;
     private int totalBurnTime;
     private int currentProductionRate;
+    private final TickAverage productionAverage = new TickAverage(HUD_AVERAGE_WINDOW_TICKS);
     private long lastHudInfoRequestTick = Long.MIN_VALUE;
     private int hudInfo;
 
@@ -112,6 +114,10 @@ public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGenerato
 
         pushEnergyToAdjacentBlocks();
         updateLitState(wasBurning || burnTime > 0);
+
+        if (level != null) {
+            productionAverage.set(currentProductionRate, level.getGameTime());
+        }
     }
 
     private void pushEnergyToAdjacentBlocks() {
@@ -215,7 +221,7 @@ public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGenerato
     @Override
     public Integer getInfo() {
         if (level != null && !level.isClientSide) {
-            return currentProductionRate;
+            return productionAverage.average(level.getGameTime());
         }
         return hudInfo;
     }

@@ -7,6 +7,7 @@ import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.reactor.Reactor;
 import g_mungus.zps.reactor.ReactorChamberNode;
 import g_mungus.zps.reactor.ReactorManager;
+import g_mungus.zps.util.TickAverage;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -43,6 +44,7 @@ public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGener
     private int inLastTick;
     private int outLastTick;
 
+    private final TickAverage outAverage = new TickAverage(HUD_AVERAGE_WINDOW_TICKS);
     private int hudInfo;
     private long lastHudInfoRequestTick = Long.MIN_VALUE;
 
@@ -107,6 +109,9 @@ public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGener
         inThisTick = 0;
         outThisTick = 0;
         pushEnergy();
+        if (level != null) {
+            outAverage.set(outLastTick, level.getGameTime());
+        }
     }
 
     /** Offer what the chamber can spare to whatever is on the outer face. */
@@ -162,11 +167,11 @@ public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGener
         hudInfo = info;
     }
 
-    /** FE that left through the outer face last tick, pushed or pulled. */
+    /** Average FE per tick leaving through the outer face over the last {@value #HUD_AVERAGE_WINDOW_TICKS} ticks. */
     @Override
     public Integer getInfo() {
         if (level != null && !level.isClientSide()) {
-            return outLastTick;
+            return outAverage.average(level.getGameTime());
         }
         return hudInfo;
     }

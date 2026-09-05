@@ -7,6 +7,7 @@ import g_mungus.zps.block.cableNetwork.TransformerBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.config.ZPSConfig;
+import g_mungus.zps.util.TickAverage;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -119,9 +120,9 @@ public class StepUpTransformerBlockEntity extends NetworkTerminalImpl implements
                 }
             });
 
-            blockEntity.provideInfo(transferredThisTick.get());
+            blockEntity.transferAverage.set(transferredThisTick.get(), level.getGameTime());
         } else {
-            blockEntity.provideInfo(0);
+            blockEntity.transferAverage.set(0, level.getGameTime());
         }
     }
 
@@ -164,6 +165,7 @@ public class StepUpTransformerBlockEntity extends NetworkTerminalImpl implements
     }
 
     private int hudInfo;
+    private final TickAverage transferAverage = new TickAverage(HUD_AVERAGE_WINDOW_TICKS);
 
 
     @Override
@@ -173,6 +175,9 @@ public class StepUpTransformerBlockEntity extends NetworkTerminalImpl implements
 
     @Override
     public Integer getInfo() {
+        if (level != null && !level.isClientSide()) {
+            return transferAverage.average(level.getGameTime());
+        }
         return hudInfo;
     }
 }

@@ -1,7 +1,6 @@
 package g_mungus.zps.block.gas;
 
 import g_mungus.zps.block.gas.core.DuctConnectionType;
-import g_mungus.zps.block.gas.core.DuctGeometry;
 import g_mungus.zps.block.gas.core.GasEdgeNegotiator;
 import g_mungus.zps.block.gas.core.GasEdgeProposal;
 import g_mungus.zps.block.gas.core.GasNodeBlock;
@@ -30,6 +29,9 @@ import org.jetbrains.annotations.Nullable;
 import org.valkyrienskies.kelvin.api.DuctNode;
 import org.valkyrienskies.kelvin.api.DuctNodePos;
 
+import java.util.EnumMap;
+import java.util.Map;
+
 
 /**
  * Carries gas between nodes on the Kelvin network. Accepts a connection on every face and imposes
@@ -52,17 +54,45 @@ public class DuctBlock extends GasNodeBlock
     private static final double MAX_TEMPERATURE = 1478.0;
     private static final double HEAT_CAPACITY = 449.0;
 
+    /**
+     * The duct's profile: an 8x8 pipe, the same shape as a cable only thicker. The core is the
+     * centre cube and each connected face grows a stub of the same cross-section out to the block
+     * edge. This is the collision half; the visual half lives in {@code block/gas_duct/*} and the
+     * two must be kept in step.
+     */
+    private static final VoxelShape CORE = Block.box(4, 4, 4, 12, 12, 12);
+
+    private static final Map<Direction, VoxelShape> ARMS = new EnumMap<>(Direction.class);
+    private static final Map<Direction, EnumProperty<DuctConnectionType>> PROPERTIES =
+            new EnumMap<>(Direction.class);
+
+    static {
+        ARMS.put(Direction.NORTH, Block.box(4, 4, 0, 12, 12, 4));
+        ARMS.put(Direction.SOUTH, Block.box(4, 4, 12, 12, 12, 16));
+        ARMS.put(Direction.WEST, Block.box(0, 4, 4, 4, 12, 12));
+        ARMS.put(Direction.EAST, Block.box(12, 4, 4, 16, 12, 12));
+        ARMS.put(Direction.DOWN, Block.box(4, 0, 4, 12, 4, 12));
+        ARMS.put(Direction.UP, Block.box(4, 12, 4, 12, 16, 12));
+
+        PROPERTIES.put(Direction.NORTH, NORTH_CONNECTION);
+        PROPERTIES.put(Direction.SOUTH, SOUTH_CONNECTION);
+        PROPERTIES.put(Direction.EAST, EAST_CONNECTION);
+        PROPERTIES.put(Direction.WEST, WEST_CONNECTION);
+        PROPERTIES.put(Direction.UP, UP_CONNECTION);
+        PROPERTIES.put(Direction.DOWN, DOWN_CONNECTION);
+    }
+
     public DuctBlock(Properties properties) {
         super(properties);
         BlockState state = stateDefinition.any();
-        for (EnumProperty<DuctConnectionType> property : DuctGeometry.connectionProperties()) {
+        for (EnumProperty<DuctConnectionType> property : PROPERTIES.values()) {
             state = state.setValue(property, DuctConnectionType.NONE);
         }
         registerDefaultState(state);
     }
 
     private static EnumProperty<DuctConnectionType> propertyFor(Direction direction) {
-        return DuctGeometry.connectionProperty(direction);
+        return PROPERTIES.get(direction);
     }
 
     @Override
@@ -73,7 +103,7 @@ public class DuctBlock extends GasNodeBlock
     @Override
     protected void createBlockStateDefinition(StateDefinition.@NotNull Builder<Block, BlockState> builder) {
         super.createBlockStateDefinition(builder);
-        DuctGeometry.connectionProperties().forEach(builder::add);
+        PROPERTIES.values().forEach(builder::add);
     }
 
     // --- gas network ------------------------------------------------------------------------
@@ -141,10 +171,10 @@ public class DuctBlock extends GasNodeBlock
     @Override
     protected @NotNull VoxelShape getShape(BlockState state, @NotNull BlockGetter level,
                                            @NotNull BlockPos pos, @NotNull CollisionContext context) {
-        VoxelShape shape = DuctGeometry.core(DuctGeometry.hasHorizontalConnection(state));
+        VoxelShape shape = CORE;
         for (Direction direction : Direction.values()) {
             if (state.getValue(propertyFor(direction)) != DuctConnectionType.NONE) {
-                shape = Shapes.joinUnoptimized(shape, DuctGeometry.arm(direction), BooleanOp.OR);
+                shape = Shapes.joinUnoptimized(shape, ARMS.get(direction), BooleanOp.OR);
             }
         }
         return shape.optimize();

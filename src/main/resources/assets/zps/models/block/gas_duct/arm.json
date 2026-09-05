@@ -1,0 +1,19 @@
+{
+  "textures": {
+    "duct": "zps:block/aluminum_block",
+    "particle": "zps:block/aluminum_block"
+  },
+  "elements": [
+    {
+      "name": "arm",
+      "from": [4, 4, 0],
+      "to": [12, 12, 4],
+      "faces": {
+        "east": {"uv": [12, 4, 16, 12], "texture": "#duct"},
+        "west": {"uv": [0, 4, 4, 12], "texture": "#duct"},
+        "up": {"uv": [4, 0, 12, 4], "texture": "#duct"},
+        "down": {"uv": [4, 12, 12, 16], "texture": "#duct"}
+      }
+    }
+  ]
+}

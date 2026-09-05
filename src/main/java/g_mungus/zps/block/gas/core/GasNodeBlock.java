@@ -37,7 +37,7 @@ public abstract class GasNodeBlock extends Block implements INodeBlock {
 
     /*
      * The per-face connection state every gas block carries. Both sides of a face read them during
-     * negotiation, and DuctGeometry maps them to collision shapes.
+     * negotiation, and each block maps them to its own collision shape.
      */
     public static final EnumProperty<DuctConnectionType> NORTH_CONNECTION = EnumProperty.create("north", DuctConnectionType.class);
     public static final EnumProperty<DuctConnectionType> SOUTH_CONNECTION = EnumProperty.create("south", DuctConnectionType.class);

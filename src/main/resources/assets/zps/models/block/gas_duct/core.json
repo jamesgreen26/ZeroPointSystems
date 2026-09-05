@@ -1,0 +1,21 @@
+{
+  "textures": {
+    "duct": "zps:block/aluminum_block",
+    "particle": "zps:block/aluminum_block"
+  },
+  "elements": [
+    {
+      "name": "core",
+      "from": [4, 4, 4],
+      "to": [12, 12, 12],
+      "faces": {
+        "north": {"uv": [4, 4, 12, 12], "texture": "#duct"},
+        "east": {"uv": [4, 4, 12, 12], "texture": "#duct"},
+        "south": {"uv": [4, 4, 12, 12], "texture": "#duct"},
+        "west": {"uv": [4, 4, 12, 12], "texture": "#duct"},
+        "up": {"uv": [4, 4, 12, 12], "texture": "#duct"},
+        "down": {"uv": [4, 4, 12, 12], "texture": "#duct"}
+      }
+    }
+  ]
+}

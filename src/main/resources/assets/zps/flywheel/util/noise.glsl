@@ -1,33 +1,25 @@
-// Texture-less 3D value noise. Integer-style hashing on fract(), no sin(), so every driver
-// agrees on the result: the fragment shader runs several times per pixel under order-independent
-// transparency and each run must land on the same colour.
+// 3D value noise from a 2D texture, so one bilinear fetch does the work of eight hashes.
+//
+// The material's diffuse texture (zps:textures/special/noise.png) is white noise in red, with the
+// same noise shifted by (37, 17) texels in green. A lattice point (x, y, z) lives at texel
+// (x + 37 z, y + 17 z); the shift means the texel one z-slice up is already in the green channel
+// of the same fetch. Bilinear filtering interpolates x and y, and the fraction in z is mixed by
+// hand. Smoothing the fraction before the fetch gives the same curve the old hashed noise had.
+//
+// Deterministic per fragment, which the transparency modes that re-run the shader need.
 
-float zps_hash13(vec3 p) {
-    p = fract(p * vec3(0.1031, 0.1030, 0.0973));
-    p += dot(p, p.yxz + 33.33);
-    return fract((p.x + p.y) * p.z);
+const float ZPS_NOISE_SIZE = 256.0;
+
+float zps_valueNoise(vec3 x) {
+    vec3 p = floor(x);
+    vec3 f = fract(x);
+    f = f * f * (3.0 - 2.0 * f);
+    vec2 uv = p.xy + vec2(37.0, 17.0) * p.z + f.xy;
+    vec2 rg = textureLod(flw_diffuseTex, (uv + 0.5) / ZPS_NOISE_SIZE, 0.0).rg;
+    return mix(rg.r, rg.g, f.z);
 }
 
-float zps_valueNoise(vec3 p) {
-    vec3 i = floor(p);
-    vec3 f = fract(p);
-    vec3 w = f * f * (3.0 - 2.0 * f);
-
-    float n000 = zps_hash13(i);
-    float n001 = zps_hash13(i + vec3(0.0, 0.0, 1.0));
-    float n010 = zps_hash13(i + vec3(0.0, 1.0, 0.0));
-    float n011 = zps_hash13(i + vec3(0.0, 1.0, 1.0));
-    float n100 = zps_hash13(i + vec3(1.0, 0.0, 0.0));
-    float n101 = zps_hash13(i + vec3(1.0, 0.0, 1.0));
-    float n110 = zps_hash13(i + vec3(1.0, 1.0, 0.0));
-    float n111 = zps_hash13(i + vec3(1.0, 1.0, 1.0));
-
-    float y0 = mix(mix(n000, n001, w.z), mix(n010, n011, w.z), w.y);
-    float y1 = mix(mix(n100, n101, w.z), mix(n110, n111, w.z), w.y);
-    return mix(y0, y1, w.x);
-}
-
-// Two octaves; enough texture for a glow, cheap enough to run three times per pixel.
+// Two octaves; enough texture for a glow.
 float zps_fbm2(vec3 p) {
     return zps_valueNoise(p) * 0.65 + zps_valueNoise(p * 2.03 + 17.1) * 0.35;
 }

@@ -75,14 +75,15 @@ public final class ReactorFlywheel {
             .build();
 
     /**
-     * Texture-less: the fragment shader writes the colour outright. A plain white texture is
-     * bound so every backend has a valid sampler and nothing tints the result.
+     * The fragment shader writes the colour outright; the bound texture is not art but the noise
+     * lattice the shader samples, which is far cheaper than hashing it per step. Linear filtering
+     * is what turns the lattice into smooth noise, so blur stays on and mipmaps stay off.
      */
     public static final Material MATERIAL = SimpleMaterial.builder()
             .shaders(new SimpleMaterialShaders(
                     ZPSMod.resource("material/reactor_volume.vert"),
                     ZPSMod.resource("material/reactor_volume.frag")))
-            .texture(ZPSMod.resource("textures/special/white.png"))
+            .texture(ZPSMod.resource("textures/special/noise.png"))
             .fog(FogShaders.LINEAR)
             .cutout(CutoutShaders.OFF)
             .light(LightShaders.FLAT)
@@ -97,7 +98,7 @@ public final class ReactorFlywheel {
             .cardinalLightingMode(CardinalLightingMode.OFF)
             .ambientOcclusion(false)
             .mipmap(false)
-            .blur(false)
+            .blur(true)
             .build();
 
     /**

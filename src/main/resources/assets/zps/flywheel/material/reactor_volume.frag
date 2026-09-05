@@ -12,7 +12,7 @@
 // Nothing here depends on which cell or face the fragment belongs to: only on where it is, where
 // the camera is, and per-reactor constants. That is what keeps neighbouring quads seamless.
 
-const int STEPS = 12;
+const int STEPS = 8;
 const float NOISE_SCALE = 0.55;
 const float SCROLL_BASE = 0.25;
 const float SCROLL_HEAT = 0.3;

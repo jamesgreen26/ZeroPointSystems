@@ -14,8 +14,12 @@
 
 const int STEPS = 8;
 const float NOISE_SCALE = 0.55;
-const float SCROLL_BASE = 0.25;
-const float SCROLL_HEAT = 0.3;
+/**
+ * Scroll speed, in noise units per second. Constant on purpose: the phase is time times speed,
+ * so a speed that followed the (eased, ever-changing) heat would rescale the whole phase on every
+ * heat update and the pattern would jump by time times the change.
+ */
+const float SCROLL_SPEED = 1.0;
 const float NOISE_LO = 0.3;
 const float NOISE_HI = 0.8;
 /** Density the volume carries everywhere, before the noise adds wisps. */
@@ -85,9 +89,8 @@ void flw_materialFragment() {
 
     vec3 centre = 0.5 * (boxMin + boxMax);
     vec3 halfSize = 0.5 * (boxMax - boxMin);
-    float t = flw_renderSeconds * (SCROLL_BASE + SCROLL_HEAT * min(heat, 2.0));
+    float t = flw_renderSeconds * SCROLL_SPEED;
     vec3 drift = vec3(0.0, -t, seed * 7.3);
-    vec3 worldOffset = vec3(flw_renderOrigin);
 
     // March the segment, front to back.
     float stepLength = pathLength / float(STEPS);
@@ -99,7 +102,9 @@ void flw_materialFragment() {
         float wallDistance = min(min(toWall.x, toWall.y), toWall.z);
         float gap = smoothstep(0.0, WALL_GAP, wallDistance);
 
-        float n = zps_fbm2((p + worldOffset) * NOISE_SCALE + drift);
+        // Anchored to the reactor's own corner: the pattern stays put on the reactor, and the
+        // coordinates stay small enough for float precision no matter where in the world it is.
+        float n = zps_fbm2((p - boxMin) * NOISE_SCALE + drift);
         float wisps = smoothstep(NOISE_LO, NOISE_HI, n);
         density += (BASE_DENSITY + (1.0 - BASE_DENSITY) * wisps) * gap * stepLength;
     }

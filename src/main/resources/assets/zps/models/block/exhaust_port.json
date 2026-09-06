@@ -1,12 +1,3 @@
 {
-  "parent": "minecraft:block/cube",
-  "textures": {
-    "particle": "zps:block/aluminum_block",
-    "north": "zps:block/insulated_end",
-    "south": "zps:block/aluminum_block",
-    "east": "zps:block/aluminum_block",
-    "west": "zps:block/aluminum_block",
-    "up": "zps:block/aluminum_block",
-    "down": "zps:block/aluminum_block"
-  }
+  "parent": "zps:block/fuel_injector"
 }

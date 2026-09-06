@@ -1,0 +1,32 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"texture_size": [32, 32],
+	"textures": {
+		"1": "zps:block/power_cell_dividers"
+	},
+	"elements": [
+		{
+			"from": [-8, 2, -8],
+			"to": [24, 5, 24],
+			"rotation": {"angle": 0, "axis": "y", "origin": [0, 6, 0]},
+			"faces": {
+				"north": {"uv": [0, 0, 10.66667, 6.16667], "texture": "#1"},
+				"east": {"uv": [0, 0, 10.66667, 6.16667], "texture": "#1"},
+				"south": {"uv": [0, 0, 10.66667, 6.16667], "texture": "#1"},
+				"west": {"uv": [0, 0, 10.66667, 6.16667], "texture": "#1"}
+			}
+		},
+		{
+			"from": [-8, 2, 24],
+			"to": [24, 5, -8],
+			"rotation": {"angle": 0, "axis": "y", "origin": [0, 6, 0]},
+			"faces": {
+				"north": {"uv": [0, 0, 10.66667, 6.16667], "texture": "#1"},
+				"east": {"uv": [0, 0, 10.66667, 6.16667], "texture": "#1"},
+				"south": {"uv": [0, 0, 10.66667, 6.16667], "texture": "#1"},
+				"west": {"uv": [0, 0, 10.66667, 6.16667], "texture": "#1"}
+			}
+		}
+	]
+}

@@ -61,6 +61,10 @@ public class ClientSetup {
             ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "item/robotic_arm_swivel_base"));
     private static final ModelResourceLocation POWER_CELL_DIVIDER_BER_MODEL =
             ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "item/power_cell_divider"));
+    private static final ModelResourceLocation POWER_CELL_DIVIDER_2X2_BER_MODEL =
+            ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "block/power_cell_divider_2x2"));
+    private static final ModelResourceLocation POWER_CELL_DIVIDER_3X3_BER_MODEL =
+            ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "block/power_cell_divider_3x3"));
     private static final ModelResourceLocation POWER_DRILL_MODEL =
             new ModelResourceLocation(ZPSMod.resource("power_drill"), "inventory");
     private static final ModelResourceLocation CHAINSAW_MODEL =
@@ -90,6 +94,8 @@ public class ClientSetup {
         event.register(ROBOTIC_ARM_SEGMENT_BER_MODEL);
         event.register(ROBOTIC_ARM_SWIVEL_BASE_BER_MODEL);
         event.register(POWER_CELL_DIVIDER_BER_MODEL);
+        event.register(POWER_CELL_DIVIDER_2X2_BER_MODEL);
+        event.register(POWER_CELL_DIVIDER_3X3_BER_MODEL);
         event.register(PoweredToolItemRenderer.BASE_MODEL);
         event.register(PoweredToolItemRenderer.HEAD_MODEL);
         event.register(ChainsawItemRenderer.BLADE_MODEL);

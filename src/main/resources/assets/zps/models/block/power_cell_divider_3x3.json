@@ -1,0 +1,29 @@
+{
+	"textures": {
+		"1": "zps:block/power_cell_dividers"
+	},
+	"elements": [
+		{
+			"from": [-16, 2, -16],
+			"to": [32, 5, 32],
+			"rotation": {"angle": 0, "axis": "y", "origin": [0, 6, 0]},
+			"faces": {
+				"north": {"uv": [0, 8, 16, 14.16667], "texture": "#1"},
+				"east": {"uv": [0, 8, 16, 14.16667], "texture": "#1"},
+				"south": {"uv": [0, 8, 16, 14.16667], "texture": "#1"},
+				"west": {"uv": [0, 8, 16, 14.16667], "texture": "#1"}
+			}
+		},
+		{
+			"from": [-16, 2, 32],
+			"to": [32, 5, -16],
+			"rotation": {"angle": 0, "axis": "y", "origin": [0, 6, 0]},
+			"faces": {
+				"north": {"uv": [0, 8, 16, 14.16667], "texture": "#1"},
+				"east": {"uv": [0, 8, 16, 14.16667], "texture": "#1"},
+				"south": {"uv": [0, 8, 16, 14.16667], "texture": "#1"},
+				"west": {"uv": [0, 8, 16, 14.16667], "texture": "#1"}
+			}
+		}
+	]
+}

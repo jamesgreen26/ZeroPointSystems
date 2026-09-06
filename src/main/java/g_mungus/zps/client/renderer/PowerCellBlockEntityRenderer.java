@@ -20,13 +20,17 @@ import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Draws the divider ring that marks the charge level. Only a structure's controller renders, and it draws one
- * ring per column of the structure at the shared fill height, so a multiblock reads as a single large cell.
+ * Draws the divider ring that marks the charge level. Only a structure's controller renders, using the ring
+ * model sized for the structure's footprint (1x1, 2x2 or 3x3) at the shared fill height.
  */
 public class PowerCellBlockEntityRenderer implements BlockEntityRenderer<PowerCellBlockEntity> {
     private static final ItemStack DIVIDER_MODEL_STACK = new ItemStack(ModItems.POWER_CELL.get());
-    private static final ModelResourceLocation DIVIDER_BER_MODEL =
-            ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "item/power_cell_divider"));
+    /** Ring models indexed by structure width; each is centred on the origin cell's centre. */
+    private static final ModelResourceLocation[] DIVIDER_BER_MODELS = {
+            ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "item/power_cell_divider")),
+            ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "block/power_cell_divider_2x2")),
+            ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(ZPSMod.MOD_ID, "block/power_cell_divider_3x3")),
+    };
     private final ItemRenderer itemRenderer;
 
     public PowerCellBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
@@ -59,32 +63,33 @@ public class PowerCellBlockEntityRenderer implements BlockEntityRenderer<PowerCe
         float ringCentre = PowerCellBlockEntity.ringCentrePx(smoothedFill, height) / 16.0f;
         float ringOffset = ringCentre - 3.5f / 16.0f;
 
-        BakedModel dividerModel = Minecraft.getInstance().getModelManager().getModel(DIVIDER_BER_MODEL);
+        int modelIndex = Math.min(width, DIVIDER_BER_MODELS.length) - 1;
+        BakedModel dividerModel = Minecraft.getInstance().getModelManager().getModel(DIVIDER_BER_MODELS[modelIndex]);
         Level level = blockEntity.getLevel();
         BlockPos origin = blockEntity.getBlockPos();
-        int ringLayer = (int) Math.floor(ringCentre);
 
-        for (int xOffset = 0; xOffset < width; xOffset++) {
-            for (int zOffset = 0; zOffset < width; zOffset++) {
-                int light = packedLight;
-                if (level != null && (width > 1 || height > 1)) {
-                    light = LevelRenderer.getLightColor(level, origin.offset(xOffset, ringLayer, zOffset));
-                }
-                poseStack.pushPose();
-                poseStack.translate(0.5f + xOffset, 0.5f + ringOffset, 0.5f + zOffset);
-                itemRenderer.render(
-                        DIVIDER_MODEL_STACK,
-                        ItemDisplayContext.NONE,
-                        false,
-                        poseStack,
-                        bufferSource,
-                        light,
-                        packedOverlay,
-                        dividerModel
-                );
-                poseStack.popPose();
-            }
+        int light = packedLight;
+        if (level != null && (width > 1 || height > 1)) {
+            // Light the ring from the middle of the layer it sits in rather than from the controller's corner.
+            int ringLayer = (int) Math.floor(ringCentre);
+            light = LevelRenderer.getLightColor(level, origin.offset(width / 2, ringLayer, width / 2));
         }
+
+        // The ring models are centred on the origin cell; the wider ones extend to cover the footprint.
+        float centreOffset = (width - 1) / 2.0f;
+        poseStack.pushPose();
+        poseStack.translate(0.5f + centreOffset, 0.5f + ringOffset, 0.5f + centreOffset);
+        itemRenderer.render(
+                DIVIDER_MODEL_STACK,
+                ItemDisplayContext.NONE,
+                false,
+                poseStack,
+                bufferSource,
+                light,
+                packedOverlay,
+                dividerModel
+        );
+        poseStack.popPose();
     }
 
     @Override

@@ -5,6 +5,7 @@ import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.client.model.connected.ConnectedModelLoader;
+import g_mungus.zps.client.reactor.WallCoats;
 import g_mungus.zps.client.model.connected.ConnectedTextureMeta;
 import g_mungus.zps.client.recipebook.ModRecipeBookCategories;
 import g_mungus.zps.client.renderer.*;
@@ -79,6 +80,8 @@ public class ClientSetup {
     public static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event) {
         // Connected-texture metadata is cached at bake time; drop it on reload so it is re-read.
         event.registerReloadListener((ResourceManagerReloadListener) resourceManager -> ConnectedTextureMeta.clear());
+        // Wall coats are built from baked models, which a reload replaces.
+        event.registerReloadListener((ResourceManagerReloadListener) resourceManager -> WallCoats.clear());
     }
 
     @SubscribeEvent

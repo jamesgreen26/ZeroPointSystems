@@ -109,6 +109,12 @@ public final class ReactorFlywheel {
      * <p>On the wall plane itself, not inset from it: that way two faces meeting at any edge,
      * concave or convex, share exactly that edge with no overlap and no gap. The material's
      * polygon offset keeps them in front of the opaque wall in the depth test.
+     *
+     * <p>This covers a wall that stops at the block boundary, which is nearly all of one. A side
+     * whose wall block reaches past its cube into the cavity is collapsed here like an open one and
+     * coated by {@link WallCoats} instead, which follows the protrusion and the face around it in
+     * one piece. The mesh cannot do that itself: it is one shared object, because Flywheel keys
+     * instancers by model identity.
      */
     public static final Model MODEL = new SingleMeshModel(coatMesh(), MATERIAL);
 

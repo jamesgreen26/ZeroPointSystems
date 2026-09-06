@@ -1,0 +1,36 @@
+{
+	"format_version": "1.9.0",
+	"texture_size": [
+		32,
+		32
+	],
+	"textures": {
+		"0": "zps:block/power_cell",
+		"particle": "zps:block/power_cell"
+	},
+	"elements": [
+		{
+			"from": [
+				1,
+				14,
+				1
+			],
+			"to": [
+				15,
+				16.0,
+				2
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						8.5,
+						8.0,
+						15.5,
+						9.0
+					],
+					"texture": "#0"
+				}
+			}
+		}
+	]
+}

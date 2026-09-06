@@ -2,6 +2,7 @@ package g_mungus.zps.item;
 
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.multiblock.MultiblockBlockItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
@@ -103,7 +104,7 @@ public class ModItems {
             () -> new BlockItem(ModBlocks.CREATIVE_POWER_CELL.get(), new Item.Properties().rarity(Rarity.EPIC)));
 
     public static final DeferredItem<Item> POWER_CELL = ITEMS.register("power_cell",
-            () -> new BlockItem(ModBlocks.POWER_CELL.get(), new Item.Properties()));
+            () -> new MultiblockBlockItem(ModBlocks.POWER_CELL.get(), new Item.Properties()));
 
     public static final DeferredItem<Item> COAL_BURNER = ITEMS.register("coal_burner",
             () -> new BlockItem(ModBlocks.COAL_BURNER.get(), new Item.Properties()));

@@ -2,22 +2,20 @@ package g_mungus.zps.blockentity;
 
 import g_mungus.zps.block.PowerCellBlock;
 import g_mungus.zps.menu.PowerCellMenu;
+import g_mungus.zps.multiblock.MultiblockBlockEntity;
+import g_mungus.zps.multiblock.MultiblockPart;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.util.Mth;
 import net.minecraft.world.Containers;
 import net.minecraft.world.MenuProvider;
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.EnergyStorage;
@@ -27,31 +25,29 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE, MenuProvider, ItemChargingPowerCell {
-    private static final int MAX_ENERGY = 2_097_152;
-    private static final int MAX_TRANSFER = 16_384;
-    private static final int ITEM_CHARGE_TRANSFER = 1024;
+import java.util.Arrays;
 
-    private final SyncedEnergyStorage energyStorage = new SyncedEnergyStorage(MAX_ENERGY, MAX_TRANSFER, MAX_TRANSFER) {
-        @Override
-        public int receiveEnergy(int maxReceive, boolean simulate) {
-            int received = super.receiveEnergy(maxReceive, simulate);
-            if (received > 0 && !simulate) {
-                onEnergyChanged();
-            }
-            return received;
-        }
+/**
+ * A Power Cell block. Cells placed in a {@code w x w x h} box (up to {@link #MAX_WIDTH} wide and
+ * {@link #MAX_HEIGHT} tall) join into one battery: the controller at the structure's minimum corner holds the
+ * pooled energy and the single charge slot, and every other part forwards to it. Only capacity scales with the
+ * number of cells; transfer and item-charging rates are fixed per structure.
+ */
+public class PowerCellBlockEntity extends MultiblockBlockEntity implements EnergyStorageBE, ItemChargingPowerCell {
+    /** Capacity contributed by each cell in a structure. */
+    public static final int MAX_ENERGY = 2_097_152;
+    /** Transfer rate in and out; fixed per structure, however many cells it has. */
+    public static final int MAX_TRANSFER = 16_384;
+    /** Item charging rate; fixed per structure, however many cells it has. */
+    public static final int ITEM_CHARGE_TRANSFER = 1024;
+    public static final int MAX_WIDTH = 3;
+    public static final int MAX_HEIGHT = 32;
 
-        @Override
-        public int extractEnergy(int maxExtract, boolean simulate) {
-            int extracted = super.extractEnergy(maxExtract, simulate);
-            if (extracted > 0 && !simulate) {
-                onEnergyChanged();
-            }
-            return extracted;
-        }
-    };
+    /** The divider ring is 3px tall and travels between the two 2px end plates. */
+    private static final float RING_HEIGHT_PX = 3.0f;
+    private static final float PLATE_HEIGHT_PX = 2.0f;
 
+    private final SyncedEnergyStorage energyStorage = new SyncedEnergyStorage();
     private final ChargeItemStackHandler chargeInventory = new ChargeItemStackHandler();
     private final ContainerData dataAccess = new ContainerData() {
         @Override
@@ -77,7 +73,9 @@ public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE
             return 4;
         }
     };
-    private int lastSyncedLevel = -1;
+
+    @Nullable
+    private int[] lastLayerLevels;
     private int lastSentClientEnergy = Integer.MIN_VALUE;
     private int lastComparatorOutput = -1;
     private float clientSmoothedFill = 0.0f;
@@ -88,21 +86,162 @@ public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE
         super(ModBlockEntities.POWER_CELL.get(), pos, state);
     }
 
-    private static class SyncedEnergyStorage extends EnergyStorage {
-        public SyncedEnergyStorage(int capacity, int maxReceive, int maxExtract) {
-            super(capacity, maxReceive, maxExtract);
+    private class SyncedEnergyStorage extends EnergyStorage {
+        private SyncedEnergyStorage() {
+            super(MAX_ENERGY, MAX_TRANSFER, MAX_TRANSFER);
         }
 
-        public void setEnergyStoredExact(int energy) {
-            this.energy = Math.max(0, Math.min(this.capacity, energy));
+        void setEnergyStoredExact(int energy) {
+            this.energy = Mth.clamp(energy, 0, this.capacity);
+        }
+
+        /** Resize to hold the contents of {@code blocks} cells, discarding anything that no longer fits. */
+        void setBlocks(int blocks) {
+            this.capacity = MAX_ENERGY * Math.max(1, blocks);
+            this.energy = Math.min(this.energy, this.capacity);
+        }
+
+        @Override
+        public int receiveEnergy(int maxReceive, boolean simulate) {
+            int received = super.receiveEnergy(maxReceive, simulate);
+            if (received > 0 && !simulate) {
+                setChanged();
+            }
+            return received;
+        }
+
+        @Override
+        public int extractEnergy(int maxExtract, boolean simulate) {
+            int extracted = super.extractEnergy(maxExtract, simulate);
+            if (extracted > 0 && !simulate) {
+                setChanged();
+            }
+            return extracted;
         }
     }
+
+    // --- ticking ----------------------------------------------------------------------------------
 
     public void serverTick() {
+        tickMultiblock();
+        if (isRemoved() || !isController()) {
+            return;
+        }
         chargeItem();
-        updateFillLevel();
+        updateFillLevels();
         updateComparatorOutput();
+        syncToClient();
     }
+
+    // --- structure --------------------------------------------------------------------------------
+
+    @Override
+    public int getMaxWidth() {
+        return MAX_WIDTH;
+    }
+
+    @Override
+    public int getMaxHeight() {
+        return MAX_HEIGHT;
+    }
+
+    @Override
+    @Nullable
+    @SuppressWarnings("unchecked")
+    public PowerCellBlockEntity getControllerBE() {
+        return super.getControllerBE();
+    }
+
+    @Override
+    public void setContainerSize(int blocks) {
+        energyStorage.setBlocks(blocks);
+    }
+
+    @Override
+    public void absorbContents(MultiblockPart part) {
+        if (!(part instanceof PowerCellBlockEntity cell) || cell == this) {
+            return;
+        }
+        int taken = cell.energyStorage.getEnergyStored();
+        energyStorage.setEnergyStoredExact(energyStorage.getEnergyStored() + taken);
+        cell.energyStorage.setEnergyStoredExact(0);
+
+        ItemStack stack = cell.chargeInventory.getStackInSlot(0);
+        if (!stack.isEmpty()) {
+            if (chargeInventory.getStackInSlot(0).isEmpty()) {
+                chargeInventory.setStackInSlot(0, stack);
+            } else if (level != null) {
+                BlockPos at = cell.getBlockPos();
+                Containers.dropItemStack(level, at.getX(), at.getY(), at.getZ(), stack);
+            }
+            cell.chargeInventory.setStackInSlot(0, ItemStack.EMPTY);
+        }
+        cell.setChanged();
+        setChanged();
+    }
+
+    @Override
+    @Nullable
+    public Object takeSplitContents() {
+        int total = energyStorage.getEnergyStored();
+        int keep = isRemoved() ? 0 : Math.min(MAX_ENERGY, total);
+        energyStorage.setBlocks(1);
+        energyStorage.setEnergyStoredExact(keep);
+        return total - keep;
+    }
+
+    @Override
+    @Nullable
+    public Object receiveSplitContents(@Nullable Object contents) {
+        if (!(contents instanceof Integer remaining) || remaining <= 0) {
+            return contents;
+        }
+        int space = energyStorage.getMaxEnergyStored() - energyStorage.getEnergyStored();
+        int take = Math.min(space, remaining);
+        energyStorage.setEnergyStoredExact(energyStorage.getEnergyStored() + take);
+        setChanged();
+        return remaining - take;
+    }
+
+    @Override
+    protected void onControllerRemoved(boolean keepContents) {
+        energyStorage.setBlocks(1);
+        if (!keepContents) {
+            energyStorage.setEnergyStoredExact(0);
+        }
+    }
+
+    @Override
+    public void notifyMultiUpdated() {
+        if (level == null || level.isClientSide()) {
+            return;
+        }
+        lastLayerLevels = null;
+        lastComparatorOutput = -1;
+
+        BlockState state = level.getBlockState(worldPosition);
+        if (!PowerCellBlock.isCell(state)) {
+            return;
+        }
+        BlockPos offset = getOffsetInStructure();
+        PowerCellBlockEntity controller = getControllerBE();
+        int fillLevel = controller == null ? state.getValue(PowerCellBlock.LEVEL)
+                : controller.fillLevelForLayer(offset.getY());
+        BlockState updated = state
+                .setValue(PowerCellBlock.BOTTOM, offset.getY() == 0)
+                .setValue(PowerCellBlock.TOP, offset.getY() == height - 1)
+                .setValue(PowerCellBlock.NORTH, offset.getZ() == 0)
+                .setValue(PowerCellBlock.SOUTH, offset.getZ() == width - 1)
+                .setValue(PowerCellBlock.WEST, offset.getX() == 0)
+                .setValue(PowerCellBlock.EAST, offset.getX() == width - 1)
+                .setValue(PowerCellBlock.LEVEL, fillLevel);
+        if (updated != state) {
+            level.setBlock(worldPosition, updated, Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
+        }
+        setChanged();
+    }
+
+    // --- energy -----------------------------------------------------------------------------------
 
     public static boolean isChargeable(ItemStack stack) {
         if (stack.isEmpty()) {
@@ -112,50 +251,55 @@ public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE
         return energy != null && energy.canReceive();
     }
 
-    public IItemHandler getChargeInventory() {
-        return chargeInventory;
-    }
-
+    /** The structure's pooled storage; {@code null} while this part's controller is not available. */
+    @Nullable
     public IEnergyStorage getEnergyStorage(@Nullable Direction side) {
-        return energyStorage;
+        PowerCellBlockEntity controller = getControllerBE();
+        return controller == null ? null : controller.energyStorage;
     }
 
+    @Nullable
     public IItemHandler getItemHandler(@Nullable Direction side) {
-        return chargeInventory;
+        PowerCellBlockEntity controller = getControllerBE();
+        return controller == null ? null : controller.chargeInventory;
+    }
+
+    @Override
+    public IItemHandler getChargeInventory() {
+        PowerCellBlockEntity controller = getControllerBE();
+        return controller == null ? chargeInventory : controller.chargeInventory;
+    }
+
+    /** Energy held by the structure this cell belongs to. */
+    public int getEnergyStored() {
+        PowerCellBlockEntity controller = getControllerBE();
+        return controller == null ? 0 : controller.energyStorage.getEnergyStored();
+    }
+
+    /** Capacity of the structure this cell belongs to. */
+    public int getMaxEnergyStored() {
+        PowerCellBlockEntity controller = getControllerBE();
+        return controller == null ? 0 : controller.energyStorage.getMaxEnergyStored();
     }
 
     @Override
     public int getMenuEnergyStored() {
-        return energyStorage.getEnergyStored();
+        return getEnergyStored();
     }
 
     @Override
     public int getMenuMaxEnergyStored() {
-        return energyStorage.getMaxEnergyStored();
+        return getMaxEnergyStored();
     }
 
-    public void dropContents() {
-        if (level == null || level.isClientSide()) {
-            return;
-        }
-
-        ItemStack stack = chargeInventory.getStackInSlot(0);
-        if (!stack.isEmpty()) {
-            Containers.dropItemStack(level, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), stack);
-        }
-    }
-
-    public int getEnergyStored() {
-        return energyStorage.getEnergyStored();
-    }
-
-    public int getMaxEnergyStored() {
-        return energyStorage.getMaxEnergyStored();
+    public float getFillFraction() {
+        int max = getMaxEnergyStored();
+        return max <= 0 ? 0.0f : (float) getEnergyStored() / max;
     }
 
     public int getComparatorOutputSignal() {
-        long energyStored = energyStorage.getEnergyStored();
-        long maxEnergy = energyStorage.getMaxEnergyStored();
+        long energyStored = getEnergyStored();
+        long maxEnergy = getMaxEnergyStored();
         if (energyStored <= 0 || maxEnergy <= 0) {
             return 0;
         }
@@ -196,16 +340,101 @@ public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE
 
     @Override
     public int getChargeItemEnergyStored() {
-        ItemStack stack = chargeInventory.getStackInSlot(0);
+        ItemStack stack = getChargeInventory().getStackInSlot(0);
         IEnergyStorage energy = stack.getCapability(Capabilities.EnergyStorage.ITEM);
         return energy == null ? 0 : energy.getEnergyStored();
     }
 
     @Override
     public int getChargeItemMaxEnergyStored() {
-        ItemStack stack = chargeInventory.getStackInSlot(0);
+        ItemStack stack = getChargeInventory().getStackInSlot(0);
         IEnergyStorage energy = stack.getCapability(Capabilities.EnergyStorage.ITEM);
         return energy == null ? 0 : energy.getMaxEnergyStored();
+    }
+
+    public void dropContents() {
+        if (level == null || level.isClientSide()) {
+            return;
+        }
+        ItemStack stack = chargeInventory.getStackInSlot(0);
+        if (!stack.isEmpty()) {
+            Containers.dropItemStack(level, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), stack);
+            chargeInventory.setStackInSlot(0, ItemStack.EMPTY);
+        }
+    }
+
+    // --- visuals ----------------------------------------------------------------------------------
+
+    /** Height the divider ring's centre sits at, in pixels above the structure's floor, for a given fill. */
+    public static float ringCentrePx(float fill, int height) {
+        float travel = 16.0f * height - 2 * PLATE_HEIGHT_PX - RING_HEIGHT_PX;
+        return PLATE_HEIGHT_PX + RING_HEIGHT_PX / 2 + Mth.clamp(fill, 0.0f, 1.0f) * travel;
+    }
+
+    /**
+     * Block-state fill level for the layer {@code yOffset} blocks above the controller: 0..9 places the
+     * charged/uncharged wall boundary at {@code 16 * level / 9} px within the block, which always lands under
+     * the divider ring so the seam stays hidden.
+     */
+    public int fillLevelForLayer(int yOffset) {
+        float localCentre = ringCentrePx(getFillFraction(), height) - 16.0f * yOffset;
+        return Mth.clamp(Math.round(9.0f * localCentre / 16.0f), 0, 9);
+    }
+
+    private void updateFillLevels() {
+        if (level == null) {
+            return;
+        }
+        if (lastLayerLevels == null || lastLayerLevels.length != height) {
+            lastLayerLevels = new int[height];
+            Arrays.fill(lastLayerLevels, -1);
+        }
+        for (int yOffset = 0; yOffset < height; yOffset++) {
+            int fillLevel = fillLevelForLayer(yOffset);
+            if (lastLayerLevels[yOffset] == fillLevel) {
+                continue;
+            }
+            lastLayerLevels[yOffset] = fillLevel;
+            for (int xOffset = 0; xOffset < width; xOffset++) {
+                for (int zOffset = 0; zOffset < width; zOffset++) {
+                    BlockPos pos = worldPosition.offset(xOffset, yOffset, zOffset);
+                    BlockState state = level.getBlockState(pos);
+                    if (!PowerCellBlock.isCell(state) || state.getValue(PowerCellBlock.LEVEL) == fillLevel) {
+                        continue;
+                    }
+                    level.setBlock(pos, state.setValue(PowerCellBlock.LEVEL, fillLevel),
+                            Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
+                }
+            }
+        }
+    }
+
+    private void updateComparatorOutput() {
+        if (level == null) {
+            return;
+        }
+        int comparatorOutput = getComparatorOutputSignal();
+        if (comparatorOutput == lastComparatorOutput) {
+            return;
+        }
+        lastComparatorOutput = comparatorOutput;
+        Block block = level.getBlockState(worldPosition).getBlock();
+        for (int yOffset = 0; yOffset < height; yOffset++) {
+            for (int xOffset = 0; xOffset < width; xOffset++) {
+                for (int zOffset = 0; zOffset < width; zOffset++) {
+                    level.updateNeighbourForOutputSignal(worldPosition.offset(xOffset, yOffset, zOffset), block);
+                }
+            }
+        }
+    }
+
+    private void syncToClient() {
+        int energyStored = energyStorage.getEnergyStored();
+        if (energyStored == lastSentClientEnergy) {
+            return;
+        }
+        lastSentClientEnergy = energyStored;
+        sendBlockEntityUpdate();
     }
 
     public float getClientSmoothedFill() {
@@ -215,6 +444,8 @@ public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE
     public void setClientSmoothedFill(float clientSmoothedFill) {
         this.clientSmoothedFill = clientSmoothedFill;
     }
+
+    // --- HUD --------------------------------------------------------------------------------------
 
     @Override
     public void setLastHudRefreshTick(long ticks) {
@@ -234,73 +465,31 @@ public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE
     @Override
     public Integer getInfo() {
         if (level != null && !level.isClientSide) {
-            return energyStorage.getEnergyStored();
+            return getEnergyStored();
         }
         return hudInfo;
     }
 
-    private void onEnergyChanged() {
-        setChanged();
-        updateFillLevel();
-        updateComparatorOutput();
-        syncToClient();
+    // --- menu -------------------------------------------------------------------------------------
+
+    public Component getDisplayName() {
+        return Component.translatable("block.zps.power_cell");
     }
 
-    private void updateComparatorOutput() {
-        if (level == null || level.isClientSide()) {
-            return;
-        }
-
-        int comparatorOutput = getComparatorOutputSignal();
-        if (comparatorOutput == lastComparatorOutput) {
-            return;
-        }
-
-        lastComparatorOutput = comparatorOutput;
-        level.updateNeighborsAt(worldPosition, getBlockState().getBlock());
+    /**
+     * Menu for this cell's structure. The menu is backed by the controller, but validated against
+     * {@code accessPos} (the block the player clicked) so tall structures can be used from any part.
+     */
+    public MenuProvider createMenuProvider(BlockPos accessPos) {
+        PowerCellBlockEntity controller = getControllerBE();
+        PowerCellBlockEntity target = controller == null ? this : controller;
+        return new SimpleMenuProvider(
+                (containerId, inventory, player) -> new PowerCellMenu(containerId, inventory, target,
+                        target.dataAccess, accessPos),
+                getDisplayName());
     }
 
-    private void updateFillLevel() {
-        if (level == null || level.isClientSide()) {
-            return;
-        }
-
-        BlockState state = getBlockState();
-        if (!state.hasProperty(PowerCellBlock.LEVEL)) {
-            return;
-        }
-
-        int fillLevel = getFillLevel();
-        if (fillLevel == lastSyncedLevel && state.getValue(PowerCellBlock.LEVEL) == fillLevel) {
-            return;
-        }
-
-        lastSyncedLevel = fillLevel;
-        if (state.getValue(PowerCellBlock.LEVEL) != fillLevel) {
-            level.setBlock(worldPosition, state.setValue(PowerCellBlock.LEVEL, fillLevel), Block.UPDATE_ALL);
-        }
-    }
-
-    private int getFillLevel() {
-        long energyStored = energyStorage.getEnergyStored();
-        long maxEnergy = energyStorage.getMaxEnergyStored();
-        if (maxEnergy <= 0) {
-            return 0;
-        }
-        return (int) Math.min(9, (energyStored * 9L) / maxEnergy);
-    }
-
-    private void syncToClient() {
-        if (level == null || level.isClientSide()) {
-            return;
-        }
-        int energyStored = energyStorage.getEnergyStored();
-        if (energyStored == lastSentClientEnergy) {
-            return;
-        }
-        lastSentClientEnergy = energyStored;
-        level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
-    }
+    // --- persistence ------------------------------------------------------------------------------
 
     @Override
     protected void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
@@ -312,6 +501,8 @@ public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE
     @Override
     protected void loadAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.loadAdditional(tag, registries);
+        lastLayerLevels = null;
+        energyStorage.setBlocks(isController() ? getStructureSize() : 1);
         if (tag.contains("Energy")) {
             energyStorage.setEnergyStoredExact(tag.getInt("Energy"));
         }
@@ -325,38 +516,6 @@ public class PowerCellBlockEntity extends BlockEntity implements EnergyStorageBE
         CompoundTag tag = super.getUpdateTag(registries);
         tag.putInt("Energy", energyStorage.getEnergyStored());
         return tag;
-    }
-
-    @Override
-    public void handleUpdateTag(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
-        super.handleUpdateTag(tag, registries);
-        if (tag.contains("Energy")) {
-            energyStorage.setEnergyStoredExact(tag.getInt("Energy"));
-        }
-    }
-
-    @Override
-    public @Nullable ClientboundBlockEntityDataPacket getUpdatePacket() {
-        return ClientboundBlockEntityDataPacket.create(this);
-    }
-
-    @Override
-    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt, HolderLookup.Provider registries) {
-        CompoundTag tag = pkt.getTag();
-        if (tag != null) {
-            handleUpdateTag(tag, registries);
-        }
-    }
-
-    @Override
-    public @NotNull Component getDisplayName() {
-        return Component.translatable("block.zps.power_cell");
-    }
-
-    @Override
-    public @Nullable AbstractContainerMenu createMenu(int containerId, @NotNull Inventory inventory,
-                                                     @NotNull Player player) {
-        return new PowerCellMenu(containerId, inventory, this, dataAccess);
     }
 
     private class ChargeItemStackHandler extends ItemStackHandler {

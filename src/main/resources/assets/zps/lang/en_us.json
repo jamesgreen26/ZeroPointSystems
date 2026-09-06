@@ -422,7 +422,7 @@
 
     "block.zps.switch_panel.zps_tooltip": "4 levers in 1!\n\nEach switch controls one of the four outputs. Connects with [Dense Cables].",
     "block.zps.graduated_lever.zps_tooltip": "Allows precise control of a redstone signal.\n\nInteract with the upper or lower half of the block to increase or decrease signal strength. Connects with [Cable].",
-    "block.zps.power_cell.zps_tooltip": "Stores up to 2.1M FE.\n\nCan be used to charge items that have [Energy Storage].",
+    "block.zps.power_cell.zps_tooltip": "Stores up to 2.1M FE per cell.\n\nCells placed in a square column (up to 3x3 wide and 32 tall) join into one larger cell with the combined capacity.\n\nCan be used to charge items that have [Energy Storage].",
     "block.zps.coal_burner.zps_tooltip": "Burns coal fuels to generate FE.\n\nAccepted fuels & burn times:\n- [Coal]: 80 seconds\n- [Charcoal]: 80 seconds\n- [Block of Coal]: 800 seconds",
     "block.zps.rolling_mill.zps_tooltip": "Consumes FE to roll metal.\n\nRolls ingots into rods and nuggets into wire.",
     "block.zps.assembler.zps_tooltip": "Consumes FE to craft items in a [5x5 crafting grid].\n\nConsumes 16 FE/t while crafting, and works only when receiving a Redstone signal.",

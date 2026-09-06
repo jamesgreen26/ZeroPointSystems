@@ -204,9 +204,11 @@ Ponder page lists the script commands and getters that block accepts.
 - Has a GUI (fuel slot + energy/burn readout) and a lit blockstate while burning; contents drop when broken.
 
 #### Power Cell (`power_cell`)
-- Bulk FE battery storing up to 2,097,152 FE (~2.1M), transferring up to 16,384 FE/tick in and out of any face.
-- Charges an inserted energy-capable item at 1,024 FE/tick via its charge slot and GUI.
-- Emits a comparator signal proportional to fill and shows a 0–9 visual fill level on the block.
+- Bulk FE battery storing up to 2,097,152 FE (~2.1M) per cell, transferring up to 16,384 FE/tick in and out of any face.
+- Multiblock: cells placed in a square column (1×1 to 3×3 wide, up to 32 tall) merge into one battery in the same way as Create's fluid tank. Only capacity scales with the cell count (transfer stays at 16,384 FE/tick and item charging at 1,024 FE/tick); the whole structure shares one charge slot and GUI, reachable from any cell, and any face accepts/provides energy for the pool. Placing a cell on the top or bottom of a structure fills the whole new layer from the stack (sneak to place a single cell).
+- Charges an inserted energy-capable item at 1,024 FE/tick via its charge slot and GUI, regardless of structure size.
+- Emits a comparator signal proportional to fill and shows the fill visually: the end plates and inset walls are drawn only on the structure's outer faces, and one divider ring rises through the whole structure.
+- The multiblock plumbing lives in `g_mungus.zps.multiblock` (`MultiblockPart`, `ConnectivityHandler`, `MultiblockBlockEntity`, `MultiblockBlockItem`) and is reusable for other blocks.
 
 #### Creative Power Cell (`creative_power_cell`)
 - Infinite FE source: pushes unlimited energy into every adjacent energy-accepting block each tick and never draws power itself.

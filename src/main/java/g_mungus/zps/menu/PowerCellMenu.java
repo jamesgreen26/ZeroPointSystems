@@ -34,15 +34,24 @@ public class PowerCellMenu extends AbstractContainerMenu {
     }
 
     private PowerCellMenu(int containerId, Inventory inventory, BlockPos pos) {
-        this(containerId, inventory, resolveBlockEntity(inventory.player.level(), pos), new SimpleContainerData(4));
+        this(containerId, inventory, resolveBlockEntity(inventory.player.level(), pos), new SimpleContainerData(4), pos);
     }
 
     public PowerCellMenu(int containerId, Inventory inventory, ItemChargingPowerCell blockEntity, ContainerData data) {
+        this(containerId, inventory, blockEntity, data, blockEntity.getBlockPos());
+    }
+
+    /**
+     * @param accessPos the block the player interacted with; for a multiblock cell this may be far from the
+     *                  controller that actually backs the menu, and it is what the reach check is measured from.
+     */
+    public PowerCellMenu(int containerId, Inventory inventory, ItemChargingPowerCell blockEntity, ContainerData data,
+                         BlockPos accessPos) {
         super(ModMenus.POWER_CELL.get(), containerId);
         this.blockEntity = blockEntity;
         this.data = data;
         Level level = blockEntity.getLevel();
-        this.access = level == null ? ContainerLevelAccess.NULL : ContainerLevelAccess.create(level, blockEntity.getBlockPos());
+        this.access = level == null ? ContainerLevelAccess.NULL : ContainerLevelAccess.create(level, accessPos);
 
         this.addSlot(new SlotItemHandler(blockEntity.getChargeInventory(), 0, 79, 34));
 

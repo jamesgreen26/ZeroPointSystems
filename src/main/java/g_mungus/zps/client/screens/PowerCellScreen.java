@@ -66,7 +66,7 @@ public class PowerCellScreen extends AbstractContainerScreen<PowerCellMenu> {
         if (maxEnergy <= 0) {
             return 0;
         }
-        return Mth.clamp((menu.getEnergyStored() * ENERGY_BAR_HEIGHT) / maxEnergy, 0, ENERGY_BAR_HEIGHT);
+        return (int) Mth.clamp(((long) menu.getEnergyStored() * ENERGY_BAR_HEIGHT) / maxEnergy, 0, ENERGY_BAR_HEIGHT);
     }
 
     private static String formatEnergy(int stored, int max) {

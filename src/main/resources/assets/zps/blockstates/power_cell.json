@@ -1,14 +1,2092 @@
 {
-  "variants": {
-    "level=0": { "model": "zps:block/power_cell_0" },
-    "level=1": { "model": "zps:block/power_cell_1" },
-    "level=2": { "model": "zps:block/power_cell_2" },
-    "level=3": { "model": "zps:block/power_cell_3" },
-    "level=4": { "model": "zps:block/power_cell_4" },
-    "level=5": { "model": "zps:block/power_cell_5" },
-    "level=6": { "model": "zps:block/power_cell_6" },
-    "level=7": { "model": "zps:block/power_cell_7" },
-    "level=8": { "model": "zps:block/power_cell_8" },
-    "level=9": { "model": "zps:block/power_cell_9" }
-  }
+  "multipart": [
+    {
+      "when": {
+        "bottom": "true"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/plate_bottom"
+      }
+    },
+    {
+      "when": {
+        "top": "true"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/plate_top"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "0"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_0"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "1"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_1"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "2"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_2"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "3"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_3"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "4"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_4"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "5"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_5"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "6"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_6"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "7"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_7"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "8"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_8"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "9"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_9"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "0",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_ext_bottom_0"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "1",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_ext_bottom_1"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "2|3|4|5|6|7|8|9",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_ext_bottom_2"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "0|1|2|3|4|5|6|7",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_ext_top_7"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "8",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_ext_top_8"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "9",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_ext_top_9"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "0",
+        "east": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_0"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "1",
+        "east": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_1"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "2",
+        "east": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_2"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "3",
+        "east": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_3"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "4",
+        "east": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_4"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "5",
+        "east": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_5"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "6",
+        "east": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_6"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "7",
+        "east": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_7"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "8",
+        "east": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_8"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "9",
+        "east": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_9"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "0",
+        "east": "false",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_ext_bottom_0"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "1",
+        "east": "false",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_ext_bottom_1"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "2|3|4|5|6|7|8|9",
+        "east": "false",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_ext_bottom_2"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "0|1|2|3|4|5|6|7",
+        "east": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_ext_top_7"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "8",
+        "east": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_ext_top_8"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "9",
+        "east": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_ext_top_9"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "0",
+        "west": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_0"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "1",
+        "west": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_1"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "2",
+        "west": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_2"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "3",
+        "west": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_3"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "4",
+        "west": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_4"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "5",
+        "west": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_5"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "6",
+        "west": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_6"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "7",
+        "west": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_7"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "8",
+        "west": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_8"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "9",
+        "west": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_9"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "0",
+        "west": "false",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_ext_bottom_0"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "1",
+        "west": "false",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_ext_bottom_1"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "2|3|4|5|6|7|8|9",
+        "west": "false",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_ext_bottom_2"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "0|1|2|3|4|5|6|7",
+        "west": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_ext_top_7"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "8",
+        "west": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_ext_top_8"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "level": "9",
+        "west": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_ext_top_9"
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "0"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_0",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "1"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_1",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "2"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_2",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "3"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_3",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "4"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_4",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "5"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_5",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "6"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_6",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "7"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_7",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "8"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_8",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "9"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_9",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "0",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_ext_bottom_0",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "1",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_ext_bottom_1",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "2|3|4|5|6|7|8|9",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_ext_bottom_2",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "0|1|2|3|4|5|6|7",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_ext_top_7",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "8",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_ext_top_8",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "9",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_ext_top_9",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "0",
+        "south": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_0",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "1",
+        "south": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_1",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "2",
+        "south": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_2",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "3",
+        "south": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_3",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "4",
+        "south": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_4",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "5",
+        "south": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_5",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "6",
+        "south": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_6",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "7",
+        "south": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_7",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "8",
+        "south": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_8",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "9",
+        "south": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_9",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "0",
+        "south": "false",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_ext_bottom_0",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "1",
+        "south": "false",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_ext_bottom_1",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "2|3|4|5|6|7|8|9",
+        "south": "false",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_ext_bottom_2",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "0|1|2|3|4|5|6|7",
+        "south": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_ext_top_7",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "8",
+        "south": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_ext_top_8",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "9",
+        "south": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_ext_top_9",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "0",
+        "north": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_0",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "1",
+        "north": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_1",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "2",
+        "north": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_2",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "3",
+        "north": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_3",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "4",
+        "north": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_4",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "5",
+        "north": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_5",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "6",
+        "north": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_6",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "7",
+        "north": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_7",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "8",
+        "north": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_8",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "9",
+        "north": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_9",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "0",
+        "north": "false",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_ext_bottom_0",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "1",
+        "north": "false",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_ext_bottom_1",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "2|3|4|5|6|7|8|9",
+        "north": "false",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_ext_bottom_2",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "0|1|2|3|4|5|6|7",
+        "north": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_ext_top_7",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "8",
+        "north": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_ext_top_8",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "level": "9",
+        "north": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_ext_top_9",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "0"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_0",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "1"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_1",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "2"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_2",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "3"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_3",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "4"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_4",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "5"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_5",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "6"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_6",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "7"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_7",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "8"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_8",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "9"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_9",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "0",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_ext_bottom_0",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "1",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_ext_bottom_1",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "2|3|4|5|6|7|8|9",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_ext_bottom_2",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "0|1|2|3|4|5|6|7",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_ext_top_7",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "8",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_ext_top_8",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "9",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_ext_top_9",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "0",
+        "west": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_0",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "1",
+        "west": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_1",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "2",
+        "west": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_2",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "3",
+        "west": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_3",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "4",
+        "west": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_4",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "5",
+        "west": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_5",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "6",
+        "west": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_6",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "7",
+        "west": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_7",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "8",
+        "west": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_8",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "9",
+        "west": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_9",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "0",
+        "west": "false",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_ext_bottom_0",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "1",
+        "west": "false",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_ext_bottom_1",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "2|3|4|5|6|7|8|9",
+        "west": "false",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_ext_bottom_2",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "0|1|2|3|4|5|6|7",
+        "west": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_ext_top_7",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "8",
+        "west": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_ext_top_8",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "9",
+        "west": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_ext_top_9",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "0",
+        "east": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_0",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "1",
+        "east": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_1",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "2",
+        "east": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_2",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "3",
+        "east": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_3",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "4",
+        "east": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_4",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "5",
+        "east": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_5",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "6",
+        "east": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_6",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "7",
+        "east": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_7",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "8",
+        "east": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_8",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "9",
+        "east": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_9",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "0",
+        "east": "false",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_ext_bottom_0",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "1",
+        "east": "false",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_ext_bottom_1",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "2|3|4|5|6|7|8|9",
+        "east": "false",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_ext_bottom_2",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "0|1|2|3|4|5|6|7",
+        "east": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_ext_top_7",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "8",
+        "east": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_ext_top_8",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "level": "9",
+        "east": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_ext_top_9",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "0"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_0",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "1"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_1",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "2"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_2",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "3"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_3",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "4"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_4",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "5"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_5",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "6"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_6",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "7"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_7",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "8"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_8",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "9"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_9",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "0",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_ext_bottom_0",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "1",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_ext_bottom_1",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "2|3|4|5|6|7|8|9",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_ext_bottom_2",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "0|1|2|3|4|5|6|7",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_ext_top_7",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "8",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_ext_top_8",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "9",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/wall_ext_top_9",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "0",
+        "north": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_0",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "1",
+        "north": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_1",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "2",
+        "north": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_2",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "3",
+        "north": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_3",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "4",
+        "north": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_4",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "5",
+        "north": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_5",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "6",
+        "north": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_6",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "7",
+        "north": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_7",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "8",
+        "north": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_8",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "9",
+        "north": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_9",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "0",
+        "north": "false",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_ext_bottom_0",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "1",
+        "north": "false",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_ext_bottom_1",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "2|3|4|5|6|7|8|9",
+        "north": "false",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_ext_bottom_2",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "0|1|2|3|4|5|6|7",
+        "north": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_ext_top_7",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "8",
+        "north": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_ext_top_8",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "9",
+        "north": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_a_ext_top_9",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "0",
+        "south": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_0",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "1",
+        "south": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_1",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "2",
+        "south": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_2",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "3",
+        "south": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_3",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "4",
+        "south": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_4",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "5",
+        "south": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_5",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "6",
+        "south": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_6",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "7",
+        "south": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_7",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "8",
+        "south": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_8",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "9",
+        "south": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_9",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "0",
+        "south": "false",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_ext_bottom_0",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "1",
+        "south": "false",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_ext_bottom_1",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "2|3|4|5|6|7|8|9",
+        "south": "false",
+        "bottom": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_ext_bottom_2",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "0|1|2|3|4|5|6|7",
+        "south": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_ext_top_7",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "8",
+        "south": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_ext_top_8",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "level": "9",
+        "south": "false",
+        "top": "false"
+      },
+      "apply": {
+        "model": "zps:block/power_cell/end_b_ext_top_9",
+        "y": 270
+      }
+    }
+  ]
 }

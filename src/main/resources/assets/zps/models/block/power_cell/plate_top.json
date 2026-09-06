@@ -1,0 +1,87 @@
+{
+	"format_version": "1.9.0",
+	"texture_size": [
+		32,
+		32
+	],
+	"textures": {
+		"0": "zps:block/power_cell",
+		"particle": "zps:block/power_cell"
+	},
+	"elements": [
+		{
+			"from": [
+				0,
+				14,
+				0
+			],
+			"to": [
+				16,
+				16,
+				16
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						8,
+						7,
+						16,
+						8
+					],
+					"texture": "#0",
+					"rotation": 180
+				},
+				"east": {
+					"uv": [
+						8,
+						7,
+						16,
+						8
+					],
+					"texture": "#0",
+					"rotation": 180
+				},
+				"south": {
+					"uv": [
+						8,
+						7,
+						16,
+						8
+					],
+					"texture": "#0",
+					"rotation": 180
+				},
+				"west": {
+					"uv": [
+						8,
+						7,
+						16,
+						8
+					],
+					"texture": "#0",
+					"rotation": 180
+				},
+				"up": {
+					"uv": [
+						0,
+						0,
+						8,
+						8
+					],
+					"texture": "#0",
+					"rotation": 180
+				},
+				"down": {
+					"uv": [
+						0,
+						0,
+						8,
+						8
+					],
+					"texture": "#0",
+					"rotation": 180
+				}
+			}
+		}
+	]
+}

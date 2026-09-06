@@ -31,8 +31,15 @@ import java.util.Map;
 import java.util.Set;
 
 public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
-    /** Maps each relevant neighbour offset to whether it connects, for the block being rendered. */
-    public static final ModelProperty<Map<Vec3i, Boolean>> CONNECTIONS = new ModelProperty<>();
+    /**
+     * Identifies one neighbour lookup: the world direction of the face being drawn, and the offset from the
+     * block being rendered to the neighbour. Keyed by face as well as offset because a rule may care which
+     * face it is drawing — the same neighbour can connect on one face of a block and not on another.
+     */
+    public record Neighbour(Direction face, Vec3i offset) {}
+
+    /** Maps each relevant neighbour lookup to whether it connects, for the block being rendered. */
+    public static final ModelProperty<Map<Neighbour, Boolean>> CONNECTIONS = new ModelProperty<>();
 
     private static final int SIDE_COUNT = 7; // 6 directions + 1 for the null (unculled) bucket
 
@@ -41,7 +48,7 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
     private final List<List<BakedQuad>> itemBySide;
     private final BakedModel itemModel;
     private final List<ConnectionRule> rules;
-    private final Set<Vec3i> neighbourOffsets;
+    private final Set<Neighbour> neighbours;
     private final RenderTypeGroup renderTypes;
 
     public ConnectingBakedModel(BakedModel original, List<ConnectionRule> rules, BlockState owner, RandomSource rand,
@@ -57,14 +64,14 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
             connectingBySide.add(new ArrayList<>());
             itemBySide.add(new ArrayList<>());
         }
-        Set<Vec3i> offsets = new HashSet<>();
+        Set<Neighbour> lookups = new HashSet<>();
 
-        sortQuads(original.getQuads(owner, null, rand), SIDE_COUNT - 1, offsets);
+        sortQuads(original.getQuads(owner, null, rand), SIDE_COUNT - 1, lookups);
         for (Direction side : Direction.values()) {
-            sortQuads(original.getQuads(owner, side, rand), side.get3DDataValue(), offsets);
+            sortQuads(original.getQuads(owner, side, rand), side.get3DDataValue(), lookups);
         }
 
-        this.neighbourOffsets = offsets;
+        this.neighbours = lookups;
         this.itemModel = new BakedModelWrapper<>(original) {
             @Override
             public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, RandomSource rand) {
@@ -94,7 +101,7 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
         };
     }
 
-    private void sortQuads(List<BakedQuad> quads, int sideIndex, Set<Vec3i> offsets) {
+    private void sortQuads(List<BakedQuad> quads, int sideIndex, Set<Neighbour> lookups) {
         for (BakedQuad quad : quads) {
             ConnectedTextureMeta.Meta meta = ConnectedTextureMeta.get(quad.getSprite().contents().name()).orElse(null);
             int tileCount = quad.getSprite().contents().width() / quad.getSprite().contents().height();
@@ -102,7 +109,7 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
                 ConnectingFace face = new ConnectingFace(quad, tileCount);
                 connectingBySide.get(sideIndex).add(face);
                 face.emit(itemBySide.get(sideIndex), null);
-                offsets.addAll(face.neighbourOffsets());
+                lookups.addAll(face.neighbours());
             } else {
                 staticBySide.get(sideIndex).add(quad);
                 itemBySide.get(sideIndex).add(quad);
@@ -123,14 +130,16 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
 
     @Override
     public ModelData getModelData(BlockAndTintGetter level, BlockPos pos, BlockState state, ModelData modelData) {
-        if (neighbourOffsets.isEmpty()) {
+        if (neighbours.isEmpty()) {
             return modelData;
         }
-        Map<Vec3i, Boolean> connections = new HashMap<>(neighbourOffsets.size());
+        Map<Neighbour, Boolean> connections = new HashMap<>(neighbours.size());
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        for (Vec3i offset : neighbourOffsets) {
+        for (Neighbour neighbour : neighbours) {
+            Vec3i offset = neighbour.offset();
             cursor.setWithOffset(pos, offset.getX(), offset.getY(), offset.getZ());
-            connections.put(offset, ConnectionRule.anyMatch(rules, state, level.getBlockState(cursor)));
+            connections.put(neighbour,
+                    ConnectionRule.anyMatch(rules, state, level.getBlockState(cursor), neighbour.face()));
         }
         return modelData.derive().with(CONNECTIONS, connections).build();
     }
@@ -146,7 +155,7 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
         return collect(side, extraData.get(CONNECTIONS));
     }
 
-    private List<BakedQuad> collect(@Nullable Direction side, @Nullable Map<Vec3i, Boolean> connections) {
+    private List<BakedQuad> collect(@Nullable Direction side, @Nullable Map<Neighbour, Boolean> connections) {
         int index = side == null ? SIDE_COUNT - 1 : side.get3DDataValue();
         List<ConnectingFace> faces = connectingBySide.get(index);
         List<BakedQuad> staticQuads = staticBySide.get(index);
@@ -252,15 +261,15 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
             this.axisV = dominantAxis(new Vector3f(bottomLeft).sub(topLeft));
         }
 
-        /** All neighbour offsets this face may query (4 corners x {H, V, D}). */
-        Set<Vec3i> neighbourOffsets() {
-            Set<Vec3i> offsets = new HashSet<>();
+        /** All neighbour lookups this face may query (4 corners x {H, V, D}). */
+        Set<Neighbour> neighbours() {
+            Set<Neighbour> lookups = new HashSet<>();
             for (int corner = 0; corner < 4; corner++) {
-                offsets.add(horizontal(corner));
-                offsets.add(vertical(corner));
-                offsets.add(diagonal(corner));
+                lookups.add(new Neighbour(direction, horizontal(corner)));
+                lookups.add(new Neighbour(direction, vertical(corner)));
+                lookups.add(new Neighbour(direction, diagonal(corner)));
             }
-            return offsets;
+            return lookups;
         }
 
         private Vec3i horizontal(int corner) {
@@ -277,7 +286,7 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
             return add(horizontal(corner), vertical(corner));
         }
 
-        void emit(List<BakedQuad> out, @Nullable Map<Vec3i, Boolean> connections) {
+        void emit(List<BakedQuad> out, @Nullable Map<Neighbour, Boolean> connections) {
             for (int corner = 0; corner < 4; corner++) {
                 boolean h = connected(connections, horizontal(corner));
                 boolean v = connected(connections, vertical(corner));
@@ -287,8 +296,8 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
             }
         }
 
-        private static boolean connected(@Nullable Map<Vec3i, Boolean> connections, Vec3i offset) {
-            return connections != null && connections.getOrDefault(offset, Boolean.FALSE);
+        private boolean connected(@Nullable Map<Neighbour, Boolean> connections, Vec3i offset) {
+            return connections != null && connections.getOrDefault(new Neighbour(direction, offset), Boolean.FALSE);
         }
 
         private BakedQuad buildCorner(int corner, int tile) {

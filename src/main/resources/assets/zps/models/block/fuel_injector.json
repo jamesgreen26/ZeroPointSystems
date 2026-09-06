@@ -1,12 +1,41 @@
 {
-  "parent": "minecraft:block/cube",
-  "textures": {
-    "particle": "zps:block/aluminum_block",
-    "north": "zps:block/dense_cables_end",
-    "south": "zps:block/aluminum_block",
-    "east": "zps:block/aluminum_block",
-    "west": "zps:block/aluminum_block",
-    "up": "zps:block/aluminum_block",
-    "down": "zps:block/aluminum_block"
-  }
+	"format_version": "1.21.11",
+	"credit": "Made with Blockbench",
+	"loader": "zps:model",
+	"type": "connecting",
+	"connections": [
+		{"type": "match_block_face", "block": "zps:fuel_injector", "property": "facing", "side": "opposite"},
+		{"type": "match_block", "block": "zps:reinforced_plating"}
+	],
+	"parent": "minecraft:block/cube",
+	"textures": {
+		"1": "zps:block/fuel_injector_back",
+		"particle": "zps:block/fuel_injector",
+		"north": "zps:block/fuel_injector"
+	},
+	"elements": [
+		{
+			"from": [0, 0, 0],
+			"to": [16, 16, 16],
+			"faces": {
+				"north": {"uv": [0, 0, 8, 8], "texture": "#north"},
+				"east": {"uv": [0, 8, 8, 16], "rotation": 90, "texture": "#north"},
+				"south": {"uv": [0, 0, 16, 16], "texture": "#1"},
+				"west": {"uv": [0, 8, 8, 16], "rotation": 270, "texture": "#north"},
+				"up": {"uv": [0, 8, 8, 16], "texture": "#north"},
+				"down": {"uv": [0, 8, 8, 16], "rotation": 180, "texture": "#north"}
+			}
+		},
+		{
+			"from": [5, 5, 16],
+			"to": [11, 11, 18],
+			"faces": {
+				"east": {"uv": [10.5, 10.5, 11.5, 13.5], "texture": "#north"},
+				"south": {"uv": [10.5, 10.5, 13.5, 13.5], "texture": "#north"},
+				"west": {"uv": [12.5, 10.5, 13.5, 13.5], "texture": "#north"},
+				"up": {"uv": [10.5, 12.5, 13.5, 13.5], "texture": "#north"},
+				"down": {"uv": [10.5, 10.5, 13.5, 11.5], "texture": "#north"}
+			}
+		}
+	]
 }

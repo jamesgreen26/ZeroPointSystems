@@ -1,6 +1,10 @@
 {
   "loader": "zps:model",
   "type": "connecting",
+  "connections": [
+    {"type": "is_same_block"},
+    {"type": "match_block_face", "block": "zps:fuel_injector", "property": "facing", "side": "opposite"}
+  ],
   "parent": "minecraft:block/cube_all",
   "textures": {
     "all": "zps:block/reinforced_plating"

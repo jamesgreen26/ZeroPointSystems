@@ -120,6 +120,10 @@ public class PowerCellBlock extends BaseEntityBlock {
     protected @NotNull InteractionResult useWithoutItem(@NotNull BlockState state, @NotNull Level level,
                                                         @NotNull BlockPos pos, @NotNull Player player,
                                                         @NotNull BlockHitResult hit) {
+        // Holding a cell means the player is building; let the block item place (and fill the layer) instead.
+        if (isHoldingCell(player)) {
+            return InteractionResult.PASS;
+        }
         if (!level.isClientSide()) {
             PowerCellBlockEntity cell = cellAt(level, pos);
             if (cell != null && player instanceof ServerPlayer serverPlayer) {
@@ -127,6 +131,10 @@ public class PowerCellBlock extends BaseEntityBlock {
             }
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
+    }
+
+    private boolean isHoldingCell(Player player) {
+        return player.getMainHandItem().is(asItem()) || player.getOffhandItem().is(asItem());
     }
 
     @Override

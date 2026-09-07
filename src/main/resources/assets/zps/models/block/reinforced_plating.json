@@ -3,7 +3,8 @@
   "type": "connecting",
   "connections": [
     {"type": "is_same_block"},
-    {"type": "match_block_face", "block": "zps:fuel_injector", "property": "facing", "side": "opposite"}
+    {"type": "match_block_face", "block": "zps:fuel_injector", "property": "facing", "side": "opposite"},
+    {"type": "match_block_face", "block": "zps:exhaust_port", "property": "facing", "side": "not_same"}
   ],
   "parent": "minecraft:block/cube_all",
   "textures": {

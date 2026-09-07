@@ -74,10 +74,11 @@ public interface ConnectionRule {
                 ResourceLocation block = ResourceLocation.parse(GsonHelper.getAsString(object, "block"));
                 String property = GsonHelper.getAsString(object, "property", "facing");
                 String side = GsonHelper.getAsString(object, "side", "same");
-                if (!"same".equals(side) && !"opposite".equals(side)) {
-                    throw new JsonParseException("match_block_face side must be \"same\" or \"opposite\", was: " + side);
+                MatchBlockFace.Side mode = MatchBlockFace.Side.byName(side);
+                if (mode == null) {
+                    throw new JsonParseException("match_block_face side must be \"same\", \"opposite\", \"not_same\" or \"not_opposite\", was: " + side);
                 }
-                return new MatchBlockFace(block, property, "opposite".equals(side));
+                return new MatchBlockFace(block, property, mode);
             }
             default:
                 throw new JsonParseException("Unknown connection type: " + type);
@@ -130,7 +131,21 @@ public interface ConnectionRule {
      * one behind the property's direction — e.g. a fuel injector's back, opposite its outer {@code facing}.
      * A neighbour whose chosen face is not coplanar with the face being drawn does not connect.
      */
-    record MatchBlockFace(ResourceLocation id, String property, boolean opposite) implements ConnectionRule {
+    record MatchBlockFace(ResourceLocation id, String property, Side side) implements ConnectionRule {
+        enum Side {
+            SAME, OPPOSITE, NOT_SAME, NOT_OPPOSITE;
+
+            static Side byName(String name) {
+                return switch (name) {
+                    case "same" -> SAME;
+                    case "opposite" -> OPPOSITE;
+                    case "not_same" -> NOT_SAME;
+                    case "not_opposite" -> NOT_OPPOSITE;
+                    default -> null;
+                };
+            }
+        }
+
         @Override
         public boolean matches(BlockState self, BlockState neighbour, Direction face) {
             Block block = BuiltInRegistries.BLOCK.get(id);
@@ -141,8 +156,13 @@ public interface ConnectionRule {
             if (!(property instanceof DirectionProperty directions)) {
                 return false;
             }
-            Direction side = neighbour.getValue(directions);
-            return (opposite ? side.getOpposite() : side) == face;
+            Direction facing = neighbour.getValue(directions);
+            return switch (side) {
+                case SAME -> facing == face;
+                case OPPOSITE -> facing.getOpposite() == face;
+                case NOT_SAME -> facing != face;
+                case NOT_OPPOSITE -> facing.getOpposite() != face;
+            };
         }
     }
 }

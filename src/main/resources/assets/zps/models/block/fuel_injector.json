@@ -5,6 +5,7 @@
 	"type": "connecting",
 	"connections": [
 		{"type": "match_block_face", "block": "zps:fuel_injector", "property": "facing", "side": "opposite"},
+		{"type": "match_block_face", "block": "zps:exhaust_port", "property": "facing", "side": "not_same"},
 		{"type": "match_block", "block": "zps:reinforced_plating"}
 	],
 	"parent": "minecraft:block/cube",

@@ -1,0 +1,20 @@
+{
+	"textures": {
+		"0": "zps:block/gas_gauge",
+		"particle": "zps:block/gas_gauge"
+	},
+	"elements": [
+		{
+			"name": "needle",
+			"from": [7.5, 7.5, 7],
+			"to": [8.5, 11, 8],
+			"faces": {
+				"north": {"uv": [10, 2, 11, 4], "texture": "#0"},
+				"east": {"uv": [10, 2, 11, 4], "texture": "#0"},
+				"west": {"uv": [10, 2, 11, 4], "texture": "#0"},
+				"up": {"uv": [10, 2, 11, 3], "texture": "#0"},
+				"down": {"uv": [10, 3, 11, 4], "texture": "#0"}
+			}
+		}
+	]
+}

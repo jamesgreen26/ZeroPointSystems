@@ -4,6 +4,7 @@ import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
 import g_mungus.zps.blockentity.gas.DuctBlockEntity;
+import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity;
 import g_mungus.zps.blockentity.gas.VentBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.*;
 import g_mungus.zps.blockentity.reactor.ExhaustPortBlockEntity;
@@ -23,6 +24,11 @@ public class ModBlockEntities {
         BLOCK_ENTITIES.register("vent",
             () -> BlockEntityType.Builder.of(VentBlockEntity::new,
                 ModBlocks.VENT.get()).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<GasGaugeBlockEntity>> GAS_GAUGE =
+        BLOCK_ENTITIES.register("gas_gauge",
+            () -> BlockEntityType.Builder.of(GasGaugeBlockEntity::new,
+                ModBlocks.GAS_GAUGE.get()).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DuctBlockEntity>> DUCT =
         BLOCK_ENTITIES.register("duct",

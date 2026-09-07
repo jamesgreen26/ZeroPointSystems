@@ -121,6 +121,9 @@ public class ModItems {
     public static final DeferredItem<Item> VENT = ITEMS.register("vent",
             () -> new BlockItem(ModBlocks.VENT.get(), new Item.Properties()));
 
+    public static final DeferredItem<Item> GAS_GAUGE = ITEMS.register("gas_gauge",
+            () -> new BlockItem(ModBlocks.GAS_GAUGE.get(), new Item.Properties()));
+
     public static final DeferredItem<Item> GAS_DUCT = ITEMS.register("gas_duct",
             () -> new BlockItem(ModBlocks.GAS_DUCT.get(), new Item.Properties()));
 

@@ -101,6 +101,7 @@ public class ClientSetup {
         event.register(ChainsawItemRenderer.BLADE_MODEL);
         event.register(RollingMillBlockEntityRenderer.ROLLER_MODEL);
         event.register(ImpactPistonBlockEntityRenderer.ROD_MODEL);
+        event.register(GasGaugeBlockEntityRenderer.NEEDLE_MODEL);
     }
 
     @SubscribeEvent
@@ -171,6 +172,7 @@ public class ClientSetup {
                     .neverSkipVanillaRender()
                     .apply();
             BlockEntityRenderers.register(ModBlockEntities.POWER_CELL.get(), PowerCellBlockEntityRenderer::new);
+            BlockEntityRenderers.register(ModBlockEntities.GAS_GAUGE.get(), GasGaugeBlockEntityRenderer::new);
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DENSE_CABLE_SEPARATOR.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DATA_CABLE.get(), RenderType.translucent());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.SERIAL_BUS.get(), RenderType.translucent());

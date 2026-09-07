@@ -7,6 +7,7 @@ import g_mungus.zps.block.cableNetwork.properties.InsulationType;
 import g_mungus.zps.block.datagen.BlockDataGenerator;
 import g_mungus.zps.block.gas.CreativeGasGeneratorBlock;
 import g_mungus.zps.block.gas.DuctBlock;
+import g_mungus.zps.block.gas.GasGaugeBlock;
 import g_mungus.zps.block.gas.VentBlock;
 import g_mungus.zps.block.reactor.ExhaustPortBlock;
 import g_mungus.zps.block.reactor.FuelInjectorBlock;
@@ -238,6 +239,12 @@ public class ModBlocks {
 
     public static final DeferredBlock<Block> VENT = BLOCKS.register("vent",
             () -> new VentBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+
+    public static final DeferredBlock<Block> GAS_GAUGE = BLOCKS.register("gas_gauge",
+            () -> new GasGaugeBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(2.0f)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));

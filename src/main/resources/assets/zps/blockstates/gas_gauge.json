@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "facing=north": {"model": "zps:block/gas_gauge/plate"},
+    "facing=east": {"model": "zps:block/gas_gauge/plate", "y": 90},
+    "facing=south": {"model": "zps:block/gas_gauge/plate", "y": 180},
+    "facing=west": {"model": "zps:block/gas_gauge/plate", "y": 270},
+    "facing=down": {"model": "zps:block/gas_gauge/plate", "x": 90},
+    "facing=up": {"model": "zps:block/gas_gauge/plate", "x": 270, "y": 180}
+  }
+}

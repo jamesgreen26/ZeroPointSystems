@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "item": "zps:aluminum_ingot"
+    },
+    "G": {
+      "item": "minecraft:glass_pane"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    }
+  },
+  "pattern": [
+    " I ",
+    "IGI",
+    " R "
+  ],
+  "result": {
+    "id": "zps:gas_gauge",
+    "count": 1
+  }
+}

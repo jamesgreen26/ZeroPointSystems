@@ -76,6 +76,7 @@ public class ModCreativeTabs {
                         IMPACT_PISTON,
                         SIEVE,
                         VENT,
+                        GAS_GAUGE,
                         GAS_DUCT,
                         CREATIVE_GAS_GENERATOR,
                         REINFORCED_PLATING,

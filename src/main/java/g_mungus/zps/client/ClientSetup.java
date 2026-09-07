@@ -189,10 +189,12 @@ public class ClientSetup {
             NeoForge.EVENT_BUS.addListener(AddressPadClientHooks::onRenderLevelStage);
             NeoForge.EVENT_BUS.addListener(GasPressureOverlay::onRenderLevelStage);
             NeoForge.EVENT_BUS.addListener(GasPressureOverlay::onPlayerTick);
+            NeoForge.EVENT_BUS.addListener(ClientReactors::onChunkLoad);
             NeoForge.EVENT_BUS.addListener(ClientReactors::onChunkUnload);
             NeoForge.EVENT_BUS.addListener(ClientReactors::onLevelUnload);
             NeoForge.EVENT_BUS.addListener(ClientReactors::onLoggingOut);
             NeoForge.EVENT_BUS.addListener(ClientReactors::onClientTick);
+            NeoForge.EVENT_BUS.addListener(ClientReactors::onRenderFrame);
         });
     }
 

@@ -39,6 +39,18 @@ public final class SableClientCompat {
     }
 
     /// Only call after verifying that Sable is loaded.
+    /// The render transform of whichever sublevel contains pos when asked. The sublevel is looked
+    /// up on every call rather than captured: on a rejoin the blocks can arrive before the sublevel
+    /// does, and Sable may replace its client object when the sublevel leaves and re-enters range.
+    static RenderTransformProvider renderTransformAt(ClientLevel level, BlockPos pos) {
+        Vec3 center = pos.getCenter();
+        return dest -> {
+            ClientSubLevelAccess subLevel = SableCompanion.INSTANCE.getContainingClient(center);
+            return subLevel == null ? null : subLevel.renderPose().bakeIntoMatrix(dest);
+        };
+    }
+
+    /// Only call after verifying that Sable is loaded.
     /// Returns the original sound instance wrapped by Sable's moving sound delegate.
     static SoundInstance unwrapMovingSound(SoundInstance instance) {
         if (instance instanceof MovingSoundInstanceDelegate delegate) {

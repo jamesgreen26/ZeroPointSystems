@@ -5,6 +5,7 @@ import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 
 public class ClientCompat {
 
@@ -47,6 +48,21 @@ public class ClientCompat {
             }
         }
         return pos;
+    }
+
+    /// A lookup of the moving grid (VS ship or Sable sublevel) drawing the position, or null when
+    /// no grid mod is present. The lookup itself answers null while the position is on no grid.
+    /// Render thread only.
+    public static @Nullable RenderTransformProvider renderTransformAt(Level level, BlockPos pos) {
+        if (level instanceof ClientLevel clientLevel) {
+            if (Compat.isVSLoaded()) {
+                return VSClientCompat.renderTransformAt(clientLevel, pos);
+            }
+            if (Compat.isSableLoaded()) {
+                return SableClientCompat.renderTransformAt(clientLevel, pos);
+            }
+        }
+        return null;
     }
 
     /// Unwraps optional moving-grid sound delegates back to the original sound instance.

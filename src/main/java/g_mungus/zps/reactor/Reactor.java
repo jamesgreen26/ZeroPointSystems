@@ -19,7 +19,10 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.valkyrienskies.kelvin.api.DuctNodePos;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * One sealed reactor: its geometry, the ratings that follow from it, and the little state the
@@ -46,6 +49,8 @@ public final class Reactor {
 
     /** Heat last sent to clients; not persisted, so a reload resends. */
     private float lastSentHeat = -1f;
+    /** Players currently holding the shape; not persisted, so a reload resends. */
+    private final Set<UUID> watchers = new HashSet<>();
 
     /** The cavity as a shape, built on first use. */
     private @Nullable VoxelShape shape;
@@ -215,6 +220,10 @@ public final class Reactor {
 
     void setLastSentHeat(float heat) {
         lastSentHeat = heat;
+    }
+
+    Set<UUID> watchers() {
+        return watchers;
     }
 
     public void recordFeIn(int fe) {

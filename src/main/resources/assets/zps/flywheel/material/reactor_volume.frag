@@ -9,6 +9,12 @@
 // field and adds a hot core from how close the ray passes to the centre. Near faces draw nothing,
 // so each pixel gets the volume once.
 //
+// Everything is measured in the reactor's own frame, from the cavity's lowest corner. The vertex
+// stage hands over the fragment's position in that frame, and the eye is brought into it by
+// turning the world-space offset from the fragment to the camera back through the reactor's
+// rotation. On the ground that rotation is the identity and the frame is the world's own; on a
+// moving grid it is the grid's, so the volume sits square in the cavity however the grid is tilted.
+//
 // Nothing here depends on which cell or face the fragment belongs to: only on where it is, where
 // the camera is, and per-reactor constants. That is what keeps neighbouring quads seamless.
 
@@ -50,9 +56,21 @@ float zps_boxEntry(vec3 start, vec3 dir, vec3 boxMin, vec3 boxMax) {
     return max(max(tMin.x, tMin.y), tMin.z);
 }
 
+// Turns v by the inverse of the unit quaternion q: out of the world and into the reactor's frame.
+vec3 zps_unrotate(vec4 q, vec3 v) {
+    vec3 t = 2.0 * cross(q.xyz, v);
+    return v - q.w * t + cross(q.xyz, t);
+}
+
+// Two signed 16-bit fixed-point values from one int, the low half first.
+vec2 zps_unpackSnorm16(int bits) {
+    return vec2(float((bits << 16) >> 16), float(bits >> 16)) / 32767.0;
+}
+
 void flw_materialFragment() {
-    vec3 boxMin = flw_vertexColor.rgb;
+    vec3 exitPoint = flw_vertexColor.rgb;
     float heat = flw_vertexColor.a;
+    vec3 boxMin = vec3(0.0);
     vec3 boxMax = vec3(flw_vertexTexCoord, flw_vertexLight.x);
     float depth = floor(flw_vertexLight.y);
     float seed = fract(flw_vertexLight.y);
@@ -62,19 +80,22 @@ void flw_materialFragment() {
         return;
     }
 
-    vec3 eye = flw_cameraPos;
-    vec3 exitPoint = flw_vertexPos.xyz;
-    vec3 toExit = exitPoint - eye;
-    float exitDistance = length(toExit);
-    vec3 dir = toExit / max(exitDistance, 1e-4);
-
-    // Near faces have their wall behind the camera's side; the far faces carry the volume.
+    // Near faces have their wall behind the camera's side; the far faces carry the volume. Both
+    // the normal and the view ray are in world space here, and the test is the same in any frame.
+    vec3 toExitWorld = flw_vertexPos.xyz - flw_cameraPos;
+    float exitDistance = length(toExitWorld);
     vec3 normal = normalize(flw_vertexNormal);
-    float facing = dot(normal, dir);
+    float facing = dot(normal, toExitWorld) / max(exitDistance, 1e-4);
     if (facing < 0.0) {
         flw_fragColor = vec4(0.0);
         return;
     }
+
+    // Into the reactor's frame: the same ray, turned, and the eye placed back from the exit along it.
+    vec4 q = normalize(vec4(zps_unpackSnorm16(flw_vertexOverlay.x), zps_unpackSnorm16(flw_vertexOverlay.y)));
+    vec3 toExit = zps_unrotate(q, toExitWorld);
+    vec3 dir = toExit / max(exitDistance, 1e-4);
+    vec3 eye = exitPoint - toExit;
 
     // The ray is inside the cavity from where it crossed the box, but no further back than the
     // cavity actually runs behind this face, so concave shapes do not glow through their walls.
@@ -104,7 +125,7 @@ void flw_materialFragment() {
 
         // Anchored to the reactor's own corner: the pattern stays put on the reactor, and the
         // coordinates stay small enough for float precision no matter where in the world it is.
-        float n = zps_fbm2((p - boxMin) * NOISE_SCALE + drift);
+        float n = zps_fbm2(p * NOISE_SCALE + drift);
         float wisps = smoothstep(NOISE_LO, NOISE_HI, n);
         density += (BASE_DENSITY + (1.0 - BASE_DENSITY) * wisps) * gap * stepLength;
     }
@@ -113,9 +134,9 @@ void flw_materialFragment() {
     // The core: how close the ray passes to the centre, within the part of it that is inside.
     float along = clamp(dot(centre - eye, dir), entryDistance, exitDistance);
     vec3 nearest = eye + dir * along;
-    vec3 q = abs(nearest - centre) / max(halfSize, vec3(0.5));
-    float round = length(q);
-    float boxy = max(max(q.x, q.y), q.z);
+    vec3 q3 = abs(nearest - centre) / max(halfSize, vec3(0.5));
+    float round = length(q3);
+    float boxy = max(max(q3.x, q3.y), q3.z);
     float coreDistance = mix(round, boxy, SHAPE_CONFORMITY);
     float core = CORE_STRENGTH * pow(max(0.0, 1.0 - coreDistance), CORE_POWER);
 

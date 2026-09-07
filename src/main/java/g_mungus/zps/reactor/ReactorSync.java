@@ -50,6 +50,10 @@ public final class ReactorSync {
         PacketDistributor.sendToPlayersTrackingChunk(level, hostChunk(reactor), new ReactorRemovedS2CPacket(reactor.id()));
     }
 
+    public static void sendRemovedTo(ServerPlayer player, Reactor reactor) {
+        PacketDistributor.sendToPlayer(player, new ReactorRemovedS2CPacket(reactor.id()));
+    }
+
     public static ChunkPos hostChunk(Reactor reactor) {
         return new ChunkPos(reactor.host());
     }

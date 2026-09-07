@@ -36,4 +36,15 @@ public class VSClientCompat {
                 .transformPosition(new Vector3d(worldPos.x, worldPos.y, worldPos.z));
         return new Vec3(local.x, local.y, local.z);
     }
+
+    /// Only call after verifying that VS is loaded.
+    /// The render transform of whichever ship manages pos when asked; the ship is looked up on
+    /// every call, so a ship that loads after its blocks, or is reloaded, is picked up.
+    static RenderTransformProvider renderTransformAt(ClientLevel level, BlockPos pos) {
+        double x = pos.getX() + 0.5, y = pos.getY() + 0.5, z = pos.getZ() + 0.5;
+        return dest -> {
+            ClientShip ship = VSGameUtilsKt.getLoadedShipManagingPos(level, x, y, z);
+            return ship == null ? null : dest.set(ship.getRenderTransform().getShipToWorld());
+        };
+    }
 }

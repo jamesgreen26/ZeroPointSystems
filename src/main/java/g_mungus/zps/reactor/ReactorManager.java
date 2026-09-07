@@ -20,6 +20,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.saveddata.SavedData;
 import org.jetbrains.annotations.NotNull;
@@ -31,8 +32,12 @@ import org.valkyrienskies.kelvin.api.GasType;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 
 /**
@@ -195,7 +200,7 @@ public final class ReactorManager extends SavedData {
         }
         ensureNode(level, reactor);
         setDirty();
-        ReactorSync.sendShape(level, reactor, currentHeat(level, reactor));
+        syncWatchers(level, reactor);
         ZPSMod.LOGGER.debug("Reactor {} sealed at {}: {} m^3, {} walls, compactness {}",
                 reactor.id(), reactor.host(), reactor.volume(), reactor.wallCount(), reactor.compactness());
     }
@@ -276,6 +281,9 @@ public final class ReactorManager extends SavedData {
             boolean lit = temperature >= ignition;
             reactor.setLit(lit);
             syncHeat(level, reactor, temperature);
+            if (level.getGameTime() % ReactorSync.STATE_SYNC_INTERVAL == 0) {
+                syncWatchers(level, reactor);
+            }
 
             if (lit && !reactor.hasIgnited()) {
                 reactor.markIgnited();
@@ -301,6 +309,43 @@ public final class ReactorManager extends SavedData {
         if (Math.abs(heat - reactor.lastSentHeat()) > ReactorSync.HEAT_EPSILON) {
             reactor.setLastSentHeat(heat);
             ReactorSync.sendState(level, reactor, heat);
+        }
+    }
+
+    /**
+     * Keep the shape in the hands of exactly the players tracking the host chunk. Vanilla announces
+     * a chunk's arrival through {@code ChunkWatchEvent.Sent}, but Sable ships plot chunks through
+     * its own sender and only patches the chunk map's player lookup, so a reactor on a sublevel
+     * would never be sent after a rejoin. Asking that lookup directly covers both: whoever has
+     * started tracking gets the shape, whoever has stopped is told to drop it. The shape may then
+     * land before the chunk it describes; the client rebuilds its visual when the chunk arrives.
+     */
+    private void syncWatchers(ServerLevel level, Reactor reactor) {
+        List<ServerPlayer> tracking = level.getChunkSource().chunkMap.getPlayers(ReactorSync.hostChunk(reactor), false);
+        Set<UUID> watchers = reactor.watchers();
+        if (tracking.isEmpty() && watchers.isEmpty()) {
+            return;
+        }
+        Set<UUID> now = new HashSet<>(tracking.size());
+        for (ServerPlayer player : tracking) {
+            now.add(player.getUUID());
+            if (watchers.add(player.getUUID())) {
+                ReactorSync.sendShapeTo(player, reactor, currentHeat(level, reactor));
+            }
+        }
+        if (watchers.size() == now.size()) {
+            return;
+        }
+        for (Iterator<UUID> it = watchers.iterator(); it.hasNext(); ) {
+            UUID id = it.next();
+            if (now.contains(id)) {
+                continue;
+            }
+            it.remove();
+            ServerPlayer player = level.getServer().getPlayerList().getPlayer(id);
+            if (player != null) {
+                ReactorSync.sendRemovedTo(player, reactor);
+            }
         }
     }
 

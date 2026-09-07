@@ -13,6 +13,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.RenderFrameEvent;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import org.jetbrains.annotations.Nullable;
@@ -54,7 +55,7 @@ public final class ClientReactors {
         ClientReactor reactor = new ClientReactor(level, packet.id(), packet.shape(), packet.heat());
         REACTORS.put(packet.id(), reactor);
         if (enabled()) {
-            VisualizationHelper.queueAdd(reactor.effect());
+            queueAdd(reactor);
         }
     }
 
@@ -80,6 +81,16 @@ public final class ClientReactors {
         lastManager = null;
     }
 
+    /**
+     * Hands the effect to Flywheel, noting whether it will build its visual for a grid or for the
+     * ground. The visual cannot change its mind once built, so {@link #onRenderFrame} watches for
+     * the reactor's grid state moving away from what was queued.
+     */
+    private static void queueAdd(ClientReactor reactor) {
+        reactor.setQueuedOnGrid(reactor.isOnGrid());
+        VisualizationHelper.queueAdd(reactor.effect());
+    }
+
     /** Reactors known to the client, for debugging. */
     public static int count() {
         return REACTORS.size();
@@ -90,6 +101,24 @@ public final class ClientReactors {
     }
 
     // --- events -------------------------------------------------------------------------------
+
+    /**
+     * The host chunk's blocks have arrived, or arrived again. The server sends the shape to whoever
+     * is tracking the chunk, not whoever has it, so the shape can come first; the visual reads the
+     * walls when it is built, so one already drawn is built over.
+     */
+    public static void onChunkLoad(ChunkEvent.Load event) {
+        if (!event.getLevel().isClientSide() || REACTORS.isEmpty() || !enabled()) {
+            return;
+        }
+        ChunkPos loaded = event.getChunk().getPos();
+        for (ClientReactor reactor : REACTORS.values()) {
+            if (reactor.hostChunk().equals(loaded)) {
+                VisualizationHelper.queueRemove(reactor.effect());
+                queueAdd(reactor);
+            }
+        }
+    }
 
     /** A chunk left the client: any reactor hosted in it is out of range now. */
     public static void onChunkUnload(ChunkEvent.Unload event) {
@@ -114,6 +143,25 @@ public final class ClientReactors {
         clearAll();
     }
 
+    /**
+     * Snapshot every reactor's grid transform for this frame. Runs before the level render, so
+     * before Flywheel's frame plan reads it from worker threads.
+     *
+     * <p>A reactor whose grid has arrived or gone since its effect was queued gets its visual
+     * rebuilt: on a rejoin the reactor packet can land before Sable has the sublevel it sits on,
+     * and a visual built for the ground would leave the glow at the sublevel's far-off plot.
+     */
+    public static void onRenderFrame(RenderFrameEvent.Pre event) {
+        boolean enabled = enabled();
+        for (ClientReactor reactor : REACTORS.values()) {
+            reactor.updateRenderTransform();
+            if (enabled && reactor.isOnGrid() != reactor.queuedOnGrid()) {
+                VisualizationHelper.queueRemove(reactor.effect());
+                queueAdd(reactor);
+            }
+        }
+    }
+
     /** Re-queue every effect whenever Flywheel has replaced its manager, or the toggle flipped. */
     public static void onClientTick(ClientTickEvent.Post event) {
         if (REACTORS.isEmpty()) {
@@ -131,7 +179,7 @@ public final class ClientReactors {
             }
         } else if (manager != null && enabled) {
             for (ClientReactor reactor : REACTORS.values()) {
-                manager.effects().queueAdd(reactor.effect());
+                queueAdd(reactor);
             }
         }
         lastManager = manager;

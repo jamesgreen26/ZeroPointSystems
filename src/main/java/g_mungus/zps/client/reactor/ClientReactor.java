@@ -1,5 +1,7 @@
 package g_mungus.zps.client.reactor;
 
+import g_mungus.zps.compat.ClientCompat;
+import g_mungus.zps.compat.RenderTransformProvider;
 import g_mungus.zps.reactor.CavityShapes;
 import it.unimi.dsi.fastutil.longs.Long2IntMap;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
@@ -9,11 +11,14 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.shapes.DiscreteVoxelShape;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4d;
+import org.joml.Matrix4dc;
 
 /**
  * A reactor as the client knows it: which of its cells touch a wall, on which sides, and how hot
- * it is. Immutable apart from the two heat values, which Flywheel's worker threads read while
- * packets on the render thread write them.
+ * it is. Immutable apart from the two heat values and the grid transform snapshot, which
+ * Flywheel's worker threads read while the render thread writes them.
  */
 public final class ClientReactor {
 
@@ -31,6 +36,17 @@ public final class ClientReactor {
     private final int[] depthsLow;
     private final int[] depthsHigh;
     private final ReactorEffect effect;
+    /** Looks up the moving grid the reactor is on, by position; null when no grid mod is present. */
+    private final @Nullable RenderTransformProvider grid;
+    /**
+     * The grid's transform for the current frame, or null while the reactor is on no grid. A fresh
+     * object each frame so Flywheel's workers read one consistent matrix; a grid that has not
+     * moved yields an equal matrix, which the visual compares against the last one it applied so
+     * standing still costs nothing.
+     */
+    private volatile @Nullable Matrix4dc renderTransform;
+    /** Whether the effect was last handed to Flywheel as riding a grid. Render thread only. */
+    private boolean queuedOnGrid;
 
     /** What the server last said, over ignition temperature. */
     private volatile float targetHeat;
@@ -61,6 +77,8 @@ public final class ClientReactor {
         this.targetHeat = heat;
         this.displayHeat = heat;
         this.effect = new ReactorEffect(level, this);
+        this.grid = ClientCompat.renderTransformAt(level, host);
+        updateRenderTransform();
     }
 
     /**
@@ -139,6 +157,29 @@ public final class ClientReactor {
     /** The chunk the server keys this reactor to: the one holding its lowest interior cell. */
     public ChunkPos hostChunk() {
         return new ChunkPos(host);
+    }
+
+    /** Whether the reactor rides a moving grid as of this frame's snapshot, and so draws inside an embedding. */
+    public boolean isOnGrid() {
+        return renderTransform != null;
+    }
+
+    /** The grid's transform as snapshotted for this frame; null on the ground. Safe off-thread. */
+    public @Nullable Matrix4dc renderTransform() {
+        return renderTransform;
+    }
+
+    /** Render thread only: takes this frame's snapshot of the grid's transform. */
+    public void updateRenderTransform() {
+        renderTransform = grid == null ? null : grid.localToWorld(new Matrix4d());
+    }
+
+    boolean queuedOnGrid() {
+        return queuedOnGrid;
+    }
+
+    void setQueuedOnGrid(boolean queuedOnGrid) {
+        this.queuedOnGrid = queuedOnGrid;
     }
 
     public float targetHeat() {

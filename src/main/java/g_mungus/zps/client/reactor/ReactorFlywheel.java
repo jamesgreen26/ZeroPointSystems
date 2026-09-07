@@ -40,6 +40,7 @@ public final class ReactorFlywheel {
             .vector("boxMin", FloatRepr.FLOAT, 3)
             .vector("boxMax", FloatRepr.FLOAT, 3)
             .vector("params", FloatRepr.FLOAT, 2)
+            .vector("rotation", FloatRepr.FLOAT, 4)
             .scalar("faces", UnsignedIntegerRepr.UNSIGNED_INT)
             .vector("depths", UnsignedIntegerRepr.UNSIGNED_INT, 2)
             .build();
@@ -49,6 +50,7 @@ public final class ReactorFlywheel {
     private static final int BOX_MIN = LAYOUT.asMap().get("boxMin").byteOffset();
     private static final int BOX_MAX = LAYOUT.asMap().get("boxMax").byteOffset();
     private static final int PARAMS = LAYOUT.asMap().get("params").byteOffset();
+    private static final int ROTATION = LAYOUT.asMap().get("rotation").byteOffset();
     private static final int FACES = LAYOUT.asMap().get("faces").byteOffset();
     private static final int DEPTHS = LAYOUT.asMap().get("depths").byteOffset();
 
@@ -66,6 +68,10 @@ public final class ReactorFlywheel {
                 MemoryUtil.memPutFloat(ptr + BOX_MAX + 8, instance.maxZ);
                 MemoryUtil.memPutFloat(ptr + PARAMS, instance.intensity);
                 MemoryUtil.memPutFloat(ptr + PARAMS + 4, instance.seed);
+                MemoryUtil.memPutFloat(ptr + ROTATION, instance.qx);
+                MemoryUtil.memPutFloat(ptr + ROTATION + 4, instance.qy);
+                MemoryUtil.memPutFloat(ptr + ROTATION + 8, instance.qz);
+                MemoryUtil.memPutFloat(ptr + ROTATION + 12, instance.qw);
                 MemoryUtil.memPutInt(ptr + FACES, instance.faces);
                 MemoryUtil.memPutInt(ptr + DEPTHS, instance.depthsLow);
                 MemoryUtil.memPutInt(ptr + DEPTHS + 4, instance.depthsHigh);

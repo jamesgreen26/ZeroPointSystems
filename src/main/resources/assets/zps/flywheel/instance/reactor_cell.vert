@@ -2,9 +2,12 @@
 // sides; the instance says which of those sides are actually against a wall, and the
 // rest are collapsed to a point so they never rasterise.
 //
-// The fragment stage needs the whole reactor's bounding box, its heat and its noise phase, which
-// are identical on every cell of a reactor, plus how deep the cavity is behind this particular
-// face. The seed is below one, so it shares a float with the whole-number depth.
+// The fragment stage works in the reactor's own frame, measured from the cavity's lowest corner:
+// it needs the vertex's position in that frame, the reactor's size, its heat and noise phase, how
+// deep the cavity is behind this particular face, and the rotation that frame has in the world.
+// The rotation is the same on every cell of a reactor, so it rides in the flat overlay slot as
+// four 16-bit fixed-point components. The seed is below one, so it shares a float with the
+// whole-number depth.
 
 // Bit per Minecraft Direction ordinal: down, up, north, south, west, east.
 uint zps_faceBit(vec3 n) {
@@ -23,6 +26,12 @@ float zps_faceDepth(uvec2 depths, uint bit) {
     return float((word >> (8u * (index & 3u))) & 255u);
 }
 
+// Two values in -1..1 as signed 16-bit fixed point in one int, x in the low half.
+int zps_packSnorm16(vec2 v) {
+    ivec2 halves = ivec2(round(clamp(v, -1.0, 1.0) * 32767.0));
+    return (halves.x & 0xFFFF) | (halves.y << 16);
+}
+
 void flw_instanceVertex(in FlwInstance i) {
     uint bit = zps_faceBit(flw_vertexNormal);
     bool onWall = (i.faces & bit) != 0u;
@@ -31,7 +40,8 @@ void flw_instanceVertex(in FlwInstance i) {
     // else: no strip drawn twice at a concave edge, no notch left open at a convex one.
     flw_vertexPos.xyz = onWall ? flw_vertexPos.xyz + i.pos : i.pos;
 
-    flw_vertexColor = vec4(i.boxMin, i.params.x);                                  // box min, heat
-    flw_vertexTexCoord = i.boxMax.xy;                                              // box max x, y
-    flw_vertexLight = vec2(i.boxMax.z, zps_faceDepth(i.depths, bit) + i.params.y); // box max z, depth + seed
+    flw_vertexColor = vec4(flw_vertexPos.xyz - i.boxMin, i.params.x);                 // position from the corner, heat
+    flw_vertexTexCoord = (i.boxMax - i.boxMin).xy;                                     // reactor size x, y
+    flw_vertexLight = vec2(i.boxMax.z - i.boxMin.z, zps_faceDepth(i.depths, bit) + i.params.y); // size z, depth + seed
+    flw_vertexOverlay = ivec2(zps_packSnorm16(i.rotation.xy), zps_packSnorm16(i.rotation.zw));
 }

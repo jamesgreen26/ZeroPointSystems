@@ -3,6 +3,7 @@ package g_mungus.zps.client.reactor;
 import dev.engine_room.flywheel.api.instance.InstanceHandle;
 import dev.engine_room.flywheel.api.instance.InstanceType;
 import dev.engine_room.flywheel.lib.instance.AbstractInstance;
+import org.joml.Quaternionfc;
 
 /**
  * One interior cell of a reactor that touches a wall. The shaders need where it is, which of its
@@ -17,6 +18,11 @@ public final class ReactorCellInstance extends AbstractInstance {
     public float x, y, z;
     /** The whole reactor's bounding box, render space. The same on every cell of a reactor. */
     public float minX, minY, minZ, maxX, maxY, maxZ;
+    /**
+     * The rotation of the reactor's frame in the world: the identity on the ground, the grid's
+     * orientation on a moving grid. The same on every cell of a reactor.
+     */
+    public float qx, qy, qz, qw = 1f;
     /** Reactor heat: chamber temperature over ignition temperature. */
     public float intensity;
     /** Per-reactor noise phase. The same on every cell, so the field is continuous across them. */
@@ -28,6 +34,14 @@ public final class ReactorCellInstance extends AbstractInstance {
 
     public ReactorCellInstance(InstanceType<?> type, InstanceHandle handle) {
         super(type, handle);
+    }
+
+    public void setRotation(Quaternionfc rotation) {
+        qx = rotation.x();
+        qy = rotation.y();
+        qz = rotation.z();
+        qw = rotation.w();
+        setChanged();
     }
 
     public void setIntensity(float intensity) {

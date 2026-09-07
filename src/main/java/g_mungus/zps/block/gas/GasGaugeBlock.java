@@ -67,10 +67,10 @@ public class GasGaugeBlock extends GasNodeBlock implements EntityBlock {
 
     /** Thickness of the plate, in pixels. The dial face sits this far in from the inlet face. */
     public static final int PLATE_THICKNESS = 2;
-    /** Inset of the plate from the block's edges, in pixels: an 8x8 plate on a 16x16 face. */
-    public static final int PLATE_INSET = 4;
+    /** Inset of the plate from the block's edges, in pixels: a 10x10 plate on a 16x16 face. */
+    public static final int PLATE_INSET = 3;
 
-    /** An 8x8 plate, {@link #PLATE_THICKNESS} deep, pushed back against the inlet face. */
+    /** A 10x10 plate, {@link #PLATE_THICKNESS} deep, pushed back against the inlet face. */
     private static final Map<Direction, VoxelShape> PLATES = new EnumMap<>(Direction.class);
 
     static {

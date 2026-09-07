@@ -9,15 +9,15 @@
 	"elements": [
 		{
 			"name": "plate",
-			"from": [4, 0, 4],
-			"to": [12, 2, 12],
+			"from": [3, 0, 3],
+			"to": [13, 2, 13],
 			"faces": {
-				"north": {"uv": [0, 8, 8, 10], "texture": "#0"},
-				"east": {"uv": [0, 8, 8, 10], "texture": "#0"},
-				"south": {"uv": [0, 8, 8, 10], "texture": "#0"},
-				"west": {"uv": [0, 8, 8, 10], "texture": "#0"},
-				"up": {"uv": [0, 0, 8, 8], "texture": "#0"},
-				"down": {"uv": [10, 0, 12, 2], "texture": "#0", "cullface": "down"}
+				"north": {"uv": [0, 10, 5, 12], "texture": "#0"},
+				"east": {"uv": [0, 10, 5, 12], "texture": "#0"},
+				"south": {"uv": [0, 10, 5, 12], "texture": "#0"},
+				"west": {"uv": [0, 10, 5, 12], "texture": "#0"},
+				"up": {"uv": [0, 0, 5, 10], "texture": "#0"},
+				"down": {"uv": [9.5, 3, 14.5, 13], "texture": "#0", "cullface": "down"}
 			}
 		},
 		{
@@ -25,11 +25,11 @@
 			"from": [7.5, 2, 5],
 			"to": [8.5, 3, 8.5],
 			"faces": {
-				"north": {"uv": [10, 2, 11, 3], "texture": "#0"},
-				"east": {"uv": [10, 2, 11, 4], "texture": "#0"},
-				"south": {"uv": [10, 3, 11, 4], "texture": "#0"},
-				"west": {"uv": [10, 2, 11, 4], "texture": "#0"},
-				"up": {"uv": [10, 2, 11, 4], "texture": "#0"}
+				"north": {"uv": [5, 2, 5.5, 3], "texture": "#0"},
+				"east": {"uv": [5, 2, 5.5, 4], "texture": "#0"},
+				"south": {"uv": [5, 3, 6, 4], "texture": "#0"},
+				"west": {"uv": [5, 2, 5.5, 4], "texture": "#0"},
+				"up": {"uv": [5, 2, 5.5, 4], "texture": "#0"}
 			}
 		}
 	]

@@ -1,0 +1,23 @@
+{
+  "type": "zps:vaporizing",
+  "ingredients": [
+    {
+      "item": "minecraft:blue_ice"
+    },
+    {
+      "item": "zps:lithium_ingot"
+    }
+  ],
+  "results": [
+    {
+      "gas": "vs_clockwork:steam",
+      "amount": 0.9
+    },
+    {
+      "gas": "zps:flux",
+      "amount": 0.1
+    }
+  ],
+  "minTemperature": 375.0,
+  "temperatureCost": 100.0
+}

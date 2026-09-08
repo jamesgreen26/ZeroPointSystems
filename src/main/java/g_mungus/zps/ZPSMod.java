@@ -9,6 +9,7 @@ import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.PowerCellBlockEntity;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
 import g_mungus.zps.blockentity.RollingMillBlockEntity;
+import g_mungus.zps.blockentity.gas.VaporizerBlockEntity;
 import g_mungus.zps.blockentity.SieveBlockEntity;
 import g_mungus.zps.blockentity.reactor.HeatExchangerBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -20,6 +21,7 @@ import g_mungus.zps.compat.Compat;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.entity.ModEntities;
 import g_mungus.zps.gametest.AssemblerGameTests;
+import g_mungus.zps.gametest.VaporizerGameTests;
 import g_mungus.zps.gametest.BrushableBlockGameTests;
 import g_mungus.zps.gametest.ImpactPistonGameTests;
 import g_mungus.zps.gametest.EnumPropertyWithAliasesGameTests;
@@ -108,6 +110,7 @@ public final class ZPSMod {
         event.register(DuctGameTests.class);
         event.register(VentGameTests.class);
         event.register(CreativeGasGeneratorGameTests.class);
+        event.register(VaporizerGameTests.class);
         event.register(FusionReactorGameTests.class);
         event.register(PowerCellMultiblockGameTests.class);
     }
@@ -133,6 +136,8 @@ public final class ZPSMod {
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.ASSEMBLER.get(), AssemblerBlockEntity::getEnergyStorage);
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.ASSEMBLER.get(), AssemblerBlockEntity::getItemHandler);
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.SIEVE.get(), SieveBlockEntity::getItemHandler);
+        event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.VAPORIZER.get(), VaporizerBlockEntity::getEnergyStorage);
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.VAPORIZER.get(), VaporizerBlockEntity::getItemHandler);
         // The Impact Piston has no inventory: energy only.
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.IMPACT_PISTON.get(), ImpactPistonBlockEntity::getEnergyStorage);
         // The Heat Exchanger only exposes FE on its outer face; the block entity checks the side.

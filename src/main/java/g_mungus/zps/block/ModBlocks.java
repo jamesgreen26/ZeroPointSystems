@@ -9,6 +9,7 @@ import g_mungus.zps.block.gas.CreativeGasGeneratorBlock;
 import g_mungus.zps.block.gas.DuctBlock;
 import g_mungus.zps.block.gas.GasGaugeBlock;
 import g_mungus.zps.block.gas.VentBlock;
+import g_mungus.zps.block.gas.VaporizerBlock;
 import g_mungus.zps.block.reactor.ExhaustPortBlock;
 import g_mungus.zps.block.reactor.FuelInjectorBlock;
 import g_mungus.zps.block.reactor.HeatExchangerBlock;
@@ -236,6 +237,11 @@ public class ModBlocks {
                     // Don't occlude light: the rod's light is sampled at the piston's own position,
                     // which would otherwise always be pitch black.
                     .noOcclusion()));
+
+    public static final DeferredBlock<Block> VAPORIZER = BLOCKS.register("vaporizer",
+            () -> new VaporizerBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(3.5f)
+                    .requiresCorrectToolForDrops()));
 
     public static final DeferredBlock<Block> VENT = BLOCKS.register("vent",
             () -> new VentBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)

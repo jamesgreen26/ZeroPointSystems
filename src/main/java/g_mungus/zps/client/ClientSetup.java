@@ -17,6 +17,7 @@ import g_mungus.zps.gas.ModParticles;
 import g_mungus.zps.client.screens.PowerCellScreen;
 import g_mungus.zps.client.screens.RollingMillScreen;
 import g_mungus.zps.client.screens.SieveScreen;
+import g_mungus.zps.client.screens.VaporizerScreen;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.entity.ModEntities;
 import g_mungus.zps.item.AddressPadClientHooks;
@@ -129,6 +130,7 @@ public class ClientSetup {
         event.register(ModMenus.ROLLING_MILL.get(), RollingMillScreen::new);
         event.register(ModMenus.ASSEMBLER.get(), AssemblerScreen::new);
         event.register(ModMenus.SIEVE.get(), SieveScreen::new);
+        event.register(ModMenus.VAPORIZER.get(), VaporizerScreen::new);
     }
 
     @SubscribeEvent

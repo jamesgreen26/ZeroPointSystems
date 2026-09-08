@@ -116,6 +116,25 @@ public class Compat {
         }
     }
 
+    /** Clockwork's Steam when it is present, or the same gas defined here so ZPS can run without it. */
+    public static GasType getOrCreateSteamGas() {
+        if (isClockworkLoaded()) {
+            return ClockworkCompat.getSteamGas();
+        } else {
+            return new GasType(
+                    "Steam",
+                    ResourceLocation.fromNamespaceAndPath("vs_clockwork", "steam"),
+                    0.762,
+                    1.223e-5,
+                    2.2,
+                    0.031,
+                    111.0,
+                    1.4,
+                    ResourceLocation.fromNamespaceAndPath("kelvin", "textures/icons/steam.png")
+            );
+        }
+    }
+
     public static GasType getOrCreateAetherGas() {
         if (isClockworkLoaded()) {
             return ClockworkCompat.getAetherGas();

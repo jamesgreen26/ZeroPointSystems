@@ -164,6 +164,13 @@ Ponder page lists the script commands and getters that block accepts.
 - Recipes set their own cost and duration (wires ~120 ticks, space metal rod ~200 ticks, all at 32 FE/tick); receives up to 512 FE/tick into an 8,192 FE buffer and holds progress when power runs out.
 - One input + one output slot with a GUI; hoppers/pipes may insert only into the input and extract only from the output, and a working blockstate drives the spinning-roller animation.
 
+#### Vaporizer (`vaporizer`)
+- Turns items into gas using `zps:vaporizing` recipes: a shapeless set of up to three items, one or more gas outputs in kilograms, a minimum machine temperature and a temperature cost per craft.
+- The machine has its own temperature, starting at ambient (273.15 K). While a matching recipe is loaded but the machine is too cold, it spends FE from its 8,192 FE buffer to heat toward the recipe's minimum (40 FE per Kelvin, at most 80 FE/tick); once hot enough it vaporizes one item per ingredient, emits the gas at the temperature it reached, and then cools by the recipe's cost.
+- The gas collects in the block's own Kelvin tank node (4 m³) and leaves through a one-way connection on any face, so gas on the line can never flow back into the machine; vaporizing pauses at 90% of the tank's pressure ceiling instead of bursting the block.
+- GUI shows the machine temperature (bottom-left, with a status tooltip), the FE bar, and a glass-fronted gas buffer whose tooltip lists each gas by mass plus the buffer's temperature and pressure. Automation may insert ingredients but never extract them.
+- Built-in recipe: blue ice + lithium ingot → Steam + Flux, needing 375 K and costing 100 K. Steam is Clockwork's gas when Clockwork is loaded and an identical stand-in otherwise, like Aether. JEI lists vaporizing recipes under a "Vaporizer" tab.
+
 #### Assembler (`assembler`)
 - Automated crafter built around a 5×5 ghost "pattern" grid that defines a recipe; resolves the mod's own `zps:shaped_5x5` recipes, vanilla shaped/shapeless recipes, and Create mechanical crafting when Create is installed.
 - Runs only while receiving redstone, drawing 16 FE/tick over a 20-tick cycle; pulls matching items from its 12-slot input buffer and deposits the result in its single output slot.

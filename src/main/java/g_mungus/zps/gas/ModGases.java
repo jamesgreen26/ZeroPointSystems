@@ -40,6 +40,9 @@ public final class ModGases {
 
     public static final GasType AETHER = Compat.getOrCreateAetherGas();
 
+    /** Water vapour, the bulk of what vaporizing ice gives off. Clockwork's when it is loaded. */
+    public static final GasType STEAM = Compat.getOrCreateSteamGas();
+
     /**
      * Registers ZPS's gases with Kelvin. Safe to call during mod construction — {@code
      * GasTypeRegistry} is a plain map, and the particle picker resolves its type lazily.
@@ -54,6 +57,7 @@ public final class ModGases {
 
         if (!Compat.isClockworkLoaded()) {
             GasTypeRegistry.INSTANCE.register(AETHER);
+            GasTypeRegistry.INSTANCE.register(STEAM);
         }
     }
 }

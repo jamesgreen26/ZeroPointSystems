@@ -6,6 +6,7 @@ import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
 import g_mungus.zps.blockentity.gas.DuctBlockEntity;
 import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity;
 import g_mungus.zps.blockentity.gas.VentBlockEntity;
+import g_mungus.zps.blockentity.gas.VaporizerBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.*;
 import g_mungus.zps.blockentity.reactor.ExhaustPortBlockEntity;
 import g_mungus.zps.blockentity.reactor.FuelInjectorBlockEntity;
@@ -179,5 +180,10 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("sieve",
                     () -> BlockEntityType.Builder.of(SieveBlockEntity::new,
                             ModBlocks.SIEVE.get()).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<VaporizerBlockEntity>> VAPORIZER =
+            BLOCK_ENTITIES.register("vaporizer",
+                    () -> BlockEntityType.Builder.of(VaporizerBlockEntity::new,
+                            ModBlocks.VAPORIZER.get()).build(null));
 
 }

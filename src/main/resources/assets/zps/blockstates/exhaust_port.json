@@ -5,6 +5,6 @@
     "facing=south": {"model": "zps:block/exhaust_port", "y": 180},
     "facing=west": {"model": "zps:block/exhaust_port", "y": 270},
     "facing=down": {"model": "zps:block/exhaust_port", "x": 90},
-    "facing=up": {"model": "zps:block/exhaust_port", "x": 270}
+    "facing=up": {"model": "zps:block/exhaust_port", "x": 270, "y":  180}
   }
 }

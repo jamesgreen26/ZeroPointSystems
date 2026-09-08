@@ -4,7 +4,6 @@ import g_mungus.zps.block.gas.core.GasEdgeNegotiator;
 import g_mungus.zps.block.gas.core.OneWayCompositeDuctEdge;
 import g_mungus.zps.block.reactor.ReactorGasWallBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
-import g_mungus.zps.blockentity.gas.core.GasNodeBlockEntity;
 import g_mungus.zps.reactor.Reactor;
 import g_mungus.zps.reactor.ReactorChamberNode;
 import g_mungus.zps.reactor.ReactorManager;
@@ -21,7 +20,7 @@ import org.valkyrienskies.kelvin.api.DuctNodePos;
  * face-to-face like every other gas edge — the chamber node is somewhere inside the cavity, not
  * next door — so it is authored here and torn down by the reactor when it dissolves.
  */
-public class FuelInjectorBlockEntity extends GasNodeBlockEntity {
+public class FuelInjectorBlockEntity extends ReactorGasWallBlockEntity {
 
     /** A duct's bore over one block: the stub's own half plus the wall's. */
     private static final double EDGE_RADIUS = 0.125;
@@ -35,6 +34,7 @@ public class FuelInjectorBlockEntity extends GasNodeBlockEntity {
         if (!(level instanceof ServerLevel serverLevel)) {
             return;
         }
+        serverTick(serverLevel);
         syncNodeState();
         ensureChamberEdge(serverLevel);
     }

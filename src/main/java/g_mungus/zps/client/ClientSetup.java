@@ -13,6 +13,7 @@ import g_mungus.zps.client.screens.AssemblerScreen;
 import g_mungus.zps.client.screens.CoalBurnerScreen;
 import g_mungus.zps.client.debug.GasPressureOverlay;
 import g_mungus.zps.client.reactor.ClientReactors;
+import g_mungus.zps.client.reactor.ReactorWallOverlayVisual;
 import g_mungus.zps.gas.ModParticles;
 import g_mungus.zps.client.screens.PowerCellScreen;
 import g_mungus.zps.client.screens.RollingMillScreen;
@@ -172,6 +173,12 @@ public class ClientSetup {
                     .factory(ImpactPistonVisual::new)
                     // The BER draws the rod as a fallback when Flywheel's backend is unavailable.
                     .neverSkipVanillaRender()
+                    .apply();
+            SimpleBlockEntityVisualizer.builder(ModBlockEntities.FUEL_INJECTOR.get())
+                    .factory(ReactorWallOverlayVisual::fuelInjector)
+                    .apply();
+            SimpleBlockEntityVisualizer.builder(ModBlockEntities.EXHAUST_PORT.get())
+                    .factory(ReactorWallOverlayVisual::exhaustPort)
                     .apply();
             BlockEntityRenderers.register(ModBlockEntities.POWER_CELL.get(), PowerCellBlockEntityRenderer::new);
             BlockEntityRenderers.register(ModBlockEntities.GAS_GAUGE.get(), GasGaugeBlockEntityRenderer::new);

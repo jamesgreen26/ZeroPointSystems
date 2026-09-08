@@ -2,7 +2,6 @@ package g_mungus.zps.blockentity.reactor;
 
 import g_mungus.zps.block.reactor.ReactorGasWallBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
-import g_mungus.zps.blockentity.gas.core.GasNodeBlockEntity;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.gas.ModGases;
 import g_mungus.zps.reactor.Reactor;
@@ -24,7 +23,7 @@ import java.util.Map;
  * the stub backs up. The heat it strips off is simply lost: the Heat Exchangers are the only
  * things that turn chamber heat into anything useful.
  */
-public class ExhaustPortBlockEntity extends GasNodeBlockEntity {
+public class ExhaustPortBlockEntity extends ReactorGasWallBlockEntity {
 
     private static final double MIN_TRANSFER = 1e-9;
 
@@ -40,6 +39,7 @@ public class ExhaustPortBlockEntity extends GasNodeBlockEntity {
         if (!(level instanceof ServerLevel serverLevel)) {
             return;
         }
+        serverTick(serverLevel);
         draw(serverLevel);
         syncNodeState();
     }

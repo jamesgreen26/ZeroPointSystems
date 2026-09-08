@@ -3,6 +3,7 @@ package g_mungus.zps.block.reactor;
 import g_mungus.zps.block.gas.core.GasEdgeProposal;
 import g_mungus.zps.block.gas.core.GasNodeBlock;
 import g_mungus.zps.block.gas.core.facets.OneWayFacet;
+import g_mungus.zps.blockentity.reactor.ReactorGasWallBlockEntity;
 import g_mungus.zps.reactor.ReactorWallBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -122,6 +123,17 @@ public abstract class ReactorGasWallBlock extends GasNodeBlock implements Entity
             ReactorWallBlock.onRemoved(level, pos);
         }
         super.onRemove(state, level, pos, newState, moved);
+    }
+
+    // --- redstone ---------------------------------------------------------------------------
+
+    @Override
+    protected void neighborChanged(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
+                                   @NotNull Block neighborBlock, @NotNull BlockPos neighborPos, boolean movedByPiston) {
+        super.neighborChanged(state, level, pos, neighborBlock, neighborPos, movedByPiston);
+        if (level.getBlockEntity(pos) instanceof ReactorGasWallBlockEntity wall) {
+            wall.refreshRedstoneLevel();
+        }
     }
 
     // --- shape ------------------------------------------------------------------------------

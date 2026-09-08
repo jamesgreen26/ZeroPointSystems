@@ -12,12 +12,16 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.valkyrienskies.kelvin.api.DuctNode;
@@ -30,9 +34,9 @@ import java.util.HashSet;
 /**
  * Vaporizes items into gas. See {@link VaporizerBlockEntity} for how.
  *
- * <p>On the gas network it is a tank that offers a connection on every face, so ducts can be run
- * off it in any direction — but every connection is a check valve pointing outward, so gas leaves
- * the machine and never comes back in. The tank keeps a duct's pressure ceiling — the block entity stops
+ * <p>On the gas network it is a tank with a single outlet on top: a check valve pointing upward,
+ * so gas leaves the machine there and never comes back in, and nothing joins on any other face.
+ * The tank keeps a duct's pressure ceiling — the block entity stops
  * vaporizing before it gets there — and a generous temperature one, since it is meant to hold gas
  * that was made hot on purpose.
  */
@@ -51,6 +55,11 @@ public class VaporizerBlock extends GasNodeBlock implements EntityBlock {
     /** A heavy vessel, in J/K: hot gas landing in it does not swing its temperature much. */
     private static final double HEAT_CAPACITY = 2000.0;
 
+    /** The model's silhouette: a 12-pixel-tall body with the outlet cap centred on top. */
+    private static final VoxelShape SHAPE = Shapes.or(
+            Block.box(0, 0, 0, 16, 12, 16),
+            Block.box(2, 12, 2, 14, 16, 14));
+
     public VaporizerBlock(Properties properties) {
         super(properties);
     }
@@ -63,9 +72,15 @@ public class VaporizerBlock extends GasNodeBlock implements EntityBlock {
                 MAX_PRESSURE, MAX_TEMPERATURE, HEAT_CAPACITY, 1.0);
     }
 
-    /** Offers a connection on every face that only ever carries gas away from the machine. */
+    /** The outlet face. */
+    public static final Direction OUTLET = Direction.UP;
+
+    /** Joins the network on the top face alone, and only ever carries gas away from the machine. */
     @Override
     public @Nullable GasEdgeProposal proposeEdge(BlockGetter level, BlockPos self, Direction toNeighbor) {
+        if (toNeighbor != OUTLET) {
+            return null;
+        }
         return GasEdgeProposal.pipe(RADIUS, HALF_LENGTH)
                 .with(new OneWayFacet(toNeighbor));
     }
@@ -73,6 +88,19 @@ public class VaporizerBlock extends GasNodeBlock implements EntityBlock {
     @Override
     public @Nullable BlockState getConnectedState(BlockGetter level, BlockState state, BlockPos pos) {
         return null;
+    }
+
+    // --- shape ------------------------------------------------------------------------------
+
+    @Override
+    protected @NotNull VoxelShape getShape(@NotNull BlockState state, @NotNull BlockGetter level,
+                                           @NotNull BlockPos pos, @NotNull CollisionContext context) {
+        return SHAPE;
+    }
+
+    @Override
+    protected boolean useShapeForLightOcclusion(@NotNull BlockState state) {
+        return true;
     }
 
     // --- block entity -----------------------------------------------------------------------

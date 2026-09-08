@@ -3,6 +3,7 @@ package g_mungus.zps.gametest;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.gas.core.GasEdgeNegotiator;
+import g_mungus.zps.block.gas.VaporizerBlock;
 import g_mungus.zps.block.gas.core.OneWayCompositeDuctEdge;
 import g_mungus.zps.blockentity.gas.VaporizerBlockEntity;
 import g_mungus.zps.gas.ModGases;
@@ -111,30 +112,36 @@ public class VaporizerGameTests {
         helper.succeed();
     }
 
-    /** Every connection is a check valve pointing out, so nothing on the line can flow back in. */
+    /** The only connection is on top, and it is a check valve pointing out. */
     @GameTest(template = TEMPLATE)
-    public static void connectionsOnlyCarryGasOutward(GameTestHelper helper) {
+    public static void connectsOnTopOnlyAndOnlyOutward(GameTestHelper helper) {
         place(helper);
+        DuctNodePos vaporizer = node(helper, VAPORIZER);
         for (Direction direction : Direction.values()) {
             BlockPos ductPos = VAPORIZER.relative(direction);
             helper.setBlock(ductPos, ModBlocks.GAS_DUCT.get().defaultBlockState());
+            DuctEdge edge = KelvinMod.INSTANCE.forceGetKelvin().getEdgeBetween(vaporizer, node(helper, ductPos));
 
-            DuctNodePos vaporizer = node(helper, VAPORIZER);
-            DuctNodePos duct = node(helper, ductPos);
-            DuctEdge edge = KelvinMod.INSTANCE.forceGetKelvin().getEdgeBetween(vaporizer, duct);
+            if (direction != VaporizerBlock.OUTLET) {
+                if (edge != null) {
+                    helper.fail("The vaporizer connected to a duct " + direction + " of it; only the top should join");
+                    return;
+                }
+                continue;
+            }
             if (edge == null) {
-                helper.fail("No edge was negotiated to the duct " + direction + " of the vaporizer");
+                helper.fail("No edge was negotiated to the duct on top of the vaporizer");
                 return;
             }
             if (!(edge instanceof OneWayCompositeDuctEdge oneWay)) {
-                helper.fail("The edge " + direction + " of the vaporizer is not one-way: " + edge);
+                helper.fail("The outlet edge is not one-way: " + edge);
                 return;
             }
             // Flow is permitted from nodeA to nodeB unless reversed; either way it must start at
             // the vaporizer.
             DuctNodePos source = oneWay.getReversed() ? edge.getNodeB() : edge.getNodeA();
             if (!source.equals(vaporizer)) {
-                helper.fail("The edge " + direction + " of the vaporizer lets gas flow back into it");
+                helper.fail("The outlet edge lets gas flow back into the vaporizer");
                 return;
             }
         }

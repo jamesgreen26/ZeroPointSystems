@@ -164,13 +164,6 @@ Ponder page lists the script commands and getters that block accepts.
 - Recipes set their own cost and duration (wires ~120 ticks, space metal rod ~200 ticks, all at 32 FE/tick); receives up to 512 FE/tick into an 8,192 FE buffer and holds progress when power runs out.
 - One input + one output slot with a GUI; hoppers/pipes may insert only into the input and extract only from the output, and a working blockstate drives the spinning-roller animation.
 
-#### Vaporizer (`vaporizer`)
-- Turns items into gas using `zps:vaporizing` recipes: a shapeless set of up to three items, one or more gas outputs in kilograms, a minimum machine temperature and a temperature cost per craft.
-- The machine has its own temperature, starting at ambient (273.15 K). While a matching recipe is loaded but the machine is too cold, it spends FE from its 8,192 FE buffer to heat toward the recipe's minimum (40 FE per Kelvin, at most 80 FE/tick); once hot enough it vaporizes one item per ingredient, emits the gas at the temperature it reached, and then cools by the recipe's cost.
-- The gas collects in the block's own Kelvin tank node (4 m³) and leaves through a one-way connection on any face, so gas on the line can never flow back into the machine; vaporizing pauses at 90% of the tank's pressure ceiling instead of bursting the block.
-- GUI shows the machine temperature (bottom-left, with a status tooltip), the FE bar, and a glass-fronted gas buffer whose tooltip lists each gas by mass plus the buffer's temperature and pressure. Automation may insert ingredients but never extract them.
-- Built-in recipe: blue ice + lithium ingot → Steam + Flux, needing 375 K and costing 100 K. Steam is Clockwork's gas when Clockwork is loaded and an identical stand-in otherwise, like Aether. JEI lists vaporizing recipes under a "Vaporizer" tab.
-
 #### Assembler (`assembler`)
 - Automated crafter built around a 5×5 ghost "pattern" grid that defines a recipe; resolves the mod's own `zps:shaped_5x5` recipes, vanilla shaped/shapeless recipes, and Create mechanical crafting when Create is installed.
 - Runs only while receiving redstone, drawing 16 FE/tick over a 20-tick cycle; pulls matching items from its 12-slot input buffer and deposits the result in its single output slot.
@@ -223,6 +216,54 @@ Ponder page lists the script commands and getters that block accepts.
 - A creative/testing supply — it cannot be filled and has no finite buffer.
 
 ---
+
+### 1.5 Gas Network & Fusion Reactor
+
+Gas is simulated by the Kelvin library. Every gas block is a **node** with a volume, a pressure
+ceiling and a temperature ceiling; gas is tracked per node as mass in kilograms, at a pressure
+(Pa) and temperature (K), and flows along **edges** between face-adjacent nodes. Like the cable
+network, an edge only forms when both blocks agree: each side proposes what it wants on the face
+(a plain pipe, a check valve, a pump, an aperture) and the two proposals merge into one edge, so
+a valve or a machine can impose its behaviour on a connection it shares with an ordinary duct. A
+node pushed past its pressure ceiling explodes; past its temperature ceiling it is destroyed.
+Edges are rebuilt from the blocks after a reload, so networks survive relogs.
+
+ZPS registers two gases of its own — **Flux** (fusion fuel, hydrogen-like: very light, very high
+heat capacity) and, when Clockwork is absent, stand-ins for Clockwork's **Aether** and **Steam**
+under Clockwork's ids so recipes and reactions work either way. Kelvin's `kelvin:air` is always
+present.
+
+#### Gas Duct (`gas_duct`)
+- The plain pipe: 1 m³ node, 12.5 cm bore, connects on every face and imposes nothing, so whatever a neighbour proposes (a valve, a pump) defines the edge.
+- Bursts at about 16.4 MPa or 1,478 K. When a neighbour is blown away the face is left as a **leak** that bleeds gas into the world until something is placed against it again.
+
+#### Vent (`vent`)
+- A full-face plate bolted flat against whatever feeds it; the network joins on the back face only, so a vent always caps the end of a run. Placed facing the player like a dispenser (sneak to flip).
+- Dumps everything at its node into the world every tick and draws a particle jet whose speed follows the pressure that pushed it out.
+- A redstone signal shuts the outlet; the node keeps filling and its pressure keeps climbing until the signal drops.
+
+#### Gas Gauge (`gas_gauge`)
+- A dial plate bolted onto the back of a duct or machine; the needle reads the node behind it. Right-click sets the mode — **pressure** or **temperature** — and a lower and upper bound for the dial.
+- Emits a comparator signal from 0 at the lower bound to 15 at the upper, so a network can be regulated with ordinary redstone.
+
+#### Creative Gas Generator (`creative_gas_generator`)
+- Pushes a chosen gas into its own node every tick at a chosen rate (up to 10 kg/tick) and temperature (1–3,000 K); a rate of zero is the off switch. Right-click opens the settings.
+- Offers a connection on every face and has no pressure or temperature ceiling of its own, so the only limit is what the ducts hanging off it can carry — over-pressurising and bursting a line is exactly the feedback it exists to give.
+
+#### Vaporizer (`vaporizer`)
+- Turns items into gas using `zps:vaporizing` recipes: a shapeless set of up to three items, one or more gas outputs in kilograms, a minimum machine temperature and a temperature cost per craft.
+- The machine has its own temperature, starting at ambient (273.15 K). While a matching recipe is loaded but the machine is too cold, it spends FE from its 8,192 FE buffer to heat toward the recipe's minimum (40 FE per Kelvin, at most 80 FE/tick); once hot enough it vaporizes one item per ingredient, emits the gas at the temperature it reached, and then cools by the recipe's cost.
+- The gas collects in the block's own Kelvin tank node (4 m³) and leaves through a one-way connection on any face, so gas on the line can never flow back into the machine; vaporizing pauses at 90% of the tank's pressure ceiling instead of bursting the block.
+- GUI shows the machine temperature (bottom-left, with a status tooltip), the FE bar, and a glass-fronted gas buffer whose tooltip lists each gas by mass plus the buffer's temperature and pressure. Automation may insert ingredients but never extract them.
+- Built-in recipe: blue ice + lithium ingot → Steam + Flux, needing 375 K and costing 100 K. Steam is Clockwork's gas when Clockwork is loaded and an identical stand-in otherwise, like Aether. JEI lists vaporizing recipes under a "Vaporizer" tab.
+
+#### Fusion Reactor (`reinforced_plating`, `reinforced_glass`, `fuel_injector`, `exhaust_port`, `heat_exchanger`)
+- There is no controller block. A reactor exists the moment a cavity of air is sealed on every side by blocks in the `zps:reactor_wall` tag (Reinforced Plating, Reinforced Glass, and the three port blocks); only blocks with a face on the cavity count, and the interior may span at most 14 blocks in any direction. The whole cavity becomes one well-mixed Kelvin node with the shell's thermal mass folded in.
+- **Fuel Injector** and **Exhaust Port** are wall blocks with a short pipe stub that joins the network on their outer face through a check valve: the injector lets gas in and never out (fuel only enters while the supply line is at a higher pressure than the chamber), the exhaust port lets gas out and never in. The exhaust draws up to 5 g/tick of everything *except* Flux out of the chamber, cools it to 1,000 K so ordinary ducts can carry it, and stops once its line backs up past 8 MPa; the heat it strips is simply lost.
+- **Heat Exchanger** converts between chamber heat and FE through its outer face, both ways, at 1 FE = 1 kJ and up to 4,096 FE/tick. It accepts FE only while the chamber is below 55,000 K (so a big power source cannot cook the chamber on its own) and only draws FE out while the chamber is above 55,000 K (so the exchangers never pull a running reactor down to where a cold dose of fuel quenches it).
+- **Running it:** pump FE in through the exchangers to heat the chamber to ignition at **50,000 K**, then feed Flux. Fusion is a property of the gas, not the block: Kelvin's `flux_fusion` reaction converts 1 kg of Flux to 0.95 kg of Aether and releases 5 GJ wherever Flux is above 50,000 K, and is inhibited once Aether makes up 25% of the mix — which is what the exhaust port is for. The exchangers turn the resulting heat back into FE.
+- **Failure:** the chamber melts above **200,000 K**, blowing out one wall block, setting fire to the surroundings and igniting anything alive nearby. It **bursts** when its pressure exceeds a rating set by its shape — 24 MPa for a compact 3×3×3 interior, lower for shells that are sprawling (compactness relative to a cube of the same volume) or large (down to half) — with a blast that grows with how far over the limit it went. Removing a wall from a lit reactor breaches it the same way; a cold one simply dissolves and is rescanned.
+- Ignition and meltdown each grant an advancement to every player within 32 blocks. A lit reactor glows across its whole cavity surface on the client. Temperatures, exchanger limits, exhaust rate and burst ratings are all server config values.
 
 ## 2. Functional Items
 

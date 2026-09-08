@@ -17,6 +17,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -90,6 +91,19 @@ public class PowerCellBlockEntityRenderer implements BlockEntityRenderer<PowerCe
                 dividerModel
         );
         poseStack.popPose();
+    }
+
+    /**
+     * The whole structure, not just the controller's block. NeoForge culls a block entity renderer
+     * against this box, and the default is the unit cube at the block entity, so a 2x2 or 3x3
+     * cell's ring vanished whenever its controller corner left the frustum.
+     */
+    @Override
+    public @NotNull AABB getRenderBoundingBox(PowerCellBlockEntity blockEntity) {
+        BlockPos origin = blockEntity.getBlockPos();
+        int width = blockEntity.getWidth();
+        int height = blockEntity.getHeight();
+        return AABB.encapsulatingFullBlocks(origin, origin.offset(width - 1, height - 1, width - 1));
     }
 
     @Override

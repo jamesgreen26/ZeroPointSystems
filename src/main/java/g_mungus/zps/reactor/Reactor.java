@@ -43,6 +43,8 @@ public final class Reactor {
 
     private boolean ignitedOnce;
     private boolean lit;
+    /** Consecutive ticks the chamber has held no gas to speak of; zero while it has some. */
+    private int emptyTicks;
 
     /** Chamber contents read from disk, applied once the node exists again. */
     private @Nullable CompoundTag savedChamber;
@@ -200,6 +202,20 @@ public final class Reactor {
         this.lit = lit;
     }
 
+    /** Chamber holding no more than a trace of any gas, as of the last tick. */
+    public boolean isEmpty() {
+        return emptyTicks > 0;
+    }
+
+    /** How many ticks in a row the chamber has been empty. */
+    public int emptyTicks() {
+        return emptyTicks;
+    }
+
+    void noteEmpty(boolean empty) {
+        emptyTicks = empty ? Math.min(emptyTicks + 1, Integer.MAX_VALUE - 1) : 0;
+    }
+
     @Nullable CompoundTag takeSavedChamber() {
         CompoundTag tag = savedChamber;
         savedChamber = null;
@@ -258,6 +274,7 @@ public final class Reactor {
         tag.putLongArray("Interior", interior.toLongArray());
         tag.putLongArray("Walls", walls.toLongArray());
         tag.putBoolean("IgnitedOnce", ignitedOnce);
+        tag.putInt("EmptyTicks", emptyTicks);
         if (savedChamber != null) {
             tag.put("Chamber", savedChamber);
         }
@@ -265,12 +282,14 @@ public final class Reactor {
     }
 
     static Reactor fromNbt(CompoundTag tag) {
-        return new Reactor(
+        Reactor reactor = new Reactor(
                 tag.getInt("Id"),
                 new LongOpenHashSet(tag.getLongArray("Interior")),
                 new LongArrayList(tag.getLongArray("Walls")),
                 BlockPos.of(tag.getLong("Host")),
                 tag.contains("Chamber") ? tag.getCompound("Chamber") : null,
                 tag.getBoolean("IgnitedOnce"));
+        reactor.emptyTicks = tag.getInt("EmptyTicks");
+        return reactor;
     }
 }

@@ -117,6 +117,11 @@ public class FusionReactorGameTests {
         kelvin().modHeatEnergy(host, (temperature - current) * kelvin().getNodeHeatCapacity(host));
     }
 
+    /** A whiff of ash in the chamber, so it counts as holding gas and keeps its heat. */
+    private static void seedChamber(GameTestHelper helper) {
+        kelvin().addGasAtTemperature(node(helper, HOST), ModGases.AETHER, 0.01, 300.0);
+    }
+
     private static BlockState facing(BlockState state, Direction direction) {
         return state.setValue(ReactorPortBlock.FACING, direction);
     }
@@ -319,6 +324,7 @@ public class FusionReactorGameTests {
         buildShell(helper, Map.of(WEST_WALL,
                 facing(ModBlocks.HEAT_EXCHANGER.get().defaultBlockState(), Direction.WEST)));
         helper.setBlock(OUTSIDE_WEST, ModBlocks.CREATIVE_POWER_CELL.get().defaultBlockState());
+        seedChamber(helper);
 
         helper.runAfterDelay(20, () -> helper.assertTrue(
                 kelvin().getTemperatureAt(node(helper, HOST)) > 1000.0, "The chamber should be heating"));
@@ -337,6 +343,7 @@ public class FusionReactorGameTests {
         buildShell(helper, Map.of(WEST_WALL,
                 facing(ModBlocks.HEAT_EXCHANGER.get().defaultBlockState(), Direction.WEST)));
         helper.setBlock(OUTSIDE_WEST, ModBlocks.POWER_CELL.get().defaultBlockState());
+        seedChamber(helper);
         setChamberTemperature(helper, 90_000.0);
 
         int ticks = 20;
@@ -361,12 +368,71 @@ public class FusionReactorGameTests {
                 facing(ModBlocks.HEAT_EXCHANGER.get().defaultBlockState(), Direction.WEST)));
         helper.setBlock(OUTSIDE_WEST, ModBlocks.POWER_CELL.get().defaultBlockState());
         double floor = ZPSConfig.exchangerGenerationFloorK();
+        seedChamber(helper);
         setChamberTemperature(helper, floor + 500.0);
 
         helper.runAfterDelay(60, () -> {
             double temperature = kelvin().getTemperatureAt(node(helper, HOST));
             helper.assertTrue(temperature >= floor - 1.0 && temperature <= floor + 1.0,
                     "The exchanger should stop at the floor, chamber was " + temperature);
+            helper.succeed();
+        });
+    }
+
+    // --- empty chamber ------------------------------------------------------------------------
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void emptyChamberCoolsAfterTheGrace(GameTestHelper helper) {
+        buildShell(helper);
+        setChamberTemperature(helper, 60_000.0);
+        int grace = ZPSConfig.reactorEmptyGraceTicks();
+
+        helper.runAfterDelay(grace - 5, () -> helper.assertTrue(
+                Math.abs(chamberTemperature(helper) - 60_000.0) < 1.0,
+                "Within the grace period the chamber should hold its heat, was " + chamberTemperature(helper)));
+        helper.runAfterDelay(grace + 60, () -> {
+            double temperature = chamberTemperature(helper);
+            helper.assertTrue(temperature < 59_000.0,
+                    "An empty chamber should be losing heat by now, was " + temperature);
+            helper.assertTrue(temperature > ReactorManager.AMBIENT_TEMPERATURE_K,
+                    "Cooling should approach ambient, not overshoot it, was " + temperature);
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void chamberWithGasKeepsItsHeat(GameTestHelper helper) {
+        buildShell(helper);
+        seedChamber(helper);
+        // Below ignition, so nothing reacts and the only thing that could move the heat is us.
+        setChamberTemperature(helper, 40_000.0);
+
+        helper.runAfterDelay(ZPSConfig.reactorEmptyGraceTicks() + 60, () -> {
+            helper.assertTrue(Math.abs(chamberTemperature(helper) - 40_000.0) < 1.0,
+                    "A chamber with gas in it should hold its heat, was " + chamberTemperature(helper));
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void emptyChamberRefusesExchangerHeat(GameTestHelper helper) {
+        buildShell(helper, Map.of(WEST_WALL,
+                facing(ModBlocks.HEAT_EXCHANGER.get().defaultBlockState(), Direction.WEST)));
+        helper.setBlock(OUTSIDE_WEST, ModBlocks.CREATIVE_POWER_CELL.get().defaultBlockState());
+        double start = chamberTemperature(helper);
+
+        helper.runAfterDelay(60, () -> {
+            helper.assertTrue(chamberTemperature(helper) <= start + 1.0,
+                    "An empty chamber must not take heat from an exchanger, went from " + start
+                            + " to " + chamberTemperature(helper));
+            helper.assertTrue(reactorAt(helper, WEST_WALL).feInLastTick() == 0,
+                    "No FE should be flowing into an empty chamber");
+            // Gas arrives: heating should start.
+            seedChamber(helper);
+        });
+        helper.runAfterDelay(120, () -> {
+            helper.assertTrue(chamberTemperature(helper) > 1000.0,
+                    "Once there is gas the exchanger should heat the chamber, was " + chamberTemperature(helper));
             helper.succeed();
         });
     }
@@ -487,6 +553,7 @@ public class FusionReactorGameTests {
         buildShell(helper, Map.of(WEST_WALL,
                 facing(ModBlocks.HEAT_EXCHANGER.get().defaultBlockState(), Direction.WEST)));
         helper.setBlock(OUTSIDE_WEST, ModBlocks.CREATIVE_POWER_CELL.get().defaultBlockState());
+        seedChamber(helper);
 
         helper.runAfterDelay(160, () -> {
             helper.assertTrue(chamberTemperature(helper) >= ZPSConfig.exchangerHeatingCutoffK() - 1000.0,
@@ -508,6 +575,8 @@ public class FusionReactorGameTests {
             reactorAt(helper, WEST_WALL);
             helper.assertTrue(chamberTemperature(helper) < 1000.0,
                     "The patched reactor should start cold, was " + chamberTemperature(helper));
+            // The breach vented the old chamber; the new one needs gas before it can be heated.
+            seedChamber(helper);
         });
         helper.runAfterDelay(340, () -> {
             double temperature = chamberTemperature(helper);
@@ -526,6 +595,7 @@ public class FusionReactorGameTests {
         buildShell(helper, Map.of(WEST_WALL,
                 facing(ModBlocks.HEAT_EXCHANGER.get().defaultBlockState(), Direction.WEST)));
         helper.setBlock(OUTSIDE_WEST, ModBlocks.CREATIVE_POWER_CELL.get().defaultBlockState());
+        seedChamber(helper);
 
         // Well past the cutoff, the way a hard-running reactor is; the cell cannot take FE back.
         helper.runAfterDelay(5, () -> setChamberTemperature(helper, 90_000.0));
@@ -551,7 +621,16 @@ public class FusionReactorGameTests {
         overrides.put(NORTH_WALL_A, exchangerNorth);
         overrides.put(NORTH_WALL_B, exchangerNorth);
         buildShell(helper, overrides);
-        holdBackFlux(helper, EAST_WALL);
+        // A whiff of Steam kept in as a buffer gas: fuel arrives by the milligram, and without it
+        // the chamber would count as empty and lose heat before the fuel has built up. Only a
+        // couple of grams, so its pressure does not hold the fuel line back.
+        if (!(helper.getBlockEntity(EAST_WALL) instanceof ReactorPortBlockEntity output)) {
+            helper.fail("No reactor port at " + EAST_WALL);
+            return;
+        }
+        output.setSettings(output.getMode(), new GasFilter(Set.of(
+                ModGases.FLUX.getResourceLocation(), ModGases.STEAM.getResourceLocation())));
+        kelvin().addGasAtTemperature(node(helper, HOST), ModGases.STEAM, 0.002, 300.0);
         // Fuel in, ash out, power out: the whole loop, sized so the exchangers keep up.
         placeGenerator(helper, OUTSIDE_WEST, 0.0008, 300.0);
         helper.setBlock(OUTSIDE_EAST, facing(ModBlocks.VENT.get().defaultBlockState(), Direction.EAST));

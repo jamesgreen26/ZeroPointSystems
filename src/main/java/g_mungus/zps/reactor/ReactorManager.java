@@ -69,6 +69,9 @@ public final class ReactorManager extends SavedData {
         byInterior.defaultReturnValue(-1);
     }
 
+    /** What an empty chamber cools toward, in kelvin. */
+    public static final double AMBIENT_TEMPERATURE_K = 273.15;
+
     public static ReactorManager get(ServerLevel level) {
         ReactorManager manager = level.getDataStorage().computeIfAbsent(FACTORY, KEY);
         manager.level = level;
@@ -277,6 +280,17 @@ public final class ReactorManager extends SavedData {
             ensureNode(level, reactor);
             DuctNodePos host = reactor.hostNodePos(level);
 
+            // An empty chamber has nothing to hold its heat: after a short grace it bleeds away,
+            // and the exchangers will not put any back until there is gas again.
+            reactor.noteEmpty(isEmpty(kelvin.getGasMassAt(host)));
+            if (reactor.emptyTicks() > ZPSConfig.reactorEmptyGraceTicks()) {
+                double excess = kelvin.getTemperatureAt(host) - AMBIENT_TEMPERATURE_K;
+                if (excess > 0) {
+                    kelvin.modHeatEnergy(host, -excess * ZPSConfig.reactorEmptyCoolingFraction()
+                            * kelvin.getNodeHeatCapacity(host));
+                }
+            }
+
             double temperature = kelvin.getTemperatureAt(host);
             double pressure = kelvin.getPressureAt(host);
             boolean lit = temperature >= ignition;
@@ -357,6 +371,17 @@ public final class ReactorManager extends SavedData {
             return 0f;
         }
         return ReactorSync.heatOf(kelvin().getTemperatureAt(host));
+    }
+
+    /** Whether a chamber holding these masses counts as empty: no gas above the trace threshold. */
+    public static boolean isEmpty(Map<GasType, Double> masses) {
+        double threshold = ZPSConfig.reactorEmptyGasThresholdKg();
+        for (double mass : masses.values()) {
+            if (mass > threshold) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static double aetherFraction(Map<GasType, Double> masses) {

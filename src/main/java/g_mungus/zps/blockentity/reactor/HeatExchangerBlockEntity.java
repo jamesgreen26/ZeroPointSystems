@@ -30,7 +30,8 @@ import org.valkyrienskies.kelvin.api.DuctNodePos;
  * <p>Two temperature limits keep the reactor alive. Nothing is drawn below a floor a little above
  * ignition, so the exchangers never pull a running chamber down to where one cold dose of fuel
  * quenches it. Nothing is accepted above a cutoff, so a big power source cannot cook the chamber
- * past melting on its own.
+ * past melting on its own. Nothing is accepted into an empty chamber either: there is no gas to
+ * heat, and the reactor is busy losing what heat it has.
  */
 public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGeneratorBE {
 
@@ -94,6 +95,10 @@ public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGener
 
         double heatCapacity() {
             return kelvin.getNodeHeatCapacity(host);
+        }
+
+        boolean isEmpty() {
+            return ReactorManager.isEmpty(kelvin.getGasMassAt(host));
         }
 
         void addHeat(double joules) {
@@ -193,7 +198,7 @@ public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGener
 
         /** FE the chamber could take right now, within this tick's cap. */
         private int room(Chamber chamber) {
-            if (chamber.temperature() >= ZPSConfig.exchangerHeatingCutoffK()) {
+            if (chamber.isEmpty() || chamber.temperature() >= ZPSConfig.exchangerHeatingCutoffK()) {
                 return 0;
             }
             return Math.max(0, ZPSConfig.exchangerFePerTick() - inThisTick);

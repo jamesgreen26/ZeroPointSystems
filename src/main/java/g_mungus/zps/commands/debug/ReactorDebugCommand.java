@@ -122,6 +122,10 @@ public class ReactorDebugCommand {
         lines.add(String.format("  %s, ignited before: %s",
                 reactor.isLit() ? "lit" : "cold",
                 reactor.hasIgnited()));
+        if (reactor.isEmpty()) {
+            lines.add(String.format("  empty for %d ticks (cooling after %d)",
+                    reactor.emptyTicks(), ZPSConfig.reactorEmptyGraceTicks()));
+        }
         lines.add(String.format("  FE last tick: in %d, out %d", reactor.feInLastTick(), reactor.feOutLastTick()));
 
         lines.add("  " + count(level, reactor, ModBlocks.REACTOR_PORT.get(), ReactorPortMode.INPUT, "inputs")

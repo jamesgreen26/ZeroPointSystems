@@ -123,6 +123,9 @@ public class ZPSConfig {
     private static ModConfigSpec.ConfigValue<Double> reactorMeltTemperatureK;
     private static ModConfigSpec.ConfigValue<Double> reactorWallHeatCapacityJPerK;
     private static ModConfigSpec.ConfigValue<Integer> reactorMaxInteriorExtent;
+    private static ModConfigSpec.ConfigValue<Double> reactorEmptyGasThresholdKg;
+    private static ModConfigSpec.ConfigValue<Integer> reactorEmptyGraceTicks;
+    private static ModConfigSpec.ConfigValue<Double> reactorEmptyCoolingFraction;
     private static ModConfigSpec.ConfigValue<Integer> exchangerFePerTick;
     private static ModConfigSpec.ConfigValue<Integer> exchangerBufferFe;
     private static ModConfigSpec.ConfigValue<Double> exchangerGenerationFloorK;
@@ -142,6 +145,9 @@ public class ZPSConfig {
     public static final double REACTOR_MELT_TEMPERATURE_K_DEFAULT = 200_000.0;
     public static final double REACTOR_WALL_HEAT_CAPACITY_DEFAULT = 150.0;
     public static final int REACTOR_MAX_INTERIOR_EXTENT_DEFAULT = 14;
+    public static final double REACTOR_EMPTY_GAS_THRESHOLD_KG_DEFAULT = 0.001;
+    public static final int REACTOR_EMPTY_GRACE_TICKS_DEFAULT = 60;
+    public static final double REACTOR_EMPTY_COOLING_FRACTION_DEFAULT = 0.001;
     public static final int EXCHANGER_FE_PER_TICK_DEFAULT = 4096;
     public static final int EXCHANGER_BUFFER_FE_DEFAULT = 16_384;
     public static final double EXCHANGER_GENERATION_FLOOR_K_DEFAULT = 55_000.0;
@@ -185,6 +191,21 @@ public class ZPSConfig {
 
     public static int reactorMaxInteriorExtent() {
         return intOr(reactorMaxInteriorExtent, REACTOR_MAX_INTERIOR_EXTENT_DEFAULT);
+    }
+
+    /** A chamber holding no more than this of every gas, in kilograms, counts as empty. */
+    public static double reactorEmptyGasThresholdKg() {
+        return doubleOr(reactorEmptyGasThresholdKg, REACTOR_EMPTY_GAS_THRESHOLD_KG_DEFAULT);
+    }
+
+    /** How long a chamber may sit empty before it starts losing heat, in ticks. */
+    public static int reactorEmptyGraceTicks() {
+        return intOr(reactorEmptyGraceTicks, REACTOR_EMPTY_GRACE_TICKS_DEFAULT);
+    }
+
+    /** The share of an empty chamber's excess over ambient that it loses each tick. */
+    public static double reactorEmptyCoolingFraction() {
+        return doubleOr(reactorEmptyCoolingFraction, REACTOR_EMPTY_COOLING_FRACTION_DEFAULT);
     }
 
     public static int exchangerFePerTick() {
@@ -282,6 +303,18 @@ public class ZPSConfig {
         reactorMaxInteriorExtent = builder
                 .comment("Largest interior size along any axis, in blocks.")
                 .defineInRange("MaxInteriorExtent", REACTOR_MAX_INTERIOR_EXTENT_DEFAULT, 1, 64);
+        reactorEmptyGasThresholdKg = builder
+                .comment("A chamber holding no more than this of every gas, in kilograms, counts as",
+                         "empty: it will not take heat from a Heat Exchanger and, after the grace",
+                         "period, loses heat every tick.")
+                .defineInRange("EmptyGasThresholdKg", REACTOR_EMPTY_GAS_THRESHOLD_KG_DEFAULT, 0.0, 1.0e6);
+        reactorEmptyGraceTicks = builder
+                .comment("How long a chamber may sit empty before it starts losing heat, in ticks.")
+                .defineInRange("EmptyGraceTicks", REACTOR_EMPTY_GRACE_TICKS_DEFAULT, 0, Integer.MAX_VALUE);
+        reactorEmptyCoolingFraction = builder
+                .comment("The share of an empty chamber's excess temperature over ambient that it",
+                         "loses each tick once the grace period is over.")
+                .defineInRange("EmptyCoolingFraction", REACTOR_EMPTY_COOLING_FRACTION_DEFAULT, 0.0, 1.0);
         exchangerFePerTick = builder
                 .comment("Heat Exchanger heating draw and generation cap, in FE per tick.")
                 .defineInRange("ExchangerFePerTick", EXCHANGER_FE_PER_TICK_DEFAULT, 1, Integer.MAX_VALUE);

@@ -14,9 +14,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * A {@link OneWayCompositeDuctEdge} that also lets only certain gases through, by whitelist or
- * blacklist. Kelvin's solver checks each gas at the source against the filter and moves only
- * the ones that pass.
+ * A {@link OneWayCompositeDuctEdge} that also holds certain gases back. Kelvin's solver checks
+ * each gas at the source against the filter and moves only the ones that pass. Kelvin's interface
+ * allows a whitelist too; ZPS only ever sets a blacklist, but the flag is kept and persisted so
+ * the edge stays faithful to what it was handed.
  *
  * <p>Kept separate for the same reason the one-way edge is: the solver keys off the interface,
  * and although an empty blacklist is inert, every edge would pay for the check.
@@ -24,6 +25,7 @@ import java.util.Set;
 public class FilteredOneWayCompositeDuctEdge extends OneWayCompositeDuctEdge implements FilteredEdge {
 
     private static final String FILTER_TAG = "Filter";
+    private static final String BLACKLIST_TAG = "Blacklist";
 
     private final HashSet<GasType> filter = new HashSet<>();
     private boolean blacklist = true;
@@ -33,9 +35,9 @@ public class FilteredOneWayCompositeDuctEdge extends OneWayCompositeDuctEdge imp
         super(type, nodeA, nodeB, radius, length);
     }
 
-    /** Take the filter's gases and mode from a {@link GasFilter}. */
+    /** Hold back the gases a {@link GasFilter} names. */
     public void setFilter(GasFilter gasFilter) {
-        modFilter(gasFilter.resolve(), gasFilter.blacklist());
+        modFilter(gasFilter.resolve(), true);
     }
 
     // --- FilteredEdge ----------------------------------------------------------------------
@@ -71,14 +73,16 @@ public class FilteredOneWayCompositeDuctEdge extends OneWayCompositeDuctEdge imp
         for (GasType gas : filter) {
             ids.add(gas.getResourceLocation());
         }
-        tag.put(FILTER_TAG, new GasFilter(blacklist, ids).save(new CompoundTag()));
+        tag.put(FILTER_TAG, new GasFilter(ids).save(new CompoundTag()));
+        tag.putBoolean(BLACKLIST_TAG, blacklist);
         return tag;
     }
 
     @Override
     public void deserialize(@NotNull CompoundTag tag) {
         super.deserialize(tag);
-        setFilter(GasFilter.load(tag.getCompound(FILTER_TAG)));
+        modFilter(GasFilter.load(tag.getCompound(FILTER_TAG)).resolve(),
+                !tag.contains(BLACKLIST_TAG) || tag.getBoolean(BLACKLIST_TAG));
     }
 
     @Override

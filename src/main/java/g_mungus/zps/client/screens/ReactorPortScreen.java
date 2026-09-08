@@ -8,10 +8,8 @@ import g_mungus.zps.networking.ZPSGamePackets;
 import net.minecraft.client.GameNarrator;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.Checkbox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -23,12 +21,12 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Settings for the reactor port: which way it carries gas across the wall, and which gases.
+ * Settings for the reactor port: which way it carries gas across the wall, and which gases it
+ * holds back.
  *
  * <p>A plain screen rather than a container screen — the block has no inventory, so there is
- * nothing for a menu to hold. Every control edits a local copy; nothing reaches the server until
- * Done is pressed, and Cancel or Escape throws the edits away. Done sends only if something
- * actually differs from what the block already has.
+ * nothing for a menu to hold. Every control sends the whole settings block to the server as it
+ * changes, the way the gas gauge's screen does, so there is nothing to confirm or discard.
  */
 public class ReactorPortScreen extends Screen {
 
@@ -40,12 +38,10 @@ public class ReactorPortScreen extends Screen {
 
     private static final int CONTROL_WIDTH = 200;
     private static final int CONTROL_HEIGHT = 20;
-    private static final int BUTTON_GAP = 8;
-    private static final int HALF_WIDTH = (CONTROL_WIDTH - BUTTON_GAP) / 2;
     private static final int LABEL_TO_CONTROL_GAP = 10;
     private static final int TITLE_TO_FIRST_LABEL_GAP = 20;
     private static final int SECTION_GAP = 12;
-    /** The gas checkboxes, two to a row. */
+    /** The gas toggles, two to a row. */
     private static final int GAS_COLUMNS = 2;
     private static final int GAS_ROW_HEIGHT = 20;
 
@@ -56,7 +52,7 @@ public class ReactorPortScreen extends Screen {
     /** Every gas anyone has registered, in a stable order so the list does not shuffle. */
     private final List<GasType> gases = new ArrayList<>();
 
-    /** The settings being chosen here; sent on Done, dropped on Cancel. */
+    /** The settings as last sent; mirrored from the block when the screen opens. */
     private ReactorPortMode mode = ReactorPortMode.INPUT;
     private GasFilter filter = GasFilter.PASS_ALL;
 
@@ -87,30 +83,20 @@ public class ReactorPortScreen extends Screen {
 
         int stackHeight = TITLE_TO_FIRST_LABEL_GAP
                 + LABEL_TO_CONTROL_GAP + CONTROL_HEIGHT + SECTION_GAP
-                + LABEL_TO_CONTROL_GAP + CONTROL_HEIGHT + SECTION_GAP
-                + gasesHeight + SECTION_GAP
-                + CONTROL_HEIGHT;
+                + LABEL_TO_CONTROL_GAP + gasesHeight;
         titleY = Math.max(SECTION_GAP, this.height / 2 - stackHeight / 2);
 
         modeLabelY = titleY + TITLE_TO_FIRST_LABEL_GAP;
         int modeButtonY = modeLabelY + LABEL_TO_CONTROL_GAP;
         filterLabelY = modeButtonY + CONTROL_HEIGHT + SECTION_GAP;
-        int filterButtonY = filterLabelY + LABEL_TO_CONTROL_GAP;
-        gasesY = filterButtonY + CONTROL_HEIGHT + SECTION_GAP;
-        int actionsY = gasesY + gasesHeight + SECTION_GAP;
+        gasesY = filterLabelY + LABEL_TO_CONTROL_GAP;
 
         this.addRenderableWidget(Button.builder(modeButtonText(), button -> {
                     mode = mode.next();
                     button.setMessage(modeButtonText());
+                    sendSettings();
                 })
                 .bounds(left, modeButtonY, CONTROL_WIDTH, CONTROL_HEIGHT)
-                .build());
-
-        this.addRenderableWidget(Button.builder(filterButtonText(), button -> {
-                    filter = filter.withBlacklist(!filter.blacklist());
-                    button.setMessage(filterButtonText());
-                })
-                .bounds(left, filterButtonY, CONTROL_WIDTH, CONTROL_HEIGHT)
                 .build());
 
         int columnWidth = CONTROL_WIDTH / GAS_COLUMNS;
@@ -118,31 +104,16 @@ public class ReactorPortScreen extends Screen {
             GasType gas = gases.get(index);
             int x = left + (index % GAS_COLUMNS) * columnWidth;
             int y = gasesY + (index / GAS_COLUMNS) * GAS_ROW_HEIGHT;
-            this.addRenderableWidget(Checkbox.builder(Component.literal(gas.getName()), this.font)
-                    .pos(x, y)
-                    .maxWidth(columnWidth - 4)
-                    .selected(filter.gases().contains(gas.getResourceLocation()))
-                    .onValueChange((checkbox, selected) -> filter = filter.toggling(gas.getResourceLocation()))
-                    .build());
+            this.addRenderableWidget(new GasBlockToggle(x, y, columnWidth - 4, Component.literal(gas.getName()),
+                    this.font, filter.blocks(gas.getResourceLocation()),
+                    blocked -> {
+                        filter = filter.toggling(gas.getResourceLocation());
+                        sendSettings();
+                    }));
         }
-
-        this.addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> {
-                    apply();
-                    onClose();
-                })
-                .bounds(left, actionsY, HALF_WIDTH, CONTROL_HEIGHT)
-                .build());
-        this.addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, button -> onClose())
-                .bounds(left + HALF_WIDTH + BUTTON_GAP, actionsY, HALF_WIDTH, CONTROL_HEIGHT)
-                .build());
     }
 
-    /** Send the chosen settings, unless the block already has them. */
-    private void apply() {
-        ReactorPortBlockEntity port = getBlockEntity();
-        if (port == null || (port.getMode() == mode && port.getFilter().equals(filter))) {
-            return;
-        }
+    private void sendSettings() {
         ZPSGamePackets.sendToServer(new ReactorPortSettingsC2SPacket(blockPos, mode, filter));
     }
 
@@ -169,12 +140,6 @@ public class ReactorPortScreen extends Screen {
 
     private Component modeButtonText() {
         return Component.translatable(mode.translationKey());
-    }
-
-    private Component filterButtonText() {
-        return Component.translatable(filter.blacklist()
-                ? "gui.zps.reactor_port.filter.blacklist"
-                : "gui.zps.reactor_port.filter.whitelist");
     }
 
     private @Nullable ReactorPortBlockEntity getBlockEntity() {

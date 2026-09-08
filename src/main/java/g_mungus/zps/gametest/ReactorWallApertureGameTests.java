@@ -268,9 +268,9 @@ public class ReactorWallApertureGameTests {
     // --- filter -------------------------------------------------------------------------------
 
     @GameTest(template = REACTOR_TEMPLATE, timeoutTicks = 100)
-    public static void inputWhitelistAdmitsOnlyListedGases(GameTestHelper helper) {
+    public static void inputHoldsBackBlockedGases(GameTestHelper helper) {
         buildShell(helper, ReactorPortMode.INPUT);
-        port(helper).setSettings(ReactorPortMode.INPUT, new GasFilter(false, Set.of(ModGases.FLUX.getResourceLocation())));
+        port(helper).setSettings(ReactorPortMode.INPUT, new GasFilter(Set.of(ModGases.AETHER.getResourceLocation())));
 
         helper.runAfterDelay(5, () -> {
             kelvin().addGasAtTemperature(node(helper, WALL), ModGases.FLUX, 0.25, 400.0);
@@ -278,17 +278,17 @@ public class ReactorWallApertureGameTests {
         });
         helper.runAfterDelay(40, () -> {
             helper.assertTrue(massOf(helper, HOST, ModGases.FLUX) > EPSILON,
-                    "The whitelisted gas should reach the chamber");
+                    "An unblocked gas should reach the chamber");
             helper.assertTrue(massOf(helper, HOST, ModGases.AETHER) < EPSILON,
-                    "A gas off the whitelist must stay out, the chamber got " + massOf(helper, HOST, ModGases.AETHER));
+                    "A blocked gas must stay out, the chamber got " + massOf(helper, HOST, ModGases.AETHER));
             helper.succeed();
         });
     }
 
     @GameTest(template = REACTOR_TEMPLATE, timeoutTicks = 100)
-    public static void outputBlacklistHoldsBackListedGases(GameTestHelper helper) {
+    public static void outputHoldsBackBlockedGases(GameTestHelper helper) {
         buildShell(helper, ReactorPortMode.OUTPUT);
-        port(helper).setSettings(ReactorPortMode.OUTPUT, new GasFilter(true, Set.of(ModGases.FLUX.getResourceLocation())));
+        port(helper).setSettings(ReactorPortMode.OUTPUT, new GasFilter(Set.of(ModGases.FLUX.getResourceLocation())));
 
         helper.runAfterDelay(5, () -> {
             kelvin().addGasAtTemperature(node(helper, HOST), ModGases.FLUX, 0.25, 400.0);
@@ -296,9 +296,9 @@ public class ReactorWallApertureGameTests {
         });
         helper.runAfterDelay(40, () -> {
             helper.assertTrue(massOf(helper, WALL, ModGases.AETHER) > EPSILON,
-                    "A gas off the blacklist should be pumped out");
+                    "An unblocked gas should be pumped out");
             helper.assertTrue(massOf(helper, WALL, ModGases.FLUX) < EPSILON,
-                    "A blacklisted gas must stay in, the stub got " + massOf(helper, WALL, ModGases.FLUX));
+                    "A blocked gas must stay in, the stub got " + massOf(helper, WALL, ModGases.FLUX));
             helper.succeed();
         });
     }

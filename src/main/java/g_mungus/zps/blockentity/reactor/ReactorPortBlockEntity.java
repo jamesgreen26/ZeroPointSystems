@@ -34,9 +34,9 @@ import java.util.Map;
  * The working half of a {@link ReactorPortBlock}, doing whichever job its mode asks for.
  *
  * <p>Everything mode-specific happens between the stub and the chamber node; the outer face is an
- * ordinary duct joint and never knows which mode the port is in. Both modes run the same
- * {@link GasFilter}, chosen in the screen alongside the mode: input holds it on the chamber edge,
- * output applies it to what the pump picks up.
+ * ordinary duct joint and never knows which mode the port is in. Both modes hold back the same
+ * gases, a {@link GasFilter} chosen in the screen alongside the mode: input holds it on the
+ * chamber edge, output applies it to what the pump picks up.
  *
  * <p><b>Input:</b> keeps a one-way, filtered edge from the stub into the chamber in place,
  * throttled by redstone. The edge cannot be negotiated face-to-face like every other gas edge —
@@ -117,7 +117,7 @@ public class ReactorPortBlockEntity extends GasNodeBlockEntity {
         if (!(level instanceof ServerLevel serverLevel)) {
             return;
         }
-        if (newFilter.gases().size() > GasFilter.MAX_GASES) {
+        if (newFilter.blocked().size() > GasFilter.MAX_GASES) {
             return;
         }
         if (!newFilter.equals(filter)) {

@@ -135,7 +135,7 @@ public class FusionReactorGameTests {
             helper.fail("No reactor port at " + relative);
             throw new IllegalStateException();
         }
-        port.setSettings(port.getMode(), new GasFilter(true, Set.of(ModGases.FLUX.getResourceLocation())));
+        port.setSettings(port.getMode(), new GasFilter(Set.of(ModGases.FLUX.getResourceLocation())));
     }
 
     /**

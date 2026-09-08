@@ -139,11 +139,8 @@ public class ModItems {
     public static final DeferredItem<Item> REINFORCED_GLASS = ITEMS.register("reinforced_glass",
             () -> new BlockItem(ModBlocks.REINFORCED_GLASS.get(), new Item.Properties()));
 
-    public static final DeferredItem<Item> FUEL_INJECTOR = ITEMS.register("fuel_injector",
-            () -> new BlockItem(ModBlocks.FUEL_INJECTOR.get(), new Item.Properties()));
-
-    public static final DeferredItem<Item> EXHAUST_PORT = ITEMS.register("exhaust_port",
-            () -> new BlockItem(ModBlocks.EXHAUST_PORT.get(), new Item.Properties()));
+    public static final DeferredItem<Item> REACTOR_PORT = ITEMS.register("reactor_port",
+            () -> new BlockItem(ModBlocks.REACTOR_PORT.get(), new Item.Properties()));
 
     public static final DeferredItem<Item> HEAT_EXCHANGER = ITEMS.register("heat_exchanger",
             () -> new BlockItem(ModBlocks.HEAT_EXCHANGER.get(), new Item.Properties()));

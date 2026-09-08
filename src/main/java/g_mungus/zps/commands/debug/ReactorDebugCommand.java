@@ -3,6 +3,8 @@ package g_mungus.zps.commands.debug;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.block.reactor.ReactorPortBlock;
+import g_mungus.zps.block.reactor.ReactorPortMode;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.reactor.Reactor;
 import g_mungus.zps.reactor.ReactorChamberNode;
@@ -20,11 +22,13 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
+import org.jetbrains.annotations.Nullable;
 import org.valkyrienskies.kelvin.KelvinMod;
 import org.valkyrienskies.kelvin.api.DuctNetwork;
 import org.valkyrienskies.kelvin.api.DuctNodePos;
 import org.valkyrienskies.kelvin.api.GasType;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -120,14 +124,22 @@ public class ReactorDebugCommand {
                 reactor.hasIgnited()));
         lines.add(String.format("  FE last tick: in %d, out %d", reactor.feInLastTick(), reactor.feOutLastTick()));
 
-        lines.add("  " + count(level, reactor, ModBlocks.FUEL_INJECTOR.get(), "injectors")
-                + ", " + count(level, reactor, ModBlocks.EXHAUST_PORT.get(), "exhaust ports")
-                + ", " + count(level, reactor, ModBlocks.HEAT_EXCHANGER.get(), "exchangers"));
+        lines.add("  " + count(level, reactor, ModBlocks.REACTOR_PORT.get(), ReactorPortMode.INPUT, "inputs")
+                + ", " + count(level, reactor, ModBlocks.REACTOR_PORT.get(), ReactorPortMode.OUTPUT, "outputs")
+                + ", " + count(level, reactor, ModBlocks.HEAT_EXCHANGER.get(), null, "exchangers"));
         return lines;
     }
 
-    private static String count(ServerLevel level, Reactor reactor, Block block, String name) {
-        List<BlockPos> all = reactor.wallsOf(level, block);
+    /** Count a wall block, or with a mode given, only the ports set to that mode. */
+    private static String count(ServerLevel level, Reactor reactor, Block block,
+                                @Nullable ReactorPortMode mode, String name) {
+        List<BlockPos> all = new ArrayList<>();
+        for (BlockPos pos : reactor.wallsOf(level, block)) {
+            BlockState state = level.getBlockState(pos);
+            if (mode == null || (state.hasProperty(ReactorPortBlock.MODE) && ReactorPortBlock.mode(state) == mode)) {
+                all.add(pos);
+            }
+        }
         int oriented = 0;
         StringBuilder misoriented = new StringBuilder();
         for (BlockPos pos : all) {

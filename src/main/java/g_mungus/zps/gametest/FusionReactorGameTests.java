@@ -4,11 +4,14 @@ import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.gas.core.GasEdgeNegotiator;
 import g_mungus.zps.block.reactor.HeatExchangerBlock;
-import g_mungus.zps.block.reactor.ReactorGasWallBlock;
+import g_mungus.zps.block.reactor.ReactorPortBlock;
+import g_mungus.zps.block.reactor.ReactorPortMode;
 import g_mungus.zps.blockentity.PowerCellBlockEntity;
 import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
 import g_mungus.zps.blockentity.reactor.HeatExchangerBlockEntity;
+import g_mungus.zps.blockentity.reactor.ReactorPortBlockEntity;
 import g_mungus.zps.config.ZPSConfig;
+import g_mungus.zps.gas.GasFilter;
 import g_mungus.zps.gas.ModGases;
 import g_mungus.zps.networking.VoxelShapeStreamCodec;
 import g_mungus.zps.reactor.CavityShapes;
@@ -39,6 +42,7 @@ import org.valkyrienskies.kelvin.api.GasType;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * The fusion reactor as a whole: a sealed shell becomes a reactor with one chamber node, the
@@ -114,7 +118,24 @@ public class FusionReactorGameTests {
     }
 
     private static BlockState facing(BlockState state, Direction direction) {
-        return state.setValue(ReactorGasWallBlock.FACING, direction);
+        return state.setValue(ReactorPortBlock.FACING, direction);
+    }
+
+    private static BlockState input() {
+        return ModBlocks.REACTOR_PORT.get().defaultBlockState().setValue(ReactorPortBlock.MODE, ReactorPortMode.INPUT);
+    }
+
+    private static BlockState output() {
+        return ModBlocks.REACTOR_PORT.get().defaultBlockState().setValue(ReactorPortBlock.MODE, ReactorPortMode.OUTPUT);
+    }
+
+    /** Keep the fuel in: the port passes everything but Flux, the way an exhaust should. */
+    private static void holdBackFlux(GameTestHelper helper, BlockPos relative) {
+        if (!(helper.getBlockEntity(relative) instanceof ReactorPortBlockEntity port)) {
+            helper.fail("No reactor port at " + relative);
+            throw new IllegalStateException();
+        }
+        port.setSettings(port.getMode(), new GasFilter(true, Set.of(ModGases.FLUX.getResourceLocation())));
     }
 
     /**
@@ -223,7 +244,7 @@ public class FusionReactorGameTests {
     @GameTest(template = TEMPLATE, timeoutTicks = 200)
     public static void injectorLetsFuelIn(GameTestHelper helper) {
         buildShell(helper, Map.of(WEST_WALL,
-                facing(ModBlocks.FUEL_INJECTOR.get().defaultBlockState(), Direction.WEST)));
+                facing(input(), Direction.WEST)));
         placeGenerator(helper, OUTSIDE_WEST, 0.001, 300.0);
 
         helper.succeedWhen(() -> helper.assertTrue(massOf(helper, HOST, ModGases.FLUX) > 0,
@@ -233,7 +254,7 @@ public class FusionReactorGameTests {
     @GameTest(template = TEMPLATE, timeoutTicks = 100)
     public static void injectorNeverLetsGasOut(GameTestHelper helper) {
         buildShell(helper, Map.of(WEST_WALL,
-                facing(ModBlocks.FUEL_INJECTOR.get().defaultBlockState(), Direction.WEST)));
+                facing(input(), Direction.WEST)));
         // A generator at rest, so the injector's outer face is joined to something.
         placeGenerator(helper, OUTSIDE_WEST, 0.0, 300.0);
         kelvin().addGasAtTemperature(node(helper, HOST), ModGases.AETHER, 1.0, 300.0);
@@ -251,7 +272,7 @@ public class FusionReactorGameTests {
     public static void misorientedInjectorIsInert(GameTestHelper helper) {
         // Facing along the wall rather than out of it: still seals, but serves no reactor.
         buildShell(helper, Map.of(WEST_WALL,
-                facing(ModBlocks.FUEL_INJECTOR.get().defaultBlockState(), Direction.NORTH)));
+                facing(input(), Direction.NORTH)));
 
         Reactor reactor = reactorAt(helper, WEST_WALL);
         helper.assertTrue(reactor.wallCount() == SMALL_WALLS, "The shell should still seal");
@@ -265,7 +286,8 @@ public class FusionReactorGameTests {
     @GameTest(template = TEMPLATE, timeoutTicks = 200)
     public static void exhaustDrawsAetherNotFluxAndCools(GameTestHelper helper) {
         buildShell(helper, Map.of(EAST_WALL,
-                facing(ModBlocks.EXHAUST_PORT.get().defaultBlockState(), Direction.EAST)));
+                facing(output(), Direction.EAST)));
+        holdBackFlux(helper, EAST_WALL);
         DuctNodePos host = node(helper, HOST);
         // Equal parts fuel and ash: the reaction is inhibited, so the flux stays put.
         kelvin().addGasAtTemperature(host, ModGases.FLUX, 0.05, 300.0);
@@ -524,11 +546,12 @@ public class FusionReactorGameTests {
     public static void readoutReportsLitWhileProducing(GameTestHelper helper) {
         BlockState exchangerNorth = facing(ModBlocks.HEAT_EXCHANGER.get().defaultBlockState(), Direction.NORTH);
         Map<BlockPos, BlockState> overrides = new HashMap<>();
-        overrides.put(WEST_WALL, facing(ModBlocks.FUEL_INJECTOR.get().defaultBlockState(), Direction.WEST));
-        overrides.put(EAST_WALL, facing(ModBlocks.EXHAUST_PORT.get().defaultBlockState(), Direction.EAST));
+        overrides.put(WEST_WALL, facing(input(), Direction.WEST));
+        overrides.put(EAST_WALL, facing(output(), Direction.EAST));
         overrides.put(NORTH_WALL_A, exchangerNorth);
         overrides.put(NORTH_WALL_B, exchangerNorth);
         buildShell(helper, overrides);
+        holdBackFlux(helper, EAST_WALL);
         // Fuel in, ash out, power out: the whole loop, sized so the exchangers keep up.
         placeGenerator(helper, OUTSIDE_WEST, 0.0008, 300.0);
         helper.setBlock(OUTSIDE_EAST, facing(ModBlocks.VENT.get().defaultBlockState(), Direction.EAST));

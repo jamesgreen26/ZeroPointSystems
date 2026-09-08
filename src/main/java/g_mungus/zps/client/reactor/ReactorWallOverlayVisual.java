@@ -1,55 +1,56 @@
 package g_mungus.zps.client.reactor;
 
 import dev.engine_room.flywheel.api.instance.Instance;
-import dev.engine_room.flywheel.api.model.Model;
 import dev.engine_room.flywheel.api.visual.TickableVisual;
 import dev.engine_room.flywheel.api.visualization.VisualizationContext;
 import dev.engine_room.flywheel.lib.instance.InstanceTypes;
 import dev.engine_room.flywheel.lib.instance.TransformedInstance;
 import dev.engine_room.flywheel.lib.visual.AbstractBlockEntityVisual;
 import dev.engine_room.flywheel.lib.visual.SimpleTickableVisual;
-import g_mungus.zps.block.reactor.ReactorGasWallBlock;
-import g_mungus.zps.blockentity.reactor.ExhaustPortBlockEntity;
-import g_mungus.zps.blockentity.reactor.FuelInjectorBlockEntity;
-import g_mungus.zps.blockentity.reactor.ReactorGasWallBlockEntity;
+import g_mungus.zps.block.reactor.ReactorPortBlock;
+import g_mungus.zps.block.reactor.ReactorPortMode;
+import g_mungus.zps.blockentity.reactor.ReactorPortBlockEntity;
 import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.function.Consumer;
 
 /**
- * Draws a block's indicator overlay on its outer face, tinted by the redstone level it receives:
+ * Draws a port's indicator overlay on its outer face, tinted by the redstone level it receives:
  * dark when unpowered, up to a full glow at fifteen. The level arrives with the block entity's
- * update packet, so the visual polls it once a tick and only touches the instance when it moves.
+ * update packet and the mode with the block state, so the visual polls both once a tick and only
+ * touches the instance when one moves. A mode change swaps the instance for one on the other
+ * mode's model, since an instance belongs to the instancer it was made by.
  */
-public class ReactorWallOverlayVisual<T extends ReactorGasWallBlockEntity> extends AbstractBlockEntityVisual<T>
+public class ReactorWallOverlayVisual extends AbstractBlockEntityVisual<ReactorPortBlockEntity>
         implements SimpleTickableVisual {
 
-    private final TransformedInstance overlay;
+    private TransformedInstance overlay;
+    private ReactorPortMode mode;
     private int lastLevel = -1;
 
-    public static ReactorWallOverlayVisual<FuelInjectorBlockEntity> fuelInjector(
-            VisualizationContext ctx, FuelInjectorBlockEntity blockEntity, float partialTick) {
-        return new ReactorWallOverlayVisual<>(ctx, blockEntity, partialTick, ReactorWallOverlays.FUEL_INJECTOR);
-    }
-
-    public static ReactorWallOverlayVisual<ExhaustPortBlockEntity> exhaustPort(
-            VisualizationContext ctx, ExhaustPortBlockEntity blockEntity, float partialTick) {
-        return new ReactorWallOverlayVisual<>(ctx, blockEntity, partialTick, ReactorWallOverlays.EXHAUST_PORT);
-    }
-
-    private ReactorWallOverlayVisual(VisualizationContext ctx, T blockEntity, float partialTick, Model model) {
+    public ReactorWallOverlayVisual(VisualizationContext ctx, ReactorPortBlockEntity blockEntity, float partialTick) {
         super(ctx, blockEntity, partialTick);
-
-        overlay = instancerProvider()
-                .instancer(InstanceTypes.TRANSFORMED, model)
-                .createInstance();
-
-        orient(ReactorGasWallBlock.facing(blockState));
-        tint(blockEntity.getRedstoneLevel());
+        createOverlay(blockState);
     }
 
     @Override
     public void tick(TickableVisual.Context ctx) {
+        BlockState state = blockEntity.getBlockState();
+        if (ReactorPortBlock.mode(state) != mode) {
+            overlay.delete();
+            createOverlay(state);
+        }
+        tint(blockEntity.getRedstoneLevel());
+    }
+
+    private void createOverlay(BlockState state) {
+        mode = ReactorPortBlock.mode(state);
+        overlay = instancerProvider()
+                .instancer(InstanceTypes.TRANSFORMED, ReactorWallOverlays.modelFor(mode))
+                .createInstance();
+        lastLevel = -1;
+        orient(ReactorPortBlock.facing(state));
         tint(blockEntity.getRedstoneLevel());
     }
 

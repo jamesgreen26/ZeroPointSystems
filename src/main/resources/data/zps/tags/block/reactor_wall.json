@@ -3,8 +3,7 @@
   "values": [
     "zps:reinforced_plating",
     "zps:reinforced_glass",
-    "zps:fuel_injector",
-    "zps:exhaust_port",
+    "zps:reactor_port",
     "zps:heat_exchanger"
   ]
 }

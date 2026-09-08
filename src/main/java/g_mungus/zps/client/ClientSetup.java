@@ -98,7 +98,7 @@ public class ClientSetup {
     @SubscribeEvent
     public static void onRegisterItemColors(RegisterColorHandlersEvent.Item event) {
         event.register((stack, tintIndex) -> tintIndex == 0 ? 0xFF000000 | ReactorWallOverlays.OFF_COLOR : -1,
-                ModItems.FUEL_INJECTOR.get(), ModItems.EXHAUST_PORT.get());
+                ModItems.REACTOR_PORT.get());
     }
 
     @SubscribeEvent
@@ -185,15 +185,9 @@ public class ClientSetup {
                     // The BER draws the rod as a fallback when Flywheel's backend is unavailable.
                     .neverSkipVanillaRender()
                     .apply();
-            BlockEntityRenderers.register(ModBlockEntities.FUEL_INJECTOR.get(), ReactorWallOverlayRenderer::fuelInjector);
-            SimpleBlockEntityVisualizer.builder(ModBlockEntities.FUEL_INJECTOR.get())
-                    .factory(ReactorWallOverlayVisual::fuelInjector)
-                    // The BER draws the overlay as a fallback when Flywheel's backend is unavailable.
-                    .neverSkipVanillaRender()
-                    .apply();
-            BlockEntityRenderers.register(ModBlockEntities.EXHAUST_PORT.get(), ReactorWallOverlayRenderer::exhaustPort);
-            SimpleBlockEntityVisualizer.builder(ModBlockEntities.EXHAUST_PORT.get())
-                    .factory(ReactorWallOverlayVisual::exhaustPort)
+            BlockEntityRenderers.register(ModBlockEntities.REACTOR_PORT.get(), ReactorWallOverlayRenderer::new);
+            SimpleBlockEntityVisualizer.builder(ModBlockEntities.REACTOR_PORT.get())
+                    .factory(ReactorWallOverlayVisual::new)
                     // The BER draws the overlay as a fallback when Flywheel's backend is unavailable.
                     .neverSkipVanillaRender()
                     .apply();

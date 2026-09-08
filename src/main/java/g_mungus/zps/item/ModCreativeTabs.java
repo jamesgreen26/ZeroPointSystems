@@ -82,8 +82,7 @@ public class ModCreativeTabs {
                         CREATIVE_GAS_GENERATOR,
                         REINFORCED_PLATING,
                         REINFORCED_GLASS,
-                        FUEL_INJECTOR,
-                        EXHAUST_PORT,
+                        REACTOR_PORT,
                         HEAT_EXCHANGER,
 
                         SUSPICIOUS_RED_SAND,

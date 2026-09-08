@@ -8,9 +8,8 @@ import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity;
 import g_mungus.zps.blockentity.gas.VentBlockEntity;
 import g_mungus.zps.blockentity.gas.VaporizerBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.*;
-import g_mungus.zps.blockentity.reactor.ExhaustPortBlockEntity;
-import g_mungus.zps.blockentity.reactor.FuelInjectorBlockEntity;
 import g_mungus.zps.blockentity.reactor.HeatExchangerBlockEntity;
+import g_mungus.zps.blockentity.reactor.ReactorPortBlockEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -41,15 +40,10 @@ public class ModBlockEntities {
             () -> BlockEntityType.Builder.of(CreativeGasGeneratorBlockEntity::new,
                 ModBlocks.CREATIVE_GAS_GENERATOR.get()).build(null));
 
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<FuelInjectorBlockEntity>> FUEL_INJECTOR =
-        BLOCK_ENTITIES.register("fuel_injector",
-            () -> BlockEntityType.Builder.of(FuelInjectorBlockEntity::new,
-                ModBlocks.FUEL_INJECTOR.get()).build(null));
-
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ExhaustPortBlockEntity>> EXHAUST_PORT =
-        BLOCK_ENTITIES.register("exhaust_port",
-            () -> BlockEntityType.Builder.of(ExhaustPortBlockEntity::new,
-                ModBlocks.EXHAUST_PORT.get()).build(null));
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ReactorPortBlockEntity>> REACTOR_PORT =
+        BLOCK_ENTITIES.register("reactor_port",
+            () -> BlockEntityType.Builder.of(ReactorPortBlockEntity::new,
+                ModBlocks.REACTOR_PORT.get()).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<HeatExchangerBlockEntity>> HEAT_EXCHANGER =
         BLOCK_ENTITIES.register("heat_exchanger",

@@ -10,9 +10,8 @@ import g_mungus.zps.block.gas.DuctBlock;
 import g_mungus.zps.block.gas.GasGaugeBlock;
 import g_mungus.zps.block.gas.VentBlock;
 import g_mungus.zps.block.gas.VaporizerBlock;
-import g_mungus.zps.block.reactor.ExhaustPortBlock;
-import g_mungus.zps.block.reactor.FuelInjectorBlock;
 import g_mungus.zps.block.reactor.HeatExchangerBlock;
+import g_mungus.zps.block.reactor.ReactorPortBlock;
 import g_mungus.zps.block.reactor.ReinforcedPlatingBlock;
 import g_mungus.zps.block.reactor.ReinforcedGlassBlock;
 import g_mungus.zps.item.ModItems;
@@ -284,14 +283,8 @@ public class ModBlocks {
                     .isViewBlocking((state, level, pos) -> false)
                     .isSuffocating((state, level, pos) -> false)));
 
-    public static final DeferredBlock<Block> FUEL_INJECTOR = BLOCKS.register("fuel_injector",
-            () -> new FuelInjectorBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
-                    .strength(3.5f)
-                    .requiresCorrectToolForDrops()
-                    .pushReaction(PushReaction.BLOCK)));
-
-    public static final DeferredBlock<Block> EXHAUST_PORT = BLOCKS.register("exhaust_port",
-            () -> new ExhaustPortBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+    public static final DeferredBlock<Block> REACTOR_PORT = BLOCKS.register("reactor_port",
+            () -> new ReactorPortBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(3.5f)
                     .requiresCorrectToolForDrops()
                     .pushReaction(PushReaction.BLOCK)));

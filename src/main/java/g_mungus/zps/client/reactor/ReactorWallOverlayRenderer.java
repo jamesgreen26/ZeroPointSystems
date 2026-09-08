@@ -3,18 +3,19 @@ package g_mungus.zps.client.reactor;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import dev.engine_room.flywheel.api.visualization.VisualizationManager;
-import g_mungus.zps.block.reactor.ReactorGasWallBlock;
-import g_mungus.zps.blockentity.reactor.ExhaustPortBlockEntity;
-import g_mungus.zps.blockentity.reactor.FuelInjectorBlockEntity;
-import g_mungus.zps.blockentity.reactor.ReactorGasWallBlockEntity;
+import g_mungus.zps.block.reactor.ReactorPortBlock;
+import g_mungus.zps.block.reactor.ReactorPortMode;
+import g_mungus.zps.blockentity.reactor.ReactorPortBlockEntity;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.EnumMap;
+import java.util.Map;
 
 /**
  * Fallback for {@link ReactorWallOverlayVisual} when Flywheel's backend is unavailable, on a ship
@@ -22,7 +23,7 @@ import org.jetbrains.annotations.NotNull;
  * the vanilla buffer instead. The visual draws it whenever Flywheel is active, so this only kicks
  * in otherwise.
  */
-public class ReactorWallOverlayRenderer<T extends ReactorGasWallBlockEntity> implements BlockEntityRenderer<T> {
+public class ReactorWallOverlayRenderer implements BlockEntityRenderer<ReactorPortBlockEntity> {
 
     /**
      * How far in front of the face the quad sits. The visual leans on polygon offset for this;
@@ -30,22 +31,17 @@ public class ReactorWallOverlayRenderer<T extends ReactorGasWallBlockEntity> imp
      */
     private static final float LIFT = 1f / 512f;
 
-    private final RenderType renderType;
+    /** One render type per mode, each on that mode's overlay texture. */
+    private final Map<ReactorPortMode, RenderType> renderTypes = new EnumMap<>(ReactorPortMode.class);
 
-    public static ReactorWallOverlayRenderer<FuelInjectorBlockEntity> fuelInjector(BlockEntityRendererProvider.Context context) {
-        return new ReactorWallOverlayRenderer<>(ReactorWallOverlays.FUEL_INJECTOR_TEXTURE);
-    }
-
-    public static ReactorWallOverlayRenderer<ExhaustPortBlockEntity> exhaustPort(BlockEntityRendererProvider.Context context) {
-        return new ReactorWallOverlayRenderer<>(ReactorWallOverlays.EXHAUST_PORT_TEXTURE);
-    }
-
-    private ReactorWallOverlayRenderer(ResourceLocation texture) {
-        this.renderType = RenderType.entityCutoutNoCull(texture);
+    public ReactorWallOverlayRenderer(BlockEntityRendererProvider.Context context) {
+        for (ReactorPortMode mode : ReactorPortMode.values()) {
+            renderTypes.put(mode, RenderType.entityCutoutNoCull(ReactorWallOverlays.textureFor(mode)));
+        }
     }
 
     @Override
-    public void render(T blockEntity, float partialTick, @NotNull PoseStack poseStack,
+    public void render(ReactorPortBlockEntity blockEntity, float partialTick, @NotNull PoseStack poseStack,
                        @NotNull MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
         if (VisualizationManager.supportsVisualization(blockEntity.getLevel())) {
             return;
@@ -58,12 +54,12 @@ public class ReactorWallOverlayRenderer<T extends ReactorGasWallBlockEntity> imp
 
         poseStack.pushPose();
         poseStack.translate(0.5f, 0.5f, 0.5f);
-        poseStack.mulPose(ReactorWallOverlays.rotationFor(ReactorGasWallBlock.facing(blockEntity.getBlockState())));
+        poseStack.mulPose(ReactorWallOverlays.rotationFor(ReactorPortBlock.facing(blockEntity.getBlockState())));
         poseStack.translate(-0.5f, -0.5f, -0.5f);
 
         // The same quad as the Flywheel mesh: the north face, u east to west, v top to bottom.
         PoseStack.Pose pose = poseStack.last();
-        VertexConsumer consumer = bufferSource.getBuffer(renderType);
+        VertexConsumer consumer = bufferSource.getBuffer(renderTypes.get(blockEntity.getMode()));
         vertex(consumer, pose, 1f, 1f, 0f, 0f, r, g, b);
         vertex(consumer, pose, 1f, 0f, 0f, 1f, r, g, b);
         vertex(consumer, pose, 0f, 0f, 1f, 1f, r, g, b);

@@ -228,9 +228,10 @@ public final class ReactorManager extends SavedData {
 
         DuctNetwork<?> kelvin = kelvin();
         DuctNodePos host = reactor.hostNodePos(level);
-        // Kelvin's removeNode leaves edges behind; the injectors' internal edges go first.
-        for (BlockPos injector : reactor.wallsOf(level, ModBlocks.FUEL_INJECTOR.get())) {
-            kelvin.removeEdge(GasEdgeNegotiator.nodePos(level, injector), host);
+        // Kelvin's removeNode leaves edges behind; the input ports' internal edges go first. Every
+        // port is tried, since removing an edge that was never there is harmless.
+        for (BlockPos port : reactor.wallsOf(level, ModBlocks.REACTOR_PORT.get())) {
+            kelvin.removeEdge(GasEdgeNegotiator.nodePos(level, port), host);
         }
         kelvin.removeNode(host);
         setDirty();

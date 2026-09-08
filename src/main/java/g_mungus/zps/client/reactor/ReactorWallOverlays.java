@@ -10,21 +10,22 @@ import dev.engine_room.flywheel.lib.model.SimpleQuadMesh;
 import dev.engine_room.flywheel.lib.model.SingleMeshModel;
 import dev.engine_room.flywheel.lib.vertex.PosTexNormalVertexView;
 import g_mungus.zps.ZPSMod;
-import g_mungus.zps.blockentity.reactor.ReactorGasWallBlockEntity;
+import g_mungus.zps.block.reactor.ReactorPortMode;
+import g_mungus.zps.blockentity.reactor.ReactorPortBlockEntity;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import org.joml.Quaternionf;
 
 /**
- * The indicator overlays drawn on the outer face of the Fuel Injector and the Exhaust Port: one
- * full-face quad per block carrying that block's {@code *_overlay} texture, tinted per instance by
- * the redstone level the block receives.
+ * The indicator overlays drawn on the outer face of the Reactor Port: one full-face quad per
+ * mode carrying that mode's {@code *_overlay} texture, tinted per instance by the redstone level
+ * the block receives.
  *
  * <p>The quad lies on the block's north face, where the models put the outer face; the visual turns
  * it to the block's facing. It sits exactly on the face plane and relies on the material's polygon
  * offset to win the depth test against the opaque block behind it. Both models are static
- * singletons: Flywheel keys instancers by model identity, so every injector shares one draw.
+ * singletons: Flywheel keys instancers by model identity, so every port in a mode shares one draw.
  */
 public final class ReactorWallOverlays {
 
@@ -34,9 +35,19 @@ public final class ReactorWallOverlays {
     public static final Model FUEL_INJECTOR = overlay("fuel_injector", FUEL_INJECTOR_TEXTURE);
     public static final Model EXHAUST_PORT = overlay("exhaust_port", EXHAUST_PORT_TEXTURE);
 
+    /** The overlay texture a port shows in a mode. */
+    public static ResourceLocation textureFor(ReactorPortMode mode) {
+        return mode == ReactorPortMode.OUTPUT ? EXHAUST_PORT_TEXTURE : FUEL_INJECTOR_TEXTURE;
+    }
+
+    /** The overlay model a port shows in a mode. */
+    public static Model modelFor(ReactorPortMode mode) {
+        return mode == ReactorPortMode.OUTPUT ? EXHAUST_PORT : FUEL_INJECTOR;
+    }
+
     /** Tint at a redstone level of zero; the item models use it too. */
     public static final int OFF_COLOR = 0x431111;
-    /** Tint at {@link ReactorGasWallBlockEntity#MAX_REDSTONE_LEVEL}. */
+    /** Tint at {@link ReactorPortBlockEntity#MAX_REDSTONE_LEVEL}. */
     public static final int ON_COLOR = 0xFF3B2E;
 
     private ReactorWallOverlays() {
@@ -44,7 +55,7 @@ public final class ReactorWallOverlays {
 
     /** The overlay's tint for a redstone level, as packed RGB. */
     public static int tintRgb(int level) {
-        float t = (float) level / ReactorGasWallBlockEntity.MAX_REDSTONE_LEVEL;
+        float t = (float) level / ReactorPortBlockEntity.MAX_REDSTONE_LEVEL;
         return lerpChannel(t, 16) << 16 | lerpChannel(t, 8) << 8 | lerpChannel(t, 0);
     }
 

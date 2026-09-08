@@ -16,9 +16,11 @@ import java.util.List;
 /**
  * A "vaporizing" recipe: a shapeless set of items is turned into gas by the Vaporizer.
  *
- * <p>Items are matched the way a shapeless crafting recipe matches them — every ingredient must be
- * satisfied by a distinct slot, and every occupied slot must be used. Each craft takes one item from
- * each of those slots and adds every {@link GasOutput} to the machine's gas buffer.
+ * <p>Items are matched by what the machine holds, not how it is stacked: the slots are pooled, each
+ * ingredient takes one item from any slot that still has one to give, and every kind of item in
+ * the machine must be taken from by some ingredient, so a stray item blocks the recipe while a
+ * stack split across two slots does not. Each craft takes one item per ingredient and adds every
+ * {@link GasOutput} to the machine's gas buffer.
  *
  * <p>The machine must be at or above {@link #minTemperature} to run the recipe; the gas comes out at
  * whatever temperature the machine is actually at, and the machine then cools by
@@ -72,42 +74,68 @@ public class VaporizingRecipe implements Recipe<VaporizingInput> {
     }
 
     /**
-     * Which slot each ingredient takes from: {@code result[i]} is the slot satisfying ingredient
-     * {@code i}. Null if the input does not match — a slot left over, an ingredient unmet, or two
-     * ingredients competing for the same slot.
+     * Which slot each ingredient takes one item from: {@code result[i]} is the slot satisfying
+     * ingredient {@code i}. A slot may serve several ingredients, one item each, as long as it
+     * holds that many. Null if the input does not match — an ingredient unmet, or a kind of item
+     * in the machine that no ingredient takes.
      */
     public int @Nullable [] findSlotAssignment(VaporizingInput input) {
-        int occupied = 0;
-        for (int slot = 0; slot < input.size(); slot++) {
-            if (!input.getItem(slot).isEmpty()) {
-                occupied++;
-            }
-        }
-        if (occupied != ingredients.size()) {
+        if (input.isEmpty()) {
             return null;
         }
+        int[] remaining = new int[input.size()];
+        for (int slot = 0; slot < input.size(); slot++) {
+            remaining[slot] = input.getItem(slot).getCount();
+        }
         int[] assignment = new int[ingredients.size()];
-        return assign(input, 0, new boolean[input.size()], assignment) ? assignment : null;
+        return assign(input, 0, remaining, assignment) ? assignment : null;
     }
 
-    private boolean assign(VaporizingInput input, int ingredientIndex, boolean[] used, int[] assignment) {
+    private boolean assign(VaporizingInput input, int ingredientIndex, int[] remaining, int[] assignment) {
         if (ingredientIndex == ingredients.size()) {
-            return true;
+            return everyKindIsUsed(input, remaining);
         }
         Ingredient ingredient = ingredients.get(ingredientIndex);
         for (int slot = 0; slot < input.size(); slot++) {
             ItemStack stack = input.getItem(slot);
-            if (used[slot] || stack.isEmpty() || !ingredient.test(stack)) {
+            if (remaining[slot] <= 0 || stack.isEmpty() || !ingredient.test(stack)) {
                 continue;
             }
-            used[slot] = true;
+            remaining[slot]--;
             assignment[ingredientIndex] = slot;
-            if (assign(input, ingredientIndex + 1, used, assignment)) {
+            if (assign(input, ingredientIndex + 1, remaining, assignment)) {
                 return true;
             }
-            used[slot] = false;
+            remaining[slot]++;
         }
         return false;
+    }
+
+    /**
+     * Whether every kind of item in the input has had at least one taken from some slot holding
+     * it. A kind is an item with its components, the way stacks decide whether they merge.
+     */
+    private static boolean everyKindIsUsed(VaporizingInput input, int[] remaining) {
+        for (int slot = 0; slot < input.size(); slot++) {
+            ItemStack stack = input.getItem(slot);
+            if (stack.isEmpty() || remaining[slot] < stack.getCount()) {
+                continue;
+            }
+            // Nothing taken from this slot: fine only if the same kind was taken from another.
+            boolean takenElsewhere = false;
+            for (int other = 0; other < input.size(); other++) {
+                ItemStack otherStack = input.getItem(other);
+                if (other != slot && remaining[other] < otherStack.getCount()
+                        && ItemStack.isSameItemSameComponents(stack, otherStack)) {
+                    takenElsewhere = true;
+                    break;
+                }
+            }
+            if (!takenElsewhere) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /** The product is gas, not an item. */

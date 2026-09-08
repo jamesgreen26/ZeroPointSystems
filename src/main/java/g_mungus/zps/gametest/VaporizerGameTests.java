@@ -224,6 +224,50 @@ public class VaporizerGameTests {
         });
     }
 
+    /** How the items are stacked does not matter: the same recipe runs with an ingredient split. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void matchesAcrossSplitStacks(GameTestHelper helper) {
+        VaporizerBlockEntity vaporizer = place(helper);
+        fillEnergy(vaporizer);
+        IItemHandlerModifiable raw = rawInventory(vaporizer);
+        raw.setStackInSlot(0, new ItemStack(ModItems.LITHIUM_INGOT.get(), 32));
+        raw.setStackInSlot(1, new ItemStack(Items.BLUE_ICE, 64));
+        raw.setStackInSlot(2, new ItemStack(Items.BLUE_ICE, 10));
+
+        helper.succeedWhen(() -> {
+            if (fluxAt(helper, VAPORIZER) < RECIPE_FLUX_KG - 1e-6) {
+                helper.fail("No Flux vaporized yet");
+            }
+            int blueIce = raw.getStackInSlot(1).getCount() + raw.getStackInSlot(2).getCount();
+            if (raw.getStackInSlot(0).getCount() >= 32 || blueIce >= 74) {
+                helper.fail("Flux appeared but no ingredients were consumed");
+            }
+        });
+    }
+
+    /** A kind of item no ingredient takes blocks the recipe, however the rest is stacked. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void aStrayItemBlocksTheRecipe(GameTestHelper helper) {
+        VaporizerBlockEntity vaporizer = place(helper);
+        fillEnergy(vaporizer);
+        int energyBefore = vaporizer.getEnergyStorage(null).getEnergyStored();
+        IItemHandlerModifiable raw = rawInventory(vaporizer);
+        raw.setStackInSlot(0, new ItemStack(Items.BLUE_ICE, SEED_COUNT));
+        raw.setStackInSlot(1, new ItemStack(ModItems.LITHIUM_INGOT.get(), SEED_COUNT));
+        // The slots would refuse this through the capability; put it in raw, as a player could.
+        raw.setStackInSlot(2, new ItemStack(Items.COBBLESTONE, 1));
+
+        helper.runAfterDelay(40, () -> {
+            if (vaporizer.getEnergyStorage(null).getEnergyStored() != energyBefore) {
+                helper.fail("FE was spent with a stray item in the machine");
+            }
+            if (vaporizer.getStatus() != VaporizerBlockEntity.Status.IDLE) {
+                helper.fail("Expected IDLE, got " + vaporizer.getStatus());
+            }
+            helper.succeed();
+        });
+    }
+
     /** Power is only spent when there is a recipe to heat for. */
     @GameTest(template = TEMPLATE, timeoutTicks = 100)
     public static void doesNotHeatWithoutARecipe(GameTestHelper helper) {

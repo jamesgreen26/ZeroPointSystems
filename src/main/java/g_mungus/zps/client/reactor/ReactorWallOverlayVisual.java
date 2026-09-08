@@ -13,7 +13,6 @@ import g_mungus.zps.blockentity.reactor.ExhaustPortBlockEntity;
 import g_mungus.zps.blockentity.reactor.FuelInjectorBlockEntity;
 import g_mungus.zps.blockentity.reactor.ReactorGasWallBlockEntity;
 import net.minecraft.core.Direction;
-import net.minecraft.util.Mth;
 
 import java.util.function.Consumer;
 
@@ -24,10 +23,6 @@ import java.util.function.Consumer;
  */
 public class ReactorWallOverlayVisual<T extends ReactorGasWallBlockEntity> extends AbstractBlockEntityVisual<T>
         implements SimpleTickableVisual {
-
-    /** Tint at a redstone level of zero and of {@link ReactorGasWallBlockEntity#MAX_REDSTONE_LEVEL}. */
-    private static final int OFF_COLOR = 0x431111;
-    private static final int ON_COLOR = 0xFF3B2E;
 
     private final TransformedInstance overlay;
     private int lastLevel = -1;
@@ -58,28 +53,11 @@ public class ReactorWallOverlayVisual<T extends ReactorGasWallBlockEntity> exten
         tint(blockEntity.getRedstoneLevel());
     }
 
-    /**
-     * Turns the north-face quad to the block's outer face with the same rotation the blockstate
-     * applies to the block model, so the overlay lines up pixel for pixel with the face art.
-     */
     private void orient(Direction facing) {
-        // Blockstate (x, y) rotations per facing; vanilla applies them as rotateYXZ(-y, -x, 0).
-        float x = switch (facing) {
-            case DOWN -> 90f;
-            case UP -> 270f;
-            default -> 0f;
-        };
-        float y = switch (facing) {
-            case EAST -> 90f;
-            case SOUTH, UP -> 180f;
-            case WEST -> 270f;
-            default -> 0f;
-        };
         overlay.setIdentityTransform()
                 .translate(getVisualPosition())
                 .translate(0.5f, 0.5f, 0.5f)
-                .rotateYDegrees(-y)
-                .rotateXDegrees(-x)
+                .rotate(ReactorWallOverlays.rotationFor(facing))
                 .translate(-0.5f, -0.5f, -0.5f)
                 .setChanged();
     }
@@ -89,15 +67,7 @@ public class ReactorWallOverlayVisual<T extends ReactorGasWallBlockEntity> exten
             return;
         }
         lastLevel = level;
-        float t = (float) level / ReactorGasWallBlockEntity.MAX_REDSTONE_LEVEL;
-        overlay.color(lerpChannel(t, 16), lerpChannel(t, 8), lerpChannel(t, 0))
-                .setChanged();
-    }
-
-    private static int lerpChannel(float t, int shift) {
-        int off = (OFF_COLOR >> shift) & 0xFF;
-        int on = (ON_COLOR >> shift) & 0xFF;
-        return Mth.lerpInt(t, off, on);
+        overlay.colorRgb(ReactorWallOverlays.tintRgb(level)).setChanged();
     }
 
     @Override

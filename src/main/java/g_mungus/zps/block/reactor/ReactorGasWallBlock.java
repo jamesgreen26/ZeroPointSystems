@@ -2,6 +2,7 @@ package g_mungus.zps.block.reactor;
 
 import g_mungus.zps.block.gas.core.GasEdgeProposal;
 import g_mungus.zps.block.gas.core.GasNodeBlock;
+import g_mungus.zps.block.gas.core.facets.ApertureFacet;
 import g_mungus.zps.block.gas.core.facets.OneWayFacet;
 import g_mungus.zps.blockentity.reactor.ReactorGasWallBlockEntity;
 import g_mungus.zps.reactor.ReactorWallBlock;
@@ -35,6 +36,9 @@ import java.util.HashSet;
  * is not an ordinary edge — the reactor manages that once the cavity seals — so the stub is a
  * dead end until the block is part of a reactor.
  *
+ * <p>Redstone throttles the outer face: the stronger the signal reaching the block, the narrower
+ * the check valve, until a full fifteen shuts it completely. Unpowered, it passes gas like any duct.
+ *
  * <p>{@link #FACING} is the outer face, chosen at placement the way a vent is: toward the player,
  * or away while sneaking. A block whose inner face is not on the cavity still seals the shell but
  * does nothing.
@@ -43,7 +47,7 @@ public abstract class ReactorGasWallBlock extends GasNodeBlock implements Entity
 
     public static final DirectionProperty FACING = BlockStateProperties.FACING;
 
-    private static final double RADIUS = 0.125;
+    public static final double RADIUS = 0.125;
     private static final double HALF_LENGTH = 0.25;
     /** Roughly a duct's cross-section over a short stub, in cubic metres. */
     public static final double VOLUME = 0.25;
@@ -95,8 +99,21 @@ public abstract class ReactorGasWallBlock extends GasNodeBlock implements Entity
         if (!state.hasProperty(FACING) || toNeighbor != state.getValue(FACING)) {
             return null;
         }
-        return GasEdgeProposal.pipe(RADIUS, HALF_LENGTH)
+        GasEdgeProposal proposal = GasEdgeProposal.pipe(RADIUS, HALF_LENGTH)
                 .with(new OneWayFacet(allowedFlow(state.getValue(FACING))));
+        double aperture = apertureFor(level, self);
+        return aperture < 0 ? proposal.with(new ApertureFacet(aperture)) : proposal;
+    }
+
+    /**
+     * How far redstone closes the outer face, as the aperture to hand Kelvin: nothing at zero
+     * power, {@code -RADIUS} at full power, which shuts the connection entirely.
+     */
+    private static double apertureFor(BlockGetter level, BlockPos pos) {
+        if (!(level.getBlockEntity(pos) instanceof ReactorGasWallBlockEntity wall)) {
+            return 0;
+        }
+        return -RADIUS * wall.getRedstoneLevel() / ReactorGasWallBlockEntity.MAX_REDSTONE_LEVEL;
     }
 
     @Override

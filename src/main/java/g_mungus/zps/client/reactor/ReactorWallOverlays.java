@@ -10,7 +10,11 @@ import dev.engine_room.flywheel.lib.model.SimpleQuadMesh;
 import dev.engine_room.flywheel.lib.model.SingleMeshModel;
 import dev.engine_room.flywheel.lib.vertex.PosTexNormalVertexView;
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.blockentity.reactor.ReactorGasWallBlockEntity;
+import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
+import org.joml.Quaternionf;
 
 /**
  * The indicator overlays drawn on the outer face of the Fuel Injector and the Exhaust Port: one
@@ -24,14 +28,58 @@ import net.minecraft.resources.ResourceLocation;
  */
 public final class ReactorWallOverlays {
 
-    public static final Model FUEL_INJECTOR = overlay("fuel_injector");
-    public static final Model EXHAUST_PORT = overlay("exhaust_port");
+    public static final ResourceLocation FUEL_INJECTOR_TEXTURE = texture("fuel_injector");
+    public static final ResourceLocation EXHAUST_PORT_TEXTURE = texture("exhaust_port");
+
+    public static final Model FUEL_INJECTOR = overlay("fuel_injector", FUEL_INJECTOR_TEXTURE);
+    public static final Model EXHAUST_PORT = overlay("exhaust_port", EXHAUST_PORT_TEXTURE);
+
+    /** Tint at a redstone level of zero; the item models use it too. */
+    public static final int OFF_COLOR = 0x431111;
+    /** Tint at {@link ReactorGasWallBlockEntity#MAX_REDSTONE_LEVEL}. */
+    public static final int ON_COLOR = 0xFF3B2E;
 
     private ReactorWallOverlays() {
     }
 
-    private static Model overlay(String block) {
-        ResourceLocation texture = ZPSMod.resource("textures/block/" + block + "_overlay.png");
+    /** The overlay's tint for a redstone level, as packed RGB. */
+    public static int tintRgb(int level) {
+        float t = (float) level / ReactorGasWallBlockEntity.MAX_REDSTONE_LEVEL;
+        return lerpChannel(t, 16) << 16 | lerpChannel(t, 8) << 8 | lerpChannel(t, 0);
+    }
+
+    private static int lerpChannel(float t, int shift) {
+        int off = (OFF_COLOR >> shift) & 0xFF;
+        int on = (ON_COLOR >> shift) & 0xFF;
+        return Mth.lerpInt(t, off, on);
+    }
+
+    /**
+     * Turns the north-face quad to the block's outer face with the same rotation the blockstate
+     * applies to the block model, so the overlay lines up pixel for pixel with the face art.
+     * Vanilla applies blockstate (x, y) rotations as {@code rotateYXZ(-y, -x, 0)} about the
+     * block's centre.
+     */
+    public static Quaternionf rotationFor(Direction facing) {
+        float x = switch (facing) {
+            case DOWN -> 90f;
+            case UP -> 270f;
+            default -> 0f;
+        };
+        float y = switch (facing) {
+            case EAST -> 90f;
+            case SOUTH, UP -> 180f;
+            case WEST -> 270f;
+            default -> 0f;
+        };
+        return new Quaternionf().rotateYXZ(-y * Mth.DEG_TO_RAD, -x * Mth.DEG_TO_RAD, 0f);
+    }
+
+    private static ResourceLocation texture(String block) {
+        return ZPSMod.resource("textures/block/" + block + "_overlay.png");
+    }
+
+    private static Model overlay(String block, ResourceLocation texture) {
         // Unlit and unshaded: the overlay is a lamp, its brightness comes from the tint alone.
         Material material = SimpleMaterial.builderOf(Materials.CUTOUT_UNSHADED_BLOCK)
                 .texture(texture)

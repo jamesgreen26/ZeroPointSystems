@@ -1,5 +1,6 @@
 package g_mungus.zps.blockentity.reactor;
 
+import g_mungus.zps.block.gas.core.GasEdgeNegotiator;
 import g_mungus.zps.blockentity.gas.core.GasNodeBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -19,7 +20,8 @@ import org.jetbrains.annotations.Nullable;
  * <p>Holds the strongest redstone signal reaching the block. The block pushes a fresh reading on
  * every neighbour change; a block that has just loaded reads it on its first tick instead, since
  * asking neighbours for their signal while the chunk is still loading can pull further chunks in.
- * The level is persisted and mirrored to clients, where the face overlay is tinted by it.
+ * The level is persisted and mirrored to clients, where the face overlay is tinted by it, and on
+ * the server it sets the aperture of the block's outer face: see {@code ReactorGasWallBlock}.
  */
 public abstract class ReactorGasWallBlockEntity extends GasNodeBlockEntity {
 
@@ -67,6 +69,8 @@ public abstract class ReactorGasWallBlockEntity extends GasNodeBlockEntity {
         if (level != null && !level.isClientSide()) {
             BlockState state = getBlockState();
             level.sendBlockUpdated(worldPosition, state, state, Block.UPDATE_CLIENTS);
+            // The level sets the outer face's aperture, so the edge there needs rebuilding.
+            GasEdgeNegotiator.updateConnections(level, worldPosition);
         }
     }
 

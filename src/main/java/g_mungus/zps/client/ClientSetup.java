@@ -13,7 +13,9 @@ import g_mungus.zps.client.screens.AssemblerScreen;
 import g_mungus.zps.client.screens.CoalBurnerScreen;
 import g_mungus.zps.client.debug.GasPressureOverlay;
 import g_mungus.zps.client.reactor.ClientReactors;
+import g_mungus.zps.client.reactor.ReactorWallOverlayRenderer;
 import g_mungus.zps.client.reactor.ReactorWallOverlayVisual;
+import g_mungus.zps.client.reactor.ReactorWallOverlays;
 import g_mungus.zps.gas.ModParticles;
 import g_mungus.zps.client.screens.PowerCellScreen;
 import g_mungus.zps.client.screens.RollingMillScreen;
@@ -22,6 +24,7 @@ import g_mungus.zps.client.screens.VaporizerScreen;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.entity.ModEntities;
 import g_mungus.zps.item.AddressPadClientHooks;
+import g_mungus.zps.item.ModItems;
 import g_mungus.zps.menu.ModMenus;
 import g_mungus.zps.recipe.ModRecipeBookTypes;
 import g_mungus.zps.recipe.ModRecipes;
@@ -47,6 +50,7 @@ import net.neoforged.neoforge.client.event.RegisterRecipeBookCategoriesEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.ModelEvent;
+import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.common.NeoForge;
 import org.valkyrienskies.kelvin.impl.client.particle.DefaultGasParticleProvider;
@@ -88,6 +92,13 @@ public class ClientSetup {
         event.registerReloadListener((ResourceManagerReloadListener) resourceManager -> ConnectedTextureMeta.clear());
         // Wall coats are built from baked models, which a reload replaces.
         event.registerReloadListener((ResourceManagerReloadListener) resourceManager -> WallCoats.clear());
+    }
+
+    /** The item models carry the face overlay on tint index 0, shown in its unpowered colour. */
+    @SubscribeEvent
+    public static void onRegisterItemColors(RegisterColorHandlersEvent.Item event) {
+        event.register((stack, tintIndex) -> tintIndex == 0 ? 0xFF000000 | ReactorWallOverlays.OFF_COLOR : -1,
+                ModItems.FUEL_INJECTOR.get(), ModItems.EXHAUST_PORT.get());
     }
 
     @SubscribeEvent
@@ -174,11 +185,17 @@ public class ClientSetup {
                     // The BER draws the rod as a fallback when Flywheel's backend is unavailable.
                     .neverSkipVanillaRender()
                     .apply();
+            BlockEntityRenderers.register(ModBlockEntities.FUEL_INJECTOR.get(), ReactorWallOverlayRenderer::fuelInjector);
             SimpleBlockEntityVisualizer.builder(ModBlockEntities.FUEL_INJECTOR.get())
                     .factory(ReactorWallOverlayVisual::fuelInjector)
+                    // The BER draws the overlay as a fallback when Flywheel's backend is unavailable.
+                    .neverSkipVanillaRender()
                     .apply();
+            BlockEntityRenderers.register(ModBlockEntities.EXHAUST_PORT.get(), ReactorWallOverlayRenderer::exhaustPort);
             SimpleBlockEntityVisualizer.builder(ModBlockEntities.EXHAUST_PORT.get())
                     .factory(ReactorWallOverlayVisual::exhaustPort)
+                    // The BER draws the overlay as a fallback when Flywheel's backend is unavailable.
+                    .neverSkipVanillaRender()
                     .apply();
             BlockEntityRenderers.register(ModBlockEntities.POWER_CELL.get(), PowerCellBlockEntityRenderer::new);
             BlockEntityRenderers.register(ModBlockEntities.GAS_GAUGE.get(), GasGaugeBlockEntityRenderer::new);

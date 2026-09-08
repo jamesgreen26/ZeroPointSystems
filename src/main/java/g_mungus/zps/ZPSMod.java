@@ -39,6 +39,7 @@ import g_mungus.zps.gametest.FusionReactorGameTests;
 import g_mungus.zps.gametest.PowerCellMultiblockGameTests;
 import g_mungus.zps.gametest.DuctGameTests;
 import g_mungus.zps.gametest.GasEdgeGameTests;
+import g_mungus.zps.gametest.ReactorWallApertureGameTests;
 import g_mungus.zps.gametest.VentGameTests;
 import g_mungus.zps.gametest.TextDisplayGameTests;
 import g_mungus.zps.menu.ModMenus;
@@ -112,6 +113,7 @@ public final class ZPSMod {
         event.register(CreativeGasGeneratorGameTests.class);
         event.register(VaporizerGameTests.class);
         event.register(FusionReactorGameTests.class);
+        event.register(ReactorWallApertureGameTests.class);
         event.register(PowerCellMultiblockGameTests.class);
     }
 

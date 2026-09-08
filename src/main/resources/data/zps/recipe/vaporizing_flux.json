@@ -11,11 +11,11 @@
   "results": [
     {
       "gas": "vs_clockwork:steam",
-      "amount": 0.9
+      "amount": 0.7
     },
     {
       "gas": "zps:flux",
-      "amount": 0.1
+      "amount": 0.3
     }
   ],
   "minTemperature": 375.0,

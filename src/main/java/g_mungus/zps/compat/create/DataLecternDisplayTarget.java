@@ -19,6 +19,31 @@ import java.util.List;
 
 public class DataLecternDisplayTarget extends DisplayTarget {
 
+    /** Lines a written book page shows before overflowing; vanilla's book screen draws 14. */
+    private static final int LINES_PER_PAGE = 14;
+
+    private static final int MAX_PAGES = 50;
+
+    /**
+     * Groups the source's lines onto pages, {@link #LINES_PER_PAGE} to a page, joined with
+     * newlines. Create's own lectern target writes one line per page; here a multi-line reading
+     * such as a reactor status or an item list fills a page before it spills to the next.
+     */
+    private static List<MutableComponent> paginate(List<MutableComponent> lines) {
+        List<MutableComponent> pages = new ArrayList<>();
+        for (int start = 0; start < lines.size(); start += LINES_PER_PAGE) {
+            MutableComponent page = Component.empty();
+            int end = Math.min(lines.size(), start + LINES_PER_PAGE);
+            for (int i = start; i < end; i++) {
+                if (i > start)
+                    page.append(Component.literal("\n"));
+                page.append(lines.get(i));
+            }
+            pages.add(page);
+        }
+        return pages;
+    }
+
     @Override
     public void acceptText(int line, List<MutableComponent> text, DisplayLinkContext context) {
         BlockEntity be = context.getTargetBlockEntity();
@@ -35,17 +60,18 @@ public class DataLecternDisplayTarget extends DisplayTarget {
 
         WrittenBookContent content = book.getOrDefault(net.minecraft.core.component.DataComponents.WRITTEN_BOOK_CONTENT, WrittenBookContent.EMPTY);
         List<Filterable<Component>> pages = new ArrayList<>(content.pages());
+        List<MutableComponent> pageTexts = paginate(text);
 
         boolean changed = false;
-        for (int i = 0; i - line < text.size() && i < 50; i++) {
+        for (int i = 0; i - line < pageTexts.size() && i < MAX_PAGES; i++) {
             if (pages.size() <= i) {
-                pages.add(Filterable.passThrough(i < line ? Component.empty() : text.get(i - line)));
+                pages.add(Filterable.passThrough(i < line ? Component.empty() : pageTexts.get(i - line)));
             } else if (i >= line) {
                 if (i - line == 0)
                     reserve(i, lectern, context);
                 if (i - line > 0 && isReserved(i - line, lectern, context))
                     break;
-                pages.set(i, Filterable.passThrough(text.get(i - line)));
+                pages.set(i, Filterable.passThrough(pageTexts.get(i - line)));
             }
             changed = true;
         }
@@ -59,7 +85,7 @@ public class DataLecternDisplayTarget extends DisplayTarget {
 
     @Override
     public DisplayTargetStats provideStats(DisplayLinkContext context) {
-        return new DisplayTargetStats(50, 256, this);
+        return new DisplayTargetStats(MAX_PAGES * LINES_PER_PAGE, 256, this);
     }
 
     @Override

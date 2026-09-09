@@ -9,9 +9,11 @@ import g_mungus.zps.block.cableNetwork.light_pipe.DataComparator;
 import g_mungus.zps.block.cableNetwork.light_pipe.DataLecternBlock;
 import g_mungus.zps.block.cableNetwork.light_pipe.DataTranscriberBlock;
 import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusBlock;
+import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusMode;
 import g_mungus.zps.block.cableNetwork.light_pipe.TextDisplayBlock;
 import g_mungus.zps.blockentity.light_pipe.DataLecternBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.SerialBusBlockEntity;
+import g_mungus.zps.commands.api_impl.ScriptCommandFailure;
 import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
 import g_mungus.zps.compat.create.CreateCompat;
 import g_mungus.zps.compat.create.DisplayLinkManualTextAccessor;
@@ -491,6 +493,187 @@ public final class LightPipeGameTests {
             return;
         }
         helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_recordsSuccessfulCommand(GameTestHelper helper) {
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        SerialBusBlockEntity serialBus = feedSerialBus(helper, serialBusPos, "set_redstone 9");
+        if (serialBus == null) {
+            return;
+        }
+        if (serialBus.getLastOutcome() != SerialBusBlockEntity.Outcome.SUCCESS) {
+            helper.fail("Expected a successful outcome, got " + serialBus.getLastOutcome()
+                    + " (" + serialBus.getLastFailure() + ")");
+            return;
+        }
+        if (!"set_redstone 9".equals(serialBus.getLastCommand())) {
+            helper.fail("Expected the last command to be recorded, got \"" + serialBus.getLastCommand() + "\"");
+            return;
+        }
+        if (serialBus.getLastFailure() != null) {
+            helper.fail("Expected no failure on success, got " + serialBus.getLastFailure());
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_recordsUnknownCommandWithItsLocation(GameTestHelper helper) {
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        SerialBusBlockEntity serialBus = feedSerialBus(helper, serialBusPos, "frobnicate 9");
+        if (serialBus == null) {
+            return;
+        }
+        ScriptCommandFailure failure = serialBus.getLastFailure();
+        if (serialBus.getLastOutcome() != SerialBusBlockEntity.Outcome.FAILURE || failure == null) {
+            helper.fail("Expected an unknown command to be recorded as a failure, got " + serialBus.getLastOutcome());
+            return;
+        }
+        if (!"Unknown command 'frobnicate'".equals(failure.reason())) {
+            helper.fail("Expected a plain-language reason, got \"" + failure.reason() + "\"");
+            return;
+        }
+        if (!failure.faultInCommand() || failure.faultStart() != 0 || failure.faultEnd() != "frobnicate".length()) {
+            helper.fail("Expected the fault to mark 'frobnicate', got " + failure);
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_recordsBadArgumentWithItsLocation(GameTestHelper helper) {
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        SerialBusBlockEntity serialBus = feedSerialBus(helper, serialBusPos, "set_redstone banana");
+        if (serialBus == null) {
+            return;
+        }
+        ScriptCommandFailure failure = serialBus.getLastFailure();
+        if (serialBus.getLastOutcome() != SerialBusBlockEntity.Outcome.FAILURE || failure == null) {
+            helper.fail("Expected a bad argument to be recorded as a failure, got " + serialBus.getLastOutcome());
+            return;
+        }
+        if (failure.reason().isBlank() || failure.reason().contains("Exception")) {
+            helper.fail("Expected a plain-language reason, got \"" + failure.reason() + "\"");
+            return;
+        }
+        int bananaAt = "set_redstone banana".indexOf("banana");
+        if (!failure.faultInCommand() || failure.faultStart() != bananaAt) {
+            helper.fail("Expected the fault to mark 'banana', got " + failure);
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_explainsValueOfTypeMismatch(GameTestHelper helper) {
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        String command = "set_redstone value_of(dimension)";
+        SerialBusBlockEntity serialBus = feedSerialBus(helper, serialBusPos, command);
+        if (serialBus == null) {
+            return;
+        }
+        ScriptCommandFailure failure = serialBus.getLastFailure();
+        if (failure == null) {
+            helper.fail("Expected a type mismatch to be recorded as a failure, got " + serialBus.getLastOutcome());
+            return;
+        }
+        String expected = "value_of(dimension) gives dimension, but set_redstone needs int";
+        if (!expected.equals(failure.reason())) {
+            helper.fail("Expected a reason naming both types, got \"" + failure.reason() + "\"");
+            return;
+        }
+        int tokenAt = command.indexOf("value_of(");
+        if (!failure.faultInCommand() || failure.faultStart() != tokenAt || failure.faultEnd() != command.length()) {
+            helper.fail("Expected the fault to mark the value_of token, got " + failure);
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_explainsValueOfBadFollowOn(GameTestHelper helper) {
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        SerialBusBlockEntity serialBus = feedSerialBus(helper, serialBusPos, "set_redstone value_of(dimension frob)");
+        if (serialBus == null) {
+            return;
+        }
+        ScriptCommandFailure failure = serialBus.getLastFailure();
+        if (failure == null) {
+            helper.fail("Expected a bad follow-on word to be recorded as a failure, got " + serialBus.getLastOutcome());
+            return;
+        }
+        String expected = "In value_of(dimension frob), 'frob' cannot follow dimension";
+        if (!expected.equals(failure.reason())) {
+            helper.fail("Expected the reason to name the stray word, got \"" + failure.reason() + "\"");
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_explainsUnknownValueOfGetter(GameTestHelper helper) {
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        SerialBusBlockEntity serialBus = feedSerialBus(helper, serialBusPos, "set_redstone value_of(frobnicate)");
+        if (serialBus == null) {
+            return;
+        }
+        ScriptCommandFailure failure = serialBus.getLastFailure();
+        if (failure == null) {
+            helper.fail("Expected an unknown getter to be recorded as a failure, got " + serialBus.getLastOutcome());
+            return;
+        }
+        if (!"'frobnicate' is not a known value in value_of(frobnicate)".equals(failure.reason())) {
+            helper.fail("Expected the reason to name the unknown value, got \"" + failure.reason() + "\"");
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_getModeDoesNotExecute(GameTestHelper helper) {
+        BlockPos targetPos = new BlockPos(3, 1, 2);
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        BlockPos cablePos = new BlockPos(3, 1, 4);
+        BlockPos senderPos = new BlockPos(3, 1, 5);
+
+        helper.setBlock(targetPos, Blocks.STONE.defaultBlockState());
+        helper.setBlock(serialBusPos, serialBus(Direction.NORTH));
+        helper.setBlock(cablePos, lightPipe());
+        helper.setBlock(senderPos, lectern(Direction.SOUTH));
+
+        SerialBusBlockEntity serialBus = serialBusEntity(helper, serialBusPos);
+        if (serialBus == null) {
+            return;
+        }
+        serialBus.setMode(SerialBusMode.GET);
+        setWritableBook(helper, senderPos, "set_redstone 9");
+
+        int stored = SetRedstoneCommand.getRedstonePowerAt(helper.getLevel(), helper.absolutePos(targetPos));
+        if (stored != 0) {
+            helper.fail("Expected a bus in Get mode to leave the target alone, got redstone " + stored);
+            return;
+        }
+        if (serialBus.getLastOutcome() != SerialBusBlockEntity.Outcome.NONE) {
+            helper.fail("Expected a bus in Get mode to record nothing, got " + serialBus.getLastOutcome());
+            return;
+        }
+        helper.succeed();
+    }
+
+    /** Stone target, bus facing it, a pipe, and a lectern holding the command. */
+    private static SerialBusBlockEntity feedSerialBus(GameTestHelper helper, BlockPos serialBusPos, String command) {
+        BlockPos targetPos = serialBusPos.north();
+        BlockPos cablePos = serialBusPos.south();
+        BlockPos senderPos = cablePos.south();
+
+        helper.setBlock(targetPos, Blocks.STONE.defaultBlockState());
+        helper.setBlock(serialBusPos, serialBus(Direction.NORTH));
+        helper.setBlock(cablePos, lightPipe());
+        helper.setBlock(senderPos, lectern(Direction.SOUTH));
+
+        setWritableBook(helper, senderPos, command);
+        return serialBusEntity(helper, serialBusPos);
     }
 
     @GameTest(template = TEMPLATE)

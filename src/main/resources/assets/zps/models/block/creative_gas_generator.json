@@ -1,6 +1,7 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/cube_column",
   "textures": {
-    "all": "zps:block/aluminum_block"
+    "end": "zps:block/creative_gas_generator_top",
+    "side": "zps:block/creative_gas_generator_side"
   }
 }

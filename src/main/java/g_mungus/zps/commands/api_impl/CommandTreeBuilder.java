@@ -20,6 +20,7 @@ import g_mungus.zps.commands.api_impl.arguments.ArgumentPlaceholder;
 import g_mungus.zps.commands.api_impl.arguments.AddressReference;
 import g_mungus.zps.commands.api_impl.arguments.OverloadedExecutorArgumentType;
 import g_mungus.zps.commands.api_impl.arguments.ZPSLiteral;
+import g_mungus.zps.commands.api_impl.exceptions.ScriptCommandException;
 import g_mungus.zps.config.ZPSConfig;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.coordinates.Coordinates;
@@ -142,7 +143,7 @@ public class CommandTreeBuilder {
                         throw new IllegalArgumentException("Argument placeholder %s must be replaced before execution");
                     }
                     if (rawArg instanceof ValueOfExpression<?> expr) {
-                        rawArg = expr.evaluate(commandSource, source.getPos());
+                        rawArg = expr.evaluate(commandSource, source.getPos(), mapper.displayName());
                     }
                     rawArg = resolveAddressReference(rawArg, source);
                     rawArg = coerceArgument(rawArg, scriptMapper2.argumentClass(), commandSource);
@@ -319,7 +320,7 @@ public class CommandTreeBuilder {
             throw new IllegalArgumentException("Argument placeholder %s must be replaced before execution");
         }
         if (rawArg instanceof ValueOfExpression<?> expr) {
-            rawArg = expr.evaluate(commandSource, source.getPos());
+            rawArg = expr.evaluate(commandSource, source.getPos(), typed.displayName());
         }
         rawArg = resolveAddressReference(rawArg, source);
         rawArg = coerceArgument(rawArg, typed.argumentClass(), commandSource);
@@ -460,7 +461,7 @@ public class CommandTreeBuilder {
                         throw new IllegalArgumentException("Argument placeholder %s must be replaced before execution");
                     }
                     if (rawArg instanceof ValueOfExpression<?> expr) {
-                        rawArg = expr.evaluate(commandSource, source.getPos());
+                        rawArg = expr.evaluate(commandSource, source.getPos(), mapper.displayName());
                     }
                     rawArg = resolveAddressReference(rawArg, source);
                     rawArg = coerceArgument(rawArg, scriptMapper2.argumentClass(), commandSource);
@@ -500,10 +501,8 @@ public class CommandTreeBuilder {
     private record ScriptContextWithArgumentImpl<T>(T argumentValue, BlockPos pos, ServerLevel level, CommandSourceStack commandSource) implements ScriptContext.WithArgument<T> { }
 
     private static RuntimeException wrapCommandException(CommandContext<CommandSourceStack> context, String phase, String commandPart, Exception exception) {
-        if (logCommandException(context, phase, commandPart, exception)) {
-            return new LoggedScriptCommandException(exception);
-        }
-        return new RuntimeException(exception);
+        boolean logged = logCommandException(context, phase, commandPart, exception);
+        return new ScriptCommandException(phase, commandPart, context.getInput(), getLastNodeRange(context), logged, exception);
     }
 
     private static boolean logCommandException(CommandContext<CommandSourceStack> context, String phase, String commandPart, Exception exception) {
@@ -534,19 +533,14 @@ public class CommandTreeBuilder {
         return message;
     }
 
+    /** Whether this failure, or one it wraps, was already written to the log when it was raised. */
     public static boolean isLoggedScriptCommandException(Throwable throwable) {
         Throwable current = throwable;
         while (current != null) {
-            if (current instanceof LoggedScriptCommandException) return true;
+            if (current instanceof ScriptCommandException scriptCommandException && scriptCommandException.logged()) return true;
             current = current.getCause();
         }
         return false;
-    }
-
-    public static class LoggedScriptCommandException extends RuntimeException {
-        public LoggedScriptCommandException(Throwable cause) {
-            super(cause);
-        }
     }
 
     private static StringRange getLastNodeRange(CommandContext<CommandSourceStack> context) {

@@ -1,7 +1,9 @@
 package g_mungus.zps.reactor;
 
 import g_mungus.zps.block.gas.core.GasEdgeNegotiator;
+import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.config.ZPSConfig;
+import g_mungus.zps.util.TickAverage;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
@@ -62,6 +64,10 @@ public final class Reactor {
     private int feOutThisTick;
     private int feInLastTick;
     private int feOutLastTick;
+    /** FE out per tick over the last {@value #OUTPUT_AVERAGE_WINDOW_TICKS} ticks, for readouts. */
+    private final TickAverage feOutAverage = new TickAverage(OUTPUT_AVERAGE_WINDOW_TICKS);
+
+    public static final int OUTPUT_AVERAGE_WINDOW_TICKS = 10;
 
     public Reactor(int id, CavityScan scan) {
         this(id, scan.interior(), new LongArrayList(scan.walls()), scan.host(), null, false);
@@ -250,9 +256,10 @@ public final class Reactor {
         feOutThisTick += fe;
     }
 
-    void rollTickCounters() {
+    void rollTickCounters(long gameTime) {
         feInLastTick = feInThisTick;
         feOutLastTick = feOutThisTick;
+        feOutAverage.set(feOutLastTick, gameTime);
         feInThisTick = 0;
         feOutThisTick = 0;
     }
@@ -263,6 +270,27 @@ public final class Reactor {
 
     public int feOutLastTick() {
         return feOutLastTick;
+    }
+
+    /** Net FE drawn out of the chamber per tick, averaged over the last {@value #OUTPUT_AVERAGE_WINDOW_TICKS} ticks. */
+    public int feOutAverage(long gameTime) {
+        return feOutAverage.average(gameTime);
+    }
+
+    /**
+     * The most FE per tick the shell could deliver right now: every heat exchanger that is set up
+     * to extract, times the per-exchanger rate. For now an exchanger counts as extracting when a
+     * step-up transformer sits on its outer face.
+     */
+    public int outputCapacityFePerTick(ServerLevel level) {
+        int extracting = 0;
+        for (BlockPos pos : orientedWallsOf(level, ModBlocks.HEAT_EXCHANGER.get())) {
+            Direction facing = level.getBlockState(pos).getValue(BlockStateProperties.FACING);
+            if (level.getBlockState(pos.relative(facing)).is(ModBlocks.STEPUP_TRANSFORMER.get())) {
+                extracting++;
+            }
+        }
+        return extracting * ZPSConfig.exchangerFePerTick();
     }
 
     // --- persistence -------------------------------------------------------------------------

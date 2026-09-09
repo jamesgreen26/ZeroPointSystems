@@ -484,6 +484,21 @@
 
     "zps.display_source.serial_bus": "Raw Input Data",
     "zps.display_source.serial_bus_manual": "Stored Display Text",
+    "zps.display_source.reactor_status": "Reactor Status",
+    "zps.display_source.reactor.not_enough_space": "Not enough space ",
+    "zps.display_source.reactor.for_reactor_status": "for Reactor Status",
+    "zps.display_source.reactor.status": "Reactor Status:  %1$s",
+    "zps.display_source.reactor.status_short": "Reactor:  %1$s",
+    "zps.display_source.reactor.offline": "Offline",
+    "zps.display_source.reactor.empty": "Empty",
+    "zps.display_source.reactor.cold": "Cold",
+    "zps.display_source.reactor.lit": "Lit",
+    "zps.display_source.reactor.pressure": "Pressure",
+    "zps.display_source.reactor.pressure_dots": "... ",
+    "zps.display_source.reactor.temperature": "Temp",
+    "zps.display_source.reactor.temperature_dots": "....... ",
+    "zps.display_source.reactor.output": "Output",
+    "zps.display_source.reactor.output_dots": "..... ",
 
     "gui.recipebook.toggleRecipes.rollable": "Rollable"
 }

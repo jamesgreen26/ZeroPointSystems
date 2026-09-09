@@ -273,7 +273,7 @@ public final class ReactorManager extends SavedData {
         double melt = ZPSConfig.reactorMeltTemperatureK();
 
         for (Reactor reactor : new ArrayList<>(reactors.values())) {
-            reactor.rollTickCounters();
+            reactor.rollTickCounters(level.getGameTime());
             if (!level.isLoaded(reactor.host())) {
                 continue;
             }
@@ -373,6 +373,23 @@ public final class ReactorManager extends SavedData {
         return ReactorSync.heatOf(kelvin().getTemperatureAt(host));
     }
 
+    /**
+     * A snapshot of the chamber for readouts: pressure and temperature. Null if the chamber is
+     * not in the simulation right now.
+     */
+    public @Nullable ChamberReading reading(ServerLevel level, Reactor reactor) {
+        DuctNetwork<?> kelvin = kelvin();
+        DuctNodePos host = reactor.hostNodePos(level);
+        if (!(kelvin.getNodeAt(host) instanceof ReactorChamberNode)) {
+            return null;
+        }
+        return new ChamberReading(kelvin.getPressureAt(host), kelvin.getTemperatureAt(host));
+    }
+
+    /** What a display or gauge sees of a chamber at one instant. */
+    public record ChamberReading(double pressurePa, double temperatureK) {
+    }
+
     /** Whether a chamber holding these masses counts as empty: no gas above the trace threshold. */
     public static boolean isEmpty(Map<GasType, Double> masses) {
         double threshold = ZPSConfig.reactorEmptyGasThresholdKg();
@@ -385,15 +402,20 @@ public final class ReactorManager extends SavedData {
     }
 
     public static double aetherFraction(Map<GasType, Double> masses) {
+        return fractionOf(masses, ModGases.AETHER);
+    }
+
+    /** Mass fraction of one gas in a mixture, or zero for an empty mixture. */
+    public static double fractionOf(Map<GasType, Double> masses, GasType gas) {
         double total = 0;
-        double aether = 0;
+        double wanted = 0;
         for (Map.Entry<GasType, Double> entry : masses.entrySet()) {
             total += entry.getValue();
-            if (entry.getKey() == ModGases.AETHER) {
-                aether += entry.getValue();
+            if (entry.getKey() == gas) {
+                wanted += entry.getValue();
             }
         }
-        return total <= 0 ? 0 : aether / total;
+        return total <= 0 ? 0 : wanted / total;
     }
 
     // --- persistence -------------------------------------------------------------------------

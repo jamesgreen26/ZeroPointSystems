@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "item": "zps:aluminum_ingot"
+    },
+    "D": {
+      "item": "zps:gas_duct"
+    },
+    "G": {
+      "item": "minecraft:glass_pane"
+    },
+    "M": {
+      "item": "zps:space_metal_mesh"
+    }
+  },
+  "pattern": [
+    "IDI",
+    "MGM",
+    "MMM"
+  ],
+  "result": {
+    "id": "zps:vaporizer",
+    "count": 1
+  }
+}

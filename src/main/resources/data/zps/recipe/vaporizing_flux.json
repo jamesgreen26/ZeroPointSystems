@@ -15,7 +15,7 @@
     },
     {
       "gas": "zps:flux",
-      "amount": 0.3
+      "amount": 0.5
     }
   ],
   "minTemperature": 375.0,

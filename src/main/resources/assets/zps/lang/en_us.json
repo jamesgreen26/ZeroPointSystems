@@ -495,10 +495,10 @@
     "zps.display_source.reactor.lit": "Lit",
     "zps.display_source.reactor.pressure": "Pressure",
     "zps.display_source.reactor.pressure_dots": "... ",
-    "zps.display_source.reactor.temperature": "Temp",
-    "zps.display_source.reactor.temperature_dots": "....... ",
+    "zps.display_source.reactor.temperature": "Heat",
+    "zps.display_source.reactor.temperature_dots": "................ ",
     "zps.display_source.reactor.output": "Output",
-    "zps.display_source.reactor.output_dots": "..... ",
+    "zps.display_source.reactor.output_dots": "........... ",
 
     "gui.recipebook.toggleRecipes.rollable": "Rollable"
 }

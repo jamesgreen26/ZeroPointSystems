@@ -83,6 +83,13 @@ public class ReactorDisplaySource extends DisplaySource {
 
         List<List<MutableComponent>> components = getComponents(context, true).toList();
 
+        // No reactor behind this block (or not a server level): a single empty row, so there is
+        // nothing to fit and the board keeps its default layout.
+        if (components.size() < 4) {
+            context.flapDisplayContext = Boolean.FALSE;
+            return components;
+        }
+
         // Same fit test as the boiler: the label column in regular flaps, the bar in wide ones.
         if (stats.maxColumns() * FlapDisplaySection.MONOSPACE < labelWidth() * FlapDisplaySection.MONOSPACE
                 + components.get(1).get(1).getString().length() * FlapDisplaySection.WIDE_MONOSPACE) {

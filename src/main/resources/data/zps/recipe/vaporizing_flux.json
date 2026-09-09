@@ -5,17 +5,17 @@
       "item": "minecraft:blue_ice"
     },
     {
-      "item": "zps:lithium_ingot"
+      "item": "zps:lithium_nugget"
     }
   ],
   "results": [
     {
       "gas": "vs_clockwork:steam",
-      "amount": 0.7
+      "amount": 0.3
     },
     {
       "gas": "zps:flux",
-      "amount": 0.5
+      "amount": 0.7
     }
   ],
   "minTemperature": 375.0,

@@ -147,7 +147,7 @@ public class ZPSConfig {
     public static final int REACTOR_MAX_INTERIOR_EXTENT_DEFAULT = 14;
     public static final double REACTOR_EMPTY_GAS_THRESHOLD_KG_DEFAULT = 0.001;
     public static final int REACTOR_EMPTY_GRACE_TICKS_DEFAULT = 60;
-    public static final double REACTOR_EMPTY_COOLING_FRACTION_DEFAULT = 0.001;
+    public static final double REACTOR_EMPTY_COOLING_FRACTION_DEFAULT = 0.005;
     public static final int EXCHANGER_FE_PER_TICK_DEFAULT = 4096;
     public static final int EXCHANGER_BUFFER_FE_DEFAULT = 16_384;
     public static final double EXCHANGER_GENERATION_FLOOR_K_DEFAULT = 55_000.0;

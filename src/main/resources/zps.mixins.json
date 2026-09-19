@@ -38,6 +38,7 @@
     "PointedDripstoneBlockInvoker",
     "PointedDripstoneBlockMixin",
     "ServerLevelMixin",
+    "SnowGolemMixin",
     "StructureTemplateMixin",
     "VoxelShapeAccessor",
     "create.DisplayLinkBlockEntityMixin",

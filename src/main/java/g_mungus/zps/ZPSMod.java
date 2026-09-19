@@ -40,6 +40,7 @@ import g_mungus.zps.gametest.FusionReactorGameTests;
 import g_mungus.zps.gametest.PowerCellMultiblockGameTests;
 import g_mungus.zps.gametest.DripstoneGameTests;
 import g_mungus.zps.gametest.PowderSnowCauldronGameTests;
+import g_mungus.zps.gametest.SnowGolemGameTests;
 import g_mungus.zps.gametest.DuctGameTests;
 import g_mungus.zps.gametest.GasEdgeGameTests;
 import g_mungus.zps.gametest.ReactorWallApertureGameTests;
@@ -122,6 +123,7 @@ public final class ZPSMod {
         event.register(PowerCellMultiblockGameTests.class);
         event.register(DripstoneGameTests.class);
         event.register(PowderSnowCauldronGameTests.class);
+        event.register(SnowGolemGameTests.class);
     }
 
     /**

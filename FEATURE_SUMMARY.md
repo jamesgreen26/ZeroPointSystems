@@ -306,6 +306,7 @@ of functional quirks noted.
 - **Vanilla suspicious sand & gravel** are replaced with the same reinforced version — unlike vanilla they survive falling *and* being pushed by pistons with their buried payload intact, and now drop plain sand/gravel when broken (or when they fall somewhere they cannot land) rather than nothing.
 - **Pointed dripstone drips powder snow** — a stalactite whose supporting block has powder snow on top drips into the cauldron under its tip, filling an empty cauldron and then topping a powder snow cauldron up one layer per drip, at the same rate and range as vanilla water drips (snowflake particles mark an active tip). Water and lava drips are unchanged.
 - **Scooping snow from a powder snow cauldron** — sneak-use a powder snow cauldron with both hands empty to take one layer out as a snowball; a plain click behaves as before and bucket interactions are unchanged.
+- **Snow golems fill cauldrons** — a snow golem standing in or on a cauldron adds a layer of powder snow to it each tick (empty cauldrons included), the same footprint its snow trail uses; gated by mob griefing like the trail.
 
 ---
 

@@ -10,10 +10,8 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.LayeredCauldronBlock;
 import net.minecraft.world.level.block.PointedDripstoneBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
@@ -86,16 +84,9 @@ public final class PowderSnowDripstone {
         if (tip == null || !hasPowderSnowSource(level, tip)) {
             return false;
         }
-        BlockState filled;
-        if (state.is(Blocks.CAULDRON)) {
-            filled = Blocks.POWDER_SNOW_CAULDRON.defaultBlockState();
-        } else if (canReceive(state)) {
-            filled = state.cycle(LayeredCauldronBlock.LEVEL);
-        } else {
+        if (PowderSnowCauldrons.addLayer(level, pos, state) == null) {
             return true;
         }
-        level.setBlockAndUpdate(pos, filled);
-        level.gameEvent(GameEvent.BLOCK_CHANGE, pos, GameEvent.Context.of(filled));
         level.playSound(null, pos, SoundEvents.POWDER_SNOW_PLACE, SoundSource.BLOCKS, 0.5F, 1.0F);
         level.sendParticles(ParticleTypes.SNOWFLAKE,
                 pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, 4, 0.2, 0.0, 0.2, 0.0);
@@ -136,11 +127,6 @@ public final class PowderSnowDripstone {
         return level.getBlockState(supportPos.above()).is(Blocks.POWDER_SNOW);
     }
 
-    private static boolean canReceive(BlockState state) {
-        return state.is(Blocks.POWDER_SNOW_CAULDRON)
-                && state.getValue(LayeredCauldronBlock.LEVEL) < LayeredCauldronBlock.MAX_FILL_LEVEL;
-    }
-
     /** Same walk as vanilla's {@code findFillableCauldronBelowStalactiteTip}, for our cauldron predicate. */
     @Nullable
     private static BlockPos findFillableCauldronBelow(ServerLevel level, BlockPos tip) {
@@ -148,7 +134,7 @@ public final class PowderSnowDripstone {
         for (int i = 1; i < SEARCH_RANGE; i++) {
             cursor.move(Direction.DOWN);
             BlockState state = level.getBlockState(cursor);
-            if (state.is(Blocks.CAULDRON) || canReceive(state)) {
+            if (PowderSnowCauldrons.canAddLayer(state)) {
                 return cursor.immutable();
             }
             if (level.isOutsideBuildHeight(cursor.getY())

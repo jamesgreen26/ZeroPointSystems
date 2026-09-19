@@ -67,6 +67,9 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
     /** The type a GET expression has to yield: what goes on the pipe is text. */
     private static final ResourceLocation STRING_TYPE = ResourceLocation.parse("zps:string");
 
+    /** What turns a value of some other type into the text the pipe carries. */
+    private static final String AS_STRING_MAPPER = "as_string";
+
     /** How the last command went. {@link #NONE} until the bus has run anything. */
     public enum Outcome {
         NONE, SUCCESS, FAILURE
@@ -204,8 +207,7 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
         }
         String value;
         try {
-            value = new ValueOfExpression<String>(chain, STRING_TYPE)
-                    .evaluate(createCommandSourceStack(serverLevel), getAffectedBlockPos());
+            value = evaluateAsText(serverLevel, chain);
         } catch (Exception e) {
             // Positions come back in the expression's own terms, which is what the screen marks up.
             recordOutcome(chain, ScriptCommandFailure.describe(e, chain, chain));
@@ -218,6 +220,28 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
         sentValue = value;
         setChanged();
         updateSignal(serverLevel);
+    }
+
+    /**
+     * The chain's value as text. A chain that stops short of text — {@code pos} rather than
+     * {@code pos as_string} — is finished off with {@code as_string} rather than refused, since
+     * that mapper is the only way its value could have reached the pipe anyway.
+     *
+     * @throws Exception the original failure if the chain does not read as text and {@code as_string}
+     *                   cannot make it, that being the one worth explaining
+     */
+    private String evaluateAsText(ServerLevel serverLevel, String chain) throws Exception {
+        try {
+            return new ValueOfExpression<String>(chain, STRING_TYPE)
+                    .evaluate(createCommandSourceStack(serverLevel), getAffectedBlockPos());
+        } catch (Exception e) {
+            try {
+                return new ValueOfExpression<String>(chain + " " + AS_STRING_MAPPER, STRING_TYPE)
+                        .evaluate(createCommandSourceStack(serverLevel), getAffectedBlockPos());
+            } catch (Exception ignored) {
+                throw e;
+            }
+        }
     }
 
     // --- sending ------------------------------------------------------------------------------

@@ -693,6 +693,38 @@ public final class LightPipeGameTests {
     }
 
     @GameTest(template = TEMPLATE)
+    public static void serialBus_getModeAddsAsStringWhenTheChainStopsShort(GameTestHelper helper) {
+        BlockPos targetPos = new BlockPos(3, 1, 2);
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        BlockPos cablePos = new BlockPos(3, 1, 4);
+        BlockPos displayPos = new BlockPos(3, 1, 5);
+
+        helper.setBlock(targetPos, Blocks.STONE.defaultBlockState());
+        helper.setBlock(serialBusPos, serialBus(Direction.NORTH));
+        helper.setBlock(cablePos, lightPipe());
+        helper.setBlock(displayPos, display(Direction.SOUTH));
+
+        SerialBusBlockEntity serialBus = serialBusEntity(helper, serialBusPos);
+        if (serialBus == null) {
+            return;
+        }
+        serialBus.setMode(SerialBusMode.GET);
+        // A block position, not text: the bus should finish the chain off itself.
+        serialBus.setExpression("pos");
+
+        BlockPos absTarget = helper.absolutePos(targetPos);
+        String expected = absTarget.getX() + " " + absTarget.getY() + " " + absTarget.getZ();
+        helper.succeedWhen(() -> {
+            String shown = displayText(helper, displayPos);
+            if (!expected.equals(shown)) {
+                helper.fail("Expected \"pos\" to send \"" + expected + "\", display shows \"" + shown
+                        + "\" (outcome " + serialBus.getLastOutcome()
+                        + ", reason " + (serialBus.getLastFailure() == null ? "none" : serialBus.getLastFailure().reason()) + ")");
+            }
+        });
+    }
+
+    @GameTest(template = TEMPLATE)
     public static void serialBus_getModeFailureKeepsLastValue(GameTestHelper helper) {
         BlockPos targetPos = new BlockPos(3, 1, 2);
         BlockPos serialBusPos = new BlockPos(3, 1, 3);

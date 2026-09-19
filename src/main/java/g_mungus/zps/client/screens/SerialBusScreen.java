@@ -110,11 +110,11 @@ public class SerialBusScreen extends Screen {
         expressionBox = null;
         expressionSuggestions = null;
 
-        // Centred on the tallest the body can get in this mode, so the layout holds still as
-        // commands of different lengths come and go.
-        int bodyHeight = mode == SerialBusMode.GET
-                ? LABEL_TO_CONTROL_GAP + BOX_HEIGHT
-                : LABEL_TO_CONTROL_GAP + MAX_COMMAND_LINES * (this.font.lineHeight + LINE_GAP);
+        // One body height for both modes — the tallest either can need — so the stack holds still
+        // as commands of different lengths come and go, and toggling the mode moves nothing but
+        // the body itself. Get mode simply leaves the slack above the buttons.
+        int readoutHeight = LABEL_TO_CONTROL_GAP + MAX_COMMAND_LINES * (this.font.lineHeight + LINE_GAP);
+        int bodyHeight = Math.max(readoutHeight, LABEL_TO_CONTROL_GAP + BOX_HEIGHT);
         int contentHeight = TITLE_TO_FIRST_LABEL_GAP + LABEL_TO_CONTROL_GAP
                 + CONTROL_HEIGHT + SECTION_GAP + bodyHeight + SECTION_GAP + CONTROL_HEIGHT;
         titleY = Math.max(SECTION_GAP, (this.height - contentHeight) / 2);

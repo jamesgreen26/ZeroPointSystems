@@ -106,6 +106,11 @@ public class CreativeGasGeneratorScreen extends Screen {
     }
 
     @Override
+    public void renderBackground(@NotNull GuiGraphics p_333749_, int p_333882_, int p_333946_, float p_334094_) {
+        this.renderTransparentBackground(p_333749_);
+    }
+
+    @Override
     public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
 

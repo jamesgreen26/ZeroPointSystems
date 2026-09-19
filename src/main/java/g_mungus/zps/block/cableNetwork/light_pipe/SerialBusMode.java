@@ -10,7 +10,10 @@ import org.jetbrains.annotations.NotNull;
 public enum SerialBusMode implements StringRepresentable {
     /** Runs each message as a script command against the block it faces. */
     EXECUTE("execute"),
-    /** Reads a value from the block it faces. Not wired up yet: the bus does nothing in this mode. */
+    /**
+     * Reads a value from the block it faces every few ticks, through a getter to mapper chain the
+     * player writes on the block's screen, and puts the answer on the light pipe.
+     */
     GET("get");
 
     private final String serializedName;

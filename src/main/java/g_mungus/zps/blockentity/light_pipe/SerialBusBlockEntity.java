@@ -2,11 +2,14 @@ package g_mungus.zps.blockentity.light_pipe;
 
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.cableNetwork.TransformerBlock;
+import g_mungus.zps.block.cableNetwork.core.Channels;
+import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusMode;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.commands.api_impl.CommandTreeBuilder;
 import g_mungus.zps.commands.api_impl.ScriptCommandFailure;
 import g_mungus.zps.commands.api_impl.ZPSCommands;
+import g_mungus.zps.commands.api_impl.arguments.ValueOfExpression;
 import g_mungus.zps.compat.Compat;
 import g_mungus.zps.compat.create.CreateCompat;
 import g_mungus.zps.config.ZPSConfig;
@@ -20,31 +23,49 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.CommandBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
- * Turns the text arriving on its light pipe into script commands against the block it faces.
+ * Turns the text arriving on its light pipe into script commands against the block it faces, or —
+ * in {@link SerialBusMode#GET} — reads a value back out of that block and puts it on the pipe.
+ *
+ * <p>In GET mode the bus stops listening and starts talking: every {@link #TICK_INTERVAL} ticks it
+ * evaluates its expression, a getter to mapper chain yielding a string, and pushes the result to the
+ * network when it differs from what it last sent. It is the only block that both receives and sends
+ * on {@link Channels#MAIN}, so several inherited helpers need to know to skip the bus itself.
  *
  * <p>Keeps a record of the last command it ran and how that went, mirrored to clients for the
  * block's screen: the command text, whether it succeeded, and if not a plain-language reason with
  * the offending part of the command marked. The record only travels when it changes, so a bus fed
  * the same command every tick costs nothing on the wire.
  */
-public class SerialBusBlockEntity extends AbstractTextDataReceiver {
+public class SerialBusBlockEntity extends AbstractTextDataReceiver implements LightPipeDataSender {
 
     private static final String MODE_TAG = "Mode";
     private static final String LAST_COMMAND_TAG = "LastCommand";
     private static final String LAST_OUTCOME_TAG = "LastOutcome";
     private static final String LAST_FAILURE_TAG = "LastFailure";
+    private static final String EXPRESSION_TAG = "Expression";
+    private static final String SENT_VALUE_TAG = "SentValue";
+
+    /** How often a bus in GET mode reads the block it faces. */
+    private static final int TICK_INTERVAL = 4;
+
+    /** The type a GET expression has to yield: what goes on the pipe is text. */
+    private static final ResourceLocation STRING_TYPE = ResourceLocation.parse("zps:string");
 
     /** How the last command went. {@link #NONE} until the bus has run anything. */
     public enum Outcome {
@@ -56,12 +77,25 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver {
     private Outcome lastOutcome = Outcome.NONE;
     private @Nullable ScriptCommandFailure lastFailure;
 
+    /** The getter to mapper chain a bus in GET mode evaluates, as the player typed it. */
+    private String expression = "";
+    /** The last value put on the pipe. Kept across a reload so downstream displays survive one. */
+    private String sentValue = "";
+
+    private int tickCounter;
+    /** Guards against a network that leads back here pushing us into our own updateSignal. */
+    private boolean updating;
+
     public SerialBusBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SERIAL_BUS.get(), pos, state);
     }
 
     @Override
     public void acceptText(int channel, String message) {
+        // In GET mode the bus is the one talking; whatever else is on the pipe is not ours to run.
+        if (mode == SerialBusMode.GET) {
+            return;
+        }
         boolean suppressCommand = shouldSuppressCommandsForDisplayLink();
         if (!suppressCommand && mode == SerialBusMode.EXECUTE) {
             executeCommand(message);
@@ -142,6 +176,140 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver {
         return currentDisplayText;
     }
 
+    // --- GET mode ----------------------------------------------------------------------------
+
+    /** Server side, from the block's ticker. Only a bus in GET mode has anything to do. */
+    public void tick() {
+        if (mode != SerialBusMode.GET || !(level instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        if (++tickCounter < TICK_INTERVAL) {
+            return;
+        }
+        tickCounter = 0;
+        evaluateAndPush(serverLevel);
+    }
+
+    /**
+     * Reads the block the bus faces through the expression and puts the answer on the pipe.
+     *
+     * <p>A value that has not changed is not sent again, so a steady reading costs one evaluation
+     * and nothing else. An expression that does not evaluate sends nothing at all: the pipe keeps
+     * the last good value and the screen explains why it stopped moving.
+     */
+    private void evaluateAndPush(ServerLevel serverLevel) {
+        String chain = expression.strip();
+        if (chain.isEmpty()) {
+            return;
+        }
+        String value;
+        try {
+            value = new ValueOfExpression<String>(chain, STRING_TYPE)
+                    .evaluate(createCommandSourceStack(serverLevel), getAffectedBlockPos());
+        } catch (Exception e) {
+            // Positions come back in the expression's own terms, which is what the screen marks up.
+            recordOutcome(chain, ScriptCommandFailure.describe(e, chain, chain));
+            return;
+        }
+        recordOutcome(chain, null);
+        if (value == null || value.equals(sentValue)) {
+            return;
+        }
+        sentValue = value;
+        setChanged();
+        updateSignal(serverLevel);
+    }
+
+    // --- sending ------------------------------------------------------------------------------
+
+    @Override
+    public String provideNextDisplayText(int length) {
+        if (mode != SerialBusMode.GET) {
+            // Blank senders do not count towards a network's signal, so a bus that is executing
+            // stays invisible to everything else on the pipe, exactly as it was before GET existed.
+            return "";
+        }
+        return sentValue.substring(0, Math.min(sentValue.length(), length));
+    }
+
+    /**
+     * The inherited walk would hand the bus its own output and count the bus as competing with
+     * itself, since it sends and receives on one channel. This one skips the bus on both counts.
+     */
+    @Override
+    public void updateSignal(Level level) {
+        if (updating) {
+            return;
+        }
+        updating = true;
+        try {
+            boolean clear = isClearSignal(level);
+            for (NetworkNode terminal : getTerminals(Channels.MAIN)) {
+                if (terminal.pos().equals(getBlockPos())) continue;
+                if (!(level.getBlockEntity(terminal.pos()) instanceof LightPipeDataReceiver.Text receiver)) {
+                    continue;
+                }
+                String text = clear ? sentValue : garbled(receiver.getMaxLength());
+                receiver.acceptText(terminal.channel(), text.substring(0, Math.min(text.length(), receiver.getMaxLength())));
+            }
+        } finally {
+            updating = false;
+        }
+    }
+
+    /** As the interface's own check, but counting the bus once from its own field rather than twice. */
+    private boolean isClearSignal(Level level) {
+        int senders = sentValue.isBlank() ? 0 : 1;
+        for (NetworkNode terminal : getTerminals(Channels.MAIN)) {
+            if (terminal.pos().equals(getBlockPos())) continue;
+            BlockEntity be = level.getBlockEntity(terminal.pos());
+            if (be instanceof LightPipeDataSender sender && !sender.provideNextDisplayText(1000).isBlank()
+                    && ++senders > 1) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static String garbled(int length) {
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < length; i++) {
+            out.append((char) (33 + (int) (Math.random() * 94)));
+        }
+        return out.toString();
+    }
+
+    /** Stops sending and blanks whatever the bus last put on the pipe. */
+    public void clearSentValue() {
+        if (sentValue.isEmpty() || level == null || level.isClientSide) {
+            return;
+        }
+        sentValue = "";
+        setChanged();
+        updateSignal(level);
+    }
+
+    /** A bus that already has a value hands it to whatever just joined the network. */
+    @Override
+    public void defineTerminals(List<NetworkNode> terminals, int channel) {
+        super.defineTerminals(terminals, channel);
+        if (level != null && !level.isClientSide && mode == SerialBusMode.GET && !sentValue.isEmpty()) {
+            updateSignal(level);
+        }
+    }
+
+    /** The bus is a sender now, so it must not count as one when asking whether it has one. */
+    @Override
+    protected boolean hasSender(Level level) {
+        for (NetworkNode terminal : getTerminals(Channels.MAIN)) {
+            if (terminal.pos().equals(getBlockPos())) continue;
+            if (level.getBlockEntity(terminal.pos()) instanceof LightPipeDataSender) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // --- settings and record, valid on both sides ------------------------------------------
 
     public SerialBusMode getMode() {
@@ -154,8 +322,43 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver {
             return;
         }
         mode = newMode;
+        // The record describes what the old mode was doing, and the counter belongs to a run that
+        // is over. Leaving GET also takes the bus's value off the pipe, so displays do not sit on
+        // a reading that nothing is refreshing any more.
+        lastCommand = "";
+        lastOutcome = Outcome.NONE;
+        lastFailure = null;
+        tickCounter = 0;
+        if (newMode != SerialBusMode.GET) {
+            clearSentValue();
+        }
         setChanged();
         syncToClients();
+    }
+
+    /** The GET expression, as the screen sends it. Server only. */
+    public void setExpression(String newExpression) {
+        if (level == null || level.isClientSide || newExpression.equals(expression)) {
+            return;
+        }
+        expression = newExpression;
+        // The old verdict was about the old text.
+        lastCommand = "";
+        lastOutcome = Outcome.NONE;
+        lastFailure = null;
+        tickCounter = 0;
+        setChanged();
+        syncToClients();
+    }
+
+    /** The getter to mapper chain this bus evaluates in GET mode. */
+    public String getExpression() {
+        return expression;
+    }
+
+    /** What the bus last put on the pipe. */
+    public String getSentValue() {
+        return sentValue;
     }
 
     /** The last command the bus ran, without its leading slash; empty until it has run one. */
@@ -179,7 +382,8 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver {
         return " " + pos.getX() + " " + pos.getY() + " " + pos.getZ() + " ";
     }
 
-    private @NotNull BlockPos getAffectedBlockPos() {
+    /** The block the bus acts on: the one it faces. */
+    public @NotNull BlockPos getAffectedBlockPos() {
         return getBlockPos().offset(getBlockState().getValue(TransformerBlock.FACING).getNormal());
     }
 
@@ -236,6 +440,8 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver {
         tag.putString(MODE_TAG, mode.getSerializedName());
         tag.putString(LAST_COMMAND_TAG, lastCommand);
         tag.putString(LAST_OUTCOME_TAG, lastOutcome.name());
+        tag.putString(EXPRESSION_TAG, expression);
+        tag.putString(SENT_VALUE_TAG, sentValue);
         if (lastFailure != null) {
             tag.put(LAST_FAILURE_TAG, lastFailure.save(new CompoundTag()));
         }
@@ -244,6 +450,8 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver {
     private void loadRecord(CompoundTag tag) {
         mode = SerialBusMode.byName(tag.getString(MODE_TAG));
         lastCommand = tag.getString(LAST_COMMAND_TAG);
+        expression = tag.getString(EXPRESSION_TAG);
+        sentValue = tag.getString(SENT_VALUE_TAG);
         lastOutcome = Outcome.NONE;
         try {
             if (tag.contains(LAST_OUTCOME_TAG, Tag.TAG_STRING)) {

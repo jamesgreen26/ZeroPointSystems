@@ -661,6 +661,121 @@ public final class LightPipeGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_getModeSendsEvaluatedValue(GameTestHelper helper) {
+        BlockPos targetPos = new BlockPos(3, 1, 2);
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        BlockPos cablePos = new BlockPos(3, 1, 4);
+        BlockPos displayPos = new BlockPos(3, 1, 5);
+
+        helper.setBlock(targetPos, Blocks.STONE.defaultBlockState());
+        helper.setBlock(serialBusPos, serialBus(Direction.NORTH));
+        helper.setBlock(cablePos, lightPipe());
+        helper.setBlock(displayPos, display(Direction.SOUTH));
+
+        SerialBusBlockEntity serialBus = serialBusEntity(helper, serialBusPos);
+        if (serialBus == null) {
+            return;
+        }
+        serialBus.setMode(SerialBusMode.GET);
+        serialBus.setExpression("pos as_string");
+
+        BlockPos absTarget = helper.absolutePos(targetPos);
+        String expected = absTarget.getX() + " " + absTarget.getY() + " " + absTarget.getZ();
+        helper.succeedWhen(() -> {
+            String shown = displayText(helper, displayPos);
+            if (!expected.equals(shown)) {
+                helper.fail("Expected the bus to send \"" + expected + "\", display shows \"" + shown
+                        + "\" (outcome " + serialBus.getLastOutcome()
+                        + ", reason " + (serialBus.getLastFailure() == null ? "none" : serialBus.getLastFailure().reason()) + ")");
+            }
+        });
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_getModeFailureKeepsLastValue(GameTestHelper helper) {
+        BlockPos targetPos = new BlockPos(3, 1, 2);
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        BlockPos cablePos = new BlockPos(3, 1, 4);
+        BlockPos displayPos = new BlockPos(3, 1, 5);
+
+        helper.setBlock(targetPos, Blocks.STONE.defaultBlockState());
+        helper.setBlock(serialBusPos, serialBus(Direction.NORTH));
+        helper.setBlock(cablePos, lightPipe());
+        helper.setBlock(displayPos, display(Direction.SOUTH));
+
+        SerialBusBlockEntity serialBus = serialBusEntity(helper, serialBusPos);
+        if (serialBus == null) {
+            return;
+        }
+        serialBus.setMode(SerialBusMode.GET);
+        serialBus.setExpression("pos as_string");
+
+        BlockPos absTarget = helper.absolutePos(targetPos);
+        String expected = absTarget.getX() + " " + absTarget.getY() + " " + absTarget.getZ();
+
+        // Once a good value is on the pipe, a broken chain must not take it away again.
+        helper.runAtTickTime(10L, () -> {
+            if (!expected.equals(displayText(helper, displayPos))) {
+                helper.fail("Expected the good value to reach the display first");
+                return;
+            }
+            serialBus.setExpression("not_a_getter at_all");
+        });
+        helper.runAtTickTime(25L, () -> {
+            if (serialBus.getLastOutcome() != SerialBusBlockEntity.Outcome.FAILURE) {
+                helper.fail("Expected a broken chain to record a failure, got " + serialBus.getLastOutcome());
+                return;
+            }
+            if (serialBus.getLastFailure() == null) {
+                helper.fail("Expected a reason for the failure");
+                return;
+            }
+            String shown = displayText(helper, displayPos);
+            if (!expected.equals(shown)) {
+                helper.fail("Expected the display to keep \"" + expected + "\", it shows \"" + shown + "\"");
+                return;
+            }
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_leavingGetModeClearsWhatItSent(GameTestHelper helper) {
+        BlockPos targetPos = new BlockPos(3, 1, 2);
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        BlockPos cablePos = new BlockPos(3, 1, 4);
+        BlockPos displayPos = new BlockPos(3, 1, 5);
+
+        helper.setBlock(targetPos, Blocks.STONE.defaultBlockState());
+        helper.setBlock(serialBusPos, serialBus(Direction.NORTH));
+        helper.setBlock(cablePos, lightPipe());
+        helper.setBlock(displayPos, display(Direction.SOUTH));
+
+        SerialBusBlockEntity serialBus = serialBusEntity(helper, serialBusPos);
+        if (serialBus == null) {
+            return;
+        }
+        serialBus.setMode(SerialBusMode.GET);
+        serialBus.setExpression("pos as_string");
+
+        helper.runAtTickTime(10L, () -> {
+            if (displayText(helper, displayPos).isEmpty()) {
+                helper.fail("Expected the bus to have sent something before switching back");
+                return;
+            }
+            serialBus.setMode(SerialBusMode.EXECUTE);
+        });
+        helper.runAtTickTime(15L, () -> {
+            String shown = displayText(helper, displayPos);
+            if (!shown.isEmpty()) {
+                helper.fail("Expected the display to clear when the bus stopped sending, it shows \"" + shown + "\"");
+                return;
+            }
+            helper.succeed();
+        });
+    }
+
     /** Stone target, bus facing it, a pipe, and a lectern holding the command. */
     private static SerialBusBlockEntity feedSerialBus(GameTestHelper helper, BlockPos serialBusPos, String command) {
         BlockPos targetPos = serialBusPos.north();

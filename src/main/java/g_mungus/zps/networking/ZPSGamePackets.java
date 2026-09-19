@@ -35,6 +35,7 @@ public final class ZPSGamePackets {
         registrar.playToServer(GasGaugeSettingsC2SPacket.TYPE, GasGaugeSettingsC2SPacket.STREAM_CODEC, GasGaugeSettingsC2SPacket::handle);
         registrar.playToServer(ReactorPortSettingsC2SPacket.TYPE, ReactorPortSettingsC2SPacket.STREAM_CODEC, ReactorPortSettingsC2SPacket::handle);
         registrar.playToServer(SerialBusSettingsC2SPacket.TYPE, SerialBusSettingsC2SPacket.STREAM_CODEC, SerialBusSettingsC2SPacket::handle);
+        registrar.playToServer(AssemblerPatternCellC2SPacket.TYPE, AssemblerPatternCellC2SPacket.STREAM_CODEC, AssemblerPatternCellC2SPacket::handle);
     }
 
     public static void sendToServer(CustomPacketPayload payload) {

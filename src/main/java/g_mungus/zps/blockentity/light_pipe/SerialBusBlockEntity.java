@@ -197,12 +197,14 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
      * Reads the block the bus faces through the expression and puts the answer on the pipe.
      *
      * <p>A value that has not changed is not sent again, so a steady reading costs one evaluation
-     * and nothing else. An expression that does not evaluate sends nothing at all: the pipe keeps
-     * the last good value and the screen explains why it stopped moving.
+     * and nothing else. A bus with nothing to read, or a chain that will not evaluate, sends the
+     * empty string: what is downstream shows that the reading has stopped rather than a value
+     * frozen in time, and the screen explains why.
      */
     private void evaluateAndPush(ServerLevel serverLevel) {
         String chain = expression.strip();
         if (chain.isEmpty()) {
+            send(serverLevel, "");
             return;
         }
         String value;
@@ -211,10 +213,16 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
         } catch (Exception e) {
             // Positions come back in the expression's own terms, which is what the screen marks up.
             recordOutcome(chain, ScriptCommandFailure.describe(e, chain, chain));
+            send(serverLevel, "");
             return;
         }
         recordOutcome(chain, null);
-        if (value == null || value.equals(sentValue)) {
+        send(serverLevel, value == null ? "" : value);
+    }
+
+    /** Puts a value on the pipe, walking the network only when it is not the one already there. */
+    private void send(ServerLevel serverLevel, String value) {
+        if (value.equals(sentValue)) {
             return;
         }
         sentValue = value;

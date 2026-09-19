@@ -725,7 +725,7 @@ public final class LightPipeGameTests {
     }
 
     @GameTest(template = TEMPLATE)
-    public static void serialBus_getModeFailureKeepsLastValue(GameTestHelper helper) {
+    public static void serialBus_getModeFailureClearsWhatItSent(GameTestHelper helper) {
         BlockPos targetPos = new BlockPos(3, 1, 2);
         BlockPos serialBusPos = new BlockPos(3, 1, 3);
         BlockPos cablePos = new BlockPos(3, 1, 4);
@@ -746,7 +746,8 @@ public final class LightPipeGameTests {
         BlockPos absTarget = helper.absolutePos(targetPos);
         String expected = absTarget.getX() + " " + absTarget.getY() + " " + absTarget.getZ();
 
-        // Once a good value is on the pipe, a broken chain must not take it away again.
+        // Once a good value is on the pipe, a broken chain takes it away rather than leaving a
+        // reading that nothing is refreshing.
         helper.runAtTickTime(10L, () -> {
             if (!expected.equals(displayText(helper, displayPos))) {
                 helper.fail("Expected the good value to reach the display first");
@@ -764,8 +765,44 @@ public final class LightPipeGameTests {
                 return;
             }
             String shown = displayText(helper, displayPos);
-            if (!expected.equals(shown)) {
-                helper.fail("Expected the display to keep \"" + expected + "\", it shows \"" + shown + "\"");
+            if (!shown.isEmpty()) {
+                helper.fail("Expected a broken chain to clear the display, it shows \"" + shown + "\"");
+                return;
+            }
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_getModeClearsWhenTheExpressionIsEmptied(GameTestHelper helper) {
+        BlockPos targetPos = new BlockPos(3, 1, 2);
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        BlockPos cablePos = new BlockPos(3, 1, 4);
+        BlockPos displayPos = new BlockPos(3, 1, 5);
+
+        helper.setBlock(targetPos, Blocks.STONE.defaultBlockState());
+        helper.setBlock(serialBusPos, serialBus(Direction.NORTH));
+        helper.setBlock(cablePos, lightPipe());
+        helper.setBlock(displayPos, display(Direction.SOUTH));
+
+        SerialBusBlockEntity serialBus = serialBusEntity(helper, serialBusPos);
+        if (serialBus == null) {
+            return;
+        }
+        serialBus.setMode(SerialBusMode.GET);
+        serialBus.setExpression("pos as_string");
+
+        helper.runAtTickTime(10L, () -> {
+            if (displayText(helper, displayPos).isEmpty()) {
+                helper.fail("Expected the bus to have sent something before the expression is cleared");
+                return;
+            }
+            serialBus.setExpression("");
+        });
+        helper.runAtTickTime(25L, () -> {
+            String shown = displayText(helper, displayPos);
+            if (!shown.isEmpty()) {
+                helper.fail("Expected a bus with nothing to read to clear the display, it shows \"" + shown + "\"");
                 return;
             }
             helper.succeed();

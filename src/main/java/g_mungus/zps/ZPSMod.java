@@ -1,6 +1,7 @@
 package g_mungus.zps;
 
 import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.block.PowderSnowCauldronScoop;
 import g_mungus.zps.blockentity.AssemblerBlockEntity;
 import g_mungus.zps.blockentity.CoalBurnerBlockEntity;
 import g_mungus.zps.blockentity.CreativePowerCellBlockEntity;
@@ -37,6 +38,8 @@ import g_mungus.zps.gas.ModParticles;
 import g_mungus.zps.gametest.CreativeGasGeneratorGameTests;
 import g_mungus.zps.gametest.FusionReactorGameTests;
 import g_mungus.zps.gametest.PowerCellMultiblockGameTests;
+import g_mungus.zps.gametest.DripstoneGameTests;
+import g_mungus.zps.gametest.PowderSnowCauldronGameTests;
 import g_mungus.zps.gametest.DuctGameTests;
 import g_mungus.zps.gametest.GasEdgeGameTests;
 import g_mungus.zps.gametest.ReactorWallApertureGameTests;
@@ -49,6 +52,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.capabilities.Capabilities;
@@ -84,6 +88,7 @@ public final class ZPSMod {
         modEventBus.addListener(ZPSMod::registerGameTests);
         modEventBus.addListener(ZPSMod::registerCapabilities);
         modEventBus.addListener(ZPSMod::addBrushableBlocks);
+        modEventBus.addListener(ZPSMod::commonSetup);
 
         if (dist == Dist.CLIENT) {
             ZPSPonderPlugin.registerPlugin();
@@ -115,12 +120,19 @@ public final class ZPSMod {
         event.register(FusionReactorGameTests.class);
         event.register(ReactorWallApertureGameTests.class);
         event.register(PowerCellMultiblockGameTests.class);
+        event.register(DripstoneGameTests.class);
+        event.register(PowderSnowCauldronGameTests.class);
     }
 
     /**
      * Vanilla's brushable block entity only accepts the two blocks it ships with, and an invalid
      * pairing is dropped on chunk load — taking the buried loot with it.
      */
+    private static void commonSetup(FMLCommonSetupEvent event) {
+        // Vanilla's cauldron interaction maps are plain hash maps, but not thread-safe to fill in parallel.
+        event.enqueueWork(PowderSnowCauldronScoop::register);
+    }
+
     private static void addBrushableBlocks(BlockEntityTypeAddBlocksEvent event) {
         event.modify(BlockEntityType.BRUSHABLE_BLOCK, ModBlocks.SUSPICIOUS_RED_SAND.get());
     }

@@ -19,6 +19,7 @@
     "ponder.ScreenOpenerMixin"
   ],
   "mixins": [
+    "AbstractCauldronBlockMixin",
     "ArgumentTypeInfosMixin",
     "ArrayVoxelShapeAccessor",
     "BitSetDiscreteVoxelShapeAccessor",
@@ -34,6 +35,8 @@
     "LivingEntityMixin",
     "PistonBaseBlockMixin",
     "PistonMovingBlockEntityMixin",
+    "PointedDripstoneBlockInvoker",
+    "PointedDripstoneBlockMixin",
     "ServerLevelMixin",
     "StructureTemplateMixin",
     "VoxelShapeAccessor",

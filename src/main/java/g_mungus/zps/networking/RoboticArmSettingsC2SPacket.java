@@ -12,19 +12,18 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-public record RoboticArmSettingsC2SPacket(BlockPos blockPos, int retrieveAmount, boolean viewRange) implements CustomPacketPayload {
+public record RoboticArmSettingsC2SPacket(BlockPos blockPos, int retrieveAmount) implements CustomPacketPayload {
     public static final Type<RoboticArmSettingsC2SPacket> TYPE = new Type<>(ZPSMod.resource("robotic_arm_settings"));
     public static final StreamCodec<RegistryFriendlyByteBuf, RoboticArmSettingsC2SPacket> STREAM_CODEC = new StreamCodec<>() {
         @Override
         public RoboticArmSettingsC2SPacket decode(RegistryFriendlyByteBuf buffer) {
-            return new RoboticArmSettingsC2SPacket(buffer.readBlockPos(), buffer.readVarInt(), buffer.readBoolean());
+            return new RoboticArmSettingsC2SPacket(buffer.readBlockPos(), buffer.readVarInt());
         }
 
         @Override
         public void encode(RegistryFriendlyByteBuf buffer, RoboticArmSettingsC2SPacket packet) {
             buffer.writeBlockPos(packet.blockPos);
             buffer.writeVarInt(packet.retrieveAmount);
-            buffer.writeBoolean(packet.viewRange);
         }
     };
 
@@ -35,7 +34,7 @@ public record RoboticArmSettingsC2SPacket(BlockPos blockPos, int retrieveAmount,
             if (!(level.getBlockEntity(packet.blockPos) instanceof RoboticArmBlockEntity be)) return;
             Vec3 worldCenter = Compat.toWorldPos(level, Vec3.atCenterOf(packet.blockPos));
             if (worldCenter.distanceToSqr(sender.position()) > 64.0D) return;
-            be.setArmSettings(packet.retrieveAmount, packet.viewRange);
+            be.setArmSettings(packet.retrieveAmount);
         });
     }
 

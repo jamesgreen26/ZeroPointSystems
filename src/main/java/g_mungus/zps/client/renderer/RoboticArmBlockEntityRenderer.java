@@ -10,6 +10,7 @@ import g_mungus.zps.item.ModItems;
 import net.createmod.catnip.outliner.Outliner;
 import net.minecraft.core.BlockPos;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -21,6 +22,8 @@ import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 
@@ -45,7 +48,7 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
                        @NotNull MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
         renderDebugTargetBox(blockEntity, poseStack, bufferSource);
 
-        if (blockEntity.isViewRange()) {
+        if (isTargetedByCrouchingPlayer(blockEntity)) {
             showRangeOutline(Outliner.getInstance(), blockEntity.getBlockPos());
         }
 
@@ -66,6 +69,16 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
         }
 
         renderHeldItem(blockEntity, pose.handPos(), poseStack, bufferSource, packedLight, packedOverlay);
+    }
+
+    /** The reach volume is only shown while the player crouches and looks at the arm. */
+    private static boolean isTargetedByCrouchingPlayer(RoboticArmBlockEntity blockEntity) {
+        Minecraft minecraft = Minecraft.getInstance();
+        LocalPlayer player = minecraft.player;
+        if (player == null || !player.isShiftKeyDown()) return false;
+        return minecraft.hitResult instanceof BlockHitResult hitResult
+                && hitResult.getType() == HitResult.Type.BLOCK
+                && hitResult.getBlockPos().equals(blockEntity.getBlockPos());
     }
 
     private void renderDebugTargetBox(RoboticArmBlockEntity blockEntity, PoseStack poseStack, MultiBufferSource bufferSource) {
@@ -181,10 +194,9 @@ public class RoboticArmBlockEntityRenderer implements BlockEntityRenderer<Roboti
             volumePositions.add(origin.offset(offset));
         }
         outliner
-                .showCluster("robotic_arm_range_" + origin.asLong(), volumePositions)
+                .showOutline("robotic_arm_range_" + origin.asLong(), new DoubleSidedBlockClusterOutline(volumePositions))
                 .colored(0x00FFFF)
                 .withFaceTextures(ZPSSpecialTextures.CHECKERED, ZPSSpecialTextures.HIGHLIGHT_CHECKERED)
-                .disableCull()
                 .lineWidth(1 / 16f);
     }
 

@@ -85,7 +85,7 @@ public class RoboticArmGameTests {
         }
 
         fillEnergy(arm);
-        arm.setArmSettings(TRANSFER_COUNT, false);
+        arm.setArmSettings(TRANSFER_COUNT);
         arm.getHeldStackAccess().setItem(0, new ItemStack(Items.COAL, TRANSFER_COUNT));
         return arm;
     }

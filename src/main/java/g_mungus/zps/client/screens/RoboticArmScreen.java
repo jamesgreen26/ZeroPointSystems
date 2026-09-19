@@ -6,7 +6,6 @@ import g_mungus.zps.networking.ZPSGamePackets;
 import net.minecraft.client.GameNarrator;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractSliderButton;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.CommonComponents;
@@ -18,7 +17,6 @@ public class RoboticArmScreen extends Screen {
     private static final Component TITLE = Component.literal("Robotic Arm");
     private static final Component ENERGY_LABEL = Component.literal("Energy");
     private static final Component RETRIEVE_LABEL = Component.literal("Item transfer stack size");
-    private static final Component VIEW_RANGE_LABEL = Component.literal("View Range");
     private static final int CONTROL_WIDTH = 200;
     private static final int CONTROL_HEIGHT = 20;
     private static final int LABEL_TO_CONTROL_GAP = 10;
@@ -28,8 +26,6 @@ public class RoboticArmScreen extends Screen {
 
     private final BlockPos blockPos;
     private RetrieveAmountSlider retrieveSlider;
-    private Button viewRangeButton;
-    private boolean viewRange;
 
     public RoboticArmScreen(BlockPos blockPos) {
         super(GameNarrator.NO_TITLE);
@@ -40,7 +36,6 @@ public class RoboticArmScreen extends Screen {
     protected void init() {
         RoboticArmBlockEntity be = getBlockEntity();
         int retrieveAmount = be != null ? be.getRetrieveAmount() : 1;
-        this.viewRange = be != null && be.isViewRange();
 
         int centerX = this.width / 2;
         int centerY = this.height / 2;
@@ -49,17 +44,8 @@ public class RoboticArmScreen extends Screen {
         int barY = energyLabelY + LABEL_TO_CONTROL_GAP;
         int retrieveLabelY = barY + CONTROL_HEIGHT + SECTION_GAP;
         int sliderY = retrieveLabelY + LABEL_TO_CONTROL_GAP;
-        int viewRangeLabelY = sliderY + CONTROL_HEIGHT + SECTION_GAP;
-        int viewRangeButtonY = viewRangeLabelY + LABEL_TO_CONTROL_GAP;
 
         this.retrieveSlider = this.addRenderableWidget(new RetrieveAmountSlider(centerX - 100, sliderY, CONTROL_WIDTH, CONTROL_HEIGHT, retrieveAmount));
-        this.viewRangeButton = this.addRenderableWidget(Button.builder(viewRangeButtonText(), button -> {
-                    this.viewRange = !this.viewRange;
-                    button.setMessage(viewRangeButtonText());
-                    sendSettings();
-                })
-                .bounds(centerX - 100, viewRangeButtonY, CONTROL_WIDTH, CONTROL_HEIGHT)
-                .build());
     }
 
     @Override
@@ -82,7 +68,6 @@ public class RoboticArmScreen extends Screen {
         int barInnerWidth = barWidth - (barInnerPadding * 2);
         int barInnerHeight = barHeight - (barInnerPadding * 2);
         int retrieveLabelY = barY + barHeight + SECTION_GAP;
-        int viewRangeLabelY = retrieveLabelY + CONTROL_HEIGHT + SECTION_GAP + LABEL_TO_CONTROL_GAP;
 
         graphics.drawCenteredString(this.font, TITLE, centerX, topSectionY, 0xFFFFFF);
         graphics.drawString(this.font, ENERGY_LABEL, centerX - 100, energyLabelY, 0xA0A0A0);
@@ -99,7 +84,6 @@ public class RoboticArmScreen extends Screen {
         String energyText = energyStored + " / " + maxEnergy + " FE";
         graphics.drawCenteredString(this.font, energyText, centerX, barY + 6, 0xFFFFFF);
         graphics.drawString(this.font, RETRIEVE_LABEL, centerX - 100, retrieveLabelY, 0xA0A0A0);
-        graphics.drawString(this.font, VIEW_RANGE_LABEL, centerX - 100, viewRangeLabelY, 0xA0A0A0);
     }
 
     @Override
@@ -108,11 +92,7 @@ public class RoboticArmScreen extends Screen {
     }
 
     private void sendSettings() {
-        ZPSGamePackets.sendToServer(new RoboticArmSettingsC2SPacket(this.blockPos, this.retrieveSlider.getAmount(), this.viewRange));
-    }
-
-    private Component viewRangeButtonText() {
-        return this.viewRange ? Component.literal("On") : Component.literal("Off");
+        ZPSGamePackets.sendToServer(new RoboticArmSettingsC2SPacket(this.blockPos, this.retrieveSlider.getAmount()));
     }
 
     private RoboticArmBlockEntity getBlockEntity() {

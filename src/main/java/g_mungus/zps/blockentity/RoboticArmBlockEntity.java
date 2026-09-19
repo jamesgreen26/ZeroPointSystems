@@ -82,7 +82,6 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
     private PendingTransfer pendingTransfer = PendingTransfer.NONE;
     private BlockPos pendingTransferTargetPos = BlockPos.ZERO;
     private int retrieveAmount = 1;
-    private boolean viewRange = false;
     private boolean energyRanOutDuringMove = false;
     private Vec3 lastSwivelAxis = new Vec3(1.0, 0.0, 0.0);
     private transient FakePlayer usePlayer;
@@ -360,7 +359,6 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
         tag.putInt("PendingTransfer", pendingTransfer.ordinal());
         tag.putLong("PendingTransferTargetPos", pendingTransferTargetPos.asLong());
         tag.putInt("RetrieveAmount", retrieveAmount);
-        tag.putBoolean("ViewRange", viewRange);
         tag.put("Energy", energyStorage.serializeNBT(registries));
     }
 
@@ -373,7 +371,6 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
         pendingTransfer = PendingTransfer.byOrdinal(tag.getInt("PendingTransfer"));
         pendingTransferTargetPos = tag.contains("PendingTransferTargetPos", Tag.TAG_LONG) ? BlockPos.of(tag.getLong("PendingTransferTargetPos")) : BlockPos.ZERO;
         retrieveAmount = clampRetrieveAmount(tag.contains("RetrieveAmount", Tag.TAG_ANY_NUMERIC) ? tag.getInt("RetrieveAmount") : 1);
-        viewRange = tag.getBoolean("ViewRange");
         if (tag.contains("Energy")) {
             energyStorage.deserializeNBT(registries, tag.get("Energy"));
         }
@@ -587,13 +584,8 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
         return retrieveAmount;
     }
 
-    public boolean isViewRange() {
-        return viewRange;
-    }
-
-    public void setArmSettings(int retrieveAmount, boolean viewRange) {
+    public void setArmSettings(int retrieveAmount) {
         this.retrieveAmount = clampRetrieveAmount(retrieveAmount);
-        this.viewRange = viewRange;
         setChanged();
         if (level != null) {
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_ALL);

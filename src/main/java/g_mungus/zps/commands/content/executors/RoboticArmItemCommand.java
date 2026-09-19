@@ -50,7 +50,7 @@ public class RoboticArmItemCommand {
     public static int setTransferCount(ServerLevel serverLevel, BlockPos armPos, int transferCount) {
         BlockEntity blockEntity = serverLevel.getBlockEntity(armPos);
         if (blockEntity instanceof RoboticArmBlockEntity roboticArm) {
-            roboticArm.setArmSettings(transferCount, roboticArm.isViewRange());
+            roboticArm.setArmSettings(transferCount);
             return 1;
         }
         return 0;

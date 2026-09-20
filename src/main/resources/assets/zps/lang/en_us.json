@@ -460,8 +460,8 @@
     "zps.ponder.reactor_intro.text_14": "Heat Exchangers that are not being supplied with FE will generate FE from the chamber's heat.",
     "zps.ponder.reactor_intro.text_15": "Aether builds up in the chamber as the Flux reacts. Too much of it will pause the reaction.",
     "zps.ponder.reactor_intro.text_16": "An Output port can pump the Aether out. Block Flux in its filter, so that the fuel stays inside.",
-    "zps.ponder.reactor_intro.text_17": "The reactor will keep running for as long as it is supplied with Flux, and its Aether is removed.",
-    "zps.ponder.reactor_intro.text_18": "If the chamber gets too cold the reaction will stop, and if it gets too hot the walls will melt.",
+    "zps.ponder.reactor_intro.text_17": "The reactor keeps running while Flux is supplied and Aether is removed. If the chamber gets too cold, the reaction will stop.",
+    "zps.ponder.reactor_intro.text_18": "If the temperature reaches 200,000 K the walls will melt, and if the pressure reaches 24 MPa the chamber will burst.",
 
     "zps.ponder.tag.can_insulate": "Blocks that can be Insulated",
     "zps.ponder.tag.can_insulate.description": "Components or Blocks which can have Cable Insulation applied to them, which prevents the block from connecting in new directions.",

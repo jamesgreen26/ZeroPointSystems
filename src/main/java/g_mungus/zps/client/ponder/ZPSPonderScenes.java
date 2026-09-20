@@ -1017,10 +1017,13 @@ public class ZPSPonderScenes {
         builder.effects().emitParticles(util.vector().topOf(vent),
                 builder.effects().simpleParticleEmitter(ParticleTypes.CLOUD, new Vec3(0, 0.05, 0)), 1, 200);
         builder.overlay().showText(95).attachKeyFrame()
-                .text("The reactor will keep running for as long as it is supplied with Flux, and its Aether is removed.");
+                .text("The reactor keeps running while Flux is supplied and Aether is removed. If the chamber gets too cold, the reaction will stop.");
         builder.idle(105);
-        builder.overlay().showText(95)
-                .text("If the chamber gets too cold the reaction will stop, and if it gets too hot the walls will melt.");
-        builder.idle(105);
+        // The thresholds are the config defaults, in the units a Gas Gauge reads them in. They are
+        // written out because lang text cannot take a value; a pack that moves them wants this
+        // line, and its lang entry, moved with them. See ZPSConfig's reactor and burst defaults.
+        builder.overlay().showText(105)
+                .text("If the temperature reaches 200,000 K the walls will melt, and if the pressure reaches 24 MPa the chamber will burst.");
+        builder.idle(115);
     }
 }

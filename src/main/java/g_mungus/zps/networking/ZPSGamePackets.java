@@ -30,7 +30,6 @@ public final class ZPSGamePackets {
         registrar.playToServer(AddressPadAddPositionC2SPacket.TYPE, AddressPadAddPositionC2SPacket.STREAM_CODEC, AddressPadAddPositionC2SPacket::handle);
         registrar.playToServer(AddressPadRemovePositionC2SPacket.TYPE, AddressPadRemovePositionC2SPacket.STREAM_CODEC, AddressPadRemovePositionC2SPacket::handle);
         registrar.playToServer(AddressPadSetEntriesC2SPacket.TYPE, AddressPadSetEntriesC2SPacket.STREAM_CODEC, AddressPadSetEntriesC2SPacket::handle);
-        registrar.playToServer(RoboticArmSettingsC2SPacket.TYPE, RoboticArmSettingsC2SPacket.STREAM_CODEC, RoboticArmSettingsC2SPacket::handle);
         registrar.playToServer(CreativeGasGeneratorSettingsC2SPacket.TYPE, CreativeGasGeneratorSettingsC2SPacket.STREAM_CODEC, CreativeGasGeneratorSettingsC2SPacket::handle);
         registrar.playToServer(GasGaugeSettingsC2SPacket.TYPE, GasGaugeSettingsC2SPacket.STREAM_CODEC, GasGaugeSettingsC2SPacket::handle);
         registrar.playToServer(ReactorPortSettingsC2SPacket.TYPE, ReactorPortSettingsC2SPacket.STREAM_CODEC, ReactorPortSettingsC2SPacket::handle);

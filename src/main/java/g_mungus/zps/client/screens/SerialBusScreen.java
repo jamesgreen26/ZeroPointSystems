@@ -17,7 +17,6 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
@@ -36,9 +35,9 @@ import java.util.Set;
  * The serial bus's screen: which mode it is in, plus what that mode has to show — in Execute a
  * readout of the last command it ran, in Get the expression it reads the block in front with.
  *
- * <p>A plain screen rather than a container screen — the block has no inventory. Nothing is sent
- * until Done, so the mode toggle and the expression are the player's to try out and think better
- * of. Everything else is drawn from the block entity each frame, so it follows the bus while the
+ * <p>A plain screen rather than a container screen — the block has no inventory. Every edit is
+ * sent to the bus as it is made, so there is nothing to confirm and nothing to lose by closing.
+ * Everything else is drawn from the block entity each frame, so it follows the bus while the
  * screen is open; a failure shows its reason and marks the part of the text it points at.
  */
 public class SerialBusScreen extends Screen {
@@ -62,7 +61,6 @@ public class SerialBusScreen extends Screen {
     private static final int MAX_COMMAND_LINES = 3;
     private static final Style FAULT_STYLE = Style.EMPTY.withColor(ChatFormatting.RED).withUnderlined(true);
     private static final String ELLIPSIS = "...";
-    private static final int BUTTON_GAP = 4;
     private static final int BOX_HEIGHT = 18;
     private static final int FAULT_UNDERLINE_COLOUR = 0xFFFF5555;
 
@@ -74,9 +72,9 @@ public class SerialBusScreen extends Screen {
 
     private final BlockPos blockPos;
 
-    /** The mode the player has picked, which reaches the bus only on Done. */
+    /** The mode the player has picked, sent to the bus the moment it changes. */
     private SerialBusMode mode = SerialBusMode.EXECUTE;
-    /** Likewise the expression: kept here across a rebuild of the widgets, sent only on Done. */
+    /** Likewise the expression: kept here across a rebuild of the widgets, sent as it is typed. */
     private String expression = "";
 
     private @Nullable MultiLineEditBox expressionBox;
@@ -112,20 +110,22 @@ public class SerialBusScreen extends Screen {
 
         // One body height for both modes — the tallest either can need — so the stack holds still
         // as commands of different lengths come and go, and toggling the mode moves nothing but
-        // the body itself. Get mode simply leaves the slack above the buttons.
+        // the body itself. Get mode simply leaves the slack below.
         int readoutHeight = LABEL_TO_CONTROL_GAP + MAX_COMMAND_LINES * (this.font.lineHeight + LINE_GAP);
         int bodyHeight = Math.max(readoutHeight, LABEL_TO_CONTROL_GAP + BOX_HEIGHT);
-        int contentHeight = TITLE_TO_FIRST_LABEL_GAP + LABEL_TO_CONTROL_GAP
-                + CONTROL_HEIGHT + SECTION_GAP + bodyHeight + SECTION_GAP + CONTROL_HEIGHT;
+        // The title counts from its own top, so the whole stack — title through body — is what
+        // gets centred; the font's line height stands in for the title's own row.
+        int contentHeight = this.font.lineHeight + TITLE_TO_FIRST_LABEL_GAP + LABEL_TO_CONTROL_GAP
+                + CONTROL_HEIGHT + SECTION_GAP + bodyHeight;
         titleY = Math.max(SECTION_GAP, (this.height - contentHeight) / 2);
         modeLabelY = titleY + TITLE_TO_FIRST_LABEL_GAP;
         int modeButtonY = modeLabelY + LABEL_TO_CONTROL_GAP;
         bodyY = modeButtonY + CONTROL_HEIGHT + SECTION_GAP;
-        int buttonsY = bodyY + bodyHeight + SECTION_GAP;
 
         int left = this.width / 2 - CONTROL_WIDTH / 2;
         this.addRenderableWidget(Button.builder(modeButtonText(), button -> {
                     mode = mode.next();
+                    sendSettings();
                     // The body differs by mode, so the whole stack is laid out again.
                     this.rebuildWidgets();
                 })
@@ -135,14 +135,6 @@ public class SerialBusScreen extends Screen {
         if (mode == SerialBusMode.GET) {
             addExpressionBox(left, bodyY + LABEL_TO_CONTROL_GAP, bus);
         }
-
-        int halfWidth = (CONTROL_WIDTH - BUTTON_GAP) / 2;
-        this.addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> onDone())
-                .bounds(left, buttonsY, halfWidth, CONTROL_HEIGHT)
-                .build());
-        this.addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, button -> onClose())
-                .bounds(left + CONTROL_WIDTH - halfWidth, buttonsY, halfWidth, CONTROL_HEIGHT)
-                .build());
     }
 
     /**
@@ -156,6 +148,7 @@ public class SerialBusScreen extends Screen {
         box.setValue(expression);
         box.setResponder(value -> {
             expression = value;
+            sendSettings();
             if (expressionSuggestions != null) {
                 expressionSuggestions.updateCommandInfo();
             }
@@ -186,13 +179,9 @@ public class SerialBusScreen extends Screen {
         return Set.of(block.builtInRegistryHolder().key().location());
     }
 
-    /** Applies everything the player has set. Nothing reaches the bus before this. */
-    private void onDone() {
-        if (expressionBox != null) {
-            expression = expressionBox.getValue();
-        }
+    /** Hands the bus what the player has set. Called for every edit, so there is nothing to apply. */
+    private void sendSettings() {
         ZPSGamePackets.sendToServer(new SerialBusSettingsC2SPacket(blockPos, mode, expression));
-        onClose();
     }
 
     @Override
@@ -207,10 +196,10 @@ public class SerialBusScreen extends Screen {
         if (expressionSuggestions != null && expressionSuggestions.keyPressed(key, scancode, modifiers)) {
             return true;
         }
-        // Enter accepts. It is checked before the box sees it, because the box would otherwise
+        // Enter closes. It is checked before the box sees it, because the box would otherwise
         // swallow it trying to start a line the filter will not allow anyway.
         if (key == 257 || key == 335) {
-            onDone();
+            onClose();
             return true;
         }
         return super.keyPressed(key, scancode, modifiers);

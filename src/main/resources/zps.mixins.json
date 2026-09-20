@@ -14,8 +14,10 @@
     "SoundEngineMixin",
     "ponder.NavigatableSimiScreenAccessor",
     "ponder.NavigatableSimiScreenMixin",
+    "ponder.PonderSceneAccessor",
     "ponder.PonderTagRegistryMixin",
     "ponder.PonderUIMixin",
+    "ponder.SceneTransformMixin",
     "ponder.ScreenOpenerMixin"
   ],
   "mixins": [

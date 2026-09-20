@@ -99,6 +99,16 @@ public final class ReactorGlowMesh implements AutoCloseable {
      * @return null for a shape with no wall faces, which no real cavity is
      */
     public static @Nullable ReactorGlowMesh build(VoxelShape shape, @Nullable BlockAndTintGetter walls) {
+        return build(shape, walls, true);
+    }
+
+    /**
+     * As {@link #build(VoxelShape, BlockAndTintGetter)}, with the windows optional. They exist to
+     * beat the level's translucent pass to the far glass, and are drawn in the level's own shader;
+     * somewhere that is not the level render, a ponder scene say, has neither and leaves them out.
+     */
+    public static @Nullable ReactorGlowMesh build(VoxelShape shape, @Nullable BlockAndTintGetter walls,
+                                                  boolean withWindows) {
         DiscreteVoxelShape grid = CavityShapes.grid(shape);
         BlockPos origin = CavityShapes.origin(shape);
         Long2IntMap masks = ClientReactor.faceMasks(grid, origin);
@@ -132,7 +142,8 @@ public final class ReactorGlowMesh implements AutoCloseable {
                         BlockState state = walls.getBlockState(wall);
                         coat = WallCoats.facesOf(state, side.getOpposite());
                         wallPositions.add(wall.asLong());
-                        if (window(windowBuilder, windowPose, walls, state, wall, origin, side.getOpposite())) {
+                        if (withWindows
+                                && window(windowBuilder, windowPose, walls, state, wall, origin, side.getOpposite())) {
                             windowCells.add(cell);
                         }
                     }

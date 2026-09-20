@@ -61,5 +61,12 @@ public class ZPSPonders {
         HELPER.forComponents(
                 ROBOTIC_ARM
         ).addStoryBoard("robotic_arm", ZPSPonderScenes::roboticArmTutorial);
+
+        HELPER.forComponents(
+                REINFORCED_PLATING,
+                REINFORCED_GLASS,
+                REACTOR_PORT,
+                HEAT_EXCHANGER
+        ).addStoryBoard("reactor", ZPSPonderScenes::reactorIntroTutorial);
     }
 }

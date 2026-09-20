@@ -10,6 +10,8 @@ import g_mungus.zps.block.cableNetwork.properties.InsulationType;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
 import g_mungus.zps.client.ponder.api.PonderExtras;
+import g_mungus.zps.client.ponder.api.ReactorGlowElement;
+import g_mungus.zps.client.ponder.api.SceneViewElement;
 import g_mungus.zps.client.ponder.api.custom_screen_in_ponder_scene.*;
 import g_mungus.zps.client.screens.ScriptTerminalScreen;
 import g_mungus.zps.item.ModItems;
@@ -23,6 +25,7 @@ import net.createmod.ponder.api.scene.Selection;
 import net.createmod.ponder.foundation.element.InputWindowElement;
 import net.createmod.ponder.foundation.instruction.DisplayWorldSectionInstruction;
 import net.createmod.ponder.foundation.instruction.FadeOutOfSceneInstruction;
+import net.createmod.ponder.foundation.instruction.RotateSceneInstruction;
 import net.createmod.ponder.foundation.instruction.ShowInputInstruction;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -739,6 +742,218 @@ public class ZPSPonderScenes {
 
         builder.overlay().showText(95).text("If the input Data changes while the Data Transcriber is powered, it will turn to the next page and then write the new Data.");
 
+        builder.idle(105);
+    }
+
+    /**
+     * The reactor's introduction, to the script in design_docs/REACTOR_PONDER_SCRIPTS.md. The
+     * structure is a working loop: four Heat Exchangers on top, two under Stepdown Transformers to
+     * light it and two under Stepup Transformers to draw power off, with the cable running over the
+     * top and down to the Vaporizer that makes the Flux. Nothing in a ponder
+     * level runs any of it, so the glow's heat and every flow shown is set by hand here.
+     */
+    public static void reactorIntroTutorial(SceneBuilder builder, SceneBuildingUtil util) {
+        builder.configureBasePlate(0, 0, 9);
+        builder.title("reactor_intro", "Setting up a Fusion Reactor");
+        builder.scaleSceneView(0.7f);
+        builder.setSceneOffsetY(-1.5f);
+
+        BlockPos inputPort = new BlockPos(5, 3, 3);
+        BlockPos outputPort = new BlockPos(3, 3, 5);
+        BlockPos vent = new BlockPos(1, 5, 5);
+        BlockPos vaporizer = new BlockPos(5, 1, 1);
+        BlockPos[] exchangers = {new BlockPos(5, 5, 4), new BlockPos(4, 5, 5), new BlockPos(6, 5, 5), new BlockPos(5, 5, 6)};
+        // One under a Stepdown Transformer and one under a Stepup Transformer, both on the camera's side.
+        BlockPos heatingExchanger = new BlockPos(4, 5, 5);
+        BlockPos generatingExchanger = new BlockPos(5, 5, 4);
+
+        Selection everything = util.select().fromTo(0, 1, 0, 8, 8, 8);
+        Selection cavity = util.select().fromTo(4, 2, 4, 6, 4, 6);
+        Selection shell = util.select().fromTo(3, 1, 3, 7, 5, 7).substract(cavity);
+        Selection floor = util.select().fromTo(3, 1, 3, 7, 1, 7);
+        // The two faces away from the camera are all plating; the two toward it hold the windows.
+        Selection backWalls = util.select().fromTo(7, 2, 3, 7, 4, 7).add(util.select().fromTo(3, 2, 7, 6, 4, 7));
+        Selection roof = util.select().fromTo(3, 5, 3, 7, 5, 7);
+        Selection northFace = util.select().fromTo(3, 2, 3, 6, 4, 3);
+        Selection westFace = util.select().fromTo(3, 2, 4, 3, 4, 6);
+        Selection ports = util.select().position(inputPort).add(util.select().position(outputPort));
+        Selection exchangerBlocks = util.select().fromTo(4, 5, 4, 6, 5, 6)
+                .substract(util.select().position(4, 5, 4)).substract(util.select().position(6, 5, 4))
+                .substract(util.select().position(4, 5, 6)).substract(util.select().position(6, 5, 6))
+                .substract(util.select().position(5, 5, 5));
+        Selection fuelLine = util.select().fromTo(5, 1, 1, 5, 3, 1).add(util.select().position(5, 3, 2));
+        Selection exhaustLine = util.select().fromTo(1, 3, 5, 2, 3, 5).add(util.select().fromTo(1, 4, 5, 1, 5, 5));
+        Selection transformers = util.select().fromTo(4, 6, 4, 6, 6, 6);
+        // Two of the exchangers are fed through Stepdown Transformers, to light the reactor; the
+        // other two sit under Stepup Transformers, which draw off what it generates.
+        Selection stepdowns = util.select().position(4, 6, 5).add(util.select().position(5, 6, 6));
+        Selection stepups = util.select().position(5, 6, 4).add(util.select().position(6, 6, 5));
+        Selection powerLine = util.select().fromTo(5, 7, 5, 8, 7, 5).add(util.select().fromTo(8, 1, 5, 8, 6, 5))
+                .add(util.select().fromTo(8, 1, 1, 8, 1, 4)).add(util.select().fromTo(6, 1, 1, 7, 1, 1));
+
+        SceneViewElement view = new SceneViewElement();
+        ReactorGlowElement glow = new ReactorGlowElement(new BlockPos(4, 2, 4), new BlockPos(6, 4, 6), 0.37f);
+
+        // 1. Purpose: the finished reactor, running.
+        builder.showBasePlate();
+        builder.idle(5);
+        builder.world().showSection(everything, Direction.DOWN);
+        builder.addInstruction(scene -> {
+            scene.addElement(glow);
+            glow.heatTo(1.3f, 0);
+        });
+        builder.idle(25);
+        builder.effects().emitParticles(util.vector().topOf(vent),
+                builder.effects().simpleParticleEmitter(ParticleTypes.CLOUD, new Vec3(0, 0.05, 0)), 1, 80);
+        builder.overlay().showText(80)
+                .text("The Fusion Reactor produces large amounts of FE by reacting Flux into Aether.");
+        builder.idle(95);
+
+        builder.addInstruction(scene -> glow.heatTo(0f, 25));
+        builder.idle(25);
+        builder.world().hideSection(everything, Direction.UP);
+        builder.idle(30);
+
+        // Out of sight, the working blocks give way to stand-ins, so the shell can go up plain.
+        builder.world().setBlocks(exchangerBlocks.copy().add(ports),
+                ModBlocks.REINFORCED_GLASS.get().defaultBlockState(), false);
+
+        // 2. The shell goes up, the two faces toward the camera left open.
+        builder.world().showSection(floor, Direction.DOWN);
+        builder.idle(5);
+        builder.world().showSection(backWalls, Direction.DOWN);
+        builder.idle(5);
+        builder.world().showSection(roof, Direction.DOWN);
+        builder.idle(10);
+        builder.overlay().showText(80).attachKeyFrame()
+                .text("A Fusion Reactor is a sealed chamber, built out of Reinforced Plating and Reinforced Glass.");
+        builder.idle(95);
+
+        // 3. The inside.
+        builder.overlay().showOutline(PonderPalette.WHITE, "cavity", cavity, 70);
+        builder.overlay().showText(70).attachKeyFrame()
+                .text("The inside of the chamber stays empty, and only holds gas.")
+                .pointAt(util.vector().centerOf(5, 3, 5)).placeNearTarget();
+        builder.idle(80);
+
+        // 4. Sealing it.
+        builder.world().showSection(northFace, Direction.SOUTH);
+        builder.idle(10);
+        builder.world().showSection(westFace, Direction.EAST);
+        builder.idle(25);
+        builder.overlay().showOutline(PonderPalette.GREEN, "shell", shell, 45);
+        builder.overlay().showText(80)
+                .text("Once the chamber is fully sealed, the blocks form a reactor. No controller block is needed.");
+        builder.idle(95);
+
+        // 5. The working blocks.
+        builder.world().restoreBlocks(ports);
+        builder.effects().indicateSuccess(inputPort);
+        builder.effects().indicateSuccess(outputPort);
+        builder.idle(10);
+        builder.overlay().showOutline(PonderPalette.BLUE, "ports", ports, 80);
+        builder.overlay().showText(80).attachKeyFrame()
+                .text("Reactor Ports move gas through the wall, and can be set to Input or Output.")
+                .pointAt(util.vector().blockSurface(inputPort, Direction.NORTH)).placeNearTarget();
+        builder.idle(95);
+
+        builder.world().restoreBlocks(exchangerBlocks);
+        for (BlockPos exchanger : exchangers) {
+            builder.effects().indicateSuccess(exchanger);
+        }
+        builder.idle(10);
+        builder.overlay().showText(80)
+                .text("Heat Exchangers convert FE into heat inside the chamber, or heat back into FE.")
+                .pointAt(util.vector().topOf(exchangers[0])).placeNearTarget();
+        builder.idle(95);
+
+        builder.world().showSection(fuelLine, Direction.DOWN);
+        builder.idle(5);
+        builder.world().showSection(exhaustLine, Direction.DOWN);
+        builder.idle(5);
+        builder.world().showSection(transformers, Direction.DOWN);
+        builder.idle(5);
+        builder.world().showSection(powerLine, Direction.DOWN);
+        builder.idle(30);
+
+        // 6. Fuel.
+        builder.overlay().showOutline(PonderPalette.INPUT, "fuel", fuelLine.copy().add(util.select().position(inputPort)), 90);
+        builder.overlay().showText(90).attachKeyFrame()
+                .text("Flux enters through an Input port when the Gas Duct's pressure is higher than the chamber's.")
+                .pointAt(util.vector().blockSurface(inputPort, Direction.NORTH)).placeNearTarget();
+        builder.idle(100);
+        builder.overlay().showText(70)
+                .text("Flux has to be heated before it will react.")
+                .pointAt(util.vector().centerOf(5, 3, 5)).placeNearTarget();
+        builder.idle(80);
+
+        // 7. Ignition: a slow warm-up, then the catch. FE goes in through the Stepdown Transformers.
+        // The camera comes round and down to face the north windows dead on, 35 degrees on each
+        // axis from where Ponder starts it, and moves in, so the glow is seen straight through the
+        // glass and large. Ponder's own rotateCameraY only turns about the one axis.
+        //
+        // Ponder keeps the middle of the base plate in the middle of the screen, and the reactor
+        // is up and to one side of that, so the view slides to centre it. From the north the
+        // screen's right is the scene's west: a block to the right and one and a half down.
+        Vec3 reactorCentred = new Vec3(-1, -1.5, 0);
+        builder.addInstruction(new RotateSceneInstruction(35, 35, true));
+        builder.addInstruction(scene -> view.moveTo(scene, 1.5f, reactorCentred, 30));
+        builder.idle(30);
+        builder.overlay().showOutline(PonderPalette.INPUT, "ignition", stepdowns, 120);
+        builder.addInstruction(scene -> glow.heatTo(0.9f, 120));
+        builder.overlay().showText(75).attachKeyFrame()
+                .text("FE supplied to a Heat Exchanger will heat the gas in the chamber...")
+                .pointAt(util.vector().topOf(heatingExchanger)).placeNearTarget();
+        builder.idle(130);
+        builder.addInstruction(scene -> glow.heatTo(1.3f, 35));
+        builder.idle(10);
+        builder.overlay().showText(90)
+                .text("...and at ignition temperature, the Flux fuses into Aether, releasing a large amount of heat.")
+                .pointAt(util.vector().centerOf(5, 3, 5)).placeNearTarget();
+        builder.idle(100);
+        builder.addInstruction(new RotateSceneInstruction(-35, -35, true));
+        builder.addInstruction(scene -> view.moveTo(scene, 1f, Vec3.ZERO, 30));
+        builder.idle(30);
+
+        // 8. Power.
+        builder.overlay().showText(70).attachKeyFrame()
+                .text("Once ignited, the reaction keeps the chamber hot by itself.");
+        builder.idle(80);
+        builder.overlay().showOutline(PonderPalette.OUTPUT, "power", stepups, 90);
+        builder.overlay().showText(90)
+                .text("Heat Exchangers that are not being supplied with FE will generate FE from the chamber's heat.")
+                .pointAt(util.vector().topOf(generatingExchanger)).placeNearTarget();
+        builder.idle(100);
+
+        // 9. Aether: the reaction sags until the Output port clears it.
+        builder.addInstruction(scene -> {
+            glow.heatTo(1.05f, 45);
+            glow.setFlicker(0.08f);
+        });
+        builder.overlay().showText(90).attachKeyFrame()
+                .text("Aether builds up in the chamber as the Flux reacts. Too much of it will pause the reaction.")
+                .pointAt(util.vector().centerOf(5, 3, 5)).placeNearTarget();
+        builder.idle(100);
+        builder.overlay().showOutline(PonderPalette.OUTPUT, "exhaust", exhaustLine.copy().add(util.select().position(outputPort)), 95);
+        builder.effects().emitParticles(util.vector().topOf(vent),
+                builder.effects().simpleParticleEmitter(ParticleTypes.CLOUD, new Vec3(0, 0.05, 0)), 1, 95);
+        builder.addInstruction(scene -> {
+            glow.heatTo(1.3f, 60);
+            glow.setFlicker(0f);
+        });
+        builder.overlay().showText(95)
+                .text("An Output port can pump the Aether out. Block Flux in its filter, so that the fuel stays inside.")
+                .pointAt(util.vector().blockSurface(outputPort, Direction.WEST)).placeNearTarget();
+        builder.idle(105);
+
+        // 10. Recap.
+        builder.effects().emitParticles(util.vector().topOf(vent),
+                builder.effects().simpleParticleEmitter(ParticleTypes.CLOUD, new Vec3(0, 0.05, 0)), 1, 200);
+        builder.overlay().showText(95).attachKeyFrame()
+                .text("The reactor will keep running for as long as it is supplied with Flux, and its Aether is removed.");
+        builder.idle(105);
+        builder.overlay().showText(95)
+                .text("If the chamber gets too cold the reaction will stop, and if it gets too hot the walls will melt.");
         builder.idle(105);
     }
 }

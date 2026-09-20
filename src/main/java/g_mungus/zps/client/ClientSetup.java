@@ -14,6 +14,7 @@ import g_mungus.zps.client.renderer.*;
 import g_mungus.zps.client.screens.AssemblerScreen;
 import g_mungus.zps.client.screens.CoalBurnerScreen;
 import g_mungus.zps.client.debug.GasPressureOverlay;
+import g_mungus.zps.client.ponder.api.ReactorGlowElement;
 import g_mungus.zps.client.reactor.ClientReactors;
 import g_mungus.zps.client.reactor.ReactorGlowPreviews;
 import g_mungus.zps.client.reactor.ReactorGlowRenderer;
@@ -112,6 +113,7 @@ public class ClientSetup {
         event.registerReloadListener((ResourceManagerReloadListener) resourceManager -> {
             WallCoats.clear();
             ClientReactors.invalidateMeshes();
+            ReactorGlowElement.releaseAll();
         });
     }
 
@@ -239,6 +241,7 @@ public class ClientSetup {
             NeoForge.EVENT_BUS.addListener(ClientReactors::onRenderLevelStage);
             NeoForge.EVENT_BUS.addListener(ReactorGlowPreviews::onRenderLevelStage);
             NeoForge.EVENT_BUS.addListener(ReactorGlowPreviews::onLoggingOut);
+            NeoForge.EVENT_BUS.addListener(ReactorGlowElement::onLoggingOut);
         });
     }
 

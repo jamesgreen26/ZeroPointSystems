@@ -240,9 +240,11 @@ public class ZPSCommands {
         PacketDistributor.sendToPlayer(player, new ExecutorBlocksS2CPacket(executorNamesByBlock));
 
         Map<ResourceLocation, List<String>> getterNamesByBlock = new HashMap<>();
+        // Resolved here rather than at registration: a getter can name a block tag, and tags are
+        // only loaded once the server is up.
         Registry.GETTERS.stream()
                 .filter(g -> g.associatedBlocks() != null)
-                .forEach(getter -> getter.associatedBlocks().stream()
+                .forEach(getter -> getter.resolveAssociatedBlocks().stream()
                         .filter(blocksWithItems::contains)
                         .forEach(block -> getterNamesByBlock
                                 .computeIfAbsent(block, ignored -> new ArrayList<>())

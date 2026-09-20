@@ -10,6 +10,9 @@ import g_mungus.zps.blockentity.PowerCellBlockEntity;
 import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
 import g_mungus.zps.blockentity.reactor.HeatExchangerBlockEntity;
 import g_mungus.zps.blockentity.reactor.ReactorPortBlockEntity;
+import g_mungus.zps.commands.api.ScriptGetter;
+import g_mungus.zps.commands.api_impl.ZPSCommands;
+import g_mungus.zps.commands.content.ZPSScriptGetters;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.gas.GasFilter;
 import g_mungus.zps.gas.ModGases;
@@ -26,6 +29,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -196,6 +200,65 @@ public class FusionReactorGameTests {
                 "Interior cells should map to the reactor");
         helper.assertTrue(manager(helper).reactorsAt(helper.absolutePos(MIN)).isEmpty(),
                 "A corner block has no face on the cavity and is not part of the reactor");
+        helper.succeed();
+    }
+
+    // --- script getters ---------------------------------------------------------------------
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void gettersReadTheChamberFromItsWall(GameTestHelper helper) {
+        buildShell(helper);
+        seedChamber(helper);
+        setChamberTemperature(helper, 5_000.0);
+
+        // Kelvin works a node's pressure out on its own tick, so give it a few before reading.
+        helper.runAfterDelay(10, () -> {
+            ServerLevel level = helper.getLevel();
+            BlockPos wall = helper.absolutePos(WEST_WALL);
+            ReactorManager.ChamberReading reading = manager(helper).reading(level, reactorAt(helper, WEST_WALL));
+            helper.assertTrue(reading != null, "A sealed shell should have a chamber to read");
+
+            double pressure = ZPSScriptGetters.reactorPressure(level, wall);
+            double temperature = ZPSScriptGetters.reactorTemperature(level, wall);
+            helper.assertTrue(pressure > 0 && pressure == reading.pressurePa(),
+                    "reactor_pressure should be the chamber's " + reading.pressurePa() + " Pa, was " + pressure);
+            helper.assertTrue(Math.abs(temperature - 5_000.0) < 1.0,
+                    "reactor_temperature should be the chamber's 5000 K, was " + temperature);
+            helper.assertTrue(ZPSScriptGetters.reactorOutput(level, wall) == 0,
+                    "reactor_output should be zero with no exchanger drawing, was "
+                            + ZPSScriptGetters.reactorOutput(level, wall));
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void gettersReadZeroAwayFromAReactor(GameTestHelper helper) {
+        buildShell(helper);
+        seedChamber(helper);
+
+        ServerLevel level = helper.getLevel();
+        // A corner has no face on the cavity, so it is wall by tag but part of no reactor.
+        BlockPos corner = helper.absolutePos(MIN);
+        helper.assertTrue(ZPSScriptGetters.reactorPressure(level, corner) == 0.0
+                        && ZPSScriptGetters.reactorTemperature(level, corner) == 0.0
+                        && ZPSScriptGetters.reactorOutput(level, corner) == 0,
+                "Getters pointed at a block on no reactor should all read zero");
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void reactorGettersAreOfferedForTaggedWall(GameTestHelper helper) {
+        for (String name : List.of("reactor_pressure", "reactor_temperature", "reactor_output")) {
+            ScriptGetter<?> getter = ZPSCommands.getGetter(name);
+            helper.assertTrue(getter != null, "No getter is registered as " + name);
+            Set<ResourceLocation> blocks = getter.resolveAssociatedBlocks();
+            helper.assertTrue(blocks != null
+                            && blocks.contains(ZPSMod.resource("reinforced_plating"))
+                            && blocks.contains(ZPSMod.resource("reactor_port")),
+                    name + " should resolve the reactor wall tag to its blocks, got " + blocks);
+            helper.assertTrue(!getter.appliesToAny(Set.of(ZPSMod.resource("gas_gauge"))),
+                    name + " should not be offered for a block outside the tag");
+        }
         helper.succeed();
     }
 

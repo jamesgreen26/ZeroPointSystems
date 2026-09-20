@@ -223,8 +223,7 @@ public class MultiLineCommandSuggestions {
                 ScriptGetter<?> getter = ZPSCommands.getGetter(command);
                 if (getter != null) {
                     knownCommand = true;
-                    Set<ResourceLocation> associatedBlocks = getter.associatedBlocks();
-                    appliesToConnectedBlocks = associatedBlocks == null || associatedBlocks.stream().anyMatch(connectedBlocks::contains);
+                    appliesToConnectedBlocks = getter.appliesToAny(connectedBlocks);
                 }
             }
 

@@ -22,6 +22,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.saveddata.SavedData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -127,6 +128,27 @@ public final class ReactorManager extends SavedData {
     public @Nullable Reactor reactorServedBy(BlockPos pos, Direction facing) {
         Reactor reactor = reactorForInterior(pos.relative(facing.getOpposite()));
         return reactor != null && reactor.isWall(pos) ? reactor : null;
+    }
+
+    /**
+     * The reactor a readout taken at this wall block is about. A functional wall — a port or an
+     * exchanger — answers for the cavity it faces into, the same one it serves; plain wall answers
+     * for the first reactor that counts it, which only matters where two cavities share it.
+     */
+    public @Nullable Reactor reactorForWall(ServerLevel level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        if (state.hasProperty(BlockStateProperties.FACING)) {
+            Reactor served = reactorServedBy(pos, state.getValue(BlockStateProperties.FACING));
+            if (served != null) {
+                return served;
+            }
+        }
+        for (Reactor reactor : reactorsAt(pos)) {
+            if (reactor.isWall(pos)) {
+                return reactor;
+            }
+        }
+        return null;
     }
 
     public boolean isTracked(BlockPos pos) {

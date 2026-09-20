@@ -123,10 +123,14 @@ public final class ClientReactors {
         clearAll();
     }
 
-    /** Ease every reactor's heat toward what the server last said. */
+    /** Ease every reactor's heat toward what the server last said, and keep the meshes honest. */
     public static void onClientTick(ClientTickEvent.Post event) {
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level == null) {
+            return;
+        }
         for (ClientReactor reactor : REACTORS.values()) {
-            reactor.tickHeat();
+            reactor.tick(level);
         }
     }
 

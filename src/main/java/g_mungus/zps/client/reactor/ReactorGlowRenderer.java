@@ -6,8 +6,10 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import g_mungus.zps.ZPSMod;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.client.event.RegisterShadersEvent;
 import org.jetbrains.annotations.Nullable;
@@ -23,6 +25,11 @@ import java.io.IOException;
  * reactor. {@link ClientReactors} calls it from the level render for every reactor; anything else
  * that wants the effect, a ponder scene or a preview, calls {@link #draw} itself with a mesh and
  * wherever it wants it.
+ *
+ * <p>A window on the far side of the cavity is the exception to that: it belongs under the
+ * plasma, not over it. The mesh carries those faces and they are drawn here first, in the level's
+ * own translucent shader and writing depth, which both puts them under the glow and keeps the
+ * level's copy of them from being drawn over it afterwards. See {@link ReactorGlowMesh}.
  *
  * <p>Additive, bright, depth-tested but not depth-written, pulled in front of the walls it lies on by polygon offset. It has to be drawn before translucent
  * blocks, which do write depth: the glass goes over the glow, not the glow over the glass.
@@ -87,19 +94,24 @@ public final class ReactorGlowRenderer {
 
         // The texture is the noise lattice; linear filtering is what makes smooth noise of it.
         Minecraft.getInstance().getTextureManager().getTexture(NOISE).setFilter(true, false);
-        RenderSystem.setShaderTexture(0, NOISE);
 
         float fogStart = RenderSystem.getShaderFogStart();
         if (!fog) {
             RenderSystem.setShaderFogStart(Float.MAX_VALUE);
         }
+        if (mesh.windows() != null) {
+            drawWindows(mesh.windows(), modelView, projection);
+        }
+
+        RenderSystem.setShaderTexture(0, NOISE);
         RenderSystem.enableBlend();
         RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
         RenderSystem.enableDepthTest();
         RenderSystem.depthFunc(GL11.GL_LEQUAL);
         RenderSystem.depthMask(false);
         RenderSystem.disableCull();
-        RenderSystem.polygonOffset(-1f, -10f);
+        // Further forward than the windows, which lie on the same planes.
+        RenderSystem.polygonOffset(-2f, -20f);
         RenderSystem.enablePolygonOffset();
 
         VertexBuffer buffer = mesh.buffer();
@@ -114,5 +126,46 @@ public final class ReactorGlowRenderer {
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableBlend();
         RenderSystem.setShaderFogStart(fogStart);
+    }
+
+    /**
+     * The far windows, as the level would draw them but now: ordinary alpha blending over what is
+     * behind, the block atlas and the lightmap, back faces culled so that a window seen from outside
+     * is left to the level. Depth is written, a little forward of the face's own, which is what
+     * makes the level's copy of the face fail its depth test later in the frame.
+     */
+    private static void drawWindows(VertexBuffer windows, Matrix4fc modelView, Matrix4fc projection) {
+        ShaderInstance translucent = GameRenderer.getRendertypeTranslucentShader();
+        if (translucent == null) {
+            return;
+        }
+        Minecraft minecraft = Minecraft.getInstance();
+        minecraft.getTextureManager().getTexture(InventoryMenu.BLOCK_ATLAS).setFilter(false, true);
+        RenderSystem.setShaderTexture(0, InventoryMenu.BLOCK_ATLAS);
+        minecraft.gameRenderer.lightTexture().turnOnLightLayer();
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        if (translucent.CHUNK_OFFSET != null) {
+            translucent.CHUNK_OFFSET.set(0f, 0f, 0f);
+        }
+
+        RenderSystem.enableBlend();
+        RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
+                GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthFunc(GL11.GL_LEQUAL);
+        RenderSystem.depthMask(true);
+        RenderSystem.enableCull();
+        RenderSystem.polygonOffset(-1f, -10f);
+        RenderSystem.enablePolygonOffset();
+
+        windows.bind();
+        windows.drawWithShader(new Matrix4f(modelView), new Matrix4f(projection), translucent);
+        VertexBuffer.unbind();
+
+        RenderSystem.polygonOffset(0f, 0f);
+        RenderSystem.disablePolygonOffset();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableBlend();
+        minecraft.gameRenderer.lightTexture().turnOffLightLayer();
     }
 }

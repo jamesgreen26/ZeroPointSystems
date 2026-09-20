@@ -31,6 +31,8 @@ public final class ClientReactor {
     private static final float MAX_STEP = 0.035f;
     /** Closer to the target than this, the eased heat lands on it. */
     private static final float SETTLE_EPSILON = 1f / 1024f;
+    /** How often, in ticks, a built mesh is checked against the walls and light it was built from. */
+    private static final int STALE_CHECK_INTERVAL = 20;
 
     private final int id;
     private final VoxelShape shape;
@@ -41,6 +43,7 @@ public final class ClientReactor {
     private final @Nullable RenderTransformProvider grid;
     /** The glow's coat. Built on first use, and let go when the walls may have changed. */
     private @Nullable ReactorGlowMesh glowMesh;
+    private int ticks;
 
     /** What the server last said, over ignition temperature. */
     private float targetHeat;
@@ -163,8 +166,19 @@ public final class ClientReactor {
         return displayHeat;
     }
 
-    /** Once a client tick: eases the drawn heat toward the server's figure. */
-    void tickHeat() {
+    /**
+     * Once a client tick: eases the heat, and every so often throws the mesh away if the walls it
+     * was cut against, or the light baked into its windows, are not what they were.
+     */
+    void tick(ClientLevel level) {
+        tickHeat();
+        if (glowMesh != null && ++ticks % STALE_CHECK_INTERVAL == 0 && glowMesh.isStale(level)) {
+            releaseGlowMesh();
+        }
+    }
+
+    /** Eases the drawn heat toward the server's figure. */
+    private void tickHeat() {
         float step = (targetHeat - displayHeat) * SMOOTHING;
         displayHeat += Math.max(-MAX_STEP, Math.min(MAX_STEP, step));
         if (Math.abs(targetHeat - displayHeat) < SETTLE_EPSILON) {

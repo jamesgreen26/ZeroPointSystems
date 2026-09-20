@@ -1,21 +1,31 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_ingots_space_metal": {
+    "has_space_metal_mesh": {
       "conditions": {
         "items": [
           {
-            "items": "#c:ingots/space_metal"
+            "items": "zps:space_metal_mesh"
           }
         ]
       },
       "trigger": "minecraft:inventory_changed"
     },
-    "has_glass_blocks": {
+    "has_gas_duct": {
       "conditions": {
         "items": [
           {
-            "items": "#c:glass_blocks"
+            "items": "zps:gas_duct"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_redstone": {
+      "conditions": {
+        "items": [
+          {
+            "items": "minecraft:redstone"
           }
         ]
       },
@@ -23,21 +33,22 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "zps:reinforced_glass"
+        "recipe": "zps:reactor_port"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
   },
   "requirements": [
     [
-      "has_ingots_space_metal",
-      "has_glass_blocks",
+      "has_space_metal_mesh",
+      "has_gas_duct",
+      "has_redstone",
       "has_the_recipe"
     ]
   ],
   "rewards": {
     "recipes": [
-      "zps:reinforced_glass"
+      "zps:reactor_port"
     ]
   },
   "sends_telemetry_event": false

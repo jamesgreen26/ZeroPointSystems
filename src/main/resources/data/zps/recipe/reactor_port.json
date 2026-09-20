@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "M": {
+      "item": "zps:space_metal_mesh"
+    },
+    "D": {
+      "item": "zps:gas_duct"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    }
+  },
+  "pattern": [
+    "MMM",
+    "DRD",
+    "MMM"
+  ],
+  "result": {
+    "id": "zps:reactor_port",
+    "count": 1
+  }
+}

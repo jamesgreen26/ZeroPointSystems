@@ -20,10 +20,12 @@ import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.block.Block;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -104,15 +106,26 @@ public class ImpactCategory implements IRecipeCategory<RecipeHolder<ImpactRecipe
             var slot = builder.addSlot(RecipeIngredientRole.OUTPUT, OUTPUTS_X + (i * SLOT_SIZE), SLOT_Y)
                     .setStandardSlotBackground()
                     .addItemStack(new ItemStack(result.block().value()));
+            List<ItemStack> buried = buriedCandidates(result);
+            if (buried.isEmpty()) {
+                continue;
+            }
             // Whatever a suspicious block may be hiding goes in its tooltip, as icons.
-            result.buriedItem().ifPresent(buried -> slot.addRichTooltipCallback((view, tooltip) -> {
-                List<ItemStack> candidates = List.of(buried.getItems());
-                if (!candidates.isEmpty()) {
-                    tooltip.add(Component.translatable("gui.zps.jei.impact.may_contain").withStyle(ChatFormatting.GRAY));
-                    tooltip.add(new ItemIconsTooltip(candidates));
-                }
-            }));
+            slot.addRichTooltipCallback((view, tooltip) -> {
+                tooltip.add(Component.translatable("gui.zps.jei.impact.may_contain").withStyle(ChatFormatting.GRAY));
+                tooltip.add(new ItemIconsTooltip(buried));
+            });
+            // The buried items are outputs too, just not ones with a slot of their own. Declaring
+            // them lets a "how do I get this" lookup on a nugget or raw ore land on this recipe.
+            builder.addInvisibleIngredients(RecipeIngredientRole.OUTPUT).addItemStacks(buried);
         }
+    }
+
+    /** The items a result may bury. An empty tag resolves to a placeholder barrier, which is not one of them. */
+    private static List<ItemStack> buriedCandidates(ImpactResult result) {
+        return result.buriedItem()
+                .map(buried -> Arrays.stream(buried.getItems()).filter(stack -> !stack.is(Items.BARRIER)).toList())
+                .orElse(List.of());
     }
 
     @Override

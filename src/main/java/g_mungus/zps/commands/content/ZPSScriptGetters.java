@@ -2,6 +2,7 @@ package g_mungus.zps.commands.content;
 
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
+import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.BookHolder;
 import g_mungus.zps.blockentity.light_pipe.RadioBlockEntity;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
@@ -61,7 +62,7 @@ public class ZPSScriptGetters {
         );
 
         event.register(ScriptGetter.withBlocks(
-                "get_page",
+                "page_number",
                 Integer.class,
                 ResourceLocation.parse("zps:int"),
                 scriptContext -> {
@@ -75,7 +76,7 @@ public class ZPSScriptGetters {
         ));
 
         event.register(ScriptGetter.withBlocks(
-                "read_page",
+                "page_contents",
                 String.class,
                 ResourceLocation.parse("zps:string"),
                 scriptContext -> {
@@ -131,6 +132,38 @@ public class ZPSScriptGetters {
                     return 0;
                 },
                 Set.of(ZPSMod.resource("radio_transmitter"), ZPSMod.resource("radio_receiver"))
+        ));
+
+        // The gauge's own readings, whichever of the two its dial is set to show: pressure in
+        // Pascals and temperature in Kelvin, unscaled and unclamped by the bounds on the dial.
+        Set<ResourceLocation> gasGaugeBlocks = Set.of(ZPSMod.resource("gas_gauge"));
+
+        event.register(ScriptGetter.withBlocks(
+                "pressure",
+                Double.class,
+                ResourceLocation.parse("zps:double"),
+                scriptContext -> {
+                    BlockEntity be = scriptContext.level().getBlockEntity(scriptContext.pos());
+                    if (be instanceof GasGaugeBlockEntity gauge) {
+                        return gauge.getPressure();
+                    }
+                    return 0.0;
+                },
+                gasGaugeBlocks
+        ));
+
+        event.register(ScriptGetter.withBlocks(
+                "temperature",
+                Double.class,
+                ResourceLocation.parse("zps:double"),
+                scriptContext -> {
+                    BlockEntity be = scriptContext.level().getBlockEntity(scriptContext.pos());
+                    if (be instanceof GasGaugeBlockEntity gauge) {
+                        return gauge.getTemperature();
+                    }
+                    return 0.0;
+                },
+                gasGaugeBlocks
         ));
     }
 }

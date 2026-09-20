@@ -46,6 +46,10 @@
     "zps:caution_block",
     "zps:radiation_caution_block",
     "zps:void_caution_block",
-    "#zps:space_plating"
+    "#zps:space_plating",
+    "zps:aluminum_plating",
+    "zps:aluminum_plating_stairs",
+    "zps:aluminum_plating_slab",
+    "zps:aluminum_plating_wall"
   ]
 }

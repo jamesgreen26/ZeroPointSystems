@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "I": {
+      "tag": "c:ingots/space_metal"
+    },
+    "C": {
+      "tag": "c:glass_blocks"
+    }
+  },
+  "pattern": [
+    " I ",
+    "ICI",
+    " I "
+  ],
+  "result": {
+    "id": "zps:reinforced_glass",
+    "count": 1
+  },
+  "show_notification": true
+}

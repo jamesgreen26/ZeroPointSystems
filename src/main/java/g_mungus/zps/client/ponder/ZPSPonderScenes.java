@@ -9,6 +9,7 @@ import g_mungus.zps.block.cableNetwork.TransformerBlock;
 import g_mungus.zps.block.cableNetwork.RedstoneConverterBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.light_pipe.DataLecternBlock;
+import g_mungus.zps.block.cableNetwork.light_pipe.TextDisplayBlock;
 import g_mungus.zps.block.cableNetwork.properties.InsulationType;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
 import g_mungus.zps.blockentity.reactor.ReactorPortBlockEntity;
@@ -52,6 +53,7 @@ import net.minecraft.world.level.block.piston.PistonBaseBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.AttachFace;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
@@ -1025,5 +1027,288 @@ public class ZPSPonderScenes {
         builder.overlay().showText(105)
                 .text("If the temperature reaches 200,000 K the walls will melt, and if the pressure reaches 24 MPa the chamber will burst.");
         builder.idle(115);
+    }
+
+    /**
+     * Tips for keeping a reactor running, to the script in design_docs/REACTOR_PONDER_SCRIPTS.md:
+     * reading it, why it overheats, why it bursts. Built on the intro's structure, with the
+     * monitoring rig and the redstone rigs placed by the scene. The three readings are faked along
+     * with the glow, and kept in step with it: temperature is heat times ignition temperature, and
+     * pressure follows temperature for as long as the contents are the same, as it does in Kelvin.
+     */
+    public static void reactorTipsTutorial(SceneBuilder builder, SceneBuildingUtil util) {
+        builder.configureBasePlate(0, 0, 9);
+        builder.title("reactor_tips", "Running a Fusion Reactor");
+        builder.scaleSceneView(0.7f);
+        builder.setSceneOffsetY(-1.5f);
+
+        BlockPos inputPort = new BlockPos(5, 3, 3);
+        BlockPos outputPort = new BlockPos(3, 3, 5);
+        BlockPos vent = new BlockPos(1, 5, 5);
+        Vec3 chamberCentre = util.vector().centerOf(5, 3, 5);
+        // Everything but where the two redstone rigs will stand: those come in later, as sections
+        // of their own, and a block shown twice is drawn twice.
+        Selection everything = util.select().fromTo(0, 1, 0, 8, 8, 8)
+                .substract(util.select().fromTo(1, 3, 6, 2, 3, 6))
+                .substract(util.select().fromTo(6, 3, 1, 6, 3, 2));
+        Selection shell = util.select().fromTo(3, 1, 3, 7, 5, 7).substract(util.select().fromTo(4, 2, 4, 6, 4, 6));
+        Selection exchangers = util.select().position(5, 5, 4).add(util.select().position(4, 5, 5))
+                .add(util.select().position(6, 5, 5)).add(util.select().position(5, 5, 6));
+        Selection powerLine = util.select().position(5, 6, 4).add(util.select().position(6, 6, 5))
+                .add(util.select().fromTo(5, 6, 5, 5, 7, 5)).add(util.select().fromTo(6, 7, 5, 8, 7, 5))
+                .add(util.select().fromTo(8, 1, 5, 8, 6, 5)).add(util.select().fromTo(8, 1, 1, 8, 1, 4))
+                .add(util.select().fromTo(6, 1, 1, 7, 1, 1));
+
+        // The monitoring rig: three chains of Serial Bus, Data Cable and Text Display that never
+        // touch. They could not stand side by side: parts on the same cable standard connect
+        // wherever they meet, and Text Displays that meet merge into one. So two buses take the
+        // ends of the west window's bottom row, a block apart, and the third goes round the corner
+        // onto the north window, its cable running back along the plate. All three displays face
+        // west on alternate blocks of the plate's edge, where one camera move takes them all in.
+        //
+        // Window height and not the floor, because a getter only answers from a wall block that
+        // touches the cavity, and the floor's edge blocks do not. The redstone rigs that come
+        // later stand next to buses, which is fine: they are on a different cable standard.
+        BlockPos[] buses = {new BlockPos(4, 2, 2), new BlockPos(2, 2, 4), new BlockPos(2, 2, 6)};
+        Direction[] busFacings = {Direction.SOUTH, Direction.EAST, Direction.EAST};
+        BlockPos[] displays = {new BlockPos(0, 1, 2), new BlockPos(0, 1, 4), new BlockPos(0, 1, 6)};
+        String[] getters = {"reactor_pressure", "reactor_temperature", "reactor_output"};
+        BlockState cableAlong = ModBlocks.DATA_CABLE.get().defaultBlockState()
+                .setValue(CableBlock.EAST, true).setValue(CableBlock.WEST, true);
+        BlockState cableUp = ModBlocks.DATA_CABLE.get().defaultBlockState()
+                .setValue(CableBlock.UP, true).setValue(CableBlock.WEST, true);
+        for (int i = 0; i < buses.length; i++) {
+            builder.world().setBlock(buses[i], ModBlocks.SERIAL_BUS.get().defaultBlockState()
+                    .setValue(TransformerBlock.FACING, busFacings[i]).setValue(CableBlock.DOWN, true), false);
+            builder.world().setBlock(buses[i].below(), cableUp, false);
+            for (int x = buses[i].getX() - 1; x > displays[i].getX(); x--) {
+                builder.world().setBlock(new BlockPos(x, 1, displays[i].getZ()), cableAlong, false);
+            }
+            builder.world().setBlock(displays[i], ModBlocks.TEXT_DISPLAY.get().defaultBlockState()
+                    .setValue(TextDisplayBlock.FACING, Direction.WEST).setValue(TextDisplayBlock.CONNECTED, true), false);
+        }
+        Selection busBlocks = util.select().position(buses[0]).add(util.select().position(buses[1]))
+                .add(util.select().position(buses[2]));
+
+        SceneViewElement view = new SceneViewElement();
+        ReactorGlowElement glow = new ReactorGlowElement(new BlockPos(4, 2, 4), new BlockPos(6, 4, 6), 0.61f);
+
+        // 1. Reading the reactor. The rig is simply there; its blocks have scenes of their own.
+        builder.showBasePlate();
+        builder.idle(5);
+        builder.world().showSection(everything, Direction.DOWN);
+        builder.addInstruction(scene -> {
+            scene.addElement(glow);
+            glow.heatTo(1.3f, 0);
+        });
+        reactorReadings(builder, displays, 9.0e6, 65_000, 8192);
+        builder.idle(30);
+        builder.effects().emitParticles(util.vector().topOf(vent),
+                builder.effects().simpleParticleEmitter(ParticleTypes.CLOUD, new Vec3(0, 0.05, 0)), 1, 930);
+
+        builder.overlay().showOutline(PonderPalette.INPUT, "buses", busBlocks, 90);
+        builder.overlay().showText(90)
+                .text("A Serial Bus in Get mode can read the state of a reactor from any of its wall blocks.")
+                .pointAt(util.vector().blockSurface(buses[1], Direction.WEST)).placeNearTarget();
+        builder.idle(100);
+        // One at a time: two of the buses stand either side of the same corner, and their labels
+        // would lie over each other.
+        for (int i = 0; i < getters.length; i++) {
+            builder.overlay().showOutline(PonderPalette.INPUT, "bus", util.select().position(buses[i]), 25);
+            builder.overlay().showText(25).text(getters[i]).colored(PonderPalette.INPUT)
+                    .pointAt(util.vector().topOf(buses[i])).placeNearTarget();
+            builder.idle(30);
+        }
+        builder.idle(5);
+        // The text on a display is a sixteenth of a block tall, far too small at the scene's scale.
+        // So for the two lines that are about the values, the camera comes round to face the
+        // displays square on, 55 degrees of yaw and 35 of pitch from where Ponder starts it, and
+        // moves in a little over three times, with the view raised a block to put the displays
+        // mid-screen.
+        builder.addInstruction(new RotateSceneInstruction(35, -55, true));
+        builder.addInstruction(scene -> view.moveTo(scene, 3.25f, new Vec3(0, 1, 0), 35));
+        builder.idle(40);
+        builder.overlay().showText(80)
+                .text("Pressure is read in Pa, temperature in K, and output in FE per tick.")
+                .pointAt(util.vector().blockSurface(displays[1], Direction.WEST)).placeNearTarget();
+        builder.idle(95);
+        builder.overlay().showText(90)
+                .text("Watching these values makes it easier to understand what the reactor is doing, and to avoid a failure.");
+        builder.idle(100);
+        builder.addInstruction(new RotateSceneInstruction(-35, 55, true));
+        builder.addInstruction(scene -> view.moveTo(scene, 1f, Vec3.ZERO, 35));
+        builder.idle(40);
+
+        // 2. Overheating. Same contents, hotter: pressure climbs with the temperature.
+        builder.addInstruction(scene -> glow.heatTo(2.2f, 105));
+        builder.overlay().showText(95).attachKeyFrame()
+                .text("The chamber heats up whenever the reaction generates heat faster than the Heat Exchangers can remove it.")
+                .pointAt(chamberCentre).placeNearTarget();
+        rampReadings(builder, displays, 9.0e6, 15.2e6, 65_000, 110_000, 8192, 8192, 105);
+
+        builder.overlay().showOutline(PonderPalette.OUTPUT, "exchangers", exchangers, 95);
+        builder.overlay().showText(95)
+                .text("Each Heat Exchanger can only generate so much FE. A reactor that runs hot needs more of them.")
+                .pointAt(util.vector().topOf(5, 5, 4)).placeNearTarget();
+        builder.idle(105);
+
+        // Nowhere for the FE to go: the output falls to nothing and the chamber climbs faster.
+        builder.overlay().showOutline(PonderPalette.RED, "blocked", powerLine, 180);
+        builder.addInstruction(scene -> glow.heatTo(2.6f, 190));
+        builder.overlay().showText(80)
+                .text("A Heat Exchanger only removes heat while its FE has somewhere to go...")
+                .pointAt(util.vector().topOf(5, 6, 4)).placeNearTarget();
+        rampReadings(builder, displays, 15.2e6, 16.6e6, 110_000, 120_000, 0, 0, 95);
+        builder.overlay().showText(90)
+                .text("...so if the machines it powers are full, it will stop cooling the chamber.")
+                .pointAt(util.vector().topOf(5, 6, 4)).placeNearTarget();
+        rampReadings(builder, displays, 16.6e6, 18.0e6, 120_000, 130_000, 0, 0, 100);
+        reactorReadings(builder, displays, 18.0e6, 130_000, 8192);
+
+        // The second remedy: hold the Aether in, and the reaction has to wait for it to leave.
+        BlockPos outputLever = placeThrottleRig(builder, util, outputPort, Direction.SOUTH, Direction.WEST);
+        builder.idle(30);
+        builder.overlay().showText(95).attachKeyFrame()
+                .text("The reaction stops while Aether makes up more than a quarter of the gas in the chamber.")
+                .pointAt(chamberCentre).placeNearTarget();
+        builder.idle(105);
+        clickThrottle(builder, util, outputLever, outputPort, 0, 10);
+        // Less leaving the Vent now.
+        builder.effects().emitParticles(util.vector().topOf(vent),
+                builder.effects().simpleParticleEmitter(ParticleTypes.CLOUD, new Vec3(0, 0.05, 0)), 0.3f, 200);
+        builder.addInstruction(scene -> glow.heatTo(1.3f, 105));
+        builder.overlay().showText(95)
+                .text("Restricting the Output port with Redstone keeps more Aether inside, which slows the reaction down.")
+                .pointAt(util.vector().blockSurface(outputPort, Direction.WEST)).placeNearTarget();
+        rampReadings(builder, displays, 18.0e6, 9.0e6, 130_000, 65_000, 8192, 8192, 105);
+
+        // 3. Pressure.
+        builder.overlay().showText(80).attachKeyFrame()
+                .text("The pressure in the chamber rises and falls with its temperature.")
+                .pointAt(util.vector().blockSurface(displays[0], Direction.WEST)).placeNearTarget();
+        builder.idle(95);
+
+        // A cold start with the Input port wide open. 400 kPa of cold gas is nothing next to what
+        // the Vaporizer will supply, and is still enough: it is past 24 MPa at 22,500 K, less than
+        // half way to ignition.
+        builder.addInstruction(scene -> glow.heatTo(0f, 35));
+        rampReadings(builder, displays, 9.0e6, 400_000, 65_000, 375, 8192, 0, 35);
+        BlockPos inputLever = placeThrottleRig(builder, util, inputPort, Direction.EAST, Direction.NORTH);
+        builder.idle(30);
+        builder.overlay().showText(100)
+                .text("A chamber filled with cold Flux will reach over a hundred times its pressure by the time it ignites...")
+                .pointAt(util.vector().blockSurface(displays[0], Direction.WEST)).placeNearTarget();
+        builder.idle(110);
+        builder.addInstruction(scene -> glow.heatTo(0.45f, 95));
+        rampReadings(builder, displays, 400_000, 24.0e6, 375, 22_500, 0, 0, 95);
+        builder.overlay().showOutline(PonderPalette.RED, "burst", shell, 60);
+        builder.overlay().showText(80)
+                .text("...and will burst long before it gets there.")
+                .pointAt(util.vector().blockSurface(displays[0], Direction.WEST)).placeNearTarget();
+        builder.idle(95);
+
+        // Again, with the Input port nearly shut first: 60 kPa cold is 10.4 MPa at running heat.
+        builder.addInstruction(scene -> glow.heatTo(0f, 30));
+        rampReadings(builder, displays, 24.0e6, 400_000, 22_500, 375, 0, 0, 30);
+        clickThrottle(builder, util, inputLever, inputPort, 0, 14);
+        reactorReadings(builder, displays, 60_000, 375, 0);
+        builder.overlay().showText(95).attachKeyFrame()
+                .text("Before igniting, restrict the Input port with Redstone, so that only a little Flux gets in.")
+                .pointAt(util.vector().blockSurface(inputPort, Direction.NORTH)).placeNearTarget();
+        builder.idle(105);
+        builder.addInstruction(scene -> glow.heatTo(1.3f, 140));
+        rampReadings(builder, displays, 60_000, 10.4e6, 375, 65_000, 0, 8192, 140);
+
+        builder.effects().emitParticles(util.vector().topOf(vent),
+                builder.effects().simpleParticleEmitter(ParticleTypes.CLOUD, new Vec3(0, 0.05, 0)), 0.3f, 175);
+        builder.overlay().showText(80)
+                .text("Once the reactor is lit, the Input port can be opened up again.")
+                .pointAt(util.vector().blockSurface(inputPort, Direction.NORTH)).placeNearTarget();
+        builder.idle(20);
+        clickThrottle(builder, util, inputLever, inputPort, 14, 4);
+        rampReadings(builder, displays, 10.4e6, 12.0e6, 65_000, 65_000, 8192, 8192, 25);
+        builder.idle(10);
+
+        builder.overlay().showText(95)
+                .text("A reactor that overheats gains pressure as well, and can burst before its walls melt.");
+        builder.idle(105);
+    }
+
+    /** Puts what the three getters would send on the three displays: two decimals for a double, none for an int. */
+    private static void reactorReadings(SceneBuilder builder, BlockPos[] displays, double pressurePa, double temperatureK, int outputFe) {
+        String[] values = {
+                String.format(java.util.Locale.ROOT, "%.2f", pressurePa),
+                String.format(java.util.Locale.ROOT, "%.2f", temperatureK),
+                Integer.toString(outputFe)
+        };
+        for (int i = 0; i < displays.length; i++) {
+            String value = values[i];
+            builder.world().modifyBlockEntity(displays[i], TextDisplayBlockEntity.class, display -> display.acceptText(Channels.MAIN, value));
+        }
+    }
+
+    /** Moves the readings from one set of values to another over a stretch of ticks, which it idles through. */
+    private static void rampReadings(SceneBuilder builder, BlockPos[] displays, double fromPa, double toPa,
+                                     double fromK, double toK, int fromFe, int toFe, int ticks) {
+        int step = 5;
+        for (int elapsed = step; elapsed <= ticks; elapsed += step) {
+            float t = (float) elapsed / ticks;
+            reactorReadings(builder, displays, fromPa + (toPa - fromPa) * t, fromK + (toK - fromK) * t,
+                    Math.round(fromFe + (toFe - fromFe) * t));
+            builder.idle(step);
+        }
+        if (ticks % step != 0) {
+            builder.idle(ticks % step);
+        }
+    }
+
+    /**
+     * The redstone rig from the intro, beside a port: the wall block on one side of it becomes
+     * plating, a Redstone Converter on that block's outer face powers it, and a Graduated Lever on
+     * the converter sets the level. Returns where the lever is.
+     *
+     * @param along   from the port to the wall block that is powered
+     * @param outward the way the port's wall faces
+     */
+    private static BlockPos placeThrottleRig(SceneBuilder builder, SceneBuildingUtil util, BlockPos port,
+                                             Direction along, Direction outward) {
+        BlockPos poweredWall = port.relative(along);
+        BlockPos converterPos = poweredWall.relative(outward);
+        BlockPos leverPos = converterPos.relative(outward);
+        builder.world().setBlock(poweredWall, ModBlocks.REINFORCED_PLATING.get().defaultBlockState(), true);
+        builder.world().setBlock(converterPos, ModBlocks.REDSTONE_CONVERTER.get().defaultBlockState()
+                .setValue(TransformerBlock.FACING, outward.getOpposite())
+                .setValue(cableConnection(outward), true), false);
+        builder.world().setBlock(leverPos, ModBlocks.GRADUATED_LEVER.get().defaultBlockState()
+                .setValue(PanelBlock.FACE, AttachFace.WALL)
+                .setValue(PanelBlock.FACING, outward)
+                .setValue(PanelBlock.CONNECTED, true), false);
+        builder.world().showSection(util.select().position(converterPos).add(util.select().position(leverPos)),
+                outward.getOpposite());
+        return leverPos;
+    }
+
+    private static BooleanProperty cableConnection(Direction direction) {
+        return switch (direction) {
+            case DOWN -> CableBlock.DOWN;
+            case UP -> CableBlock.UP;
+            case NORTH -> CableBlock.NORTH;
+            case SOUTH -> CableBlock.SOUTH;
+            case WEST -> CableBlock.WEST;
+            case EAST -> CableBlock.EAST;
+        };
+    }
+
+    /** Clicks a Graduated Lever a step at a time from one level to another, the port's lamp following, and idles through it. */
+    private static void clickThrottle(SceneBuilder builder, SceneBuildingUtil util, BlockPos leverPos, BlockPos port,
+                                      int from, int to) {
+        int direction = Integer.signum(to - from);
+        for (int level = from + direction; direction != 0 && level != to + direction; level += direction) {
+            int power = level;
+            builder.world().modifyBlock(leverPos, state -> state.setValue(GraduatedLeverBlock.POWER, power), false);
+            builder.world().modifyBlockEntityNBT(util.select().position(port), ReactorPortBlockEntity.class,
+                    nbt -> nbt.putInt("Redstone", power));
+            builder.idle(5);
+        }
     }
 }

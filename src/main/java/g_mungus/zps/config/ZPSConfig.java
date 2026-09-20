@@ -87,11 +87,7 @@ public class ZPSConfig {
      * plain pipe edge from our side, since most foreign gas blocks author no edges at all and would
      * otherwise never connect to anything of ours.
      */
-    private static final List<String> gasEdgeForeignBlocklistDefault = List.of(
-            // Clockwork's edge authors: its duct, plus the two IConnectable block entities.
-            "vs_clockwork:duct",
-            "vs_clockwork:hose_port",
-            "vs_clockwork:extendon");
+    private static final List<String> gasEdgeForeignBlocklistDefault = List.of("vs_clockwork:duct");
 
     public static boolean authorsOwnGasEdges(ResourceLocation block) {
         String id = block.toString();

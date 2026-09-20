@@ -1,6 +1,8 @@
 package g_mungus.zps.commands.content;
 
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.blockentity.CreativePowerCellBlockEntity;
+import g_mungus.zps.blockentity.PowerCellBlockEntity;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
 import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.BookHolder;
@@ -136,6 +138,15 @@ public class ZPSScriptGetters {
                 Set.of("zps:radio_transmitter", "zps:radio_receiver")
         ));
 
+        // A power cell structure pools its energy, so any of its cells reads the whole battery.
+        event.register(ScriptGetter.withBlocks(
+                "stored_energy",
+                Integer.class,
+                ResourceLocation.parse("zps:int"),
+                scriptContext -> storedEnergy(scriptContext.level(), scriptContext.pos()),
+                Set.of("zps:power_cell", "zps:creative_power_cell")
+        ));
+
         // The gauge's own readings, whichever of the two its dial is set to show: pressure in
         // Pascals and temperature in Kelvin, unscaled and unclamped by the bounds on the dial.
         Set<String> gasGaugeBlocks = Set.of("zps:gas_gauge");
@@ -195,6 +206,22 @@ public class ZPSScriptGetters {
                 scriptContext -> reactorOutput(scriptContext.level(), scriptContext.pos()),
                 reactorWalls
         ));
+    }
+
+    /**
+     * FE held by the power cell structure this block belongs to, read from any of its cells. A
+     * creative cell reads as {@link Integer#MAX_VALUE}, the same figure its energy capability
+     * reports, so a comparison against it behaves as "always full". Zero where there is no cell.
+     */
+    public static int storedEnergy(ServerLevel level, BlockPos pos) {
+        BlockEntity be = level.getBlockEntity(pos);
+        if (be instanceof PowerCellBlockEntity cell) {
+            return cell.getEnergyStored();
+        }
+        if (be instanceof CreativePowerCellBlockEntity) {
+            return Integer.MAX_VALUE;
+        }
+        return 0;
     }
 
     /** Chamber pressure in Pascals, or zero where there is no reactor or its chamber is not simulated. */

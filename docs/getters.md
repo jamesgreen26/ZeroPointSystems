@@ -106,6 +106,22 @@ set_frequency value_of(frequency + 1)
 
 ---
 
+## Power Cell
+
+The following getter requires the target block to be a `Power Cell` or `Creative Power Cell`.
+
+| Getter          | Output | Description                                                                 |
+|-----------------|--------|-----------------------------------------------------------------------------|
+| `stored_energy` | Int    | The FE stored in the power cell structure. Every cell of a multiblock reads the same pooled total. A `Creative Power Cell` reads as the largest Int. |
+
+Examples:
+
+```
+if stored_energy < 100000 set_redstone 15 else set_redstone 0
+```
+
+---
+
 ## Additional Getters
 
 - [Sable](sable.md) — `sublevel`

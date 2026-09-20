@@ -4,6 +4,9 @@ import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.PowerCellBlock;
 import g_mungus.zps.blockentity.PowerCellBlockEntity;
+import g_mungus.zps.commands.api.ScriptGetter;
+import g_mungus.zps.commands.api_impl.ZPSCommands;
+import g_mungus.zps.commands.content.ZPSScriptGetters;
 import g_mungus.zps.multiblock.ConnectivityHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -17,6 +20,8 @@ import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+
+import java.util.Set;
 
 @GameTestHolder(ZPSMod.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -154,6 +159,35 @@ public class PowerCellMultiblockGameTests {
             helper.assertTrue(helper.getBlockState(ORIGIN.above(2)).getValue(PowerCellBlock.TOP)
                             && !helper.getBlockState(ORIGIN.above(2)).getValue(PowerCellBlock.BOTTOM),
                     "The top cell should only carry the top plate");
+            helper.succeed();
+        });
+    }
+
+    /** The stored_energy getter reads the pooled energy from any cell, and the creative cell as full. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 60)
+    public static void storedEnergyGetter_readsThePoolFromAnyCell(GameTestHelper helper) {
+        placeBox(helper, ORIGIN, 2, 1);
+        BlockPos creative = ORIGIN.offset(4, 0, 0);
+        helper.setBlock(creative, ModBlocks.CREATIVE_POWER_CELL.get().defaultBlockState());
+
+        helper.runAfterDelay(FORM_TICKS, () -> {
+            BlockPos part = ORIGIN.offset(1, 0, 1);
+            int accepted = energyAt(helper, ORIGIN, Direction.UP).receiveEnergy(1000, false);
+            helper.assertTrue(accepted == 1000, "The structure should take 1000 FE, took " + accepted);
+
+            int viaPart = ZPSScriptGetters.storedEnergy(helper.getLevel(), helper.absolutePos(part));
+            helper.assertTrue(viaPart == 1000, "stored_energy at a part should read the pooled 1000 FE, was " + viaPart);
+            helper.assertTrue(ZPSScriptGetters.storedEnergy(helper.getLevel(), helper.absolutePos(creative))
+                    == Integer.MAX_VALUE, "stored_energy at a creative cell should read as full");
+            helper.assertTrue(ZPSScriptGetters.storedEnergy(helper.getLevel(), helper.absolutePos(ORIGIN.below())) == 0,
+                    "stored_energy away from a cell should read zero");
+
+            ScriptGetter<?> getter = ZPSCommands.getGetter("stored_energy");
+            helper.assertTrue(getter != null, "No getter is registered as stored_energy");
+            helper.assertTrue(getter.appliesToAny(Set.of(ZPSMod.resource("power_cell")))
+                            && getter.appliesToAny(Set.of(ZPSMod.resource("creative_power_cell")))
+                            && !getter.appliesToAny(Set.of(ZPSMod.resource("gas_gauge"))),
+                    "stored_energy should be offered for power cells only");
             helper.succeed();
         });
     }

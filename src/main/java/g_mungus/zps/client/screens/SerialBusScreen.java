@@ -79,6 +79,8 @@ public class SerialBusScreen extends Screen {
 
     private @Nullable MultiLineEditBox expressionBox;
     private @Nullable MultiLineCommandSuggestions expressionSuggestions;
+    /** Set by a mode toggle that lands on Get, for {@link #mouseClicked} to act on once the click is over. */
+    private boolean focusExpressionBox;
 
     private @Nullable String highlightedCommand;
     private List<ScriptSyntaxHighlighter.Span> highlighting = List.of();
@@ -125,6 +127,7 @@ public class SerialBusScreen extends Screen {
         int left = this.width / 2 - CONTROL_WIDTH / 2;
         this.addRenderableWidget(Button.builder(modeButtonText(), button -> {
                     mode = mode.next();
+                    focusExpressionBox = mode == SerialBusMode.GET;
                     sendSettings();
                     // The body differs by mode, so the whole stack is laid out again.
                     this.rebuildWidgets();
@@ -215,8 +218,17 @@ public class SerialBusScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        return (expressionSuggestions != null && expressionSuggestions.mouseClicked(mouseX, mouseY, button))
+        boolean handled = (expressionSuggestions != null && expressionSuggestions.mouseClicked(mouseX, mouseY, button))
                 || super.mouseClicked(mouseX, mouseY, button);
+        // Switching to Get rebuilds the widgets from inside the mode button's click, and the new
+        // box takes focus then — but vanilla ends the click by focusing whatever was clicked, which
+        // is the old button, already gone. So the box is given focus again after the click is done.
+        if (focusExpressionBox && expressionBox != null) {
+            this.setFocused(expressionBox);
+            this.setDragging(false);
+        }
+        focusExpressionBox = false;
+        return handled;
     }
 
     @Override

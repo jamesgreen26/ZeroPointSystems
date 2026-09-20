@@ -67,6 +67,6 @@ public class ZPSPonders {
                 REINFORCED_GLASS,
                 REACTOR_PORT,
                 HEAT_EXCHANGER
-        ).addStoryBoard("reactor", ZPSPonderScenes::reactorIntroTutorial);
+        ).addStoryBoard("reactor", ZPSPonderScenes::reactorIntroTutorial, ZPSPonderTags.REACTOR_WALL_BLOCKS);
     }
 }

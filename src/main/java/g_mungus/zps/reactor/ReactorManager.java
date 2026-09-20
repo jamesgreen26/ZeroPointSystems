@@ -226,8 +226,8 @@ public final class ReactorManager extends SavedData {
         ensureNode(level, reactor);
         setDirty();
         syncWatchers(level, reactor);
-        ZPSMod.LOGGER.debug("Reactor {} sealed at {}: {} m^3, {} walls, compactness {}",
-                reactor.id(), reactor.host(), reactor.volume(), reactor.wallCount(), reactor.compactness());
+        ZPSMod.LOGGER.debug("Reactor {} sealed at {}: {} m^3, {} walls",
+                reactor.id(), reactor.host(), reactor.volume(), reactor.wallCount());
     }
 
     /** Forget a reactor and take its chamber out of the simulation. The blocks are untouched. */

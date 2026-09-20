@@ -93,8 +93,8 @@ public class ReactorDebugCommand {
                 reactor.host().toShortString(),
                 level.isLoaded(reactor.host()) ? "loaded" : "unloaded",
                 nodePresent ? "present" : "missing"));
-        lines.add(String.format("  volume %d m^3, walls %d, compactness %.3f",
-                reactor.volume(), reactor.wallCount(), reactor.compactness()));
+        lines.add(String.format("  volume %d m^3, walls %d",
+                reactor.volume(), reactor.wallCount()));
         lines.add(String.format("  burst %.2f MPa, wall heat capacity %.0f J/K",
                 reactor.burstPressure() / 1e6, reactor.wallHeatCapacity()));
 

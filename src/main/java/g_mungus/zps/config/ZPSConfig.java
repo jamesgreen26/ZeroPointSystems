@@ -130,8 +130,6 @@ public class ZPSConfig {
     private static ModConfigSpec.ConfigValue<Double> exhaustOutletTemperatureK;
     private static ModConfigSpec.ConfigValue<Double> exhaustBackpressureLimitPa;
     private static ModConfigSpec.ConfigValue<Double> burstBasePressurePa;
-    private static ModConfigSpec.ConfigValue<Double> burstCompactnessExponent;
-    private static ModConfigSpec.ConfigValue<Double> burstSizeExponent;
     private static ModConfigSpec.ConfigValue<Double> burstRadiusPerOvershoot;
     private static ModConfigSpec.ConfigValue<Integer> breachFireRadius;
     private static ModConfigSpec.ConfigValue<Integer> breachIgniteRadius;
@@ -152,8 +150,6 @@ public class ZPSConfig {
     public static final double EXHAUST_OUTLET_TEMPERATURE_K_DEFAULT = 1000.0;
     public static final double EXHAUST_BACKPRESSURE_LIMIT_PA_DEFAULT = 8_000_000.0;
     public static final double BURST_BASE_PRESSURE_PA_DEFAULT = 24_000_000.0;
-    public static final double BURST_COMPACTNESS_EXPONENT_DEFAULT = 2.0;
-    public static final double BURST_SIZE_EXPONENT_DEFAULT = 0.1;
     public static final double BURST_RADIUS_PER_OVERSHOOT_DEFAULT = 4.0;
     public static final int BREACH_FIRE_RADIUS_DEFAULT = 2;
     public static final int BREACH_IGNITE_RADIUS_DEFAULT = 4;
@@ -234,14 +230,6 @@ public class ZPSConfig {
 
     public static double burstBasePressurePa() {
         return doubleOr(burstBasePressurePa, BURST_BASE_PRESSURE_PA_DEFAULT);
-    }
-
-    public static double burstCompactnessExponent() {
-        return doubleOr(burstCompactnessExponent, BURST_COMPACTNESS_EXPONENT_DEFAULT);
-    }
-
-    public static double burstSizeExponent() {
-        return doubleOr(burstSizeExponent, BURST_SIZE_EXPONENT_DEFAULT);
     }
 
     public static double burstRadiusPerOvershoot() {
@@ -335,15 +323,8 @@ public class ZPSConfig {
                 .comment("An Exhaust Port stops drawing once its own outlet reaches this pressure, in pascals.")
                 .defineInRange("ExhaustBackpressureLimitPa", EXHAUST_BACKPRESSURE_LIMIT_PA_DEFAULT, 1.0, 1.0e12);
         burstBasePressurePa = builder
-                .comment("Burst pressure of a compact 3x3x3 chamber, in pascals. Less compact and",
-                         "larger shapes are rated lower.")
+                .comment("Pressure at which a reactor chamber bursts, in pascals. The same for every shape and size.")
                 .defineInRange("BurstBasePressurePa", BURST_BASE_PRESSURE_PA_DEFAULT, 1.0, 1.0e12);
-        burstCompactnessExponent = builder
-                .comment("How hard poor compactness reduces the burst rating. 0 disables it.")
-                .defineInRange("BurstCompactnessExponent", BURST_COMPACTNESS_EXPONENT_DEFAULT, 0.0, 16.0);
-        burstSizeExponent = builder
-                .comment("How hard size reduces the burst rating. 0 disables it.")
-                .defineInRange("BurstSizeExponent", BURST_SIZE_EXPONENT_DEFAULT, 0.0, 4.0);
         burstRadiusPerOvershoot = builder
                 .comment("Extra explosion radius per 100% over the burst pressure.")
                 .defineInRange("BurstRadiusPerOvershoot", BURST_RADIUS_PER_OVERSHOOT_DEFAULT, 0.0, 32.0);

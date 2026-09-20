@@ -39,7 +39,6 @@ public final class Reactor {
 
     private final int volume;
     private final int wallCount;
-    private final double compactness;
     private final double burstPressure;
     private final double wallHeatCapacity;
 
@@ -84,11 +83,7 @@ public final class Reactor {
 
         this.volume = interior.size();
         this.wallCount = walls.size();
-        this.compactness = ReactorGeometry.compactness(volume, wallCount);
-        this.burstPressure = ReactorGeometry.burstPressure(volume, wallCount,
-                ZPSConfig.burstBasePressurePa(),
-                ZPSConfig.burstCompactnessExponent(),
-                ZPSConfig.burstSizeExponent());
+        this.burstPressure = ZPSConfig.burstBasePressurePa();
         this.wallHeatCapacity = ReactorGeometry.wallHeatCapacity(wallCount, ZPSConfig.reactorWallHeatCapacityJPerK());
     }
 
@@ -129,10 +124,6 @@ public final class Reactor {
 
     public int wallCount() {
         return wallCount;
-    }
-
-    public double compactness() {
-        return compactness;
     }
 
     public double burstPressure() {

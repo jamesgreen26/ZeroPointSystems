@@ -193,7 +193,6 @@ public class FusionReactorGameTests {
                 "Host should be the lowest interior cell, was " + reactor.host());
         helper.assertTrue(reactor.volume() == 27, "Volume should be 27, was " + reactor.volume());
         helper.assertTrue(reactor.wallCount() == SMALL_WALLS, "Wall count should be 54, was " + reactor.wallCount());
-        helper.assertTrue(Math.abs(reactor.compactness() - 1.0) < EPSILON, "A cube is fully compact");
         helper.assertTrue(kelvin().getNodeAt(node(helper, HOST)) instanceof ReactorChamberNode,
                 "The chamber node should exist at the host");
         helper.assertTrue(manager(helper).reactorForInterior(helper.absolutePos(HOST.above())) == reactor,

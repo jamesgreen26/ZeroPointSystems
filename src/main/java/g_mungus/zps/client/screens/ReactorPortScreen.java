@@ -30,7 +30,7 @@ import java.util.Map;
  *
  * <p>A plain screen rather than a container screen — the block has no inventory, so there is
  * nothing for a menu to hold. Every control sends the whole settings block to the server as it
- * changes, the way the gas gauge's screen does, so there is nothing to confirm or discard.
+ * changes, the way the creative gas generator's screen does, so there is nothing to confirm or discard.
  */
 public class ReactorPortScreen extends Screen implements GasFilterList.Host {
 

@@ -15,21 +15,19 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.EnumMap;
 import java.util.Locale;
-import java.util.Map;
 
 /**
- * Reads one property of the gas at its node and maps it onto a configured range.
+ * Reads one property of the gas at its node and maps it onto that property's range.
  *
- * <p>The gauge measures either pressure or temperature — {@link Mode} — between a lower and an upper
- * bound of the player's choosing. Everything downstream works from the normalised reading
+ * <p>The gauge measures either pressure or temperature — {@link Mode} — over a fixed range: zero to
+ * what a plain duct will stand. Everything downstream works from the normalised reading
  * ({@link #getFraction()}): the needle sweeps from one end of the dial to the other over it, and the
- * comparator signal runs from 0 at the lower bound to 15 at the upper. Readings outside the range
- * pin at the ends rather than wrapping or going dark.
+ * comparator signal runs from 0 at the bottom of the range to 15 at the top. Readings outside the
+ * range pin at the ends rather than wrapping or going dark.
  *
- * <p>Each mode keeps its own bounds, so switching from pressure to temperature and back does not
- * leave a Pascal range applied to Kelvin.
+ * <p>The mode is the only setting, cycled by a sneaking empty-handed click on the block; the
+ * needle's colour says which one is showing.
  *
  * <p>Nothing here moves gas. The node fills from the line it is bolted to and stays at the line's
  * pressure; the block only looks.
@@ -39,23 +37,16 @@ public class GasGaugeBlockEntity extends GasNodeBlockEntity {
     /** Which property of the gas the dial reads. */
     public enum Mode implements StringRepresentable {
         /** Pressure at the node, in Pascals. */
-        PRESSURE("pressure", "Pa", 0.0, GasGaugeBlock.MAX_PRESSURE, 1.0e12),
+        PRESSURE("pressure", 0.0, GasGaugeBlock.MAX_PRESSURE),
         /** Temperature at the node, in Kelvin. */
-        TEMPERATURE("temperature", "K", 0.0, GasGaugeBlock.MAX_TEMPERATURE, 1.0e6);
+        TEMPERATURE("temperature", 0.0, GasGaugeBlock.MAX_TEMPERATURE);
 
         private final String serializedName;
-        private final String unit;
-        private final double defaultLower;
-        private final double defaultUpper;
-        /** The largest bound the mode accepts, so a stray packet cannot store infinity. */
-        private final double ceiling;
+        private final Bounds bounds;
 
-        Mode(String serializedName, String unit, double defaultLower, double defaultUpper, double ceiling) {
+        Mode(String serializedName, double lower, double upper) {
             this.serializedName = serializedName;
-            this.unit = unit;
-            this.defaultLower = defaultLower;
-            this.defaultUpper = defaultUpper;
-            this.ceiling = ceiling;
+            this.bounds = new Bounds(lower, upper);
         }
 
         @Override
@@ -63,21 +54,9 @@ public class GasGaugeBlockEntity extends GasNodeBlockEntity {
             return serializedName;
         }
 
-        /** The unit symbol readings in this mode are shown in. */
-        public String unit() {
-            return unit;
-        }
-
-        public double defaultLower() {
-            return defaultLower;
-        }
-
-        public double defaultUpper() {
-            return defaultUpper;
-        }
-
-        public double ceiling() {
-            return ceiling;
+        /** The span the dial covers in this mode. */
+        public Bounds bounds() {
+            return bounds;
         }
 
         public Mode next() {
@@ -127,11 +106,8 @@ public class GasGaugeBlockEntity extends GasNodeBlockEntity {
     }
 
     private static final String MODE_KEY = "Mode";
-    private static final String LOWER_KEY_SUFFIX = "Lower";
-    private static final String UPPER_KEY_SUFFIX = "Upper";
 
     private Mode mode = Mode.PRESSURE;
-    private final Map<Mode, Bounds> bounds = new EnumMap<>(Mode.class);
 
     private int lastComparatorOutput = -1;
 
@@ -140,9 +116,6 @@ public class GasGaugeBlockEntity extends GasNodeBlockEntity {
 
     public GasGaugeBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.GAS_GAUGE.get(), pos, state);
-        for (Mode each : Mode.values()) {
-            bounds.put(each, new Bounds(each.defaultLower(), each.defaultUpper()));
-        }
     }
 
     // --- work -------------------------------------------------------------------------------
@@ -192,37 +165,21 @@ public class GasGaugeBlockEntity extends GasNodeBlockEntity {
 
     /** The bounds of the current mode. */
     public Bounds getBounds() {
-        return getBounds(mode);
+        return mode.bounds();
     }
 
-    public Bounds getBounds(Mode ofMode) {
-        return bounds.get(ofMode);
+    /** Move on to the next mode, and tell clients so the needle changes colour. */
+    public Mode cycleMode() {
+        setMode(mode.next());
+        return mode;
     }
 
-    /**
-     * Apply what the screen sent: the mode to read in and that mode's bounds. Bounds that are not
-     * finite, negative, over the mode's ceiling, or not in order are ignored — the mode still
-     * changes, but the old bounds stay rather than storing a range nothing can be mapped onto.
-     *
-     * @return whether the bounds were accepted
-     */
-    public boolean setSettings(Mode newMode, double lower, double upper) {
+    public void setMode(Mode newMode) {
         this.mode = newMode;
-        boolean accepted = acceptableBounds(newMode, lower, upper);
-        if (accepted) {
-            bounds.put(newMode, new Bounds(lower, upper));
-        }
         setChanged();
         if (level != null) {
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_ALL);
         }
-        return accepted;
-    }
-
-    public static boolean acceptableBounds(Mode ofMode, double lower, double upper) {
-        return Double.isFinite(lower) && Double.isFinite(upper)
-                && lower >= 0.0 && upper <= ofMode.ceiling()
-                && lower < upper;
     }
 
     // --- client -----------------------------------------------------------------------------
@@ -239,27 +196,12 @@ public class GasGaugeBlockEntity extends GasNodeBlockEntity {
 
     private void writeSettings(CompoundTag tag) {
         tag.putString(MODE_KEY, mode.getSerializedName());
-        for (Map.Entry<Mode, Bounds> entry : bounds.entrySet()) {
-            String prefix = entry.getKey().getSerializedName();
-            tag.putDouble(prefix + LOWER_KEY_SUFFIX, entry.getValue().lower());
-            tag.putDouble(prefix + UPPER_KEY_SUFFIX, entry.getValue().upper());
-        }
     }
 
+    /** Only the mode. Gauges saved when the bounds could be set still carry them; they are ignored. */
     private void readSettings(CompoundTag tag) {
         if (tag.contains(MODE_KEY)) {
             mode = Mode.bySerializedName(tag.getString(MODE_KEY));
-        }
-        for (Mode each : Mode.values()) {
-            String prefix = each.getSerializedName();
-            if (!tag.contains(prefix + LOWER_KEY_SUFFIX) || !tag.contains(prefix + UPPER_KEY_SUFFIX)) {
-                continue;
-            }
-            double lower = tag.getDouble(prefix + LOWER_KEY_SUFFIX);
-            double upper = tag.getDouble(prefix + UPPER_KEY_SUFFIX);
-            if (acceptableBounds(each, lower, upper)) {
-                bounds.put(each, new Bounds(lower, upper));
-            }
         }
     }
 

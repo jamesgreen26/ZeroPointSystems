@@ -22,7 +22,8 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Draws the gauge's needle, swept across the dial by the block entity's normalised reading.
  *
- * <p>The dial face and hub are part of the block model; only the needle moves. It is a one-pixel
+ * <p>The dial face and hub are part of the block model; only the needle moves, and it is red when
+ * the gauge reads temperature and blue when it reads pressure. It is a one-pixel
  * standalone model pivoted on the dial's centre, standing a pixel proud of the face, drawn through
  * the item renderer the way the power cell's divider ring is, and turned about the dial's axis by
  * the reading. The needle eases toward its
@@ -30,8 +31,12 @@ import org.jetbrains.annotations.NotNull;
  */
 public class GasGaugeBlockEntityRenderer implements BlockEntityRenderer<GasGaugeBlockEntity> {
 
+    /** The red needle, which reads temperature. */
     public static final ModelResourceLocation NEEDLE_MODEL =
             ModelResourceLocation.standalone(ZPSMod.resource("block/gas_gauge/needle"));
+    /** The same needle in blue, which reads pressure: the colour is how the mode is told at a glance. */
+    public static final ModelResourceLocation PRESSURE_NEEDLE_MODEL =
+            ModelResourceLocation.standalone(ZPSMod.resource("block/gas_gauge/needle_pressure"));
 
     private static final ItemStack NEEDLE_MODEL_STACK = new ItemStack(ModItems.GAS_GAUGE.get());
 
@@ -74,7 +79,8 @@ public class GasGaugeBlockEntityRenderer implements BlockEntityRenderer<GasGauge
         }
         gauge.setClientNeedleFraction(shown);
 
-        BakedModel needle = Minecraft.getInstance().getModelManager().getModel(NEEDLE_MODEL);
+        BakedModel needle = Minecraft.getInstance().getModelManager().getModel(
+                gauge.getMode() == GasGaugeBlockEntity.Mode.PRESSURE ? PRESSURE_NEEDLE_MODEL : NEEDLE_MODEL);
 
         poseStack.pushPose();
         poseStack.translate(0.5f, 0.5f, 0.5f);

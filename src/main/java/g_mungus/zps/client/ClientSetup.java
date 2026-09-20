@@ -115,6 +115,7 @@ public class ClientSetup {
         event.register(RollingMillBlockEntityRenderer.ROLLER_MODEL);
         event.register(ImpactPistonBlockEntityRenderer.ROD_MODEL);
         event.register(GasGaugeBlockEntityRenderer.NEEDLE_MODEL);
+        event.register(GasGaugeBlockEntityRenderer.PRESSURE_NEEDLE_MODEL);
     }
 
     @SubscribeEvent

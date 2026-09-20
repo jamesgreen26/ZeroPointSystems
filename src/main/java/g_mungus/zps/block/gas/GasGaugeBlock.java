@@ -4,9 +4,9 @@ import g_mungus.zps.block.gas.core.GasEdgeProposal;
 import g_mungus.zps.block.gas.core.GasNodeBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity;
-import g_mungus.zps.client.screens.GasGaugeClientHooks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -45,8 +45,9 @@ import java.util.Map;
  * its node stays in the network, it is only measured.
  *
  * <p>{@link #FACING} is the side the dial is read from; the inlet is the face opposite. The block
- * entity holds the measurement settings, drives the needle, and supplies a comparator signal that
- * runs from 0 at the configured lower bound to 15 at the upper.
+ * entity holds the mode, drives the needle, and supplies a comparator signal that runs from 0 at
+ * the bottom of the dial to 15 at the top. A click reads the dial out as a figure; a sneaking,
+ * empty-handed one switches what it reads.
  */
 public class GasGaugeBlock extends GasNodeBlock implements EntityBlock {
 
@@ -137,10 +138,21 @@ public class GasGaugeBlock extends GasNodeBlock implements EntityBlock {
     protected @NotNull InteractionResult useWithoutItem(@NotNull BlockState state, @NotNull Level level,
                                                         @NotNull BlockPos pos, @NotNull Player player,
                                                         @NotNull BlockHitResult hit) {
-        // No inventory, so nothing for a container menu to hold: the settings screen is opened
-        // straight from the client, the way the creative gas generator's is.
-        if (level.isClientSide()) {
-            GasGaugeClientHooks.openScreen(pos);
+        // The mode is the gauge's one setting, so it needs no screen: a sneaking, empty-handed
+        // click steps it on. Any other click reads the dial out as a figure, whatever is in hand —
+        // this runs ahead of the held item's own use, so a block is not placed against the gauge.
+        // (Sneaking with something in hand never gets here: vanilla gives that click to the item.)
+        if (!level.isClientSide() && level.getBlockEntity(pos) instanceof GasGaugeBlockEntity gauge) {
+            if (player.isShiftKeyDown() && player.getMainHandItem().isEmpty()) {
+                GasGaugeBlockEntity.Mode mode = gauge.cycleMode();
+                player.displayClientMessage(Component.translatable("gui.zps.gas_gauge.mode",
+                        Component.translatable(mode.translationKey())), true);
+            } else {
+                GasGaugeBlockEntity.Mode mode = gauge.getMode();
+                player.displayClientMessage(Component.translatable("gui.zps.gas_gauge.reading",
+                        Component.translatable(mode.translationKey()),
+                        mode.format(gauge.getMeasuredValue())), true);
+            }
         }
         return InteractionResult.sidedSuccess(level.isClientSide());
     }

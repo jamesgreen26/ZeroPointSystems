@@ -6,17 +6,23 @@ import g_mungus.zps.block.gas.GasGaugeBlock;
 import g_mungus.zps.block.gas.core.GasEdgeNegotiator;
 import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
 import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity;
+import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity.Bounds;
 import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity.Mode;
 import g_mungus.zps.gas.ModGases;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ComparatorBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.ComparatorBlockEntity;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import org.valkyrienskies.kelvin.KelvinMod;
@@ -24,7 +30,8 @@ import org.valkyrienskies.kelvin.api.DuctNodePos;
 
 /**
  * The gas gauge: it joins the network on its inlet face and nowhere else, keeps what reaches it,
- * maps its reading onto the configured bounds, and puts that on a comparator.
+ * maps its reading onto the range of whichever property it is set to, and puts that on a
+ * comparator. A sneaking, empty-handed click is what changes the property.
  */
 @GameTestHolder(ZPSMod.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -149,7 +156,7 @@ public class GasGaugeGameTests {
     }
 
     @GameTest(template = TEMPLATE, timeoutTicks = 200)
-    public static void readingMapsOntoTheBounds(GameTestHelper helper) {
+    public static void pressureReadsOverTheDuctsRange(GameTestHelper helper) {
         GasGaugeBlockEntity gauge = placeGauge(helper, Direction.UP);
         fillGauge(helper, 300.0);
 
@@ -159,26 +166,14 @@ public class GasGaugeGameTests {
                 helper.fail("A gauge full of gas reads no pressure");
                 return;
             }
-
-            gauge.setSettings(Mode.PRESSURE, 0.0, pressure / 2.0);
-            if (gauge.getComparatorOutputSignal() != 15) {
-                helper.fail("Above its upper bound the gauge should pin at 15, not "
-                        + gauge.getComparatorOutputSignal());
+            if (gauge.getMode() != Mode.PRESSURE) {
+                helper.fail("A new gauge should read pressure, not " + gauge.getMode());
                 return;
             }
-
-            gauge.setSettings(Mode.PRESSURE, pressure * 2.0, pressure * 3.0);
-            if (gauge.getComparatorOutputSignal() != 0) {
-                helper.fail("Below its lower bound the gauge should read 0, not "
-                        + gauge.getComparatorOutputSignal());
-                return;
-            }
-
-            // Bounds put the reading a quarter of the way along: 15 * 0.25 rounds to 4.
-            gauge.setSettings(Mode.PRESSURE, pressure / 2.0, pressure * 2.5);
-            if (gauge.getComparatorOutputSignal() != 4) {
-                helper.fail("A quarter of the way along the range should read 4, not "
-                        + gauge.getComparatorOutputSignal());
+            int expected = (int) Math.round(15.0 * Math.min(1.0, pressure / GasGaugeBlock.MAX_PRESSURE));
+            if (gauge.getComparatorOutputSignal() != expected) {
+                helper.fail(pressure + " Pa over 0.." + GasGaugeBlock.MAX_PRESSURE + " Pa should read "
+                        + expected + ", not " + gauge.getComparatorOutputSignal());
                 return;
             }
             helper.succeed();
@@ -191,11 +186,11 @@ public class GasGaugeGameTests {
         fillGauge(helper, 900.0);
 
         helper.runAfterDelay(5, () -> {
-            // 900 K over 0..1200 K is three quarters of the way along: 15 * 0.75 rounds to 11.
-            gauge.setSettings(Mode.TEMPERATURE, 0.0, 1200.0);
+            // 900 K over 0..1478 K is 0.609 of the way along: 15 * 0.609 rounds to 9.
+            gauge.setMode(Mode.TEMPERATURE);
             int signal = gauge.getComparatorOutputSignal();
-            if (signal != 11) {
-                helper.fail("Gas at " + gauge.getTemperature() + " K over 0..1200 K should read 11, not "
+            if (signal != 9) {
+                helper.fail("Gas at " + gauge.getTemperature() + " K over 0..1478 K should read 9, not "
                         + signal);
                 return;
             }
@@ -204,51 +199,76 @@ public class GasGaugeGameTests {
     }
 
     @GameTest(template = TEMPLATE)
-    public static void eachModeKeepsItsOwnBounds(GameTestHelper helper) {
-        GasGaugeBlockEntity gauge = placeGauge(helper, Direction.UP);
-
-        gauge.setSettings(Mode.PRESSURE, 100.0, 200.0);
-        gauge.setSettings(Mode.TEMPERATURE, 300.0, 400.0);
-
-        if (gauge.getMode() != Mode.TEMPERATURE) {
-            helper.fail("The gauge did not switch to temperature");
+    public static void readingsPastTheRangePinAtItsEnds(GameTestHelper helper) {
+        Bounds bounds = new Bounds(100.0, 200.0);
+        if (bounds.fractionOf(50.0) != 0.0) {
+            helper.fail("Below the range should pin at 0, not " + bounds.fractionOf(50.0));
             return;
         }
-        if (gauge.getBounds(Mode.PRESSURE).lower() != 100.0 || gauge.getBounds(Mode.PRESSURE).upper() != 200.0) {
-            helper.fail("Setting temperature bounds disturbed the pressure bounds: "
-                    + gauge.getBounds(Mode.PRESSURE));
+        if (bounds.fractionOf(500.0) != 1.0) {
+            helper.fail("Above the range should pin at 1, not " + bounds.fractionOf(500.0));
             return;
         }
-        if (gauge.getBounds(Mode.TEMPERATURE).lower() != 300.0 || gauge.getBounds(Mode.TEMPERATURE).upper() != 400.0) {
-            helper.fail("The temperature bounds were not stored: " + gauge.getBounds(Mode.TEMPERATURE));
+        if (bounds.fractionOf(125.0) != 0.25) {
+            helper.fail("A quarter of the way along should be 0.25, not " + bounds.fractionOf(125.0));
             return;
         }
         helper.succeed();
     }
 
     @GameTest(template = TEMPLATE)
-    public static void boundsOutOfOrderAreRefused(GameTestHelper helper) {
+    public static void eachModeHasItsOwnRange(GameTestHelper helper) {
         GasGaugeBlockEntity gauge = placeGauge(helper, Direction.UP);
-        gauge.setSettings(Mode.PRESSURE, 100.0, 200.0);
 
-        if (gauge.setSettings(Mode.PRESSURE, 200.0, 100.0)) {
-            helper.fail("Bounds in the wrong order were accepted");
+        if (gauge.getBounds().upper() != GasGaugeBlock.MAX_PRESSURE) {
+            helper.fail("Pressure should run to the duct's limit, not " + gauge.getBounds());
             return;
         }
-        if (gauge.setSettings(Mode.PRESSURE, 100.0, 100.0)) {
-            helper.fail("An empty range was accepted");
+        gauge.setMode(Mode.TEMPERATURE);
+        if (gauge.getBounds().upper() != GasGaugeBlock.MAX_TEMPERATURE) {
+            helper.fail("Temperature should run to the duct's limit, not " + gauge.getBounds());
             return;
         }
-        if (gauge.setSettings(Mode.PRESSURE, -1.0, 100.0)) {
-            helper.fail("A negative lower bound was accepted");
+        helper.succeed();
+    }
+
+    private static InteractionResult click(GameTestHelper helper, boolean sneaking) {
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        player.setShiftKeyDown(sneaking);
+        BlockPos pos = helper.absolutePos(GAUGE);
+        return helper.getBlockState(GAUGE).useWithoutItem(helper.getLevel(), player,
+                new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false));
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void sneakingEmptyHandedClickCyclesTheMode(GameTestHelper helper) {
+        GasGaugeBlockEntity gauge = placeGauge(helper, Direction.UP);
+
+        click(helper, true);
+        if (gauge.getMode() != Mode.TEMPERATURE) {
+            helper.fail("A sneaking click should move pressure on to temperature, not " + gauge.getMode());
             return;
         }
-        if (gauge.setSettings(Mode.PRESSURE, 0.0, Double.POSITIVE_INFINITY)) {
-            helper.fail("An infinite upper bound was accepted");
+        click(helper, true);
+        if (gauge.getMode() != Mode.PRESSURE) {
+            helper.fail("A second sneaking click should come back round to pressure, not " + gauge.getMode());
             return;
         }
-        if (gauge.getBounds().lower() != 100.0 || gauge.getBounds().upper() != 200.0) {
-            helper.fail("Refused bounds still replaced the old ones: " + gauge.getBounds());
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void plainClickReadsWithoutChangingTheMode(GameTestHelper helper) {
+        GasGaugeBlockEntity gauge = placeGauge(helper, Direction.UP);
+
+        InteractionResult result = click(helper, false);
+        if (gauge.getMode() != Mode.PRESSURE) {
+            helper.fail("A click without sneaking changed the mode to " + gauge.getMode());
+            return;
+        }
+        // Consumed, so whatever the player is holding is not used against the gauge as well.
+        if (!result.consumesAction()) {
+            helper.fail("A click without sneaking should be taken by the gauge; got " + result);
             return;
         }
         helper.succeed();
@@ -265,19 +285,18 @@ public class GasGaugeGameTests {
                 return;
             }
 
-            fillGauge(helper, 300.0);
-            helper.runAfterDelay(5, () -> {
-                // Pin the reading at the top so the exact pressure does not matter.
-                gauge.setSettings(Mode.PRESSURE, 0.0, gauge.getPressure() / 2.0);
+            // Temperature, because what 900 K reads is known; the pressure of a kilo of flux is not.
+            fillGauge(helper, 900.0);
+            gauge.setMode(Mode.TEMPERATURE);
 
-                helper.runAfterDelay(COMPARATOR_SETTLE_TICKS, () -> {
-                    if (comparatorOutput(helper) != 15) {
-                        helper.fail("A gauge pinned at its upper bound drove the comparator to "
-                                + comparatorOutput(helper) + ", not 15");
-                        return;
-                    }
-                    helper.succeed();
-                });
+            helper.runAfterDelay(COMPARATOR_SETTLE_TICKS, () -> {
+                if (comparatorOutput(helper) != gauge.getComparatorOutputSignal()
+                        || comparatorOutput(helper) == 0) {
+                    helper.fail("A gauge reading " + gauge.getComparatorOutputSignal()
+                            + " drove the comparator to " + comparatorOutput(helper));
+                    return;
+                }
+                helper.succeed();
             });
         });
     }

@@ -3,11 +3,15 @@ package g_mungus.zps.client.ponder;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.CableBlock;
 import g_mungus.zps.block.cableNetwork.DenseCableSeparatorBlock;
+import g_mungus.zps.block.cableNetwork.GraduatedLeverBlock;
+import g_mungus.zps.block.cableNetwork.PanelBlock;
+import g_mungus.zps.block.cableNetwork.TransformerBlock;
 import g_mungus.zps.block.cableNetwork.RedstoneConverterBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.light_pipe.DataLecternBlock;
 import g_mungus.zps.block.cableNetwork.properties.InsulationType;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
+import g_mungus.zps.blockentity.reactor.ReactorPortBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
 import g_mungus.zps.client.ponder.api.PonderExtras;
 import g_mungus.zps.client.ponder.api.ReactorGlowElement;
@@ -46,6 +50,7 @@ import net.minecraft.world.level.block.BarrelBlock;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.piston.PistonBaseBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.AttachFace;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
@@ -857,12 +862,74 @@ public class ZPSPonderScenes {
                 .pointAt(util.vector().blockSurface(inputPort, Direction.NORTH)).placeNearTarget();
         builder.idle(95);
 
+        // Redstone throttles a port: open at no signal, shut at full strength, and in proportion
+        // between. The glass beside the Input port gives way to plating for a moment, and a
+        // Redstone Converter powers that, which powers the port next to it; a Graduated Lever on
+        // the converter sets the level. All of it stands clear of where the fuel duct goes. The
+        // port's lamp follows the signal it receives, and is set here as the level is.
+        BlockPos poweredWall = inputPort.east();
+        BlockPos converterPos = poweredWall.north();
+        BlockPos leverPos = converterPos.north();
+        Selection throttleRig = util.select().position(converterPos).add(util.select().position(leverPos));
+        Selection inputPortOnly = util.select().position(inputPort);
+
+        builder.world().setBlock(poweredWall, ModBlocks.REINFORCED_PLATING.get().defaultBlockState(), true);
+        builder.idle(10);
+        builder.world().setBlock(converterPos, ModBlocks.REDSTONE_CONVERTER.get().defaultBlockState()
+                .setValue(TransformerBlock.FACING, Direction.SOUTH)
+                .setValue(CableBlock.NORTH, true), false);
+        builder.world().setBlock(leverPos, ModBlocks.GRADUATED_LEVER.get().defaultBlockState()
+                .setValue(PanelBlock.FACE, AttachFace.WALL)
+                .setValue(PanelBlock.FACING, Direction.NORTH)
+                .setValue(PanelBlock.CONNECTED, true), false);
+        builder.world().showSection(throttleRig, Direction.SOUTH);
+        builder.idle(25);
+
+        builder.overlay().showText(80)
+                .text("A Redstone signal will reduce the flow rate through a Reactor Port...")
+                .pointAt(util.vector().blockSurface(inputPort, Direction.NORTH)).placeNearTarget();
+        builder.idle(15);
+        // Up to half, a click at a time.
+        for (int level = 1; level <= 8; level++) {
+            int power = level;
+            builder.world().modifyBlock(leverPos, state -> state.setValue(GraduatedLeverBlock.POWER, power), false);
+            builder.world().modifyBlockEntityNBT(inputPortOnly, ReactorPortBlockEntity.class,
+                    nbt -> nbt.putInt("Redstone", power));
+            builder.idle(5);
+        }
+        builder.effects().indicateRedstone(poweredWall);
+        builder.idle(35);
+
+        builder.overlay().showText(80)
+                .text("...and at full strength, it will close the port completely.")
+                .pointAt(util.vector().blockSurface(inputPort, Direction.NORTH)).placeNearTarget();
+        builder.idle(15);
+        for (int level = 9; level <= ReactorPortBlockEntity.MAX_REDSTONE_LEVEL; level++) {
+            int power = level;
+            builder.world().modifyBlock(leverPos, state -> state.setValue(GraduatedLeverBlock.POWER, power), false);
+            builder.world().modifyBlockEntityNBT(inputPortOnly, ReactorPortBlockEntity.class,
+                    nbt -> nbt.putInt("Redstone", power));
+            builder.idle(5);
+        }
+        builder.effects().indicateRedstone(poweredWall);
+        builder.idle(40);
+
+        // Open again, and the rig away, leaving the window as it was.
+        builder.world().modifyBlock(leverPos, state -> state.setValue(GraduatedLeverBlock.POWER, 0), false);
+        builder.world().modifyBlockEntityNBT(inputPortOnly, ReactorPortBlockEntity.class, nbt -> nbt.putInt("Redstone", 0));
+        builder.idle(15);
+        builder.world().hideSection(throttleRig, Direction.NORTH);
+        builder.idle(20);
+        builder.world().restoreBlocks(throttleRig);
+        builder.world().setBlock(poweredWall, ModBlocks.REINFORCED_GLASS.get().defaultBlockState(), true);
+        builder.idle(10);
+
         builder.world().restoreBlocks(exchangerBlocks);
         for (BlockPos exchanger : exchangers) {
             builder.effects().indicateSuccess(exchanger);
         }
         builder.idle(10);
-        builder.overlay().showText(80)
+        builder.overlay().showText(80).attachKeyFrame()
                 .text("Heat Exchangers convert FE into heat inside the chamber, or heat back into FE.")
                 .pointAt(util.vector().topOf(exchangers[0])).placeNearTarget();
         builder.idle(95);

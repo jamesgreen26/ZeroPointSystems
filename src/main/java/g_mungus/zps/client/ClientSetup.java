@@ -4,6 +4,8 @@ import dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.ModBlockEntities;
+import g_mungus.zps.client.tooltip.ClientItemIconsTooltip;
+import g_mungus.zps.client.tooltip.ItemIconsTooltip;
 import g_mungus.zps.client.model.connected.ConnectedModelLoader;
 import g_mungus.zps.client.reactor.WallCoats;
 import g_mungus.zps.client.model.connected.ConnectedTextureMeta;
@@ -47,6 +49,7 @@ import net.neoforged.fml.event.lifecycle.FMLLoadCompleteEvent;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
 import net.neoforged.neoforge.client.event.RegisterRecipeBookCategoriesEvent;
+import net.neoforged.neoforge.client.event.RegisterClientTooltipComponentFactoriesEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.ModelEvent;
@@ -75,6 +78,11 @@ public class ClientSetup {
             new ModelResourceLocation(ZPSMod.resource("power_drill"), "inventory");
     private static final ModelResourceLocation CHAINSAW_MODEL =
             new ModelResourceLocation(ZPSMod.resource("chainsaw"), "inventory");
+
+    @SubscribeEvent
+    public static void onRegisterTooltipComponents(RegisterClientTooltipComponentFactoriesEvent event) {
+        event.register(ItemIconsTooltip.class, ClientItemIconsTooltip::new);
+    }
 
     @SubscribeEvent
     public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {

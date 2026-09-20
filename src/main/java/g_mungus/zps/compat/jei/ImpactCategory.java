@@ -1,6 +1,7 @@
 package g_mungus.zps.compat.jei;
 
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.client.tooltip.ItemIconsTooltip;
 import g_mungus.zps.item.ModItems;
 import g_mungus.zps.recipe.ImpactRecipe;
 import g_mungus.zps.recipe.ImpactResult;
@@ -12,6 +13,7 @@ import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.Holder;
@@ -98,9 +100,18 @@ public class ImpactCategory implements IRecipeCategory<RecipeHolder<ImpactRecipe
 
         List<ImpactResult> results = recipe.results();
         for (int i = 0; i < results.size(); i++) {
-            builder.addSlot(RecipeIngredientRole.OUTPUT, OUTPUTS_X + (i * SLOT_SIZE), SLOT_Y)
+            ImpactResult result = results.get(i);
+            var slot = builder.addSlot(RecipeIngredientRole.OUTPUT, OUTPUTS_X + (i * SLOT_SIZE), SLOT_Y)
                     .setStandardSlotBackground()
-                    .addItemStack(new ItemStack(results.get(i).block().value()));
+                    .addItemStack(new ItemStack(result.block().value()));
+            // Whatever a suspicious block may be hiding goes in its tooltip, as icons.
+            result.buriedItem().ifPresent(buried -> slot.addRichTooltipCallback((view, tooltip) -> {
+                List<ItemStack> candidates = List.of(buried.getItems());
+                if (!candidates.isEmpty()) {
+                    tooltip.add(Component.translatable("gui.zps.jei.impact.may_contain").withStyle(ChatFormatting.GRAY));
+                    tooltip.add(new ItemIconsTooltip(candidates));
+                }
+            }));
         }
     }
 

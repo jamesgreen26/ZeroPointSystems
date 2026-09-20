@@ -30,8 +30,15 @@ import java.util.Optional;
  *                   ignored when there is no buried item. Written either as a plain number or as any
  *                   int provider, so {@code {"type": "minecraft:uniform", "min_inclusive": 1,
  *                   "max_inclusive": 2}} buries one or two.
+ * @param buriedDrops when present and {@code block} has a {@code BrushableBlockEntity}, the struck
+ *                   block's own loot table is rolled and its drops are buried instead, e.g.
+ *                   {@code {"fortune": 2}} for what a Fortune II pickaxe would have mined. The loot
+ *                   table sets its own counts, so {@code count} does not apply, and
+ *                   {@code buriedItem} stops being buried and becomes purely descriptive: it is
+ *                   what JEI lists under "May contain", since loot tables never reach the client.
  */
-public record ImpactResult(Holder<Block> block, int weight, Optional<Ingredient> buriedItem, IntProvider count) {
+public record ImpactResult(Holder<Block> block, int weight, Optional<Ingredient> buriedItem, IntProvider count,
+                           Optional<BuriedDrops> buriedDrops) {
     public static final int DEFAULT_WEIGHT = 1;
     /** Shared instance so {@code optionalFieldOf} can recognise — and omit — an unset count. */
     public static final IntProvider DEFAULT_COUNT = ConstantInt.of(1);
@@ -40,11 +47,16 @@ public record ImpactResult(Holder<Block> block, int weight, Optional<Ingredient>
         this(block, weight, buriedItem, DEFAULT_COUNT);
     }
 
+    public ImpactResult(Holder<Block> block, int weight, Optional<Ingredient> buriedItem, IntProvider count) {
+        this(block, weight, buriedItem, count, Optional.empty());
+    }
+
     public static final Codec<ImpactResult> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             BuiltInRegistries.BLOCK.holderByNameCodec().fieldOf("block").forGetter(ImpactResult::block),
             ExtraCodecs.POSITIVE_INT.optionalFieldOf("weight", DEFAULT_WEIGHT).forGetter(ImpactResult::weight),
             Ingredient.CODEC.optionalFieldOf("buried_item").forGetter(ImpactResult::buriedItem),
-            IntProvider.codec(1, Item.ABSOLUTE_MAX_STACK_SIZE).optionalFieldOf("count", DEFAULT_COUNT).forGetter(ImpactResult::count)
+            IntProvider.codec(1, Item.ABSOLUTE_MAX_STACK_SIZE).optionalFieldOf("count", DEFAULT_COUNT).forGetter(ImpactResult::count),
+            BuriedDrops.CODEC.optionalFieldOf("buried_drops").forGetter(ImpactResult::buriedDrops)
     ).apply(instance, ImpactResult::new));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, ImpactResult> STREAM_CODEC = StreamCodec.composite(
@@ -52,5 +64,6 @@ public record ImpactResult(Holder<Block> block, int weight, Optional<Ingredient>
             ByteBufCodecs.VAR_INT, ImpactResult::weight,
             Ingredient.CONTENTS_STREAM_CODEC.apply(ByteBufCodecs::optional), ImpactResult::buriedItem,
             ByteBufCodecs.fromCodec(IntProvider.CODEC), ImpactResult::count,
+            BuriedDrops.STREAM_CODEC.apply(ByteBufCodecs::optional), ImpactResult::buriedDrops,
             ImpactResult::new);
 }

@@ -4,10 +4,12 @@ import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.ImpactPistonBlockEntity;
 import g_mungus.zps.item.ModItems;
+import g_mungus.zps.recipe.BuriedDrops;
 import g_mungus.zps.recipe.ImpactInput;
 import g_mungus.zps.recipe.ImpactRecipe;
 import g_mungus.zps.recipe.ImpactResult;
 import g_mungus.zps.recipe.ModRecipes;
+import g_mungus.zps.recipe.OreDropsTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
@@ -162,6 +164,88 @@ public class ImpactPistonGameTests {
             helper.fail("Plain gravel buries nothing, so its count should stay at the default 1");
         }
         helper.succeed();
+    }
+
+    /**
+     * Ores need no recipe of their own: the shipped {@code #c:ores_in_ground/stone} recipe has to
+     * pick up vanilla ores and the mod's own alike, and turn them into suspicious gravel holding
+     * Fortune II drops.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void stoneOres_shareTheFortuneDropsRecipe(GameTestHelper helper) {
+        for (Block ore : List.of(Blocks.IRON_ORE, Blocks.DIAMOND_ORE, ModBlocks.LITHIUM_ORE.get())) {
+            List<ImpactResult> results = findRecipe(helper, ore).results();
+            if (results.size() != 1) {
+                helper.fail("Expected a single outcome for " + ore.getName().getString() + ", got " + results.size());
+            }
+            ImpactResult suspicious = outcomeFor(helper, results, Blocks.SUSPICIOUS_GRAVEL);
+            int fortune = suspicious.buriedDrops().map(BuriedDrops::fortune).orElse(-1);
+            if (fortune != 2) {
+                helper.fail("Expected " + ore.getName().getString() + " to bury Fortune 2 drops, got fortune " + fortune);
+            }
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Nobody lists the ore drops tag by hand: it has to come out of the data load already holding
+     * what each stone ore's loot table drops, vanilla and modded alike, and the ore recipe has to
+     * describe its buried contents with it so JEI has something to show.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void oreDropsTag_isFilledFromLootTables(GameTestHelper helper) {
+        for (Item expected : List.of(Items.DIAMOND, Items.COAL, Items.RAW_IRON, Items.RAW_COPPER, ModItems.RAW_LITHIUM.get())) {
+            if (!new ItemStack(expected).is(OreDropsTags.STONE_ORES_IN_GROUND_DROPS)) {
+                helper.fail("Expected " + expected + " in " + OreDropsTags.STONE_ORES_IN_GROUND_DROPS.location());
+            }
+        }
+        // Neither the silk touch branch of the table nor the smelted form is what gets buried.
+        for (Item unexpected : List.of(Items.IRON_ORE, Items.IRON_INGOT)) {
+            if (new ItemStack(unexpected).is(OreDropsTags.STONE_ORES_IN_GROUND_DROPS)) {
+                helper.fail("Did not expect " + unexpected + " in " + OreDropsTags.STONE_ORES_IN_GROUND_DROPS.location());
+            }
+        }
+        // Rebinding the item tags must not have cost any item the tags it already had.
+        if (!new ItemStack(Items.OAK_PLANKS).is(ItemTags.PLANKS)) {
+            helper.fail("Oak planks lost the planks tag when the ore drops tag was filled");
+        }
+
+        ImpactResult suspicious = outcomeFor(helper, findRecipe(helper, Blocks.DIAMOND_ORE).results(), Blocks.SUSPICIOUS_GRAVEL);
+        boolean describesDiamond = suspicious.buriedItem().map(buried -> buried.test(new ItemStack(Items.DIAMOND))).orElse(false);
+        if (!describesDiamond) {
+            helper.fail("The ore recipe should list diamond among what its suspicious gravel may contain");
+        }
+        helper.succeed();
+    }
+
+    /**
+     * End to end: striking iron ore leaves suspicious gravel with the ore's own drop inside. Fortune
+     * II on an ore multiplies the single raw iron by up to three, and never yields the ore block.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void ironOre_becomesSuspiciousGravelHoldingRawIron(GameTestHelper helper) {
+        // Suspicious gravel falls, and the template has nothing under the target to catch it.
+        helper.setBlock(TARGET_POS.below(), Blocks.STONE);
+        helper.setBlock(TARGET_POS, Blocks.IRON_ORE);
+        ImpactPistonBlockEntity piston = placePiston(helper);
+        charge(piston);
+        helper.setBlock(POWER_POS, Blocks.REDSTONE_BLOCK);
+
+        helper.startSequence()
+                .thenIdle(STROKE_TICKS)
+                .thenExecute(() -> {
+                    assertTarget(helper, Blocks.SUSPICIOUS_GRAVEL);
+                    BlockEntity blockEntity = helper.getLevel().getBlockEntity(helper.absolutePos(TARGET_POS));
+                    if (!(blockEntity instanceof BrushableBlockEntity brushable)) {
+                        helper.fail("Expected a brushable block entity at " + TARGET_POS);
+                        return;
+                    }
+                    ItemStack buried = brushable.getItem();
+                    if (!buried.is(Items.RAW_IRON) || buried.getCount() < 1 || buried.getCount() > 3) {
+                        helper.fail("Expected 1 to 3 raw iron buried in the suspicious gravel, got " + buried);
+                    }
+                })
+                .thenSucceed();
     }
 
     /** The weighted pick must track the declared weights rather than picking uniformly. */

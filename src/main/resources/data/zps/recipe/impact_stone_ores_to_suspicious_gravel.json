@@ -1,0 +1,9 @@
+{
+  "type": "zps:impact",
+  "ingredient": "#c:ores_in_ground/stone",
+  "results": [
+    { "block": "minecraft:suspicious_gravel",
+      "buried_drops": { "fortune": 2 },
+      "buried_item": { "tag": "zps:stone_ores_in_ground_drops" } }
+  ]
+}

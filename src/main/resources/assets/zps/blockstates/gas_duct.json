@@ -48,8 +48,8 @@
     {
       "when": {
         "AND": [
-          {"north": "connection|leak"},
-          {"south": "connection|leak"},
+          {"north": "connection"},
+          {"south": "connection"},
           {"east": "none"},
           {"west": "none"},
           {"up": "none"},
@@ -63,17 +63,110 @@
     {
       "when": {
         "AND": [
+          {"north": "leak"},
+          {"south": "connection"},
+          {"east": "none"},
+          {"west": "none"},
+          {"up": "none"},
+          {"down": "none"}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/gas_duct/straight_leak_negative"
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"north": "connection"},
+          {"south": "leak"},
+          {"east": "none"},
+          {"west": "none"},
+          {"up": "none"},
+          {"down": "none"}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/gas_duct/straight_leak_positive"
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"north": "leak"},
+          {"south": "leak"},
+          {"east": "none"},
+          {"west": "none"},
+          {"up": "none"},
+          {"down": "none"}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/gas_duct/straight_leak_both"
+      }
+    },
+    {
+      "when": {
+        "AND": [
           {"north": "none"},
           {"south": "none"},
-          {"east": "connection|leak"},
-          {"west": "connection|leak"},
+          {"east": "connection"},
+          {"west": "connection"},
           {"up": "none"},
           {"down": "none"}
         ]
       },
       "apply": {
         "model": "zps:block/gas_duct/straight",
-        "y": 90
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"north": "none"},
+          {"south": "none"},
+          {"east": "connection"},
+          {"west": "leak"},
+          {"up": "none"},
+          {"down": "none"}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/gas_duct/straight_leak_negative",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"north": "none"},
+          {"south": "none"},
+          {"east": "leak"},
+          {"west": "connection"},
+          {"up": "none"},
+          {"down": "none"}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/gas_duct/straight_leak_positive",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"north": "none"},
+          {"south": "none"},
+          {"east": "leak"},
+          {"west": "leak"},
+          {"up": "none"},
+          {"down": "none"}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/gas_duct/straight_leak_both",
+        "y": 270
       }
     },
     {
@@ -83,12 +176,60 @@
           {"south": "none"},
           {"east": "none"},
           {"west": "none"},
-          {"up": "connection|leak"},
-          {"down": "connection|leak"}
+          {"up": "connection"},
+          {"down": "connection"}
         ]
       },
       "apply": {
         "model": "zps:block/gas_duct/straight",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"north": "none"},
+          {"south": "none"},
+          {"east": "none"},
+          {"west": "none"},
+          {"up": "connection"},
+          {"down": "leak"}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/gas_duct/straight_leak_negative",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"north": "none"},
+          {"south": "none"},
+          {"east": "none"},
+          {"west": "none"},
+          {"up": "leak"},
+          {"down": "connection"}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/gas_duct/straight_leak_positive",
+        "x": 90
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {"north": "none"},
+          {"south": "none"},
+          {"east": "none"},
+          {"west": "none"},
+          {"up": "leak"},
+          {"down": "leak"}
+        ]
+      },
+      "apply": {
+        "model": "zps:block/gas_duct/straight_leak_both",
         "x": 90
       }
     },
@@ -107,30 +248,10 @@
               ]
             }
           },
-          {"north": "connection|leak"}
+          {"north": "connection"}
         ]
       },
       "apply": {"model": "zps:block/gas_duct/arm"}
-    },
-    {
-      "when": {
-        "AND": [
-          {
-            "NOT": {
-              "AND": [
-                {"north": "none"},
-                {"south": "none"},
-                {"east": "connection|leak"},
-                {"west": "connection|leak"},
-                {"up": "none"},
-                {"down": "none"}
-              ]
-            }
-          },
-          {"east": "connection|leak"}
-        ]
-      },
-      "apply": {"model": "zps:block/gas_duct/arm", "y": 90}
     },
     {
       "when": {
@@ -147,10 +268,10 @@
               ]
             }
           },
-          {"south": "connection|leak"}
+          {"north": "leak"}
         ]
       },
-      "apply": {"model": "zps:block/gas_duct/arm", "y": 180}
+      "apply": {"model": "zps:block/gas_duct/arm_leak"}
     },
     {
       "when": {
@@ -167,10 +288,110 @@
               ]
             }
           },
-          {"west": "connection|leak"}
+          {"east": "connection"}
+        ]
+      },
+      "apply": {"model": "zps:block/gas_duct/arm", "y": 90}
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "NOT": {
+              "AND": [
+                {"north": "none"},
+                {"south": "none"},
+                {"east": "connection|leak"},
+                {"west": "connection|leak"},
+                {"up": "none"},
+                {"down": "none"}
+              ]
+            }
+          },
+          {"east": "leak"}
+        ]
+      },
+      "apply": {"model": "zps:block/gas_duct/arm_leak", "y": 90}
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "NOT": {
+              "AND": [
+                {"north": "connection|leak"},
+                {"south": "connection|leak"},
+                {"east": "none"},
+                {"west": "none"},
+                {"up": "none"},
+                {"down": "none"}
+              ]
+            }
+          },
+          {"south": "connection"}
+        ]
+      },
+      "apply": {"model": "zps:block/gas_duct/arm", "y": 180}
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "NOT": {
+              "AND": [
+                {"north": "connection|leak"},
+                {"south": "connection|leak"},
+                {"east": "none"},
+                {"west": "none"},
+                {"up": "none"},
+                {"down": "none"}
+              ]
+            }
+          },
+          {"south": "leak"}
+        ]
+      },
+      "apply": {"model": "zps:block/gas_duct/arm_leak", "y": 180}
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "NOT": {
+              "AND": [
+                {"north": "none"},
+                {"south": "none"},
+                {"east": "connection|leak"},
+                {"west": "connection|leak"},
+                {"up": "none"},
+                {"down": "none"}
+              ]
+            }
+          },
+          {"west": "connection"}
         ]
       },
       "apply": {"model": "zps:block/gas_duct/arm", "y": 270}
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "NOT": {
+              "AND": [
+                {"north": "none"},
+                {"south": "none"},
+                {"east": "connection|leak"},
+                {"west": "connection|leak"},
+                {"up": "none"},
+                {"down": "none"}
+              ]
+            }
+          },
+          {"west": "leak"}
+        ]
+      },
+      "apply": {"model": "zps:block/gas_duct/arm_leak", "y": 270}
     },
     {
       "when": {
@@ -187,7 +408,7 @@
               ]
             }
           },
-          {"up": "connection|leak"}
+          {"up": "connection"}
         ]
       },
       "apply": {"model": "zps:block/gas_duct/arm", "x": 270}
@@ -207,10 +428,50 @@
               ]
             }
           },
-          {"down": "connection|leak"}
+          {"up": "leak"}
+        ]
+      },
+      "apply": {"model": "zps:block/gas_duct/arm_leak", "x": 270}
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "NOT": {
+              "AND": [
+                {"north": "none"},
+                {"south": "none"},
+                {"east": "none"},
+                {"west": "none"},
+                {"up": "connection|leak"},
+                {"down": "connection|leak"}
+              ]
+            }
+          },
+          {"down": "connection"}
         ]
       },
       "apply": {"model": "zps:block/gas_duct/arm", "x": 90}
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "NOT": {
+              "AND": [
+                {"north": "none"},
+                {"south": "none"},
+                {"east": "none"},
+                {"west": "none"},
+                {"up": "connection|leak"},
+                {"down": "connection|leak"}
+              ]
+            }
+          },
+          {"down": "leak"}
+        ]
+      },
+      "apply": {"model": "zps:block/gas_duct/arm_leak", "x": 90}
     }
   ]
 }

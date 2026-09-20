@@ -13,82 +13,54 @@ import net.minecraft.world.phys.shapes.DiscreteVoxelShape;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4d;
-import org.joml.Matrix4dc;
 
 /**
- * A reactor as the client knows it: which of its cells touch a wall, on which sides, and how hot
- * it is. Immutable apart from the two heat values and the grid transform snapshot, which
- * Flywheel's worker threads read while the render thread writes them.
+ * A reactor as the client knows it: the shape of its cavity, how hot it is, and the glow's mesh
+ * once it has been drawn. Render thread only.
  */
 public final class ClientReactor {
 
+    /** Below this the glow is invisible, and the reactor is not drawn at all. */
+    public static final float VISIBLE_HEAT = 0.02f;
+    /**
+     * Fraction of the remaining gap closed each tick, and the most the heat may move in one tick.
+     * Together they turn the server's ten-tick steps, and a sputtering reactor's swings, into a
+     * slow glide: a jump of one full ignition takes about a second and a half to show.
+     */
+    private static final float SMOOTHING = 0.08f;
+    private static final float MAX_STEP = 0.035f;
+    /** Closer to the target than this, the eased heat lands on it. */
+    private static final float SETTLE_EPSILON = 1f / 1024f;
+
     private final int id;
     private final VoxelShape shape;
+    /** The cavity's lowest corner: the origin of the frame the glow is drawn in. */
+    private final BlockPos origin;
     private final BlockPos host;
-    /** Cells with at least one open face, as packed positions. */
-    private final long[] cells;
-    /** For each of {@link #cells}, a bit per {@link Direction} ordinal set where that face is a wall. */
-    private final int[] faces;
-    /**
-     * For each of {@link #cells}, how far the cavity runs back from each face, in blocks, one byte
-     * per {@link Direction} ordinal: directions 0..3 in {@code depthsLow}, 4..5 in {@code depthsHigh}.
-     */
-    private final int[] depthsLow;
-    private final int[] depthsHigh;
-    private final ReactorEffect effect;
     /** Looks up the moving grid the reactor is on, by position; null when no grid mod is present. */
     private final @Nullable RenderTransformProvider grid;
-    /**
-     * The grid's transform for the current frame, or null while the reactor is on no grid. A fresh
-     * object each frame so Flywheel's workers read one consistent matrix; a grid that has not
-     * moved yields an equal matrix, which the visual compares against the last one it applied so
-     * standing still costs nothing.
-     */
-    private volatile @Nullable Matrix4dc renderTransform;
-    /** Whether the effect was last handed to Flywheel as riding a grid. Render thread only. */
-    private boolean queuedOnGrid;
+    /** The glow's coat. Built on first use, and let go when the walls may have changed. */
+    private @Nullable ReactorGlowMesh glowMesh;
 
     /** What the server last said, over ignition temperature. */
-    private volatile float targetHeat;
+    private float targetHeat;
     /** What is being drawn, eased toward the target so packets every ten ticks do not step. */
-    private volatile float displayHeat;
+    private float displayHeat;
 
     public ClientReactor(ClientLevel level, int id, VoxelShape shape, float heat) {
         this.id = id;
         this.shape = shape;
+        this.origin = CavityShapes.origin(shape);
         this.host = CavityShapes.lowestCell(shape);
-        Long2IntMap masks = faceMasks(shape);
-        DiscreteVoxelShape grid = CavityShapes.grid(shape);
-        BlockPos origin = CavityShapes.origin(shape);
-        this.cells = new long[masks.size()];
-        this.faces = new int[masks.size()];
-        this.depthsLow = new int[masks.size()];
-        this.depthsHigh = new int[masks.size()];
-        int n = 0;
-        for (Long2IntMap.Entry entry : masks.long2IntEntrySet()) {
-            long cell = entry.getLongKey();
-            cells[n] = cell;
-            faces[n] = entry.getIntValue();
-            long packed = faceDepths(grid, origin, BlockPos.getX(cell), BlockPos.getY(cell), BlockPos.getZ(cell));
-            depthsLow[n] = (int) packed;
-            depthsHigh[n] = (int) (packed >>> 32);
-            n++;
-        }
         this.targetHeat = heat;
         this.displayHeat = heat;
-        this.effect = new ReactorEffect(level, this);
         this.grid = ClientCompat.renderTransformAt(level, host);
-        updateRenderTransform();
     }
 
     /**
      * Which faces of which cells are against a wall: for every cell with an open side, a bit per
      * {@link Direction} ordinal. Cells deep inside the cavity have no open side and are absent.
      */
-    static Long2IntMap faceMasks(VoxelShape shape) {
-        return faceMasks(CavityShapes.grid(shape), CavityShapes.origin(shape));
-    }
-
     static Long2IntMap faceMasks(DiscreteVoxelShape grid, BlockPos origin) {
         Long2IntMap masks = new Long2IntOpenHashMap();
         grid.forAllFaces((direction, x, y, z) -> masks.mergeInt(
@@ -133,25 +105,8 @@ public final class ClientReactor {
         return shape;
     }
 
-    /** The cells that draw: those with a wall on at least one side. */
-    public long[] cells() {
-        return cells;
-    }
-
-    public int[] faces() {
-        return faces;
-    }
-
-    public int[] depthsLow() {
-        return depthsLow;
-    }
-
-    public int[] depthsHigh() {
-        return depthsHigh;
-    }
-
-    public ReactorEffect effect() {
-        return effect;
+    public BlockPos origin() {
+        return origin;
     }
 
     /** The chunk the server keys this reactor to: the one holding its lowest interior cell. */
@@ -159,27 +114,41 @@ public final class ClientReactor {
         return new ChunkPos(host);
     }
 
-    /** Whether the reactor rides a moving grid as of this frame's snapshot, and so draws inside an embedding. */
-    public boolean isOnGrid() {
-        return renderTransform != null;
+    /** A stable 0..1 noise phase from the reactor id, so two reactors side by side do not match. */
+    public float seed() {
+        long h = (id + 1L) * 0x9E3779B97F4A7C15L;
+        h ^= h >>> 29;
+        return (h & 0xFFFF) / 65536f;
     }
 
-    /** The grid's transform as snapshotted for this frame; null on the ground. Safe off-thread. */
-    public @Nullable Matrix4dc renderTransform() {
-        return renderTransform;
+    /**
+     * Where the moving grid the reactor rides is drawn this frame, as the map from the grid's own
+     * block space to the world, written into dest; null on the ground.
+     *
+     * <p>Asked every frame rather than remembered: on a rejoin the reactor packet can land before
+     * Sable has the sublevel it sits on, and the answer changes when the sublevel turns up.
+     */
+    public @Nullable Matrix4d gridTransform(Matrix4d dest) {
+        return grid == null ? null : grid.localToWorld(dest);
     }
 
-    /** Render thread only: takes this frame's snapshot of the grid's transform. */
-    public void updateRenderTransform() {
-        renderTransform = grid == null ? null : grid.localToWorld(new Matrix4d());
+    /**
+     * The glow's coat, built from the walls as they stand in the level the first time it is asked
+     * for. Null for a shape with nothing to coat.
+     */
+    @Nullable ReactorGlowMesh glowMesh(ClientLevel level) {
+        if (glowMesh == null) {
+            glowMesh = ReactorGlowMesh.build(shape, level);
+        }
+        return glowMesh;
     }
 
-    boolean queuedOnGrid() {
-        return queuedOnGrid;
-    }
-
-    void setQueuedOnGrid(boolean queuedOnGrid) {
-        this.queuedOnGrid = queuedOnGrid;
+    /** Frees the coat; the next {@link #glowMesh} builds it afresh. */
+    void releaseGlowMesh() {
+        if (glowMesh != null) {
+            glowMesh.close();
+            glowMesh = null;
+        }
     }
 
     public float targetHeat() {
@@ -194,7 +163,12 @@ public final class ClientReactor {
         return displayHeat;
     }
 
-    public void setDisplayHeat(float heat) {
-        displayHeat = heat;
+    /** Once a client tick: eases the drawn heat toward the server's figure. */
+    void tickHeat() {
+        float step = (targetHeat - displayHeat) * SMOOTHING;
+        displayHeat += Math.max(-MAX_STEP, Math.min(MAX_STEP, step));
+        if (Math.abs(targetHeat - displayHeat) < SETTLE_EPSILON) {
+            displayHeat = targetHeat;
+        }
     }
 }

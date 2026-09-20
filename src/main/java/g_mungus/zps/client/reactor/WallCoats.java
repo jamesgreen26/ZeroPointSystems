@@ -1,11 +1,5 @@
 package g_mungus.zps.client.reactor;
 
-import dev.engine_room.flywheel.api.model.Mesh;
-import dev.engine_room.flywheel.api.model.Model;
-import dev.engine_room.flywheel.lib.memory.MemoryBlock;
-import dev.engine_room.flywheel.lib.model.SimpleQuadMesh;
-import dev.engine_room.flywheel.lib.model.SingleMeshModel;
-import dev.engine_room.flywheel.lib.vertex.PosTexNormalVertexView;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.resources.model.BakedModel;
@@ -24,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * The coat for one side of a cavity cell whose wall block reaches into it.
  *
- * <p>{@link ReactorFlywheel#MODEL} coats a cell's sides on the block boundary, which is where the
+ * <p>{@link ReactorGlowMesh} coats a cell's sides on the block boundary, which is where the
  * cavity's surface is for the flat walls that make up nearly all of one. A wall block whose model
  * reaches past its own cube — the fuel injector's nozzle does, two pixels of it — moves part of that
  * surface out into the cell, and no single flat quad follows it: left on the boundary the coat has
@@ -34,12 +28,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>So a side like that is handed over to a coat built for it. The protruding geometry is coated by
  * the quads of the wall's own model that reach past its cube, cut back to the part that does, and
  * the flat part of the face by a ring of quads around the footprint those leave on the boundary.
- * {@link ReactorEffectVisual} clears the side's bit on the cell so the shared mesh leaves it alone,
- * and the two kinds of quad meet along the footprint's edges — the same edges, off the same numbers
+ * {@link ReactorGlowMesh} leaves the cell's own flat quad off that side, and the two kinds of quad
+ * meet along the footprint's edges — the same edges, off the same numbers
  * — so every point of the surface is covered exactly once.
  *
  * <p>Exactly once is the whole point. Leaning on the depth test to hide one coat under another
- * leaves the join doubled, and the material adds rather than replaces, so that reads as a bright
+ * leaves the join doubled, and the glow is drawn additively, so that reads as a bright
  * seam; backing one coat off to avoid it leaves a hairline the opaque block still covers, which
  * reads as a dark one.
  *
@@ -51,8 +45,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * with two separate protrusions would be coated across the gap between them rather than around each;
  * nothing has that shape yet, and the fix is to cut the ring per protrusion.
  *
- * <p>One model per wall state and side that needs one, so a reactor built of these adds an instancer
- * per distinct protruding wall rather than per reactor.
+ * <p>Cached per wall state; the faces are baked into each reactor's mesh when that is built.
  */
 public final class WallCoats {
 
@@ -64,8 +57,11 @@ public final class WallCoats {
     private static final int CORNERS = 4;
     private static final int FACE_FLOATS = CORNERS * 3 + 3;
 
-    /** Per wall state, the coat for each side it protrudes on, indexed by {@link Direction} ordinal. */
-    private static final Map<BlockState, Model[]> CACHE = new ConcurrentHashMap<>();
+    /**
+     * Per wall state, the coat's faces for each side it protrudes on, indexed by {@link Direction}
+     * ordinal; null on the sides it does not.
+     */
+    private static final Map<BlockState, List<float[]>[]> CACHE = new ConcurrentHashMap<>();
 
     private WallCoats() {
     }
@@ -77,16 +73,17 @@ public final class WallCoats {
 
     /**
      * The whole coat for the side of a cavity cell whose wall is {@code state}, where {@code into}
-     * points from that wall into the cell. Null when the wall stops at its own cube on that side —
-     * which is the case for nearly every wall block — leaving the cell's own coat to it as usual.
+     * points from that wall into the cell. Null when the wall stops at its own cube on that side,
+     * which is the case for nearly every wall block, leaving the cell's flat quad to it as usual.
      *
-     * <p>Positioned like {@link ReactorFlywheel#MODEL}: relative to the cell's minimum corner.
+     * <p>Each face is four corners of x, y, z relative to the cell's minimum corner, then the
+     * face's normal.
      */
-    public static @Nullable Model of(BlockState state, Direction into) {
+    public static @Nullable List<float[]> facesOf(BlockState state, Direction into) {
         return CACHE.computeIfAbsent(state, WallCoats::build)[into.ordinal()];
     }
 
-    private static Model[] build(BlockState state) {
+    private static List<float[]>[] build(BlockState state) {
         BakedModel model = Minecraft.getInstance().getBlockRenderer().getBlockModelShaper().getBlockModel(state);
         RandomSource rand = RandomSource.create(SEED);
         List<BakedQuad> quads = new ArrayList<>(model.getQuads(state, null, rand, ModelData.EMPTY, null));
@@ -94,18 +91,17 @@ public final class WallCoats {
             quads.addAll(model.getQuads(state, cull, rand, ModelData.EMPTY, null));
         }
 
-        Model[] coats = new Model[Direction.values().length];
+        @SuppressWarnings("unchecked")
+        List<float[]>[] coats = new List[Direction.values().length];
         for (Direction into : Direction.values()) {
-            Mesh mesh = coat(quads, into);
-            if (mesh != null) {
-                coats[into.ordinal()] = new SingleMeshModel(mesh, ReactorFlywheel.MATERIAL);
-            }
+            List<float[]> faces = coat(quads, into);
+            coats[into.ordinal()] = faces == null ? null : List.copyOf(faces);
         }
         return coats;
     }
 
-    /** The coat for one side, or null if the model stops at its own cube there. */
-    private static @Nullable Mesh coat(List<BakedQuad> quads, Direction into) {
+    /** The faces of the coat for one side, or null if the model stops at its own cube there. */
+    private static @Nullable List<float[]> coat(List<BakedQuad> quads, Direction into) {
         // The boundary plane and the two axes across it. Everything stays in the wall block's own
         // frame until the mesh is written, so the plane is at 0 or 1 like any model coordinate.
         boolean positive = into.getAxisDirection() == Direction.AxisDirection.POSITIVE;
@@ -144,7 +140,15 @@ public final class WallCoats {
         addRing(faces, normalAxis, axisA, axisB, plane, outward, 0f, a0, b0, b1);
         addRing(faces, normalAxis, axisA, axisB, plane, outward, a1, 1f, b0, b1);
 
-        return mesh(faces, into);
+        // The wall block sits one step back from the cell whose corner everything is measured from.
+        for (float[] face : faces) {
+            for (int corner = 0; corner < CORNERS; corner++) {
+                face[corner * 3] -= into.getStepX();
+                face[corner * 3 + 1] -= into.getStepY();
+                face[corner * 3 + 2] -= into.getStepZ();
+            }
+        }
+        return faces;
     }
 
     /** Whether any corner of the quad clears the block's own cube on the side being coated. */
@@ -205,34 +209,5 @@ public final class WallCoats {
         face[CORNERS * 3 + 1] = outward.getStepY();
         face[CORNERS * 3 + 2] = outward.getStepZ();
         return face;
-    }
-
-    /** The faces as a mesh, moved out of the wall block's frame into the cell's. */
-    private static Mesh mesh(List<float[]> faces, Direction into) {
-        MemoryBlock block = MemoryBlock.malloc((long) faces.size() * CORNERS * PosTexNormalVertexView.STRIDE);
-        PosTexNormalVertexView view = new PosTexNormalVertexView();
-        view.load(block);
-
-        // The wall block sits one step back from the cell whose corner everything is measured from.
-        float shiftX = -into.getStepX();
-        float shiftY = -into.getStepY();
-        float shiftZ = -into.getStepZ();
-        float[][] uvs = {{0f, 0f}, {0f, 1f}, {1f, 1f}, {1f, 0f}};
-
-        int index = 0;
-        for (float[] face : faces) {
-            for (int corner = 0; corner < CORNERS; corner++) {
-                view.x(index, face[corner * 3] + shiftX);
-                view.y(index, face[corner * 3 + 1] + shiftY);
-                view.z(index, face[corner * 3 + 2] + shiftZ);
-                view.u(index, uvs[corner][0]);
-                view.v(index, uvs[corner][1]);
-                view.normalX(index, face[CORNERS * 3]);
-                view.normalY(index, face[CORNERS * 3 + 1]);
-                view.normalZ(index, face[CORNERS * 3 + 2]);
-                index++;
-            }
-        }
-        return new SimpleQuadMesh(view, "zps:reactor_wall_coat");
     }
 }

@@ -54,7 +54,7 @@ public class ZPSConfig {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
         terminalKeyboardSounds = builder.define("TerminalKeyboardSounds", terminalKeyboardSoundsDefault);
         reactorGlow = builder
-                .comment("Draw the glowing plasma inside fusion reactors. Needs Flywheel's backend on.")
+                .comment("Draw the glowing plasma inside fusion reactors.")
                 .define("ReactorGlow", reactorGlowDefault);
         if (!FMLLoader.isProduction()) {
             gasPressureOverlay = builder

@@ -15,6 +15,8 @@ import g_mungus.zps.client.screens.AssemblerScreen;
 import g_mungus.zps.client.screens.CoalBurnerScreen;
 import g_mungus.zps.client.debug.GasPressureOverlay;
 import g_mungus.zps.client.reactor.ClientReactors;
+import g_mungus.zps.client.reactor.ReactorGlowPreviews;
+import g_mungus.zps.client.reactor.ReactorGlowRenderer;
 import g_mungus.zps.client.reactor.ReactorWallOverlayRenderer;
 import g_mungus.zps.client.reactor.ReactorWallOverlayVisual;
 import g_mungus.zps.client.reactor.ReactorWallOverlays;
@@ -48,6 +50,7 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLLoadCompleteEvent;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
+import net.neoforged.neoforge.client.event.RegisterShadersEvent;
 import net.neoforged.neoforge.client.event.RegisterRecipeBookCategoriesEvent;
 import net.neoforged.neoforge.client.event.RegisterClientTooltipComponentFactoriesEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
@@ -58,6 +61,7 @@ import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.common.NeoForge;
 import org.valkyrienskies.kelvin.impl.client.particle.DefaultGasParticleProvider;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -94,12 +98,21 @@ public class ClientSetup {
         event.register(ConnectedModelLoader.ID, ConnectedModelLoader.INSTANCE);
     }
 
+    /** The reactor glow's core shader. */
+    @SubscribeEvent
+    public static void onRegisterShaders(RegisterShadersEvent event) throws IOException {
+        ReactorGlowRenderer.onRegisterShaders(event);
+    }
+
     @SubscribeEvent
     public static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event) {
         // Connected-texture metadata is cached at bake time; drop it on reload so it is re-read.
         event.registerReloadListener((ResourceManagerReloadListener) resourceManager -> ConnectedTextureMeta.clear());
-        // Wall coats are built from baked models, which a reload replaces.
-        event.registerReloadListener((ResourceManagerReloadListener) resourceManager -> WallCoats.clear());
+        // Wall coats are built from baked models, which a reload replaces, and the glow meshes from them.
+        event.registerReloadListener((ResourceManagerReloadListener) resourceManager -> {
+            WallCoats.clear();
+            ClientReactors.invalidateMeshes();
+        });
     }
 
     /** The item models carry the face overlay on tint index 0, shown in its unpowered colour. */
@@ -223,7 +236,9 @@ public class ClientSetup {
             NeoForge.EVENT_BUS.addListener(ClientReactors::onLevelUnload);
             NeoForge.EVENT_BUS.addListener(ClientReactors::onLoggingOut);
             NeoForge.EVENT_BUS.addListener(ClientReactors::onClientTick);
-            NeoForge.EVENT_BUS.addListener(ClientReactors::onRenderFrame);
+            NeoForge.EVENT_BUS.addListener(ClientReactors::onRenderLevelStage);
+            NeoForge.EVENT_BUS.addListener(ReactorGlowPreviews::onRenderLevelStage);
+            NeoForge.EVENT_BUS.addListener(ReactorGlowPreviews::onLoggingOut);
         });
     }
 

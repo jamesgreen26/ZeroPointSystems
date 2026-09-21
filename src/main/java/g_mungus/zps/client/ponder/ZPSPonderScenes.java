@@ -274,7 +274,6 @@ public class ZPSPonderScenes {
         builder.idle(20);
     }
 
-    @SuppressWarnings("deprecation")
     public static void octoControllerTutorial(SceneBuilder builder, SceneBuildingUtil util) {
         builder.configureBasePlate(0, 0, 7);
         builder.title("octo_controller", "Octo-Controller");
@@ -768,7 +767,6 @@ public class ZPSPonderScenes {
         BlockPos inputPort = new BlockPos(5, 3, 3);
         BlockPos outputPort = new BlockPos(3, 3, 5);
         BlockPos vent = new BlockPos(1, 5, 5);
-        BlockPos vaporizer = new BlockPos(5, 1, 1);
         BlockPos[] exchangers = {new BlockPos(5, 5, 4), new BlockPos(4, 5, 5), new BlockPos(6, 5, 5), new BlockPos(5, 5, 6)};
         // One under a Stepdown Transformer and one under a Stepup Transformer, both on the camera's side.
         BlockPos heatingExchanger = new BlockPos(4, 5, 5);
@@ -1252,8 +1250,7 @@ public class ZPSPonderScenes {
         builder.idle(90);
 
         builder.overlay().showText(80)
-                .text("The pressure in the chamber rises and falls with its temperature.")
-                .pointAt(util.vector().blockSurface(displays[0], Direction.WEST)).placeNearTarget();
+                .text("The pressure in the chamber rises and falls with its temperature.");
         builder.idle(95);
 
         // A cold start with the Input port wide open. 400 kPa of cold gas is nothing next to what
@@ -1264,15 +1261,13 @@ public class ZPSPonderScenes {
         BlockPos inputLever = placeThrottleRig(builder, util, inputPort, Direction.EAST, Direction.NORTH);
         builder.idle(30);
         builder.overlay().showText(100)
-                .text("A chamber filled with cold Flux will reach over a hundred times its pressure by the time it ignites...")
-                .pointAt(util.vector().blockSurface(displays[0], Direction.WEST)).placeNearTarget();
+                .text("A chamber filled with cold Flux will reach over a hundred times its pressure by the time it ignites...");
         builder.idle(110);
         builder.addInstruction(scene -> glow.heatTo(0.45f, 95));
         rampReadings(builder, displays, 400_000, 24.0e6, 375, 22_500, 0, 0, 95);
         builder.overlay().showOutline(PonderPalette.RED, "burst", shell, 60);
         builder.overlay().showText(80)
-                .text("...and will burst long before it gets there.")
-                .pointAt(util.vector().blockSurface(displays[0], Direction.WEST)).placeNearTarget();
+                .text("...and will burst long before it gets there.");
         builder.idle(95);
 
         // Again, with the Input port nearly shut first: 60 kPa cold is 10.4 MPa at running heat.

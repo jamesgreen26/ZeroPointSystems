@@ -9,8 +9,11 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.Container;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.gametest.GameTestHolder;
@@ -97,6 +100,64 @@ public class RoboticArmGameTests {
             }
             helper.succeed();
         });
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void playerUse_emptyHand_takesHeldStack(GameTestHelper helper) {
+        RoboticArmBlockEntity arm = placeLoadedArm(helper);
+        if (arm == null) return;
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+
+        helper.useBlock(ARM_POS, player);
+
+        assertArmEmpty(helper, arm);
+        assertStack(helper, player.getItemInHand(InteractionHand.MAIN_HAND), new ItemStack(Items.COAL), TRANSFER_COUNT, "Player hand after taking");
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void playerUse_matchingItem_topsUpHeldStack(GameTestHelper helper) {
+        RoboticArmBlockEntity arm = placeLoadedArm(helper);
+        if (arm == null) return;
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.COAL, 64));
+
+        helper.useBlock(ARM_POS, player);
+
+        assertStack(helper, arm.getHeldStack(), new ItemStack(Items.COAL), 64, "Arm after top-up");
+        assertStack(helper, player.getItemInHand(InteractionHand.MAIN_HAND), new ItemStack(Items.COAL), TRANSFER_COUNT, "Player hand after top-up");
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void playerUse_emptyArm_acceptsWholeStack(GameTestHelper helper) {
+        RoboticArmBlockEntity arm = placeLoadedArm(helper);
+        if (arm == null) return;
+        arm.clearContent();
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.IRON_INGOT, 10));
+
+        helper.useBlock(ARM_POS, player);
+
+        assertStack(helper, arm.getHeldStack(), new ItemStack(Items.IRON_INGOT), 10, "Arm after giving");
+        if (!player.getItemInHand(InteractionHand.MAIN_HAND).isEmpty()) {
+            helper.fail("Expected player hand to be empty, got " + player.getItemInHand(InteractionHand.MAIN_HAND));
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void playerUse_mismatchedItem_isRejected(GameTestHelper helper) {
+        RoboticArmBlockEntity arm = placeLoadedArm(helper);
+        if (arm == null) return;
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.IRON_INGOT, 10));
+
+        helper.useBlock(ARM_POS, player);
+
+        assertStack(helper, arm.getHeldStack(), new ItemStack(Items.COAL), TRANSFER_COUNT, "Arm after rejected give");
+        assertStack(helper, player.getItemInHand(InteractionHand.MAIN_HAND), new ItemStack(Items.IRON_INGOT), 10, "Player hand after rejected give");
+        helper.succeed();
     }
 
     private static RoboticArmBlockEntity placeLoadedArm(GameTestHelper helper) {

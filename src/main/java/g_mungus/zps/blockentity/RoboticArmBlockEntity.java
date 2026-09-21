@@ -282,6 +282,43 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
         return heldStack;
     }
 
+    /** How many items of {@code stack} the hand could take right now: it holds a single stack, so only an empty hand or a matching, non-full stack accepts anything. */
+    public int getAcceptableCount(ItemStack stack) {
+        if (stack.isEmpty()) return 0;
+        if (heldStack.isEmpty()) return Math.min(stack.getCount(), stack.getMaxStackSize());
+        if (!ItemStack.isSameItemSameComponents(heldStack, stack)) return 0;
+        return Math.min(stack.getCount(), Math.max(0, heldStack.getMaxStackSize() - heldStack.getCount()));
+    }
+
+    /** Hands over as much of {@code stack} as the arm can accept, without modifying {@code stack}. Returns the count taken. */
+    public int giveHeldItems(ItemStack stack) {
+        int accepted = getAcceptableCount(stack);
+        if (accepted <= 0) return 0;
+        if (heldStack.isEmpty()) {
+            heldStack = stack.copyWithCount(accepted);
+        } else {
+            heldStack.grow(accepted);
+        }
+        syncHeldStack();
+        return accepted;
+    }
+
+    /** Removes and returns everything the arm is holding. */
+    public ItemStack takeHeldStack() {
+        if (heldStack.isEmpty()) return ItemStack.EMPTY;
+        ItemStack taken = heldStack;
+        heldStack = ItemStack.EMPTY;
+        syncHeldStack();
+        return taken;
+    }
+
+    private void syncHeldStack() {
+        setChanged();
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_ALL);
+        }
+    }
+
     public Vec3 getLastSwivelAxis() {
         return lastSwivelAxis;
     }

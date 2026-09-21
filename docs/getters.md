@@ -122,6 +122,22 @@ if stored_energy < 100000 set_redstone 15 else set_redstone 0
 
 ---
 
+## Gas Gauge
+
+The following getter requires the target block to be a `Gas Gauge`.
+
+| Getter        | Output | Description                                                                 |
+|---------------|--------|-----------------------------------------------------------------------------|
+| `gauge_value` | Double | The reading the gauge's dial is set to show: pressure in Pascals or temperature in Kelvin. The value is not scaled or clamped to the dial's range. Changing the gauge's mode changes what this reads. |
+
+Examples:
+
+```
+if gauge_value > 8000000 set_redstone 15 else set_redstone 0
+```
+
+---
+
 ## Additional Getters
 
 - [Sable](sable.md) — `sublevel`

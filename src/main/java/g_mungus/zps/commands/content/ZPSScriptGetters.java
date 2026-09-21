@@ -147,36 +147,20 @@ public class ZPSScriptGetters {
                 Set.of("zps:power_cell", "zps:creative_power_cell")
         ));
 
-        // The gauge's own readings, whichever of the two its dial is set to show: pressure in
-        // Pascals and temperature in Kelvin, unscaled and unclamped by the bounds on the dial.
-        Set<String> gasGaugeBlocks = Set.of("zps:gas_gauge");
-
+        // Whatever the gauge's dial is set to show: pressure in Pascals or temperature in Kelvin,
+        // unscaled and unclamped by the bounds on the dial. Cycling the mode changes what this reads.
         event.register(ScriptGetter.withBlocks(
-                "pressure",
+                "gauge_value",
                 Double.class,
                 ResourceLocation.parse("zps:double"),
                 scriptContext -> {
                     BlockEntity be = scriptContext.level().getBlockEntity(scriptContext.pos());
                     if (be instanceof GasGaugeBlockEntity gauge) {
-                        return gauge.getPressure();
+                        return gauge.getMeasuredValue();
                     }
                     return 0.0;
                 },
-                gasGaugeBlocks
-        ));
-
-        event.register(ScriptGetter.withBlocks(
-                "temperature",
-                Double.class,
-                ResourceLocation.parse("zps:double"),
-                scriptContext -> {
-                    BlockEntity be = scriptContext.level().getBlockEntity(scriptContext.pos());
-                    if (be instanceof GasGaugeBlockEntity gauge) {
-                        return gauge.getTemperature();
-                    }
-                    return 0.0;
-                },
-                gasGaugeBlocks
+                Set.of("zps:gas_gauge")
         ));
 
         // A reactor read from any block of its shell. Tied to the wall tag rather than a list of

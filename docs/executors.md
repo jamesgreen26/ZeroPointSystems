@@ -66,7 +66,7 @@ set_frequency 10
 
 The following commands require the target block to be a `Robotic Arm`.
 
-Unlike other executors, the argument is a **block position** (`x y z`) telling the arm which block to act on, not a value applied to the arm itself. The arm first swings its hand to that position, then performs the action. The target must be within 4 blocks of the arm; positions out of range are skipped.
+Unlike other executors, the argument is a **block position** (`x y z`) telling the arm which block to act on, not a value applied to the arm itself. The arm first swings its hand to that position, then performs the action. The target must be within 4 blocks of the arm; positions out of range are skipped. The arm can only accept commands that require it to move `once every 16 ticks`.
 
 | Executor      | Argument  | Description                                                                                       |
 |---------------|-----------|---------------------------------------------------------------------------------------------------|

@@ -23,7 +23,7 @@ Produced by: `sublevel`
 | `pos` | Vec Pos | The sublevel pose position in global space. Returns the target block's own centered position if not inside a sublevel. |
 | `world_vel` | Vec Dir | The target block's global velocity, accounting for sublevel motion. Returns zero if not inside a sublevel. |
 | `local_vel` | Vec Dir | The target block's velocity rotated into the sublevel's local frame. Returns zero if not inside a sublevel. |
-| `bounding_box` | Vec Box | The sublevel bounding box dimensions in global space. Returns zero if not inside a sublevel. |
+| `bounding_box` | Vec Box | The sublevel bounding box dimensions in local space, in blocks. Does not change as the sublevel rotates. Returns zero if not inside a sublevel. |
 | `dir <direction>` | Vec Dir | A cardinal direction (`north`, `south`, `east`, `west`, `up`, `down`) rotated to match the sublevel's current orientation. Returns the unrotated direction if not inside a sublevel. |
 
 ---

@@ -4,8 +4,10 @@ import dev.ryanhcode.sable.companion.SableCompanion;
 import dev.ryanhcode.sable.companion.SubLevelAccess;
 import dev.ryanhcode.sable.companion.math.BoundingBox3d;
 import dev.ryanhcode.sable.companion.math.BoundingBox3dc;
+import dev.ryanhcode.sable.companion.math.BoundingBox3ic;
 import dev.ryanhcode.sable.companion.math.Pose3d;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
+import dev.ryanhcode.sable.sublevel.SubLevel;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptGetter;
@@ -117,11 +119,22 @@ public final class SableCompat {
                         return Vec3.ZERO;
                     }
 
-                    BoundingBox3dc bounds = subLevel.boundingBox();
+                    // SubLevelAccess#boundingBox is the world-space AABB, which grows as the
+                    // sublevel rotates. The plot bounds are the local-space block extents.
+                    if (!(subLevel instanceof SubLevel fullSubLevel)) {
+                        return Vec3.ZERO;
+                    }
+
+                    BoundingBox3ic bounds = fullSubLevel.getPlot().getBoundingBox();
+                    if (bounds.maxX() < bounds.minX() || bounds.maxY() < bounds.minY() || bounds.maxZ() < bounds.minZ()) {
+                        return Vec3.ZERO;
+                    }
+
+                    // Plot bounds are inclusive block coordinates.
                     return new Vec3(
-                            bounds.maxX() - bounds.minX(),
-                            bounds.maxY() - bounds.minY(),
-                            bounds.maxZ() - bounds.minZ()
+                            bounds.maxX() - bounds.minX() + 1,
+                            bounds.maxY() - bounds.minY() + 1,
+                            bounds.maxZ() - bounds.minZ() + 1
                     );
                 }
         ));

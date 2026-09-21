@@ -68,6 +68,8 @@ public class ZPSPonders {
                 REACTOR_PORT,
                 HEAT_EXCHANGER
         ).addStoryBoard("reactor", ZPSPonderScenes::reactorIntroTutorial, ZPSPonderTags.REACTOR_WALL_BLOCKS)
-                .addStoryBoard("reactor", ZPSPonderScenes::reactorTipsTutorial, ZPSPonderTags.REACTOR_WALL_BLOCKS);
+                .addStoryBoard("reactor", ZPSPonderScenes::reactorMonitoringTutorial, ZPSPonderTags.REACTOR_WALL_BLOCKS)
+                .addStoryBoard("reactor", ZPSPonderScenes::reactorOverheatingTutorial, ZPSPonderTags.REACTOR_WALL_BLOCKS)
+                .addStoryBoard("reactor", ZPSPonderScenes::reactorBurstingTutorial, ZPSPonderTags.REACTOR_WALL_BLOCKS);
     }
 }

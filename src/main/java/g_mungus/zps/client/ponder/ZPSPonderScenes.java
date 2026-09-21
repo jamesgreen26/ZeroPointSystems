@@ -976,8 +976,11 @@ public class ZPSPonderScenes {
         builder.idle(130);
         builder.addInstruction(scene -> glow.heatTo(1.3f, 35));
         builder.idle(10);
+        // The config default for the ignition temperature, written out because lang text cannot
+        // take a value: a pack that moves it wants this line and its lang entry moved too. Each of
+        // the three limits is given once, in the scene that is about it. This is this scene's.
         builder.overlay().showText(90)
-                .text("...and at ignition temperature, the Flux fuses into Aether, releasing a large amount of heat.")
+                .text("...and at 50,000 K, the Flux fuses into Aether, releasing a large amount of heat.")
                 .pointAt(util.vector().centerOf(5, 3, 5)).placeNearTarget();
         builder.idle(100);
         builder.addInstruction(new RotateSceneInstruction(-35, -35, true));
@@ -1017,40 +1020,46 @@ public class ZPSPonderScenes {
 
         // 10. Recap.
         builder.effects().emitParticles(util.vector().topOf(vent),
-                builder.effects().simpleParticleEmitter(ParticleTypes.CLOUD, new Vec3(0, 0.05, 0)), 1, 200);
+                builder.effects().simpleParticleEmitter(ParticleTypes.CLOUD, new Vec3(0, 0.05, 0)), 1, 110);
         builder.overlay().showText(95).attachKeyFrame()
                 .text("The reactor keeps running while Flux is supplied and Aether is removed. If the chamber gets too cold, the reaction will stop.");
         builder.idle(105);
-        // The thresholds are the config defaults, in the units a Gas Gauge reads them in. They are
-        // written out because lang text cannot take a value; a pack that moves them wants this
-        // line, and its lang entry, moved with them. See ZPSConfig's reactor and burst defaults.
-        builder.overlay().showText(105)
-                .text("If the temperature reaches 200,000 K the walls will melt, and if the pressure reaches 24 MPa the chamber will burst.");
-        builder.idle(115);
     }
 
     /**
-     * Tips for keeping a reactor running, to the script in design_docs/REACTOR_PONDER_SCRIPTS.md:
-     * reading it, why it overheats, why it bursts. Built on the intro's structure, with the
-     * monitoring rig and the redstone rigs placed by the scene. The three readings are faked along
-     * with the glow, and kept in step with it: temperature is heat times ignition temperature, and
-     * pressure follows temperature for as long as the contents are the same, as it does in Kelvin.
+     * What the three scenes about running a reactor share: the intro's structure, lit, with the
+     * monitoring rig on it. The scenes are the script's "tips" in design_docs/
+     * REACTOR_PONDER_SCRIPTS.md, one topic each, so that the title says which one a scene is and
+     * each starts from a clean set. The three readings are faked along with the glow, and kept in
+     * step with it: temperature is heat times ignition temperature, and pressure follows
+     * temperature for as long as the contents are the same, as it does in Kelvin.
      */
-    public static void reactorTipsTutorial(SceneBuilder builder, SceneBuildingUtil util) {
+    private record ReactorRunningSet(BlockPos inputPort, BlockPos outputPort, BlockPos vent, Vec3 chamberCentre,
+                                     Selection shell, Selection exchangers, Selection powerLine,
+                                     BlockPos[] buses, BlockPos[] displays, Selection busBlocks,
+                                     ReactorGlowElement glow) {
+    }
+
+    /**
+     * Opens one of those scenes: titles it, builds the rig, and brings the whole reactor in running
+     * at a steady 65,000 K, with the Vent giving off cloud for a while.
+     *
+     * @param rigSpace where the scene will later stand a redstone rig, left out of the opening
+     *                 section: a block shown twice is drawn twice. Null for none.
+     */
+    private static ReactorRunningSet openReactorRunningScene(SceneBuilder builder, SceneBuildingUtil util, String id,
+                                                             String title, @org.jetbrains.annotations.Nullable Selection rigSpace,
+                                                             int cloudTicks) {
         builder.configureBasePlate(0, 0, 9);
-        builder.title("reactor_tips", "Running a Fusion Reactor");
+        builder.title(id, title);
         builder.scaleSceneView(0.7f);
         builder.setSceneOffsetY(-1.5f);
 
-        BlockPos inputPort = new BlockPos(5, 3, 3);
-        BlockPos outputPort = new BlockPos(3, 3, 5);
         BlockPos vent = new BlockPos(1, 5, 5);
-        Vec3 chamberCentre = util.vector().centerOf(5, 3, 5);
-        // Everything but where the two redstone rigs will stand: those come in later, as sections
-        // of their own, and a block shown twice is drawn twice.
-        Selection everything = util.select().fromTo(0, 1, 0, 8, 8, 8)
-                .substract(util.select().fromTo(1, 3, 6, 2, 3, 6))
-                .substract(util.select().fromTo(6, 3, 1, 6, 3, 2));
+        Selection everything = util.select().fromTo(0, 1, 0, 8, 8, 8);
+        if (rigSpace != null) {
+            everything = everything.substract(rigSpace);
+        }
         Selection shell = util.select().fromTo(3, 1, 3, 7, 5, 7).substract(util.select().fromTo(4, 2, 4, 6, 4, 6));
         Selection exchangers = util.select().position(5, 5, 4).add(util.select().position(4, 5, 5))
                 .add(util.select().position(6, 5, 5)).add(util.select().position(5, 5, 6));
@@ -1072,7 +1081,6 @@ public class ZPSPonderScenes {
         BlockPos[] buses = {new BlockPos(4, 2, 2), new BlockPos(2, 2, 4), new BlockPos(2, 2, 6)};
         Direction[] busFacings = {Direction.SOUTH, Direction.EAST, Direction.EAST};
         BlockPos[] displays = {new BlockPos(0, 1, 2), new BlockPos(0, 1, 4), new BlockPos(0, 1, 6)};
-        String[] getters = {"reactor_pressure", "reactor_temperature", "reactor_output"};
         BlockState cableAlong = ModBlocks.DATA_CABLE.get().defaultBlockState()
                 .setValue(CableBlock.EAST, true).setValue(CableBlock.WEST, true);
         BlockState cableUp = ModBlocks.DATA_CABLE.get().defaultBlockState()
@@ -1090,10 +1098,8 @@ public class ZPSPonderScenes {
         Selection busBlocks = util.select().position(buses[0]).add(util.select().position(buses[1]))
                 .add(util.select().position(buses[2]));
 
-        SceneViewElement view = new SceneViewElement();
         ReactorGlowElement glow = new ReactorGlowElement(new BlockPos(4, 2, 4), new BlockPos(6, 4, 6), 0.61f);
 
-        // 1. Reading the reactor. The rig is simply there; its blocks have scenes of their own.
         builder.showBasePlate();
         builder.idle(5);
         builder.world().showSection(everything, Direction.DOWN);
@@ -1103,8 +1109,23 @@ public class ZPSPonderScenes {
         });
         reactorReadings(builder, displays, 9.0e6, 65_000, 8192);
         builder.idle(30);
-        builder.effects().emitParticles(util.vector().topOf(vent),
-                builder.effects().simpleParticleEmitter(ParticleTypes.CLOUD, new Vec3(0, 0.05, 0)), 1, 930);
+        if (cloudTicks > 0) {
+            builder.effects().emitParticles(util.vector().topOf(vent),
+                    builder.effects().simpleParticleEmitter(ParticleTypes.CLOUD, new Vec3(0, 0.05, 0)), 1, cloudTicks);
+        }
+        return new ReactorRunningSet(new BlockPos(5, 3, 3), new BlockPos(3, 3, 5), vent, util.vector().centerOf(5, 3, 5),
+                shell, exchangers, powerLine, buses, displays, busBlocks, glow);
+    }
+
+    /** Reading the reactor: which values there are, and where a Serial Bus has to point to get them. */
+    public static void reactorMonitoringTutorial(SceneBuilder builder, SceneBuildingUtil util) {
+        ReactorRunningSet set = openReactorRunningScene(builder, util, "reactor_monitoring",
+                "Monitoring a Fusion Reactor", null, 520);
+        BlockPos[] buses = set.buses();
+        BlockPos[] displays = set.displays();
+        Selection busBlocks = set.busBlocks();
+        String[] getters = {"reactor_pressure", "reactor_temperature", "reactor_output"};
+        SceneViewElement view = new SceneViewElement();
 
         builder.overlay().showOutline(PonderPalette.INPUT, "buses", busBlocks, 90);
         builder.overlay().showText(90)
@@ -1138,52 +1159,99 @@ public class ZPSPonderScenes {
         builder.addInstruction(new RotateSceneInstruction(-35, 55, true));
         builder.addInstruction(scene -> view.moveTo(scene, 1f, Vec3.ZERO, 35));
         builder.idle(40);
+    }
 
-        // 2. Overheating. Same contents, hotter: pressure climbs with the temperature.
+    /** Why a reactor overheats, and the two ways to stop it. */
+    public static void reactorOverheatingTutorial(SceneBuilder builder, SceneBuildingUtil util) {
+        ReactorRunningSet set = openReactorRunningScene(builder, util, "reactor_overheating",
+                "Keeping a Fusion Reactor from Overheating", util.select().fromTo(1, 3, 6, 2, 3, 6), 330);
+        BlockPos outputPort = set.outputPort();
+        BlockPos vent = set.vent();
+        Vec3 chamberCentre = set.chamberCentre();
+        Selection exchangers = set.exchangers();
+        Selection powerLine = set.powerLine();
+        BlockPos[] displays = set.displays();
+        ReactorGlowElement glow = set.glow();
+
+        // The config default for the melt temperature, written out as in the intro's last line: lang text
+        // cannot take a value, so a pack that moves it wants this line and its lang entry moved too.
+        builder.overlay().showText(80)
+                .text("A Fusion Reactor will melt one of its wall blocks if the chamber exceeds 200,000 K.");
+        builder.idle(90);
+
+        // The cause. Same contents, hotter: pressure climbs with the temperature.
         builder.addInstruction(scene -> glow.heatTo(2.2f, 105));
-        builder.overlay().showText(95).attachKeyFrame()
+        builder.overlay().showText(95)
                 .text("The chamber heats up whenever the reaction generates heat faster than the Heat Exchangers can remove it.")
                 .pointAt(chamberCentre).placeNearTarget();
         rampReadings(builder, displays, 9.0e6, 15.2e6, 65_000, 110_000, 8192, 8192, 105);
 
-        builder.overlay().showOutline(PonderPalette.OUTPUT, "exchangers", exchangers, 95);
-        builder.overlay().showText(95)
-                .text("Each Heat Exchanger can only generate so much FE. A reactor that runs hot needs more of them.")
-                .pointAt(util.vector().topOf(5, 5, 4)).placeNearTarget();
-        builder.idle(105);
-
-        // Nowhere for the FE to go: the output falls to nothing and the chamber climbs faster.
-        builder.overlay().showOutline(PonderPalette.RED, "blocked", powerLine, 180);
-        builder.addInstruction(scene -> glow.heatTo(2.6f, 190));
-        builder.overlay().showText(80)
-                .text("A Heat Exchanger only removes heat while its FE has somewhere to go...")
-                .pointAt(util.vector().topOf(5, 6, 4)).placeNearTarget();
-        rampReadings(builder, displays, 15.2e6, 16.6e6, 110_000, 120_000, 0, 0, 95);
-        builder.overlay().showText(90)
-                .text("...so if the machines it powers are full, it will stop cooling the chamber.")
-                .pointAt(util.vector().topOf(5, 6, 4)).placeNearTarget();
-        rampReadings(builder, displays, 16.6e6, 18.0e6, 120_000, 130_000, 0, 0, 100);
-        reactorReadings(builder, displays, 18.0e6, 130_000, 8192);
-
-        // The second remedy: hold the Aether in, and the reaction has to wait for it to leave.
+        // The response: slow the reaction. Hold the Aether in, and it has to wait for it to leave.
+        // That takes no heat out by itself. It cuts what is being put in, to below what the Heat
+        // Exchangers are taking out, and they are what bring the temperature down.
         BlockPos outputLever = placeThrottleRig(builder, util, outputPort, Direction.SOUTH, Direction.WEST);
         builder.idle(30);
         builder.overlay().showText(95).attachKeyFrame()
-                .text("The reaction stops while Aether makes up more than a quarter of the gas in the chamber.")
+                .text("The reaction pauses while Aether is above a quarter of the gas, so the Output port sets how fast it can run.")
                 .pointAt(chamberCentre).placeNearTarget();
         builder.idle(105);
         clickThrottle(builder, util, outputLever, outputPort, 0, 10);
-        // Less leaving the Vent now.
+        // Less leaving the Vent from here on.
         builder.effects().emitParticles(util.vector().topOf(vent),
-                builder.effects().simpleParticleEmitter(ParticleTypes.CLOUD, new Vec3(0, 0.05, 0)), 0.3f, 200);
+                builder.effects().simpleParticleEmitter(ParticleTypes.CLOUD, new Vec3(0, 0.05, 0)), 0.3f, 620);
         builder.addInstruction(scene -> glow.heatTo(1.3f, 105));
-        builder.overlay().showText(95)
-                .text("Restricting the Output port with Redstone keeps more Aether inside, which slows the reaction down.")
+        builder.overlay().showText(115)
+                .text("Restricting the Output port with Redstone keeps more Aether inside, so less heat is generated and the Heat Exchangers can catch up.")
                 .pointAt(util.vector().blockSurface(outputPort, Direction.WEST)).placeNearTarget();
-        rampReadings(builder, displays, 18.0e6, 9.0e6, 130_000, 65_000, 8192, 8192, 105);
+        rampReadings(builder, displays, 15.2e6, 9.0e6, 110_000, 65_000, 8192, 8192, 105);
+        // The line is a long one: hold on the settled reactor until it has been read.
+        builder.idle(20);
 
-        // 3. Pressure.
+        // The exception, where slowing the reaction is not the answer: nowhere for the FE to go.
+        // The output falls to nothing and the chamber climbs, until whatever was full is not.
+        builder.overlay().showOutline(PonderPalette.RED, "blocked", powerLine, 180);
+        builder.addInstruction(scene -> glow.heatTo(1.9f, 190));
         builder.overlay().showText(80).attachKeyFrame()
+                .text("A Heat Exchanger can only extract heat while its FE has somewhere to go...")
+                .pointAt(util.vector().topOf(5, 6, 4)).placeNearTarget();
+        rampReadings(builder, displays, 9.0e6, 11.1e6, 65_000, 80_000, 0, 0, 95);
+        builder.overlay().showText(90)
+                .text("...so if the machines it powers are full, it will stop cooling the chamber.")
+                .pointAt(util.vector().topOf(5, 6, 4)).placeNearTarget();
+        rampReadings(builder, displays, 11.1e6, 13.2e6, 80_000, 95_000, 0, 0, 100);
+        builder.addInstruction(scene -> glow.heatTo(1.3f, 60));
+        rampReadings(builder, displays, 13.2e6, 9.0e6, 95_000, 65_000, 8192, 8192, 60);
+
+        // What more Heat Exchangers are for: not cooling a reactor that runs hot, but letting one
+        // run faster.
+        builder.overlay().showOutline(PonderPalette.OUTPUT, "exchangers", exchangers, 180);
+        builder.overlay().showText(90).attachKeyFrame()
+                .text("Each Heat Exchanger can only extract so much heat, so they limit how fast a reactor can safely run.")
+                .pointAt(util.vector().topOf(5, 5, 4)).placeNearTarget();
+        builder.idle(100);
+        builder.overlay().showText(95)
+                .text("To produce more FE, add more Heat Exchangers, then open the Output port further. This will also consume more Flux.")
+                .pointAt(util.vector().blockSurface(outputPort, Direction.WEST)).placeNearTarget();
+        builder.idle(105);
+    }
+
+    /** Why a reactor bursts, which is mostly a matter of how it is lit, and how to light it safely. */
+    public static void reactorBurstingTutorial(SceneBuilder builder, SceneBuildingUtil util) {
+        ReactorRunningSet set = openReactorRunningScene(builder, util, "reactor_bursting",
+                "Keeping a Fusion Reactor from Bursting", util.select().fromTo(6, 3, 1, 6, 3, 2), 200);
+        BlockPos inputPort = set.inputPort();
+        BlockPos vent = set.vent();
+        Selection shell = set.shell();
+        BlockPos[] displays = set.displays();
+        ReactorGlowElement glow = set.glow();
+
+        // The config default for the burst pressure, written out as in the intro's last line: lang text
+        // cannot take a value, so a pack that moves it wants this line and its lang entry moved too.
+        builder.overlay().showText(80)
+                .text("A Fusion Reactor will burst if the pressure in its chamber exceeds 24 MPa.");
+        builder.idle(90);
+
+        builder.overlay().showText(80)
                 .text("The pressure in the chamber rises and falls with its temperature.")
                 .pointAt(util.vector().blockSurface(displays[0], Direction.WEST)).placeNearTarget();
         builder.idle(95);

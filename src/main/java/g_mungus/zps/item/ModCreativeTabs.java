@@ -85,6 +85,8 @@ public class ModCreativeTabs {
                         REACTOR_PORT,
                         HEAT_EXCHANGER,
 
+                        BEAM_COLLECTOR,
+
                         SUSPICIOUS_RED_SAND,
 
                         BAUXITE,

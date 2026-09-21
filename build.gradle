@@ -5,6 +5,9 @@ plugins {
 
 configurations {
     clientOnlyMods
+    // Mods that are on the classpath for local runs and gametests only: never compiled against, never shipped.
+    localRuntime
+    runtimeClasspath.extendsFrom localRuntime
 }
 
 group = project.maven_group
@@ -130,6 +133,18 @@ dependencies {
         }
     }
     compileOnly("dev.ryanhcode.sable:sable-common-${project.minecraft_version}:${project.sable_version}") { transitive = false }
+    // Sable itself, for local runs and gametests only, so that what ZPS does across sublevels can be tested
+    // rather than reasoned about. Players install Sable separately. Its POM asks for newer builds of Create,
+    // Ponder, Flywheel and Registrate than the ones declared below; leave those to this build.
+    localRuntime("dev.ryanhcode.sable:sable-neoforge-${project.minecraft_version}:${project.sable_version}") {
+        exclude group: 'com.simibubi.create'
+        exclude group: 'net.createmod.ponder'
+        exclude group: 'net.createmod'
+        exclude group: 'dev.engine-room.flywheel'
+        exclude group: 'com.tterrag.registrate'
+    }
+    // Sable's POM pins an older Veil than the one it runs best with.
+    localRuntime("foundry.veil:veil-neoforge-${project.minecraft_version}:${project.veil_version}")
 
     implementation(files('libs/jsapi.jar', 'libs/freetts.jar'))
     additionalRuntimeClasspath(files('libs/jsapi.jar', 'libs/freetts.jar'))

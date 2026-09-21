@@ -211,6 +211,12 @@ public class ModBlocks {
                     .noOcclusion()
                     .requiresCorrectToolForDrops()));
 
+    public static final DeferredBlock<Block> BEAM_COLLECTOR = BLOCKS.register("beam_collector",
+            () -> new BeamCollectorBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(3.0f)
+                    .noOcclusion()
+                    .requiresCorrectToolForDrops()));
+
     public static final DeferredBlock<Block> COAL_BURNER = BLOCKS.register("coal_burner",
             () -> new CoalBurnerBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.FURNACE)
                     .strength(3.5f)

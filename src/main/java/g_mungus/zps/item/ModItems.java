@@ -2,6 +2,7 @@ package g_mungus.zps.item;
 
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.block.BeamCollectorBlockItem;
 import g_mungus.zps.multiblock.MultiblockBlockItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -105,6 +106,9 @@ public class ModItems {
 
     public static final DeferredItem<Item> POWER_CELL = ITEMS.register("power_cell",
             () -> new MultiblockBlockItem(ModBlocks.POWER_CELL.get(), new Item.Properties()));
+
+    public static final DeferredItem<Item> BEAM_COLLECTOR = ITEMS.register("beam_collector",
+            () -> new BeamCollectorBlockItem(ModBlocks.BEAM_COLLECTOR.get(), new Item.Properties()));
 
     public static final DeferredItem<Item> COAL_BURNER = ITEMS.register("coal_burner",
             () -> new BlockItem(ModBlocks.COAL_BURNER.get(), new Item.Properties()));

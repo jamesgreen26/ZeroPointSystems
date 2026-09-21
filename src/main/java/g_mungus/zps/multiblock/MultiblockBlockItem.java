@@ -62,7 +62,11 @@ public class MultiblockBlockItem extends BlockItem {
         return super.updateCustomBlockEntityTag(pos, level, player, stack, state);
     }
 
-    private void tryMultiPlace(BlockPlaceContext ctx) {
+    /**
+     * Fills the rest of a layer after one block of it was placed. Subclasses whose structures are not stacked
+     * vertically (a flat panel, say) override this to do nothing.
+     */
+    protected void tryMultiPlace(BlockPlaceContext ctx) {
         Player player = ctx.getPlayer();
         if (player == null || player.isShiftKeyDown()) {
             return;

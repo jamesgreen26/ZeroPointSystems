@@ -18,6 +18,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.Position;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.server.command.EnumArgument;
 import org.jetbrains.annotations.NotNull;
@@ -25,6 +26,8 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public final class SableCompat {
@@ -190,6 +193,49 @@ public final class SableCompat {
         SubLevelAccess subLevel = SableCompanion.INSTANCE.getContaining(level, anchorPos.getCenter());
         if (subLevel == null) return worldPos;
         return subLevel.logicalPose().transformPositionInverse(worldPos);
+    }
+
+    /// Only call after verifying that Sable is loaded.
+    static @Nullable GridSpace gridOf(Level level, BlockPos pos) {
+        SubLevelAccess subLevel = SableCompanion.INSTANCE.getContaining(level, pos);
+        return subLevel == null ? null : new SubLevelSpace(level, subLevel);
+    }
+
+    /// Only call after verifying that Sable is loaded.
+    static List<GridSpace> gridsTouching(Level level, AABB worldBounds) {
+        List<GridSpace> grids = new ArrayList<>();
+        // Sable forbids touching the bounds while iterating; they are not kept past this call.
+        for (SubLevelAccess subLevel : SableCompanion.INSTANCE.getAllIntersecting(level, new BoundingBox3d(worldBounds))) {
+            grids.add(new SubLevelSpace(level, subLevel));
+        }
+        return grids;
+    }
+
+    private record SubLevelSpace(Level level, SubLevelAccess subLevel) implements GridSpace {
+        @Override
+        public Vec3 toLocal(Vec3 world) {
+            return subLevel.logicalPose().transformPositionInverse(world);
+        }
+
+        @Override
+        public Vec3 toWorld(Vec3 local) {
+            return subLevel.logicalPose().transformPosition(local);
+        }
+
+        /// Sable asks for the point in the sublevel's own space and answers per second.
+        @Override
+        public Vec3 velocityAt(Vec3 world) {
+            Vec3 local = toLocal(world);
+            Vector3d velocity = SableCompanion.INSTANCE.getVelocity(level, subLevel,
+                    new Vector3d(local.x, local.y, local.z), new Vector3d());
+            return new Vec3(velocity.x / 20.0, velocity.y / 20.0, velocity.z / 20.0);
+        }
+
+        @Override
+        public boolean isSameGrid(GridSpace other) {
+            return other instanceof SubLevelSpace(Level otherLevel, SubLevelAccess otherSubLevel)
+                    && otherSubLevel.getUniqueId().equals(subLevel.getUniqueId());
+        }
     }
 
     private static Vec3 subLevelDirection(SubLevelAccess subLevel, Direction direction) {

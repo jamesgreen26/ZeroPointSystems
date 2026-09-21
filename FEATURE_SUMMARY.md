@@ -198,6 +198,16 @@ Ponder page lists the script commands and getters that block accepts.
 - Share the finished arm's collision shape and play a repair sound/particles per segment; completing the arm grants the `robotic_arm_completed` advancement.
 - Purely inert until completed — no work, energy, or item storage.
 
+#### Beam Collector (`beam_collector`)
+- A six-way directional machine that projects a tractor beam, pulling items, entities (players included), particles and piston-pushable blocks toward its mouth. Runs while any block of it has a redstone signal and it has FE.
+- Blocks sharing a facing join into a square panel: 1x1, 2x2 or 3x3. Panel size sets the beam's width, its reach at full signal (8 / 15 / 30 blocks), its pooled storage (9 / 15 / 21 slots) and its FE buffer (8,192 FE per block, receive-only).
+- Each 1x1 column of the beam takes its nearest block, one at a time on a cooldown: blocks a piston could push come loose as falling blocks and are carried in, blocks a piston would break are broken and their drops carried in, and anything else (obsidian, block entities) ends the column and shields what is behind it.
+- Items and pulled blocks that reach the mouth are stored as themselves (stone stays stone); a suspicious block gives up its buried loot first. Blocks are only pulled loose while there is room for them. Automation can extract from any block of the panel but not insert.
+- Living entities are drawn to the mouth and held there. Only creative flight resists the pull.
+- Costs `columns x range x 8` FE per tick while running (64 for a single block at full range, 2,160 for a 3x3) and nothing else: what the beam is pulling never changes the cost.
+- Range is set by the strength of the redstone signal, each size spreading the fifteen steps over its own reach: a single block gains a block of range on every odd strength (up to 8), a 2x2 has a block a step (up to 15), a 3x3 two (up to 30). The GUI is the size of a chest's and shows the inventory and energy, with nothing to set. It has no script commands or getters and no config: it is run entirely by redstone, and its numbers are fixed. Every ripped block passes a fake-player interaction check and a cancellable break event, and the `zps:tractor_beam_immune` block and entity-type tags exempt things outright.
+- Works across Valkyrien Skies ships and Sable sublevels. A panel on a ship pulls entities, items and blocks from its own ship, from the world and from other ships, keeps what it carries moving with the ship, and draws its beam on the ship. A panel in the world pulls blocks off any ship that passes through its beam. Blocks in other grids are found by casting rays down each column with the level's own raycast, which both mods extend across grids. Falling blocks do not collide while a beam carries them, so they cannot jam on the way in; collision returns a tick after the beam lets go.
+
 ### 1.4 Power Generation & Storage
 
 #### Coal Burner (`coal_burner`)

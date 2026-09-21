@@ -150,6 +150,11 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(PowerCellBlockEntity::new,
                             ModBlocks.POWER_CELL.get()).build(null));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<BeamCollectorBlockEntity>> BEAM_COLLECTOR =
+            BLOCK_ENTITIES.register("beam_collector",
+                    () -> BlockEntityType.Builder.of(BeamCollectorBlockEntity::new,
+                            ModBlocks.BEAM_COLLECTOR.get()).build(null));
+
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CoalBurnerBlockEntity>> COAL_BURNER =
             BLOCK_ENTITIES.register("coal_burner",
                     () -> BlockEntityType.Builder.of(CoalBurnerBlockEntity::new,

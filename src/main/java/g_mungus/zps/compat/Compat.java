@@ -1,5 +1,8 @@
 package g_mungus.zps.compat;
 
+import net.minecraft.world.phys.AABB;
+import org.jetbrains.annotations.Nullable;
+import java.util.List;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.compat.create.CreateCompat;
@@ -61,7 +64,7 @@ public class Compat {
         return pos;
     }
 
-    public static Vec3 toWorldPos(ServerLevel level, Vec3 pos) {
+    public static Vec3 toWorldPos(Level level, Vec3 pos) {
         if (isVSLoaded()) {
             return VSCompat.shipToWorld(level, pos);
         }
@@ -74,7 +77,7 @@ public class Compat {
     /// Projects pos (in the local grid space of the grid managing anchorPos) into world space.
     /// anchorPos resolves which ship/sublevel to use, so positions outside that grid's strict
     /// bounds still transform correctly. Identity when neither VS nor Sable is loaded.
-    public static Vec3 toWorldPos(ServerLevel level, BlockPos anchorPos, Vec3 pos) {
+    public static Vec3 toWorldPos(Level level, BlockPos anchorPos, Vec3 pos) {
         if (isVSLoaded()) {
             return VSCompat.shipToWorld(level, anchorPos, pos);
         }
@@ -96,6 +99,29 @@ public class Compat {
             return SableCompat.worldToSubLevel(level, anchorPos, worldPos);
         }
         return pos;
+    }
+
+    /// The moving grid (VS ship or Sable sublevel) that pos belongs to, or null when pos is in the
+    /// world proper or no grid mod is present.
+    public static @Nullable GridSpace gridOf(Level level, BlockPos pos) {
+        if (isVSLoaded()) {
+            return VSCompat.gridOf(level, pos);
+        }
+        if (isSableLoaded()) {
+            return SableCompat.gridOf(level, pos);
+        }
+        return null;
+    }
+
+    /// Every moving grid that reaches into worldBounds. Empty when no grid mod is present.
+    public static List<GridSpace> gridsTouching(Level level, AABB worldBounds) {
+        if (isVSLoaded()) {
+            return VSCompat.gridsTouching(level, worldBounds);
+        }
+        if (isSableLoaded()) {
+            return SableCompat.gridsTouching(level, worldBounds);
+        }
+        return List.of();
     }
 
     @SubscribeEvent

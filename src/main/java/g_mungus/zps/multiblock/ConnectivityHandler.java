@@ -123,6 +123,13 @@ public final class ConnectivityHandler {
             bestAmount = amount;
         }
 
+        // Nothing can form here, not even at width 1: every footprint is already spoken for (a structure at
+        // its maximum length refuses to be re-headed, which is every structure when the maximum length is 1).
+        // Without this, the zero scores walk bestWidth up to the maximum and the part is resized to nothing.
+        if (bestAmount < 1) {
+            return 0;
+        }
+
         if (!simulate) {
             int beWidth = be.getWidth();
             if (beWidth == bestWidth && beWidth * beWidth * be.getHeight() == bestAmount) {

@@ -23,6 +23,8 @@ import g_mungus.zps.client.reactor.ReactorWallOverlayVisual;
 import g_mungus.zps.client.reactor.ReactorWallOverlays;
 import g_mungus.zps.gas.ModParticles;
 import g_mungus.zps.client.screens.PowerCellScreen;
+import g_mungus.zps.client.screens.BeamCollectorScreen;
+import g_mungus.zps.client.tractor.TractorBeamRenderer;
 import g_mungus.zps.client.screens.RollingMillScreen;
 import g_mungus.zps.client.screens.SieveScreen;
 import g_mungus.zps.client.screens.VaporizerScreen;
@@ -103,6 +105,7 @@ public class ClientSetup {
     @SubscribeEvent
     public static void onRegisterShaders(RegisterShadersEvent event) throws IOException {
         ReactorGlowRenderer.onRegisterShaders(event);
+        TractorBeamRenderer.onRegisterShaders(event);
     }
 
     @SubscribeEvent
@@ -163,6 +166,7 @@ public class ClientSetup {
     public static void onRegisterMenuScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenus.COAL_BURNER.get(), CoalBurnerScreen::new);
         event.register(ModMenus.POWER_CELL.get(), PowerCellScreen::new);
+        event.register(ModMenus.BEAM_COLLECTOR.get(), BeamCollectorScreen::new);
         event.register(ModMenus.ROLLING_MILL.get(), RollingMillScreen::new);
         event.register(ModMenus.ASSEMBLER.get(), AssemblerScreen::new);
         event.register(ModMenus.SIEVE.get(), SieveScreen::new);
@@ -240,6 +244,7 @@ public class ClientSetup {
             NeoForge.EVENT_BUS.addListener(ClientReactors::onClientTick);
             NeoForge.EVENT_BUS.addListener(ClientReactors::onRenderLevelStage);
             NeoForge.EVENT_BUS.addListener(ReactorGlowPreviews::onRenderLevelStage);
+            NeoForge.EVENT_BUS.addListener(TractorBeamRenderer::onRenderLevelStage);
             NeoForge.EVENT_BUS.addListener(ReactorGlowPreviews::onLoggingOut);
             NeoForge.EVENT_BUS.addListener(ReactorGlowElement::onLoggingOut);
         });

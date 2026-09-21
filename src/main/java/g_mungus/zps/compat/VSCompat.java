@@ -10,7 +10,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3d;
 import org.joml.primitives.AABBd;
@@ -23,8 +25,12 @@ import org.valkyrienskies.core.api.ships.Ship;
 import org.valkyrienskies.core.api.ships.properties.ChunkClaim;
 import org.valkyrienskies.core.api.ships.properties.IShipActiveChunksSet;
 import org.valkyrienskies.core.api.ships.properties.ShipTransform;
+import org.valkyrienskies.core.api.util.functions.DoubleTernaryConsumer;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 import org.valkyrienskies.mod.common.util.VectorConversionsMCKt;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class VSCompat {
 
@@ -59,6 +65,66 @@ public class VSCompat {
         Vector3d local = ship.getTransform().getWorldToShip()
                 .transformPosition(VectorConversionsMCKt.toJOML(worldPos));
         return VectorConversionsMCKt.toMinecraft(local);
+    }
+
+    /// Only call after verifying that VS is loaded.
+    static @Nullable GridSpace gridOf(Level level, BlockPos pos) {
+        Ship ship = VSGameUtilsKt.getShipManagingPos(level, pos);
+        return ship == null ? null : new ShipSpace(ship);
+    }
+
+    /// Only call after verifying that VS is loaded.
+    /// VS's own "which ships are near here" query hands back the point as each nearby ship sees
+    /// it rather than the ships, so the ships are looked up again from those points.
+    static List<GridSpace> gridsTouching(Level level, AABB worldBounds) {
+        Vec3 centre = worldBounds.getCenter();
+        double radius = 0.5 * Math.max(worldBounds.getXsize(), Math.max(worldBounds.getYsize(), worldBounds.getZsize()));
+        List<GridSpace> grids = new ArrayList<>();
+        VSGameUtilsKt.transformToNearbyShipsAndWorld(level, centre.x, centre.y, centre.z, radius,
+                (DoubleTernaryConsumer) (x, y, z) -> {
+                    Ship ship = VSGameUtilsKt.getShipManagingPos(level, x, y, z);
+                    if (ship == null || !intersects(ship.getWorldAABB(), worldBounds)) {
+                        return;
+                    }
+                    ShipSpace space = new ShipSpace(ship);
+                    if (grids.stream().noneMatch(space::isSameGrid)) {
+                        grids.add(space);
+                    }
+                });
+        return grids;
+    }
+
+    private static boolean intersects(AABBdc ship, AABB bounds) {
+        return ship.minX() <= bounds.maxX && ship.maxX() >= bounds.minX
+                && ship.minY() <= bounds.maxY && ship.maxY() >= bounds.minY
+                && ship.minZ() <= bounds.maxZ && ship.maxZ() >= bounds.minZ;
+    }
+
+    private record ShipSpace(Ship ship) implements GridSpace {
+        @Override
+        public Vec3 toLocal(Vec3 world) {
+            return VectorConversionsMCKt.toMinecraft(ship.getTransform().getWorldToShip()
+                    .transformPosition(VectorConversionsMCKt.toJOML(world)));
+        }
+
+        @Override
+        public Vec3 toWorld(Vec3 local) {
+            return VectorConversionsMCKt.toMinecraft(ship.getTransform().getShipToWorld()
+                    .transformPosition(VectorConversionsMCKt.toJOML(local)));
+        }
+
+        /// Linear plus angular, both of which VS gives per second.
+        @Override
+        public Vec3 velocityAt(Vec3 world) {
+            Vector3d arm = VectorConversionsMCKt.toJOML(world).sub(ship.getTransform().getPositionInWorld());
+            Vector3d velocity = new Vector3d(ship.getAngularVelocity()).cross(arm).add(ship.getVelocity());
+            return VectorConversionsMCKt.toMinecraft(velocity.div(20.0));
+        }
+
+        @Override
+        public boolean isSameGrid(GridSpace other) {
+            return other instanceof ShipSpace(Ship otherShip) && otherShip.getId() == ship.getId();
+        }
     }
 
     static void registerScriptCommands(RegisterScriptCommandsEvent event) {

@@ -1,5 +1,6 @@
 package g_mungus.zps.recipe;
 
+import net.minecraft.advancements.critereon.StatePropertiesPredicate;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.NonNullList;
@@ -14,6 +15,7 @@ import net.minecraft.world.level.block.Block;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * An "impact" recipe: the Impact Piston slams its rod into the block below and, if that block is in
@@ -23,18 +25,33 @@ import java.util.List;
  * items in slots, so the item-oriented half of {@link Recipe} is inert. Stroke time and power draw
  * are fixed properties of the machine, not of the recipe. Used for brick -> cracked brick and
  * cobblestone -> gravel transforms.
+ *
+ * <p>{@link #properties} optionally narrows the match to particular block states, in the same
+ * format loot tables use, so a recipe can ask for e.g. a composter at {@code level} 8 rather than
+ * any composter.
  */
 public class ImpactRecipe implements Recipe<ImpactInput> {
     private final HolderSet<Block> ingredient;
+    private final Optional<StatePropertiesPredicate> properties;
     private final List<ImpactResult> results;
 
     public ImpactRecipe(HolderSet<Block> ingredient, List<ImpactResult> results) {
+        this(ingredient, Optional.empty(), results);
+    }
+
+    public ImpactRecipe(HolderSet<Block> ingredient, Optional<StatePropertiesPredicate> properties, List<ImpactResult> results) {
         this.ingredient = ingredient;
+        this.properties = properties;
         this.results = List.copyOf(results);
     }
 
     public HolderSet<Block> ingredient() {
         return ingredient;
+    }
+
+    /** State properties the struck block must have, on top of being in {@link #ingredient}. */
+    public Optional<StatePropertiesPredicate> properties() {
+        return properties;
     }
 
     public List<ImpactResult> results() {
@@ -43,7 +60,8 @@ public class ImpactRecipe implements Recipe<ImpactInput> {
 
     @Override
     public boolean matches(ImpactInput input, @NotNull Level level) {
-        return ingredient.contains(input.state().getBlockHolder());
+        return ingredient.contains(input.state().getBlockHolder())
+                && properties.map(predicate -> predicate.matches(input.state())).orElse(true);
     }
 
     /** Picks one outcome in proportion to the entry weights. */

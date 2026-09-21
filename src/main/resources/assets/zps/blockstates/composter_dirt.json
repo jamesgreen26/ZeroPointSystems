@@ -1,0 +1,6 @@
+{
+  "multipart": [
+    { "apply": { "model": "minecraft:block/composter" } },
+    { "apply": { "model": "zps:block/composter_dirt_contents" } }
+  ]
+}

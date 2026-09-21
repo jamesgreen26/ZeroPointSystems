@@ -237,6 +237,10 @@ public class ModBlocks {
                     // which would otherwise always be pitch black.
                     .noOcclusion()));
 
+    /** World-only: made by striking a full composter with the Impact Piston. Has no item on purpose. */
+    public static final DeferredBlock<Block> COMPOSTER_DIRT = BLOCKS.register("composter_dirt",
+            () -> new ComposterDirtBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.COMPOSTER)));
+
     public static final DeferredBlock<Block> VAPORIZER = BLOCKS.register("vaporizer",
             () -> new VaporizerBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(3.5f)

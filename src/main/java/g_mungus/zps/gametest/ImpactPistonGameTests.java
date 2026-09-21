@@ -28,6 +28,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.ComposterBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BrushableBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -109,6 +110,71 @@ public class ImpactPistonGameTests {
                     }
                 })
                 .thenSucceed();
+    }
+
+    /** A full composter is packed into a dirt-filled one. */
+    @GameTest(template = TEMPLATE)
+    public static void fullComposter_becomesDirtComposter(GameTestHelper helper) {
+        helper.setBlock(TARGET_POS, Blocks.COMPOSTER.defaultBlockState().setValue(ComposterBlock.LEVEL, ComposterBlock.READY));
+        ImpactPistonBlockEntity piston = placePiston(helper);
+        charge(piston);
+        helper.setBlock(POWER_POS, Blocks.REDSTONE_BLOCK);
+
+        helper.startSequence()
+                .thenIdle(STROKE_TICKS)
+                .thenExecute(() -> assertTarget(helper, ModBlocks.COMPOSTER_DIRT.get()))
+                .thenSucceed();
+    }
+
+    /** The composter recipe is gated on the fill level: a part-filled composter is not a recipe at all. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void partFilledComposter_isLeftAlone(GameTestHelper helper) {
+        BlockState partFilled = Blocks.COMPOSTER.defaultBlockState().setValue(ComposterBlock.LEVEL, 4);
+        helper.setBlock(TARGET_POS, partFilled);
+        ImpactPistonBlockEntity piston = placePiston(helper);
+        charge(piston);
+        int energyBefore = piston.getEnergyStored();
+        helper.setBlock(POWER_POS, Blocks.REDSTONE_BLOCK);
+
+        helper.startSequence()
+                .thenIdle(IDLE_OBSERVATION_TICKS)
+                .thenExecute(() -> {
+                    if (helper.getBlockState(TARGET_POS) != partFilled) {
+                        helper.fail("Expected the part-filled composter untouched, got " + helper.getBlockState(TARGET_POS), TARGET_POS);
+                    }
+                    if (piston.getEnergyStored() != energyBefore) {
+                        helper.fail("Piston drew FE over a composter that is not full; expected none");
+                    }
+                })
+                .thenSucceed();
+    }
+
+    /** Using a dirt-filled composter pops out one dirt and leaves an empty vanilla composter. */
+    @GameTest(template = TEMPLATE)
+    public static void dirtComposter_popsDirtWhenUsed(GameTestHelper helper) {
+        helper.setBlock(TARGET_POS, ModBlocks.COMPOSTER_DIRT.get());
+        helper.useBlock(TARGET_POS);
+
+        BlockState after = helper.getBlockState(TARGET_POS);
+        if (after != Blocks.COMPOSTER.defaultBlockState()) {
+            helper.fail("Expected an empty composter after use, got " + after, TARGET_POS);
+        }
+        helper.assertItemEntityCountIs(Items.DIRT, TARGET_POS.above(), 1.0, 1);
+        helper.succeed();
+    }
+
+    /** With no item of its own, a broken dirt-filled composter gives back its two halves. */
+    @GameTest(template = TEMPLATE)
+    public static void dirtComposter_dropsComposterAndDirt(GameTestHelper helper) {
+        helper.setBlock(TARGET_POS, ModBlocks.COMPOSTER_DIRT.get());
+        List<ItemStack> drops = Block.getDrops(helper.getBlockState(TARGET_POS), helper.getLevel(),
+                helper.absolutePos(TARGET_POS), null);
+        boolean composter = drops.stream().anyMatch(stack -> stack.is(Items.COMPOSTER) && stack.getCount() == 1);
+        boolean dirt = drops.stream().anyMatch(stack -> stack.is(Items.DIRT) && stack.getCount() == 1);
+        if (drops.size() != 2 || !composter || !dirt) {
+            helper.fail("Expected 1x composter and 1x dirt, got " + drops);
+        }
+        helper.succeed();
     }
 
     /** What the cobblestone recipe may bury: copper, lithium and iron nuggets, nothing else. */

@@ -75,6 +75,30 @@ public class RoboticArmGameTests {
         });
     }
 
+    /**
+     * A dirt-filled composter has no block entity, so its item handler comes from the bare block.
+     * The arm takes the one dirt and leaves an empty composter, as a hopper would.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void takeItems_dirtComposter_takesTheDirt(GameTestHelper helper) {
+        RoboticArmBlockEntity arm = placeLoadedArm(helper);
+        if (arm == null) return;
+        arm.getHeldStackAccess().setItem(0, ItemStack.EMPTY);
+        helper.setBlock(TARGET_POS, ModBlocks.COMPOSTER_DIRT.get());
+
+        if (!arm.RetrieveItemsFrom(helper.absolutePos(TARGET_POS))) {
+            helper.fail("Robotic arm failed to start retrieve");
+        }
+
+        helper.runAfterDelay(RoboticArmBlockEntity.MOVE_TIME_TICKS + 1, () -> {
+            assertStack(helper, arm.getHeldStack(), Items.DIRT.getDefaultInstance(), 1, "arm held stack");
+            if (helper.getBlockState(TARGET_POS) != Blocks.COMPOSTER.defaultBlockState()) {
+                helper.fail("Expected an empty composter once the dirt was taken, got " + helper.getBlockState(TARGET_POS), TARGET_POS);
+            }
+            helper.succeed();
+        });
+    }
+
     private static RoboticArmBlockEntity placeLoadedArm(GameTestHelper helper) {
         helper.setBlock(ARM_POS, ModBlocks.ROBOTIC_ARM.get());
 

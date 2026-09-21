@@ -466,7 +466,8 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
     private @Nullable IItemHandler resolveTransferItemHandler(BlockPos targetPos, Direction side) {
         if (level == null) return null;
         BlockEntity blockEntity = level.getBlockEntity(targetPos);
-        if (blockEntity == null) return null;
+        if (blockEntity == null) return level.getCapability(Capabilities.ItemHandler.BLOCK, targetPos, side);
+
         return level.getCapability(Capabilities.ItemHandler.BLOCK, targetPos, blockEntity.getBlockState(), blockEntity, side);
     }
 

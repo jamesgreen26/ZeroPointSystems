@@ -1,0 +1,10 @@
+{
+  "type": "zps:impact",
+  "ingredient": "minecraft:composter",
+  "properties": {
+    "level": "8"
+  },
+  "results": [
+    { "block": "zps:composter_dirt" }
+  ]
+}

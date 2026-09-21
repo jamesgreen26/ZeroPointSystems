@@ -1,5 +1,6 @@
 package g_mungus.zps;
 
+import g_mungus.zps.block.ComposterDirtBlock;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.PowderSnowCauldronScoop;
 import g_mungus.zps.blockentity.AssemblerBlockEntity;
@@ -13,7 +14,9 @@ import g_mungus.zps.blockentity.RollingMillBlockEntity;
 import g_mungus.zps.blockentity.gas.VaporizerBlockEntity;
 import g_mungus.zps.blockentity.SieveBlockEntity;
 import g_mungus.zps.blockentity.reactor.HeatExchangerBlockEntity;
+import net.minecraft.world.entity.ai.village.poi.PoiTypes;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.neoforged.neoforge.common.world.poi.ExtendPoiTypesEvent;
 import net.neoforged.neoforge.event.BlockEntityTypeAddBlocksEvent;
 import g_mungus.zps.client.ClientSetup;
 import g_mungus.zps.client.ponder.ZPSPonderPlugin;
@@ -22,6 +25,7 @@ import g_mungus.zps.compat.Compat;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.entity.ModEntities;
 import g_mungus.zps.gametest.AssemblerGameTests;
+import g_mungus.zps.gametest.ComposterDirtGameTests;
 import g_mungus.zps.gametest.VaporizerGameTests;
 import g_mungus.zps.gametest.BrushableBlockGameTests;
 import g_mungus.zps.gametest.ImpactPistonGameTests;
@@ -58,6 +62,9 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import net.neoforged.neoforge.items.wrapper.EmptyItemHandler;
+import net.neoforged.neoforge.items.wrapper.ForwardingItemHandler;
+import net.neoforged.neoforge.items.wrapper.SidedInvWrapper;
 import net.neoforged.neoforge.event.RegisterGameTestsEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,6 +96,7 @@ public final class ZPSMod {
         modEventBus.addListener(ZPSMod::registerGameTests);
         modEventBus.addListener(ZPSMod::registerCapabilities);
         modEventBus.addListener(ZPSMod::addBrushableBlocks);
+        modEventBus.addListener(ZPSMod::extendPoiTypes);
         modEventBus.addListener(ZPSMod::commonSetup);
 
         if (dist == Dist.CLIENT) {
@@ -112,6 +120,7 @@ public final class ZPSMod {
         event.register(RollingMillGameTests.class);
         event.register(AssemblerGameTests.class);
         event.register(ImpactPistonGameTests.class);
+        event.register(ComposterDirtGameTests.class);
         event.register(BrushableBlockGameTests.class);
         event.register(GasEdgeGameTests.class);
         event.register(DuctGameTests.class);
@@ -139,7 +148,22 @@ public final class ZPSMod {
         event.modify(BlockEntityType.BRUSHABLE_BLOCK, ModBlocks.SUSPICIOUS_RED_SAND.get());
     }
 
+    /**
+     * A dirt-filled composter is still a farmer's workstation. Sharing the vanilla composter's PoI
+     * type also means the swap between the two never touches the PoI record, so a farmer keeps its
+     * claim on the job site, and with it its profession and trades, across both conversions.
+     */
+    private static void extendPoiTypes(ExtendPoiTypesEvent event) {
+        event.addBlockToPoi(PoiTypes.FARMER, ModBlocks.COMPOSTER_DIRT.get());
+    }
+
     private static void registerCapabilities(RegisterCapabilitiesEvent event) {
+        // Same arrangement NeoForge gives the vanilla composter: the state is re-read on every access,
+        // so a handler someone is still holding goes inert once the dirt has been taken another way.
+        event.registerBlock(Capabilities.ItemHandler.BLOCK, (level, pos, state, blockEntity, side) ->
+                new ForwardingItemHandler(() -> level.getBlockState(pos).getBlock() instanceof ComposterDirtBlock composter
+                        ? new SidedInvWrapper(composter.getContainer(level.getBlockState(pos), level, pos), side)
+                        : EmptyItemHandler.INSTANCE), ModBlocks.COMPOSTER_DIRT.get());
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.POWER_CELL.get(), PowerCellBlockEntity::getEnergyStorage);
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.POWER_CELL.get(), PowerCellBlockEntity::getItemHandler);
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.CREATIVE_POWER_CELL.get(), CreativePowerCellBlockEntity::getEnergyStorage);

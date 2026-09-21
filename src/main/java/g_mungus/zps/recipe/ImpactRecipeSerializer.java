@@ -4,6 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.advancements.critereon.StatePropertiesPredicate;
 import net.minecraft.core.RegistryCodecs;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -24,11 +25,14 @@ public class ImpactRecipeSerializer implements RecipeSerializer<ImpactRecipe> {
     private static final MapCodec<ImpactRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             // Accepts a block id, a "#block_tag", or a list of either.
             RegistryCodecs.homogeneousList(Registries.BLOCK).fieldOf("ingredient").forGetter(ImpactRecipe::ingredient),
+            // Same shape as a loot table's block_state_property condition: {"level": "8"}.
+            StatePropertiesPredicate.CODEC.optionalFieldOf("properties").forGetter(ImpactRecipe::properties),
             RESULTS_CODEC.fieldOf("results").forGetter(ImpactRecipe::results)
     ).apply(instance, ImpactRecipe::new));
 
     private static final StreamCodec<RegistryFriendlyByteBuf, ImpactRecipe> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.holderSet(Registries.BLOCK), ImpactRecipe::ingredient,
+            StatePropertiesPredicate.STREAM_CODEC.apply(ByteBufCodecs::optional), ImpactRecipe::properties,
             ImpactResult.STREAM_CODEC.apply(ByteBufCodecs.list()), ImpactRecipe::results,
             ImpactRecipe::new);
 

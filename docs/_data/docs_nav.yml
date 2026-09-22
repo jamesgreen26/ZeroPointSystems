@@ -1,24 +1,32 @@
-- key: index
-  title: Script Commands
-  url: /
 - key: basics
   title: Basics
+  group: Data Networks
   url: /basics.html
 - key: collisions
   title: Collisions
+  group: Data Networks
   url: /collisions.html
+- key: index
+  title: Syntax
+  group: Script Language
+  url: /
 - key: executors
   title: Executors
+  group: Script Language
   url: /executors.html
 - key: getters
   title: Getters
+  group: Script Language
   url: /getters.html
 - key: mappers
   title: Mappers
+  group: Script Language
   url: /mappers.html
 - key: create
-  title: Create Integration
+  title: Create
+  group: Integrations
   url: /create.html
 - key: sable
-  title: Sable Integration
+  title: Sable
+  group: Integrations
   url: /sable.html

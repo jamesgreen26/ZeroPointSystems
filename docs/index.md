@@ -1,4 +1,4 @@
-# Script Commands
+# Syntax
 
 The Script Terminal lets you automate blocks using a simple, line-based scripting language.
 

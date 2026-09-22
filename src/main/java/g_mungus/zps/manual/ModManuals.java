@@ -13,21 +13,25 @@ public final class ModManuals {
     public static final List<ManualSection> SCRIPT_COMMANDS_SECTIONS = buildScriptCommandsSections();
 
     private static List<ManualSection> buildScriptCommandsSections() {
+        final Component networks = Component.translatable("zps.manual.group.networks");
+        final Component language = Component.translatable("zps.manual.group.language");
+        final Component integrations = Component.translatable("zps.manual.group.integrations");
+
         final List<ManualSection> sections = new ArrayList<>();
-        sections.add(new ManualSection("home", "index.md", Component.translatable("zps.manual.home")));
-        sections.add(new ManualSection("basics", "basics.md", Component.translatable("zps.manual.basics")));
-        sections.add(new ManualSection("collisions", "collisions.md", Component.translatable("zps.manual.collisions")));
-        sections.add(new ManualSection("executors", "executors.md", Component.translatable("zps.manual.executors")));
-        sections.add(new ManualSection("getters", "getters.md", Component.translatable("zps.manual.getters")));
-        sections.add(new ManualSection("mappers", "mappers.md", Component.translatable("zps.manual.mappers")));
+        sections.add(new ManualSection("basics", "basics.md", Component.translatable("zps.manual.basics"), networks));
+        sections.add(new ManualSection("collisions", "collisions.md", Component.translatable("zps.manual.collisions"), networks));
+        sections.add(new ManualSection("syntax", "index.md", Component.translatable("zps.manual.syntax"), language));
+        sections.add(new ManualSection("executors", "executors.md", Component.translatable("zps.manual.executors"), language));
+        sections.add(new ManualSection("getters", "getters.md", Component.translatable("zps.manual.getters"), language));
+        sections.add(new ManualSection("mappers", "mappers.md", Component.translatable("zps.manual.mappers"), language));
         if (Compat.isCreateLoaded()) {
-            sections.add(new ManualSection("create", "create.md", Component.translatable("zps.manual.create")));
+            sections.add(new ManualSection("create", "create.md", Component.translatable("zps.manual.create"), integrations));
         }
         if (Compat.isSableLoaded()) {
-            sections.add(new ManualSection("sable", "sable.md", Component.translatable("zps.manual.sable")));
+            sections.add(new ManualSection("sable", "sable.md", Component.translatable("zps.manual.sable"), integrations));
         }
         if (Compat.isVSLoaded()) {
-            sections.add(new ManualSection("valkyrien_skies", "valkyrien_skies.md", Component.translatable("zps.manual.valkyrien_skies")));
+            sections.add(new ManualSection("valkyrien_skies", "valkyrien_skies.md", Component.translatable("zps.manual.valkyrien_skies"), integrations));
         }
         return List.copyOf(sections);
     }

@@ -44,8 +44,11 @@ public class ManualScreen extends Screen {
     private static final int SCROLLBAR_TRACK = 0x55606060;
     private static final int BODY_TEXT = 0xFFFFFF;
     private static final int IMAGE_PADDING = 4;
-    private static final int TAB_WIDTH = 75;
-    private static final int TAB_AREA_WIDTH = 95;
+    private static final int TAB_WIDTH = 120;
+    private static final int TAB_PITCH = 26;
+    private static final int TAB_GROUP_HEADER_HEIGHT = 14;
+    private static final int TAB_GROUP_GAP = 8;
+    private static final int TAB_AREA_WIDTH = 140;
     private static final int SCROLLBAR_WIDTH = 8;
 
     private final List<ManualSection> sections;
@@ -53,6 +56,7 @@ public class ManualScreen extends Screen {
     private final Screen previousScreen;
 
     private final List<TabButton> tabButtons = new ArrayList<>();
+    private final List<TabGroupHeader> tabGroupHeaders = new ArrayList<>();
     private Button closeButton;
 
     private ManualDocument currentDocument = new ManualDocument(List.of());
@@ -83,20 +87,28 @@ public class ManualScreen extends Screen {
     protected void rebuildWidgets() {
         this.clearWidgets();
         this.tabButtons.clear();
+        this.tabGroupHeaders.clear();
 
         final int frameLeft = this.frameLeft();
         final int frameTop = this.frameTop();
         final int tabAreaTop = frameTop + 34;
         final int tabAreaHeight = this.tabAreaHeight();
-        final int totalTabHeight = this.sections.size() * 26;
-        this.maxTabScroll = Math.max(0, totalTabHeight - tabAreaHeight);
+        this.maxTabScroll = Math.max(0, this.totalTabHeight() - tabAreaHeight);
         this.tabScroll = Math.max(0, Math.min(this.tabScroll, this.maxTabScroll));
 
+        int offset = 0;
+        Component previousGroup = null;
         for (int index = 0; index < this.sections.size(); index++) {
-            final int y = tabAreaTop + index * 26 - this.tabScroll;
-            final TabButton button = new TabButton(frameLeft + 4, y, TAB_WIDTH, 22, this.sections.get(index), index);
+            final ManualSection section = this.sections.get(index);
+            if (startsNewGroup(section, previousGroup)) {
+                offset += groupHeaderHeight(previousGroup);
+                this.tabGroupHeaders.add(new TabGroupHeader(section.group(), tabAreaTop + offset - this.tabScroll - TAB_GROUP_HEADER_HEIGHT));
+                previousGroup = section.group();
+            }
+            final TabButton button = new TabButton(frameLeft + 4, tabAreaTop + offset - this.tabScroll, TAB_WIDTH, 22, section, index);
             this.tabButtons.add(button);
             this.addRenderableWidget(button);
+            offset += TAB_PITCH;
         }
 
         this.closeButton = this.addRenderableWidget(Button.builder(CommonComponents.EMPTY, button -> this.onClose())
@@ -136,23 +148,45 @@ public class ManualScreen extends Screen {
     }
 
     private int frameLeft() {
-        return Math.max(16, this.width / 2 - 210);
+        return 0;
     }
 
     private int frameTop() {
-        return Math.max(12, (this.height - this.frameHeight()) / 2);
+        return 0;
     }
 
     private int frameWidth() {
-        return Math.min(this.width - 32, 420);
+        return this.width;
     }
 
     private int frameHeight() {
-        return Math.min(this.height - 24, 320);
+        return this.height;
     }
 
     private int tabAreaHeight() {
         return this.frameHeight() - 50;
+    }
+
+    private int totalTabHeight() {
+        int total = 0;
+        Component previousGroup = null;
+        for (final ManualSection section : this.sections) {
+            if (startsNewGroup(section, previousGroup)) {
+                total += groupHeaderHeight(previousGroup);
+                previousGroup = section.group();
+            }
+            total += TAB_PITCH;
+        }
+        return total;
+    }
+
+    private static boolean startsNewGroup(final ManualSection section, final Component previousGroup) {
+        return section.group() != null && !section.group().equals(previousGroup);
+    }
+
+    /** Height taken by a group header row, including the gap that separates it from the group above. */
+    private static int groupHeaderHeight(final Component previousGroup) {
+        return TAB_GROUP_HEADER_HEIGHT + (previousGroup == null ? 0 : TAB_GROUP_GAP);
     }
 
     private int contentLeft() {
@@ -284,6 +318,7 @@ public class ManualScreen extends Screen {
         graphics.vLine(this.contentLeft() - 12, frameTop + 6, frameBottom - 34, PANEL_BORDER);
         graphics.drawCenteredString(this.font, TITLE, this.width / 2, frameTop + 10, TOOLTIP_HIGHLIGHT);
 
+        this.renderTabGroupHeaders(graphics);
         this.renderContent(graphics, mouseX, mouseY);
         super.render(graphics, mouseX, mouseY, partialTick);
         PonderGuiTextures.ICON_DISABLE.render(graphics, this.closeButton.getX() + 1, this.closeButton.getY() + 1);
@@ -293,6 +328,20 @@ public class ManualScreen extends Screen {
             if (style != null) {
                 graphics.renderComponentHoverEffect(this.font, style, mouseX, mouseY);
             }
+        }
+    }
+
+    private void renderTabGroupHeaders(final GuiGraphics graphics) {
+        final int tabAreaTop = this.frameTop() + 34;
+        final int tabAreaBottom = tabAreaTop + this.tabAreaHeight();
+        final int left = this.frameLeft() + 6;
+        for (final TabGroupHeader header : this.tabGroupHeaders) {
+            if (header.y() + TAB_GROUP_HEADER_HEIGHT < tabAreaTop || header.y() > tabAreaBottom) {
+                continue;
+            }
+            final String label = header.title().getString().toUpperCase(Locale.ROOT);
+            final String clipped = this.font.plainSubstrByWidth(label, TAB_WIDTH - 4);
+            graphics.drawString(this.font, clipped, left, header.y() + 2, MUTED_TEXT);
         }
     }
 
@@ -610,6 +659,9 @@ public class ManualScreen extends Screen {
         private int handleBottom() {
             return this.handleTop + this.handleHeight;
         }
+    }
+
+    private record TabGroupHeader(Component title, int y) {
     }
 
     private final class TabButton extends Button {

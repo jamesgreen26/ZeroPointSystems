@@ -36,7 +36,6 @@ public final class ManualContentLayout {
     private static final Map<String, ImageSize> TEXTURE_SIZE_CACHE = new HashMap<>();
     private static final int TEXT_BASE = 0x4C99C9;
     private static final int TEXT_HIGHLIGHT = 0x79F1A3;
-    private static final int TEXT_MUTED = 0xA6B8C5;
 
     private final List<Entry> entries;
     private final int totalHeight;
@@ -62,8 +61,7 @@ public final class ManualContentLayout {
             if (block instanceof ManualDocument.HeadingBlock heading) {
                 final MutableComponent text = buildInlineComponent(heading.inlines());
                 final Style style = switch (heading.level()) {
-                    case 1 -> Style.EMPTY.withBold(true).withColor(TEXT_HIGHLIGHT);
-                    case 2 -> Style.EMPTY.withBold(true).withColor(TEXT_MUTED);
+                    case 1, 2 -> Style.EMPTY.withBold(true).withColor(TEXT_HIGHLIGHT);
                     default -> Style.EMPTY.withBold(true).withColor(TEXT_BASE);
                 };
                 final int scale = switch (heading.level()) {

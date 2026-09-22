@@ -1,5 +1,6 @@
 package g_mungus.zps.commands.content;
 
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -788,6 +789,34 @@ public class ZPSScriptMappers {
                 ResourceLocation.parse("zps:string")
         ));
 
+        // Logical AND for boolean
+        event.register(new ScriptMapper2<>(
+                "&&",
+                Boolean.class,
+                Boolean.class,
+                ResourceLocation.parse("zps:boolean"),
+                ResourceLocation.parse("zps:boolean"),
+                "boolean",
+                (value, context) -> value && context.argumentValue(),
+                BoolArgumentType.bool(),
+                Boolean.class,
+                ResourceLocation.parse("zps:boolean")
+        ));
+
+        // Logical OR for boolean
+        event.register(new ScriptMapper2<>(
+                "||",
+                Boolean.class,
+                Boolean.class,
+                ResourceLocation.parse("zps:boolean"),
+                ResourceLocation.parse("zps:boolean"),
+                "boolean",
+                (value, context) -> value || context.argumentValue(),
+                BoolArgumentType.bool(),
+                Boolean.class,
+                ResourceLocation.parse("zps:boolean")
+        ));
+
         // Equality check for dimension
         event.register(new ScriptMapper2<>(
                 "==",
@@ -833,6 +862,16 @@ public class ZPSScriptMappers {
                 ResourceLocation.parse("zps:double"),
                 ResourceLocation.parse("zps:string"),
                 (value, ctx) -> formatDouble(value)
+        ));
+
+        // as_string for boolean ("true" / "false")
+        event.register(new ScriptMapper<>(
+                "as_string",
+                Boolean.class,
+                String.class,
+                ResourceLocation.parse("zps:boolean"),
+                ResourceLocation.parse("zps:string"),
+                (value, ctx) -> value.toString()
         ));
 
         // as_string for block_pos ("x y z")
@@ -905,6 +944,16 @@ public class ZPSScriptMappers {
                 (value, ctx) -> Double.parseDouble(value)
         ));
 
+        // string as_boolean (accepts "true" / "false", case-insensitive)
+        event.register(new ScriptMapper<>(
+                "as_boolean",
+                String.class,
+                Boolean.class,
+                ResourceLocation.parse("zps:string"),
+                ResourceLocation.parse("zps:boolean"),
+                (value, ctx) -> parseBoolean(value)
+        ));
+
         // string as_block_pos (expects "x y z" format)
         event.register(new ScriptMapper<>(
                 "as_block_pos",
@@ -940,5 +989,16 @@ public class ZPSScriptMappers {
 
     private static String[] splitEscapedNewlines(String value) {
         return ESCAPED_NEWLINE_PATTERN.split(value, -1);
+    }
+
+    private static boolean parseBoolean(String value) {
+        String trimmed = value.trim();
+        if (trimmed.equalsIgnoreCase("true")) {
+            return true;
+        }
+        if (trimmed.equalsIgnoreCase("false")) {
+            return false;
+        }
+        throw new IllegalArgumentException("Expected \"true\" or \"false\", got \"" + value + "\"");
     }
 }

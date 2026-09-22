@@ -434,6 +434,106 @@ public class ScriptCommandGameTests {
     }
 
     // -------------------------------------------------------------------------
+    // Boolean operators and conversions
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code &&} should AND the current boolean with a literal or a
+     * {@code value_of(...)} boolean argument.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void valueOf_booleanAnd_combinesBothSides(GameTestHelper helper) {
+        BlockPos absPos = helper.absolutePos(new BlockPos(4, 1, 3));
+
+        Boolean both = evalValueOf(helper, absPos,
+                "pos x == " + absPos.getX() + " && value_of(pos z == " + absPos.getZ() + ")", BOOLEAN_KEY);
+        if (!Boolean.TRUE.equals(both)) {
+            helper.fail("true && value_of(true): expected true, got " + both);
+            return;
+        }
+
+        Boolean literalFalse = evalValueOf(helper, absPos, "pos x == " + absPos.getX() + " && false", BOOLEAN_KEY);
+        if (!Boolean.FALSE.equals(literalFalse)) {
+            helper.fail("true && false: expected false, got " + literalFalse);
+            return;
+        }
+        helper.succeed();
+    }
+
+    /**
+     * {@code ||} should OR the current boolean with a literal or a
+     * {@code value_of(...)} boolean argument.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void valueOf_booleanOr_combinesBothSides(GameTestHelper helper) {
+        BlockPos absPos = helper.absolutePos(new BlockPos(4, 1, 3));
+
+        Boolean either = evalValueOf(helper, absPos,
+                "pos x == " + (absPos.getX() + 1) + " || value_of(pos z == " + absPos.getZ() + ")", BOOLEAN_KEY);
+        if (!Boolean.TRUE.equals(either)) {
+            helper.fail("false || value_of(true): expected true, got " + either);
+            return;
+        }
+
+        Boolean neither = evalValueOf(helper, absPos, "pos x == " + (absPos.getX() + 1) + " || false", BOOLEAN_KEY);
+        if (!Boolean.FALSE.equals(neither)) {
+            helper.fail("false || false: expected false, got " + neither);
+            return;
+        }
+        helper.succeed();
+    }
+
+    /**
+     * {@code boolean as_string} should yield {@code "true"} / {@code "false"},
+     * and {@code string as_boolean} should parse them back (case-insensitively).
+     */
+    @GameTest(template = TEMPLATE)
+    public static void valueOf_booleanStringRoundTrip(GameTestHelper helper) {
+        BlockPos absPos = helper.absolutePos(new BlockPos(4, 1, 3));
+
+        String asString = evalValueOf(helper, absPos, "pos x == " + absPos.getX() + " as_string", STRING_KEY);
+        if (!"true".equals(asString)) {
+            helper.fail("true as_string: expected \"true\", got " + asString);
+            return;
+        }
+
+        Boolean roundTrip = evalValueOf(helper, absPos, "pos x == " + (absPos.getX() + 1) + " as_string as_boolean", BOOLEAN_KEY);
+        if (!Boolean.FALSE.equals(roundTrip)) {
+            helper.fail("false as_string as_boolean: expected false, got " + roundTrip);
+            return;
+        }
+
+        Boolean upperCase = evalValueOf(helper, absPos, "pos as_string <+ \"TRUE\\\\n\" get_line 1 as_boolean", BOOLEAN_KEY);
+        if (!Boolean.TRUE.equals(upperCase)) {
+            helper.fail("\"TRUE\" as_boolean: expected true, got " + upperCase);
+            return;
+        }
+        helper.succeed();
+    }
+
+    /**
+     * {@code if <cond> && value_of(<cond>) ... else ...} should pick the branch
+     * from the combined condition when run as a real script command.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_ifWithAnd_usesCombinedCondition(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+
+        int result = runScriptCommand(
+                helper,
+                absPos,
+                "if pos x == " + absPos.getX() + " && value_of(pos z == " + (absPos.getZ() + 1) + ") set_redstone 3 else set_redstone 12"
+        );
+        if (result != 1) {
+            helper.fail("zps_script if && returned " + result + " instead of 1");
+            return;
+        }
+
+        assertStoredRedstone(helper, absPos, 12, "zps_script if &&");
+        helper.succeed();
+    }
+
+    // -------------------------------------------------------------------------
     // Bitwise operators (regression for & and |)
     // -------------------------------------------------------------------------
 

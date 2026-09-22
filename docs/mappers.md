@@ -151,7 +151,7 @@ Produced by: `pos x/y/z` (Vec Pos), `vec_dir length/dot`, `vec_box volume`, `int
 
 ## String
 
-Produced by: `read_page`, `pos as_string`, `dimension as_string`, `int as_string`, `double as_string`, `ship slug`, `sublevel name`, `sublevel id`
+Produced by: `read_page`, `pos as_string`, `dimension as_string`, `int as_string`, `double as_string`, `boolean as_string`, `ship slug`, `sublevel name`, `sublevel id`
 
 | Mapper | Output | Description |
 |--------|--------|-------------|
@@ -165,6 +165,7 @@ Produced by: `read_page`, `pos as_string`, `dimension as_string`, `int as_string
 | `as_int` | Int | Parse as integer |
 | `as_double` | Double | Parse as double |
 | `as_block_pos` | BlockPos | Parse as `"x y z"` format |
+| `as_boolean` | Boolean | Parse `"true"` / `"false"` (case-insensitive) |
 | `as_dimension` | Dimension | Treat as a dimension key |
 
 Examples:
@@ -176,6 +177,27 @@ write_page value_of(pos as_string <+ "Pos: ")
 set_redstone value_of(read_page lines)
 write_page value_of(read_page remove_line 1)
 write_page value_of(read_page split ", ")
+```
+
+---
+
+## Boolean
+
+Produced by: any `==`, `>`, `<` comparison, `string as_boolean`
+
+| Mapper | Output | Description |
+|--------|--------|-------------|
+| `&& <boolean>` | Boolean | Logical AND |
+| `\|\| <boolean>` | Boolean | Logical OR |
+| `as_string` | String | `"true"` or `"false"` |
+
+Examples:
+
+```
+if pos x > 0 && value_of(pos z > 0) set_redstone 15
+if read_page == "open" || value_of(redstone > 0) set_redstone 15
+write_page value_of(redstone > 7 as_string)
+if read_page as_boolean set_redstone 15
 ```
 
 ---

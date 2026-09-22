@@ -18,9 +18,9 @@ public final class ModManuals {
         final Component integrations = Component.translatable("zps.manual.group.integrations");
 
         final List<ManualSection> sections = new ArrayList<>();
-        sections.add(new ManualSection("basics", "basics.md", Component.translatable("zps.manual.basics"), networks));
+        sections.add(new ManualSection("basics", "index.md", Component.translatable("zps.manual.basics"), networks));
         sections.add(new ManualSection("collisions", "collisions.md", Component.translatable("zps.manual.collisions"), networks));
-        sections.add(new ManualSection("syntax", "index.md", Component.translatable("zps.manual.syntax"), language));
+        sections.add(new ManualSection("syntax", "syntax.md", Component.translatable("zps.manual.syntax"), language));
         sections.add(new ManualSection("executors", "executors.md", Component.translatable("zps.manual.executors"), language));
         sections.add(new ManualSection("getters", "getters.md", Component.translatable("zps.manual.getters"), language));
         sections.add(new ManualSection("mappers", "mappers.md", Component.translatable("zps.manual.mappers"), language));

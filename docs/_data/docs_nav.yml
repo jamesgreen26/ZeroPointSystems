@@ -1,15 +1,15 @@
-- key: basics
+- key: index
   title: Basics
   group: Data Networks
-  url: /basics.html
+  url: /
 - key: collisions
   title: Collisions
   group: Data Networks
   url: /collisions.html
-- key: index
+- key: syntax
   title: Syntax
   group: Script Language
-  url: /
+  url: /syntax.html
 - key: executors
   title: Executors
   group: Script Language

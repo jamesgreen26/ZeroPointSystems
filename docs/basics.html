@@ -1,9 +1,0 @@
----
-layout: docs
-title: Basics
-doc_key: basics
----
-{% capture doc %}{% include_relative basics.md %}{% endcapture %}
-{%- capture image_base -%}{{ '/assets/images/' | relative_url }}{%- endcapture -%}
-{%- assign doc = doc | replace: 'zps:textures/gui/manual/', image_base -%}
-{{ doc | markdownify }}

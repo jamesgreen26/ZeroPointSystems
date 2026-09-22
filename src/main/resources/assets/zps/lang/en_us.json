@@ -367,6 +367,7 @@
     "zps.manual.executors": "Executors",
     "zps.manual.getters": "Getters",
     "zps.manual.mappers": "Mappers",
+    "zps.manual.basics": "Basics",
     "zps.manual.create": "Create",
     "zps.manual.sable": "Sable",
     "zps.manual.valkyrien_skies": "Valkyrien Skies",
@@ -563,6 +564,5 @@
     "zps.display_source.reactor.output": "Output",
     "zps.display_source.reactor.output_dots": "........... ",
 
-    "gui.recipebook.toggleRecipes.rollable": "Rollable",
-    "zps.manual.networks": "Networks"
+    "gui.recipebook.toggleRecipes.rollable": "Rollable"
 }

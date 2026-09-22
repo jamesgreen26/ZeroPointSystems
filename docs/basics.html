@@ -1,9 +1,9 @@
 ---
 layout: docs
-title: Networks
-doc_key: networks
+title: Basics
+doc_key: basics
 ---
-{% capture doc %}{% include_relative networks.md %}{% endcapture %}
+{% capture doc %}{% include_relative basics.md %}{% endcapture %}
 {%- capture image_base -%}{{ '/assets/images/networks/' | relative_url }}{%- endcapture -%}
 {%- assign doc = doc | replace: 'zps:textures/gui/manual/', image_base -%}
 {{ doc | markdownify }}

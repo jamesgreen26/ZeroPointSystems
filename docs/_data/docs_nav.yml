@@ -1,9 +1,9 @@
 - key: index
   title: Script Commands
   url: /
-- key: networks
-  title: Networks
-  url: /networks.html
+- key: basics
+  title: Basics
+  url: /basics.html
 - key: executors
   title: Executors
   url: /executors.html

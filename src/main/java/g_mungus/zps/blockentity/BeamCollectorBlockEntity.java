@@ -293,20 +293,42 @@ public class BeamCollectorBlockEntity extends MultiblockBlockEntity {
         PanelFrame frame = PanelFrame.of(state.getValue(BeamCollectorBlock.FACING));
         BlockPos offset = getOffsetInStructure();
         BlockState updated = state
-                .setValue(BeamCollectorBlock.EDGE_UP, onRim(offset, frame.up()))
-                .setValue(BeamCollectorBlock.EDGE_DOWN, onRim(offset, frame.down()))
-                .setValue(BeamCollectorBlock.EDGE_LEFT, onRim(offset, frame.left()))
-                .setValue(BeamCollectorBlock.EDGE_RIGHT, onRim(offset, frame.right()));
+                .setValue(BeamCollectorBlock.SIZE, width)
+                .setValue(BeamCollectorBlock.COLUMN, indexAlong(offset, frame.right()))
+                .setValue(BeamCollectorBlock.ROW, indexAlong(offset, frame.down()))
+                .setValue(BeamCollectorBlock.POWER, controllerBE != null ? controllerBE.signal : 0);
         if (updated != state) {
             level.setBlock(worldPosition, updated, Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
         }
         setChanged();
     }
 
-    /** Whether the part {@code offset} blocks from the minimum corner is the last one in {@code direction}. */
-    private boolean onRim(BlockPos offset, Direction direction) {
+    /**
+     * How many blocks the part {@code offset} blocks from the minimum corner is from the panel's rim opposite
+     * {@code direction}: 0 on that rim, {@code width - 1} on the rim in {@code direction}.
+     */
+    private int indexAlong(BlockPos offset, Direction direction) {
         int along = offset.get(direction.getAxis());
-        return direction.getAxisDirection() == Direction.AxisDirection.POSITIVE ? along >= width - 1 : along <= 0;
+        return direction.getAxisDirection() == Direction.AxisDirection.POSITIVE ? along : width - 1 - along;
+    }
+
+    /**
+     * Writes the redstone signal into every block of the panel, which is what colours its lamps. They follow the
+     * signal alone, whether or not the beam can afford to run. Only meaningful on the controller.
+     */
+    private void setPower(int power) {
+        if (level == null || level.isClientSide()) {
+            return;
+        }
+        BeamGeometry beam = geometry();
+        for (int column = 0; column < beam.columns(); column++) {
+            BlockPos pos = beam.columnBase(column);
+            BlockState state = level.getBlockState(pos);
+            if (state.getBlock() instanceof BeamCollectorBlock && state.getValue(BeamCollectorBlock.POWER) != power) {
+                level.setBlock(pos, state.setValue(BeamCollectorBlock.POWER, power),
+                        Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
+            }
+        }
     }
 
     private void spill(List<ItemStack> stacks, BlockPos at) {
@@ -407,6 +429,8 @@ public class BeamCollectorBlockEntity extends MultiblockBlockEntity {
             setChanged();
             sendBlockEntityUpdate();
         }
+        // Every time, not only on a change: a part just cut loose from a panel still wears that panel's state.
+        setPower(signal);
     }
 
     public BeamGeometry geometry() {

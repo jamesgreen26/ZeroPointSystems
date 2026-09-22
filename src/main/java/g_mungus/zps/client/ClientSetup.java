@@ -2,6 +2,7 @@ package g_mungus.zps.client;
 
 import dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer;
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.block.BeamCollectorBlock;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.client.tooltip.ClientItemIconsTooltip;
@@ -125,6 +126,16 @@ public class ClientSetup {
     public static void onRegisterItemColors(RegisterColorHandlersEvent.Item event) {
         event.register((stack, tintIndex) -> tintIndex == 0 ? 0xFF000000 | ReactorWallOverlays.OFF_COLOR : -1,
                 ModItems.REACTOR_PORT.get());
+        event.register((stack, tintIndex) -> tintIndex == 0 ? BeamCollectorBlock.lampColor(0) : -1,
+                ModItems.BEAM_COLLECTOR.get());
+    }
+
+    /** The Beam Collector's lamps sit on tint index 0 and take their colour from the redstone signal. */
+    @SubscribeEvent
+    public static void onRegisterBlockColors(RegisterColorHandlersEvent.Block event) {
+        event.register((state, level, pos, tintIndex) -> tintIndex == 0
+                        ? BeamCollectorBlock.lampColor(state.getValue(BeamCollectorBlock.POWER)) : -1,
+                ModBlocks.BEAM_COLLECTOR.get());
     }
 
     @SubscribeEvent

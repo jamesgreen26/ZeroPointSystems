@@ -7,6 +7,8 @@ import g_mungus.zps.multiblock.ConnectivityHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.FastColor;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -22,8 +24,8 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -31,31 +33,45 @@ import org.jetbrains.annotations.Nullable;
 /**
  * One block of a Beam Collector panel. Blocks sharing a {@link #FACING} join into square panels up to three wide.
  * <p>
- * The four edge flags say which sides of this block are on the panel's rim, in the panel's own frame (see
- * {@link g_mungus.zps.tractor.PanelFrame}), so the model draws the raised rim around the panel and nowhere inside.
+ * {@link #SIZE}, {@link #COLUMN} and {@link #ROW} say how wide the panel is and where in it this block sits, in the
+ * panel's own frame (see {@link g_mungus.zps.tractor.PanelFrame}): column 0 is the panel's left, row 0 its top. The
+ * models are plain cubes that pick the matching tile of the panel-sized texture for each face, with the lamps
+ * drawn over them on a tinted overlay whose colour follows {@link #POWER}, the redstone signal reaching the panel
+ * (see {@link #lampColor}).
  */
 public class BeamCollectorBlock extends BaseEntityBlock {
     private static final MapCodec<BeamCollectorBlock> CODEC = simpleCodec(BeamCollectorBlock::new);
 
     public static final DirectionProperty FACING = BlockStateProperties.FACING;
-    public static final BooleanProperty EDGE_UP = BooleanProperty.create("edge_up");
-    public static final BooleanProperty EDGE_DOWN = BooleanProperty.create("edge_down");
-    public static final BooleanProperty EDGE_LEFT = BooleanProperty.create("edge_left");
-    public static final BooleanProperty EDGE_RIGHT = BooleanProperty.create("edge_right");
+    public static final IntegerProperty SIZE = IntegerProperty.create("size", 1, BeamCollectorBlockEntity.MAX_WIDTH);
+    public static final IntegerProperty COLUMN = IntegerProperty.create("column", 0, BeamCollectorBlockEntity.MAX_WIDTH - 1);
+    public static final IntegerProperty ROW = IntegerProperty.create("row", 0, BeamCollectorBlockEntity.MAX_WIDTH - 1);
+    /** The redstone signal reaching the panel, 0 to 15, which is what lights the lamps. */
+    public static final IntegerProperty POWER = BlockStateProperties.POWER;
+
+    /** Lamp overlay colour with no signal and at full signal; the overlay art is greyscale. */
+    public static final int LAMP_OFF_COLOR = 0x5B0507;
+    public static final int LAMP_ON_COLOR = 0xFF1A09;
 
     public BeamCollectorBlock(Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any()
                 .setValue(FACING, Direction.NORTH)
-                .setValue(EDGE_UP, true)
-                .setValue(EDGE_DOWN, true)
-                .setValue(EDGE_LEFT, true)
-                .setValue(EDGE_RIGHT, true));
+                .setValue(SIZE, 1)
+                .setValue(COLUMN, 0)
+                .setValue(ROW, 0)
+                .setValue(POWER, 0));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.@NotNull Builder<Block, BlockState> builder) {
-        builder.add(FACING, EDGE_UP, EDGE_DOWN, EDGE_LEFT, EDGE_RIGHT);
+        builder.add(FACING, SIZE, COLUMN, ROW, POWER);
+    }
+
+    /** The lamp overlay's tint for a signal of {@code power}: a straight blend from off to on. */
+    public static int lampColor(int power) {
+        float t = Mth.clamp(power / 15f, 0f, 1f);
+        return 0xFF000000 | FastColor.ARGB32.lerp(t, LAMP_OFF_COLOR, LAMP_ON_COLOR);
     }
 
     @Override

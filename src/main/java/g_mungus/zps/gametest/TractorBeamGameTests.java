@@ -68,15 +68,15 @@ public class TractorBeamGameTests {
                     + controller.getMaxRange());
 
             BlockState centre = helper.getBlockState(corner.offset(0, 1, 1));
-            helper.assertTrue(!centre.getValue(BeamCollectorBlock.EDGE_UP) && !centre.getValue(BeamCollectorBlock.EDGE_DOWN)
-                            && !centre.getValue(BeamCollectorBlock.EDGE_LEFT) && !centre.getValue(BeamCollectorBlock.EDGE_RIGHT),
-                    "The centre block has no rim");
+            helper.assertTrue(centre.getValue(BeamCollectorBlock.SIZE) == 3 && centre.getValue(BeamCollectorBlock.COLUMN) == 1
+                            && centre.getValue(BeamCollectorBlock.ROW) == 1,
+                    "The centre block should sit in the middle of a size 3 panel");
 
-            // Facing east, the panel's right is south: the far corner is top right.
+            // Facing east, the panel's right is south: the far corner is top right, and row 0 is the top.
             BlockState farCorner = helper.getBlockState(corner.offset(0, 2, 2));
-            helper.assertTrue(farCorner.getValue(BeamCollectorBlock.EDGE_UP) && farCorner.getValue(BeamCollectorBlock.EDGE_RIGHT)
-                            && !farCorner.getValue(BeamCollectorBlock.EDGE_DOWN) && !farCorner.getValue(BeamCollectorBlock.EDGE_LEFT),
-                    "The top right block should have its rim up and right only");
+            helper.assertTrue(farCorner.getValue(BeamCollectorBlock.SIZE) == 3 && farCorner.getValue(BeamCollectorBlock.COLUMN) == 2
+                            && farCorner.getValue(BeamCollectorBlock.ROW) == 0,
+                    "The top right block should be column 2, row 0");
             helper.succeed();
         });
     }

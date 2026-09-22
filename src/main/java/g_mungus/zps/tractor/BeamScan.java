@@ -180,6 +180,10 @@ public final class BeamScan {
                 continue;
             }
             int distance = distanceOut(level, beam, touched);
+            // A ray ending exactly on the face of the block past the reach can report it: not the beam's to take.
+            if (distance > reach[column]) {
+                continue;
+            }
             if (distance < nearestDistance) {
                 nearest = touched;
                 nearestDistance = distance;
@@ -225,7 +229,7 @@ public final class BeamScan {
      */
     private static int distanceOut(Level level, BeamGeometry beam, BlockPos pos) {
         Vec3 world = Compat.toWorldPos(level, Vec3.atCenterOf(pos));
-        return Mth.clamp(Mth.floor(beam.axialDistance(beam.toLocal(level, world))) + 1, 1, beam.range());
+        return Math.max(1, Mth.floor(beam.axialDistance(beam.toLocal(level, world))) + 1);
     }
 
     /** Air and liquid neither stop the beam nor get pulled. */

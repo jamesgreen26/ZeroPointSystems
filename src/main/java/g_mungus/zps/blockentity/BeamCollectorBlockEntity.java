@@ -56,7 +56,7 @@ import java.util.List;
  * strength of that signal is what sets its range (see {@link #rangeFor}). The tick cost depends only on the
  * panel's size and that range: what the beam happens to be pulling never changes it.
  */
-public class BeamCollectorBlockEntity extends MultiblockBlockEntity implements EnergyStorageBE {
+public class BeamCollectorBlockEntity extends MultiblockBlockEntity {
     public static final int MAX_WIDTH = 3;
     /** Ticks between looks down the columns. A pulled block forces a fresh look straight away. */
     private static final int SCAN_INTERVAL = 5;
@@ -89,9 +89,6 @@ public class BeamCollectorBlockEntity extends MultiblockBlockEntity implements E
     /** What the last split could not hand to any remaining part; see {@link #dropSplitLeftovers}. */
     @Nullable
     private SplitPayload lastSplit;
-
-    private long lastHudInfoRequestTick = Long.MIN_VALUE;
-    private int hudInfo;
 
     private final ContainerData dataAccess = new ContainerData() {
         @Override
@@ -626,31 +623,6 @@ public class BeamCollectorBlockEntity extends MultiblockBlockEntity implements E
     public int getMaxEnergyStored() {
         BeamCollectorBlockEntity controllerBE = getControllerBE();
         return controllerBE == null ? 0 : controllerBE.energy.getMaxEnergyStored();
-    }
-
-    // --- HUD --------------------------------------------------------------------------------------
-
-    @Override
-    public void setLastHudRefreshTick(long ticks) {
-        lastHudInfoRequestTick = ticks;
-    }
-
-    @Override
-    public long getLastHudRefreshTick() {
-        return lastHudInfoRequestTick;
-    }
-
-    @Override
-    public void provideInfo(Integer info) {
-        hudInfo = info;
-    }
-
-    @Override
-    public Integer getInfo() {
-        if (level != null && !level.isClientSide) {
-            return getEnergyStored();
-        }
-        return hudInfo;
     }
 
     // --- menu -------------------------------------------------------------------------------------

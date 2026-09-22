@@ -60,6 +60,49 @@ public class CableBlock extends CableComponentBlock {
     protected static final VoxelShape CATWALK_SHAPE = Block.box(0, 12, 0, 16, 16, 16);
     private static final double CATWALK_MIN_Y = 12.0D / 16.0D;
 
+    /** Bit set in a shape index when the cable has a catwalk on top; bits 0-5 are Direction ordinals. */
+    protected static final int CATWALK_BIT = 1 << 6;
+    protected static final int SHAPE_COUNT = CATWALK_BIT << 1;
+
+    /**
+     * Every cable shape, precomputed once and indexed by {@link #shapeIndex(BlockState)}.
+     * Shapes depend only on the block state, and {@link Shapes#or} is expensive, so building
+     * the union per call showed up as a main-thread hotspot on collision and raycast paths.
+     */
+    private static final VoxelShape[] SHAPES = new VoxelShape[SHAPE_COUNT];
+
+    static {
+        for (int i = 0; i < SHAPE_COUNT; i++) {
+            VoxelShape shape = CORE;
+            if ((i & (1 << Direction.DOWN.ordinal())) != 0) shape = Shapes.or(shape, DOWN_SHAPE);
+            if ((i & (1 << Direction.UP.ordinal())) != 0) shape = Shapes.or(shape, UP_SHAPE);
+            if ((i & (1 << Direction.NORTH.ordinal())) != 0) shape = Shapes.or(shape, NORTH_SHAPE);
+            if ((i & (1 << Direction.SOUTH.ordinal())) != 0) shape = Shapes.or(shape, SOUTH_SHAPE);
+            if ((i & (1 << Direction.WEST.ordinal())) != 0) shape = Shapes.or(shape, WEST_SHAPE);
+            if ((i & (1 << Direction.EAST.ordinal())) != 0) shape = Shapes.or(shape, EAST_SHAPE);
+            if ((i & CATWALK_BIT) != 0) shape = Shapes.or(shape, CATWALK_SHAPE);
+            SHAPES[i] = shape;
+        }
+    }
+
+    /** Index into the precomputed shape table: one bit per connected direction (by ordinal) plus {@link #CATWALK_BIT}. */
+    protected static int shapeIndex(BlockState state) {
+        int index = 0;
+        if (state.getValue(DOWN)) index |= 1 << Direction.DOWN.ordinal();
+        if (state.getValue(UP)) index |= 1 << Direction.UP.ordinal();
+        if (state.getValue(NORTH)) index |= 1 << Direction.NORTH.ordinal();
+        if (state.getValue(SOUTH)) index |= 1 << Direction.SOUTH.ordinal();
+        if (state.getValue(WEST)) index |= 1 << Direction.WEST.ordinal();
+        if (state.getValue(EAST)) index |= 1 << Direction.EAST.ordinal();
+        if (state.getValue(INSULATION_TYPE) == CATWALK) index |= CATWALK_BIT;
+        return index;
+    }
+
+    /** The bare cable shape for a {@link #shapeIndex(BlockState)}, ignoring insulation and grating. */
+    protected static VoxelShape cableShape(int shapeIndex) {
+        return SHAPES[shapeIndex];
+    }
+
     public CableBlock(Properties properties) {
         super(properties);
         BlockState defaultState = this.stateDefinition.any()
@@ -114,21 +157,10 @@ public class CableBlock extends CableComponentBlock {
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         InsulationType insulationType = state.getValue(INSULATION_TYPE);
-        if (insulationType.equals(INSULATION) || insulationType.equals(GRATING)) {
+        if (insulationType == INSULATION || insulationType == GRATING) {
             return Shapes.block();
         }
-
-        VoxelShape shape = CORE;
-
-        if (state.getValue(NORTH)) shape = Shapes.or(shape, NORTH_SHAPE);
-        if (state.getValue(SOUTH)) shape = Shapes.or(shape, SOUTH_SHAPE);
-        if (state.getValue(EAST)) shape = Shapes.or(shape, EAST_SHAPE);
-        if (state.getValue(WEST)) shape = Shapes.or(shape, WEST_SHAPE);
-        if (state.getValue(UP)) shape = Shapes.or(shape, UP_SHAPE);
-        if (state.getValue(DOWN)) shape = Shapes.or(shape, DOWN_SHAPE);
-        if (state.getValue(INSULATION_TYPE).equals(CATWALK)) shape = Shapes.or(shape, CATWALK_SHAPE);
-
-        return shape;
+        return SHAPES[shapeIndex(state)];
     }
 
     @Override

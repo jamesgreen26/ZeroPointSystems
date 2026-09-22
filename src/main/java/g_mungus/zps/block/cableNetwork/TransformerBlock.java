@@ -13,7 +13,6 @@ import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -40,6 +39,29 @@ public abstract class TransformerBlock extends CableBlock implements EntityBlock
     private static final VoxelShape UP_SHAPE_SUPPORT = Block.box(0, 8, 0, 16, 16, 16);
     private static final VoxelShape DOWN_SHAPE_SUPPORT = Block.box(0, 0, 0, 16, 8, 16);
 
+    /**
+     * Transformer plate unioned with the cable shape, precomputed for every facing and
+     * {@link #shapeIndex(BlockState)}. The connection on the facing side is always forced on.
+     */
+    private static final VoxelShape[] SHAPES = new VoxelShape[Direction.values().length * SHAPE_COUNT];
+
+    static {
+        for (Direction facing : Direction.values()) {
+            VoxelShape plate = switch (facing) {
+                case DOWN -> DOWN_SHAPE;
+                case UP -> UP_SHAPE;
+                case NORTH -> NORTH_SHAPE;
+                case SOUTH -> SOUTH_SHAPE;
+                case WEST -> WEST_SHAPE;
+                case EAST -> EAST_SHAPE;
+            };
+            int facingBit = 1 << facing.ordinal();
+            for (int i = 0; i < SHAPE_COUNT; i++) {
+                SHAPES[facing.ordinal() * SHAPE_COUNT + i] = Shapes.or(plate, cableShape(i | facingBit));
+            }
+        }
+    }
+
 
     public TransformerBlock(Properties properties) {
         super(properties);
@@ -58,35 +80,16 @@ public abstract class TransformerBlock extends CableBlock implements EntityBlock
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         InsulationType insulationType = state.getValue(INSULATION_TYPE);
-        if (insulationType.equals(INSULATION) || insulationType.equals(GRATING)) {
+        if (insulationType == INSULATION || insulationType == GRATING) {
             return Shapes.block();
         }
-        VoxelShape transformerShape = switch (state.getValue(FACING)) {
-            case DOWN -> DOWN_SHAPE;
-            case UP -> UP_SHAPE;
-            case NORTH -> NORTH_SHAPE;
-            case SOUTH -> SOUTH_SHAPE;
-            case WEST -> WEST_SHAPE;
-            case EAST -> EAST_SHAPE;
-        };
-
-        BooleanProperty facingConnectionProperty = switch (state.getValue(FACING)) {
-            case DOWN -> CableBlock.DOWN;
-            case UP -> CableBlock.UP;
-            case NORTH -> CableBlock.NORTH;
-            case SOUTH -> CableBlock.SOUTH;
-            case WEST -> CableBlock.WEST;
-            case EAST -> CableBlock.EAST;
-        };
-
-        VoxelShape cableShape = super.getShape(state.setValue(facingConnectionProperty, true), level, pos, context);
-        return Shapes.or(transformerShape, cableShape);
+        return SHAPES[state.getValue(FACING).ordinal() * SHAPE_COUNT + shapeIndex(state)];
     }
 
     @Override
     public VoxelShape getBlockSupportShape(BlockState state, BlockGetter level, BlockPos pos) {
         InsulationType insulationType = state.getValue(INSULATION_TYPE);
-        if (insulationType.equals(INSULATION) || insulationType.equals(GRATING)) {
+        if (insulationType == INSULATION || insulationType == GRATING) {
             return Shapes.block();
         }
         return switch (state.getValue(FACING)) {

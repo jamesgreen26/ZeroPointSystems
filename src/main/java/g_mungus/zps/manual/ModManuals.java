@@ -18,6 +18,7 @@ public final class ModManuals {
         sections.add(new ManualSection("executors", "executors.md", Component.translatable("zps.manual.executors")));
         sections.add(new ManualSection("getters", "getters.md", Component.translatable("zps.manual.getters")));
         sections.add(new ManualSection("mappers", "mappers.md", Component.translatable("zps.manual.mappers")));
+        sections.add(new ManualSection("networks", "networks.md", Component.translatable("zps.manual.networks")));
         if (Compat.isCreateLoaded()) {
             sections.add(new ManualSection("create", "create.md", Component.translatable("zps.manual.create")));
         }

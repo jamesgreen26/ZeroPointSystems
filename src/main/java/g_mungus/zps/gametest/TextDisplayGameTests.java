@@ -4,11 +4,22 @@ import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.light_pipe.DisplayLayout;
 import g_mungus.zps.block.cableNetwork.light_pipe.TextDisplayBlock;
+import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
+import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
@@ -389,6 +400,81 @@ public class TextDisplayGameTests {
         helper.assertBlockProperty(posB, TextDisplayBlock.LAYOUT, DisplayLayout.LEFT_2x1);
         helper.assertBlockProperty(posC, TextDisplayBlock.LAYOUT, DisplayLayout.SINGLE_1x1);
         helper.assertBlockProperty(posD, TextDisplayBlock.LAYOUT, DisplayLayout.SINGLE_1x1);
+        helper.succeed();
+    }
+
+    // -------------------------------------------------------------------------
+    // Dye
+    // -------------------------------------------------------------------------
+
+    private static ItemInteractionResult useOn(GameTestHelper helper, BlockPos pos, ItemStack stack, Player player) {
+        BlockPos abs = helper.absolutePos(pos);
+        BlockState state = helper.getBlockState(pos);
+        BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(abs), Direction.NORTH, abs, false);
+        return state.useItemOn(stack, helper.getLevel(), player, InteractionHand.MAIN_HAND, hit);
+    }
+
+    private static DyeColor colorAt(GameTestHelper helper, BlockPos pos) {
+        if (!(helper.getBlockEntity(pos) instanceof TextDisplayBlockEntity display)) {
+            throw new GameTestAssertException("No text display block entity at " + pos);
+        }
+        return display.getTextColor();
+    }
+
+    /** A fresh display renders white; using a dye on it stores that dye's colour and consumes the dye. */
+    @GameTest(template = TEMPLATE)
+    public static void dye_setsTextColourAndConsumesDye(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(3, 1, 3);
+        helper.setBlock(pos, display(Direction.NORTH));
+        helper.assertTrue(colorAt(helper, pos) == DyeColor.WHITE, "Default text colour should be white");
+
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        ItemStack dye = new ItemStack(Items.RED_DYE, 2);
+        ItemInteractionResult result = useOn(helper, pos, dye, player);
+
+        helper.assertTrue(result.consumesAction(), "Dye use should be consumed, got " + result);
+        helper.assertTrue(colorAt(helper, pos) == DyeColor.RED, "Text colour should be red");
+        helper.assertTrue(dye.getCount() == 1, "One dye should be consumed, stack has " + dye.getCount());
+        helper.succeed();
+    }
+
+    /** Applying the same colour twice does nothing and keeps the dye. */
+    @GameTest(template = TEMPLATE)
+    public static void dye_sameColourIsNotConsumed(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(3, 1, 3);
+        helper.setBlock(pos, display(Direction.NORTH));
+
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        ItemStack dye = new ItemStack(Items.WHITE_DYE, 1);
+        useOn(helper, pos, dye, player);
+
+        helper.assertTrue(colorAt(helper, pos) == DyeColor.WHITE, "Text colour should stay white");
+        helper.assertTrue(dye.getCount() == 1, "Dye should not be consumed when the colour is unchanged");
+        helper.succeed();
+    }
+
+    /** Dyeing one block of a merged 2×2 display recolours every block in it. */
+    @GameTest(template = TEMPLATE)
+    public static void dye_recoloursWholeMergedDisplay(GameTestHelper helper) {
+        BlockPos a = new BlockPos(3, 2, 3);
+        BlockPos b = new BlockPos(4, 2, 3);
+        BlockPos c = new BlockPos(3, 1, 3);
+        BlockPos d = new BlockPos(4, 1, 3);
+        BlockPos lone = new BlockPos(1, 1, 3); // not part of the 2×2
+        for (BlockPos p : new BlockPos[]{a, b, c, d, lone}) {
+            helper.setBlock(p, display(Direction.NORTH));
+        }
+        helper.assertBlockProperty(a, TextDisplayBlock.LAYOUT, DisplayLayout.TOP_RIGHT_2x2);
+
+        Player player = helper.makeMockPlayer(GameType.CREATIVE);
+        ItemStack dye = new ItemStack(Items.LIME_DYE, 1);
+        useOn(helper, d, dye, player);
+
+        for (BlockPos p : new BlockPos[]{a, b, c, d}) {
+            helper.assertTrue(colorAt(helper, p) == DyeColor.LIME, "Merged display block at " + p + " should be lime");
+        }
+        helper.assertTrue(colorAt(helper, lone) == DyeColor.WHITE, "Unrelated display should stay white");
+        helper.assertTrue(dye.getCount() == 1, "Creative players should not consume the dye");
         helper.succeed();
     }
 }

@@ -6,17 +6,44 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class TextDisplayBlockEntity extends AbstractTextDataReceiver {
+
+    private static final String COLOR_TAG = "Color";
+
+    private DyeColor textColor = DyeColor.WHITE;
+
     public TextDisplayBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.TEXT_DISPLAY.get(), pos, state);
     }
 
     public String getDisplayText() {
         return currentDisplayText;
+    }
+
+    public DyeColor getTextColor() {
+        return textColor;
+    }
+
+    /**
+     * Sets the dye colour the text is rendered in, mirroring how a dye is applied
+     * to a vanilla sign. Returns {@code false} if the colour was already set.
+     */
+    public boolean setTextColor(DyeColor color) {
+        if (color == textColor) {
+            return false;
+        }
+        textColor = color;
+        setChanged();
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
+        }
+        return true;
     }
 
     public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
@@ -34,5 +61,18 @@ public class TextDisplayBlockEntity extends AbstractTextDataReceiver {
     @Override
     public ClientboundBlockEntityDataPacket getUpdatePacket() {
         return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override
+    protected void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
+        super.saveAdditional(tag, registries);
+        tag.putString(COLOR_TAG, textColor.getName());
+    }
+
+    @Override
+    protected void loadAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
+        super.loadAdditional(tag, registries);
+        // Same storage format as vanilla sign text: the dye's registry name.
+        textColor = DyeColor.byName(tag.getString(COLOR_TAG), DyeColor.WHITE);
     }
 }

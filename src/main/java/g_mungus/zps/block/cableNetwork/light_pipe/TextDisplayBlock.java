@@ -8,6 +8,14 @@ import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.stats.Stats;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.DyeItem;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -22,6 +30,8 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2i;
@@ -141,6 +151,45 @@ public class TextDisplayBlock extends CableComponentBlock implements EntityBlock
     @Override
     public @Nullable BlockEntity newBlockEntity(BlockPos arg, BlockState arg2) {
         return new TextDisplayBlockEntity(arg, arg2);
+    }
+
+    /**
+     * Using a dye on the display recolours its text, the same way a dye recolours
+     * a vanilla sign (see {@code SignBlock#useItemOn}). Every block of a merged
+     * multi-block display takes the colour so the text isn't left half-dyed.
+     */
+    @Override
+    protected @NotNull ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        if (!(stack.getItem() instanceof DyeItem dye)) {
+            return super.useItemOn(stack, state, level, pos, player, hand, hit);
+        }
+        if (level.isClientSide) {
+            return ItemInteractionResult.SUCCESS;
+        }
+
+        boolean changed = false;
+        for (BlockPos displayPos : getDisplayPositions(state, pos)) {
+            if (level.getBlockEntity(displayPos) instanceof TextDisplayBlockEntity display) {
+                changed |= display.setTextColor(dye.getDyeColor());
+            }
+        }
+        if (!changed) {
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+
+        level.playSound(null, pos, SoundEvents.DYE_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
+        player.awardStat(Stats.ITEM_USED.get(dye));
+        level.gameEvent(GameEvent.BLOCK_CHANGE, pos, GameEvent.Context.of(player, state));
+        if (!player.isCreative()) {
+            stack.shrink(1);
+        }
+        return ItemInteractionResult.SUCCESS;
+    }
+
+    /** All block positions that make up the (possibly multi-block) display containing {@code pos}. */
+    public List<BlockPos> getDisplayPositions(BlockState state, BlockPos pos) {
+        Vec3i left = state.getValue(FACING).getNormal().cross(Direction.UP.getNormal());
+        return getExistingDisplayPositions(pos, state.getValue(LAYOUT), left);
     }
 
     @Override

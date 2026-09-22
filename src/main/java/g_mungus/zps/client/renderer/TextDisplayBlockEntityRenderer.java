@@ -94,6 +94,9 @@ public class TextDisplayBlockEntityRenderer implements BlockEntityRenderer<TextD
         int minDisplayableX = minDisplayableCol * cellSize;
         int maxDisplayableX = maxDisplayableCol * cellSize;
 
+        // Same text colour a dyed sign uses for this dye.
+        int textColor = blockEntity.getTextColor().getTextColor();
+
         for (Glyph glyph : glyphs) {
             boolean isWithinDisplayableBounds =
                     glyph.x() >= minDisplayableX && glyph.x() < maxDisplayableX &&
@@ -107,7 +110,7 @@ public class TextDisplayBlockEntityRenderer implements BlockEntityRenderer<TextD
                     String.valueOf(glyph.c()),
                     originX + glyph.x(),
                     originY + glyph.row() * cellSize,
-                    0xFFFFFF,
+                    textColor,
                     false,
                     poseStack.last().pose(),
                     bufferSource,

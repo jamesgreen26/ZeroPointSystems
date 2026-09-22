@@ -373,6 +373,66 @@ public class ScriptCommandGameTests {
         helper.succeed();
     }
 
+    /**
+     * {@code value_of(pos as_string + "\\nalpha\\nbeta" remove_line 2)} should
+     * drop the requested escaped-newline-delimited segment (1-based) and rejoin
+     * the rest with escaped newlines.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void valueOf_stringRemoveLine_removesIndexedLine(GameTestHelper helper) {
+        BlockPos absPos = helper.absolutePos(new BlockPos(4, 1, 3));
+
+        String result = evalValueOf(helper, absPos, "pos as_string + \"\\\\nalpha\\\\nbeta\" remove_line 2", STRING_KEY);
+        String expected = absPos.getX() + " " + absPos.getY() + " " + absPos.getZ() + "\\nbeta";
+
+        if (!expected.equals(result)) {
+            helper.fail("value_of(pos as_string + \"\\\\nalpha\\\\nbeta\" remove_line 2): expected " + expected + ", got " + result);
+            return;
+        }
+        helper.succeed();
+    }
+
+    /**
+     * {@code value_of(pos as_string + "\\nalpha" remove_line 5)} should return
+     * the input unchanged when the requested index is out of bounds.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void valueOf_stringRemoveLine_outOfBoundsReturnsUnchanged(GameTestHelper helper) {
+        BlockPos absPos = helper.absolutePos(new BlockPos(4, 1, 3));
+
+        String result = evalValueOf(helper, absPos, "pos as_string + \"\\\\nalpha\" remove_line 5", STRING_KEY);
+        String expected = absPos.getX() + " " + absPos.getY() + " " + absPos.getZ() + "\\nalpha";
+
+        if (!expected.equals(result)) {
+            helper.fail("value_of(pos as_string + \"\\\\nalpha\" remove_line 5): expected " + expected + ", got " + result);
+            return;
+        }
+        helper.succeed();
+    }
+
+    /**
+     * {@code value_of(pos as_string split " " lines)} should replace every
+     * delimiter with an escaped newline, so the "x y z" string becomes three lines.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void valueOf_stringSplit_replacesDelimiterWithNewline(GameTestHelper helper) {
+        BlockPos absPos = helper.absolutePos(new BlockPos(4, 1, 3));
+
+        String split = evalValueOf(helper, absPos, "pos as_string split \" \"", STRING_KEY);
+        String expected = absPos.getX() + "\\n" + absPos.getY() + "\\n" + absPos.getZ();
+        if (!expected.equals(split)) {
+            helper.fail("value_of(pos as_string split \" \"): expected " + expected + ", got " + split);
+            return;
+        }
+
+        Integer lines = evalValueOf(helper, absPos, "pos as_string split \" \" lines", INT_KEY);
+        if (lines == null || lines != 3) {
+            helper.fail("value_of(pos as_string split \" \" lines): expected 3, got " + lines);
+            return;
+        }
+        helper.succeed();
+    }
+
     // -------------------------------------------------------------------------
     // Bitwise operators (regression for & and |)
     // -------------------------------------------------------------------------

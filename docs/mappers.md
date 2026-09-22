@@ -160,6 +160,8 @@ Produced by: `read_page`, `pos as_string`, `dimension as_string`, `int as_string
 | `<+ <string>` | String | Prepends the given string |
 | `lines` | Int | Splits by `\n` and returns the number of lines |
 | `get_line <int>` | String | Splits by `\n` and returns the line at that index, or `""` if out of bounds |
+| `remove_line <int>` | String | Splits by `\n` and removes the line at that index; unchanged if out of bounds |
+| `split <string>` | String | Replaces every occurrence of the given delimiter with `\n` |
 | `as_int` | Int | Parse as integer |
 | `as_double` | Double | Parse as double |
 | `as_block_pos` | BlockPos | Parse as `"x y z"` format |
@@ -172,6 +174,8 @@ if read_page == "open" set_redstone 15
 write_page value_of(pos as_string)
 write_page value_of(pos as_string <+ "Pos: ")
 set_redstone value_of(read_page lines)
+write_page value_of(read_page remove_line 1)
+write_page value_of(read_page split ", ")
 ```
 
 ---

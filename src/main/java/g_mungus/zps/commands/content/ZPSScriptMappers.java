@@ -740,6 +740,54 @@ public class ZPSScriptMappers {
                 ResourceLocation.parse("zps:int")
         ));
 
+        // Remove the escaped "\n"-delimited line at the given index
+        event.register(new ScriptMapper2<>(
+                "remove_line",
+                String.class,
+                String.class,
+                ResourceLocation.parse("zps:string"),
+                ResourceLocation.parse("zps:string"),
+                "int",
+                (str, context) -> {
+                    String[] lines = splitEscapedNewlines(str);
+                    int index = context.argumentValue() - 1; // 1-based indexing
+                    if (index < 0 || index >= lines.length) {
+                        return str;
+                    }
+                    StringBuilder result = new StringBuilder();
+                    for (int i = 0; i < lines.length; i++) {
+                        if (i == index) {
+                            continue;
+                        }
+                        if (!result.isEmpty()) {
+                            result.append(ESCAPED_NEWLINE);
+                        }
+                        result.append(lines[i]);
+                    }
+                    return result.toString();
+                },
+                IntegerArgumentType.integer(),
+                Integer.class,
+                ResourceLocation.parse("zps:int")
+        ));
+
+        // Replace every occurrence of the delimiter with an escaped "\n"
+        event.register(new ScriptMapper2<>(
+                "split",
+                String.class,
+                String.class,
+                ResourceLocation.parse("zps:string"),
+                ResourceLocation.parse("zps:string"),
+                "int",
+                (str, context) -> {
+                    String delimiter = context.argumentValue();
+                    return delimiter.isEmpty() ? str : str.replace(delimiter, ESCAPED_NEWLINE);
+                },
+                StringArgumentType.string(),
+                String.class,
+                ResourceLocation.parse("zps:string")
+        ));
+
         // Equality check for dimension
         event.register(new ScriptMapper2<>(
                 "==",

@@ -9,6 +9,7 @@ import g_mungus.zps.client.screens.components.ScriptDispatcherProvider;
 import g_mungus.zps.commands.api_impl.aliases.ScriptAliases;
 import g_mungus.zps.commands.api_impl.arguments.ValueOfOrLiteralArgumentType;
 import g_mungus.zps.config.ZPSConfig;
+import g_mungus.zps.item.ModItems;
 import g_mungus.zps.manual.ModManuals;
 import g_mungus.zps.networking.ScriptComputerC2SPacket;
 import g_mungus.zps.networking.ZPSGamePackets;
@@ -30,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Set;
 
 public class ScriptTerminalScreen extends PonderCompatibleScreen {
-    private static final ItemStack MANUAL_BUTTON_ICON = new ItemStack(Items.KNOWLEDGE_BOOK);
+    private static final ItemStack MANUAL_BUTTON_ICON = new ItemStack(ModItems.SCRIPT_BOOK.get());
 
     private static final Component SET_COMMAND_LABEL = Component.literal("Script Terminal");
     private static final Component COMMAND_LABEL = Component.literal("ZPS Script Command");

@@ -250,17 +250,19 @@ public class TractorBeamGameTests {
         });
     }
 
-    /** Automation takes from the panel and cannot put into it. */
+    /** Automation can both put into the panel and take from it. */
     @GameTest(template = TEMPLATE, timeoutTicks = 40)
-    public static void automation_isExtractOnly(GameTestHelper helper) {
+    public static void automation_insertsAndExtracts(GameTestHelper helper) {
         place(helper, BEAM, Direction.EAST);
         helper.runAfterDelay(FORM_TICKS, () -> {
             beam(helper, BEAM).getInventory().setStackInSlot(0, new ItemStack(Items.DIRT, 5));
             IItemHandler handler = helper.getLevel().getCapability(
                     Capabilities.ItemHandler.BLOCK, helper.absolutePos(BEAM), Direction.DOWN);
             helper.assertTrue(handler != null, "The panel should expose an item handler");
-            ItemStack refused = handler.insertItem(1, new ItemStack(Items.STONE, 4), false);
-            helper.assertTrue(refused.getCount() == 4, "Insertion should be refused");
+            ItemStack remainder = handler.insertItem(1, new ItemStack(Items.STONE, 4), false);
+            helper.assertTrue(remainder.isEmpty(), "Insertion should be accepted");
+            helper.assertTrue(beam(helper, BEAM).getInventory().getStackInSlot(1).is(Items.STONE),
+                    "The inserted stone should be in the panel");
             ItemStack taken = handler.extractItem(0, 5, false);
             helper.assertTrue(taken.is(Items.DIRT) && taken.getCount() == 5, "Extraction should work");
             helper.succeed();

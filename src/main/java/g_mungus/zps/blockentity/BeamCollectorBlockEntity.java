@@ -73,7 +73,6 @@ public class BeamCollectorBlockEntity extends MultiblockBlockEntity {
     public static final int DATA_COUNT = 4;
 
     private final PooledInventory inventory = new PooledInventory();
-    private final IItemHandler automationView = new ExtractOnlyHandler(inventory);
     private final BeamEnergy energy = new BeamEnergy();
 
     private boolean active;
@@ -620,11 +619,11 @@ public class BeamCollectorBlockEntity extends MultiblockBlockEntity {
 
     // --- capabilities -----------------------------------------------------------------------------
 
-    /** Automation may only take from the panel: what goes in is what the beam brings. */
+    /** The pooled inventory, open both ways: the panel is storage that the beam happens to fill as well. */
     @Nullable
     public IItemHandler getItemHandler(@Nullable Direction side) {
         BeamCollectorBlockEntity controllerBE = getControllerBE();
-        return controllerBE == null ? null : controllerBE.automationView;
+        return controllerBE == null ? null : controllerBE.inventory;
     }
 
     @Nullable
@@ -805,38 +804,6 @@ public class BeamCollectorBlockEntity extends MultiblockBlockEntity {
         @Override
         public boolean canReceive() {
             return true;
-        }
-    }
-
-    private record ExtractOnlyHandler(IItemHandler delegate) implements IItemHandler {
-        @Override
-        public int getSlots() {
-            return delegate.getSlots();
-        }
-
-        @Override
-        public @NotNull ItemStack getStackInSlot(int slot) {
-            return delegate.getStackInSlot(slot);
-        }
-
-        @Override
-        public @NotNull ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
-            return stack;
-        }
-
-        @Override
-        public @NotNull ItemStack extractItem(int slot, int amount, boolean simulate) {
-            return delegate.extractItem(slot, amount, simulate);
-        }
-
-        @Override
-        public int getSlotLimit(int slot) {
-            return delegate.getSlotLimit(slot);
-        }
-
-        @Override
-        public boolean isItemValid(int slot, @NotNull ItemStack stack) {
-            return false;
         }
     }
 }

@@ -64,12 +64,7 @@ public class BeamCollectorMenu extends AbstractContainerMenu {
         int columns = columnsFor(beamSlots);
         for (int slot = 0; slot < beamSlots; slot++) {
             addSlot(new SlotItemHandler(beamInventory, slot,
-                    gridLeft(beamSlots) + (slot % columns) * 18, gridTop(beamSlots) + (slot / columns) * 18) {
-                @Override
-                public boolean mayPlace(@NotNull ItemStack stack) {
-                    return false;
-                }
-            });
+                    gridLeft(beamSlots) + (slot % columns) * 18, gridTop(beamSlots) + (slot / columns) * 18));
         }
 
         for (int row = 0; row < 3; ++row) {
@@ -138,12 +133,7 @@ public class BeamCollectorMenu extends AbstractContainerMenu {
                 if (!moveItemStackTo(stack, playerStart, end, true)) {
                     return ItemStack.EMPTY;
                 }
-            } else if (index < hotbarStart) {
-                // Nothing goes into the beam by hand, so this only shuffles the player's own inventory.
-                if (!moveItemStackTo(stack, hotbarStart, end, false)) {
-                    return ItemStack.EMPTY;
-                }
-            } else if (!moveItemStackTo(stack, playerStart, hotbarStart, false)) {
+            } else if (!moveItemStackTo(stack, 0, playerStart, false)) {
                 return ItemStack.EMPTY;
             }
 

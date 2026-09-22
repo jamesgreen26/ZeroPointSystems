@@ -24,7 +24,6 @@ import java.util.Locale;
 import java.util.List;
 
 public class ManualScreen extends Screen {
-    private static final Component TITLE = Component.literal("Script Commands");
     private static final int TOOLTIP_BASE = 0x4C99C9;
     private static final int TOOLTIP_HIGHLIGHT = 0x79F1A3;
     private static final int SCROLLBAR_THUMB = 0xFF4C99C9;
@@ -50,6 +49,8 @@ public class ManualScreen extends Screen {
     private static final int TAB_GROUP_GAP = 8;
     private static final int TAB_AREA_WIDTH = 140;
     private static final int SCROLLBAR_WIDTH = 8;
+    private static final int FRAME_PADDING = 8;
+    private static final int CLOSE_BUTTON_SIZE = 18;
 
     private final List<ManualSection> sections;
     private int selectedSectionIndex;
@@ -90,8 +91,7 @@ public class ManualScreen extends Screen {
         this.tabGroupHeaders.clear();
 
         final int frameLeft = this.frameLeft();
-        final int frameTop = this.frameTop();
-        final int tabAreaTop = frameTop + 34;
+        final int tabAreaTop = this.tabAreaTop();
         final int tabAreaHeight = this.tabAreaHeight();
         this.maxTabScroll = Math.max(0, this.totalTabHeight() - tabAreaHeight);
         this.tabScroll = Math.max(0, Math.min(this.tabScroll, this.maxTabScroll));
@@ -112,7 +112,7 @@ public class ManualScreen extends Screen {
         }
 
         this.closeButton = this.addRenderableWidget(Button.builder(CommonComponents.EMPTY, button -> this.onClose())
-            .bounds(this.frameLeft() + this.frameWidth() - 24, this.frameTop() + 6, 18, 18)
+            .bounds(this.scrollbarLeft() + SCROLLBAR_WIDTH / 2 - CLOSE_BUTTON_SIZE / 2, this.contentTop(), CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE)
             .build());
     }
 
@@ -163,8 +163,12 @@ public class ManualScreen extends Screen {
         return this.height;
     }
 
+    private int tabAreaTop() {
+        return this.frameTop() + FRAME_PADDING;
+    }
+
     private int tabAreaHeight() {
-        return this.frameHeight() - 50;
+        return this.frameHeight() - FRAME_PADDING * 2;
     }
 
     private int totalTabHeight() {
@@ -194,7 +198,7 @@ public class ManualScreen extends Screen {
     }
 
     private int contentTop() {
-        return this.frameTop() + 34;
+        return this.frameTop() + FRAME_PADDING;
     }
 
     private int contentWidth() {
@@ -202,7 +206,16 @@ public class ManualScreen extends Screen {
     }
 
     private int contentHeight() {
-        return this.frameHeight() - 46;
+        return this.frameHeight() - FRAME_PADDING * 2;
+    }
+
+    /** The scrollbar track starts below the close button, which sits above it in the same column. */
+    private int scrollbarTop() {
+        return this.contentTop() + CLOSE_BUTTON_SIZE + 4;
+    }
+
+    private int scrollbarHeight() {
+        return this.contentHeight() - CLOSE_BUTTON_SIZE - 4;
     }
 
     @Override
@@ -314,9 +327,7 @@ public class ManualScreen extends Screen {
         final int frameBottom = frameTop + this.frameHeight();
         graphics.fill(frameLeft, frameTop, frameRight, frameBottom, FRAME_COLOR);
         graphics.fill(frameLeft + 1, frameTop + 1, frameRight - 1, frameBottom - 1, PANEL_COLOR);
-        graphics.hLine(frameLeft + 1, frameRight - 2, frameTop + 28, PANEL_BORDER);
-        graphics.vLine(this.contentLeft() - 12, frameTop + 6, frameBottom - 34, PANEL_BORDER);
-        graphics.drawCenteredString(this.font, TITLE, this.width / 2, frameTop + 10, TOOLTIP_HIGHLIGHT);
+        graphics.vLine(this.contentLeft() - 12, frameTop + FRAME_PADDING, frameBottom - FRAME_PADDING, PANEL_BORDER);
 
         this.renderTabGroupHeaders(graphics);
         this.renderContent(graphics, mouseX, mouseY);
@@ -332,7 +343,7 @@ public class ManualScreen extends Screen {
     }
 
     private void renderTabGroupHeaders(final GuiGraphics graphics) {
-        final int tabAreaTop = this.frameTop() + 34;
+        final int tabAreaTop = this.tabAreaTop();
         final int tabAreaBottom = tabAreaTop + this.tabAreaHeight();
         final int left = this.frameLeft() + 6;
         for (final TabGroupHeader header : this.tabGroupHeaders) {
@@ -396,7 +407,7 @@ public class ManualScreen extends Screen {
         }
 
         graphics.disableScissor();
-        renderScrollBar(graphics, right + 4, top, bottom);
+        renderScrollBar(graphics, right + 4, this.scrollbarTop(), bottom);
     }
 
     private void renderChart(final GuiGraphics graphics, final int x, final int y, final int width, final ManualContentLayout.ChartEntry chartEntry) {
@@ -583,8 +594,8 @@ public class ManualScreen extends Screen {
     private boolean isMouseOverTabs(final double mouseX, final double mouseY) {
         return mouseX >= this.frameLeft() + 4
             && mouseX <= this.contentLeft() - 16
-            && mouseY >= this.frameTop() + 34
-            && mouseY <= this.frameTop() + 34 + this.tabAreaHeight();
+            && mouseY >= this.tabAreaTop()
+            && mouseY <= this.tabAreaTop() + this.tabAreaHeight();
     }
 
     private boolean isMouseOverContent(final double mouseX, final double mouseY) {
@@ -597,8 +608,8 @@ public class ManualScreen extends Screen {
     private boolean isMouseOverScrollbar(final double mouseX, final double mouseY) {
         return mouseX >= this.scrollbarLeft()
             && mouseX <= this.scrollbarLeft() + SCROLLBAR_WIDTH
-            && mouseY >= this.contentTop()
-            && mouseY <= this.contentTop() + this.contentHeight();
+            && mouseY >= this.scrollbarTop()
+            && mouseY <= this.scrollbarTop() + this.scrollbarHeight();
     }
 
     private void updateSmoothScroll() {
@@ -625,8 +636,8 @@ public class ManualScreen extends Screen {
     }
 
     private ScrollbarMetrics getScrollbarMetrics() {
-        final int top = this.contentTop();
-        final int height = this.contentHeight();
+        final int top = this.scrollbarTop();
+        final int height = this.scrollbarHeight();
         if (this.maxScroll <= 0) {
             return new ScrollbarMetrics(top, height, 0);
         }
@@ -643,7 +654,7 @@ public class ManualScreen extends Screen {
             this.renderedScrollAmount = 0;
             return;
         }
-        final int minTop = this.contentTop();
+        final int minTop = this.scrollbarTop();
         final int maxTop = minTop + metrics.travel();
         final int targetTop = Mth.clamp((int) Math.round(mouseY) - this.scrollbarDragOffset, minTop, maxTop);
         final float progress = (targetTop - minTop) / (float) metrics.travel();
@@ -680,7 +691,8 @@ public class ManualScreen extends Screen {
 
         @Override
         protected void renderWidget(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-            if (this.getY() + this.getHeight() < ManualScreen.this.frameTop() + 34 || this.getY() > ManualScreen.this.frameTop() + 34 + ManualScreen.this.tabAreaHeight()) {
+            final int tabAreaTop = ManualScreen.this.tabAreaTop();
+            if (this.getY() + this.getHeight() < tabAreaTop || this.getY() > tabAreaTop + ManualScreen.this.tabAreaHeight()) {
                 return;
             }
             final boolean expanded = this.isHoveredOrFocused() && this.isLabelTruncated();

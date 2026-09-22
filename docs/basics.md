@@ -1,4 +1,4 @@
-# Networks
+# Basics
 
 The script terminal can be tricky to get your head around at first, but will get easier as you learn how the data networks work.
 

@@ -6,6 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class ManualMarkdownParser {
+    private static final String UNDERLINE_OPEN = "<u>";
+    private static final String UNDERLINE_CLOSE = "</u>";
+
     private ManualMarkdownParser() {
     }
 
@@ -273,6 +276,13 @@ public final class ManualMarkdownParser {
                 index = linkAdvance.nextIndex();
                 continue;
             }
+            final ParseAdvance underlineAdvance = tryReadUnderline(text, index, style);
+            if (underlineAdvance != null) {
+                flushPlain(plain, inlines, style);
+                inlines.addAll(underlineAdvance.produced());
+                index = underlineAdvance.nextIndex();
+                continue;
+            }
             final String marker = findInlineMarker(text, index);
             if (marker != null) {
                 final int end = text.indexOf(marker, index + marker.length());
@@ -293,6 +303,24 @@ public final class ManualMarkdownParser {
         }
         flushPlain(plain, inlines, style);
         return new ParseResult(inlines);
+    }
+
+    /**
+     * Parse &lt;u&gt; and &lt;/u&gt; into underline because its different
+     * from markdown syntax (and markdown doesn't have its own underline)
+     */
+    private static ParseAdvance tryReadUnderline(final String text, final int index, final InlineStyle currentStyle) {
+        if (!text.startsWith(UNDERLINE_OPEN, index)) {
+            return null;
+        }
+        final int contentStart = index + UNDERLINE_OPEN.length();
+        final int contentEnd = text.indexOf(UNDERLINE_CLOSE, contentStart);
+        if (contentEnd < 0) {
+            return null;
+        }
+        final String inner = text.substring(contentStart, contentEnd);
+        final List<ManualDocument.ManualInline> produced = parseInlineSegment(inner, currentStyle.withUnderline(true)).inlines();
+        return new ParseAdvance(contentEnd + UNDERLINE_CLOSE.length(), produced, null);
     }
 
     private static CodeSpan tryReadCodeSpan(final String text, final int index) {
@@ -349,7 +377,7 @@ public final class ManualMarkdownParser {
         final List<ManualDocument.ManualInline> linked = new ArrayList<>();
         for (ManualDocument.ManualInline inline : parsed) {
             if (inline instanceof ManualDocument.TextInline textInline) {
-                linked.add(new ManualDocument.StyledInline(textInline.text(), false, false, false, false, linkTarget.target(), linkTarget.tooltip()));
+                linked.add(new ManualDocument.StyledInline(textInline.text(), false, false, false, false, false, linkTarget.target(), linkTarget.tooltip()));
             } else if (inline instanceof ManualDocument.StyledInline styledInline) {
                 linked.add(new ManualDocument.StyledInline(
                     styledInline.text(),
@@ -357,6 +385,7 @@ public final class ManualMarkdownParser {
                     styledInline.italic(),
                     styledInline.code(),
                     styledInline.strikethrough(),
+                    styledInline.underline(),
                     linkTarget.target(),
                     linkTarget.tooltip()
                 ));
@@ -652,30 +681,34 @@ public final class ManualMarkdownParser {
     private record LinkTarget(String target, String tooltip) {
     }
 
-    private record InlineStyle(boolean bold, boolean italic, boolean code, boolean strikethrough) {
+    private record InlineStyle(boolean bold, boolean italic, boolean code, boolean strikethrough, boolean underline) {
         private InlineStyle() {
-            this(false, false, false, false);
+            this(false, false, false, false, false);
         }
 
         private InlineStyle apply(final String marker) {
             return switch (marker) {
-                case "***", "___" -> new InlineStyle(true, true, this.code, this.strikethrough);
-                case "**", "__" -> new InlineStyle(true, this.italic, this.code, this.strikethrough);
-                case "*", "_" -> new InlineStyle(this.bold, true, this.code, this.strikethrough);
-                case "~~" -> new InlineStyle(this.bold, this.italic, this.code, true);
+                case "***", "___" -> new InlineStyle(true, true, this.code, this.strikethrough, this.underline);
+                case "**", "__" -> new InlineStyle(true, this.italic, this.code, this.strikethrough, this.underline);
+                case "*", "_" -> new InlineStyle(this.bold, true, this.code, this.strikethrough, this.underline);
+                case "~~" -> new InlineStyle(this.bold, this.italic, this.code, true, this.underline);
                 default -> this;
             };
         }
 
         private InlineStyle withCode(final boolean codeValue) {
-            return new InlineStyle(this.bold, this.italic, codeValue, this.strikethrough);
+            return new InlineStyle(this.bold, this.italic, codeValue, this.strikethrough, this.underline);
+        }
+
+        private InlineStyle withUnderline(final boolean underlineValue) {
+            return new InlineStyle(this.bold, this.italic, this.code, this.strikethrough, underlineValue);
         }
 
         private ManualDocument.ManualInline toInline(final String text) {
-            if (!this.bold && !this.italic && !this.code && !this.strikethrough) {
+            if (!this.bold && !this.italic && !this.code && !this.strikethrough && !this.underline) {
                 return new ManualDocument.TextInline(text);
             }
-            return new ManualDocument.StyledInline(text, this.bold, this.italic, this.code, this.strikethrough, null, null);
+            return new ManualDocument.StyledInline(text, this.bold, this.italic, this.code, this.strikethrough, this.underline, null, null);
         }
     }
 }

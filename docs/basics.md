@@ -62,3 +62,14 @@ Remember: the script terminal does not run anything*, it simply sends commands t
 _*Under some rare situations, the script terminal does run part of the script, but those situations will be covered later on_
 
 
+## Collisions
+
+There's an important limitation of the data system to be aware of: The cables can only carry one signal per tick.
+If you have more than one device outputting into the network at the same time, the signal will be scrambled into gibberish for all receivers.
+
+For example, if you have a serial bus on `get` mode and a script terminal outputting commands on the same network,
+they will collide and cause the gibberish output. 
+
+However, there is a way around this problem. Using the **Data Comparator** or **Data Combinator** you can process multiple different signal inputs on the same tick.
+
+

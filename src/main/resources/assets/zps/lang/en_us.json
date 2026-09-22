@@ -563,5 +563,6 @@
     "zps.display_source.reactor.output": "Output",
     "zps.display_source.reactor.output_dots": "........... ",
 
-    "gui.recipebook.toggleRecipes.rollable": "Rollable"
+    "gui.recipebook.toggleRecipes.rollable": "Rollable",
+    "zps.manual.networks": "Networks"
 }

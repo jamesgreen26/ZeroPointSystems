@@ -43,6 +43,7 @@ public class ManualScreen extends Screen {
     private static final int TABLE_ROW_BACKGROUND = 0x88303030;
     private static final int SCROLLBAR_TRACK = 0x55606060;
     private static final int BODY_TEXT = 0xFFFFFF;
+    private static final int IMAGE_PADDING = 4;
     private static final int TAB_WIDTH = 75;
     private static final int TAB_AREA_WIDTH = 95;
     private static final int SCROLLBAR_WIDTH = 8;
@@ -402,8 +403,9 @@ public class ManualScreen extends Screen {
         if (imageEntry.kind() == g_mungus.zps.manual.markdown.ManualDocument.ImageKind.RESOURCE) {
             try {
                 final ResourceLocation texture = ResourceLocation.parse(imageEntry.target());
-                graphics.blit(texture, x + 4, y + 4, 0, 0, Math.min(imageEntry.width() - 8, width - 8), imageEntry.height(this.font) - 8, Math.min(imageEntry.width() - 8, width - 8), imageEntry.height(this.font) - 8);
-                graphics.drawString(this.font, imageEntry.label(), x + 8, y + imageEntry.height(this.font) - this.font.lineHeight - 2, TOOLTIP_HIGHLIGHT);
+                final int drawWidth = Math.max(1, Math.min(imageEntry.width(), width) - IMAGE_PADDING * 2);
+                final int drawHeight = Math.max(1, imageEntry.height(this.font) - IMAGE_PADDING * 2);
+                graphics.blit(texture, x + IMAGE_PADDING, y + IMAGE_PADDING, 0, 0, drawWidth, drawHeight, drawWidth, drawHeight);
                 return;
             } catch (Exception ignored) {
             }

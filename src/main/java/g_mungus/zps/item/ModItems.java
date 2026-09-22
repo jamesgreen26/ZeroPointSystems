@@ -150,7 +150,7 @@ public class ModItems {
             () -> new BlockItem(ModBlocks.HEAT_EXCHANGER.get(), new Item.Properties()));
 
     public static final DeferredItem<Item> SCRIPT_BOOK = ITEMS.register("script_book",
-            () -> new ScriptBookItem(new Item.Properties()));
+            () -> new ScriptBookItem(new Item.Properties().rarity(Rarity.RARE)));
 
     public static final DeferredItem<Item> SIEVE = ITEMS.register("sieve",
             () -> new BlockItem(ModBlocks.SIEVE.get(), new Item.Properties()));

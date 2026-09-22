@@ -526,6 +526,7 @@
     "block.zps.catwalk.zps_tooltip": "Can be placed on cable blocks to prevent upwards connection.",
     "block.zps.space_grating_block.zps_tooltip": "Can be placed on cable blocks to prevent connection in new directions.",
 
+    "item.zps.script_book.zps_tooltip": "Can also be opened from the Script Terminal screen without this book",
 
     "block.zps.radio_transmitter.zps_tooltip": "Transmits a radio signal with data from a [Data Cable].\n\nTune the radio frequency with [Shift + Right Click]. Higher frequencies have a longer range and require a taller [Radio Antenna] on top.",
     "block.zps.radio_receiver.zps_tooltip": "Receives a radio signal and sends the data over a [Data Cable].\n\nTune the radio frequency with [Shift + Right Click]. Higher frequencies have a longer range and require a taller [Radio Antenna] on top.",

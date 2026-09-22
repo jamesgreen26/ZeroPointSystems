@@ -136,6 +136,7 @@ public class ModCreativeTabs {
                         );
                 addPoweredTools(parameters, output);
                 output.accept(ADDRESS_PAD.get());
+                output.accept(SCRIPT_BOOK.get());
                 output.accept(Items.WRITABLE_BOOK);
                 addPaintings(parameters, output);
             }).build());

@@ -2,11 +2,11 @@
 
 The script terminal can be tricky to get your head around at first, but will get easier as you learn how the data networks work.
 
-The first important thing to know is that the script terminal runs for every serial bus connected.
+The first important thing to know is that commands from the script terminal each run once for every serial bus connected.
 
 That means when you send 
 `write_page "hello world"`
-from the terminal, it will go to all connected serial buses.
+from the terminal, it will go to all connected serial buses and evaluate separately at each one.
 
 ![Every serial bus on a network receiving the same script output](zps:textures/gui/manual/all_busses.png)
 
@@ -15,7 +15,7 @@ they just won't act on it.
 
 In fact, it's best to picture the code running at each serial bus instead of at the script terminal.
 
-Variables like `pos` and `block` will be the value at the serial bus being run.
+Getters like `pos` and `block` will hold the value computed at the serial bus being run.
 You can use this to filter commands to only act for one particular serial bus, like so:
 
 ![Filtering busses](zps:textures/gui/manual/filtering.png)

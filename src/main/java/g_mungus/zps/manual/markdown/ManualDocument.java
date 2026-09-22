@@ -77,6 +77,7 @@ public record ManualDocument(List<ManualBlock> blocks) {
         boolean italic,
         boolean code,
         boolean strikethrough,
+        boolean underline,
         String linkTarget,
         String linkTooltip
     ) implements ManualInline {

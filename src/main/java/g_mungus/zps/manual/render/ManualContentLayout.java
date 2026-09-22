@@ -253,6 +253,9 @@ public final class ManualContentLayout {
                 if (styledInline.strikethrough()) {
                     style = style.withStrikethrough(true);
                 }
+                if (styledInline.underline()) {
+                    style = style.withUnderlined(true);
+                }
                 if (styledInline.linkTarget() != null) {
                     final String target = styledInline.linkTarget();
                     final ClickEvent.Action action = target.endsWith(".md")

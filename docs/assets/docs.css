@@ -131,6 +131,15 @@ body {
   background: var(--panel-2);
 }
 
+.doc-content img {
+  display: block;
+  max-width: min(100%, 36rem);
+  height: auto;
+  margin: 1.25rem auto;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+}
+
 .doc-content pre {
   padding: 1rem;
   overflow-x: auto;

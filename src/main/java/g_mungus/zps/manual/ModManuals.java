@@ -16,6 +16,7 @@ public final class ModManuals {
         final List<ManualSection> sections = new ArrayList<>();
         sections.add(new ManualSection("home", "index.md", Component.translatable("zps.manual.home")));
         sections.add(new ManualSection("basics", "basics.md", Component.translatable("zps.manual.basics")));
+        sections.add(new ManualSection("collisions", "collisions.md", Component.translatable("zps.manual.collisions")));
         sections.add(new ManualSection("executors", "executors.md", Component.translatable("zps.manual.executors")));
         sections.add(new ManualSection("getters", "getters.md", Component.translatable("zps.manual.getters")));
         sections.add(new ManualSection("mappers", "mappers.md", Component.translatable("zps.manual.mappers")));

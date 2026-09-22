@@ -4,6 +4,9 @@
 - key: basics
   title: Basics
   url: /basics.html
+- key: collisions
+  title: Collisions
+  url: /collisions.html
 - key: executors
   title: Executors
   url: /executors.html

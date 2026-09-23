@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "item": "zps:space_metal_ingot"
+    },
+    "M": {
+      "item": "zps:space_metal_mesh"
+    },
+    "L": {
+      "item": "zps:lithium_ingot"
+    }
+  },
+  "pattern": [
+    "IMI",
+    "MLM",
+    "IMI"
+  ],
+  "result": {
+    "id": "zps:beam_collector",
+    "count": 1
+  }
+}

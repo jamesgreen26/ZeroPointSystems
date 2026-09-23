@@ -499,6 +499,18 @@
     "zps.ponder.reactor_bursting.text_6": "Once the reactor is lit, the Input port can be opened up again.",
     "zps.ponder.reactor_bursting.text_7": "A reactor that overheats gains pressure as well, and can burst before its walls melt.",
 
+    "zps.ponder.gas_duct.header": "Gas Ducts",
+    "zps.ponder.gas_duct.text_1": "Gas Ducts carry gas between blocks.",
+    "zps.ponder.gas_duct.text_2": "Gas is simulated with a pressure and a temperature. It flows from higher pressure to lower pressure, so it spreads out along the run.",
+    "zps.ponder.gas_duct.text_3": "Each gas has its own density and heat capacity, so different gases behave differently in the same duct.",
+    "zps.ponder.gas_duct.text_4": "A Gas Gauge reads the pressure of the gas in the duct it is attached to.",
+    "zps.ponder.gas_duct.text_5": "Sneak and click it to read temperature instead.",
+    "zps.ponder.gas_duct.text_6": "A Gas Duct bursts above 16.4 MPa, and is destroyed above 1,478 K.",
+    "zps.ponder.gas_duct.text_7": "The dial covers exactly this range. A needle at the top of the dial is a duct at its limit.",
+    "zps.ponder.gas_duct.text_8": "As gas keeps arriving with nowhere to go, the pressure climbs until a duct bursts.",
+    "zps.ponder.gas_duct.text_9": "A burst leaves the ducts around it open, and they bleed gas into the air until a Gas Duct is placed back against them.",
+    "zps.ponder.gas_duct.text_10": "A Vent at the end of the run releases gas into the air, so the pressure never reaches the limit.",
+
 
     "zps.ponder.tag.can_insulate": "Blocks that can be Insulated",
     "zps.ponder.tag.can_insulate.description": "Components or Blocks which can have Cable Insulation applied to them, which prevents the block from connecting in new directions.",

@@ -11,7 +11,13 @@ import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.light_pipe.DataLecternBlock;
 import g_mungus.zps.block.cableNetwork.light_pipe.TextDisplayBlock;
 import g_mungus.zps.block.cableNetwork.properties.InsulationType;
+import g_mungus.zps.block.gas.GasGaugeBlock;
+import g_mungus.zps.block.gas.core.DuctConnectionType;
+import g_mungus.zps.block.gas.core.GasNodeBlock;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
+import g_mungus.zps.blockentity.gas.DuctBlockEntity;
+import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity;
+import g_mungus.zps.blockentity.gas.VentBlockEntity;
 import g_mungus.zps.blockentity.reactor.ReactorPortBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
 import g_mungus.zps.client.ponder.api.PonderExtras;
@@ -760,6 +766,202 @@ public class ZPSPonderScenes {
      * top and down to the Vaporizer that makes the Flux. Nothing in a ponder
      * level runs any of it, so the glow's heat and every flow shown is set by hand here.
      */
+    // --- gas ducts ------------------------------------------------------------------------
+
+    /** What a plain duct will stand, from {@code DuctBlock}: the gauge's dial covers exactly this. */
+    private static final double DUCT_BURST_PA = 16_375_049.0;
+    /** A line being fed by a source with the end capped: a comfortable working pressure. */
+    private static final double DUCT_WORKING_PA = 2.0e6;
+    /** Roughly what a Vaporizer gives off, well under the dial's top. */
+    private static final double DUCT_GAS_K = 375.0;
+
+    public static void gasDuctTutorial(SceneBuilder builder, SceneBuildingUtil util) {
+        builder.configureBasePlate(0, 0, 7);
+        builder.title("gas_duct", "Gas Ducts");
+        builder.showBasePlate();
+        builder.idle(5);
+
+        BlockPos source = new BlockPos(1, 1, 3);
+        BlockPos gauge = new BlockPos(3, 2, 2);
+        BlockPos beforeGap = new BlockPos(3, 2, 3);
+        BlockPos gap = new BlockPos(4, 2, 3);
+        BlockPos afterGap = new BlockPos(5, 2, 3);
+        BlockPos vent = new BlockPos(6, 2, 3);
+        int runStart = 1;
+        int runEnd = 5;
+
+        // The gas source, then the run out of it one duct at a time.
+        builder.world().showSection(util.select().position(source), Direction.DOWN);
+        builder.idle(10);
+        for (int x = runStart; x <= runEnd; x++) {
+            builder.world().showSection(util.select().position(x, 2, 3), Direction.DOWN);
+            builder.idle(4);
+        }
+        builder.idle(10);
+        builder.overlay().showText(60)
+                .text("Gas Ducts carry gas between blocks.")
+                .pointAt(util.vector().centerOf(3, 2, 3)).placeNearTarget();
+        builder.idle(70);
+
+        // Ducts have no visual for what they hold, so the direction of flow is a highlight walked
+        // along the run from the source outward.
+        builder.overlay().showText(100)
+                .text("Gas is simulated with a pressure and a temperature. It flows from higher pressure to lower pressure, so it spreads out along the run.");
+        for (int pass = 0; pass < 2; pass++) {
+            for (int x = runStart; x <= runEnd; x++) {
+                builder.overlay().showOutline(PonderPalette.OUTPUT, "flow", util.select().position(x, 2, 3), 12);
+                builder.idle(8);
+            }
+        }
+        builder.idle(30);
+
+        builder.overlay().showText(80)
+                .text("Each gas has its own density and heat capacity, so different gases behave differently in the same duct.");
+        builder.idle(90);
+
+        // The gauge. Its needle is the only instrument in the scene. It is attached to the north
+        // side of the run, and the duct behind it only opens that face once it is there.
+        builder.world().showSection(util.select().position(gauge), Direction.DOWN);
+        builder.world().setBlock(beforeGap, duct(DuctConnectionType.CONNECTION, DuctConnectionType.CONNECTION, DuctConnectionType.CONNECTION), false);
+        gaugeReading(builder, gauge, DUCT_WORKING_PA);
+        builder.idle(10);
+        builder.overlay().showText(70)
+                .text("A Gas Gauge reads the pressure of the gas in the duct it is attached to.")
+                .pointAt(dialFace(gauge)).placeNearTarget();
+        builder.idle(80);
+
+        builder.overlay().showControls(dialFace(gauge), Pointing.DOWN, 15).rightClick().whileSneaking();
+        builder.idle(8);
+        setGaugeMode(builder, gauge, GasGaugeBlockEntity.Mode.TEMPERATURE);
+        builder.overlay().showText(60)
+                .text("Sneak and click it to read temperature instead.")
+                .pointAt(dialFace(gauge)).placeNearTarget();
+        builder.idle(70);
+        // Back to pressure, which is what the rest of the scene is about.
+        builder.overlay().showControls(dialFace(gauge), Pointing.DOWN, 15).rightClick().whileSneaking();
+        builder.idle(8);
+        setGaugeMode(builder, gauge, GasGaugeBlockEntity.Mode.PRESSURE);
+        builder.idle(20);
+
+        // --- the limits ---
+
+        // Constants on DuctBlock, not config, so the figures can be written into the text.
+        builder.overlay().showText(80).attachKeyFrame()
+                .text("A Gas Duct bursts above 16.4 MPa, and is destroyed above 1,478 K.")
+                .pointAt(util.vector().centerOf(gap)).placeNearTarget();
+        builder.idle(90);
+
+        builder.overlay().showOutline(PonderPalette.WHITE, "dial", util.select().position(gauge), 80);
+        builder.overlay().showText(80)
+                .text("The dial covers exactly this range. A needle at the top of the dial is a duct at its limit.")
+                .pointAt(dialFace(gauge)).placeNearTarget();
+        builder.idle(90);
+
+        builder.overlay().showText(100)
+                .text("As gas keeps arriving with nowhere to go, the pressure climbs until a duct bursts.")
+                .pointAt(util.vector().centerOf(gap)).placeNearTarget();
+        rampGauge(builder, gauge, DUCT_WORKING_PA, DUCT_BURST_PA, 90);
+        builder.idle(10);
+
+        // The burst: the duct past the gauge goes, and the ends either side of it are left open.
+        builder.effects().emitParticles(util.vector().centerOf(gap),
+                builder.effects().simpleParticleEmitter(ParticleTypes.EXPLOSION_EMITTER, Vec3.ZERO), 1, 1);
+        builder.world().destroyBlock(gap);
+        builder.world().setBlock(beforeGap, duct(DuctConnectionType.CONNECTION, DuctConnectionType.LEAK, DuctConnectionType.CONNECTION), false);
+        builder.world().setBlock(afterGap, duct(DuctConnectionType.LEAK, DuctConnectionType.NONE, DuctConnectionType.NONE), false);
+        leakPlume(builder, beforeGap, 0.04, 8.0e6);
+        leakPlume(builder, afterGap, 0.04, 8.0e6);
+        // The open ends drain the line.
+        rampGauge(builder, gauge, DUCT_BURST_PA, 0.6e6, 40);
+        builder.idle(20);
+
+        builder.overlay().showText(100)
+                .text("A burst leaves the ducts around it open, and they bleed gas into the air until a Gas Duct is placed back against them.")
+                .pointAt(util.vector().centerOf(gap)).placeNearTarget();
+        builder.idle(80);
+
+        builder.overlay().showControls(util.vector().centerOf(gap), Pointing.DOWN, 15).rightClick()
+                .withItem(ModItems.GAS_DUCT.get().getDefaultInstance());
+        builder.idle(8);
+        builder.world().setBlock(gap, duct(DuctConnectionType.CONNECTION, DuctConnectionType.CONNECTION, DuctConnectionType.NONE), true);
+        builder.world().setBlock(beforeGap, duct(DuctConnectionType.CONNECTION, DuctConnectionType.CONNECTION, DuctConnectionType.CONNECTION), false);
+        builder.world().setBlock(afterGap, duct(DuctConnectionType.CONNECTION, DuctConnectionType.NONE, DuctConnectionType.NONE), false);
+        leakPlume(builder, beforeGap, 0, 0);
+        leakPlume(builder, afterGap, 0, 0);
+        rampGauge(builder, gauge, 0.6e6, DUCT_WORKING_PA, 30);
+        builder.idle(10);
+
+        // The vent, kept out of sight until now so that the run really had nowhere to go.
+        builder.world().showSection(util.select().position(vent), Direction.DOWN);
+        builder.world().setBlock(afterGap, duct(DuctConnectionType.CONNECTION, DuctConnectionType.CONNECTION, DuctConnectionType.NONE), false);
+        builder.idle(10);
+        ventJet(builder, vent, 0.05, 1.0e6);
+        rampGauge(builder, gauge, DUCT_WORKING_PA, 1.0e6, 20);
+        builder.overlay().showText(90)
+                .text("A Vent at the end of the run releases gas into the air, so the pressure never reaches the limit.")
+                .pointAt(util.vector().blockSurface(vent, Direction.EAST)).placeNearTarget();
+        builder.idle(100);
+    }
+
+    /**
+     * The centre of the gauge's dial. The gauge is a thin plate pressed against the duct behind it,
+     * not a full block, so the north face of its block space is well in front of the dial and a
+     * pointer aimed there looks like it is pointing at nothing.
+     */
+    private static Vec3 dialFace(BlockPos gauge) {
+        double dialFromCentre = 0.5 - GasGaugeBlock.PLATE_THICKNESS / 16.0;
+        return Vec3.atCenterOf(gauge).add(Vec3.atLowerCornerOf(Direction.SOUTH.getNormal()).scale(dialFromCentre));
+    }
+
+    /** A duct running east-west, with the given faces; the south, up and down faces are closed. */
+    private static BlockState duct(DuctConnectionType west, DuctConnectionType east, DuctConnectionType north) {
+        return ModBlocks.GAS_DUCT.get().defaultBlockState()
+                .setValue(GasNodeBlock.WEST_CONNECTION, west)
+                .setValue(GasNodeBlock.EAST_CONNECTION, east)
+                .setValue(GasNodeBlock.NORTH_CONNECTION, north);
+    }
+
+    /**
+     * Nothing in a ponder level runs the gas simulation, so the scene feeds the gauge the figures
+     * a packet from the server would, and the needle draws itself from them.
+     */
+    private static void gaugeReading(SceneBuilder builder, BlockPos gauge, double pressurePa) {
+        builder.world().modifyBlockEntity(gauge, GasGaugeBlockEntity.class,
+                be -> be.acceptSyncedState(0, pressurePa, DUCT_GAS_K));
+    }
+
+    private static void rampGauge(SceneBuilder builder, BlockPos gauge, double fromPa, double toPa, int ticks) {
+        int step = 5;
+        for (int elapsed = step; elapsed <= ticks; elapsed += step) {
+            float t = (float) elapsed / ticks;
+            gaugeReading(builder, gauge, fromPa + (toPa - fromPa) * t);
+            builder.idle(step);
+        }
+        if (ticks % step != 0) {
+            builder.idle(ticks % step);
+        }
+    }
+
+    private static void setGaugeMode(SceneBuilder builder, BlockPos gauge, GasGaugeBlockEntity.Mode mode) {
+        builder.world().modifyBlockEntity(gauge, GasGaugeBlockEntity.class, be -> be.setMode(mode));
+    }
+
+    /**
+     * The same trick for a leaking duct: on the client the synced mass is its leak rate in
+     * kilograms per tick, and the block entity's own ticker draws the plume from it. The ticker only
+     * attaches while a face is open, so this wants the leak state set first.
+     */
+    private static void leakPlume(SceneBuilder builder, BlockPos duct, double ratePerTick, double pressurePa) {
+        builder.world().modifyBlockEntity(duct, DuctBlockEntity.class,
+                be -> be.acceptSyncedState(ratePerTick, pressurePa, DUCT_GAS_K));
+    }
+
+    /** And for a vent, whose synced mass is what it vents per tick. */
+    private static void ventJet(SceneBuilder builder, BlockPos vent, double ratePerTick, double pressurePa) {
+        builder.world().modifyBlockEntity(vent, VentBlockEntity.class,
+                be -> be.acceptSyncedState(ratePerTick, pressurePa, DUCT_GAS_K));
+    }
+
     public static void reactorIntroTutorial(SceneBuilder builder, SceneBuildingUtil util) {
         builder.configureBasePlate(0, 0, 9);
         builder.title("reactor_intro", "Setting up a Fusion Reactor");

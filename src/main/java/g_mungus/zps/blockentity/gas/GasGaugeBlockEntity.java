@@ -177,7 +177,9 @@ public class GasGaugeBlockEntity extends GasNodeBlockEntity {
     public void setMode(Mode newMode) {
         this.mode = newMode;
         setChanged();
-        if (level != null) {
+        // The client learns the mode from the block update this sends, so a client-side call — a
+        // ponder scene switching the dial — has nothing to send on.
+        if (level != null && !level.isClientSide()) {
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_ALL);
         }
     }

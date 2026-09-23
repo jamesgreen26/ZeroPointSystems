@@ -63,6 +63,11 @@ public class ZPSPonders {
         ).addStoryBoard("robotic_arm", ZPSPonderScenes::roboticArmTutorial);
 
         HELPER.forComponents(
+                GAS_DUCT,
+                GAS_GAUGE
+        ).addStoryBoard("gas_duct", ZPSPonderScenes::gasDuctTutorial);
+
+        HELPER.forComponents(
                 REINFORCED_PLATING,
                 REINFORCED_GLASS,
                 REACTOR_PORT,

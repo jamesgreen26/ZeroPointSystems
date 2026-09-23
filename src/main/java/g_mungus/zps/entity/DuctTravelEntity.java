@@ -132,6 +132,13 @@ public class DuctTravelEntity extends Entity {
     public static final int MAX_TRAVEL_TICKS = 100;
 
     /**
+     * How often, in ticks, the destination list is checked against the run while the rider is
+     * simply sitting in a vent. A hop checks it anyway; this is for the run being altered under
+     * a rider who is not going anywhere, so the count on their HUD does not go stale.
+     */
+    public static final int REFRESH_INTERVAL_TICKS = 40;
+
+    /**
      * How far the vent may be from the vehicle, in blocks, before its position is not to be trusted
      * for putting a rider down. The vehicle sits at most a head's length from the vent it is in, so
      * anything beyond a couple of blocks means one of them has been moved without the other: a
@@ -153,6 +160,8 @@ public class DuctTravelEntity extends Entity {
     private int pendingDelta;
     /** Ticks left before another hop may be asked for. Covers the fade back in as well. */
     private int cooldown;
+    /** Ticks until the destination list is next checked against the run unprompted. */
+    private int refreshDelay = REFRESH_INTERVAL_TICKS;
 
     public DuctTravelEntity(@NotNull EntityType<DuctTravelEntity> type, @NotNull Level level) {
         super(type, level);
@@ -509,6 +518,20 @@ public class DuctTravelEntity extends Entity {
                 cycle(pendingDelta, rider);
             }
         }
+
+        // Unprompted, while nothing else is going on: a hop refreshes the list itself, and a
+        // rider mid-crawl will be told what is there when they arrive.
+        if (hopDelay == 0 && arriveDelay == 0 && --refreshDelay <= 0) {
+            refreshDelay = REFRESH_INTERVAL_TICKS;
+            List<BlockPos> before = destinations;
+            // The same list comes back when nothing has changed, so only a change is sent.
+            if (refreshDestinations() != before) {
+                Player rider = rider();
+                if (rider != null) {
+                    sendState(rider, false);
+                }
+            }
+        }
     }
 
     /** The player riding this, if there is one. There is never more than one. */
@@ -627,6 +650,11 @@ public class DuctTravelEntity extends Entity {
 
     public BlockPos getVentPos() {
         return ventPos;
+    }
+
+    /** The vents currently on offer, as last worked out. Server side only. */
+    public List<BlockPos> getDestinations() {
+        return ensureDestinations();
     }
 
     /**

@@ -202,6 +202,35 @@ public class DuctTravelGameTests {
         });
     }
 
+    /**
+     * A rider who is going nowhere still finds out the run has changed: the list is checked against
+     * it every couple of seconds, not only when a hop is asked for.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void aRiderSittingStillLearnsTheRunWasCut(GameTestHelper helper) {
+        placeRun(helper);
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        if (!DuctTravelEntity.enter(helper.getLevel(), helper.absolutePos(NEAR_VENT), player)) {
+            helper.fail("Could not climb into the vent");
+        }
+        if (!(player.getVehicle() instanceof DuctTravelEntity duct)) {
+            throw new GameTestAssertException("Climbing in left the player riding nothing");
+        }
+        if (duct.getDestinations().size() != 2) {
+            helper.fail("The intact run should offer two vents, offered " + duct.getDestinations().size());
+        }
+
+        helper.setBlock(MIDDLE_DUCT, Blocks.AIR.defaultBlockState());
+
+        helper.runAfterDelay(DuctTravelEntity.REFRESH_INTERVAL_TICKS + 4, () -> {
+            if (duct.getDestinations().size() != 1) {
+                helper.fail("With the run cut, only the rider's own vent should be on offer, but "
+                        + duct.getDestinations().size() + " are");
+            }
+            helper.succeed();
+        });
+    }
+
     // --- how long the crawl takes -------------------------------------------------------------
 
     /**

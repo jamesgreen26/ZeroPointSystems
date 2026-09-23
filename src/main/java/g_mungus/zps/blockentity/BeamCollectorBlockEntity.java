@@ -16,6 +16,7 @@ import g_mungus.zps.tractor.BeamScan;
 import g_mungus.zps.tractor.BlockRipper;
 import g_mungus.zps.tractor.PanelFrame;
 import g_mungus.zps.tractor.RunningBeams;
+import g_mungus.zps.tractor.SilkDrops;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -31,9 +32,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.inventory.ContainerData;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
@@ -483,7 +482,7 @@ public class BeamCollectorBlockEntity extends MultiblockBlockEntity {
                 // Likewise what a player is steering; the server's push below is simply overruled.
                 excuseHovering(rider);
             }
-            if (BeamForces.isCargo(entity) && grip.atMouth() && collect(entity)) {
+            if (BeamForces.isCargo(entity) && grip.atMouth() && collect(serverLevel, entity)) {
                 continue;
             }
             BeamForces.apply(serverLevel, beam, entity, grip, carrier);
@@ -515,7 +514,7 @@ public class BeamCollectorBlockEntity extends MultiblockBlockEntity {
     }
 
     /** Swallows an item or falling block at the mouth. False when it did not all fit and is still out there. */
-    private boolean collect(Entity entity) {
+    private boolean collect(ServerLevel serverLevel, Entity entity) {
         if (entity instanceof ItemEntity item) {
             ItemStack remainder = ItemHandlerHelper.insertItemStacked(inventory, item.getItem().copy(), false);
             if (remainder.isEmpty()) {
@@ -532,20 +531,42 @@ public class BeamCollectorBlockEntity extends MultiblockBlockEntity {
                 siftable.sift(inventory);
                 return true;
             }
-            Item item = block.asItem();
-            if (item == Items.AIR) {
-                falling.discard();
-                return true;
-            }
-            ItemStack stack = new ItemStack(item);
-            if (!ItemHandlerHelper.insertItemStacked(inventory, stack, true).isEmpty()) {
+            List<ItemStack> drops = SilkDrops.of(serverLevel, falling.getBlockState(), falling.blockPosition());
+            if (!fits(inventory, drops)) {
                 return false;
             }
-            ItemHandlerHelper.insertItemStacked(inventory, stack, false);
+            for (ItemStack stack : drops) {
+                ItemHandlerHelper.insertItemStacked(inventory, stack, false);
+            }
             falling.discard();
             return true;
         }
         return false;
+    }
+
+    /** Whether every one of {@code stacks} would go into {@code into}, all together. */
+    private static boolean fits(IItemHandler into, List<ItemStack> stacks) {
+        if (stacks.isEmpty()) {
+            return true;
+        }
+        if (stacks.size() == 1) {
+            return ItemHandlerHelper.insertItemStacked(into, stacks.getFirst(), true).isEmpty();
+        }
+        ItemStackHandler scratch = copyOf(into);
+        for (ItemStack stack : stacks) {
+            if (!ItemHandlerHelper.insertItemStacked(scratch, stack, false).isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static ItemStackHandler copyOf(IItemHandler handler) {
+        ItemStackHandler copy = new ItemStackHandler(handler.getSlots());
+        for (int slot = 0; slot < handler.getSlots(); slot++) {
+            copy.setStackInSlot(slot, handler.getStackInSlot(slot).copy());
+        }
+        return copy;
     }
 
     private void pullBlocks(ServerLevel serverLevel, BeamGeometry beam, @Nullable GridSpace carrier,
@@ -576,17 +597,19 @@ public class BeamCollectorBlockEntity extends MultiblockBlockEntity {
             if (hit == BeamScan.ColumnHit.PULLABLE) {
                 // Only pull loose what there will be room for, counting the blocks already on their way.
                 if (reserved == null) {
-                    reserved = reservedInventory(inFlight);
+                    reserved = reservedInventory(serverLevel, inFlight);
                 }
-                ItemStack arriving = new ItemStack(state.getBlock().asItem());
-                if (!ItemHandlerHelper.insertItemStacked(reserved, arriving, true).isEmpty()) {
+                List<ItemStack> arriving = SilkDrops.of(serverLevel, state, target);
+                if (!fits(reserved, arriving)) {
                     continue;
                 }
                 if (!BlockRipper.mayTake(serverLevel, target, state)) {
                     cooldowns[column] = RIP_COOLDOWN_TICKS;
                     continue;
                 }
-                ItemHandlerHelper.insertItemStacked(reserved, arriving, false);
+                for (ItemStack stack : arriving) {
+                    ItemHandlerHelper.insertItemStacked(reserved, stack, false);
+                }
                 BlockRipper.pullLoose(serverLevel, beam, carrier, target, state);
             } else {
                 if (!BlockRipper.mayTake(serverLevel, target, state)) {
@@ -603,15 +626,11 @@ public class BeamCollectorBlockEntity extends MultiblockBlockEntity {
     }
 
     /** A scratch copy of the inventory with every block already in flight put away in it. */
-    private ItemStackHandler reservedInventory(List<FallingBlockEntity> inFlight) {
-        ItemStackHandler copy = new ItemStackHandler(inventory.getSlots());
-        for (int slot = 0; slot < inventory.getSlots(); slot++) {
-            copy.setStackInSlot(slot, inventory.getStackInSlot(slot).copy());
-        }
+    private ItemStackHandler reservedInventory(ServerLevel serverLevel, List<FallingBlockEntity> inFlight) {
+        ItemStackHandler copy = copyOf(inventory);
         for (FallingBlockEntity falling : inFlight) {
-            Item item = falling.getBlockState().getBlock().asItem();
-            if (item != Items.AIR) {
-                ItemHandlerHelper.insertItemStacked(copy, new ItemStack(item), false);
+            for (ItemStack stack : SilkDrops.of(serverLevel, falling.getBlockState(), falling.blockPosition())) {
+                ItemHandlerHelper.insertItemStacked(copy, stack, false);
             }
         }
         return copy;

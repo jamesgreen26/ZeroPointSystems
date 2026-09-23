@@ -379,6 +379,29 @@ public class TractorBeamGameTests {
     }
 
     /**
+     * What arrives is the block's silk-touch drops, not its placing item. Powder snow's placing item is the
+     * bucket, and silk touch on powder snow yields nothing, so the beam swallows it and banks nothing.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 160)
+    public static void block_isCollectedAsItsSilkTouchDrops_powderSnowGivesNoBucket(GameTestHelper helper) {
+        BeamCollectorBlockEntity beam = runningBeam(helper);
+        helper.setBlock(BEAM.east(2), Blocks.POWDER_SNOW);
+
+        helper.runAfterDelay(120, () -> {
+            helper.assertBlockPresent(Blocks.AIR, BEAM.east(2));
+            helper.assertTrue(count(beam.getInventory(), Items.POWDER_SNOW_BUCKET) == 0,
+                    "Powder snow must not turn into a bucket");
+            helper.assertTrue(countLoose(helper, Items.POWDER_SNOW_BUCKET) == 0,
+                    "No bucket should be lying about either");
+            for (int slot = 0; slot < beam.getInventory().getSlots(); slot++) {
+                helper.assertTrue(beam.getInventory().getStackInSlot(slot).isEmpty(),
+                        "Powder snow has no silk-touch drops, so nothing should be banked");
+            }
+            helper.succeed();
+        });
+    }
+
+    /**
      * The rays that find blocks in other grids, made to run where there are none. They can then only find what
      * the walk of the panel's own grid finds, so the beam must behave exactly as it always does: break the grass,
      * which has an outline and no substance, then pull the stone behind it, and leave what the obsidian shields.

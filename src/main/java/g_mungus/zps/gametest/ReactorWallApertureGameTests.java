@@ -27,9 +27,10 @@ import org.valkyrienskies.kelvin.api.edges.OneWayEdge;
 import java.util.Set;
 
 /**
- * The Reactor Port's mode and redstone throttle act between its stub and the chamber, never on
- * its outer face. Redstone narrows the input's valve into the chamber and slows the output's
- * pump out of it, to nothing at full power; the outer face stays a plain duct joint throughout.
+ * The Reactor Port's mode and redstone valve act between its stub and the chamber, never on
+ * its outer face. Redstone opens the input's valve into the chamber and drives the output's
+ * pump out of it, from nothing unpowered to the full rate at full power; the outer face stays a
+ * plain duct joint throughout.
  *
  * <p>Most tests build a 5x5x5 shell around a 3x3x3 cavity with the port in the middle of the
  * west wall, power it from the block outside, and put gas straight into the stub or the chamber.
@@ -136,16 +137,16 @@ public class ReactorWallApertureGameTests {
         helper.runAfterDelay(5, () -> {
             helper.assertTrue(port(helper).getRedstoneLevel() == 15,
                     "A redstone block should read as 15, was " + port(helper).getRedstoneLevel());
-            helper.assertTrue(Math.abs(chamberApertureOf(helper) + ReactorPortBlockEntity.CHAMBER_EDGE_RADIUS) < EPSILON,
-                    "Full power should close the chamber side entirely, aperture was " + chamberApertureOf(helper));
+            helper.assertTrue(Math.abs(chamberApertureOf(helper)) < EPSILON,
+                    "Full power should open the chamber side fully, aperture was " + chamberApertureOf(helper));
 
             power(helper, false);
         });
         helper.runAfterDelay(10, () -> {
             helper.assertTrue(port(helper).getRedstoneLevel() == 0,
                     "Removing the signal should drop the level to 0, was " + port(helper).getRedstoneLevel());
-            helper.assertTrue(Math.abs(chamberApertureOf(helper)) < EPSILON,
-                    "Unpowered, the chamber side should be fully open, aperture was " + chamberApertureOf(helper));
+            helper.assertTrue(Math.abs(chamberApertureOf(helper) + ReactorPortBlockEntity.CHAMBER_EDGE_RADIUS) < EPSILON,
+                    "Unpowered, the chamber side should be shut entirely, aperture was " + chamberApertureOf(helper));
             helper.succeed();
         });
     }
@@ -153,32 +154,32 @@ public class ReactorWallApertureGameTests {
     // --- input -----------------------------------------------------------------------------
 
     @GameTest(template = REACTOR_TEMPLATE, timeoutTicks = 100)
-    public static void poweredInputAdmitsNothing(GameTestHelper helper) {
+    public static void unpoweredInputAdmitsNothing(GameTestHelper helper) {
         buildShell(helper, ReactorPortMode.INPUT);
-        power(helper, true);
 
         helper.runAfterDelay(5, () -> kelvin().addGasAtTemperature(node(helper, WALL), ModGases.FLUX, 0.5, 400.0));
         helper.runAfterDelay(30, () -> {
             helper.assertTrue(totalMass(helper, HOST) < EPSILON,
-                    "A fully powered input must admit nothing, the chamber got " + totalMass(helper, HOST));
+                    "An unpowered input must admit nothing, the chamber got " + totalMass(helper, HOST));
             // Open the valve: the same gas should now reach the chamber.
-            power(helper, false);
+            power(helper, true);
         });
         helper.runAfterDelay(60, () -> {
             helper.assertTrue(totalMass(helper, HOST) > EPSILON,
-                    "Unpowered, the input should let its stub empty into the chamber");
+                    "Powered, the input should let its stub empty into the chamber");
             helper.succeed();
         });
     }
 
     @GameTest(template = REACTOR_TEMPLATE, timeoutTicks = 100)
-    public static void unpoweredInputAdmitsGas(GameTestHelper helper) {
+    public static void poweredInputAdmitsGas(GameTestHelper helper) {
         buildShell(helper, ReactorPortMode.INPUT);
+        power(helper, true);
 
         helper.runAfterDelay(5, () -> kelvin().addGasAtTemperature(node(helper, WALL), ModGases.FLUX, 0.5, 400.0));
         helper.runAfterDelay(30, () -> {
             helper.assertTrue(totalMass(helper, HOST) > EPSILON,
-                    "An unpowered input should pass gas into the chamber");
+                    "A powered input should pass gas into the chamber");
             helper.succeed();
         });
     }
@@ -186,33 +187,33 @@ public class ReactorWallApertureGameTests {
     // --- output ------------------------------------------------------------------------------
 
     @GameTest(template = REACTOR_TEMPLATE, timeoutTicks = 100)
-    public static void poweredOutputDrawsNothing(GameTestHelper helper) {
+    public static void unpoweredOutputDrawsNothing(GameTestHelper helper) {
         buildShell(helper, ReactorPortMode.OUTPUT);
-        power(helper, true);
 
         helper.runAfterDelay(5, () -> kelvin().addGasAtTemperature(node(helper, HOST), ModGases.AETHER, 0.5, 400.0));
         helper.runAfterDelay(30, () -> {
             helper.assertTrue(totalMass(helper, WALL) < EPSILON,
-                    "A fully powered output must draw nothing, the stub got " + totalMass(helper, WALL));
+                    "An unpowered output must draw nothing, the stub got " + totalMass(helper, WALL));
             helper.assertTrue(kelvin().getEdgeBetween(node(helper, WALL), node(helper, HOST)) == null,
                     "An output has no edge to the chamber");
-            power(helper, false);
+            power(helper, true);
         });
         helper.runAfterDelay(60, () -> {
             helper.assertTrue(totalMass(helper, WALL) > EPSILON,
-                    "Unpowered, the output should draw the chamber into its stub");
+                    "Powered, the output should draw the chamber into its stub");
             helper.succeed();
         });
     }
 
     @GameTest(template = REACTOR_TEMPLATE, timeoutTicks = 100)
-    public static void unpoweredOutputDrawsGas(GameTestHelper helper) {
+    public static void poweredOutputDrawsGas(GameTestHelper helper) {
         buildShell(helper, ReactorPortMode.OUTPUT);
+        power(helper, true);
 
         helper.runAfterDelay(5, () -> kelvin().addGasAtTemperature(node(helper, HOST), ModGases.AETHER, 0.5, 400.0));
         helper.runAfterDelay(30, () -> {
             helper.assertTrue(totalMass(helper, WALL) > EPSILON,
-                    "An unpowered output should draw gas out of the chamber");
+                    "A powered output should draw gas out of the chamber");
             helper.succeed();
         });
     }
@@ -222,6 +223,7 @@ public class ReactorWallApertureGameTests {
     @GameTest(template = REACTOR_TEMPLATE, timeoutTicks = 150)
     public static void switchingModeSwapsValveForPump(GameTestHelper helper) {
         buildShell(helper, ReactorPortMode.INPUT);
+        power(helper, true);
 
         helper.runAfterDelay(5, () -> kelvin().addGasAtTemperature(node(helper, HOST), ModGases.AETHER, 0.5, 400.0));
         helper.runAfterDelay(30, () -> {
@@ -247,9 +249,7 @@ public class ReactorWallApertureGameTests {
     public static void outerFaceIsAPlainDuctJointInEitherMode(GameTestHelper helper) {
         helper.setBlock(LONE_WALL, port(ReactorPortMode.INPUT, Direction.EAST));
         helper.setBlock(LONE_OUTSIDE, ModBlocks.GAS_DUCT.get().defaultBlockState());
-        helper.setBlock(LONE_WALL.north(), Blocks.REDSTONE_BLOCK.defaultBlockState());
-
-        // Powered and in input mode, which used to be the most closed the outer face could be.
+        // Unpowered and in input mode: the most closed the chamber side can be.
         helper.runAfterDelay(5, () -> {
             DuctEdge edge = kelvin().getEdgeBetween(node(helper, LONE_WALL), node(helper, LONE_OUTSIDE));
             helper.assertTrue(edge != null, "The outer face should be joined to the duct");
@@ -270,6 +270,7 @@ public class ReactorWallApertureGameTests {
     @GameTest(template = REACTOR_TEMPLATE, timeoutTicks = 100)
     public static void inputHoldsBackBlockedGases(GameTestHelper helper) {
         buildShell(helper, ReactorPortMode.INPUT);
+        power(helper, true);
         port(helper).setSettings(ReactorPortMode.INPUT, new GasFilter(Set.of(ModGases.AETHER.getResourceLocation())));
 
         helper.runAfterDelay(5, () -> {
@@ -288,6 +289,7 @@ public class ReactorWallApertureGameTests {
     @GameTest(template = REACTOR_TEMPLATE, timeoutTicks = 100)
     public static void outputHoldsBackBlockedGases(GameTestHelper helper) {
         buildShell(helper, ReactorPortMode.OUTPUT);
+        power(helper, true);
         port(helper).setSettings(ReactorPortMode.OUTPUT, new GasFilter(Set.of(ModGases.FLUX.getResourceLocation())));
 
         helper.runAfterDelay(5, () -> {
@@ -306,6 +308,7 @@ public class ReactorWallApertureGameTests {
     @GameTest(template = REACTOR_TEMPLATE, timeoutTicks = 100)
     public static void unfilteredOutputPumpsEverything(GameTestHelper helper) {
         buildShell(helper, ReactorPortMode.OUTPUT);
+        power(helper, true);
 
         helper.runAfterDelay(5, () -> {
             kelvin().addGasAtTemperature(node(helper, HOST), ModGases.FLUX, 0.25, 400.0);

@@ -39,15 +39,15 @@ import java.util.Map;
  * chamber edge, output applies it to what the pump picks up.
  *
  * <p><b>Input:</b> keeps a one-way, filtered edge from the stub into the chamber in place,
- * throttled by redstone. The edge cannot be negotiated face-to-face like every other gas edge —
+ * opened by redstone. The edge cannot be negotiated face-to-face like every other gas edge —
  * the chamber node is somewhere inside the cavity, not next door — so it is authored here, rebuilt
  * when the redstone level or the filter moves, taken down when the mode changes, and torn down by
  * the reactor when it dissolves.
  *
  * <p><b>Output:</b> pumps gas out of the chamber. Each tick it moves up to a fixed mass of
  * whatever passes the filter from the chamber into its own stub, cooled to a temperature a duct
- * can carry, and stops once the stub backs up. Redstone scales that rate down, to nothing at full
- * power. There is no edge at all in this mode, so nothing can drift back into the chamber. The
+ * can carry, and stops once the stub backs up. Redstone sets that rate: nothing unpowered, the
+ * full rate at full power. There is no edge at all in this mode, so nothing can drift back into the chamber. The
  * heat it strips off is simply lost: the Heat Exchangers are the only things that turn chamber
  * heat into anything useful.
  *
@@ -150,16 +150,17 @@ public class ReactorPortBlockEntity extends GasNodeBlockEntity {
     // --- throttle ---------------------------------------------------------------------------
 
     /**
-     * How far redstone closes the chamber side, as the aperture to hand Kelvin: nothing at zero
-     * power, {@code -CHAMBER_EDGE_RADIUS} at full power, which shuts the passage entirely.
+     * How far the chamber side is closed for want of redstone, as the aperture to hand Kelvin:
+     * {@code -CHAMBER_EDGE_RADIUS} unpowered, which shuts the passage entirely, nothing at full
+     * power.
      */
     public double chamberAperture() {
-        return -CHAMBER_EDGE_RADIUS * redstoneLevel / MAX_REDSTONE_LEVEL;
+        return -CHAMBER_EDGE_RADIUS * (MAX_REDSTONE_LEVEL - redstoneLevel) / MAX_REDSTONE_LEVEL;
     }
 
-    /** How much of its full rate the port runs at: one unpowered, zero at full power. */
+    /** How much of its full rate the port runs at: zero unpowered, one at full power. */
     private double openness() {
-        return 1.0 - (double) redstoneLevel / MAX_REDSTONE_LEVEL;
+        return (double) redstoneLevel / MAX_REDSTONE_LEVEL;
     }
 
     // --- input ------------------------------------------------------------------------------
@@ -186,7 +187,7 @@ public class ReactorPortBlockEntity extends GasNodeBlockEntity {
         kelvin.addEdge(desired.getNodeA(), desired.getNodeB(), desired);
     }
 
-    /** The input edge: a filtered check valve from the stub into the chamber, narrowed by redstone. */
+    /** The input edge: a filtered check valve from the stub into the chamber, opened by redstone. */
     private FilteredOneWayCompositeDuctEdge chamberEdge(DuctNodePos own, DuctNodePos host) {
         GasEdgeNegotiator.EdgeKey key = GasEdgeNegotiator.canonical(own, host);
         double aperture = chamberAperture();
@@ -227,7 +228,7 @@ public class ReactorPortBlockEntity extends GasNodeBlockEntity {
             return;
         }
 
-        // Redstone throttles the pump the way it narrows the input's valve.
+        // Redstone drives the pump the way it opens the input's valve.
         double budget = ZPSConfig.exhaustKgPerTick() * openness();
         double outletTemperature = Math.min(kelvin.getTemperatureAt(host), ZPSConfig.exhaustOutletTemperatureK());
 

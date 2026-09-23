@@ -32,8 +32,10 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LeverBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.AttachFace;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.gametest.GameTestHolder;
@@ -136,6 +138,24 @@ public class FusionReactorGameTests {
 
     private static BlockState output() {
         return ModBlocks.REACTOR_PORT.get().defaultBlockState().setValue(ReactorPortBlock.MODE, ReactorPortMode.OUTPUT);
+    }
+
+    /**
+     * Open a port: a lit lever on the outer face of the wall block above it. The lever strongly
+     * powers that plating, and the port reads the plating's signal. The port's own outer face
+     * stays free for whatever duct the test hangs on it. A lever set down already lit tells only
+     * its own neighbours, unlike one that is pulled, so the port is told to read again.
+     */
+    private static void openPort(GameTestHelper helper, BlockPos wall, Direction outward) {
+        helper.setBlock(wall.above().relative(outward), Blocks.LEVER.defaultBlockState()
+                .setValue(LeverBlock.FACE, AttachFace.WALL)
+                .setValue(LeverBlock.FACING, outward)
+                .setValue(LeverBlock.POWERED, true));
+        if (!(helper.getBlockEntity(wall) instanceof ReactorPortBlockEntity port)) {
+            helper.fail("No reactor port at " + wall);
+            throw new IllegalStateException();
+        }
+        port.refreshRedstoneLevel();
     }
 
     /** Keep the fuel in: the port passes everything but Flux, the way an exhaust should. */
@@ -312,6 +332,7 @@ public class FusionReactorGameTests {
     public static void injectorLetsFuelIn(GameTestHelper helper) {
         buildShell(helper, Map.of(WEST_WALL,
                 facing(input(), Direction.WEST)));
+        openPort(helper, WEST_WALL, Direction.WEST);
         placeGenerator(helper, OUTSIDE_WEST, 0.001, 300.0);
 
         helper.succeedWhen(() -> helper.assertTrue(massOf(helper, HOST, ModGases.FLUX) > 0,
@@ -322,6 +343,8 @@ public class FusionReactorGameTests {
     public static void injectorNeverLetsGasOut(GameTestHelper helper) {
         buildShell(helper, Map.of(WEST_WALL,
                 facing(input(), Direction.WEST)));
+        // Wide open, so it is the check valve alone that holds the chamber in.
+        openPort(helper, WEST_WALL, Direction.WEST);
         // A generator at rest, so the injector's outer face is joined to something.
         placeGenerator(helper, OUTSIDE_WEST, 0.0, 300.0);
         kelvin().addGasAtTemperature(node(helper, HOST), ModGases.AETHER, 1.0, 300.0);
@@ -354,6 +377,7 @@ public class FusionReactorGameTests {
     public static void exhaustDrawsAetherNotFluxAndCools(GameTestHelper helper) {
         buildShell(helper, Map.of(EAST_WALL,
                 facing(output(), Direction.EAST)));
+        openPort(helper, EAST_WALL, Direction.EAST);
         holdBackFlux(helper, EAST_WALL);
         DuctNodePos host = node(helper, HOST);
         // Equal parts fuel and ash: the reaction is inhibited, so the flux stays put.
@@ -683,6 +707,8 @@ public class FusionReactorGameTests {
         overrides.put(NORTH_WALL_A, exchangerNorth);
         overrides.put(NORTH_WALL_B, exchangerNorth);
         buildShell(helper, overrides);
+        openPort(helper, WEST_WALL, Direction.WEST);
+        openPort(helper, EAST_WALL, Direction.EAST);
         // A whiff of Steam kept in as a buffer gas: fuel arrives by the milligram, and without it
         // the chamber would count as empty and lose heat before the fuel has built up. Only a
         // couple of grams, so its pressure does not hold the fuel line back.

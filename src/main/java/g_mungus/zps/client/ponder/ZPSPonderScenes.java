@@ -58,6 +58,8 @@ import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
+
 public class ZPSPonderScenes {
     public static void cableTutorial(SceneBuilder builder, SceneBuildingUtil util) {
         builder.configureBasePlate(0, 0, 7);
@@ -799,6 +801,18 @@ public class ZPSPonderScenes {
         SceneViewElement view = new SceneViewElement();
         ReactorGlowElement glow = new ReactorGlowElement(new BlockPos(4, 2, 4), new BlockPos(6, 4, 6), 0.37f);
 
+        // A port is shut until redstone opens it, so a running reactor has a rig on each port:
+        // the glass beside the port is plating, a Redstone Converter powers that, which powers
+        // the port next to it, and a Graduated Lever on the converter sets the level. Both stand
+        // clear of where the ducts go. The port's lamp follows the signal it receives, and is set
+        // here as the level is. The rigs go in before the opening shot, wide open, since the
+        // finished reactor could not run without them.
+        ThrottleRig inputRig = placeThrottleRig(builder, util, inputPort, Direction.EAST, Direction.NORTH,
+                ReactorPortBlockEntity.MAX_REDSTONE_LEVEL);
+        ThrottleRig outputRig = placeThrottleRig(builder, util, outputPort, Direction.SOUTH, Direction.WEST,
+                ReactorPortBlockEntity.MAX_REDSTONE_LEVEL);
+        List<ThrottleRig> rigs = List.of(inputRig, outputRig);
+
         // 1. Purpose: the finished reactor, running.
         builder.showBasePlate();
         builder.idle(5);
@@ -819,7 +833,9 @@ public class ZPSPonderScenes {
         builder.world().hideSection(everything, Direction.UP);
         builder.idle(30);
 
-        // Out of sight, the working blocks give way to stand-ins, so the shell can go up plain.
+        // Out of sight, the levers go back to nothing, for the ports to be opened on camera, and
+        // the working blocks give way to stand-ins, so the shell can go up plain.
+        setThrottle(builder, util, rigs, 0);
         builder.world().setBlocks(exchangerBlocks.copy().add(ports),
                 ModBlocks.REINFORCED_GLASS.get().defaultBlockState(), false);
 
@@ -851,8 +867,10 @@ public class ZPSPonderScenes {
                 .text("Once the chamber is fully sealed, the blocks form a reactor. No controller block is needed.");
         builder.idle(95);
 
-        // 5. The working blocks.
+        // 5. The working blocks. The ports come back at whatever level the schematic saved, and
+        // are shut, for the beat that follows to open them from nothing.
         builder.world().restoreBlocks(ports);
+        setThrottle(builder, util, rigs, 0);
         builder.effects().indicateSuccess(inputPort);
         builder.effects().indicateSuccess(outputPort);
         builder.idle(10);
@@ -862,67 +880,32 @@ public class ZPSPonderScenes {
                 .pointAt(util.vector().blockSurface(inputPort, Direction.NORTH)).placeNearTarget();
         builder.idle(95);
 
-        // Redstone throttles a port: open at no signal, shut at full strength, and in proportion
-        // between. The glass beside the Input port gives way to plating for a moment, and a
-        // Redstone Converter powers that, which powers the port next to it; a Graduated Lever on
-        // the converter sets the level. All of it stands clear of where the fuel duct goes. The
-        // port's lamp follows the signal it receives, and is set here as the level is.
-        BlockPos poweredWall = inputPort.east();
-        BlockPos converterPos = poweredWall.north();
-        BlockPos leverPos = converterPos.north();
-        Selection throttleRig = util.select().position(converterPos).add(util.select().position(leverPos));
-        Selection inputPortOnly = util.select().position(inputPort);
-
-        builder.world().setBlock(poweredWall, ModBlocks.REINFORCED_PLATING.get().defaultBlockState(), true);
-        builder.idle(10);
-        builder.world().setBlock(converterPos, ModBlocks.REDSTONE_CONVERTER.get().defaultBlockState()
-                .setValue(TransformerBlock.FACING, Direction.SOUTH)
-                .setValue(CableBlock.NORTH, true), false);
-        builder.world().setBlock(leverPos, ModBlocks.GRADUATED_LEVER.get().defaultBlockState()
-                .setValue(PanelBlock.FACE, AttachFace.WALL)
-                .setValue(PanelBlock.FACING, Direction.NORTH)
-                .setValue(PanelBlock.CONNECTED, true), false);
-        builder.world().showSection(throttleRig, Direction.SOUTH);
+        // Redstone opens a port: shut at no signal, wide open at full strength, and in proportion
+        // between. The rigs come back, the levers at nothing, and both ports are opened together:
+        // the line is about the Input port, but the reactor needs both, and they stay open from
+        // here on.
+        builder.world().showSection(inputRig.blocks(), Direction.SOUTH);
+        builder.world().showSection(outputRig.blocks(), Direction.EAST);
         builder.idle(25);
 
         builder.overlay().showText(80)
-                .text("A Redstone signal will reduce the flow rate through a Reactor Port...")
+                .text("A Reactor Port stays closed until it receives a Redstone signal, and opens further as the signal gets stronger...")
                 .pointAt(util.vector().blockSurface(inputPort, Direction.NORTH)).placeNearTarget();
         builder.idle(15);
         // Up to half, a click at a time.
-        for (int level = 1; level <= 8; level++) {
-            int power = level;
-            builder.world().modifyBlock(leverPos, state -> state.setValue(GraduatedLeverBlock.POWER, power), false);
-            builder.world().modifyBlockEntityNBT(inputPortOnly, ReactorPortBlockEntity.class,
-                    nbt -> nbt.putInt("Redstone", power));
-            builder.idle(5);
-        }
-        builder.effects().indicateRedstone(poweredWall);
+        clickThrottle(builder, util, rigs, 0, 8);
+        builder.effects().indicateRedstone(inputRig.poweredWall());
+        builder.effects().indicateRedstone(outputRig.poweredWall());
         builder.idle(35);
 
         builder.overlay().showText(80)
-                .text("...and at full strength, it will close the port completely.")
+                .text("...until at full strength, the port is fully open.")
                 .pointAt(util.vector().blockSurface(inputPort, Direction.NORTH)).placeNearTarget();
         builder.idle(15);
-        for (int level = 9; level <= ReactorPortBlockEntity.MAX_REDSTONE_LEVEL; level++) {
-            int power = level;
-            builder.world().modifyBlock(leverPos, state -> state.setValue(GraduatedLeverBlock.POWER, power), false);
-            builder.world().modifyBlockEntityNBT(inputPortOnly, ReactorPortBlockEntity.class,
-                    nbt -> nbt.putInt("Redstone", power));
-            builder.idle(5);
-        }
-        builder.effects().indicateRedstone(poweredWall);
+        clickThrottle(builder, util, rigs, 8, ReactorPortBlockEntity.MAX_REDSTONE_LEVEL);
+        builder.effects().indicateRedstone(inputRig.poweredWall());
+        builder.effects().indicateRedstone(outputRig.poweredWall());
         builder.idle(40);
-
-        // Open again, and the rig away, leaving the window as it was.
-        builder.world().modifyBlock(leverPos, state -> state.setValue(GraduatedLeverBlock.POWER, 0), false);
-        builder.world().modifyBlockEntityNBT(inputPortOnly, ReactorPortBlockEntity.class, nbt -> nbt.putInt("Redstone", 0));
-        builder.idle(15);
-        builder.world().hideSection(throttleRig, Direction.NORTH);
-        builder.idle(20);
-        builder.world().restoreBlocks(throttleRig);
-        builder.world().setBlock(poweredWall, ModBlocks.REINFORCED_GLASS.get().defaultBlockState(), true);
-        builder.idle(10);
 
         builder.world().restoreBlocks(exchangerBlocks);
         for (BlockPos exchanger : exchangers) {
@@ -1035,29 +1018,25 @@ public class ZPSPonderScenes {
     private record ReactorRunningSet(BlockPos inputPort, BlockPos outputPort, BlockPos vent, Vec3 chamberCentre,
                                      Selection shell, Selection exchangers, Selection powerLine,
                                      BlockPos[] buses, BlockPos[] displays, Selection busBlocks,
-                                     ReactorGlowElement glow) {
+                                     ThrottleRig inputRig, ThrottleRig outputRig, ReactorGlowElement glow) {
     }
 
     /**
-     * Opens one of those scenes: titles it, builds the rig, and brings the whole reactor in running
-     * at a steady 65,000 K, with the Vent giving off cloud for a while.
-     *
-     * @param rigSpace where the scene will later stand a redstone rig, left out of the opening
-     *                 section: a block shown twice is drawn twice. Null for none.
+     * Opens one of those scenes: titles it, builds the rigs, and brings the whole reactor in running
+     * at a steady 65,000 K, with the Vent giving off cloud for a while. A port is shut until
+     * redstone opens it, so both ports carry the intro's redstone rig, wide open, from the start.
      */
     private static ReactorRunningSet openReactorRunningScene(SceneBuilder builder, SceneBuildingUtil util, String id,
-                                                             String title, @org.jetbrains.annotations.Nullable Selection rigSpace,
-                                                             int cloudTicks) {
+                                                             String title, int cloudTicks) {
         builder.configureBasePlate(0, 0, 9);
         builder.title(id, title);
         builder.scaleSceneView(0.7f);
         builder.setSceneOffsetY(-1.5f);
 
+        BlockPos inputPort = new BlockPos(5, 3, 3);
+        BlockPos outputPort = new BlockPos(3, 3, 5);
         BlockPos vent = new BlockPos(1, 5, 5);
         Selection everything = util.select().fromTo(0, 1, 0, 8, 8, 8);
-        if (rigSpace != null) {
-            everything = everything.substract(rigSpace);
-        }
         Selection shell = util.select().fromTo(3, 1, 3, 7, 5, 7).substract(util.select().fromTo(4, 2, 4, 6, 4, 6));
         Selection exchangers = util.select().position(5, 5, 4).add(util.select().position(4, 5, 5))
                 .add(util.select().position(6, 5, 5)).add(util.select().position(5, 5, 6));
@@ -1074,8 +1053,8 @@ public class ZPSPonderScenes {
         // west on alternate blocks of the plate's edge, where one camera move takes them all in.
         //
         // Window height and not the floor, because a getter only answers from a wall block that
-        // touches the cavity, and the floor's edge blocks do not. The redstone rigs that come
-        // later stand next to buses, which is fine: they are on a different cable standard.
+        // touches the cavity, and the floor's edge blocks do not. The redstone rigs stand next to
+        // buses, which is fine: they are on a different cable standard.
         BlockPos[] buses = {new BlockPos(4, 2, 2), new BlockPos(2, 2, 4), new BlockPos(2, 2, 6)};
         Direction[] busFacings = {Direction.SOUTH, Direction.EAST, Direction.EAST};
         BlockPos[] displays = {new BlockPos(0, 1, 2), new BlockPos(0, 1, 4), new BlockPos(0, 1, 6)};
@@ -1096,6 +1075,11 @@ public class ZPSPonderScenes {
         Selection busBlocks = util.select().position(buses[0]).add(util.select().position(buses[1]))
                 .add(util.select().position(buses[2]));
 
+        ThrottleRig inputRig = placeThrottleRig(builder, util, inputPort, Direction.EAST, Direction.NORTH,
+                ReactorPortBlockEntity.MAX_REDSTONE_LEVEL);
+        ThrottleRig outputRig = placeThrottleRig(builder, util, outputPort, Direction.SOUTH, Direction.WEST,
+                ReactorPortBlockEntity.MAX_REDSTONE_LEVEL);
+
         ReactorGlowElement glow = new ReactorGlowElement(new BlockPos(4, 2, 4), new BlockPos(6, 4, 6), 0.61f);
 
         builder.showBasePlate();
@@ -1111,14 +1095,14 @@ public class ZPSPonderScenes {
             builder.effects().emitParticles(util.vector().topOf(vent),
                     builder.effects().simpleParticleEmitter(ParticleTypes.CLOUD, new Vec3(0, 0.05, 0)), 1, cloudTicks);
         }
-        return new ReactorRunningSet(new BlockPos(5, 3, 3), new BlockPos(3, 3, 5), vent, util.vector().centerOf(5, 3, 5),
-                shell, exchangers, powerLine, buses, displays, busBlocks, glow);
+        return new ReactorRunningSet(inputPort, outputPort, vent, util.vector().centerOf(5, 3, 5),
+                shell, exchangers, powerLine, buses, displays, busBlocks, inputRig, outputRig, glow);
     }
 
     /** Reading the reactor: which values there are, and where a Serial Bus has to point to get them. */
     public static void reactorMonitoringTutorial(SceneBuilder builder, SceneBuildingUtil util) {
         ReactorRunningSet set = openReactorRunningScene(builder, util, "reactor_monitoring",
-                "Monitoring a Fusion Reactor", null, 520);
+                "Monitoring a Fusion Reactor", 520);
         BlockPos[] buses = set.buses();
         BlockPos[] displays = set.displays();
         Selection busBlocks = set.busBlocks();
@@ -1162,8 +1146,9 @@ public class ZPSPonderScenes {
     /** Why a reactor overheats, and the two ways to stop it. */
     public static void reactorOverheatingTutorial(SceneBuilder builder, SceneBuildingUtil util) {
         ReactorRunningSet set = openReactorRunningScene(builder, util, "reactor_overheating",
-                "Keeping a Fusion Reactor from Overheating", util.select().fromTo(1, 3, 6, 2, 3, 6), 330);
+                "Keeping a Fusion Reactor from Overheating", 330);
         BlockPos outputPort = set.outputPort();
+        ThrottleRig outputRig = set.outputRig();
         BlockPos vent = set.vent();
         Vec3 chamberCentre = set.chamberCentre();
         Selection exchangers = set.exchangers();
@@ -1187,19 +1172,17 @@ public class ZPSPonderScenes {
         // The response: slow the reaction. Hold the Aether in, and it has to wait for it to leave.
         // That takes no heat out by itself. It cuts what is being put in, to below what the Heat
         // Exchangers are taking out, and they are what bring the temperature down.
-        BlockPos outputLever = placeThrottleRig(builder, util, outputPort, Direction.SOUTH, Direction.WEST);
-        builder.idle(30);
         builder.overlay().showText(95).attachKeyFrame()
                 .text("The reaction pauses while Aether is above a quarter of the gas, so the Output port sets how fast it can run.")
                 .pointAt(chamberCentre).placeNearTarget();
         builder.idle(105);
-        clickThrottle(builder, util, outputLever, outputPort, 0, 10);
+        clickThrottle(builder, util, outputRig, ReactorPortBlockEntity.MAX_REDSTONE_LEVEL, 5);
         // Less leaving the Vent from here on.
         builder.effects().emitParticles(util.vector().topOf(vent),
                 builder.effects().simpleParticleEmitter(ParticleTypes.CLOUD, new Vec3(0, 0.05, 0)), 0.3f, 620);
         builder.addInstruction(scene -> glow.heatTo(1.3f, 105));
         builder.overlay().showText(115)
-                .text("Restricting the Output port with Redstone keeps more Aether inside, so less heat is generated and the Heat Exchangers can catch up.")
+                .text("Weakening the Output port's Redstone signal keeps more Aether inside, so less heat is generated and the Heat Exchangers can catch up.")
                 .pointAt(util.vector().blockSurface(outputPort, Direction.WEST)).placeNearTarget();
         rampReadings(builder, displays, 15.2e6, 9.0e6, 110_000, 65_000, 8192, 8192, 105);
         // The line is a long one: hold on the settled reactor until it has been read.
@@ -1236,8 +1219,9 @@ public class ZPSPonderScenes {
     /** Why a reactor bursts, which is mostly a matter of how it is lit, and how to light it safely. */
     public static void reactorBurstingTutorial(SceneBuilder builder, SceneBuildingUtil util) {
         ReactorRunningSet set = openReactorRunningScene(builder, util, "reactor_bursting",
-                "Keeping a Fusion Reactor from Bursting", util.select().fromTo(6, 3, 1, 6, 3, 2), 200);
+                "Keeping a Fusion Reactor from Bursting", 200);
         BlockPos inputPort = set.inputPort();
+        ThrottleRig inputRig = set.inputRig();
         BlockPos vent = set.vent();
         Selection shell = set.shell();
         BlockPos[] displays = set.displays();
@@ -1258,8 +1242,6 @@ public class ZPSPonderScenes {
         // half way to ignition.
         builder.addInstruction(scene -> glow.heatTo(0f, 35));
         rampReadings(builder, displays, 9.0e6, 400_000, 65_000, 375, 8192, 0, 35);
-        BlockPos inputLever = placeThrottleRig(builder, util, inputPort, Direction.EAST, Direction.NORTH);
-        builder.idle(30);
         builder.overlay().showText(100)
                 .text("A chamber filled with cold Flux will reach over a hundred times its pressure by the time it ignites...");
         builder.idle(110);
@@ -1273,10 +1255,10 @@ public class ZPSPonderScenes {
         // Again, with the Input port nearly shut first: 60 kPa cold is 10.4 MPa at running heat.
         builder.addInstruction(scene -> glow.heatTo(0f, 30));
         rampReadings(builder, displays, 24.0e6, 400_000, 22_500, 375, 0, 0, 30);
-        clickThrottle(builder, util, inputLever, inputPort, 0, 14);
+        clickThrottle(builder, util, inputRig, ReactorPortBlockEntity.MAX_REDSTONE_LEVEL, 1);
         reactorReadings(builder, displays, 60_000, 375, 0);
         builder.overlay().showText(95).attachKeyFrame()
-                .text("Before igniting, restrict the Input port with Redstone, so that only a little Flux gets in.")
+                .text("Before igniting, give the Input port only a weak Redstone signal, so that only a little Flux gets in.")
                 .pointAt(util.vector().blockSurface(inputPort, Direction.NORTH)).placeNearTarget();
         builder.idle(105);
         builder.addInstruction(scene -> glow.heatTo(1.3f, 140));
@@ -1288,7 +1270,7 @@ public class ZPSPonderScenes {
                 .text("Once the reactor is lit, the Input port can be opened up again.")
                 .pointAt(util.vector().blockSurface(inputPort, Direction.NORTH)).placeNearTarget();
         builder.idle(20);
-        clickThrottle(builder, util, inputLever, inputPort, 14, 4);
+        clickThrottle(builder, util, inputRig, 1, 11);
         rampReadings(builder, displays, 10.4e6, 12.0e6, 65_000, 65_000, 8192, 8192, 25);
         builder.idle(10);
 
@@ -1326,29 +1308,40 @@ public class ZPSPonderScenes {
     }
 
     /**
-     * The redstone rig from the intro, beside a port: the wall block on one side of it becomes
-     * plating, a Redstone Converter on that block's outer face powers it, and a Graduated Lever on
-     * the converter sets the level. Returns where the lever is.
+     * A port's redstone rig: the wall block beside the port that is powered, the Graduated Lever
+     * that sets the level, the port itself, and the rig's own blocks, the converter and lever,
+     * for showing and hiding.
+     */
+    private record ThrottleRig(BlockPos port, BlockPos poweredWall, BlockPos lever, Selection blocks) {
+    }
+
+    /**
+     * Puts the redstone rig beside a port, without showing it: the wall block on one side of the
+     * port becomes plating, a Redstone Converter on that block's outer face powers it, and a
+     * Graduated Lever on the converter sets the level, which starts at {@code power}, the port's
+     * lamp with it.
      *
      * @param along   from the port to the wall block that is powered
      * @param outward the way the port's wall faces
      */
-    private static BlockPos placeThrottleRig(SceneBuilder builder, SceneBuildingUtil util, BlockPos port,
-                                             Direction along, Direction outward) {
+    private static ThrottleRig placeThrottleRig(SceneBuilder builder, SceneBuildingUtil util, BlockPos port,
+                                                Direction along, Direction outward, int power) {
         BlockPos poweredWall = port.relative(along);
         BlockPos converterPos = poweredWall.relative(outward);
         BlockPos leverPos = converterPos.relative(outward);
-        builder.world().setBlock(poweredWall, ModBlocks.REINFORCED_PLATING.get().defaultBlockState(), true);
+        builder.world().setBlock(poweredWall, ModBlocks.REINFORCED_PLATING.get().defaultBlockState(), false);
         builder.world().setBlock(converterPos, ModBlocks.REDSTONE_CONVERTER.get().defaultBlockState()
                 .setValue(TransformerBlock.FACING, outward.getOpposite())
                 .setValue(cableConnection(outward), true), false);
         builder.world().setBlock(leverPos, ModBlocks.GRADUATED_LEVER.get().defaultBlockState()
                 .setValue(PanelBlock.FACE, AttachFace.WALL)
                 .setValue(PanelBlock.FACING, outward)
-                .setValue(PanelBlock.CONNECTED, true), false);
-        builder.world().showSection(util.select().position(converterPos).add(util.select().position(leverPos)),
-                outward.getOpposite());
-        return leverPos;
+                .setValue(PanelBlock.CONNECTED, true)
+                .setValue(GraduatedLeverBlock.POWER, power), false);
+        ThrottleRig rig = new ThrottleRig(port, poweredWall, leverPos,
+                util.select().position(converterPos).add(util.select().position(leverPos)));
+        setThrottle(builder, util, List.of(rig), power);
+        return rig;
     }
 
     private static BooleanProperty cableConnection(Direction direction) {
@@ -1362,15 +1355,26 @@ public class ZPSPonderScenes {
         };
     }
 
-    /** Clicks a Graduated Lever a step at a time from one level to another, the port's lamp following, and idles through it. */
-    private static void clickThrottle(SceneBuilder builder, SceneBuildingUtil util, BlockPos leverPos, BlockPos port,
+    /** Sets each rig's Graduated Lever to a level at once, the port's lamp following. */
+    private static void setThrottle(SceneBuilder builder, SceneBuildingUtil util, List<ThrottleRig> rigs, int power) {
+        for (ThrottleRig rig : rigs) {
+            builder.world().modifyBlock(rig.lever(), state -> state.setValue(GraduatedLeverBlock.POWER, power), false);
+            builder.world().modifyBlockEntityNBT(util.select().position(rig.port()), ReactorPortBlockEntity.class,
+                    nbt -> nbt.putInt("Redstone", power));
+        }
+    }
+
+    /** Clicks a rig's Graduated Lever a step at a time from one level to another, the port's lamp following, and idles through it. */
+    private static void clickThrottle(SceneBuilder builder, SceneBuildingUtil util, ThrottleRig rig, int from, int to) {
+        clickThrottle(builder, util, List.of(rig), from, to);
+    }
+
+    /** The same for several rigs together, a step of each per click. */
+    private static void clickThrottle(SceneBuilder builder, SceneBuildingUtil util, List<ThrottleRig> rigs,
                                       int from, int to) {
         int direction = Integer.signum(to - from);
         for (int level = from + direction; direction != 0 && level != to + direction; level += direction) {
-            int power = level;
-            builder.world().modifyBlock(leverPos, state -> state.setValue(GraduatedLeverBlock.POWER, power), false);
-            builder.world().modifyBlockEntityNBT(util.select().position(port), ReactorPortBlockEntity.class,
-                    nbt -> nbt.putInt("Redstone", power));
+            setThrottle(builder, util, rigs, level);
             builder.idle(5);
         }
     }

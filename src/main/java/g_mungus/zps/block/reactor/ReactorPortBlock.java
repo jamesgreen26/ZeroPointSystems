@@ -43,12 +43,12 @@ import java.util.HashSet;
  * <p>The block holds a short stub of pipe as its own Kelvin node and joins the network on its
  * outer face only, as an ordinary length of duct. Everything that makes the port a port happens
  * on the chamber side, between the stub and the reactor's chamber node: the check valve, the
- * redstone throttle, the gas filter, and in output mode the pump that draws gas out. That side is not a
+ * redstone valve, the gas filter, and in output mode the pump that draws gas out. That side is not a
  * negotiated edge — the block entity manages it once the cavity seals — so the stub is a dead end
  * until the block is part of a reactor.
  *
- * <p>Redstone throttles the chamber side: the stronger the signal reaching the block, the narrower
- * the passage, until a full fifteen shuts it completely. Unpowered, the port carries its full rate.
+ * <p>Redstone opens the chamber side: unpowered, the port is shut, and the stronger the signal
+ * reaching the block, the wider the passage, until a full fifteen carries the port's full rate.
  *
  * <p>{@link #FACING} is the outer face, chosen at placement the way a vent is: toward the player,
  * or away while sneaking. A block whose inner face is not on the cavity still seals the shell but
@@ -108,7 +108,7 @@ public class ReactorPortBlock extends GasNodeBlock implements EntityBlock, React
                 VOLUME, Double.MAX_VALUE, Double.MAX_VALUE, HEAT_CAPACITY);
     }
 
-    /** The outer face is a plain length of duct; the mode and the throttle act on the chamber side. */
+    /** The outer face is a plain length of duct; the mode and the redstone valve act on the chamber side. */
     @Override
     public @Nullable GasEdgeProposal proposeEdge(BlockGetter level, BlockPos self, Direction toNeighbor) {
         BlockState state = level.getBlockState(self);

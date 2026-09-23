@@ -29,7 +29,6 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.vehicle.DismountHelper;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
@@ -82,13 +81,23 @@ public class DuctTravelEntity extends Entity {
     public static final float HEAD_SIZE = 0.5f;
 
     /**
-     * How far out of the vent's block centre the head sits: to the outer face of the plate, then
-     * half a head to clear it. The plate is pressed back against the duct feeding it, so its face
-     * sits inside the vent's own block and the head does too. The result is a head cube resting
-     * flush against the outside of the grille, centred on it, which is what anyone walking past
-     * sees.
+     * Where the grille is, measured from the vent's block centre along the way it faces. The plate
+     * is pressed back against the duct feeding it, so its face sits well inside the vent's own
+     * block: a negative offset, behind the centre. Everything that meets the vent — the rider's
+     * head, a player climbing out, the puff and clatter of someone coming or going — is placed
+     * against this face, not against the block.
      */
-    private static final double HEAD_OFFSET = VentBlock.PLATE_THICKNESS / 16.0 - 0.5 + HEAD_SIZE / 2.0;
+    public static final double GRILLE_OFFSET = VentBlock.PLATE_THICKNESS / 16.0 - 0.5;
+
+    /**
+     * How far out of the vent's block centre the head sits: to the face of the grille, then half a
+     * head to clear it. The result is a head cube resting flush against the outside of the grille,
+     * centred on it, which is what anyone walking past sees.
+     */
+    private static final double HEAD_OFFSET = GRILLE_OFFSET + HEAD_SIZE / 2.0;
+
+    /** How far off the grille the puff and clatter of a vent are placed, so they are not inside it. */
+    private static final double MOUTH_CLEARANCE = 0.05;
 
     /**
      * What the rider is while they are in here. The eye sits at the middle of the cube, so the
@@ -461,14 +470,19 @@ public class DuctTravelEntity extends Entity {
     }
 
     /**
-     * Where a rider is put down. Every candidate is worked out and checked for room in the vent's
-     * own block space, where its blocks are, and the one chosen is then taken into the world, which
-     * is where the rider has to end up.
+     * Where a rider is put down: right against the grille they were looking out of, the way they
+     * would be if they had stepped out of it. Out of a wall vent they stand in the vent's own block
+     * with their back to the plate; out of a floor vent they stand on the plate; out of a ceiling
+     * vent they hang from it, with the top of their head just under the grille. There is no
+     * searching for room — a vent is a way through a wall, and whatever is on the other side is
+     * where the rider ends up, exactly as in the world proper.
+     *
+     * <p>Worked out in the vent's own block space, where its blocks are, and then taken into the
+     * world, which is where the rider has to end up.
      *
      * <p>Runs on the rider's client as well as the server when the vehicle is on a sublevel — Sable
      * asks the client's copy, and the server takes its word — so everything here comes from what is
-     * synched: the vent's position and facing, and the blocks around it, which the client has for
-     * any sublevel it can see.
+     * synched: the vent's position and facing, and the block at it.
      */
     @Override
     public @NotNull Vec3 getDismountLocationForPassenger(@NotNull LivingEntity passenger) {
@@ -486,46 +500,21 @@ public class DuctTravelEntity extends Entity {
         // From the block rather than the synched facing: a vent that has just been broken reads as
         // facing up, which puts a rider being thrown out down where it stood rather than beside it.
         Direction facing = facingOf(level().getBlockState(ventPos));
+        Vec3 grille = Vec3.atCenterOf(ventPos)
+                .add(Vec3.atLowerCornerOf(facing.getNormal()).scale(GRILLE_OFFSET));
+        // Their size on their feet, not the head they are while they ride.
+        EntityDimensions standing = passenger.getDimensions(Pose.STANDING);
 
-        BlockPos outside = ventPos.relative(facing);
-        double x = outside.getX() + 0.5;
-        double z = outside.getZ() + 0.5;
-
-        // A vent in a floor is a plate lying on the block beneath, with most of its own block open
-        // above it. Climbing out of one means standing on the grille, not being lifted a block
-        // into the air to fall back onto it.
-        if (facing == Direction.UP) {
-            Vec3 onPlate = new Vec3(ventPos.getX() + 0.5,
-                    ventPos.getY() + VentBlock.PLATE_THICKNESS / 16.0, ventPos.getZ() + 0.5);
-            if (DismountHelper.canDismountTo(level(), onPlate, passenger, Pose.STANDING)) {
-                return toWorld(onPlate);
-            }
-        }
-
-        // A vent in a ceiling opens straight down, so the block immediately outside it is the one
-        // the player's head would be standing in. Every other facing puts that block beside or
-        // above the vent, where a full-height body clears it; here it has to drop a whole block
-        // further or they come out wedged in the grille they just left.
-        if (facing == Direction.DOWN) {
-            Vec3 below = new Vec3(x, outside.getY() - 1.0, z);
-            if (DismountHelper.canDismountTo(level(), below, passenger, Pose.STANDING)) {
-                return toWorld(below);
-            }
-        }
-
-        Vec3 inFront = new Vec3(x, outside.getY(), z);
-        if (DismountHelper.canDismountTo(level(), inFront, passenger, Pose.STANDING)) {
-            return toWorld(inFront);
-        }
-
-        // Someone has walled the grille over. Try to stand on top of the vent instead.
-        Vec3 above = new Vec3(ventPos.getX() + 0.5, ventPos.getY() + 1.0, ventPos.getZ() + 0.5);
-        if (DismountHelper.canDismountTo(level(), above, passenger, Pose.STANDING)) {
-            return toWorld(above);
-        }
-
-        // Nowhere is clear. Better to leave them in the vent's own space than in limbo.
-        return toWorld(new Vec3(ventPos.getX() + 0.5, ventPos.getY(), ventPos.getZ() + 0.5));
+        Vec3 spot = switch (facing) {
+            // Standing on the plate.
+            case UP -> grille;
+            // Hanging under it: the top of the head level with the grille.
+            case DOWN -> grille.subtract(0.0, standing.height(), 0.0);
+            // Feet on the vent block's floor, body pressed to the grille.
+            default -> new Vec3(grille.x, ventPos.getY(), grille.z)
+                    .add(Vec3.atLowerCornerOf(facing.getNormal()).scale(standing.width() / 2.0));
+        };
+        return toWorld(spot);
     }
 
     // --- lifecycle --------------------------------------------------------------------------
@@ -917,7 +906,7 @@ public class DuctTravelEntity extends Entity {
                               @Nullable Player except) {
         Direction facing = facingOf(state);
         Vec3 mouth = toWorld(level, pos, Vec3.atCenterOf(pos)
-                .add(Vec3.atLowerCornerOf(facing.getNormal()).scale(0.55)));
+                .add(Vec3.atLowerCornerOf(facing.getNormal()).scale(GRILLE_OFFSET + MOUTH_CLEARANCE)));
         level.playSound(except, mouth.x, mouth.y, mouth.z, CLANK_SOUND, SoundSource.BLOCKS,
                 CLANK_VOLUME, CLANK_PITCH);
         level.sendParticles(ParticleTypes.CLOUD, mouth.x, mouth.y, mouth.z, 8, 0.15, 0.15, 0.15, 0.02);

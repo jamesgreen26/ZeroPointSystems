@@ -12,6 +12,7 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
@@ -103,8 +104,10 @@ public class DuctTravelSableGameTests {
             duct.requestCycle(1);
 
             helper.runAfterDelay(HOP_TICKS, () -> {
-                // The far vent faces south, so the player should be stood just south of it, at its height.
-                Vec3 outside = run.farWorld().add(0.0, -0.5, 1.0);
+                // The far vent faces south, so the player should be stood against its grille, facing south,
+                // on the floor of its block.
+                Vec3 outside = run.farWorld().add(0.0, -0.5,
+                        DuctTravelEntity.GRILLE_OFFSET + player.getDimensions(Pose.STANDING).width() / 2.0);
                 // The spot itself, and not only where the player ends up: Sable brings a dismount that
                 // lands in a plot it knows back into the world, which would hide the wrong answer here.
                 assertNear(helper, duct.getDismountLocationForPassenger(player), outside,
@@ -118,9 +121,15 @@ public class DuctTravelSableGameTests {
         });
     }
 
+    /** Where a player hangs from a ceiling vent whose centre is at {@code ventCentre} in the world. */
+    private static Vec3 underTheGrille(Vec3 ventCentre, Player player) {
+        return ventCentre.add(0.0,
+                -DuctTravelEntity.GRILLE_OFFSET - player.getDimensions(Pose.STANDING).height(), 0.0);
+    }
+
     /**
-     * A ceiling vent on a sublevel puts the player down the same way one in the world does: a whole body below
-     * the grille, standing clear of it, not on top of the vent.
+     * A ceiling vent on a sublevel puts the player down the same way one in the world does: hanging from the
+     * grille with the top of their head just under it, not on top of the vent.
      */
     @GameTest(template = TEMPLATE, batch = BATCH + "_climbingOutOfASublevelCeilingVentDropsThePlayerClearOfIt", skyAccess = true)
     public static void climbingOutOfASublevelCeilingVentDropsThePlayerClearOfIt(GameTestHelper helper) {
@@ -129,14 +138,13 @@ public class DuctTravelSableGameTests {
             DuctTravelEntity duct = enter(helper, run.nearPlot(), player);
 
             helper.runAfterDelay(2, () -> {
-                // The block outside a ceiling vent is the one a standing player's head would be in, so the spot
-                // is a block further down: two blocks below the vent's centre, on the block face.
-                Vec3 clear = run.nearWorld().add(0.0, -2.5, 0.0);
+                // Hanging from the grille, the top of the head level with it.
+                Vec3 clear = underTheGrille(run.nearWorld(), player);
                 assertNear(helper, duct.getDismountLocationForPassenger(player), clear,
-                        "the spot a rider is put down on from a sublevel ceiling vent should be a body below it in the world");
+                        "the spot a rider is put down on from a sublevel ceiling vent should be just under its grille in the world");
                 player.stopRiding();
                 assertNear(helper, player.position(), clear,
-                        "climbing out of a ceiling vent on a sublevel should put the player a body below it in the world");
+                        "climbing out of a ceiling vent on a sublevel should hang the player just under its grille in the world");
                 run.rig().remove();
                 helper.succeed();
             });
@@ -168,9 +176,9 @@ public class DuctTravelSableGameTests {
                     clientCopy.getEntityData().assignValues(synched);
                 }
 
-                Vec3 clear = run.nearWorld().add(0.0, -2.5, 0.0);
+                Vec3 clear = underTheGrille(run.nearWorld(), player);
                 assertNear(helper, clientCopy.getDismountLocationForPassenger(player), clear,
-                        "the spot the rider's client works out from the synched data alone should be a body below the vent in the world");
+                        "the spot the rider's client works out from the synched data alone should be just under the grille in the world");
                 run.rig().remove();
                 helper.succeed();
             });

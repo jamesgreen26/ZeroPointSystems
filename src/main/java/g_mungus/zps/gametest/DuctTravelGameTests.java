@@ -14,6 +14,7 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
@@ -430,10 +431,13 @@ public class DuctTravelGameTests {
 
     /** Climb into a vent facing {@code facing} and ask where dismounting would put the player. */
     private static Vec3 dismountFrom(GameTestHelper helper, BlockPos vent, Direction facing) {
+        return dismountFrom(helper, vent, facing, helper.makeMockPlayer(GameType.SURVIVAL));
+    }
+
+    private static Vec3 dismountFrom(GameTestHelper helper, BlockPos vent, Direction facing, Player player) {
         helper.setBlock(vent, ModBlocks.VENT.get().defaultBlockState()
                 .setValue(VentBlock.FACING, facing));
 
-        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
         if (!DuctTravelEntity.enter(helper.getLevel(), helper.absolutePos(vent), player)) {
             helper.fail("Could not climb into the vent");
         }
@@ -444,23 +448,22 @@ public class DuctTravelGameTests {
         return duct.getDismountLocationForPassenger(player);
     }
 
-    /**
-     * A ceiling vent opens into the block a standing player's head would occupy, so coming out of
-     * one has to drop a whole body rather than the one block every other facing needs.
-     */
+    /** Out of a ceiling vent a player hangs from the grille, the top of their head just under it. */
     @GameTest(template = TEMPLATE)
-    public static void aCeilingVentDropsThePlayerClearOfIt(GameTestHelper helper) {
-        BlockPos landingBlock = new BlockPos(3, 1, 3);
-        // The two blocks a standing player would occupy under the vent.
-        helper.setBlock(landingBlock, Blocks.AIR.defaultBlockState());
-        helper.setBlock(new BlockPos(3, 2, 3), Blocks.AIR.defaultBlockState());
+    public static void aCeilingVentLeavesThePlayersHeadJustUnderTheGrille(GameTestHelper helper) {
+        BlockPos vent = new BlockPos(3, 3, 3);
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        Vec3 landing = dismountFrom(helper, vent, Direction.DOWN, player);
 
-        Vec3 landing = dismountFrom(helper, new BlockPos(3, 3, 3), Direction.DOWN);
-
-        double expected = helper.absolutePos(landingBlock).getY();
-        if (landing.y != expected) {
-            helper.fail("A ceiling vent should leave the player standing clear of it at y "
+        BlockPos abs = helper.absolutePos(vent);
+        double grille = abs.getY() + 0.5 - DuctTravelEntity.GRILLE_OFFSET;
+        double expected = grille - player.getDimensions(Pose.STANDING).height();
+        if (Math.abs(landing.y - expected) > 1.0e-6) {
+            helper.fail("A ceiling vent should hang the player from its grille with their feet at y "
                     + expected + ", but put them at y " + landing.y);
+        }
+        if (landing.x != abs.getX() + 0.5 || landing.z != abs.getZ() + 0.5) {
+            helper.fail("A ceiling vent should put the player straight under it, but put them at " + landing);
         }
         helper.succeed();
     }
@@ -483,19 +486,27 @@ public class DuctTravelGameTests {
         helper.succeed();
     }
 
-    /** The extra drop is for ceilings alone: a vent in a wall still puts them level with it. */
+    /**
+     * Out of a wall vent a player stands right against the grille, in the vent's own block, feet on
+     * its floor — not a block out from it.
+     */
     @GameTest(template = TEMPLATE)
-    public static void aWallVentLeavesThePlayerLevelWithIt(GameTestHelper helper) {
-        BlockPos landingBlock = new BlockPos(3, 1, 2);
-        helper.setBlock(landingBlock, Blocks.AIR.defaultBlockState());
-        helper.setBlock(new BlockPos(3, 2, 2), Blocks.AIR.defaultBlockState());
+    public static void aWallVentLeavesThePlayerAgainstTheGrille(GameTestHelper helper) {
+        BlockPos vent = new BlockPos(3, 1, 3);
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        Vec3 landing = dismountFrom(helper, vent, Direction.NORTH, player);
 
-        Vec3 landing = dismountFrom(helper, new BlockPos(3, 1, 3), Direction.NORTH);
-
-        double expected = helper.absolutePos(landingBlock).getY();
-        if (landing.y != expected) {
-            helper.fail("A wall vent should leave the player standing beside it at y "
-                    + expected + ", but put them at y " + landing.y);
+        BlockPos abs = helper.absolutePos(vent);
+        if (landing.y != abs.getY()) {
+            helper.fail("A wall vent should leave the player standing on its block's floor at y "
+                    + abs.getY() + ", but put them at y " + landing.y);
+        }
+        // North faces -z: the grille is behind the centre, the player half a body in front of it.
+        double expectedZ = abs.getZ() + 0.5
+                - (DuctTravelEntity.GRILLE_OFFSET + player.getDimensions(Pose.STANDING).width() / 2.0);
+        if (Math.abs(landing.z - expectedZ) > 1.0e-6 || landing.x != abs.getX() + 0.5) {
+            helper.fail("A wall vent should stand the player against its grille at z " + expectedZ
+                    + ", but put them at " + landing);
         }
         helper.succeed();
     }

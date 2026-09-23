@@ -130,8 +130,6 @@ public class ClientSetup {
             ClientReactors.invalidateMeshes();
             ReactorGlowElement.releaseAll();
         });
-        // The duct rider's helmet model is baked from the entity model set, which a reload rebuilds.
-        event.registerReloadListener((ResourceManagerReloadListener) resourceManager -> DuctTravelClientHooks.clearBakedModels());
     }
 
     /** The item models carry the face overlay on tint index 0, shown in its unpowered colour. */

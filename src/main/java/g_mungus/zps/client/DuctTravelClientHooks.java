@@ -5,45 +5,40 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.entity.DuctTravelEntity;
+import g_mungus.zps.mixin.LivingEntityRendererAccessor;
 import g_mungus.zps.networking.DuctCycleC2SPacket;
 import g_mungus.zps.networking.ZPSGamePackets;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.model.HumanoidArmorModel;
-import net.minecraft.client.model.HumanoidModel;
-import net.minecraft.client.model.Model;
 import net.minecraft.client.model.PlayerModel;
-import net.minecraft.client.model.geom.ModelLayers;
+import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
-import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.renderer.entity.layers.CapeLayer;
+import net.minecraft.client.renderer.entity.layers.ElytraLayer;
+import net.minecraft.client.renderer.entity.layers.ItemInHandLayer;
+import net.minecraft.client.renderer.entity.layers.ParrotOnShoulderLayer;
+import net.minecraft.client.renderer.entity.layers.RenderLayer;
+import net.minecraft.client.renderer.entity.layers.SpinAttackEffectLayer;
+import net.minecraft.client.renderer.entity.layers.StuckInBodyLayer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ArmorItem;
-import net.minecraft.world.item.ArmorMaterial;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.armortrim.ArmorTrim;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import net.neoforged.neoforge.client.ClientHooks;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
 import net.neoforged.neoforge.client.event.RenderPlayerEvent;
-import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
+import java.util.ArrayList;
 import java.util.List;
+
 
 /**
  * The client half of duct travel: hiding whoever is inside one, and turning left/right into a
@@ -79,7 +74,13 @@ public final class DuctTravelClientHooks {
     private static boolean wasRight;
     private static int heldTicks;
     private static boolean wasRiding;
-    private static HumanoidModel<AbstractClientPlayer> helmetModel;
+
+    /**
+     * Where the body goes while the layers run, in model pixels: far enough that nothing hung on it
+     * lands inside the far plane. Not merely hidden, because a layer that draws its own thing off a
+     * body part — a backtank, a cape, a quiver — never asks whether that part is visible.
+     */
+    private static final float BODY_EXILE = 1.0e7f;
 
     private DuctTravelClientHooks() {
     }
@@ -93,7 +94,8 @@ public final class DuctTravelClientHooks {
      * one, because the parts are only half of a player: armour, held items, capes and the name tag
      * all come from separate layers that know nothing about model visibility, and every one of them
      * would be left hanging in the wall. Cancelling takes the lot, and the head is drawn back by
-     * hand.
+     * hand — and then the renderer's own layers are run over it with the body put out of reach,
+     * so that whatever belongs on a head, from any mod, is drawn where it always is.
      *
      * <p>The transform is vanilla's minus the drop onto a body. {@code LivingEntityRenderer} turns
      * to face the body, flips into the y-down model space, then lowers everything by 1.501 blocks
@@ -159,8 +161,8 @@ public final class DuctTravelClientHooks {
         model.head.render(poseStack, consumer, event.getPackedLight(), overlay);
         model.hat.render(poseStack, consumer, event.getPackedLight(), overlay);
 
-        renderHelmet(rider, model, poseStack, event.getMultiBufferSource(), event.getPackedLight(),
-                partialTick, (float) rotation.x);
+        renderHeadLayers(renderer, model, rider, poseStack, event.getMultiBufferSource(),
+                event.getPackedLight(), partialTick, (float) rotation.x);
 
         poseStack.popPose();
     }
@@ -225,93 +227,73 @@ public final class DuctTravelClientHooks {
     }
 
     /**
-     * Whatever is on the rider's head, drawn over it.
+     * Whatever is on the rider's head, drawn over it by the layers that always draw it.
      *
-     * <p>Cancelling vanilla's pass took the armour layer with it, so the head slot is drawn here
-     * the way {@code HumanoidArmorLayer} would: every layer the material declares, its dye tint,
-     * a trim if there is one, and the enchantment glint. The other three slots stay gone — there
-     * is no body for them to sit on.
-     *
-     * <p>The armour model is posed by copying the head model, which has already been turned into
-     * the vent's frame, so a helmet follows the head however it is lying.
+     * <p>Cancelling vanilla's pass took every layer with it, and the head slot is served by more
+     * than one: the armour layer for a helmet, the custom-head layer for anything else equipped
+     * there — Create's goggles are a plain item with a head model — and whatever a mod hangs on
+     * the head through a layer of its own. Rather than copy each of them here and miss the next,
+     * the renderer's real layers are run, over a head that is already posed, and the body is put
+     * where nothing on it can be seen: hidden, and moved out past the far plane, since a layer that
+     * draws off a body part never asks whether that part is showing. The armour layer copies part
+     * poses onto its own models, so a chestplate goes into exile with the body while the helmet
+     * stays on the head. Vanilla's layers that only ever hang on a body are skipped outright.
      */
-    private static void renderHelmet(AbstractClientPlayer rider, PlayerModel<AbstractClientPlayer> head,
-                                     PoseStack poseStack, MultiBufferSource buffers, int packedLight,
-                                     float partialTick, float framePitch) {
-        ItemStack helmet = rider.getItemBySlot(EquipmentSlot.HEAD);
-        if (!(helmet.getItem() instanceof ArmorItem armor)
-                || armor.getEquipmentSlot() != EquipmentSlot.HEAD) {
-            return;
+    private static void renderHeadLayers(PlayerRenderer renderer, PlayerModel<AbstractClientPlayer> model,
+                                         AbstractClientPlayer rider, PoseStack poseStack,
+                                         MultiBufferSource buffers, int packedLight, float partialTick,
+                                         float headPitch) {
+        // Vanilla sets these on the model inside the render that was cancelled, so it is left holding
+        // whatever the last player actually drawn put there — and before any player has been drawn
+        // at all, EntityModel's own defaults, where young is true. Armour copies them, and its baby
+        // branch drops the head a block and shrinks it: a helmet somewhere around the waist.
+        model.young = rider.isBaby();
+        model.riding = false;
+        model.attackTime = 0.0f;
+
+        // Every part of a player but the head and its hat; the cloak and the ears are the cape
+        // layer's and the head's own.
+        List<ModelPart> exiled = List.of(model.body, model.jacket,
+                model.rightArm, model.leftArm, model.rightSleeve, model.leftSleeve,
+                model.rightLeg, model.leftLeg, model.rightPants, model.leftPants);
+        List<PartPose> poses = new ArrayList<>(exiled.size());
+        for (ModelPart part : exiled) {
+            poses.add(part.storePose());
+            part.visible = false;
+            part.setPos(0.0f, BODY_EXILE, 0.0f);
         }
 
-        HumanoidModel<AbstractClientPlayer> armorModel = helmetModel();
-        head.copyPropertiesTo(armorModel);
-
-        // Vanilla sets these on the player model inside the render we cancelled, so the model is
-        // left holding whatever the last player actually drawn put there — and before any player
-        // has been drawn at all, EntityModel's own defaults, where young is true. Unlike the head,
-        // which is drawn part by part, armour goes through renderToBuffer, and its baby branch
-        // drops the head a block and shrinks it: a helmet somewhere around the waist.
-        armorModel.young = rider.isBaby();
-        armorModel.riding = false;
-        armorModel.attackTime = 0.0f;
-
-        armorModel.setAllVisible(false);
-        armorModel.head.visible = true;
-        armorModel.hat.visible = true;
-
-        // Lets another mod swap in its own model for its own helmet.
-        Model posed = ClientHooks.getArmorModel(rider, helmet, EquipmentSlot.HEAD, armorModel);
-        IClientItemExtensions extensions = IClientItemExtensions.of(helmet);
-        extensions.setupModelAnimations(rider, helmet, EquipmentSlot.HEAD, posed,
-                0.0f, 0.0f, partialTick, 0.0f, 0.0f, framePitch);
-
-        int fallbackColor = extensions.getDefaultDyeColor(helmet);
-        List<ArmorMaterial.Layer> layers = armor.getMaterial().value().layers();
-        for (int i = 0; i < layers.size(); i++) {
-            ArmorMaterial.Layer layer = layers.get(i);
-            int tint = extensions.getArmorLayerTintColor(helmet, rider, layer, i, fallbackColor);
-            if (tint != 0) {
-                ResourceLocation texture =
-                        ClientHooks.getArmorTexture(rider, helmet, layer, false, EquipmentSlot.HEAD);
-                posed.renderToBuffer(poseStack, buffers.getBuffer(RenderType.armorCutoutNoCull(texture)),
-                        packedLight, OverlayTexture.NO_OVERLAY, tint);
+        try {
+            @SuppressWarnings("unchecked")
+            List<RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>>> layers =
+                    ((LivingEntityRendererAccessor<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>>) renderer)
+                            .zps$getLayers();
+            float ageInTicks = rider.tickCount + partialTick;
+            for (RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> layer : layers) {
+                if (isBodyOnly(layer)) {
+                    continue;
+                }
+                // The head is already turned into the vent's frame by the pose stack and its part,
+                // so relative to the body it is looking dead ahead.
+                layer.render(poseStack, buffers, packedLight, rider, 0.0f, 0.0f, partialTick, ageInTicks,
+                        0.0f, headPitch);
+            }
+        } finally {
+            for (int i = 0; i < exiled.size(); i++) {
+                exiled.get(i).loadPose(poses.get(i));
+                exiled.get(i).visible = true;
             }
         }
-
-        ArmorTrim trim = helmet.get(DataComponents.TRIM);
-        if (trim != null) {
-            TextureAtlasSprite sprite = Minecraft.getInstance().getModelManager()
-                    .getAtlas(Sheets.ARMOR_TRIMS_SHEET)
-                    .getSprite(trim.outerTexture(armor.getMaterial()));
-            posed.renderToBuffer(poseStack,
-                    sprite.wrap(buffers.getBuffer(Sheets.armorTrimsSheet(trim.pattern().value().decal()))),
-                    packedLight, OverlayTexture.NO_OVERLAY);
-        }
-
-        if (helmet.hasFoil()) {
-            posed.renderToBuffer(poseStack, buffers.getBuffer(RenderType.armorEntityGlint()),
-                    packedLight, OverlayTexture.NO_OVERLAY);
-        }
     }
 
-    /**
-     * The armour model a helmet is drawn on, baked once and kept.
-     *
-     * <p>The wide layer serves both skin types: slim and wide armour differ only at the arms, and
-     * no arms are drawn here.
-     */
-    private static HumanoidModel<AbstractClientPlayer> helmetModel() {
-        if (helmetModel == null) {
-            helmetModel = new HumanoidArmorModel<>(Minecraft.getInstance().getEntityModels()
-                    .bakeLayer(ModelLayers.PLAYER_OUTER_ARMOR));
-        }
-        return helmetModel;
-    }
-
-    /** Dropped on a resource reload, when the geometry behind it is rebuilt. */
-    public static void clearBakedModels() {
-        helmetModel = null;
+    /** Vanilla's layers that hang on the body alone, with nothing to offer a head. */
+    private static boolean isBodyOnly(RenderLayer<?, ?> layer) {
+        return layer instanceof CapeLayer
+                || layer instanceof ElytraLayer
+                || layer instanceof ItemInHandLayer
+                || layer instanceof StuckInBodyLayer
+                || layer instanceof ParrotOnShoulderLayer
+                || layer instanceof SpinAttackEffectLayer;
     }
 
     /**

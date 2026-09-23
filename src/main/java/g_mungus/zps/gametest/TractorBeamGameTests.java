@@ -15,6 +15,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.animal.Pig;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
@@ -322,6 +323,28 @@ public class TractorBeamGameTests {
 
         helper.succeedWhen(() -> helper.assertTrue(count(beam.getInventory(), Items.DIAMOND) == 1,
                 "The diamond should end up in the panel"));
+    }
+
+    /** A spent arrow lying stuck in the floor is pulled loose and taken in as the arrow it was. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 120)
+    public static void arrow_isPulledInAndCollected(GameTestHelper helper) {
+        BeamCollectorBlockEntity beam = runningBeam(helper);
+        AbstractArrow arrow = helper.spawn(EntityType.ARROW, 6.5f, 2.5f, 5.5f);
+        arrow.pickup = AbstractArrow.Pickup.ALLOWED;
+
+        helper.succeedWhen(() -> helper.assertTrue(count(beam.getInventory(), Items.ARROW) == 1,
+                "The arrow should end up in the panel"));
+    }
+
+    /** So is one nobody could pick up, a skeleton's say: the beam is not bound by that rule. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 120)
+    public static void arrow_nobodyCouldPickUp_isCollectedToo(GameTestHelper helper) {
+        BeamCollectorBlockEntity beam = runningBeam(helper);
+        AbstractArrow arrow = helper.spawn(EntityType.ARROW, 6.5f, 2.5f, 5.5f);
+        arrow.pickup = AbstractArrow.Pickup.DISALLOWED;
+
+        helper.succeedWhen(() -> helper.assertTrue(count(beam.getInventory(), Items.ARROW) == 1,
+                "The arrow should end up in the panel"));
     }
 
     @GameTest(template = TEMPLATE, timeoutTicks = 100)

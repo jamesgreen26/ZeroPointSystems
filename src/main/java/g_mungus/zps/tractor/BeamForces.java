@@ -3,6 +3,7 @@ package g_mungus.zps.tractor;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.compat.GridSpace;
 import g_mungus.zps.entity.TractorCargo;
+import g_mungus.zps.mixin.AbstractArrowAccessor;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.Mth;
@@ -15,6 +16,7 @@ import net.minecraft.world.entity.Marker;
 import net.minecraft.world.entity.decoration.HangingEntity;
 import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
@@ -59,8 +61,9 @@ public final class BeamForces {
             return false;
         }
         // The server flags an item as noPhysics while it is inside a block; it still wants pulling out. And a
-        // falling block in a beam is noPhysics because the beam made it so; see TractorCargo.
-        if (entity.noPhysics && !isCargo(entity)) {
+        // falling block in a beam is noPhysics because the beam made it so; see TractorCargo. An arrow that is
+        // noPhysics is a trident flying home to its owner, which is left to it.
+        if (entity.noPhysics && !(entity instanceof ItemEntity || entity instanceof FallingBlockEntity)) {
             return false;
         }
         if (entity.getType().is(IMMUNE_ENTITIES)) {
@@ -77,9 +80,12 @@ public final class BeamForces {
         return player.getAbilities().flying;
     }
 
-    /** Items and falling blocks are carried; everything else is pushed. */
+    /**
+     * Items, falling blocks and arrows are carried; everything else is pushed. Every arrow, whoever fired it: the
+     * beam is not a player, and the rule about who may pick an arrow up is not its concern.
+     */
     public static boolean isCargo(Entity entity) {
-        return entity instanceof ItemEntity || entity instanceof FallingBlockEntity;
+        return entity instanceof ItemEntity || entity instanceof FallingBlockEntity || entity instanceof AbstractArrow;
     }
 
     /**
@@ -176,6 +182,10 @@ public final class BeamForces {
         if (entity instanceof FallingBlockEntity falling) {
             // A falling block gives up and drops as an item after 600 ticks in the air.
             falling.time = 1;
+        }
+        if (entity instanceof AbstractArrow arrow && ((AbstractArrowAccessor) arrow).zps$isInGround()) {
+            // Stuck in a block, an arrow ignores its velocity; pulled loose, it flies like any other.
+            ((AbstractArrowAccessor) arrow).zps$setInGround(false);
         }
         if (entity instanceof TractorCargo cargo) {
             cargo.zps$carriedByBeam();

@@ -26,6 +26,7 @@
     "SoundEngineMixin"
   ],
   "mixins": [
+    "AbstractArrowAccessor",
     "AbstractCauldronBlockMixin",
     "ArgumentTypeInfosMixin",
     "ArrayVoxelShapeAccessor",

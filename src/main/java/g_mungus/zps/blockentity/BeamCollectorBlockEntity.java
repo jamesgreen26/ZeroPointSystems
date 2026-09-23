@@ -31,6 +31,7 @@ import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
@@ -513,7 +514,7 @@ public class BeamCollectorBlockEntity extends MultiblockBlockEntity {
         scanAge = 0;
     }
 
-    /** Swallows an item or falling block at the mouth. False when it did not all fit and is still out there. */
+    /** Swallows an item, arrow or falling block at the mouth. False when it did not all fit and is still out there. */
     private boolean collect(ServerLevel serverLevel, Entity entity) {
         if (entity instanceof ItemEntity item) {
             ItemStack remainder = ItemHandlerHelper.insertItemStacked(inventory, item.getItem().copy(), false);
@@ -523,6 +524,15 @@ public class BeamCollectorBlockEntity extends MultiblockBlockEntity {
             }
             item.setItem(remainder);
             return false;
+        }
+        if (entity instanceof AbstractArrow arrow) {
+            // What a player would get picking it up: the arrow item it was fired as, tipped or not.
+            ItemStack stack = arrow.getPickupItemStackOrigin().copy();
+            if (!ItemHandlerHelper.insertItemStacked(inventory, stack, false).isEmpty()) {
+                return false;
+            }
+            arrow.discard();
+            return true;
         }
         if (entity instanceof FallingBlockEntity falling) {
             Block block = falling.getBlockState().getBlock();

@@ -51,6 +51,18 @@ public class VentBlockEntity extends GasNodeBlockEntity {
     /** Everything this vent has ever vented, in kilograms. Never reset. */
     private double totalVented;
 
+    /**
+     * How many ticks gas last seen at the node counts as still passing through. The vent empties
+     * its node every tick, so at any given moment there is usually nothing there to take the
+     * temperature of; what was there a moment ago is what anyone sitting in the vent feels.
+     */
+    private static final int GAS_MEMORY_TICKS = 10;
+    /** Temperature of the gas last seen at the node, in kelvin, and the tick it was seen on. */
+    private double lastGasTemperatureK;
+    private long lastGasSeenTick = NEVER;
+    /** Far enough back that no game time is within memory of it, without overflowing a subtraction. */
+    private static final long NEVER = Long.MIN_VALUE / 2;
+
     public VentBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.VENT.get(), pos, state);
     }
@@ -74,12 +86,16 @@ public class VentBlockEntity extends GasNodeBlockEntity {
         // worth watching, and afterwards there is nothing left to measure.
         peakPressureSinceSync = Math.max(peakPressureSinceSync, getPressure());
 
-        if (VentBlock.isShut(getBlockState())) {
-            return;
-        }
-
         Map<GasType, Double> gases = getGases();
         if (gases.isEmpty()) {
+            return;
+        }
+        // Taken while there is gas to take it of, shut or not: a shut vent holding hot gas is as
+        // hot to sit in as an open one passing it.
+        lastGasTemperatureK = getTemperature();
+        lastGasSeenTick = level == null ? 0 : level.getGameTime();
+
+        if (VentBlock.isShut(getBlockState())) {
             return;
         }
 
@@ -121,6 +137,19 @@ public class VentBlockEntity extends GasNodeBlockEntity {
     /** Total gas this vent has vented, in kilograms. */
     public double getTotalVented() {
         return totalVented;
+    }
+
+    /**
+     * The temperature of the gas passing this vent, in kelvin: that of the gas last seen at its
+     * node, for a short while after it was seen. {@link Double#NaN} once nothing has come through
+     * for a while — no gas is neither hot nor cold, and NaN fails every comparison. Server side
+     * only.
+     */
+    public double gasTemperatureK() {
+        if (level == null || level.getGameTime() > lastGasSeenTick + GAS_MEMORY_TICKS) {
+            return Double.NaN;
+        }
+        return lastGasTemperatureK;
     }
 
     private void spawnJet() {

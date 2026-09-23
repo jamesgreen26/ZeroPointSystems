@@ -4,6 +4,8 @@ import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.gas.VentBlock;
 import g_mungus.zps.block.gas.core.DuctTravelNetwork;
+import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
+import g_mungus.zps.gas.ModGases;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.entity.DuctTravelEntity;
 import net.minecraft.core.BlockPos;
@@ -227,6 +229,92 @@ public class DuctTravelGameTests {
                 helper.fail("With the run cut, only the rider's own vent should be on offer, but "
                         + duct.getDestinations().size() + " are");
             }
+            helper.succeed();
+        });
+    }
+
+    // --- hot gas ----------------------------------------------------------------------------------
+
+    /** The vent a rider sits in for the gas tests, fed from behind by a creative source. */
+    private static final BlockPos GAS_VENT = new BlockPos(3, 2, 3);
+    private static final BlockPos GAS_SOURCE = new BlockPos(3, 2, 2);
+    /**
+     * Long enough for the vent's node to warm to the source's temperature. Kelvin heats a node
+     * gradually as gas passes through it, so the vent is not hot the moment the source is.
+     */
+    private static final int WARM_UP_TICKS = 80;
+
+    /**
+     * Climb into a vent with a creative source pressed against its inlet, running Flux through it
+     * at {@code temperature} kelvin.
+     */
+    private static Player enterVentFedAt(GameTestHelper helper, double temperature) {
+        helper.setBlock(GAS_VENT, ModBlocks.VENT.get().defaultBlockState()
+                .setValue(VentBlock.FACING, Direction.SOUTH));
+        helper.setBlock(GAS_SOURCE, ModBlocks.CREATIVE_GAS_GENERATOR.get().defaultBlockState());
+        if (!(helper.getBlockEntity(GAS_SOURCE) instanceof CreativeGasGeneratorBlockEntity source)) {
+            throw new GameTestAssertException("The gas source has no block entity");
+        }
+        source.setSettings(ModGases.FLUX.getResourceLocation(), 0.01, temperature);
+
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        if (!DuctTravelEntity.enter(helper.getLevel(), helper.absolutePos(GAS_VENT), player)) {
+            helper.fail("Could not climb into the vent");
+        }
+        return player;
+    }
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void hotGasThroughTheVentBurnsTheRider(GameTestHelper helper) {
+        Player player = enterVentFedAt(helper, ZPSConfig.entityBurnGasTemperatureK() * 3.0);
+
+        helper.runAfterDelay(WARM_UP_TICKS, () -> {
+            helper.assertTrue(player.isOnFire(), "A rider in a vent passing hot gas should be on fire");
+            helper.assertTrue(player.getHealth() < player.getMaxHealth(), "The rider should have been hurt");
+            helper.succeed();
+        });
+    }
+
+    /** Gas between the two thresholds does nothing to the rider either way. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void mildGasThroughTheVentLeavesTheRiderAlone(GameTestHelper helper) {
+        double mild = (ZPSConfig.entityBurnGasTemperatureK() + ZPSConfig.entityFreezeGasTemperatureK()) / 2.0;
+        Player player = enterVentFedAt(helper, mild);
+
+        helper.runAfterDelay(WARM_UP_TICKS, () -> {
+            helper.assertFalse(player.isOnFire(), "A rider in a vent passing mild gas should not be on fire");
+            helper.assertTrue(player.getTicksFrozen() == 0, "A rider in a vent passing mild gas should not be freezing");
+            helper.assertTrue(player.getHealth() == player.getMaxHealth(), "The rider should be unhurt");
+            helper.succeed();
+        });
+    }
+
+    /** No gas is neither hot nor cold. A vent nothing has passed through in a while does nothing. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void anEmptyVentLeavesTheRiderAlone(GameTestHelper helper) {
+        BlockPos vent = new BlockPos(3, 2, 3);
+        helper.setBlock(vent, ModBlocks.VENT.get().defaultBlockState()
+                .setValue(VentBlock.FACING, Direction.WEST));
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        if (!DuctTravelEntity.enter(helper.getLevel(), helper.absolutePos(vent), player)) {
+            helper.fail("Could not climb into the vent");
+        }
+
+        helper.runAfterDelay(WARM_UP_TICKS, () -> {
+            helper.assertFalse(player.isOnFire(), "A rider in an empty vent should not be on fire");
+            helper.assertTrue(player.getTicksFrozen() == 0, "A rider in an empty vent should not be freezing");
+            helper.assertTrue(player.getHealth() == player.getMaxHealth(), "The rider should be unhurt");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void coldGasThroughTheVentFreezesTheRider(GameTestHelper helper) {
+        Player player = enterVentFedAt(helper, ZPSConfig.entityFreezeGasTemperatureK() / 2.0);
+
+        helper.runAfterDelay(WARM_UP_TICKS, () -> {
+            helper.assertTrue(player.getTicksFrozen() > 0, "A rider in a vent passing cold gas should be freezing");
+            helper.assertFalse(player.isOnFire(), "A freezing rider should not also be on fire");
             helper.succeed();
         });
     }

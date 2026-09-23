@@ -101,6 +101,10 @@ public class ZPSConfig {
     private static final int ductTravelMaxNodesDefault = 4096;
     private static ModConfigSpec.ConfigValue<Double> ductTravelSpeed;
     private static final double ductTravelSpeedDefault = 0.4;
+    private static ModConfigSpec.ConfigValue<Double> entityBurnGasTemperature;
+    private static final double entityBurnGasTemperatureDefault = 850.0;
+    private static ModConfigSpec.ConfigValue<Double> entityFreezeGasTemperature;
+    private static final double entityFreezeGasTemperatureDefault = 250.0;
 
     /**
      * Blocks from other mods that author their own Kelvin gas edges. ZPS never creates an edge to
@@ -140,6 +144,22 @@ public class ZPSConfig {
             return ductTravelSpeed.get();
         } catch (Exception ignored) { }
         return ductTravelSpeedDefault;
+    }
+
+    /** Gas this hot, in kelvin, passing the vent a player is sitting in sets them alight. */
+    public static double entityBurnGasTemperatureK() {
+        try {
+            return entityBurnGasTemperature.get();
+        } catch (Exception ignored) { }
+        return entityBurnGasTemperatureDefault;
+    }
+
+    /** Gas this cold, in kelvin, passing the vent a player is sitting in freezes them. */
+    public static double entityFreezeGasTemperatureK() {
+        try {
+            return entityFreezeGasTemperature.get();
+        } catch (Exception ignored) { }
+        return entityFreezeGasTemperatureDefault;
     }
 
     public static ConverterOverpowerBehavior getConverterOverpowerBehavior() {
@@ -397,6 +417,15 @@ public class ZPSConfig {
                          "The screen is held black for the length of the journey, so lower values",
                          "make distant Vents a slower way to travel and nearby ones barely a pause.")
                 .defineInRange("DuctTravelBlocksPerTick", ductTravelSpeedDefault, 0.05, 64.0);
+        entityBurnGasTemperature = builder
+                .comment("Gas at or above this temperature, in kelvin, passing the Vent a player is",
+                         "sitting in sets them on fire. The ducts are not a safe place to be when",
+                         "something hot is being vented through them.")
+                .defineInRange("EntityBurnGasTemperature", entityBurnGasTemperatureDefault, 1.0, 1.0e9);
+        entityFreezeGasTemperature = builder
+                .comment("Gas at or below this temperature, in kelvin, passing the Vent a player is",
+                         "sitting in freezes them, as powder snow would.")
+                .defineInRange("EntityFreezeGasTemperature", entityFreezeGasTemperatureDefault, 0.0, 1.0e9);
         return builder.build();
     }
 }

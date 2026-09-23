@@ -3,8 +3,10 @@ package g_mungus.zps.entity;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.gas.VentBlock;
 import g_mungus.zps.block.gas.core.DuctTravelNetwork;
+import g_mungus.zps.blockentity.gas.VentBlockEntity;
 import g_mungus.zps.compat.Compat;
 import g_mungus.zps.config.ZPSConfig;
+import g_mungus.zps.gas.GasExposure;
 import g_mungus.zps.networking.DuctTravelStateS2CPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -496,6 +498,10 @@ public class DuctTravelEntity extends Entity {
 
         entityData.set(VENT_FACING, facingOf(state));
 
+        if (!isTravelling()) {
+            exposeToGas();
+        }
+
         if (cooldown > 0) {
             cooldown--;
         }
@@ -531,6 +537,27 @@ public class DuctTravelEntity extends Entity {
                     sendState(rider, false);
                 }
             }
+        }
+    }
+
+    /**
+     * A vent with hot or cold gas going through it is no place to put your head: the rider gets
+     * {@link GasExposure} to whatever is passing, for as long as they stay and the gas stays as it
+     * is — which, since a hop is always available, is their choice.
+     *
+     * <p>Only while sitting in the vent: between vents the rider is nowhere, and nothing reaches
+     * them there.
+     */
+    private void exposeToGas() {
+        if (!(level().getBlockEntity(ventPos) instanceof VentBlockEntity vent)) {
+            return;
+        }
+        double temperature = vent.gasTemperatureK();
+        if (!GasExposure.isHarmful(temperature)) {
+            return;
+        }
+        for (Entity passenger : getPassengers()) {
+            GasExposure.expose(passenger, temperature);
         }
     }
 

@@ -31,11 +31,14 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.animal.Pig;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LeverBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.AttachFace;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.gametest.GameTestHolder;
@@ -537,6 +540,58 @@ public class FusionReactorGameTests {
             helper.assertTrue(massOf(helper, HOST, ModGases.AETHER) > 0.009, "Aether should have formed");
             helper.assertTrue(kelvin().getTemperatureAt(host) > 61_000.0,
                     "Fusion should heat the chamber, was " + kelvin().getTemperatureAt(host));
+            helper.succeed();
+        });
+    }
+
+    // --- hazards ------------------------------------------------------------------------------
+
+    /** The middle of the cavity floor: the cavity is three cells across, so this is its centre column. */
+    private static final Vec3 CAVITY_FLOOR = new Vec3(5.5, 2.0, 5.5);
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void litReactorBurnsWhatIsInside(GameTestHelper helper) {
+        buildShell(helper);
+        Pig pig = helper.spawnWithNoFreeWill(EntityType.PIG, CAVITY_FLOOR);
+        seedChamber(helper);
+        setChamberTemperature(helper, ZPSConfig.reactorIgnitionTemperatureK() + 5_000.0);
+
+        helper.runAfterDelay(5, () -> {
+            helper.assertTrue(reactorAt(helper, WEST_WALL).isLit(), "The reactor should register as lit");
+            helper.assertTrue(pig.getHealth() < pig.getMaxHealth(), "The pig should have been hurt");
+            helper.assertTrue(pig.isOnFire(), "The pig should be on fire");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void coldReactorLeavesWhatIsInsideAlone(GameTestHelper helper) {
+        buildShell(helper);
+        Pig pig = helper.spawnWithNoFreeWill(EntityType.PIG, CAVITY_FLOOR);
+        seedChamber(helper);
+        setChamberTemperature(helper, ZPSConfig.reactorIgnitionTemperatureK() - 5_000.0);
+
+        helper.runAfterDelay(20, () -> {
+            helper.assertFalse(reactorAt(helper, WEST_WALL).isLit(), "The reactor should not be lit");
+            helper.assertTrue(pig.getHealth() == pig.getMaxHealth(), "The pig should be unhurt");
+            helper.assertFalse(pig.isOnFire(), "The pig should not be on fire");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void litReactorSparesWhatIsOutside(GameTestHelper helper) {
+        buildShell(helper);
+        // Standing on the arena floor, which is the layer the shell's bottom wall is set into, against the
+        // outside of the west wall.
+        Pig pig = helper.spawnWithNoFreeWill(EntityType.PIG, new Vec3(OUTSIDE_WEST.getX() + 0.5, 2.0, 5.5));
+        seedChamber(helper);
+        setChamberTemperature(helper, ZPSConfig.reactorIgnitionTemperatureK() + 5_000.0);
+
+        helper.runAfterDelay(20, () -> {
+            helper.assertTrue(reactorAt(helper, WEST_WALL).isLit(), "The reactor should register as lit");
+            helper.assertTrue(pig.getHealth() == pig.getMaxHealth(), "The pig should be unhurt");
+            helper.assertFalse(pig.isOnFire(), "The pig should not be on fire");
             helper.succeed();
         });
     }

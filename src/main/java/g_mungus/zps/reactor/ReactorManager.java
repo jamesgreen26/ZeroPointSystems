@@ -317,6 +317,9 @@ public final class ReactorManager extends SavedData {
             double pressure = kelvin.getPressureAt(host);
             boolean lit = temperature >= ignition;
             reactor.setLit(lit);
+            if (lit) {
+                ReactorHazards.hurtEntitiesInside(level, reactor);
+            }
             syncHeat(level, reactor, temperature);
             if (level.getGameTime() % ReactorSync.STATE_SYNC_INTERVAL == 0) {
                 syncWatchers(level, reactor);

@@ -16,8 +16,9 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import org.jetbrains.annotations.Nullable;
 import org.valkyrienskies.kelvin.api.DuctNodePos;
 
 import java.util.ArrayList;
@@ -57,6 +58,8 @@ public final class Reactor {
 
     /** The cavity as a shape, built on first use. */
     private @Nullable VoxelShape shape;
+    /** The box around the cavity, built on first use. */
+    private @Nullable AABB bounds;
 
     // FE moved by the exchangers, for the debug readout. Rolled over every tick.
     private int feInThisTick;
@@ -107,6 +110,29 @@ public final class Reactor {
             shape = CavityShapes.fromCells(interior);
         }
         return shape;
+    }
+
+    /**
+     * The box the cavity fits in, in the reactor's own grid: from the outer faces of its outermost
+     * interior cells. A world reactor's is in world coordinates; one on a ship or sublevel is in
+     * that grid's block space.
+     */
+    public AABB bounds() {
+        if (bounds == null) {
+            int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
+            int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
+            for (long cell : interior) {
+                int x = BlockPos.getX(cell), y = BlockPos.getY(cell), z = BlockPos.getZ(cell);
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                minZ = Math.min(minZ, z);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
+                maxZ = Math.max(maxZ, z);
+            }
+            bounds = new AABB(minX, minY, minZ, maxX + 1, maxY + 1, maxZ + 1);
+        }
+        return bounds;
     }
 
     /** The interior cell the chamber's Kelvin node sits at. */

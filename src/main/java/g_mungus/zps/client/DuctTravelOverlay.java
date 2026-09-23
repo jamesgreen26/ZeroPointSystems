@@ -23,8 +23,12 @@ public final class DuctTravelOverlay implements LayeredDraw.Layer {
 
     public static final DuctTravelOverlay INSTANCE = new DuctTravelOverlay();
 
-    private static final int PANEL_BOTTOM_MARGIN = 76;
-    private static final int TITLE_COLOR = 0xFFE9F4FF;
+    /**
+     * Clear of vanilla's overlay message, which sits at 68 above the bottom and is where the duct's
+     * own controls banner appears on the way in.
+     */
+    private static final int PANEL_BOTTOM_MARGIN = 90;
+    private static final int TITLE_COLOR = 0xFFAAAAAA;
 
     private DuctTravelOverlay() {
     }

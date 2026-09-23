@@ -553,6 +553,7 @@
     "sounds.zps.reactor_hum": "Reactor hums",
 
     "zps.duct.sealed": "The vent is sealed shut.",
+    "zps.duct.mount_hint": "Press %s to Exit, %s/%s to Crawl Through",
     "zps.duct.hud.title": "Vent %s / %s",
     "zps.duct.hud.entry": "%s, %s, %s \u00b7 where you got in",
     "zps.duct.hud.destination": "%s, %s, %s \u00b7 %sm from entry",

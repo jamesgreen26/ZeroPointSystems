@@ -108,6 +108,17 @@ public class DuctTravelEntity extends Entity {
             SynchedEntityData.defineId(DuctTravelEntity.class, EntityDataSerializers.DIRECTION);
 
     /**
+     * The vent currently being looked out of, in the level's block space. Synched for the rider's
+     * own client: when the vehicle is on a Sable sublevel, Sable has that client work out where to
+     * put the player down from its own copy of the vehicle, and then takes the position the client
+     * reports — the sublevel's blocks are not in the world for it to see the player has been put
+     * inside one. Left unsynched, the copy knows no vent, falls back on the vehicle's own spot,
+     * and the player is stood up out of the grille on top of it.
+     */
+    private static final EntityDataAccessor<BlockPos> VENT_POS =
+            SynchedEntityData.defineId(DuctTravelEntity.class, EntityDataSerializers.BLOCK_POS);
+
+    /**
      * Whether the rider is between vents rather than sitting in one. Synched for the same reason
      * the facing is: it decides whether anyone draws them at all.
      */
@@ -180,7 +191,7 @@ public class DuctTravelEntity extends Entity {
      */
     private static final double LOST_VENT_DISTANCE = 3.0;
 
-    /** The vent currently being looked out of. */
+    /** The vent currently being looked out of. Server side; the client reads {@link #VENT_POS}. */
     private BlockPos ventPos = BlockPos.ZERO;
     /** Index 0 is always the vent the player entered by. Server side; null until first needed. */
     private @Nullable List<BlockPos> destinations;
@@ -413,6 +424,7 @@ public class DuctTravelEntity extends Entity {
     private void placeAtVent(BlockState state) {
         Direction facing = facingOf(state);
         entityData.set(VENT_FACING, facing);
+        entityData.set(VENT_POS, ventPos);
 
         // In the vent's own block space, grid or world. moveTo clears the previous position too,
         // so a hop across the map is a cut rather than a hundred-block interpolated smear.
@@ -426,7 +438,7 @@ public class DuctTravelEntity extends Entity {
      * world proper; for one on a grid, wherever that grid is showing that point right now.
      */
     private Vec3 toWorld(Vec3 local) {
-        return toWorld(level(), ventPos, local);
+        return toWorld(level(), getVentPos(), local);
     }
 
     private static Vec3 toWorld(Level level, BlockPos anchor, Vec3 local) {
@@ -452,9 +464,16 @@ public class DuctTravelEntity extends Entity {
      * Where a rider is put down. Every candidate is worked out and checked for room in the vent's
      * own block space, where its blocks are, and the one chosen is then taken into the world, which
      * is where the rider has to end up.
+     *
+     * <p>Runs on the rider's client as well as the server when the vehicle is on a sublevel — Sable
+     * asks the client's copy, and the server takes its word — so everything here comes from what is
+     * synched: the vent's position and facing, and the blocks around it, which the client has for
+     * any sublevel it can see.
      */
     @Override
     public @NotNull Vec3 getDismountLocationForPassenger(@NotNull LivingEntity passenger) {
+        BlockPos ventPos = getVentPos();
+
         // The vent is not where this vehicle is: a sublevel taken away has thrown the vehicle out
         // into the world and left the vent's grid position pointing at nothing, or the position
         // never named a vent at all. Its coordinates then say nothing about where the rider is, and
@@ -464,6 +483,8 @@ public class DuctTravelEntity extends Entity {
             return new Vec3(getX(), getY() - HEAD_SIZE / 2.0, getZ());
         }
 
+        // From the block rather than the synched facing: a vent that has just been broken reads as
+        // facing up, which puts a rider being thrown out down where it stood rather than beside it.
         Direction facing = facingOf(level().getBlockState(ventPos));
 
         BlockPos outside = ventPos.relative(facing);
@@ -680,6 +701,7 @@ public class DuctTravelEntity extends Entity {
     protected void readAdditionalSaveData(@NotNull CompoundTag tag) {
         // The destination list is rebuilt on demand; only where we are needs to survive a reload.
         ventPos = NbtUtils.readBlockPos(tag, VENT_TAG).orElse(BlockPos.ZERO);
+        entityData.set(VENT_POS, ventPos);
         destinations = null;
         selected = 0;
     }
@@ -692,6 +714,7 @@ public class DuctTravelEntity extends Entity {
     @Override
     protected void defineSynchedData(SynchedEntityData.@NotNull Builder builder) {
         builder.define(VENT_FACING, Direction.UP);
+        builder.define(VENT_POS, BlockPos.ZERO);
         builder.define(TRAVELLING, false);
         builder.define(CRAWL_START, 0L);
         builder.define(CRAWL_TICKS, 0);
@@ -745,8 +768,13 @@ public class DuctTravelEntity extends Entity {
 
     // --- helpers ----------------------------------------------------------------------------
 
+    /**
+     * The vent the rider is looking out of, in the level's block space. Valid on both sides: read
+     * from the synched copy, which the server keeps equal to its own, so that a copy of this entity
+     * built from nothing but its synched data — a client's — answers the same as the original.
+     */
     public BlockPos getVentPos() {
-        return ventPos;
+        return entityData.get(VENT_POS);
     }
 
     /** The vents currently on offer, as last worked out. Server side only. */

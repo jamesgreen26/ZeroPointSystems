@@ -5,13 +5,16 @@ import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.gas.VentBlock;
 import g_mungus.zps.compat.Compat;
 import g_mungus.zps.entity.DuctTravelEntity;
+import g_mungus.zps.entity.ModEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
@@ -116,6 +119,65 @@ public class DuctTravelSableGameTests {
     }
 
     /**
+     * A ceiling vent on a sublevel puts the player down the same way one in the world does: a whole body below
+     * the grille, standing clear of it, not on top of the vent.
+     */
+    @GameTest(template = TEMPLATE, batch = BATCH + "_climbingOutOfASublevelCeilingVentDropsThePlayerClearOfIt", skyAccess = true)
+    public static void climbingOutOfASublevelCeilingVentDropsThePlayerClearOfIt(GameTestHelper helper) {
+        withCeilingRun(helper, run -> {
+            Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+            DuctTravelEntity duct = enter(helper, run.nearPlot(), player);
+
+            helper.runAfterDelay(2, () -> {
+                // The block outside a ceiling vent is the one a standing player's head would be in, so the spot
+                // is a block further down: two blocks below the vent's centre, on the block face.
+                Vec3 clear = run.nearWorld().add(0.0, -2.5, 0.0);
+                assertNear(helper, duct.getDismountLocationForPassenger(player), clear,
+                        "the spot a rider is put down on from a sublevel ceiling vent should be a body below it in the world");
+                player.stopRiding();
+                assertNear(helper, player.position(), clear,
+                        "climbing out of a ceiling vent on a sublevel should put the player a body below it in the world");
+                run.rig().remove();
+                helper.succeed();
+            });
+        });
+    }
+
+    /**
+     * The rider's own client puts them down where the server does.
+     *
+     * <p>When the vehicle is on a sublevel, Sable has the client work out the dismount spot for itself from its
+     * own copy of the vehicle, and the server takes the position the client then reports — the sublevel's blocks
+     * are not in the world for it to see the player is inside one. So the client's copy has to reach the same
+     * answer from what is synched to it alone, or the player is put down at the vehicle, inside the vent, and
+     * pushed out on top of it. The copy is rebuilt here exactly as a client would build it: a fresh entity at
+     * the vehicle's position, given nothing but its synched data.
+     */
+    @GameTest(template = TEMPLATE, batch = BATCH + "_theRidersOwnClientPutsThemDownWhereTheServerDoes", skyAccess = true)
+    public static void theRidersOwnClientPutsThemDownWhereTheServerDoes(GameTestHelper helper) {
+        withCeilingRun(helper, run -> {
+            Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+            DuctTravelEntity duct = enter(helper, run.nearPlot(), player);
+
+            helper.runAfterDelay(2, () -> {
+                DuctTravelEntity clientCopy = ModEntities.DUCT_TRAVEL.get().create(helper.getLevel());
+                helper.assertTrue(clientCopy != null, "Could not make a copy of the vehicle");
+                clientCopy.setPos(duct.position());
+                List<SynchedEntityData.DataValue<?>> synched = duct.getEntityData().getNonDefaultValues();
+                if (synched != null) {
+                    clientCopy.getEntityData().assignValues(synched);
+                }
+
+                Vec3 clear = run.nearWorld().add(0.0, -2.5, 0.0);
+                assertNear(helper, clientCopy.getDismountLocationForPassenger(player), clear,
+                        "the spot the rider's client works out from the synched data alone should be a body below the vent in the world");
+                run.rig().remove();
+                helper.succeed();
+            });
+        });
+    }
+
+    /**
      * The vent the player is peeking out of is broken from under them while their run is on a sublevel: the
      * vehicle throws them out, and it has only the vent's position to go on.
      */
@@ -199,6 +261,52 @@ public class DuctTravelSableGameTests {
             helper.assertTrue(vents.size() == 2, "Expected both vents in the plot, found " + vents.size());
 
             test.accept(new Run(rig, vents.get(0), vents.get(1), nearWorld, farWorld));
+        });
+    }
+
+    /**
+     * As {@link #withRun}, but the run stands on end: a vent facing down into the arena with the ducts rising
+     * from its back to a vent facing up, all lifted into a sublevel that stays where it is. The "near" vent is
+     * the one in the ceiling.
+     */
+    private static void withCeilingRun(GameTestHelper helper, Consumer<Run> test) {
+        if (!Compat.isSableLoaded()) {
+            helper.succeed();
+            return;
+        }
+        ServerLevel level = helper.getLevel();
+
+        int bottomY = RUN_Y + 1;
+        int topY = bottomY + 3;
+        List<BlockPos> blocks = new ArrayList<>();
+        BlockPos ceiling = new BlockPos(RUN_X, bottomY, NEAR_Z);
+        BlockPos top = new BlockPos(RUN_X, topY, NEAR_Z);
+        helper.setBlock(ceiling, ModBlocks.VENT.get().defaultBlockState().setValue(VentBlock.FACING, Direction.DOWN));
+        helper.setBlock(top, ModBlocks.VENT.get().defaultBlockState().setValue(VentBlock.FACING, Direction.UP));
+        for (int y = bottomY; y <= topY; y++) {
+            BlockPos pos = new BlockPos(RUN_X, y, NEAR_Z);
+            if (y != bottomY && y != topY) {
+                helper.setBlock(pos, ModBlocks.GAS_DUCT.get().defaultBlockState());
+            }
+            blocks.add(helper.absolutePos(pos));
+        }
+        // The two blocks a standing player would occupy under the vent, as in the world's own test.
+        helper.setBlock(ceiling.below(), Blocks.AIR.defaultBlockState());
+        helper.setBlock(ceiling.below(2), Blocks.AIR.defaultBlockState());
+        Vec3 ceilingWorld = Vec3.atCenterOf(helper.absolutePos(ceiling));
+        Vec3 topWorld = Vec3.atCenterOf(helper.absolutePos(top));
+
+        helper.runAfterDelay(2, () -> {
+            SableBeamRig rig = SableBeamRig.assemble(level, helper.absolutePos(ceiling), helper.absolutePos(top),
+                    blocks, new Quaterniond());
+
+            List<BlockPos> vents = rig.blocksLeft().stream()
+                    .filter(pos -> level.getBlockState(pos).getBlock() instanceof VentBlock)
+                    .sorted(Comparator.comparingInt(BlockPos::getY))
+                    .toList();
+            helper.assertTrue(vents.size() == 2, "Expected both vents in the plot, found " + vents.size());
+
+            test.accept(new Run(rig, vents.get(0), vents.get(1), ceilingWorld, topWorld));
         });
     }
 

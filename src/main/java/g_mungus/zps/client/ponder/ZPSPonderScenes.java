@@ -23,6 +23,7 @@ import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
 import g_mungus.zps.client.ponder.api.PonderExtras;
 import g_mungus.zps.client.ponder.api.ReactorGlowElement;
 import g_mungus.zps.client.ponder.api.SceneViewElement;
+import g_mungus.zps.client.ponder.api.VentJetInstruction;
 import g_mungus.zps.client.ponder.api.custom_screen_in_ponder_scene.*;
 import g_mungus.zps.client.screens.ScriptTerminalScreen;
 import g_mungus.zps.item.ModItems;
@@ -962,6 +963,17 @@ public class ZPSPonderScenes {
                 be -> be.acceptSyncedState(ratePerTick, pressurePa, DUCT_GAS_K));
     }
 
+    /** The pressure behind a running reactor's exhaust vent; only the jet's speed comes from it. */
+    private static final double EXHAUST_PA = 1.0e6;
+
+    /**
+     * A vent venting for {@code ticks}, without holding up the timeline: what an emitter at the
+     * vent used to be, drawn by the vent itself with the gas particle.
+     */
+    private static void ventJetFor(SceneBuilder builder, BlockPos vent, double particlesPerTick, int ticks) {
+        builder.addInstruction(new VentJetInstruction(vent, particlesPerTick, EXHAUST_PA, DUCT_GAS_K, ticks));
+    }
+
     public static void reactorIntroTutorial(SceneBuilder builder, SceneBuildingUtil util) {
         builder.configureBasePlate(0, 0, 9);
         builder.title("reactor_intro", "Setting up a Fusion Reactor");
@@ -1024,8 +1036,7 @@ public class ZPSPonderScenes {
             glow.heatTo(1.3f, 0);
         });
         builder.idle(25);
-        builder.effects().emitParticles(util.vector().topOf(vent),
-                builder.effects().simpleParticleEmitter(ParticleTypes.CLOUD, new Vec3(0, 0.05, 0)), 1, 80);
+        ventJetFor(builder, vent, 1, 80);
         builder.overlay().showText(80)
                 .text("The Fusion Reactor produces large amounts of FE by reacting Flux into Aether.");
         builder.idle(95);
@@ -1190,8 +1201,7 @@ public class ZPSPonderScenes {
                 .pointAt(util.vector().centerOf(5, 3, 5)).placeNearTarget();
         builder.idle(100);
         builder.overlay().showOutline(PonderPalette.OUTPUT, "exhaust", exhaustLine.copy().add(util.select().position(outputPort)), 95);
-        builder.effects().emitParticles(util.vector().topOf(vent),
-                builder.effects().simpleParticleEmitter(ParticleTypes.CLOUD, new Vec3(0, 0.05, 0)), 1, 95);
+        ventJetFor(builder, vent, 1, 95);
         builder.addInstruction(scene -> {
             glow.heatTo(1.3f, 60);
             glow.setFlicker(0f);
@@ -1202,8 +1212,7 @@ public class ZPSPonderScenes {
         builder.idle(105);
 
         // 10. Recap.
-        builder.effects().emitParticles(util.vector().topOf(vent),
-                builder.effects().simpleParticleEmitter(ParticleTypes.CLOUD, new Vec3(0, 0.05, 0)), 1, 110);
+        ventJetFor(builder, vent, 1, 110);
         builder.overlay().showText(95).attachKeyFrame()
                 .text("The reactor keeps running while Flux is supplied and Aether is removed. If the chamber gets too cold, the reaction will stop.");
         builder.idle(105);
@@ -1225,11 +1234,11 @@ public class ZPSPonderScenes {
 
     /**
      * Opens one of those scenes: titles it, builds the rigs, and brings the whole reactor in running
-     * at a steady 65,000 K, with the Vent giving off cloud for a while. A port is shut until
+     * at a steady 65,000 K, with the Vent venting for a while. A port is shut until
      * redstone opens it, so both ports carry the intro's redstone rig, wide open, from the start.
      */
     private static ReactorRunningSet openReactorRunningScene(SceneBuilder builder, SceneBuildingUtil util, String id,
-                                                             String title, int cloudTicks) {
+                                                             String title, int ventTicks) {
         builder.configureBasePlate(0, 0, 9);
         builder.title(id, title);
         builder.scaleSceneView(0.7f);
@@ -1293,9 +1302,8 @@ public class ZPSPonderScenes {
         });
         reactorReadings(builder, displays, 9.0e6, 65_000, 8192);
         builder.idle(30);
-        if (cloudTicks > 0) {
-            builder.effects().emitParticles(util.vector().topOf(vent),
-                    builder.effects().simpleParticleEmitter(ParticleTypes.CLOUD, new Vec3(0, 0.05, 0)), 1, cloudTicks);
+        if (ventTicks > 0) {
+            ventJetFor(builder, vent, 1, ventTicks);
         }
         return new ReactorRunningSet(inputPort, outputPort, vent, util.vector().centerOf(5, 3, 5),
                 shell, exchangers, powerLine, buses, displays, busBlocks, inputRig, outputRig, glow);
@@ -1380,8 +1388,7 @@ public class ZPSPonderScenes {
         builder.idle(105);
         clickThrottle(builder, util, outputRig, ReactorPortBlockEntity.MAX_REDSTONE_LEVEL, 5);
         // Less leaving the Vent from here on.
-        builder.effects().emitParticles(util.vector().topOf(vent),
-                builder.effects().simpleParticleEmitter(ParticleTypes.CLOUD, new Vec3(0, 0.05, 0)), 0.3f, 620);
+        ventJetFor(builder, vent, 0.3, 620);
         builder.addInstruction(scene -> glow.heatTo(1.3f, 105));
         builder.overlay().showText(115)
                 .text("Weakening the Output port's Redstone signal keeps more Aether inside, so less heat is generated and the Heat Exchangers can catch up.")
@@ -1466,8 +1473,7 @@ public class ZPSPonderScenes {
         builder.addInstruction(scene -> glow.heatTo(1.3f, 140));
         rampReadings(builder, displays, 60_000, 10.4e6, 375, 65_000, 0, 8192, 140);
 
-        builder.effects().emitParticles(util.vector().topOf(vent),
-                builder.effects().simpleParticleEmitter(ParticleTypes.CLOUD, new Vec3(0, 0.05, 0)), 0.3f, 175);
+        ventJetFor(builder, vent, 0.3, 175);
         builder.overlay().showText(80)
                 .text("Once the reactor is lit, the Input port can be opened up again.")
                 .pointAt(util.vector().blockSurface(inputPort, Direction.NORTH)).placeNearTarget();

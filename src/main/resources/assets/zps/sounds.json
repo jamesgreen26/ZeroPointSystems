@@ -37,5 +37,15 @@
     "sounds": [
       "minecraft:mob/irongolem/damage1"
     ]
+  },
+  "reactor_hum": {
+    "subtitle": "sounds.zps.reactor_hum",
+    "sounds": [
+      {
+        "name": "zps:reactor_hum",
+        "preload": true,
+        "attenuation_distance": 32
+      }
+    ]
   }
 }

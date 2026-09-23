@@ -550,6 +550,7 @@
     "sounds.zps.arm_move": "Robotic arm moves",
     "sounds.zps.impact_thunk": "Impact Piston lands",
     "sounds.zps.impact_anvil_break": "Anvil shatters",
+    "sounds.zps.reactor_hum": "Reactor hums",
 
     "zps.display_source.serial_bus": "Raw Input Data",
     "zps.display_source.serial_bus_manual": "Stored Display Text",

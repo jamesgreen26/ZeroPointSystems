@@ -23,7 +23,7 @@ import java.util.ArrayList;
 
 /**
  * Every reactor the client has been told about, and the level render hook that draws their glow
- * through {@link ReactorGlowRenderer}.
+ * through {@link ReactorGlowRenderer}. Each reactor runs its own hum from the client tick.
  *
  * <p>Only the render thread touches any of it: packet handlers run through {@code enqueueWork} and
  * the events below are posted from it.
@@ -59,12 +59,12 @@ public final class ClientReactors {
     public static void remove(int id) {
         ClientReactor reactor = REACTORS.remove(id);
         if (reactor != null) {
-            reactor.releaseGlowMesh();
+            reactor.release();
         }
     }
 
     public static void clearAll() {
-        REACTORS.values().forEach(ClientReactor::releaseGlowMesh);
+        REACTORS.values().forEach(ClientReactor::release);
         REACTORS.clear();
     }
 

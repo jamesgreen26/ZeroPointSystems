@@ -23,6 +23,18 @@ public class ZPSConfig {
         return result;
     }
 
+    private static ModConfigSpec.ConfigValue<Boolean> reactorHum;
+    private static final boolean reactorHumDefault = true;
+
+    /** Whether a hot fusion reactor hums. */
+    public static boolean playReactorHum() {
+        boolean result = reactorHumDefault;
+        try {
+            result = reactorHum.get();
+        } catch (Exception ignored) { }
+        return result;
+    }
+
     /**
      * Null outside a development environment: the option is not written to the config at all, so
      * it cannot be switched on in a released build.
@@ -56,6 +68,9 @@ public class ZPSConfig {
         reactorGlow = builder
                 .comment("Draw the glowing plasma inside fusion reactors.")
                 .define("ReactorGlow", reactorGlowDefault);
+        reactorHum = builder
+                .comment("Play a hum from hot fusion reactors.")
+                .define("ReactorHum", reactorHumDefault);
         if (!FMLLoader.isProduction()) {
             gasPressureOverlay = builder
                     .comment("Debug: tint every gas node with a colour for its pressure,",

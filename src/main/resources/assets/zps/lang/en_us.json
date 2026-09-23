@@ -536,6 +536,7 @@
     "block.zps.coal_burner.zps_tooltip": "Burns coal fuels to generate FE.\n\nAccepted fuels & burn times:\n- [Coal]: 80 seconds\n- [Charcoal]: 80 seconds\n- [Block of Coal]: 800 seconds",
     "block.zps.rolling_mill.zps_tooltip": "Consumes FE to roll metal.\n\nRolls ingots into rods and nuggets into wire.",
     "block.zps.vaporizer.zps_tooltip": "Consumes FE to heat up, then vaporizes items into gas.\n\nEach recipe needs a minimum temperature and cools the machine when it runs. The gas collects in an internal buffer and leaves through the top.",
+    "block.zps.vent.zps_tooltip": "Releases gas from a [Gas Duct] into the air to prevent pressure buildup.\n\nCloses when receiving a redstone signal.\n\n[R-Click] an open vent to climb inside.\nEntering a vent with very hot or very cold gas can be dangerous.",
     "block.zps.assembler.zps_tooltip": "Consumes FE to craft items in a [5x5 crafting grid].\n\nConsumes 16 FE/t while crafting, and works only when receiving a Redstone signal.",
     "block.zps.impact_piston.zps_tooltip": "Consumes FE to slam a heavy rod into the block underneath.\n\nConsumes 64 FE/t while raising the rod, and works only when receiving a Redstone signal.",
     "block.zps.sieve.zps_tooltip": "Allows players and mobs to stand on top, while other entities fall through.\n\nFalling blocks that drop through are [sifted]: any loot buried inside is collected in the sieve.",

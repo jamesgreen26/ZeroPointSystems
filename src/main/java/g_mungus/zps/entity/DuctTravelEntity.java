@@ -134,18 +134,24 @@ public class DuctTravelEntity extends Entity {
     public static final int FADE_IN_TICKS = 8;
 
     /**
-     * Ticks after a hop lands, or is turned down, before another may be asked for. This is the rate
+     * How far into the fade back in the client may ask for the next vent. Waiting out the whole
+     * fade-in between hops was found to drag when stepping through a run of vents; a couple of
+     * ticks is enough for the far vent to register before the screen is on its way dark again.
+     */
+    public static final int REQUEST_AGAIN_TICKS = 2;
+
+    /**
+     * Ticks after a hop lands, or is turned down, before another request is taken. This is the rate
      * limit on duct travel, held here rather than trusted to the client.
      *
-     * <p>Shorter than the client's fade back in on purpose. The client will not ask again until
-     * {@link #FADE_IN_TICKS} have passed since the arrival reached it, and that request is handled
-     * here between two server ticks, against a clock that is not lined up with the client's. Were
-     * the two the same length, a request sent on the first tick the client allows would land, about
-     * half the time, with one tick still on the cooldown and be turned down — for a screen that has
-     * already gone dark. The two ticks of slack cover the misalignment, and a refusal is answered
+     * <p>One tick shorter than the client's own wait on purpose. The client asks no sooner than
+     * {@link #REQUEST_AGAIN_TICKS} after the arrival reaches it, and that request is handled here
+     * between two server ticks, against a clock that is not lined up with the client's. Were the
+     * two the same length, a request sent on the first tick the client allows would land, about
+     * half the time, with one tick still on the cooldown and be turned down. A refusal is answered
      * in any case, so a client that gets ahead under lag is still brought back.
      */
-    public static final int ARRIVAL_COOLDOWN_TICKS = FADE_IN_TICKS - 2;
+    public static final int ARRIVAL_COOLDOWN_TICKS = REQUEST_AGAIN_TICKS - 1;
 
     /** The clatter a vent makes when someone goes through it. */
     public static final SoundEvent CLANK_SOUND = SoundEvents.IRON_TRAPDOOR_OPEN;

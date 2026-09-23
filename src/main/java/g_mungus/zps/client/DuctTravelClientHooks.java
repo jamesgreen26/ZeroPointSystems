@@ -408,10 +408,11 @@ public final class DuctTravelClientHooks {
     /**
      * Ask for another vent and start fading immediately, so the screen responds on the same frame
      * as the key rather than a round trip later. A hop already under way swallows the request —
-     * holding a direction therefore steps once per transition rather than queueing them up.
+     * holding a direction therefore steps once per transition rather than queueing them up — but
+     * the tail of the fade back in does not, so stepping through a run does not wait on it.
      */
     private static void send(int delta) {
-        if (DuctTravelFade.isTransitioning()) {
+        if (!DuctTravelFade.mayRequest()) {
             return;
         }
         DuctTravelFade.beginHop();

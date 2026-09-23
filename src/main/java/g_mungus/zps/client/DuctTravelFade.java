@@ -73,11 +73,27 @@ public final class DuctTravelFade implements LayeredDraw.Layer {
     private DuctTravelFade() {
     }
 
-    /** The player has asked for another vent. */
+    /**
+     * The player has asked for another vent. Asked for mid fade-in, the screen turns back towards
+     * black from however dark it still is rather than flashing clear first.
+     */
     public static void beginHop() {
+        float darkness = phase == Phase.IN
+                ? Math.max(0.0f, 1.0f - (float) ticks / DuctTravelEntity.FADE_IN_TICKS)
+                : 0.0f;
         phase = Phase.OUT;
-        ticks = 0;
+        ticks = Math.round(darkness * DuctTravelEntity.FADE_OUT_TICKS);
         arrivalPending = false;
+    }
+
+    /**
+     * Whether the next vent may be asked for now: nothing under way, or the last hop landed and
+     * the fade back in is at least {@link DuctTravelEntity#REQUEST_AGAIN_TICKS} along. Any earlier
+     * and the server would still be counting its own cooldown on the last one.
+     */
+    public static boolean mayRequest() {
+        return phase == Phase.IDLE
+                || (phase == Phase.IN && !awaitingVehicle && ticks >= DuctTravelEntity.REQUEST_AGAIN_TICKS);
     }
 
     /** The server has moved us. Start coming back. */

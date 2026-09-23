@@ -210,10 +210,11 @@ public class DuctTravelGameTests {
      * <p>The client begins fading to black the moment the key is pressed and comes back only when
      * the server answers, so a request turned down for landing on a cooldown with a tick left on
      * it left the rider in the dark, bar empty, for as long as the fade took to give up. The client
-     * asks no sooner than {@link DuctTravelEntity#FADE_IN_TICKS} after the arrival reaches it, and
-     * a request is handled between two server ticks, so the earliest one there can be is handled
-     * {@code FADE_IN_TICKS - 1} server ticks after the arrival was sent. That one must be taken —
-     * while one a tick after landing is still, rightly, turned down, and says so.
+     * asks no sooner than {@link DuctTravelEntity#REQUEST_AGAIN_TICKS} after the arrival reaches
+     * it, and a request is handled between two server ticks, so the earliest one there can be is
+     * handled {@code REQUEST_AGAIN_TICKS - 1} server ticks after the arrival was sent. That one
+     * must be taken — while one in the tick the hop lands is still, rightly, turned down, and says
+     * so.
      */
     @GameTest(template = TEMPLATE, timeoutTicks = 200)
     public static void theFirstRequestTheClientCanMakeAfterLandingIsTaken(GameTestHelper helper) {
@@ -238,11 +239,11 @@ public class DuctTravelGameTests {
             }
 
             int since = sinceArrival[0];
-            if (since == 1) {
+            if (since == 0) {
                 if (duct.requestCycle(1)) {
-                    helper.fail("A request a tick after landing should still be on cooldown");
+                    helper.fail("A request in the tick the hop lands should still be on cooldown");
                 }
-            } else if (since == DuctTravelEntity.FADE_IN_TICKS - 1) {
+            } else if (since == DuctTravelEntity.REQUEST_AGAIN_TICKS - 1) {
                 if (!duct.requestCycle(1)) {
                     helper.fail("The first request the client can make after landing, "
                             + since + " ticks on, should be taken rather than refused");

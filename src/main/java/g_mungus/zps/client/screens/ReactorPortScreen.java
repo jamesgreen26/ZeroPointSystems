@@ -22,7 +22,6 @@ import org.valkyrienskies.kelvin.impl.registry.GasTypeRegistry;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Settings for the reactor port: which way it carries gas across the wall, and which gases it
@@ -152,13 +151,12 @@ public class ReactorPortScreen extends Screen implements GasFilterList.Host {
 
     private void collectGases() {
         gases.clear();
-        Map<ResourceLocation, GasType> registered = GasTypeRegistry.INSTANCE.getGAS_TYPES();
-        for (GasType gas : registered.values()) {
+        for (GasType gas : GasTypeRegistry.INSTANCE.getGasTypes()) {
             gases.add(new GasFilterList.Gas(gas.getResourceLocation(), gas.getName(), gas.getIconLocation(), true));
         }
         // A gas whose mod has gone is still in the filter; without a row it could never be unblocked.
         for (ResourceLocation id : filter.blocked()) {
-            if (!registered.containsKey(id)) {
+            if (GasTypeRegistry.INSTANCE.getGasType(id) == null) {
                 gases.add(new GasFilterList.Gas(id, id.toString(), GasType.Companion.getPLACEHOLDER_ICON(), false));
             }
         }

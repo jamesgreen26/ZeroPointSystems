@@ -67,7 +67,7 @@ public class CreativeGasGeneratorScreen extends Screen {
     @Override
     protected void init() {
         gases.clear();
-        gases.addAll(GasTypeRegistry.INSTANCE.getGAS_TYPES().values());
+        GasTypeRegistry.INSTANCE.getGasTypes().forEach(gases::add);
         gases.sort(Comparator.comparing(gas -> gas.getResourceLocation().toString()));
 
         CreativeGasGeneratorBlockEntity generator = getBlockEntity();

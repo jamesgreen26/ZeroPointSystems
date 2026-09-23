@@ -45,7 +45,7 @@ public record GasFilter(Set<ResourceLocation> blocked) {
     public HashSet<GasType> resolve() {
         HashSet<GasType> resolved = new HashSet<>();
         for (ResourceLocation id : blocked) {
-            GasType gas = GasTypeRegistry.INSTANCE.getGAS_TYPES().get(id);
+            GasType gas = GasTypeRegistry.INSTANCE.getGasType(id);
             if (gas != null) {
                 resolved.add(gas);
             }

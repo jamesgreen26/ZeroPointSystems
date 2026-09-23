@@ -44,8 +44,13 @@ public final class ModGases {
     public static final GasType STEAM = Compat.getOrCreateSteamGas();
 
     /**
-     * Registers ZPS's gases with Kelvin. Safe to call during mod construction — {@code
-     * GasTypeRegistry} is a plain map, and the particle picker resolves its type lazily.
+     * Registers ZPS's gases with Kelvin. Safe to call during mod construction: gas types live in
+     * Kelvin's {@code kelvin:gas_type} registry, fed by an Architectury deferred register. Entries
+     * added after Kelvin has submitted that register are queued until {@code RegisterEvent}, which
+     * fires once every mod has been constructed, so the order ZPS and Kelvin construct in does not
+     * matter. The {@link GasType} instances are registered as-is, so the constants above stay the
+     * canonical objects; the registry only becomes queryable ({@code getGasType}) after
+     * {@code RegisterEvent}. The particle picker resolves its type lazily.
      *
      * <p>Deliberately not the single-argument {@code register(GasType)}: that one registers a
      * particle into Kelvin's own deferred registry, which Kelvin has already submitted by the time

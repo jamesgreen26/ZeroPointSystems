@@ -6,7 +6,7 @@ import g_mungus.zps.block.reactor.ReactorPortBlock;
 import g_mungus.zps.block.reactor.ReactorPortMode;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.gas.core.GasNodeBlockEntity;
-import g_mungus.zps.config.ZPSConfig;
+import g_mungus.zps.reactor.ReactorTuning;
 import g_mungus.zps.gas.GasFilter;
 import g_mungus.zps.reactor.Reactor;
 import g_mungus.zps.reactor.ReactorChamberNode;
@@ -224,13 +224,13 @@ public class ReactorPortBlockEntity extends GasNodeBlockEntity {
         }
         // Gated on the stub's own pressure, not the chamber's: a well-run chamber holds a few
         // grams at a few kilopascals, less than the stub, and would never drain otherwise.
-        if (getPressure() >= ZPSConfig.exhaustBackpressureLimitPa()) {
+        if (getPressure() >= ReactorTuning.EXHAUST_BACKPRESSURE_LIMIT_PA) {
             return;
         }
 
         // Redstone drives the pump the way it opens the input's valve.
-        double budget = ZPSConfig.exhaustKgPerTick() * openness();
-        double outletTemperature = Math.min(kelvin.getTemperatureAt(host), ZPSConfig.exhaustOutletTemperatureK());
+        double budget = ReactorTuning.EXHAUST_KG_PER_TICK * openness();
+        double outletTemperature = Math.min(kelvin.getTemperatureAt(host), ReactorTuning.EXHAUST_OUTLET_TEMPERATURE_K);
 
         // The pump takes the mixture as it finds it: each passing gas in proportion to its share
         // of what passes, so a trace gas is not starved by an abundant one.
@@ -262,7 +262,7 @@ public class ReactorPortBlockEntity extends GasNodeBlockEntity {
 
         // Whatever arrives, the stub never runs hotter than its outlet rating.
         double temperature = getTemperature();
-        double limit = ZPSConfig.exhaustOutletTemperatureK();
+        double limit = ReactorTuning.EXHAUST_OUTLET_TEMPERATURE_K;
         if (temperature > limit) {
             kelvin.modHeatEnergy(own, -(temperature - limit) * kelvin.getNodeHeatCapacity(own));
         }

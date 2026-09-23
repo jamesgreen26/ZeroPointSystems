@@ -4,6 +4,7 @@ import g_mungus.zps.block.reactor.HeatExchangerBlock;
 import g_mungus.zps.blockentity.EnergyGeneratorBE;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.config.ZPSConfig;
+import g_mungus.zps.reactor.ReactorTuning;
 import g_mungus.zps.reactor.Reactor;
 import g_mungus.zps.reactor.ReactorChamberNode;
 import g_mungus.zps.reactor.ReactorManager;
@@ -27,10 +28,10 @@ import org.valkyrienskies.kelvin.api.DuctNodePos;
  * straight from chamber heat. Each tick the exchanger also offers what the chamber can spare to
  * whatever is on its outer face. Both directions are capped per tick.
  *
- * <p>Two temperature limits keep the reactor alive. Nothing is drawn below a floor a little above
- * ignition, so the exchangers never pull a running chamber down to where one cold dose of fuel
- * quenches it. Nothing is accepted above a cutoff, so a big power source cannot cook the chamber
- * past melting on its own. Nothing is accepted into an empty chamber either: there is no gas to
+ * <p>One temperature keeps the reactor alive. Nothing is drawn below it, and it sits a little
+ * above ignition, so the exchangers never pull a running chamber down to where one cold dose of
+ * fuel quenches it. Nothing is accepted above it either, so a big power source cannot cook the
+ * chamber past melting on its own. Nothing is accepted into an empty chamber: there is no gas to
  * heat, and the reactor is busy losing what heat it has.
  */
 public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGeneratorBE {
@@ -191,17 +192,17 @@ public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGener
 
         /** FE the chamber could give up right now, within this tick's cap. */
         private int spare(Chamber chamber) {
-            double surplus = (chamber.temperature() - ZPSConfig.exchangerGenerationFloorK()) * chamber.heatCapacity();
-            int cap = ZPSConfig.exchangerFePerTick() - outThisTick;
+            double surplus = (chamber.temperature() - ZPSConfig.exchangerTemperatureK()) * chamber.heatCapacity();
+            int cap = ReactorTuning.EXCHANGER_FE_PER_TICK - outThisTick;
             return (int) Math.max(0, Math.min(cap, surplus / JOULES_PER_FE));
         }
 
         /** FE the chamber could take right now, within this tick's cap. */
         private int room(Chamber chamber) {
-            if (chamber.isEmpty() || chamber.temperature() >= ZPSConfig.exchangerHeatingCutoffK()) {
+            if (chamber.isEmpty() || chamber.temperature() >= ZPSConfig.exchangerTemperatureK()) {
                 return 0;
             }
-            return Math.max(0, ZPSConfig.exchangerFePerTick() - inThisTick);
+            return Math.max(0, ReactorTuning.EXCHANGER_FE_PER_TICK - inThisTick);
         }
 
         @Override
@@ -243,7 +244,7 @@ public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGener
 
         @Override
         public int getMaxEnergyStored() {
-            return ZPSConfig.exchangerFePerTick();
+            return ReactorTuning.EXCHANGER_FE_PER_TICK;
         }
 
         @Override

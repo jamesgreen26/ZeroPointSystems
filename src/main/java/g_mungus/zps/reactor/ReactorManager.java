@@ -305,10 +305,10 @@ public final class ReactorManager extends SavedData {
             // An empty chamber has nothing to hold its heat: after a short grace it bleeds away,
             // and the exchangers will not put any back until there is gas again.
             reactor.noteEmpty(isEmpty(kelvin.getGasMassAt(host)));
-            if (reactor.emptyTicks() > ZPSConfig.reactorEmptyGraceTicks()) {
+            if (reactor.emptyTicks() > ReactorTuning.EMPTY_GRACE_TICKS) {
                 double excess = kelvin.getTemperatureAt(host) - AMBIENT_TEMPERATURE_K;
                 if (excess > 0) {
-                    kelvin.modHeatEnergy(host, -excess * ZPSConfig.reactorEmptyCoolingFraction()
+                    kelvin.modHeatEnergy(host, -excess * ReactorTuning.EMPTY_COOLING_FRACTION
                             * kelvin.getNodeHeatCapacity(host));
                 }
             }
@@ -417,7 +417,7 @@ public final class ReactorManager extends SavedData {
 
     /** Whether a chamber holding these masses counts as empty: no gas above the trace threshold. */
     public static boolean isEmpty(Map<GasType, Double> masses) {
-        double threshold = ZPSConfig.reactorEmptyGasThresholdKg();
+        double threshold = ReactorTuning.EMPTY_GAS_THRESHOLD_KG;
         for (double mass : masses.values()) {
             if (mass > threshold) {
                 return false;

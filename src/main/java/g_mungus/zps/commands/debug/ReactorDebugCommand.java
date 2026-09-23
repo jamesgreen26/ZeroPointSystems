@@ -6,6 +6,7 @@ import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.reactor.ReactorPortBlock;
 import g_mungus.zps.block.reactor.ReactorPortMode;
 import g_mungus.zps.config.ZPSConfig;
+import g_mungus.zps.reactor.ReactorTuning;
 import g_mungus.zps.reactor.Reactor;
 import g_mungus.zps.reactor.ReactorChamberNode;
 import g_mungus.zps.reactor.ReactorManager;
@@ -124,7 +125,7 @@ public class ReactorDebugCommand {
                 reactor.hasIgnited()));
         if (reactor.isEmpty()) {
             lines.add(String.format("  empty for %d ticks (cooling after %d)",
-                    reactor.emptyTicks(), ZPSConfig.reactorEmptyGraceTicks()));
+                    reactor.emptyTicks(), ReactorTuning.EMPTY_GRACE_TICKS));
         }
         lines.add(String.format("  FE last tick: in %d, out %d", reactor.feInLastTick(), reactor.feOutLastTick()));
 

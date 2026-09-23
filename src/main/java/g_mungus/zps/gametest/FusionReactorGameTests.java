@@ -14,6 +14,7 @@ import g_mungus.zps.commands.api.ScriptGetter;
 import g_mungus.zps.commands.api_impl.ZPSCommands;
 import g_mungus.zps.commands.content.ZPSScriptGetters;
 import g_mungus.zps.config.ZPSConfig;
+import g_mungus.zps.reactor.ReactorTuning;
 import g_mungus.zps.gas.GasFilter;
 import g_mungus.zps.gas.ModGases;
 import g_mungus.zps.networking.VoxelShapeStreamCodec;
@@ -400,7 +401,7 @@ public class FusionReactorGameTests {
             helper.assertTrue(massOf(helper, HOST, ModGases.AETHER) < 0.05,
                     "The chamber's aether should be going down");
             double temperature = kelvin().getTemperatureAt(node(helper, EAST_WALL));
-            helper.assertTrue(temperature <= ZPSConfig.exhaustOutletTemperatureK() + 1.0,
+            helper.assertTrue(temperature <= ReactorTuning.EXHAUST_OUTLET_TEMPERATURE_K + 1.0,
                     "The stub should be cooled to the outlet temperature, was " + temperature);
             helper.succeed();
         });
@@ -419,7 +420,7 @@ public class FusionReactorGameTests {
                 kelvin().getTemperatureAt(node(helper, HOST)) > 1000.0, "The chamber should be heating"));
         helper.runAfterDelay(300, () -> {
             double temperature = kelvin().getTemperatureAt(node(helper, HOST));
-            double cutoff = ZPSConfig.exchangerHeatingCutoffK();
+            double cutoff = ZPSConfig.exchangerTemperatureK();
             helper.assertTrue(temperature >= cutoff - 1000.0 && temperature <= cutoff + 3000.0,
                     "Heating should stop at the cutoff, was " + temperature);
             helper.assertTrue(reactorAt(helper, WEST_WALL).hasIgnited(), "The reactor should have ignited");
@@ -442,7 +443,7 @@ public class FusionReactorGameTests {
                     helper.absolutePos(OUTSIDE_WEST), cell.getBlockState(), cell, Direction.EAST);
             helper.assertTrue(energy != null, "The power cell should expose energy");
             int stored = energy.getEnergyStored();
-            int perTick = ZPSConfig.exchangerFePerTick();
+            int perTick = ReactorTuning.EXCHANGER_FE_PER_TICK;
             helper.assertTrue(stored >= perTick * (ticks - 3) && stored <= perTick * ticks,
                     "Expected about " + perTick + " FE/t into the cell, got " + stored + " over " + ticks + " ticks");
             helper.assertTrue(kelvin().getTemperatureAt(node(helper, HOST)) < 90_000.0,
@@ -456,7 +457,7 @@ public class FusionReactorGameTests {
         buildShell(helper, Map.of(WEST_WALL,
                 facing(ModBlocks.HEAT_EXCHANGER.get().defaultBlockState(), Direction.WEST)));
         helper.setBlock(OUTSIDE_WEST, ModBlocks.POWER_CELL.get().defaultBlockState());
-        double floor = ZPSConfig.exchangerGenerationFloorK();
+        double floor = ZPSConfig.exchangerTemperatureK();
         seedChamber(helper);
         setChamberTemperature(helper, floor + 500.0);
 
@@ -474,7 +475,7 @@ public class FusionReactorGameTests {
     public static void emptyChamberCoolsAfterTheGrace(GameTestHelper helper) {
         buildShell(helper);
         setChamberTemperature(helper, 60_000.0);
-        int grace = ZPSConfig.reactorEmptyGraceTicks();
+        int grace = ReactorTuning.EMPTY_GRACE_TICKS;
 
         helper.runAfterDelay(grace - 5, () -> helper.assertTrue(
                 Math.abs(chamberTemperature(helper) - 60_000.0) < 1.0,
@@ -496,7 +497,7 @@ public class FusionReactorGameTests {
         // Below ignition, so nothing reacts and the only thing that could move the heat is us.
         setChamberTemperature(helper, 40_000.0);
 
-        helper.runAfterDelay(ZPSConfig.reactorEmptyGraceTicks() + 60, () -> {
+        helper.runAfterDelay(ReactorTuning.EMPTY_GRACE_TICKS + 60, () -> {
             helper.assertTrue(Math.abs(chamberTemperature(helper) - 40_000.0) < 1.0,
                     "A chamber with gas in it should hold its heat, was " + chamberTemperature(helper));
             helper.succeed();
@@ -697,7 +698,7 @@ public class FusionReactorGameTests {
         seedChamber(helper);
 
         helper.runAfterDelay(160, () -> {
-            helper.assertTrue(chamberTemperature(helper) >= ZPSConfig.exchangerHeatingCutoffK() - 1000.0,
+            helper.assertTrue(chamberTemperature(helper) >= ZPSConfig.exchangerTemperatureK() - 1000.0,
                     "The heater should have brought the chamber to the cutoff first, was " + chamberTemperature(helper));
             // Then it runs hard for a while, well past the cutoff, before it gets away from us.
             setChamberTemperature(helper, 90_000.0);
@@ -825,7 +826,7 @@ public class FusionReactorGameTests {
         int[] pulled = {0};
         for (int tick = 5; tick < 30; tick++) {
             helper.runAtTickTime(tick, () -> pulled[0] += energyAt(helper, NORTH_WALL_A, Direction.NORTH)
-                    .extractEnergy(ZPSConfig.exchangerFePerTick(), false));
+                    .extractEnergy(ReactorTuning.EXCHANGER_FE_PER_TICK, false));
         }
         helper.runAtTickTime(30, () -> {
             helper.assertTrue(pulled[0] > 0, "Pulling from the exchanger should yield FE");

@@ -86,8 +86,8 @@ public final class Reactor {
 
         this.volume = interior.size();
         this.wallCount = walls.size();
-        this.burstPressure = ZPSConfig.burstBasePressurePa();
-        this.wallHeatCapacity = ReactorGeometry.wallHeatCapacity(wallCount, ZPSConfig.reactorWallHeatCapacityJPerK());
+        this.burstPressure = ZPSConfig.burstPressurePa();
+        this.wallHeatCapacity = ReactorGeometry.wallHeatCapacity(wallCount, ReactorTuning.WALL_HEAT_CAPACITY_J_PER_K);
     }
 
     // --- geometry ----------------------------------------------------------------------------
@@ -307,7 +307,7 @@ public final class Reactor {
                 extracting++;
             }
         }
-        return extracting * ZPSConfig.exchangerFePerTick();
+        return extracting * ReactorTuning.EXCHANGER_FE_PER_TICK;
     }
 
     // --- persistence -------------------------------------------------------------------------

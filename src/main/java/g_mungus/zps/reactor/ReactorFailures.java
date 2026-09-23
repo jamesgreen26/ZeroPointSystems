@@ -1,7 +1,6 @@
 package g_mungus.zps.reactor;
 
 import g_mungus.zps.ZPSMod;
-import g_mungus.zps.config.ZPSConfig;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
@@ -45,7 +44,7 @@ public final class ReactorFailures {
             level.destroyBlock(wall, true);
         }
 
-        int fireRadius = ZPSConfig.breachFireRadius();
+        int fireRadius = ReactorTuning.BREACH_FIRE_RADIUS;
         for (BlockPos pos : BlockPos.betweenClosed(wall.offset(-fireRadius, -fireRadius, -fireRadius),
                 wall.offset(fireRadius, fireRadius, fireRadius))) {
             if (reactor.isInterior(pos) || !level.getBlockState(pos).isAir()) {
@@ -57,7 +56,7 @@ public final class ReactorFailures {
             }
         }
 
-        int igniteRadius = ZPSConfig.breachIgniteRadius();
+        int igniteRadius = ReactorTuning.BREACH_IGNITE_RADIUS;
         for (LivingEntity entity : level.getEntitiesOfClass(LivingEntity.class, new AABB(wall).inflate(igniteRadius))) {
             entity.igniteForSeconds(BREACH_BURN_SECONDS);
             entity.hurt(level.damageSources().inFire(), BREACH_DAMAGE);
@@ -78,7 +77,7 @@ public final class ReactorFailures {
 
         BlockPos wall = reactor.randomWall(level.random);
         double overshoot = Math.max(0, pressure / reactor.burstPressure() - 1.0);
-        float radius = (float) Mth.clamp(2.0 + ZPSConfig.burstRadiusPerOvershoot() * overshoot, 2.0, 8.0);
+        float radius = (float) Mth.clamp(2.0 + ReactorTuning.BURST_RADIUS_PER_OVERSHOOT * overshoot, 2.0, 8.0);
         Vec3 centre = Vec3.atCenterOf(wall);
         level.explode(null, centre.x, centre.y, centre.z, radius, Level.ExplosionInteraction.BLOCK);
         ZPSMod.LOGGER.info("Reactor {} burst at {} ({} Pa against {} Pa)", reactor.id(), wall, pressure, reactor.burstPressure());
@@ -90,7 +89,7 @@ public final class ReactorFailures {
         if (advancement == null) {
             return;
         }
-        double radius = ZPSConfig.reactorAdvancementRadius();
+        double radius = ReactorTuning.ADVANCEMENT_RADIUS;
         Vec3 centre = Vec3.atCenterOf(reactor.host());
         for (ServerPlayer player : level.players()) {
             if (player.position().closerThan(centre, radius)) {

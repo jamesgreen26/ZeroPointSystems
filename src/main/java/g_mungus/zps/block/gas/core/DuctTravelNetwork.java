@@ -44,11 +44,34 @@ public final class DuctTravelNetwork {
      * <p>Server side only.
      */
     public static List<BlockPos> reachableVents(Level level, BlockPos startVent) {
+        BlockPos start = startVent.immutable();
+        List<BlockPos> found = new ArrayList<>(reachableVentSet(level, start));
+        found.remove(start);
+        found.sort(Comparator.comparingDouble(pos -> pos.distSqr(start)));
+
+        List<BlockPos> destinations = new ArrayList<>();
+        destinations.add(start);
+        for (BlockPos vent : found) {
+            if (destinations.size() > MAX_DESTINATIONS) {
+                break;
+            }
+            destinations.add(vent);
+        }
+        return List.copyOf(destinations);
+    }
+
+    /**
+     * Every open vent joined to {@code startVent} by duct, the starting vent included, with no
+     * cap and in no order: the question of whether a vent can still be reached at all, as opposed
+     * to which ones to offer. Walks the same budget as {@link #reachableVents}.
+     */
+    public static Set<BlockPos> reachableVentSet(Level level, BlockPos startVent) {
         Set<BlockPos> visited = new HashSet<>();
         Deque<BlockPos> queue = new ArrayDeque<>();
-        List<BlockPos> found = new ArrayList<>();
+        Set<BlockPos> found = new HashSet<>();
 
         BlockPos start = startVent.immutable();
+        found.add(start);
         visited.add(start);
         queue.add(start);
 
@@ -81,17 +104,6 @@ public final class DuctTravelNetwork {
                 }
             }
         }
-
-        found.sort(Comparator.comparingDouble(pos -> pos.distSqr(start)));
-
-        List<BlockPos> destinations = new ArrayList<>();
-        destinations.add(start);
-        for (BlockPos vent : found) {
-            if (destinations.size() > MAX_DESTINATIONS) {
-                break;
-            }
-            destinations.add(vent);
-        }
-        return List.copyOf(destinations);
+        return found;
     }
 }

@@ -9,6 +9,7 @@ import g_mungus.zps.entity.DuctTravelEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
+import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.entity.player.Player;
@@ -102,6 +103,103 @@ public class DuctTravelGameTests {
             helper.fail("Only the vent climbed into should remain, offered " + vents.size());
         }
         helper.succeed();
+    }
+
+    // --- the run changing under a rider ---------------------------------------------------------
+
+    /** Ticks from asking for the next vent to the hop being made, with a little to spare. */
+    private static final int HOP_TICKS = DuctTravelEntity.FADE_OUT_TICKS + 4;
+
+    /** Climb into the near vent and ask for the next vent along. */
+    private static DuctTravelEntity enterNearAndCycle(GameTestHelper helper) {
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        if (!DuctTravelEntity.enter(helper.getLevel(), helper.absolutePos(NEAR_VENT), player)) {
+            helper.fail("Could not climb into the vent");
+        }
+        if (!(player.getVehicle() instanceof DuctTravelEntity duct)) {
+            throw new GameTestAssertException("Climbing in left the player riding nothing");
+        }
+        duct.requestCycle(1);
+        return duct;
+    }
+
+    /** The baseline the next test is measured against: on an intact run, cycling does hop. */
+    @GameTest(template = TEMPLATE)
+    public static void cyclingHopsToTheFarVent(GameTestHelper helper) {
+        placeRun(helper);
+        DuctTravelEntity duct = enterNearAndCycle(helper);
+
+        helper.runAfterDelay(HOP_TICKS, () -> {
+            if (!duct.getVentPos().equals(helper.absolutePos(FAR_VENT))) {
+                helper.fail("Cycling on an intact run should have hopped to the far vent, but the rider is at "
+                        + duct.getVentPos());
+            }
+            helper.succeed();
+        });
+    }
+
+    /**
+     * The list of vents is drawn up on the way in. If the run is cut afterwards, the vents on the
+     * far side of the cut are no longer anywhere the player can crawl to, however recently they
+     * were.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void breakingTheRunAfterEnteringStopsTravelAcrossTheGap(GameTestHelper helper) {
+        placeRun(helper);
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        if (!DuctTravelEntity.enter(helper.getLevel(), helper.absolutePos(NEAR_VENT), player)) {
+            helper.fail("Could not climb into the vent");
+        }
+        if (!(player.getVehicle() instanceof DuctTravelEntity duct)) {
+            throw new GameTestAssertException("Climbing in left the player riding nothing");
+        }
+
+        helper.setBlock(MIDDLE_DUCT, Blocks.AIR.defaultBlockState());
+        duct.requestCycle(1);
+
+        helper.runAfterDelay(HOP_TICKS, () -> {
+            if (!duct.getVentPos().equals(helper.absolutePos(NEAR_VENT))) {
+                helper.fail("A vent across a gap in the run should be out of reach, but the rider hopped to "
+                        + duct.getVentPos());
+            }
+            if (!player.isPassenger()) {
+                helper.fail("The rider should still be in the vent they climbed into");
+            }
+            helper.succeed();
+        });
+    }
+
+    /** Once the run is mended, the vents beyond the old break are back on offer without climbing out. */
+    @GameTest(template = TEMPLATE)
+    public static void mendingTheRunRestoresTravelAcrossTheGap(GameTestHelper helper) {
+        placeRun(helper);
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        if (!DuctTravelEntity.enter(helper.getLevel(), helper.absolutePos(NEAR_VENT), player)) {
+            helper.fail("Could not climb into the vent");
+        }
+        if (!(player.getVehicle() instanceof DuctTravelEntity duct)) {
+            throw new GameTestAssertException("Climbing in left the player riding nothing");
+        }
+
+        helper.setBlock(MIDDLE_DUCT, Blocks.AIR.defaultBlockState());
+        duct.requestCycle(1);
+
+        // Long enough for the refused hop's cooldown to run out as well.
+        helper.runAfterDelay(DuctTravelEntity.FADE_OUT_TICKS + DuctTravelEntity.FADE_IN_TICKS + 4, () -> {
+            if (!duct.getVentPos().equals(helper.absolutePos(NEAR_VENT))) {
+                helper.fail("The rider should not have crossed the gap, but is at " + duct.getVentPos());
+            }
+            helper.setBlock(MIDDLE_DUCT, ModBlocks.GAS_DUCT.get().defaultBlockState());
+            duct.requestCycle(1);
+
+            helper.runAfterDelay(HOP_TICKS, () -> {
+                if (!duct.getVentPos().equals(helper.absolutePos(FAR_VENT))) {
+                    helper.fail("With the run mended the far vent should be reachable again, but the rider is at "
+                            + duct.getVentPos());
+                }
+                helper.succeed();
+            });
+        });
     }
 
     // --- how long the crawl takes -------------------------------------------------------------

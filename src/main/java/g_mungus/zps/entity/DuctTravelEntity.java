@@ -43,8 +43,11 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * A player riding the inside of a duct run.
@@ -207,11 +210,11 @@ public class DuctTravelEntity extends Entity {
 
     /**
      * Move one step through the destination list and hop the rider's eyes to the vent that lands
-     * on. Vents that have been broken or sealed since the list was built are skipped; if none of
-     * them survive, the list is rebuilt from where the player is standing and they stay put.
+     * on. The list is first brought up to date with what the run reaches now; if nothing but the
+     * rider's own vent survives, they stay put.
      */
     private void cycle(int delta, Player player) {
-        List<BlockPos> current = ensureDestinations();
+        List<BlockPos> current = refreshDestinations();
         if (current.size() <= 1) {
             sendState(player, false);
             return;
@@ -280,6 +283,53 @@ public class DuctTravelEntity extends Entity {
             destinations = DuctTravelNetwork.reachableVents(level(), ventPos);
             selected = 0;
         }
+        return destinations;
+    }
+
+    /**
+     * The destination list brought up to date with what the rider can actually get to.
+     *
+     * <p>The list is drawn up on the way in and kept, so that cycling steps through the same vents
+     * in the same order however far the rider has gone. But a duct run is only a list of vents for
+     * as long as it holds together: break it behind a rider and the vents beyond the break are as
+     * far away as any other, whatever the list says; mend it, or join another run on, and there
+     * are vents to offer that the list has never heard of. So the network is walked again from the
+     * vent the rider is in before every hop. What is still reachable keeps its place, what is not
+     * is dropped, and what is newly reachable is added after the rest, nearest the way in first.
+     * The selection follows the vent the rider is in.
+     */
+    private List<BlockPos> refreshDestinations() {
+        List<BlockPos> current = ensureDestinations();
+        Set<BlockPos> reachable = DuctTravelNetwork.reachableVentSet(level(), ventPos);
+
+        List<BlockPos> kept = new ArrayList<>(current.size());
+        for (BlockPos vent : current) {
+            if (reachable.contains(vent)) {
+                kept.add(vent);
+            }
+        }
+        // Distances are measured from the vent the player came in by while it is still on the run,
+        // as the original list's were, so the new entries sort the way the old ones did.
+        BlockPos origin = kept.isEmpty() ? ventPos : kept.get(0);
+        List<BlockPos> added = new ArrayList<>();
+        for (BlockPos vent : reachable) {
+            if (!current.contains(vent)) {
+                added.add(vent);
+            }
+        }
+        added.sort(Comparator.comparingDouble(vent -> vent.distSqr(origin)));
+
+        if (added.isEmpty() && kept.size() == current.size()) {
+            return current;
+        }
+        for (BlockPos vent : added) {
+            if (kept.size() > DuctTravelNetwork.MAX_DESTINATIONS) {
+                break;
+            }
+            kept.add(vent);
+        }
+        destinations = List.copyOf(kept);
+        selected = Math.max(0, destinations.indexOf(ventPos));
         return destinations;
     }
 

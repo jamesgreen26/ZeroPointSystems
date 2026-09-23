@@ -646,6 +646,16 @@ public class DuctTravelEntity extends Entity {
         return entity.getVehicle() instanceof DuctTravelEntity duct && duct.isTravelling();
     }
 
+    /**
+     * Whether nothing of this entity should be drawn — not its shadow, not its debug hitbox —
+     * because it is a rider between vents, or the duct carrying one. Either would give away
+     * where the rider is about to appear.
+     */
+    public static boolean isHiddenInTransit(Entity entity) {
+        return isInTransit(entity)
+                || (entity instanceof DuctTravelEntity duct && duct.isTravelling());
+    }
+
     // --- helpers ----------------------------------------------------------------------------
 
     public BlockPos getVentPos() {

@@ -7,6 +7,7 @@ import g_mungus.zps.blockentity.gas.VentBlockEntity;
 import g_mungus.zps.compat.Compat;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.gas.GasExposure;
+import g_mungus.zps.networking.DuctCycleRefusedS2CPacket;
 import g_mungus.zps.networking.DuctTravelStateS2CPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -132,6 +133,20 @@ public class DuctTravelEntity extends Entity {
     /** Ticks the client spends fading back in once the move has landed. */
     public static final int FADE_IN_TICKS = 8;
 
+    /**
+     * Ticks after a hop lands, or is turned down, before another may be asked for. This is the rate
+     * limit on duct travel, held here rather than trusted to the client.
+     *
+     * <p>Shorter than the client's fade back in on purpose. The client will not ask again until
+     * {@link #FADE_IN_TICKS} have passed since the arrival reached it, and that request is handled
+     * here between two server ticks, against a clock that is not lined up with the client's. Were
+     * the two the same length, a request sent on the first tick the client allows would land, about
+     * half the time, with one tick still on the cooldown and be turned down — for a screen that has
+     * already gone dark. The two ticks of slack cover the misalignment, and a refusal is answered
+     * in any case, so a client that gets ahead under lag is still brought back.
+     */
+    public static final int ARRIVAL_COOLDOWN_TICKS = FADE_IN_TICKS - 2;
+
     /** The clatter a vent makes when someone goes through it. */
     public static final SoundEvent CLANK_SOUND = SoundEvents.IRON_TRAPDOOR_OPEN;
     public static final float CLANK_VOLUME = 0.7f;
@@ -216,17 +231,26 @@ public class DuctTravelEntity extends Entity {
 
     /**
      * Take a request for another vent. The move itself waits {@link #FADE_OUT_TICKS} so it happens
-     * behind a black screen, and nothing further is accepted until the fade back in would have
-     * finished — which is the rate limit on duct travel, enforced here rather than trusted to the
-     * client.
+     * behind a black screen, and nothing further is accepted until
+     * {@link #ARRIVAL_COOLDOWN_TICKS} after it lands.
+     *
+     * <p>Returns false when the request is turned down: a hop is already under way, or the last one
+     * has only just landed. The rider is told so, because their screen began going dark the moment
+     * they asked and would otherwise stay that way waiting for an arrival that is never coming.
+     * A request is never dropped without an answer.
      */
-    public void requestCycle(int delta) {
+    public boolean requestCycle(int delta) {
         if (hopDelay > 0 || arriveDelay > 0 || cooldown > 0) {
-            return;
+            Player rider = rider();
+            if (rider instanceof ServerPlayer serverPlayer) {
+                PacketDistributor.sendToPlayer(serverPlayer, new DuctCycleRefusedS2CPacket());
+            }
+            return false;
         }
         pendingDelta = delta;
         hopDelay = FADE_OUT_TICKS;
-        cooldown = FADE_OUT_TICKS + FADE_IN_TICKS;
+        cooldown = FADE_OUT_TICKS + ARRIVAL_COOLDOWN_TICKS;
+        return true;
     }
 
     /**
@@ -282,7 +306,7 @@ public class DuctTravelEntity extends Entity {
         // distance would take. Nothing is sent until then: the state packet is what tells the
         // client it has arrived and may fade back in.
         arriveDelay = travelTicks(from, target);
-        cooldown = arriveDelay + FADE_IN_TICKS;
+        cooldown = arriveDelay + ARRIVAL_COOLDOWN_TICKS;
         entityData.set(CRAWL_START, level().getGameTime());
         entityData.set(CRAWL_TICKS, arriveDelay);
         entityData.set(TRAVELLING, true);

@@ -36,6 +36,7 @@ public final class ZPSGamePackets {
         registrar.playToServer(AssemblerPatternCellC2SPacket.TYPE, AssemblerPatternCellC2SPacket.STREAM_CODEC, AssemblerPatternCellC2SPacket::handle);
         registrar.playToServer(DuctCycleC2SPacket.TYPE, DuctCycleC2SPacket.STREAM_CODEC, DuctCycleC2SPacket::handle);
         registrar.playToClient(DuctTravelStateS2CPacket.TYPE, DuctTravelStateS2CPacket.STREAM_CODEC, DuctTravelStateS2CPacket::handle);
+        registrar.playToClient(DuctCycleRefusedS2CPacket.TYPE, DuctCycleRefusedS2CPacket.STREAM_CODEC, DuctCycleRefusedS2CPacket::handle);
     }
 
     public static void sendToServer(CustomPacketPayload payload) {

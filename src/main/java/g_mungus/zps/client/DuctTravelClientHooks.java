@@ -73,7 +73,13 @@ public final class DuctTravelClientHooks {
     private static boolean wasLeft;
     private static boolean wasRight;
     private static int heldTicks;
-    private static boolean wasRiding;
+    /**
+     * The duct the player was in on the last tick, or null. Kept as the entity rather than a flag
+     * so that, when it goes, the client's copy can be asked whether it was removed outright — the
+     * tracker dropping it for a moment on a far hop — or is still there and the player merely
+     * climbed off it.
+     */
+    private static DuctTravelEntity lastDuct;
 
     /**
      * Where the body goes while the layers run, in model pixels: far enough that nothing hung on it
@@ -182,19 +188,35 @@ public final class DuctTravelClientHooks {
             return;
         }
 
-        if (!(player.getVehicle() instanceof DuctTravelEntity)) {
-            if (wasRiding) {
-                DuctTravelClientState.clear();
-                DuctTravelFade.reset();
-                wasRiding = false;
+        if (!(player.getVehicle() instanceof DuctTravelEntity duct)) {
+            if (lastDuct != null) {
+                // Either the player climbed out — the vehicle is still there, they are just not on
+                // it — or the vehicle itself was taken away. The latter is what a hop beyond view
+                // distance looks like from here: the server stops tracking the duct for its own
+                // rider until the chunk it landed in has been sent, and it is back a few ticks
+                // later. A fade in progress waits for it rather than showing the far vent early.
+                if (lastDuct.isRemoved() && DuctTravelFade.isTransitioning()) {
+                    DuctTravelFade.vehicleVanished();
+                } else {
+                    DuctTravelClientState.clear();
+                    DuctTravelFade.reset();
+                }
+                lastDuct = null;
+            }
+            if (DuctTravelFade.isAwaitingVehicle()) {
+                DuctTravelFade.tick(false);
+                if (!DuctTravelFade.isTransitioning()) {
+                    // Gave up waiting: they really have left.
+                    DuctTravelClientState.clear();
+                }
             }
             wasLeft = false;
             wasRight = false;
             heldTicks = 0;
             return;
         }
-        wasRiding = true;
-        DuctTravelFade.tick();
+        lastDuct = duct;
+        DuctTravelFade.tick(true);
         playCrawlingStep();
 
         Minecraft minecraft = Minecraft.getInstance();

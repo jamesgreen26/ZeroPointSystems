@@ -37,10 +37,15 @@ public final class DuctTravelProgressBar implements LayeredDraw.Layer {
     private DuctTravelProgressBar() {
     }
 
-    /** Whether the player is in a vent, and so whether this bar stands in for the experience bar. */
+    /**
+     * Whether the player is in a vent, and so whether this bar stands in for the experience bar.
+     * A duct that has dropped out from under them for a moment mid-hop still counts, so the
+     * experience bar does not flicker back for the few ticks it is gone.
+     */
     private static boolean isRiding(Minecraft minecraft) {
         LocalPlayer player = minecraft.player;
-        return player != null && player.getVehicle() instanceof DuctTravelEntity;
+        return player != null
+                && (player.getVehicle() instanceof DuctTravelEntity || DuctTravelFade.isAwaitingVehicle());
     }
 
     /** Takes the experience bar and level off the screen while the player is in a vent. */

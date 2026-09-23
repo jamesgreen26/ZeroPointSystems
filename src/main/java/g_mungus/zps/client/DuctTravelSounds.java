@@ -63,12 +63,13 @@ public final class DuctTravelSounds {
 
     /**
      * Whether new sounds are being dropped: the local player is in a duct and on their way, rather
-     * than sitting in a vent or fading back into one.
+     * than sitting in a vent or fading back into one. A duct that has dropped out from under them
+     * for a moment mid-hop still counts as being in one.
      */
     public static boolean isMuted() {
         LocalPlayer player = Minecraft.getInstance().player;
         return player != null
-                && player.getVehicle() instanceof DuctTravelEntity
+                && (player.getVehicle() instanceof DuctTravelEntity || DuctTravelFade.isAwaitingVehicle())
                 && DuctTravelFade.isUnderway();
     }
 

@@ -2,6 +2,7 @@ package g_mungus.zps.mixin;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import g_mungus.zps.client.DuctTravelFade;
 import g_mungus.zps.entity.DuctTravelEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
@@ -38,6 +39,11 @@ public class ClientPacketListenerMixin {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
         if (player != null && player.getVehicle() instanceof DuctTravelEntity) {
+            // A duct being announced mid-hop is one the tracker dropped and has just sent back,
+            // not one the player has just climbed into: they were told the controls on the way in.
+            if (DuctTravelFade.isTransitioning()) {
+                return;
+            }
             Options options = minecraft.options;
             message = Component.translatable("zps.duct.mount_hint",
                     options.keyShift.getTranslatedKeyMessage(),

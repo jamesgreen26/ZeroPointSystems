@@ -114,6 +114,16 @@ public class DuctTravelEntity extends Entity {
             SynchedEntityData.defineId(DuctTravelEntity.class, EntityDataSerializers.BOOLEAN);
 
     /**
+     * When the current crawl began, in game time, and how many ticks it takes. Synched so the
+     * rider's client can draw how far along it is: game time is kept in step with the server, so
+     * the two together give the progress without a packet a tick.
+     */
+    private static final EntityDataAccessor<Long> CRAWL_START =
+            SynchedEntityData.defineId(DuctTravelEntity.class, EntityDataSerializers.LONG);
+    private static final EntityDataAccessor<Integer> CRAWL_TICKS =
+            SynchedEntityData.defineId(DuctTravelEntity.class, EntityDataSerializers.INT);
+
+    /**
      * Ticks between asking for another vent and actually being moved there. The client spends them
      * fading to black, so the move lands unseen; the server counts from when the request arrived,
      * which is at or after the client began fading, so it is always covered.
@@ -273,6 +283,8 @@ public class DuctTravelEntity extends Entity {
         // client it has arrived and may fade back in.
         arriveDelay = travelTicks(from, target);
         cooldown = arriveDelay + FADE_IN_TICKS;
+        entityData.set(CRAWL_START, level().getGameTime());
+        entityData.set(CRAWL_TICKS, arriveDelay);
         entityData.set(TRAVELLING, true);
     }
 
@@ -651,6 +663,24 @@ public class DuctTravelEntity extends Entity {
     protected void defineSynchedData(SynchedEntityData.@NotNull Builder builder) {
         builder.define(VENT_FACING, Direction.UP);
         builder.define(TRAVELLING, false);
+        builder.define(CRAWL_START, 0L);
+        builder.define(CRAWL_TICKS, 0);
+    }
+
+    /**
+     * How far along the current crawl is, 0 to 1, or 0 when the rider is sitting in a vent. Valid
+     * on both sides; the client draws its progress bar from it.
+     */
+    public float crawlProgress(float partialTick) {
+        if (!isTravelling()) {
+            return 0.0f;
+        }
+        int ticks = entityData.get(CRAWL_TICKS);
+        if (ticks <= 0) {
+            return 1.0f;
+        }
+        double elapsed = level().getGameTime() - entityData.get(CRAWL_START) + partialTick;
+        return Mth.clamp((float) (elapsed / ticks), 0.0f, 1.0f);
     }
 
     /** Which way the vent the rider is looking out of opens. Valid on both sides. */

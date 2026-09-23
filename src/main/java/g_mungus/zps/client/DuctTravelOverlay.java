@@ -38,10 +38,13 @@ public final class DuctTravelOverlay implements LayeredDraw.Layer {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
 
+        // Not while on the move: the count is about the vent being looked out of, and between
+        // vents there is none. The progress bar carries the crawl instead.
         if (player == null
                 || minecraft.options.hideGui
                 || !(player.getVehicle() instanceof DuctTravelEntity)
-                || DuctTravelClientState.isEmpty()) {
+                || DuctTravelClientState.isEmpty()
+                || DuctTravelFade.isTransitioning()) {
             return;
         }
 

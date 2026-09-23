@@ -104,8 +104,12 @@ public class ClientSetup {
         // Above the hotbar rather than over it: the player is still in the world while inside a duct.
         event.registerAbove(VanillaGuiLayers.HOTBAR, ZPSMod.resource("duct_travel"),
                 DuctTravelOverlay.INSTANCE);
-        // Over everything, HUD included: the transition takes the whole screen, not just the world.
-        event.registerAboveAll(ZPSMod.resource("duct_travel_fade"), DuctTravelFade.INSTANCE);
+        // Under the whole HUD: the black takes the world away, while the hotbar, health and hunger
+        // stay in view across the crawl, as they would on any other ride.
+        event.registerBelowAll(ZPSMod.resource("duct_travel_fade"), DuctTravelFade.INSTANCE);
+        // Where the experience bar is, which it stands in for while the player is in a vent.
+        event.registerAbove(VanillaGuiLayers.EXPERIENCE_BAR, ZPSMod.resource("duct_travel_progress"),
+                DuctTravelProgressBar.INSTANCE);
     }
 
     @SubscribeEvent
@@ -273,6 +277,7 @@ public class ClientSetup {
             NeoForge.EVENT_BUS.addListener(DuctTravelClientHooks::onRenderPlayer);
             NeoForge.EVENT_BUS.addListener(DuctTravelClientHooks::onRenderHand);
             NeoForge.EVENT_BUS.addListener(DuctTravelClientHooks::onPlayerTick);
+            NeoForge.EVENT_BUS.addListener(DuctTravelProgressBar::onRenderGuiLayer);
             NeoForge.EVENT_BUS.addListener(DuctTravelSounds::onPlaySound);
         });
     }

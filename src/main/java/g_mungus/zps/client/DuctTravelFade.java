@@ -16,6 +16,9 @@ import net.minecraft.util.Mth;
  * answer, and — because nothing else may be requested until the fade has run its course — how often
  * a player can move at all.
  *
+ * <p>Drawn under the HUD rather than over it: the black covers the world, and the hotbar, health,
+ * hunger and the crawl's own progress bar stay in view across it, as on any other ride.
+ *
  * <p>The client starts fading the moment the key is pressed, so the response is immediate, while
  * the server independently holds the move back by {@link DuctTravelEntity#FADE_OUT_TICKS}. Since
  * the server counts from when the request reached it, the move always lands at or after the screen

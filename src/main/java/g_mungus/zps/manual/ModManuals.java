@@ -15,6 +15,7 @@ public final class ModManuals {
     private static List<ManualSection> buildScriptCommandsSections() {
         final Component networks = Component.translatable("zps.manual.group.networks");
         final Component language = Component.translatable("zps.manual.group.language");
+        final Component gameplay = Component.translatable("zps.manual.group.gameplay");
         final Component integrations = Component.translatable("zps.manual.group.integrations");
 
         final List<ManualSection> sections = new ArrayList<>();
@@ -24,6 +25,8 @@ public final class ModManuals {
         sections.add(new ManualSection("executors", "executors.md", Component.translatable("zps.manual.executors"), language));
         sections.add(new ManualSection("getters", "getters.md", Component.translatable("zps.manual.getters"), language));
         sections.add(new ManualSection("mappers", "mappers.md", Component.translatable("zps.manual.mappers"), language));
+        sections.add(new ManualSection("reactors", "reactors.md", Component.translatable("zps.manual.reactors"), gameplay));
+
         if (Compat.isCreateLoaded()) {
             sections.add(new ManualSection("create", "create.md", Component.translatable("zps.manual.create"), integrations));
         }

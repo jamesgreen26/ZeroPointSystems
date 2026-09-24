@@ -3,6 +3,7 @@ package g_mungus.zps.item;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.multiblock.MultiblockBlockItem;
+import g_mungus.zps.block.BeamCollectorBlockItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
@@ -119,6 +120,9 @@ public class ModItems {
 
     public static final RegistryObject<Item> IMPACT_PISTON = ITEMS.register("impact_piston",
             () -> new BlockItem(ModBlocks.IMPACT_PISTON.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> BEAM_COLLECTOR = ITEMS.register("beam_collector",
+            () -> new BeamCollectorBlockItem(ModBlocks.BEAM_COLLECTOR.get(), new Item.Properties()));
 
     public static final RegistryObject<Item> VAPORIZER = ITEMS.register("vaporizer",
             () -> new BlockItem(ModBlocks.VAPORIZER.get(), new Item.Properties()));

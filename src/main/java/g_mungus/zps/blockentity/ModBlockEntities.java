@@ -180,4 +180,9 @@ public class ModBlockEntities {
         BLOCK_ENTITIES.register("heat_exchanger",
             () -> BlockEntityType.Builder.of(HeatExchangerBlockEntity::new,
                 ModBlocks.HEAT_EXCHANGER.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<BeamCollectorBlockEntity>> BEAM_COLLECTOR =
+            BLOCK_ENTITIES.register("beam_collector",
+                    () -> BlockEntityType.Builder.of(BeamCollectorBlockEntity::new,
+                            ModBlocks.BEAM_COLLECTOR.get()).build(null));
 }

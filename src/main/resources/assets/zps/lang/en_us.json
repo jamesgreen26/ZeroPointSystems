@@ -574,5 +574,8 @@
     "zps.display_source.reactor.temperature": "Heat",
     "zps.display_source.reactor.temperature_dots": "................ ",
     "zps.display_source.reactor.output": "Output",
-    "zps.display_source.reactor.output_dots": "........... "
+    "zps.display_source.reactor.output_dots": "........... ",
+    "block.zps.beam_collector": "Beam Collector",
+    "item.zps.beam_collector": "Beam Collector",
+    "block.zps.beam_collector.zps_tooltip": "Projects a beam that pulls in items, mobs and blocks. Items and blocks that reach it are stored inside.\n\nPlace blocks facing the same way in a square (up to 3x3) to form a larger panel with a longer beam and more storage.\n\nRuns only when receiving a Redstone signal, and consumes FE while running. The signal strength sets the beam's range."
 }

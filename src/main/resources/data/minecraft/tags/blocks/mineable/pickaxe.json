@@ -57,6 +57,7 @@
     "zps:reinforced_plating",
     "zps:reinforced_glass",
     "zps:reactor_port",
-    "zps:heat_exchanger"
+    "zps:heat_exchanger",
+    "zps:beam_collector"
   ]
 }

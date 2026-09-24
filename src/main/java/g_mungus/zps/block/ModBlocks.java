@@ -238,6 +238,12 @@ public class ModBlocks {
     public static final RegistryObject<Block> COMPOSTER_DIRT = BLOCKS.register("composter_dirt",
             () -> new ComposterDirtBlock(BlockBehaviour.Properties.copy(Blocks.COMPOSTER)));
 
+    public static final RegistryObject<Block> BEAM_COLLECTOR = BLOCKS.register("beam_collector",
+            () -> new BeamCollectorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.0f)
+                    .noOcclusion()
+                    .requiresCorrectToolForDrops()));
+
     public static final RegistryObject<Block> VAPORIZER = BLOCKS.register("vaporizer",
             () -> new VaporizerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.5f)

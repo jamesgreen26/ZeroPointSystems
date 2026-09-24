@@ -22,6 +22,9 @@ import g_mungus.zps.client.screens.RollingMillScreen;
 import g_mungus.zps.client.screens.AssemblerScreen;
 import g_mungus.zps.client.screens.SieveScreen;
 import g_mungus.zps.client.screens.VaporizerScreen;
+import g_mungus.zps.client.screens.BeamCollectorScreen;
+import g_mungus.zps.client.tractor.TractorBeamRenderer;
+import g_mungus.zps.block.BeamCollectorBlock;
 import g_mungus.zps.commands.content.arguments.AssemblerRecipeArgument;
 import g_mungus.zps.entity.ModEntities;
 import g_mungus.zps.item.AddressPadClientHooks;
@@ -108,6 +111,7 @@ public class ClientSetup {
     @SubscribeEvent
     public static void onRegisterShaders(RegisterShadersEvent event) throws IOException {
         ReactorGlowRenderer.onRegisterShaders(event);
+        TractorBeamRenderer.onRegisterShaders(event);
     }
 
     @SubscribeEvent
@@ -127,6 +131,16 @@ public class ClientSetup {
     public static void onRegisterItemColors(RegisterColorHandlersEvent.Item event) {
         event.register((stack, tintIndex) -> tintIndex == 0 ? 0xFF000000 | ReactorWallOverlays.OFF_COLOR : -1,
                 ModItems.REACTOR_PORT.get());
+        event.register((stack, tintIndex) -> tintIndex == 0 ? BeamCollectorBlock.lampColor(0) : -1,
+                ModItems.BEAM_COLLECTOR.get());
+    }
+
+    /** The Beam Collector's lamps sit on tint index 0 and take their colour from the redstone signal. */
+    @SubscribeEvent
+    public static void onRegisterBlockColors(RegisterColorHandlersEvent.Block event) {
+        event.register((state, level, pos, tintIndex) -> tintIndex == 0
+                        ? BeamCollectorBlock.lampColor(state.getValue(BeamCollectorBlock.POWER)) : -1,
+                ModBlocks.BEAM_COLLECTOR.get());
     }
 
     @SubscribeEvent
@@ -186,6 +200,7 @@ public class ClientSetup {
             MenuScreens.register(ModMenus.ASSEMBLER.get(), AssemblerScreen::new);
             MenuScreens.register(ModMenus.SIEVE.get(), SieveScreen::new);
             MenuScreens.register(ModMenus.VAPORIZER.get(), VaporizerScreen::new);
+            MenuScreens.register(ModMenus.BEAM_COLLECTOR.get(), BeamCollectorScreen::new);
             // The set_recipe argument suggests recipe ids client-side (script terminal) against the synced level.
             AssemblerRecipeArgument.setClientLevelSupplier(() -> net.minecraft.client.Minecraft.getInstance().level);
             BlockEntityRenderers.register(ModBlockEntities.GRADUATED_LEVER.get(), GraduatedLeverBlockEntityRenderer::new);
@@ -245,6 +260,7 @@ public class ClientSetup {
             MinecraftForge.EVENT_BUS.addListener(ReactorGlowPreviews::onRenderLevelStage);
             MinecraftForge.EVENT_BUS.addListener(ReactorGlowPreviews::onLoggingOut);
             MinecraftForge.EVENT_BUS.addListener(ReactorGlowElement::onLoggingOut);
+            MinecraftForge.EVENT_BUS.addListener(TractorBeamRenderer::onRenderLevelStage);
         });
     }
 

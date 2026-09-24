@@ -1,21 +1,36 @@
 - key: index
-  title: Script Commands
+  title: Basics
+  group: Data Networks
   url: /
+- key: collisions
+  title: Collisions
+  group: Data Networks
+  url: /collisions.html
+- key: syntax
+  title: Syntax
+  group: Script Language
+  url: /syntax.html
 - key: executors
   title: Executors
+  group: Script Language
   url: /executors.html
 - key: getters
   title: Getters
+  group: Script Language
   url: /getters.html
 - key: mappers
   title: Mappers
+  group: Script Language
   url: /mappers.html
 - key: create
-  title: Create Integration
+  title: Create
+  group: Integrations
   url: /create.html
 - key: genesis
-  title: Genesis Integration
+  title: Genesis
+  group: Integrations
   url: /genesis.html
 - key: valkyrien_skies
-  title: Valkyrien Skies Integration
+  title: Valkyrien Skies
+  group: Integrations
   url: /valkyrien_skies.html

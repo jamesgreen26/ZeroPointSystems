@@ -19,4 +19,9 @@ public class TypeKeys {
             ResourceLocation.parse("zps:vec_dir"),   Vec3.class,
             ResourceLocation.parse("zps:vec_box"),   Vec3.class
     );
+
+    /** The type's name as scripts and errors refer to it: the key's path, e.g. "int" or "dimension". */
+    public static String name(ResourceLocation typeKey) {
+        return typeKey.getNamespace().equals("zps") ? typeKey.getPath() : typeKey.toString();
+    }
 }

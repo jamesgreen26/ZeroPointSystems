@@ -12,7 +12,12 @@
         <a class="docs-home" href="{{ '/' | relative_url }}">Zero Point Systems</a>
         <nav aria-label="Documentation pages">
           <ul class="docs-nav">
+            {% assign current_group = "" %}
             {% for item in site.data.docs_nav %}
+            {% if item.group and item.group != current_group %}
+            {% assign current_group = item.group %}
+            <li class="docs-nav-group">{{ item.group }}</li>
+            {% endif %}
             <li>
               <a href="{{ item.url | relative_url }}"{% if item.key == page.doc_key %} aria-current="page"{% endif %}>
                 {{ item.title }}

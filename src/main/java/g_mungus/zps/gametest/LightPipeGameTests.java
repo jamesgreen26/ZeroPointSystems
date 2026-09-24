@@ -4,12 +4,16 @@ import com.simibubi.create.AllBlocks;
 import com.simibubi.create.content.redstone.displayLink.DisplayLinkBlockEntity;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
-import g_mungus.zps.block.cableNetwork.TransformerBlock;
 import g_mungus.zps.block.cableNetwork.light_pipe.DataCombinator;
+import g_mungus.zps.block.cableNetwork.light_pipe.DataComparator;
 import g_mungus.zps.block.cableNetwork.light_pipe.DataLecternBlock;
+import g_mungus.zps.block.cableNetwork.light_pipe.DataTranscriberBlock;
+import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusBlock;
+import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusMode;
 import g_mungus.zps.block.cableNetwork.light_pipe.TextDisplayBlock;
 import g_mungus.zps.blockentity.light_pipe.DataLecternBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.SerialBusBlockEntity;
+import g_mungus.zps.commands.api_impl.ScriptCommandFailure;
 import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
 import g_mungus.zps.compat.create.CreateCompat;
 import g_mungus.zps.compat.create.DisplayLinkManualTextAccessor;
@@ -18,29 +22,21 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DirectionalBlock;
+import net.minecraft.world.level.block.RedstoneLampBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
-/**
- * Forge Gametests for the light pipe data combinator, focused on chaining behaviour.
- *
- * Structure template: data/zps/structures/gametest/flat_7x4x7.nbt
- * Stone floor at y=0, 3 blocks of air above. Test blocks placed at y=1.
- *
- * Combinator wiring (FACING points at the output; inputs sit on the two wings):
- *   output (TRIPLE_C) -> relative(FACING)
- *   input A (TRIPLE_A) -> relative(FACING.counterClockWise)
- *   input B (TRIPLE_B) -> relative(FACING.clockWise)
- * A data lectern connects on its back (opposite its FACING).
- */
 @GameTestHolder(ZPSMod.MOD_ID)
 @PrefixGameTestTemplate(false)
 public final class LightPipeGameTests {
@@ -71,9 +67,20 @@ public final class LightPipeGameTests {
                 .setValue(DataCombinator.MODE, mode);
     }
 
+    private static BlockState comparator(Direction facing, DataComparator.ComparisonMode mode) {
+        return ModBlocks.DATA_COMPARATOR.get().defaultBlockState()
+                .setValue(DataComparator.FACING, facing)
+                .setValue(DataComparator.MODE, mode);
+    }
+
+    private static BlockState transcriber(Direction facing) {
+        return ModBlocks.DATA_TRANSCRIBER.get().defaultBlockState()
+                .setValue(DataTranscriberBlock.FACING, facing);
+    }
+
     private static BlockState serialBus(Direction facing) {
         return ModBlocks.SERIAL_BUS.get().defaultBlockState()
-                .setValue(TransformerBlock.FACING, facing);
+                .setValue(SerialBusBlock.FACING, facing);
     }
 
     private static BlockState displayLink(Direction facing) {
@@ -135,6 +142,94 @@ public final class LightPipeGameTests {
     private static String displayText(GameTestHelper helper, BlockPos relPos) {
         TextDisplayBlockEntity display = textDisplayEntity(helper, relPos);
         return display == null ? "" : display.getDisplayText();
+    }
+
+    private static String currentPageText(GameTestHelper helper, BlockPos relPos) {
+        DataLecternBlockEntity lectern = lecternEntity(helper, relPos);
+        if (lectern == null) {
+            return "";
+        }
+        ItemStack book = lectern.getBook();
+        CompoundTag tag = book.getTag();
+        if (tag == null || !tag.contains("pages", Tag.TAG_LIST)) {
+            return "";
+        }
+        ListTag pages = tag.getList("pages", Tag.TAG_STRING);
+        int page = lectern.getPage();
+        if (page < 0 || page >= pages.size()) {
+            return "";
+        }
+        String text = pages.getString(page);
+        if (book.is(Items.WRITTEN_BOOK)) {
+            Component component = Component.Serializer.fromJson(text);
+            return component == null ? "" : component.getString();
+        }
+        return text;
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void dataLectern_turnPageUpdatesConnectedDisplay(GameTestHelper helper) {
+        BlockPos displayPos = new BlockPos(3, 1, 3);
+        BlockPos cablePos = new BlockPos(4, 1, 3);
+        BlockPos lecternPos = new BlockPos(5, 1, 3);
+
+        helper.setBlock(displayPos, display(Direction.WEST));
+        helper.setBlock(cablePos, lightPipe());
+        helper.setBlock(lecternPos, lectern(Direction.EAST));
+        setWritableBook(helper, lecternPos, "alpha", "beta");
+
+        if (!"alpha".equals(displayText(helper, displayPos))) {
+            helper.fail("Expected initial lectern page to be displayed");
+            return;
+        }
+
+        DataLecternBlockEntity lectern = lecternEntity(helper, lecternPos);
+        if (lectern == null) {
+            return;
+        }
+        lectern.turnPage();
+
+        if (!"beta".equals(displayText(helper, displayPos))) {
+            helper.fail("Expected display to update after turning lectern page");
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void multipleLightPipeSenders_garbleReceiverOutput(GameTestHelper helper) {
+        BlockPos receiverPos = new BlockPos(3, 1, 4);
+        BlockPos centerCable = new BlockPos(3, 1, 3);
+        BlockPos leftSender = new BlockPos(2, 1, 3);
+        BlockPos rightSender = new BlockPos(4, 1, 3);
+
+        helper.setBlock(receiverPos, display(Direction.SOUTH));
+        helper.setBlock(centerCable, lightPipe());
+        helper.setBlock(leftSender, lectern(Direction.WEST));
+        helper.setBlock(rightSender, lectern(Direction.EAST));
+
+        setWritableBook(helper, leftSender, "alpha");
+        if (!"alpha".equals(displayText(helper, receiverPos))) {
+            helper.fail("Expected single sender to transmit clear text");
+            return;
+        }
+
+        setWritableBook(helper, rightSender, "beta");
+        TextDisplayBlockEntity display = textDisplayEntity(helper, receiverPos);
+        if (display == null) {
+            return;
+        }
+
+        String garbled = display.getDisplayText();
+        if (garbled.length() != display.getMaxLength()) {
+            helper.fail("Expected garbled collision text length " + display.getMaxLength() + ", got " + garbled.length());
+            return;
+        }
+        if ("alpha".equals(garbled) || "beta".equals(garbled)) {
+            helper.fail("Expected collision output to differ from either source");
+            return;
+        }
+        helper.succeed();
     }
 
     @GameTest(template = TEMPLATE)
@@ -320,6 +415,470 @@ public final class LightPipeGameTests {
             return;
         }
         helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void dataComparator_equalsModePowersLampForMatchingInputs(GameTestHelper helper) {
+        BlockPos lampPos = new BlockPos(3, 1, 2);
+        BlockPos comparatorPos = new BlockPos(3, 1, 3);
+        BlockPos inputAPos = new BlockPos(4, 1, 3);
+        BlockPos inputBPos = new BlockPos(2, 1, 3);
+
+        helper.setBlock(lampPos, Blocks.REDSTONE_LAMP.defaultBlockState());
+        helper.setBlock(comparatorPos, comparator(Direction.EAST, DataComparator.ComparisonMode.equals));
+        helper.setBlock(inputAPos, lectern(Direction.EAST));
+        helper.setBlock(inputBPos, lectern(Direction.WEST));
+
+        setWritableBook(helper, inputAPos, "match");
+        setWritableBook(helper, inputBPos, "match");
+
+        helper.assertBlockProperty(comparatorPos, DataComparator.POWERED, true);
+        helper.assertBlockProperty(lampPos, RedstoneLampBlock.LIT, true);
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void dataComparator_greaterThanModeParsesNumericPrefixesAndRejectsInvalidInput(GameTestHelper helper) {
+        BlockPos lampPos = new BlockPos(3, 1, 2);
+        BlockPos comparatorPos = new BlockPos(3, 1, 3);
+        BlockPos inputAPos = new BlockPos(4, 1, 3);
+        BlockPos inputBPos = new BlockPos(2, 1, 3);
+
+        helper.setBlock(lampPos, Blocks.REDSTONE_LAMP.defaultBlockState());
+        helper.setBlock(comparatorPos, comparator(Direction.EAST, DataComparator.ComparisonMode.greater_than));
+        helper.setBlock(inputAPos, lectern(Direction.EAST));
+        helper.setBlock(inputBPos, lectern(Direction.WEST));
+
+        setWritableBook(helper, inputAPos, "12 m");
+        setWritableBook(helper, inputBPos, "2");
+        helper.assertBlockProperty(comparatorPos, DataComparator.POWERED, true);
+        helper.assertBlockProperty(lampPos, RedstoneLampBlock.LIT, true);
+
+        setWritableBook(helper, inputAPos, "not_a_number");
+        helper.succeedWhen(() -> {
+            helper.assertBlockProperty(comparatorPos, DataComparator.POWERED, false);
+            helper.assertBlockProperty(lampPos, RedstoneLampBlock.LIT, false);
+        });
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void dataTranscriber_writesIncomingTextToBookBelowWhenPowered(GameTestHelper helper) {
+        BlockPos bookLecternPos = new BlockPos(3, 1, 3);
+        BlockPos transcriberPos = new BlockPos(3, 2, 3);
+        BlockPos powerPos = new BlockPos(3, 2, 2);
+        BlockPos cablePos = new BlockPos(3, 2, 4);
+        BlockPos senderPos = new BlockPos(3, 2, 5);
+
+        helper.setBlock(bookLecternPos, lectern(Direction.NORTH));
+        setWritableBook(helper, bookLecternPos);
+        helper.setBlock(transcriberPos, transcriber(Direction.NORTH));
+        helper.setBlock(powerPos, Blocks.REDSTONE_BLOCK.defaultBlockState());
+        helper.setBlock(cablePos, lightPipe());
+        helper.setBlock(senderPos, lectern(Direction.SOUTH));
+        setWritableBook(helper, senderPos, "printed log");
+
+        helper.succeedWhen(() -> {
+            String actual = currentPageText(helper, bookLecternPos);
+            if (!"printed log".equals(actual)) {
+                helper.fail("Expected transcriber to write received text, got \"" + actual + "\"");
+            }
+        });
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_executesReceivedScriptCommandAgainstFacingBlock(GameTestHelper helper) {
+        BlockPos targetPos = new BlockPos(3, 1, 2);
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        BlockPos cablePos = new BlockPos(3, 1, 4);
+        BlockPos senderPos = new BlockPos(3, 1, 5);
+
+        helper.setBlock(targetPos, Blocks.STONE.defaultBlockState());
+        helper.setBlock(serialBusPos, serialBus(Direction.NORTH));
+        helper.setBlock(cablePos, lightPipe());
+        helper.setBlock(senderPos, lectern(Direction.SOUTH));
+
+        setWritableBook(helper, senderPos, "set_redstone 9");
+
+        SerialBusBlockEntity serialBus = serialBusEntity(helper, serialBusPos);
+        if (serialBus == null) {
+            return;
+        }
+        if (!"set_redstone 9".equals(serialBus.getCurrentText())) {
+            helper.fail("Expected serial bus to store the received command text");
+            return;
+        }
+
+        int stored = SetRedstoneCommand.getRedstonePowerAt(helper.getLevel(), helper.absolutePos(targetPos));
+        if (stored != 9) {
+            helper.fail("Expected serial bus command to set redstone 9, got " + stored);
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_recordsSuccessfulCommand(GameTestHelper helper) {
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        SerialBusBlockEntity serialBus = feedSerialBus(helper, serialBusPos, "set_redstone 9");
+        if (serialBus == null) {
+            return;
+        }
+        if (serialBus.getLastOutcome() != SerialBusBlockEntity.Outcome.SUCCESS) {
+            helper.fail("Expected a successful outcome, got " + serialBus.getLastOutcome()
+                    + " (" + serialBus.getLastFailure() + ")");
+            return;
+        }
+        if (!"set_redstone 9".equals(serialBus.getLastCommand())) {
+            helper.fail("Expected the last command to be recorded, got \"" + serialBus.getLastCommand() + "\"");
+            return;
+        }
+        if (serialBus.getLastFailure() != null) {
+            helper.fail("Expected no failure on success, got " + serialBus.getLastFailure());
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_recordsUnknownCommandWithItsLocation(GameTestHelper helper) {
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        SerialBusBlockEntity serialBus = feedSerialBus(helper, serialBusPos, "frobnicate 9");
+        if (serialBus == null) {
+            return;
+        }
+        ScriptCommandFailure failure = serialBus.getLastFailure();
+        if (serialBus.getLastOutcome() != SerialBusBlockEntity.Outcome.FAILURE || failure == null) {
+            helper.fail("Expected an unknown command to be recorded as a failure, got " + serialBus.getLastOutcome());
+            return;
+        }
+        if (!"Unknown command 'frobnicate'".equals(failure.reason())) {
+            helper.fail("Expected a plain-language reason, got \"" + failure.reason() + "\"");
+            return;
+        }
+        if (!failure.faultInCommand() || failure.faultStart() != 0 || failure.faultEnd() != "frobnicate".length()) {
+            helper.fail("Expected the fault to mark 'frobnicate', got " + failure);
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_recordsBadArgumentWithItsLocation(GameTestHelper helper) {
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        SerialBusBlockEntity serialBus = feedSerialBus(helper, serialBusPos, "set_redstone banana");
+        if (serialBus == null) {
+            return;
+        }
+        ScriptCommandFailure failure = serialBus.getLastFailure();
+        if (serialBus.getLastOutcome() != SerialBusBlockEntity.Outcome.FAILURE || failure == null) {
+            helper.fail("Expected a bad argument to be recorded as a failure, got " + serialBus.getLastOutcome());
+            return;
+        }
+        if (failure.reason().isBlank() || failure.reason().contains("Exception")) {
+            helper.fail("Expected a plain-language reason, got \"" + failure.reason() + "\"");
+            return;
+        }
+        int bananaAt = "set_redstone banana".indexOf("banana");
+        if (!failure.faultInCommand() || failure.faultStart() != bananaAt) {
+            helper.fail("Expected the fault to mark 'banana', got " + failure);
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_explainsValueOfTypeMismatch(GameTestHelper helper) {
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        String command = "set_redstone value_of(dimension)";
+        SerialBusBlockEntity serialBus = feedSerialBus(helper, serialBusPos, command);
+        if (serialBus == null) {
+            return;
+        }
+        ScriptCommandFailure failure = serialBus.getLastFailure();
+        if (failure == null) {
+            helper.fail("Expected a type mismatch to be recorded as a failure, got " + serialBus.getLastOutcome());
+            return;
+        }
+        String expected = "value_of(dimension) gives dimension, but set_redstone needs int";
+        if (!expected.equals(failure.reason())) {
+            helper.fail("Expected a reason naming both types, got \"" + failure.reason() + "\"");
+            return;
+        }
+        int tokenAt = command.indexOf("value_of(");
+        if (!failure.faultInCommand() || failure.faultStart() != tokenAt || failure.faultEnd() != command.length()) {
+            helper.fail("Expected the fault to mark the value_of token, got " + failure);
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_explainsValueOfBadFollowOn(GameTestHelper helper) {
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        SerialBusBlockEntity serialBus = feedSerialBus(helper, serialBusPos, "set_redstone value_of(dimension frob)");
+        if (serialBus == null) {
+            return;
+        }
+        ScriptCommandFailure failure = serialBus.getLastFailure();
+        if (failure == null) {
+            helper.fail("Expected a bad follow-on word to be recorded as a failure, got " + serialBus.getLastOutcome());
+            return;
+        }
+        String expected = "In value_of(dimension frob), 'frob' cannot follow dimension";
+        if (!expected.equals(failure.reason())) {
+            helper.fail("Expected the reason to name the stray word, got \"" + failure.reason() + "\"");
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_explainsUnknownValueOfGetter(GameTestHelper helper) {
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        SerialBusBlockEntity serialBus = feedSerialBus(helper, serialBusPos, "set_redstone value_of(frobnicate)");
+        if (serialBus == null) {
+            return;
+        }
+        ScriptCommandFailure failure = serialBus.getLastFailure();
+        if (failure == null) {
+            helper.fail("Expected an unknown getter to be recorded as a failure, got " + serialBus.getLastOutcome());
+            return;
+        }
+        if (!"'frobnicate' is not a known value in value_of(frobnicate)".equals(failure.reason())) {
+            helper.fail("Expected the reason to name the unknown value, got \"" + failure.reason() + "\"");
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_getModeDoesNotExecute(GameTestHelper helper) {
+        BlockPos targetPos = new BlockPos(3, 1, 2);
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        BlockPos cablePos = new BlockPos(3, 1, 4);
+        BlockPos senderPos = new BlockPos(3, 1, 5);
+
+        helper.setBlock(targetPos, Blocks.STONE.defaultBlockState());
+        helper.setBlock(serialBusPos, serialBus(Direction.NORTH));
+        helper.setBlock(cablePos, lightPipe());
+        helper.setBlock(senderPos, lectern(Direction.SOUTH));
+
+        SerialBusBlockEntity serialBus = serialBusEntity(helper, serialBusPos);
+        if (serialBus == null) {
+            return;
+        }
+        serialBus.setMode(SerialBusMode.GET);
+        setWritableBook(helper, senderPos, "set_redstone 9");
+
+        int stored = SetRedstoneCommand.getRedstonePowerAt(helper.getLevel(), helper.absolutePos(targetPos));
+        if (stored != 0) {
+            helper.fail("Expected a bus in Get mode to leave the target alone, got redstone " + stored);
+            return;
+        }
+        if (serialBus.getLastOutcome() != SerialBusBlockEntity.Outcome.NONE) {
+            helper.fail("Expected a bus in Get mode to record nothing, got " + serialBus.getLastOutcome());
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_getModeSendsEvaluatedValue(GameTestHelper helper) {
+        BlockPos targetPos = new BlockPos(3, 1, 2);
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        BlockPos cablePos = new BlockPos(3, 1, 4);
+        BlockPos displayPos = new BlockPos(3, 1, 5);
+
+        helper.setBlock(targetPos, Blocks.STONE.defaultBlockState());
+        helper.setBlock(serialBusPos, serialBus(Direction.NORTH));
+        helper.setBlock(cablePos, lightPipe());
+        helper.setBlock(displayPos, display(Direction.SOUTH));
+
+        SerialBusBlockEntity serialBus = serialBusEntity(helper, serialBusPos);
+        if (serialBus == null) {
+            return;
+        }
+        serialBus.setMode(SerialBusMode.GET);
+        serialBus.setExpression("pos as_string");
+
+        BlockPos absTarget = helper.absolutePos(targetPos);
+        String expected = absTarget.getX() + " " + absTarget.getY() + " " + absTarget.getZ();
+        helper.succeedWhen(() -> {
+            String shown = displayText(helper, displayPos);
+            if (!expected.equals(shown)) {
+                helper.fail("Expected the bus to send \"" + expected + "\", display shows \"" + shown
+                        + "\" (outcome " + serialBus.getLastOutcome()
+                        + ", reason " + (serialBus.getLastFailure() == null ? "none" : serialBus.getLastFailure().reason()) + ")");
+            }
+        });
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_getModeAddsAsStringWhenTheChainStopsShort(GameTestHelper helper) {
+        BlockPos targetPos = new BlockPos(3, 1, 2);
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        BlockPos cablePos = new BlockPos(3, 1, 4);
+        BlockPos displayPos = new BlockPos(3, 1, 5);
+
+        helper.setBlock(targetPos, Blocks.STONE.defaultBlockState());
+        helper.setBlock(serialBusPos, serialBus(Direction.NORTH));
+        helper.setBlock(cablePos, lightPipe());
+        helper.setBlock(displayPos, display(Direction.SOUTH));
+
+        SerialBusBlockEntity serialBus = serialBusEntity(helper, serialBusPos);
+        if (serialBus == null) {
+            return;
+        }
+        serialBus.setMode(SerialBusMode.GET);
+        // A block position, not text: the bus should finish the chain off itself.
+        serialBus.setExpression("pos");
+
+        BlockPos absTarget = helper.absolutePos(targetPos);
+        String expected = absTarget.getX() + " " + absTarget.getY() + " " + absTarget.getZ();
+        helper.succeedWhen(() -> {
+            String shown = displayText(helper, displayPos);
+            if (!expected.equals(shown)) {
+                helper.fail("Expected \"pos\" to send \"" + expected + "\", display shows \"" + shown
+                        + "\" (outcome " + serialBus.getLastOutcome()
+                        + ", reason " + (serialBus.getLastFailure() == null ? "none" : serialBus.getLastFailure().reason()) + ")");
+            }
+        });
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_getModeFailureClearsWhatItSent(GameTestHelper helper) {
+        BlockPos targetPos = new BlockPos(3, 1, 2);
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        BlockPos cablePos = new BlockPos(3, 1, 4);
+        BlockPos displayPos = new BlockPos(3, 1, 5);
+
+        helper.setBlock(targetPos, Blocks.STONE.defaultBlockState());
+        helper.setBlock(serialBusPos, serialBus(Direction.NORTH));
+        helper.setBlock(cablePos, lightPipe());
+        helper.setBlock(displayPos, display(Direction.SOUTH));
+
+        SerialBusBlockEntity serialBus = serialBusEntity(helper, serialBusPos);
+        if (serialBus == null) {
+            return;
+        }
+        serialBus.setMode(SerialBusMode.GET);
+        serialBus.setExpression("pos as_string");
+
+        BlockPos absTarget = helper.absolutePos(targetPos);
+        String expected = absTarget.getX() + " " + absTarget.getY() + " " + absTarget.getZ();
+
+        // Once a good value is on the pipe, a broken chain takes it away rather than leaving a
+        // reading that nothing is refreshing.
+        helper.runAtTickTime(10L, () -> {
+            if (!expected.equals(displayText(helper, displayPos))) {
+                helper.fail("Expected the good value to reach the display first");
+                return;
+            }
+            serialBus.setExpression("not_a_getter at_all");
+        });
+        helper.runAtTickTime(25L, () -> {
+            if (serialBus.getLastOutcome() != SerialBusBlockEntity.Outcome.FAILURE) {
+                helper.fail("Expected a broken chain to record a failure, got " + serialBus.getLastOutcome());
+                return;
+            }
+            if (serialBus.getLastFailure() == null) {
+                helper.fail("Expected a reason for the failure");
+                return;
+            }
+            String shown = displayText(helper, displayPos);
+            if (!shown.isEmpty()) {
+                helper.fail("Expected a broken chain to clear the display, it shows \"" + shown + "\"");
+                return;
+            }
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_getModeClearsWhenTheExpressionIsEmptied(GameTestHelper helper) {
+        BlockPos targetPos = new BlockPos(3, 1, 2);
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        BlockPos cablePos = new BlockPos(3, 1, 4);
+        BlockPos displayPos = new BlockPos(3, 1, 5);
+
+        helper.setBlock(targetPos, Blocks.STONE.defaultBlockState());
+        helper.setBlock(serialBusPos, serialBus(Direction.NORTH));
+        helper.setBlock(cablePos, lightPipe());
+        helper.setBlock(displayPos, display(Direction.SOUTH));
+
+        SerialBusBlockEntity serialBus = serialBusEntity(helper, serialBusPos);
+        if (serialBus == null) {
+            return;
+        }
+        serialBus.setMode(SerialBusMode.GET);
+        serialBus.setExpression("pos as_string");
+
+        helper.runAtTickTime(10L, () -> {
+            if (displayText(helper, displayPos).isEmpty()) {
+                helper.fail("Expected the bus to have sent something before the expression is cleared");
+                return;
+            }
+            serialBus.setExpression("");
+        });
+        helper.runAtTickTime(25L, () -> {
+            String shown = displayText(helper, displayPos);
+            if (!shown.isEmpty()) {
+                helper.fail("Expected a bus with nothing to read to clear the display, it shows \"" + shown + "\"");
+                return;
+            }
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_leavingGetModeClearsWhatItSent(GameTestHelper helper) {
+        BlockPos targetPos = new BlockPos(3, 1, 2);
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        BlockPos cablePos = new BlockPos(3, 1, 4);
+        BlockPos displayPos = new BlockPos(3, 1, 5);
+
+        helper.setBlock(targetPos, Blocks.STONE.defaultBlockState());
+        helper.setBlock(serialBusPos, serialBus(Direction.NORTH));
+        helper.setBlock(cablePos, lightPipe());
+        helper.setBlock(displayPos, display(Direction.SOUTH));
+
+        SerialBusBlockEntity serialBus = serialBusEntity(helper, serialBusPos);
+        if (serialBus == null) {
+            return;
+        }
+        serialBus.setMode(SerialBusMode.GET);
+        serialBus.setExpression("pos as_string");
+
+        helper.runAtTickTime(10L, () -> {
+            if (displayText(helper, displayPos).isEmpty()) {
+                helper.fail("Expected the bus to have sent something before switching back");
+                return;
+            }
+            serialBus.setMode(SerialBusMode.EXECUTE);
+        });
+        helper.runAtTickTime(15L, () -> {
+            String shown = displayText(helper, displayPos);
+            if (!shown.isEmpty()) {
+                helper.fail("Expected the display to clear when the bus stopped sending, it shows \"" + shown + "\"");
+                return;
+            }
+            helper.succeed();
+        });
+    }
+
+    /** Stone target, bus facing it, a pipe, and a lectern holding the command. */
+    private static SerialBusBlockEntity feedSerialBus(GameTestHelper helper, BlockPos serialBusPos, String command) {
+        BlockPos targetPos = serialBusPos.north();
+        BlockPos cablePos = serialBusPos.south();
+        BlockPos senderPos = cablePos.south();
+
+        helper.setBlock(targetPos, Blocks.STONE.defaultBlockState());
+        helper.setBlock(serialBusPos, serialBus(Direction.NORTH));
+        helper.setBlock(cablePos, lightPipe());
+        helper.setBlock(senderPos, lectern(Direction.SOUTH));
+
+        setWritableBook(helper, senderPos, command);
+        return serialBusEntity(helper, serialBusPos);
     }
 
     @GameTest(template = TEMPLATE)

@@ -109,6 +109,12 @@ public class ZPSGamePackets {
                 .consumerMainThread(AddressPadSetEntriesC2SPacket::handle)
                 .add();
 
+        INSTANCE.messageBuilder(SerialBusSettingsC2SPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(SerialBusSettingsC2SPacket::encode)
+                .decoder(SerialBusSettingsC2SPacket::decode)
+                .consumerMainThread(SerialBusSettingsC2SPacket::handle)
+                .add();
+
         INSTANCE.messageBuilder(AssemblerPatternCellC2SPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(AssemblerPatternCellC2SPacket::encode)
                 .decoder(AssemblerPatternCellC2SPacket::decode)

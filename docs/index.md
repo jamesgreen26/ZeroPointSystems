@@ -1,193 +1,62 @@
-# Script Commands
+# Basics
 
-The Script Terminal lets you automate blocks using a simple, line-based scripting language.
+The script terminal can be tricky to get your head around at first, but will get easier as you learn how the data networks work.
 
-Each line is a command. When the terminal receives a redstone signal, it dispatches each command in order.
+The first important thing to know is that commands from the script terminal each run once for every serial bus connected.
 
----
+That means when you send 
+`write_page "hello world"`
+from the terminal, it will go to all connected serial buses and evaluate separately at each one.
 
-## How It Works
+![Every serial bus on a network receiving the same script output](zps:textures/gui/manual/all_busses.png)
 
-Commands are built up of chainable parts:
+Even serial buses that do not support a command (like the arm receiving `write_page`) will still receive it,
+they just won't act on it.
 
-| Part       | Purpose                                                                       |
-| ---------- | ----------------------------------------------------------------------------- |
-| `Executor` | Performs an action on the target block. Always takes an argument.             |
-| `Getter`   | Reads a value from the world or target block. Never takes an argument.        |
-| `Mapper`   | Transforms the current value into another value. Sometimes takes an argument. |
+In fact, it's best to picture the code running at each serial bus instead of at the script terminal.
 
-The simplest valid command is an executor with its associated argument:
+Getters like `pos` and `block` will hold the value computed at the serial bus being run.
+You can use this to filter commands to only act for one particular serial bus, like so:
 
-```
-set_redstone 15
-```
+![Filtering busses](zps:textures/gui/manual/filtering.png)
 
-Here `set_redstone` is the executor and `15` is its argument.
+In the above example, the code is still running at every serial bus, but since only the left-most one passes the condition
+it will be the only one to act on the command following the `if`.
 
----
+_(Note: this example has the script terminal located at the world coordinates `0 0 0`. Your coordinates will probably differ)_
 
-## Conditionals
+Let's run through a concrete example. Say we have two arms as seen below, and want them to reach into their respective chests with `take_item`.
 
-Use `if` or `unless` before an executor to make it conditional:
+We will use an address pad to label the arms as `@arm1` and `@arm2`, and the chests as `@chest1` and `@chest2` respectively. 
+This is not required, but it will make our script easier to write.
 
-```
-if <condition> <executor>
-unless <condition> <executor>
-```
+![Filtering busses](zps:textures/gui/manual/arm_example_step_1.png)
 
-The `condition` is a getter → mapper chain that produces a Boolean value (`true` or `false`).
+Let's start off with a naive (and incorrect) script and see what happens. 
 
-- `if` runs the executor when the condition is `true`
-- `unless` runs the executor when the condition is `false`
+_(Make sure your script terminal delay is set to 16t)_
 
-Example:
+![Filtering busses](zps:textures/gui/manual/arm_example_step_2.png)
 
-```
-if redstone > 7 set_redstone 0
-```
+When we run it, we get this result:
 
-Here, `redstone > 7` is the condition.  
-If it evaluates to `true`, the executor `set_redstone` runs with argument `0`.
+![Filtering busses](zps:textures/gui/manual/arm_example_step_3.png)
 
-I.e. this command sets redstone to 0 only if the target block is receiving a signal strength of 8 or higher.
+Clearly, this isn't correct. Both arms reached for the same chest!
 
----
+This is because both serial buses ran the code to reach for `@chest1`, and then both ran the code for `@chest2`.
 
-## Conditionals with alternatives
+So, we fix the issue by filtering on the `pos` variable with our commands:
 
-Add `else` to provide an alternative if the condition fails:
+![Filtering busses](zps:textures/gui/manual/arm_example_step_4.png)
 
-```
-if <condition> <executor> else <executor>
-unless <condition> <executor> else <executor>
-```
+This way, even though both arms are running the same code, they will stick to their respective commands. 
 
-- For `if`:
-    - If the condition is `true`, the first executor runs
-    - If the condition is `false`, the second executor runs
+If we run the script, we find that it worked! The arms reached to their own chests:
 
-- For `unless`:
-    - If the condition is `false`, the first executor runs
-    - If the condition is `true`, the second executor runs
+![Filtering busses](zps:textures/gui/manual/arm_example_step_5.png)
 
-Example:
+Understanding this (how serial buses each run individually and in parallel) is crucial to understanding the rest of the data system.
+Remember: the script terminal does not run anything*, it simply sends commands to all connected serial buses.
 
-```
-if redstone > 7 set_redstone 0 else set_redstone 15
-```
-
-Here, `redstone > 7` is the condition.
-
-- If it evaluates to `true`, `set_redstone 0` runs
-- If it evaluates to `false`, `set_redstone 15` runs
-
-This command sets redstone to 0 when the signal strength is 8 or higher, and 15 otherwise.
-
----
-
-## Wait
-
-Use `wait <cycles>` to pause execution for a number of cycles:
-
-Example:
-
-```
-set_redstone 15
-wait 2
-set_redstone 0
-```
-
-`wait` behaves like an executor, but cannot be used with `if`, `unless`, or `else`.
-
-It always runs when reached, and delays the dispatch of following commands.
-
----
-
-> The remaining concepts are more advanced and are not required to get started. It is recommended to become familiar 
-> with the above material before continuing, and return to these topics as needed.
-
----
-
-## Coordinate Types
-
-Arguments support Minecraft's relative (`~`) and local (`^`) coordinate syntax, resolved relative to the terminal's position.
-
-Examples
-
-```
-if pos == ~ ~1 ~ set_redstone 15
-if pos == ^3 ^ ^-12 set_redstone 0
-```
-
-The coordinates are resolved when the command is dispatched, not when it's executed.
-
----
-
-## Addresses
-
-Typing out coordinates by hand is error-prone, especially when using many positions at once. The **Address Pad** lets you save block positions under memorable names and refer to them in scripts with a `@name` token.
-
-**Saving addresses** — hold an Address Pad and:
-
-- **Right-click a block** to save its position as a new address (up to 15 per pad).
-- **Right-click the air** to open a screen for renaming and removing saved addresses.
-
-Address names may contain letters, digits, `.`, and `_`.
-
-**Using addresses** — right-click a Script Terminal with the Address Pad to attach it. Once attached, any of its saved addresses can be used wherever a coordinate argument is expected, by writing `@` followed by the name:
-
-```
-take_items @input_chest
-put_items @furnace
-if block == minecraft:lava_cauldron use @bucket_dropoff
-```
-
-Each `@name` is substituted with the saved position's absolute `x y z` coordinates when the command is dispatched, exactly as if you had typed them out.
-
-> **Addresses only work from a Script Terminal with an attached Address Pad.** They are resolved by the terminal using its pad, so a `@name` token will *not* resolve from other command sources such as command blocks or chat — only literal coordinates and the `~` / `^` syntax work there.
-
----
-
-## value_of()
-
-Use `value_of(...)` in place of a literal argument to compute a value at runtime:
-
-Example:
-
-```
-set_redstone value_of(pos y - 50)
-```
-
-The expression inside can be any getter → mapper chain, so long as it returns the required argument type.
-
----
-
-## Expression Aliases
-
-Use `#def <name> = <expression>` at the top of a script to give a reusable name to a getter → mapper chain:
-
-```
-#def first_line = read_page get_line 1
-
-write_page value_of(first_line)
-```
-
-Alias names may contain letters, digits, and `_`, and cannot start with a digit.
-
-Declarations are read from the top of the script. Blank lines are ignored while reading declarations, and the first nonblank line that does not start with `#` ends the declaration section.
-
-Aliases may reference aliases declared earlier:
-
-```
-#def line_1 = read_page get_line 1
-#def line_2 = read_page get_line 2
-#def combined = line_2 + "\n" + value_of(line_1)
-
-write_page value_of(combined)
-```
-
-Later aliases with the same name replace earlier aliases for following declarations and commands.
-
-Alias bodies must start with a getter or an earlier alias, then may continue with mappers.
-
----
+_*Under some rare situations, the script terminal does run part of the script, but those situations will be covered later on_

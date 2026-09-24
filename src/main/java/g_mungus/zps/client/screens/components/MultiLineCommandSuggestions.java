@@ -9,8 +9,6 @@ import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContextBuilder;
-import com.mojang.brigadier.context.ParsedCommandNode;
-import com.mojang.brigadier.context.ParsedArgument;
 import com.mojang.brigadier.context.StringRange;
 import com.mojang.brigadier.context.SuggestionContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -29,13 +27,11 @@ import javax.annotation.Nullable;
 
 import g_mungus.zps.commands.api.ScriptExecutor;
 import g_mungus.zps.commands.api.ScriptGetter;
-import g_mungus.zps.commands.api.ScriptMapper;
 import g_mungus.zps.commands.api_impl.ValueOfDispatchers;
 import g_mungus.zps.commands.api_impl.TypeKeys;
 import g_mungus.zps.commands.api_impl.ZPSCommands;
 import g_mungus.zps.commands.api_impl.aliases.ScriptAliases;
 import g_mungus.zps.commands.api_impl.arguments.OverloadedExecutorArgumentType;
-import g_mungus.zps.commands.api_impl.arguments.ValueOfExpression;
 import g_mungus.zps.commands.api_impl.arguments.ValueOfOrLiteralArgumentType;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -58,20 +54,13 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
 public class MultiLineCommandSuggestions {
+    public static final int EXECUTOR_COLOR = ScriptSyntaxHighlighter.EXECUTOR_COLOR;
+    public static final int GETTER_COLOR = ScriptSyntaxHighlighter.GETTER_COLOR;
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("(\\s+)");
     private static final Pattern ALIAS_NAME_PATTERN = Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
-    private static final String ARGUMENT_PLACEHOLDER = "%s";
     private static final String ALIAS_NAME_USAGE = "<alias>";
     private static final String EXPECTED_EQUALS_MESSAGE = "Expected '=' after alias name";
     private static final ResourceLocation BOOLEAN_TYPE = ResourceLocation.parse("zps:boolean");
-    private static final Style UNPARSED_STYLE = Style.EMPTY.withColor(ChatFormatting.RED);
-    public static final int EXECUTOR_COLOR = 0xF5A97F;
-    public static final int GETTER_COLOR = 0xC792EA;
-    private static final Style EXECUTOR_STYLE = Style.EMPTY.withColor(EXECUTOR_COLOR);
-    private static final Style GETTER_STYLE = Style.EMPTY.withColor(GETTER_COLOR);
-    private static final Style MAPPER_STYLE = Style.EMPTY.withColor(0x4C99C9);
-    private static final Style ARGUMENT_STYLE = Style.EMPTY.withColor(0x79F1A3);
-    private static final Style DEFAULT_STYLE = Style.EMPTY.withColor(ChatFormatting.GRAY);
     final Minecraft minecraft;
     private final CommandDispatcherProvider dispatcherProvider;
     private final Screen screen;
@@ -96,6 +85,12 @@ public class MultiLineCommandSuggestions {
     private CompletableFuture<Suggestions> pendingSuggestions;
     @Nullable
     private MultiLineCommandSuggestions.SuggestionsList suggestions;
+    /**
+     * When set, the box holds one bare getter to mapper chain that has to yield this type, not a
+     * script command: suggestions, usage and highlighting all come from that type's value_of tree.
+     */
+    @Nullable
+    private ResourceLocation expressionTypeKey;
     private boolean allowSuggestions;
     boolean keepSuggestions;
 
@@ -113,6 +108,16 @@ public class MultiLineCommandSuggestions {
         this.anchorToBottom = bl3;
         this.fillColor = k;
         arg3.setFormatter(this::formatChat);
+    }
+
+    /** Turns the box into an expression box for chains yielding {@code typeKey}. */
+    public void setExpressionType(@Nullable ResourceLocation typeKey) {
+        this.expressionTypeKey = typeKey;
+    }
+
+    /** Whether the suggestion popup is up, so callers can keep tooltips out from under it. */
+    public boolean isShowingSuggestions() {
+        return this.suggestions != null;
     }
 
     public void setAllowSuggestions(boolean bl) {
@@ -218,8 +223,7 @@ public class MultiLineCommandSuggestions {
                 ScriptGetter<?> getter = ZPSCommands.getGetter(command);
                 if (getter != null) {
                     knownCommand = true;
-                    Set<ResourceLocation> associatedBlocks = getter.associatedBlocks();
-                    appliesToConnectedBlocks = associatedBlocks == null || associatedBlocks.stream().anyMatch(connectedBlocks::contains);
+                    appliesToConnectedBlocks = getter.appliesToAny(connectedBlocks);
                 }
             }
 
@@ -247,6 +251,15 @@ public class MultiLineCommandSuggestions {
         }
 
         this.commandUsage.clear();
+
+        if (this.expressionTypeKey != null) {
+            // No script around the line, so no aliases and none of the #def or command handling.
+            ValueOfOrLiteralArgumentType.setActiveExpressionAliases(Map.of());
+            OverloadedExecutorArgumentType.setActiveConnectedBlocks(connectedBlocks);
+            updateExpressionInfo(currentLine, lineCursorPos);
+            return;
+        }
+
         int currentLineNumber = getCurrentLineNumber();
         ValueOfOrLiteralArgumentType.setActiveExpressionAliases(aliasesBeforeLine(currentLineNumber));
         OverloadedExecutorArgumentType.setActiveConnectedBlocks(connectedBlocks);
@@ -366,6 +379,57 @@ public class MultiLineCommandSuggestions {
         return false;
     }
 
+    /** The whole line is the expression, so there is no prefix to step over and no type to guess. */
+    private void updateExpressionInfo(String currentLine, int lineCursorPos) {
+        this.currentParse = null;
+        this.commandUsage.clear();
+        this.commandUsagePosition = this.input.getScreenX(this.input.getCursorPosition());
+        this.commandUsageWidth = this.screen.width;
+
+        this.pendingSuggestions = expressionSuggestions(currentLine, lineCursorPos);
+        this.suggestions = null;
+        if (this.allowSuggestions && this.minecraft.options.autoSuggestions().get()) {
+            this.showSuggestions(false);
+        }
+    }
+
+    private CompletableFuture<Suggestions> expressionSuggestions(String currentLine, int lineCursorPos) {
+        assert this.minecraft.player != null;
+        ResourceLocation typeKey = this.expressionTypeKey;
+        if (typeKey == null) {
+            return Suggestions.empty();
+        }
+
+        SharedSuggestionProvider source = this.minecraft.player.connection.getSuggestionsProvider();
+        var dispatcher = ValueOfOrLiteralArgumentType.valueOfDispatcherWithExpressionAliases(typeKey, Map.of(), source);
+        if (dispatcher == null) {
+            return Suggestions.empty();
+        }
+
+        String typed = currentLine.substring(0, Math.min(lineCursorPos, currentLine.length()));
+        List<Suggestion> suggestions = new ArrayList<>();
+        try {
+            @SuppressWarnings({"rawtypes", "unchecked"})
+            var rawDispatcher = (CommandDispatcher) dispatcher;
+            ParseResults<SharedSuggestionProvider> parseResults = rawDispatcher.parse(typed, source);
+            Suggestions dispatcherSuggestions = (Suggestions) rawDispatcher
+                    .getCompletionSuggestions(parseResults, typed.length())
+                    .join();
+            for (Suggestion suggestion : dispatcherSuggestions.getList()) {
+                // The sentinel that closes an expression is ours, not something to offer a player.
+                if (ValueOfDispatchers.TERMINAL_LITERAL.equals(suggestion.getText())) {
+                    continue;
+                }
+                suggestions.add(suggestion);
+            }
+        } catch (Exception ignored) {
+        }
+
+        // Same rule as a command line: only offer what the block on the other end can answer.
+        return CompletableFuture.completedFuture(
+                Suggestions.create(currentLine, filterByConnectedBlocks(suggestions)));
+    }
+
     private void updateAliasDefinitionInfo(String currentLine, int lineCursorPos, int currentLineNumber) {
         this.currentParse = null;
         this.commandUsage.clear();
@@ -376,11 +440,11 @@ public class MultiLineCommandSuggestions {
             ScriptAliases.ParsedScript parsedThroughLine = ScriptAliases.parse(scriptThroughLine(currentLineNumber));
             for (ScriptAliases.Diagnostic diagnostic : parsedThroughLine.diagnostics()) {
                 if (diagnostic.lineIndex() == currentLineNumber) {
-                    this.commandUsage.add(FormattedCharSequence.forward(diagnostic.message(), UNPARSED_STYLE));
+                    this.commandUsage.add(FormattedCharSequence.forward(diagnostic.message(), ScriptSyntaxHighlighter.UNPARSED_STYLE));
                 }
             }
         } else if (hasTextInsteadOfEquals(currentLine)) {
-            this.commandUsage.add(FormattedCharSequence.forward(EXPECTED_EQUALS_MESSAGE, UNPARSED_STYLE));
+            this.commandUsage.add(FormattedCharSequence.forward(EXPECTED_EQUALS_MESSAGE, ScriptSyntaxHighlighter.UNPARSED_STYLE));
         }
 
         this.pendingSuggestions = aliasDefinitionSuggestions(currentLine, lineCursorPos, currentLineNumber);
@@ -453,7 +517,7 @@ public class MultiLineCommandSuggestions {
 
     private void addAliasNameUsageHint(String currentLine, int currentLineNumber) {
         boolean positionUsage = this.commandUsage.isEmpty();
-        this.commandUsage.add(FormattedCharSequence.forward(ALIAS_NAME_USAGE, DEFAULT_STYLE));
+        this.commandUsage.add(FormattedCharSequence.forward(ALIAS_NAME_USAGE, ScriptSyntaxHighlighter.DEFAULT_STYLE));
         if (!positionUsage) {
             return;
         }
@@ -925,9 +989,16 @@ public class MultiLineCommandSuggestions {
         int visibleStart = Mth.clamp(i, 0, fullLine.length());
         int visibleLength = Math.min(string.length(), fullLine.length() - visibleStart);
 
+        if (this.expressionTypeKey != null) {
+            assert this.minecraft.player != null;
+            return ScriptSyntaxHighlighter.formatExpression(fullLine, visibleStart, visibleLength,
+                    this.expressionTypeKey, this.minecraft.player.connection.getSuggestionsProvider());
+        }
+
         // Parse the full line
         if (lineNumber >= 0 && isLeadingAliasDefinitionLine(lineNumber, fullLine)) {
-            return formatAliasDefinitionLine(fullLine, visibleStart, visibleLength, lineNumber);
+            return ScriptSyntaxHighlighter.formatAliasDefinition(fullLine, visibleStart, visibleLength,
+                    aliasesBeforeLine(lineNumber), this.minecraft.player.connection.getSuggestionsProvider());
         }
 
         // Parse the full line
@@ -948,7 +1019,7 @@ public class MultiLineCommandSuggestions {
                         : dispatcherProvider.get();
                 ParseResults<SharedSuggestionProvider> lineParseResults = commandDispatcher.parse(stringReader, this.minecraft.player.connection.getSuggestionsProvider());
 
-                return formatText(lineParseResults, fullLine, visibleStart, visibleLength, expressionAliases);
+                return ScriptSyntaxHighlighter.formatCommand(lineParseResults, fullLine, visibleStart, visibleLength, expressionAliases);
             } catch (Exception e) {
                 // If parsing fails, return unformatted
                 return FormattedCharSequence.forward(string, Style.EMPTY);
@@ -957,200 +1028,9 @@ public class MultiLineCommandSuggestions {
         return FormattedCharSequence.forward(string, Style.EMPTY);
     }
 
-    private FormattedCharSequence formatAliasDefinitionLine(String fullLine, int visibleStart, int visibleLength, int lineNumber) {
-        List<FormattedCharSequence> list = Lists.newArrayList();
-        List<HighlightSpan> spans = new ArrayList<>();
-        collectAliasDefinitionSpans(fullLine, spans, lineNumber);
-        spans.sort(Comparator.comparingInt(span -> span.range().getStart()));
-
-        int cursor = 0;
-        for (HighlightSpan span : spans) {
-            int start = Math.max(span.range().getStart() - visibleStart, 0);
-            if (start >= visibleLength) {
-                break;
-            }
-            int end = Math.min(span.range().getEnd() - visibleStart, visibleLength);
-            if (end <= start) {
-                continue;
-            }
-            if (start > cursor) {
-                list.add(FormattedCharSequence.forward(fullLine.substring(visibleStart + cursor, visibleStart + start), DEFAULT_STYLE));
-            }
-            list.add(FormattedCharSequence.forward(fullLine.substring(visibleStart + start, visibleStart + end), span.style()));
-            cursor = end;
-        }
-        list.add(FormattedCharSequence.forward(fullLine.substring(visibleStart + cursor, visibleStart + visibleLength), DEFAULT_STYLE));
-        return FormattedCharSequence.composite(list);
-    }
-
-    private void collectAliasDefinitionSpans(String fullLine, List<HighlightSpan> spans, int lineNumber) {
-        int cursor = 0;
-        while (cursor < fullLine.length() && Character.isWhitespace(fullLine.charAt(cursor))) {
-            cursor++;
-        }
-
-        int keywordStart = cursor;
-        if (!fullLine.startsWith("#def", cursor)) {
-            spans.add(new HighlightSpan(StringRange.between(0, fullLine.length()), UNPARSED_STYLE));
-            return;
-        }
-
-        int keywordEnd = cursor + "#def".length();
-        spans.add(new HighlightSpan(StringRange.between(keywordStart, keywordEnd), DEFAULT_STYLE));
-        cursor = keywordEnd;
-
-        while (cursor < fullLine.length() && Character.isWhitespace(fullLine.charAt(cursor))) {
-            cursor++;
-        }
-
-        Matcher nameMatcher = ALIAS_NAME_PATTERN.matcher(fullLine);
-        nameMatcher.region(cursor, fullLine.length());
-        if (nameMatcher.lookingAt()) {
-            String name = nameMatcher.group();
-            Style nameStyle = ZPSCommands.isMapperName(name) ? UNPARSED_STYLE : GETTER_STYLE;
-            spans.add(new HighlightSpan(StringRange.between(nameMatcher.start(), nameMatcher.end()), nameStyle));
-            cursor = nameMatcher.end();
-        } else if (cursor < fullLine.length()) {
-            int invalidStart = cursor;
-            while (cursor < fullLine.length() && !Character.isWhitespace(fullLine.charAt(cursor)) && fullLine.charAt(cursor) != '=') {
-                cursor++;
-            }
-            spans.add(new HighlightSpan(StringRange.between(invalidStart, cursor), UNPARSED_STYLE));
-        }
-
-        int equals = fullLine.indexOf('=', cursor);
-        if (equals == -1) {
-            int unexpectedStart = cursor;
-            while (unexpectedStart < fullLine.length() && Character.isWhitespace(fullLine.charAt(unexpectedStart))) {
-                unexpectedStart++;
-            }
-            if (unexpectedStart < fullLine.length()) {
-                spans.add(new HighlightSpan(StringRange.between(unexpectedStart, fullLine.length()), UNPARSED_STYLE));
-            }
-            return;
-        }
-
-        spans.add(new HighlightSpan(StringRange.between(equals, equals + 1), DEFAULT_STYLE));
-        int expressionStart = equals + 1;
-        while (expressionStart < fullLine.length() && Character.isWhitespace(fullLine.charAt(expressionStart))) {
-            expressionStart++;
-        }
-        if (expressionStart < fullLine.length()) {
-            collectAliasExpressionSpans(fullLine.substring(expressionStart), expressionStart, spans, lineNumber);
-        }
-    }
-
-    private void collectAliasExpressionSpans(String expression, int offset, List<HighlightSpan> spans, int lineNumber) {
-        Map<String, ScriptAliases.AliasDefinition> visibleAliases = aliasesBeforeLine(lineNumber);
-        assert this.minecraft.player != null;
-        ParseResults<SharedSuggestionProvider> bestParse = null;
-        int bestScore = -1;
-        for (ResourceLocation typeKey : TypeKeys.TYPE_KEY_TO_CLASS.keySet()) {
-            var dispatcher = ValueOfOrLiteralArgumentType.valueOfDispatcherWithExpressionAliases(
-                    typeKey,
-                    visibleAliases,
-                    this.minecraft.player.connection.getSuggestionsProvider()
-            );
-            if (dispatcher == null) {
-                continue;
-            }
-            try {
-                @SuppressWarnings({"rawtypes", "unchecked"})
-                var rawDispatcher = (CommandDispatcher) dispatcher;
-                ParseResults<SharedSuggestionProvider> parse = rawDispatcher.parse(
-                        expression,
-                        this.minecraft.player.connection.getSuggestionsProvider()
-                );
-                int score = parse.getReader().getCursor() * 10 - parse.getExceptions().size();
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestParse = parse;
-                }
-            } catch (Exception ignored) {
-            }
-        }
-
-        if (bestParse == null) {
-            spans.add(new HighlightSpan(StringRange.between(offset, offset + expression.length()), ARGUMENT_STYLE));
-            return;
-        }
-
-        Map<CommandNode<SharedSuggestionProvider>, Style> literalStyles = buildLiteralStyleIndex(
-                bestParse.getContext().getRootNode(),
-                visibleAliases.keySet()
-        );
-        collectLiteralSpansWithOffset(bestParse.getContext(), spans, offset, literalStyles, visibleAliases.keySet());
-        collectArgumentSpansWithOffset(bestParse.getContext(), spans, bestParse.getContext().getSource(), offset, visibleAliases);
-
-        if (bestParse.getReader().canRead()) {
-            int start = offset + bestParse.getReader().getCursor();
-            spans.add(new HighlightSpan(StringRange.between(start, offset + expression.length()), UNPARSED_STYLE));
-        }
-    }
-
     @Nullable
     static String calculateSuggestionSuffix(String string, String string2) {
         return string2.startsWith(string) ? string2.substring(string.length()) : null;
-    }
-
-    private static FormattedCharSequence formatText(
-            ParseResults<SharedSuggestionProvider> parseResults,
-            String fullText,
-            int visibleStart,
-            int visibleLength,
-            Map<String, ScriptAliases.AliasDefinition> expressionAliases
-    ) {
-        List<FormattedCharSequence> list = Lists.<FormattedCharSequence>newArrayList();
-        List<HighlightSpan> spans = new ArrayList<>();
-        Set<String> expressionAliasNames = expressionAliases.keySet();
-        Map<CommandNode<SharedSuggestionProvider>, Style> literalStyles = buildLiteralStyleIndex(
-                parseResults.getContext().getRootNode(),
-                expressionAliasNames
-        );
-        collectLiteralSpans(parseResults.getContext(), spans, literalStyles, expressionAliasNames);
-        collectArgumentSpans(parseResults.getContext(), spans, parseResults.getContext().getSource(), expressionAliases);
-        spans.sort(Comparator.comparingInt(span -> span.range().getStart()));
-
-        int cursor = 0;
-        for (HighlightSpan span : spans) {
-            int start = Math.max(span.range().getStart() - visibleStart, 0);
-            if (start >= visibleLength) {
-                break;
-            }
-
-            int end = Math.min(span.range().getEnd() - visibleStart, visibleLength);
-            if (end <= start) {
-                continue;
-            }
-
-            if (start > cursor) {
-                list.add(FormattedCharSequence.forward(fullText.substring(visibleStart + cursor, visibleStart + start), DEFAULT_STYLE));
-            }
-
-            String spanText = fullText.substring(visibleStart + start, visibleStart + end);
-            list.add(FormattedCharSequence.forward(spanText, span.style()));
-            cursor = end;
-        }
-
-        // Mark any remaining unparsed text as invalid
-        if (parseResults.getReader().canRead()) {
-            int n = Math.max(parseResults.getReader().getCursor() - visibleStart, 0);
-            if (n >= cursor && n < visibleLength) {
-                list.add(FormattedCharSequence.forward(fullText.substring(visibleStart + cursor, visibleStart + n), DEFAULT_STYLE));
-                if (isArgumentPlaceholderAt(fullText, parseResults.getReader().getCursor())) {
-                    int o = Math.min(n + ARGUMENT_PLACEHOLDER.length(), visibleLength);
-                    list.add(FormattedCharSequence.forward(fullText.substring(visibleStart + n, visibleStart + o), ARGUMENT_STYLE));
-                    cursor = o;
-                } else {
-                    int o = Math.min(n + parseResults.getReader().getRemainingLength(), visibleLength);
-                    list.add(FormattedCharSequence.forward(fullText.substring(visibleStart + n, visibleStart + o), UNPARSED_STYLE));
-                    cursor = o;
-                }
-            }
-        }
-
-        list.add(FormattedCharSequence.forward(fullText.substring(visibleStart + cursor, visibleStart + visibleLength), DEFAULT_STYLE));
-        return FormattedCharSequence.composite(list);
     }
 
     private static boolean hasArgumentPlaceholder(@Nullable ParseResults<SharedSuggestionProvider> parseResults) {
@@ -1160,230 +1040,7 @@ public class MultiLineCommandSuggestions {
 
         String input = parseResults.getReader().getString();
         int cursor = parseResults.getReader().getCursor();
-        return isArgumentPlaceholderAt(input, cursor);
-    }
-
-    private static boolean isArgumentPlaceholderAt(String input, int start) {
-        int end = start + ARGUMENT_PLACEHOLDER.length();
-        if (start < 0 || end > input.length() || !input.startsWith(ARGUMENT_PLACEHOLDER, start)) {
-            return false;
-        }
-
-        boolean startsAtBoundary = start == 0 || Character.isWhitespace(input.charAt(start - 1));
-        boolean endsAtBoundary = end == input.length() || Character.isWhitespace(input.charAt(end));
-        return startsAtBoundary && endsAtBoundary;
-    }
-
-    private static void collectLiteralSpans(
-            CommandContextBuilder<SharedSuggestionProvider> context,
-            List<HighlightSpan> spans,
-            Map<CommandNode<SharedSuggestionProvider>, Style> literalStyles,
-            Set<String> expressionAliasNames
-    ) {
-        for (ParsedCommandNode<SharedSuggestionProvider> node : context.getNodes()) {
-            if (node.getNode() instanceof LiteralCommandNode<?> literalNode) {
-                Style style = literalStyles.getOrDefault(node.getNode(), styleForLiteralFallback(literalNode.getLiteral(), expressionAliasNames));
-                spans.add(new HighlightSpan(node.getRange(), style));
-            }
-        }
-
-        if (context.getChild() != null) {
-            collectLiteralSpans(context.getChild(), spans, literalStyles, expressionAliasNames);
-        }
-    }
-
-    private static void collectArgumentSpans(
-            CommandContextBuilder<SharedSuggestionProvider> context,
-            List<HighlightSpan> spans,
-            SharedSuggestionProvider source,
-            Map<String, ScriptAliases.AliasDefinition> expressionAliases
-    ) {
-        for (ParsedArgument<SharedSuggestionProvider, ?> parsedArgument : context.getArguments().values()) {
-            Object result = parsedArgument.getResult();
-            if (result instanceof ValueOfExpression<?> expr) {
-                collectValueOfSpans(expr, parsedArgument.getRange(), spans, source, expressionAliases);
-            } else {
-                spans.add(new HighlightSpan(parsedArgument.getRange(), ARGUMENT_STYLE));
-            }
-        }
-
-        if (context.getChild() != null) {
-            collectArgumentSpans(context.getChild(), spans, source, expressionAliases);
-        }
-    }
-
-    private static void collectValueOfSpans(
-            ValueOfExpression<?> expression,
-            StringRange range,
-            List<HighlightSpan> spans,
-            SharedSuggestionProvider source,
-            Map<String, ScriptAliases.AliasDefinition> expressionAliases
-    ) {
-        int start = range.getStart();
-        int prefixEnd = Math.min(start + "value_of(".length(), range.getEnd());
-        spans.add(new HighlightSpan(StringRange.between(start, prefixEnd), ARGUMENT_STYLE));
-
-        var innerDispatcher = ValueOfOrLiteralArgumentType.valueOfDispatcherWithExpressionAliases(
-                expression.targetTypeKey(),
-                expressionAliases,
-                source
-        );
-        if (innerDispatcher != null) {
-            try {
-                @SuppressWarnings({"rawtypes", "unchecked"})
-                var rawDispatcher = (CommandDispatcher) innerDispatcher;
-                ParseResults<SharedSuggestionProvider> innerParse = rawDispatcher.parse(expression.innerExpression(), source);
-                Map<CommandNode<SharedSuggestionProvider>, Style> innerLiteralStyles = buildLiteralStyleIndex(
-                        innerParse.getContext().getRootNode(),
-                        expressionAliases.keySet()
-                );
-                collectLiteralSpansWithOffset(innerParse.getContext(), spans, prefixEnd, innerLiteralStyles, expressionAliases.keySet());
-                collectArgumentSpansWithOffset(innerParse.getContext(), spans, source, prefixEnd, expressionAliases);
-            } catch (Exception ignored) {
-                spans.add(new HighlightSpan(StringRange.between(prefixEnd, range.getEnd() - 1), ARGUMENT_STYLE));
-            }
-        } else if (prefixEnd < range.getEnd() - 1) {
-            spans.add(new HighlightSpan(StringRange.between(prefixEnd, range.getEnd() - 1), ARGUMENT_STYLE));
-        }
-
-        if (range.getEnd() > prefixEnd) {
-            spans.add(new HighlightSpan(StringRange.between(range.getEnd() - 1, range.getEnd()), ARGUMENT_STYLE));
-        }
-    }
-
-    private static void collectLiteralSpansWithOffset(
-            CommandContextBuilder<SharedSuggestionProvider> context,
-            List<HighlightSpan> spans,
-            int offset,
-            Map<CommandNode<SharedSuggestionProvider>, Style> literalStyles,
-            Set<String> expressionAliasNames
-    ) {
-        for (ParsedCommandNode<SharedSuggestionProvider> node : context.getNodes()) {
-            if (node.getNode() instanceof LiteralCommandNode<?> literalNode) {
-                spans.add(new HighlightSpan(
-                        StringRange.between(node.getRange().getStart() + offset, node.getRange().getEnd() + offset),
-                        literalStyles.getOrDefault(node.getNode(), styleForLiteralFallback(literalNode.getLiteral(), expressionAliasNames))
-                ));
-            }
-        }
-
-        if (context.getChild() != null) {
-            collectLiteralSpansWithOffset(context.getChild(), spans, offset, literalStyles, expressionAliasNames);
-        }
-    }
-
-    private static void collectArgumentSpansWithOffset(
-            CommandContextBuilder<SharedSuggestionProvider> context,
-            List<HighlightSpan> spans,
-            SharedSuggestionProvider source,
-            int offset,
-            Map<String, ScriptAliases.AliasDefinition> expressionAliases
-    ) {
-        for (ParsedArgument<SharedSuggestionProvider, ?> parsedArgument : context.getArguments().values()) {
-            Object result = parsedArgument.getResult();
-            StringRange shiftedRange = StringRange.between(parsedArgument.getRange().getStart() + offset, parsedArgument.getRange().getEnd() + offset);
-            if (result instanceof ValueOfExpression<?> expr) {
-                collectValueOfSpans(expr, shiftedRange, spans, source, expressionAliases);
-            } else {
-                spans.add(new HighlightSpan(shiftedRange, ARGUMENT_STYLE));
-            }
-        }
-
-        if (context.getChild() != null) {
-            collectArgumentSpansWithOffset(context.getChild(), spans, source, offset, expressionAliases);
-        }
-    }
-
-    private static Map<CommandNode<SharedSuggestionProvider>, Style> buildLiteralStyleIndex(
-            CommandNode<SharedSuggestionProvider> root,
-            Set<String> expressionAliasNames
-    ) {
-        Map<CommandNode<SharedSuggestionProvider>, Style> literalStyles = new IdentityHashMap<>();
-        Set<CommandNode<SharedSuggestionProvider>> visited = Collections.newSetFromMap(new IdentityHashMap<>());
-        indexLiteralStyles(root, null, literalStyles, visited, expressionAliasNames);
-        return literalStyles;
-    }
-
-    private static void indexLiteralStyles(
-            CommandNode<SharedSuggestionProvider> node,
-            @Nullable String parentLiteral,
-            Map<CommandNode<SharedSuggestionProvider>, Style> literalStyles,
-            Set<CommandNode<SharedSuggestionProvider>> visited,
-            Set<String> expressionAliasNames
-    ) {
-        if (!visited.add(node)) {
-            return;
-        }
-
-        String currentLiteral = parentLiteral;
-        if (node instanceof LiteralCommandNode<?> literalNode) {
-            currentLiteral = literalNode.getLiteral();
-            literalStyles.put(node, styleForLiteralNode(currentLiteral, parentLiteral, expressionAliasNames));
-        }
-
-        for (CommandNode<SharedSuggestionProvider> child : node.getChildren()) {
-            indexLiteralStyles(child, currentLiteral, literalStyles, visited, expressionAliasNames);
-        }
-
-        if (node.getRedirect() != null) {
-            indexLiteralStyles(node.getRedirect(), currentLiteral, literalStyles, visited, expressionAliasNames);
-        }
-    }
-
-    private static Style styleForLiteralNode(String literal, @Nullable String parentLiteral, Set<String> expressionAliasNames) {
-        if (ZPSCommands.getGetter(literal) != null && (parentLiteral == null || parentLiteral.startsWith("need-"))) {
-            return GETTER_STYLE;
-        }
-
-        if (expressionAliasNames.contains(literal) || ValueOfOrLiteralArgumentType.isActiveExpressionAliasName(literal)) {
-            return GETTER_STYLE;
-        }
-
-        if (ZPSCommands.getMapper(literal) != null && parentLiteral != null && parentLiteral.startsWith("have-")) {
-            return MAPPER_STYLE;
-        }
-
-        if (ZPSCommands.getExecutor(literal) != null && (
-                parentLiteral == null
-                        || expressionAliasNames.contains(parentLiteral)
-                        || parentLiteral.startsWith("have-")
-                        || "else".equals(parentLiteral)
-                        || ZPSCommands.Paths.EXECUTORS.equals(parentLiteral)
-        )) {
-            return EXECUTOR_STYLE;
-        }
-
-        return DEFAULT_STYLE;
-    }
-
-    private static Style styleForLiteralFallback(String literal) {
-        return styleForLiteralFallback(literal, Set.of());
-    }
-
-    private static Style styleForLiteralFallback(String literal, Set<String> expressionAliasNames) {
-        ScriptExecutor<?, ?> executor = ZPSCommands.getExecutor(literal);
-        if (executor != null) {
-            return EXECUTOR_STYLE;
-        }
-
-        ScriptGetter<?> getter = ZPSCommands.getGetter(literal);
-        if (getter != null) {
-            return GETTER_STYLE;
-        }
-
-        if (expressionAliasNames.contains(literal) || ValueOfOrLiteralArgumentType.isActiveExpressionAliasName(literal)) {
-            return GETTER_STYLE;
-        }
-
-        ScriptMapper<?, ?> mapper = ZPSCommands.getMapper(literal);
-        if (mapper != null) {
-            return MAPPER_STYLE;
-        }
-
-        return DEFAULT_STYLE;
-    }
-
-    private record HighlightSpan(StringRange range, Style style) {
+        return ScriptSyntaxHighlighter.isArgumentPlaceholderAt(input, cursor);
     }
 
     private record AliasExpressionParse(

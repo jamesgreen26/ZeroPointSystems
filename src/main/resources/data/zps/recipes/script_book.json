@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "redstone",
+  "ingredients": [
+    {
+      "item": "minecraft:book"
+    },
+    {
+      "item": "zps:data_cable"
+    }
+  ],
+  "result": {
+    "item": "zps:script_book",
+    "count": 1
+  },
+  "show_notification": true
+}

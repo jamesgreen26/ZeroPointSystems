@@ -381,6 +381,166 @@ public class ScriptCommandGameTests {
         helper.succeed();
     }
 
+    /**
+     * {@code value_of(pos as_string + "\\nalpha\\nbeta" remove_line 2)} should
+     * drop the requested escaped-newline-delimited segment (1-based) and rejoin
+     * the rest with escaped newlines.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void valueOf_stringRemoveLine_removesIndexedLine(GameTestHelper helper) {
+        BlockPos absPos = helper.absolutePos(new BlockPos(4, 1, 3));
+
+        String result = evalValueOf(helper, absPos, "pos as_string + \"\\\\nalpha\\\\nbeta\" remove_line 2", STRING_KEY);
+        String expected = absPos.getX() + " " + absPos.getY() + " " + absPos.getZ() + "\\nbeta";
+
+        if (!expected.equals(result)) {
+            helper.fail("value_of(pos as_string + \"\\\\nalpha\\\\nbeta\" remove_line 2): expected " + expected + ", got " + result);
+            return;
+        }
+        helper.succeed();
+    }
+
+    /**
+     * {@code value_of(pos as_string + "\\nalpha" remove_line 5)} should return
+     * the input unchanged when the requested index is out of bounds.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void valueOf_stringRemoveLine_outOfBoundsReturnsUnchanged(GameTestHelper helper) {
+        BlockPos absPos = helper.absolutePos(new BlockPos(4, 1, 3));
+
+        String result = evalValueOf(helper, absPos, "pos as_string + \"\\\\nalpha\" remove_line 5", STRING_KEY);
+        String expected = absPos.getX() + " " + absPos.getY() + " " + absPos.getZ() + "\\nalpha";
+
+        if (!expected.equals(result)) {
+            helper.fail("value_of(pos as_string + \"\\\\nalpha\" remove_line 5): expected " + expected + ", got " + result);
+            return;
+        }
+        helper.succeed();
+    }
+
+    /**
+     * {@code value_of(pos as_string split " " lines)} should replace every
+     * delimiter with an escaped newline, so the "x y z" string becomes three lines.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void valueOf_stringSplit_replacesDelimiterWithNewline(GameTestHelper helper) {
+        BlockPos absPos = helper.absolutePos(new BlockPos(4, 1, 3));
+
+        String split = evalValueOf(helper, absPos, "pos as_string split \" \"", STRING_KEY);
+        String expected = absPos.getX() + "\\n" + absPos.getY() + "\\n" + absPos.getZ();
+        if (!expected.equals(split)) {
+            helper.fail("value_of(pos as_string split \" \"): expected " + expected + ", got " + split);
+            return;
+        }
+
+        Integer lines = evalValueOf(helper, absPos, "pos as_string split \" \" lines", INT_KEY);
+        if (lines == null || lines != 3) {
+            helper.fail("value_of(pos as_string split \" \" lines): expected 3, got " + lines);
+            return;
+        }
+        helper.succeed();
+    }
+
+    // -------------------------------------------------------------------------
+    // Boolean operators and conversions
+    // -------------------------------------------------------------------------
+
+    /**
+     * {@code &&} should AND the current boolean with a literal or a
+     * {@code value_of(...)} boolean argument.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void valueOf_booleanAnd_combinesBothSides(GameTestHelper helper) {
+        BlockPos absPos = helper.absolutePos(new BlockPos(4, 1, 3));
+
+        Boolean both = evalValueOf(helper, absPos,
+                "pos x == " + absPos.getX() + " && value_of(pos z == " + absPos.getZ() + ")", BOOLEAN_KEY);
+        if (!Boolean.TRUE.equals(both)) {
+            helper.fail("true && value_of(true): expected true, got " + both);
+            return;
+        }
+
+        Boolean literalFalse = evalValueOf(helper, absPos, "pos x == " + absPos.getX() + " && false", BOOLEAN_KEY);
+        if (!Boolean.FALSE.equals(literalFalse)) {
+            helper.fail("true && false: expected false, got " + literalFalse);
+            return;
+        }
+        helper.succeed();
+    }
+
+    /**
+     * {@code ||} should OR the current boolean with a literal or a
+     * {@code value_of(...)} boolean argument.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void valueOf_booleanOr_combinesBothSides(GameTestHelper helper) {
+        BlockPos absPos = helper.absolutePos(new BlockPos(4, 1, 3));
+
+        Boolean either = evalValueOf(helper, absPos,
+                "pos x == " + (absPos.getX() + 1) + " || value_of(pos z == " + absPos.getZ() + ")", BOOLEAN_KEY);
+        if (!Boolean.TRUE.equals(either)) {
+            helper.fail("false || value_of(true): expected true, got " + either);
+            return;
+        }
+
+        Boolean neither = evalValueOf(helper, absPos, "pos x == " + (absPos.getX() + 1) + " || false", BOOLEAN_KEY);
+        if (!Boolean.FALSE.equals(neither)) {
+            helper.fail("false || false: expected false, got " + neither);
+            return;
+        }
+        helper.succeed();
+    }
+
+    /**
+     * {@code boolean as_string} should yield {@code "true"} / {@code "false"},
+     * and {@code string as_boolean} should parse them back (case-insensitively).
+     */
+    @GameTest(template = TEMPLATE)
+    public static void valueOf_booleanStringRoundTrip(GameTestHelper helper) {
+        BlockPos absPos = helper.absolutePos(new BlockPos(4, 1, 3));
+
+        String asString = evalValueOf(helper, absPos, "pos x == " + absPos.getX() + " as_string", STRING_KEY);
+        if (!"true".equals(asString)) {
+            helper.fail("true as_string: expected \"true\", got " + asString);
+            return;
+        }
+
+        Boolean roundTrip = evalValueOf(helper, absPos, "pos x == " + (absPos.getX() + 1) + " as_string as_boolean", BOOLEAN_KEY);
+        if (!Boolean.FALSE.equals(roundTrip)) {
+            helper.fail("false as_string as_boolean: expected false, got " + roundTrip);
+            return;
+        }
+
+        Boolean upperCase = evalValueOf(helper, absPos, "pos as_string <+ \"TRUE\\\\n\" get_line 1 as_boolean", BOOLEAN_KEY);
+        if (!Boolean.TRUE.equals(upperCase)) {
+            helper.fail("\"TRUE\" as_boolean: expected true, got " + upperCase);
+            return;
+        }
+        helper.succeed();
+    }
+
+    /**
+     * {@code if <cond> && value_of(<cond>) ... else ...} should pick the branch
+     * from the combined condition when run as a real script command.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_ifWithAnd_usesCombinedCondition(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+
+        int result = runScriptCommand(
+                helper,
+                absPos,
+                "if pos x == " + absPos.getX() + " && value_of(pos z == " + (absPos.getZ() + 1) + ") set_redstone 3 else set_redstone 12"
+        );
+        if (result != 1) {
+            helper.fail("zps_script if && returned " + result + " instead of 1");
+            return;
+        }
+
+        assertStoredRedstone(helper, absPos, 12, "zps_script if &&");
+        helper.succeed();
+    }
+
     // -------------------------------------------------------------------------
     // Bitwise operators (regression for & and |)
     // -------------------------------------------------------------------------

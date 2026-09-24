@@ -1,6 +1,8 @@
 package g_mungus.zps.commands.content;
 
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.blockentity.CreativePowerCellBlockEntity;
+import g_mungus.zps.blockentity.PowerCellBlockEntity;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.BookHolder;
 import g_mungus.zps.blockentity.light_pipe.RadioBlockEntity;
@@ -12,6 +14,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -57,13 +60,10 @@ public class ZPSScriptGetters {
                 null
         ));
 
-        Set<ResourceLocation> lecternBlocks = Set.of(
-                ZPSMod.resource("data_lectern"),
-                ResourceLocation.withDefaultNamespace("lectern")
-        );
+        Set<String> lecternBlocks = Set.of("zps:data_lectern", "minecraft:lectern");
 
         event.register(ScriptGetter.withBlocks(
-                "get_page",
+                "page_number",
                 Integer.class,
                 ResourceLocation.parse("zps:int"),
                 scriptContext -> {
@@ -77,7 +77,7 @@ public class ZPSScriptGetters {
         ));
 
         event.register(ScriptGetter.withBlocks(
-                "read_page",
+                "page_contents",
                 String.class,
                 ResourceLocation.parse("zps:string"),
                 scriptContext -> {
@@ -108,7 +108,7 @@ public class ZPSScriptGetters {
                     }
                     return ItemStack.EMPTY;
                 },
-                Set.of(ZPSMod.resource("robotic_arm"))
+                Set.of("zps:robotic_arm")
         ));
 
         event.register(ScriptGetter.withBlocks(
@@ -122,7 +122,7 @@ public class ZPSScriptGetters {
                     }
                     return 0;
                 },
-                Set.of(ZPSMod.resource("robotic_arm"))
+                Set.of("zps:robotic_arm")
         ));
 
         event.register(ScriptGetter.withBlocks(
@@ -136,7 +136,32 @@ public class ZPSScriptGetters {
                     }
                     return 0;
                 },
-                Set.of(ZPSMod.resource("radio_transmitter"), ZPSMod.resource("radio_receiver"))
+                Set.of("zps:radio_transmitter", "zps:radio_receiver")
         ));
+
+        // A power cell structure pools its energy, so any of its cells reads the whole battery.
+        event.register(ScriptGetter.withBlocks(
+                "stored_energy",
+                Integer.class,
+                ResourceLocation.parse("zps:int"),
+                scriptContext -> storedEnergy(scriptContext.level(), scriptContext.pos()),
+                Set.of("zps:power_cell", "zps:creative_power_cell")
+        ));
+    }
+
+    /**
+     * FE held by the power cell structure this block belongs to, read from any of its cells. A
+     * creative cell reads as {@link Integer#MAX_VALUE}, the same figure its energy capability
+     * reports, so a comparison against it behaves as "always full". Zero where there is no cell.
+     */
+    public static int storedEnergy(ServerLevel level, BlockPos pos) {
+        BlockEntity be = level.getBlockEntity(pos);
+        if (be instanceof PowerCellBlockEntity cell) {
+            return cell.getMenuEnergyStored();
+        }
+        if (be instanceof CreativePowerCellBlockEntity) {
+            return Integer.MAX_VALUE;
+        }
+        return 0;
     }
 }

@@ -106,7 +106,38 @@ set_frequency value_of(frequency + 1)
 
 ---
 
+## Power Cell
+
+The following getter requires the target block to be a `Power Cell` or `Creative Power Cell`.
+
+| Getter          | Output | Description                                                                 |
+|-----------------|--------|-----------------------------------------------------------------------------|
+| `stored_energy` | Int    | The FE stored in the power cell structure. Every cell of a multiblock reads the same pooled total. A `Creative Power Cell` reads as the largest Int. |
+
+Examples:
+
+```
+if stored_energy < 100000 set_redstone 15 else set_redstone 0
+```
+
+---
+
+## Gas Gauge
+
+The following getter requires the target block to be a `Gas Gauge`.
+
+| Getter        | Output | Description                                                                 |
+|---------------|--------|-----------------------------------------------------------------------------|
+| `gauge_value` | Double | The reading the gauge's dial is set to show: pressure in Pascals or temperature in Kelvin. The value is not scaled or clamped to the dial's range. Changing the gauge's mode changes what this reads. |
+
+Examples:
+
+```
+if gauge_value > 8000000 set_redstone 15 else set_redstone 0
+```
+
+---
+
 ## Additional Getters
 
-- [Valkyrien Skies](valkyrien_skies.md) — `ship`
-- [Genesis](genesis.md) — `celestial`
+- [Sable](sable.md) — `sublevel`

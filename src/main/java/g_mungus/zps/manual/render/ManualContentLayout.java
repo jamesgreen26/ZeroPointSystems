@@ -1,5 +1,6 @@
 package g_mungus.zps.manual.render;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import g_mungus.zps.manual.markdown.ManualDocument;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -9,14 +10,19 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public final class ManualContentLayout {
     public static final float LINE_SPACING_MULTIPLIER = 1.15F;
@@ -26,9 +32,10 @@ public final class ManualContentLayout {
     private static final int TABLE_PADDING = 4;
     private static final int TABLE_GAP = 2;
     private static final int CHART_BAR_HEIGHT = 12;
+    private static final int IMAGE_PADDING = 4;
+    private static final Map<String, ImageSize> TEXTURE_SIZE_CACHE = new HashMap<>();
     private static final int TEXT_BASE = 0x4C99C9;
     private static final int TEXT_HIGHLIGHT = 0x79F1A3;
-    private static final int TEXT_MUTED = 0xA6B8C5;
 
     private final List<Entry> entries;
     private final int totalHeight;
@@ -54,8 +61,7 @@ public final class ManualContentLayout {
             if (block instanceof ManualDocument.HeadingBlock heading) {
                 final MutableComponent text = buildInlineComponent(heading.inlines());
                 final Style style = switch (heading.level()) {
-                    case 1 -> Style.EMPTY.withBold(true).withColor(TEXT_HIGHLIGHT);
-                    case 2 -> Style.EMPTY.withBold(true).withColor(TEXT_MUTED);
+                    case 1, 2 -> Style.EMPTY.withBold(true).withColor(TEXT_HIGHLIGHT);
                     default -> Style.EMPTY.withBold(true).withColor(TEXT_BASE);
                 };
                 final int scale = switch (heading.level()) {
@@ -102,7 +108,7 @@ public final class ManualContentLayout {
                 continue;
             }
             if (block instanceof ManualDocument.ImageBlock imageBlock) {
-                entries.add(createImageEntry(imageBlock, y));
+                entries.add(createImageEntry(minecraft, imageBlock, y, width));
                 y += entries.get(entries.size() - 1).height(font) + PARAGRAPH_SPACING;
                 continue;
             }
@@ -121,14 +127,73 @@ public final class ManualContentLayout {
         return new ManualContentLayout(List.copyOf(entries), Math.max(0, y));
     }
 
-    private static ImageEntry createImageEntry(final ManualDocument.ImageBlock imageBlock, final int y) {
+    private static ImageEntry createImageEntry(final Minecraft minecraft, final ManualDocument.ImageBlock imageBlock, final int y, final int width) {
         if (imageBlock.kind() == ManualDocument.ImageKind.ITEM) {
             final String itemId = imageBlock.target().substring("item:".length());
             final Item item = ForgeRegistries.ITEMS.getValue(net.minecraft.resources.ResourceLocation.parse(itemId));
             final ItemStack stack = item == null ? ItemStack.EMPTY : new ItemStack(item);
             return new ImageEntry(y, imageBlock.kind(), imageBlock.target(), Component.literal(imageBlock.altText()), stack, 24, 24);
         }
+        if (imageBlock.kind() == ManualDocument.ImageKind.RESOURCE) {
+            final ImageSize size = measureTexture(minecraft, imageBlock.target(), width);
+            if (size != null) {
+                return new ImageEntry(y, imageBlock.kind(), imageBlock.target(), Component.literal(imageBlock.altText()), ItemStack.EMPTY, size.width(), size.height());
+            }
+        }
         return new ImageEntry(y, imageBlock.kind(), imageBlock.target(), Component.literal(imageBlock.altText()), ItemStack.EMPTY, 112, 64);
+    }
+
+    /**
+     * Scale the image to the available width, maintaining its aspect ratio.
+     * <br>
+     * Returns null if the texture can't be read (aka we should use a placeholder instead)
+     */
+    private static ImageSize measureTexture(final Minecraft minecraft, final String target, final int width) {
+        final ImageSize source = sourceSize(minecraft, target);
+        if (source == null) {
+            return null;
+        }
+        final int available = Math.max(1, width - IMAGE_PADDING * 2);
+        final int drawWidth = Math.min(source.width(), available);
+        final int drawHeight = Math.max(1, Math.round(drawWidth * (float) source.height() / (float) source.width()));
+        return new ImageSize(drawWidth + IMAGE_PADDING * 2, drawHeight + IMAGE_PADDING * 2);
+    }
+
+    private static ImageSize sourceSize(final Minecraft minecraft, final String target) {
+        if (TEXTURE_SIZE_CACHE.containsKey(target)) {
+            return TEXTURE_SIZE_CACHE.get(target);
+        }
+        final ImageSize size = readSourceSize(minecraft, target);
+        TEXTURE_SIZE_CACHE.put(target, size);
+        return size;
+    }
+
+    private static ImageSize readSourceSize(final Minecraft minecraft, final String target) {
+        try {
+            final ResourceLocation texture = ResourceLocation.parse(target);
+            final Resource resource = minecraft.getResourceManager().getResource(texture).orElse(null);
+            if (resource == null) {
+                return null;
+            }
+            try (InputStream stream = resource.open(); NativeImage image = NativeImage.read(stream)) {
+                final int sourceWidth = image.getWidth();
+                final int sourceHeight = image.getHeight();
+                if (sourceWidth <= 0 || sourceHeight <= 0) {
+                    return null;
+                }
+                return new ImageSize(sourceWidth, sourceHeight);
+            }
+        } catch (Exception exception) {
+            return null;
+        }
+    }
+
+    /** Clears cached texture dimensions so a resource reload re-measures. */
+    public static void clearTextureCache() {
+        TEXTURE_SIZE_CACHE.clear();
+    }
+
+    private record ImageSize(int width, int height) {
     }
 
     private static TableEntry createTableEntry(final Font font, final int width, final int y, final ManualDocument.TableBlock table) {
@@ -187,6 +252,9 @@ public final class ManualContentLayout {
                 }
                 if (styledInline.strikethrough()) {
                     style = style.withStrikethrough(true);
+                }
+                if (styledInline.underline()) {
+                    style = style.withUnderlined(true);
                 }
                 if (styledInline.linkTarget() != null) {
                     final String target = styledInline.linkTarget();

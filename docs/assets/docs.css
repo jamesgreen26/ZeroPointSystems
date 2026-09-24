@@ -82,6 +82,20 @@ body {
   background: rgba(142, 197, 255, 0.1);
 }
 
+.docs-nav-group {
+  margin: 1rem 0 0.25rem;
+  padding: 0 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.docs-nav-group:first-child {
+  margin-top: 0;
+}
+
 .docs-main {
   min-width: 0;
 }
@@ -115,6 +129,15 @@ body {
   padding: 0.1rem 0.3rem;
   border-radius: 0.35rem;
   background: var(--panel-2);
+}
+
+.doc-content img {
+  display: block;
+  max-width: min(100%, 36rem);
+  height: auto;
+  margin: 1.25rem auto;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
 }
 
 .doc-content pre {

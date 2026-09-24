@@ -1,0 +1,9 @@
+---
+layout: docs
+title: Collisions
+doc_key: collisions
+---
+{% capture doc %}{% include_relative collisions.md %}{% endcapture %}
+{%- capture image_base -%}{{ '/assets/images/' | relative_url }}{%- endcapture -%}
+{%- assign doc = doc | replace: 'zps:textures/gui/manual/', image_base -%}
+{{ doc | markdownify }}

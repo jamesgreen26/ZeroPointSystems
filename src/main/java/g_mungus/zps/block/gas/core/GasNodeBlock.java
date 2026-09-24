@@ -132,6 +132,18 @@ public abstract class GasNodeBlock extends Block implements INodeBlock {
         }
     }
 
+    /**
+     * Picks up neighbours that are not ZPS gas blocks. Ours renegotiate us themselves when they are
+     * placed or removed; another mod's Kelvin block does not know to, so without this a block would
+     * keep the shape it had before the foreign block arrived or left.
+     */
+    @Override
+    public void neighborChanged(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
+                                @NotNull Block block, @NotNull BlockPos fromPos, boolean movedByPiston) {
+        super.neighborChanged(state, level, pos, block, fromPos, movedByPiston);
+        GasEdgeNegotiator.updateConnections(level, pos);
+    }
+
     /** Runs the deferred negotiation pass scheduled after a block entity loads. */
     @Override
     protected void tick(@NotNull BlockState state, @NotNull ServerLevel level, @NotNull BlockPos pos,

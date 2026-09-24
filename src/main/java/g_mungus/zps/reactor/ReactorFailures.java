@@ -1,6 +1,7 @@
 package g_mungus.zps.reactor;
 
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.compat.Compat;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
@@ -90,7 +91,8 @@ public final class ReactorFailures {
             return;
         }
         double radius = ReactorTuning.ADVANCEMENT_RADIUS;
-        Vec3 centre = Vec3.atCenterOf(reactor.host());
+        // The host sits in grid block space when the reactor is on a ship or sublevel; players never do.
+        Vec3 centre = Compat.toWorldPos(level, reactor.host(), Vec3.atCenterOf(reactor.host()));
         for (ServerPlayer player : level.players()) {
             if (player.position().closerThan(centre, radius)) {
                 player.getAdvancements().award(advancement, criterion);

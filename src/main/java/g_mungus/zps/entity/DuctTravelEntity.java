@@ -468,6 +468,21 @@ public class DuctTravelEntity extends Entity {
         }
     }
 
+    /**
+     * The same spot as {@link #positionRider}, in the vanilla form. Valkyrien Skies ignores
+     * {@code positionRider} for anyone mounted on a ship and puts them at the vehicle plus this
+     * plus their own riding offset instead ({@code VSGameUtils.getShipMountedToData}); left at the
+     * default {@code 0.75 * height}, a player would sit 0.275 above where the head belongs.
+     */
+    @Override
+    public double getPassengersRidingOffset() {
+        Entity passenger = getFirstPassenger();
+        if (passenger == null) {
+            return super.getPassengersRidingOffset();
+        }
+        return -passenger.getEyeHeight() - passenger.getMyRidingOffset();
+    }
+
     /** The rider steers nothing — cycling is the only control, and it goes over the network. */
     @Override
     public @Nullable LivingEntity getControllingPassenger() {

@@ -25,7 +25,7 @@ to the heat exchangers on your reactor, you can feed it FE to heat it up to the 
 If you attach Step-Up transformers to the heat exchangers, you can siphon off heat from the reactor to generate FE.
 
 Luckily, the transforms also include smart monitoring technology. That is to say they will only feed FE to the reactor
-if it is below 50,000K and they will only take FE from the reactor if it is _above_ 50,000K. This means you can have 
+if it is below 55,000K and they will only take FE from the reactor if it is above 55,000K. This means you can have 
 both an input and an output of FE attached to your reactor at all times, and you don't have to worry about somehow 
 enabling/disabling the transformers.
 
@@ -53,6 +53,7 @@ no longer be able to produce more heat. To deal with this, you need to handle pu
 
 To get a reactor started, you should leave the Aether trapped inside (aka disable the output port with a full redstone signal).
 Then you can let Flux flow in, and start heating it up with FE from your network. 
+It's best to restrict the flow of Flux in at first, since its cheaper to heat up less gas and helps avoid bursting once the Flux heats up.
 
 Once it reaches 50,000K, the reaction can begin. It will heat up very quickly, but hopefully the Aether will build up fast
 enough to inhibit the reaction from going far enough to melt down. 

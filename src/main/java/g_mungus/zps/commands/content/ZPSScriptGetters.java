@@ -5,6 +5,10 @@ import g_mungus.zps.blockentity.CreativePowerCellBlockEntity;
 import g_mungus.zps.blockentity.PowerCellBlockEntity;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
 import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity;
+import g_mungus.zps.reactor.Reactor;
+import g_mungus.zps.reactor.ReactorManager;
+import g_mungus.zps.reactor.ReactorWallBlock;
+import org.jetbrains.annotations.Nullable;
 import g_mungus.zps.blockentity.light_pipe.BookHolder;
 import g_mungus.zps.blockentity.light_pipe.RadioBlockEntity;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
@@ -164,6 +168,34 @@ public class ZPSScriptGetters {
                 },
                 Set.of("zps:gas_gauge")
         ));
+
+        // A reactor read from any block of its shell. Tied to the wall tag rather than a list of
+        // blocks, so wall a datapack adds is offered these too.
+        Set<String> reactorWalls = Set.of("#" + ReactorWallBlock.REACTOR_WALL.location());
+
+        event.register(ScriptGetter.withBlocks(
+                "reactor_pressure",
+                Double.class,
+                ResourceLocation.parse("zps:double"),
+                scriptContext -> reactorPressure(scriptContext.level(), scriptContext.pos()),
+                reactorWalls
+        ));
+
+        event.register(ScriptGetter.withBlocks(
+                "reactor_temperature",
+                Double.class,
+                ResourceLocation.parse("zps:double"),
+                scriptContext -> reactorTemperature(scriptContext.level(), scriptContext.pos()),
+                reactorWalls
+        ));
+
+        event.register(ScriptGetter.withBlocks(
+                "reactor_output",
+                Integer.class,
+                ResourceLocation.parse("zps:int"),
+                scriptContext -> reactorOutput(scriptContext.level(), scriptContext.pos()),
+                reactorWalls
+        ));
     }
 
     /**
@@ -180,5 +212,32 @@ public class ZPSScriptGetters {
             return Integer.MAX_VALUE;
         }
         return 0;
+    }
+
+    /** Chamber pressure in Pascals, or zero where there is no reactor or its chamber is not simulated. */
+    public static double reactorPressure(ServerLevel level, BlockPos wall) {
+        ReactorManager.ChamberReading reading = chamberReading(level, wall);
+        return reading == null ? 0.0 : reading.pressurePa();
+    }
+
+    /** Chamber temperature in Kelvin, or zero where there is no reactor or its chamber is not simulated. */
+    public static double reactorTemperature(ServerLevel level, BlockPos wall) {
+        ReactorManager.ChamberReading reading = chamberReading(level, wall);
+        return reading == null ? 0.0 : reading.temperatureK();
+    }
+
+    /**
+     * FE per tick the exchangers are drawing out of the chamber, averaged over the same short
+     * window the reactor's displays use so it does not flicker. Zero where there is no reactor.
+     */
+    public static int reactorOutput(ServerLevel level, BlockPos wall) {
+        Reactor reactor = ReactorManager.get(level).reactorForWall(level, wall);
+        return reactor == null ? 0 : reactor.feOutAverage(level.getGameTime());
+    }
+
+    private static ReactorManager.@Nullable ChamberReading chamberReading(ServerLevel level, BlockPos wall) {
+        ReactorManager manager = ReactorManager.get(level);
+        Reactor reactor = manager.reactorForWall(level, wall);
+        return reactor == null ? null : manager.reading(level, reactor);
     }
 }

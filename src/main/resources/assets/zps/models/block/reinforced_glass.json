@@ -1,0 +1,9 @@
+{
+  "loader": "zps:model",
+  "type": "connecting",
+  "parent": "minecraft:block/cube_all",
+  "render_type": "minecraft:translucent",
+  "textures": {
+    "all": "zps:block/reinforced_glass"
+  }
+}

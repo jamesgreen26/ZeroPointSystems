@@ -23,6 +23,7 @@ public class ZPSClientCommands {
             dispatcher.register(ShowScreenCommand.COMMAND);
             dispatcher.register(TtsDebugCommand.COMMAND);
             dispatcher.register(ExportBookCharWidthsCommand.COMMAND);
+            dispatcher.register(ReactorGlowPreviewCommand.COMMAND);
         }
     }
 }

@@ -61,5 +61,20 @@ public class ZPSPonders {
         HELPER.forComponents(
                 ROBOTIC_ARM
         ).addStoryBoard("robotic_arm", ZPSPonderScenes::roboticArmTutorial);
+
+        HELPER.forComponents(
+                GAS_DUCT,
+                GAS_GAUGE
+        ).addStoryBoard("gas_duct", ZPSPonderScenes::gasDuctTutorial);
+
+        HELPER.forComponents(
+                REINFORCED_PLATING,
+                REINFORCED_GLASS,
+                REACTOR_PORT,
+                HEAT_EXCHANGER
+        ).addStoryBoard("reactor", ZPSPonderScenes::reactorIntroTutorial, ZPSPonderTags.REACTOR_WALL_BLOCKS)
+                .addStoryBoard("reactor", ZPSPonderScenes::reactorMonitoringTutorial, ZPSPonderTags.REACTOR_WALL_BLOCKS)
+                .addStoryBoard("reactor", ZPSPonderScenes::reactorOverheatingTutorial, ZPSPonderTags.REACTOR_WALL_BLOCKS)
+                .addStoryBoard("reactor", ZPSPonderScenes::reactorBurstingTutorial, ZPSPonderTags.REACTOR_WALL_BLOCKS);
     }
 }

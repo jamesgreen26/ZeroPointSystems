@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "zps:reinforced_plating",
+    "zps:reinforced_glass",
+    "zps:reactor_port",
+    "zps:heat_exchanger"
+  ]
+}

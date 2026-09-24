@@ -17,6 +17,8 @@ public class ZPSPonderTags {
 
     public static final ResourceLocation HAS_SCRIPT_CAPS = ZPSMod.resource("has_script_caps");
 
+    public static final ResourceLocation REACTOR_WALL_BLOCKS = ZPSMod.resource("reactor_wall_blocks");
+
     @SuppressWarnings("ConstantConditions")
     public static void register(@NotNull PonderTagRegistrationHelper<ResourceLocation> helper) {
         helper.registerTag(CAN_INSULATE)
@@ -85,6 +87,19 @@ public class ZPSPonderTags {
                 .add(SCRIPT_TERMINAL.getId());
                 ///  other items are added via a mixin
 
+        helper.registerTag(REACTOR_WALL_BLOCKS)
+                .item(REINFORCED_PLATING.get())
+                .title("Reactor Wall Blocks")
+                .description("Blocks which can form part of the sealed chamber of a Fusion Reactor.")
+                .addToIndex()
+                .register();
+
+        // The same blocks as the zps:reactor_wall block tag, which is what decides it in the world.
+        helper.addToTag(REACTOR_WALL_BLOCKS)
+                .add(REINFORCED_PLATING.getId())
+                .add(REINFORCED_GLASS.getId())
+                .add(REACTOR_PORT.getId())
+                .add(HEAT_EXCHANGER.getId());
 
     }
 }

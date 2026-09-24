@@ -133,6 +133,30 @@ public class ZPSGamePackets {
                 .consumerMainThread(CreativeGasGeneratorSettingsC2SPacket::handle)
                 .add();
 
+        INSTANCE.messageBuilder(ReactorShapeS2CPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ReactorShapeS2CPacket::encode)
+                .decoder(ReactorShapeS2CPacket::decode)
+                .consumerMainThread(ReactorShapeS2CPacket::handle)
+                .add();
+
+        INSTANCE.messageBuilder(ReactorStateS2CPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ReactorStateS2CPacket::encode)
+                .decoder(ReactorStateS2CPacket::decode)
+                .consumerMainThread(ReactorStateS2CPacket::handle)
+                .add();
+
+        INSTANCE.messageBuilder(ReactorRemovedS2CPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ReactorRemovedS2CPacket::encode)
+                .decoder(ReactorRemovedS2CPacket::decode)
+                .consumerMainThread(ReactorRemovedS2CPacket::handle)
+                .add();
+
+        INSTANCE.messageBuilder(ReactorPortSettingsC2SPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(ReactorPortSettingsC2SPacket::encode)
+                .decoder(ReactorPortSettingsC2SPacket::decode)
+                .consumerMainThread(ReactorPortSettingsC2SPacket::handle)
+                .add();
+
         INSTANCE.messageBuilder(SerialBusSettingsC2SPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(SerialBusSettingsC2SPacket::encode)
                 .decoder(SerialBusSettingsC2SPacket::decode)

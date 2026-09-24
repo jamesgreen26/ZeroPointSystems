@@ -1,0 +1,867 @@
+package g_mungus.zps.gametest;
+
+import g_mungus.zps.ZPSMod;
+import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.block.gas.core.GasEdgeNegotiator;
+import g_mungus.zps.block.reactor.HeatExchangerBlock;
+import g_mungus.zps.block.reactor.ReactorPortBlock;
+import g_mungus.zps.block.reactor.ReactorPortMode;
+import g_mungus.zps.blockentity.PowerCellBlockEntity;
+import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
+import g_mungus.zps.blockentity.reactor.HeatExchangerBlockEntity;
+import g_mungus.zps.blockentity.reactor.ReactorPortBlockEntity;
+import g_mungus.zps.commands.api.ScriptGetter;
+import g_mungus.zps.commands.api_impl.ZPSCommands;
+import g_mungus.zps.commands.content.ZPSScriptGetters;
+import g_mungus.zps.config.ZPSConfig;
+import g_mungus.zps.reactor.ReactorTuning;
+import g_mungus.zps.gas.GasFilter;
+import g_mungus.zps.gas.ModGases;
+import g_mungus.zps.networking.VoxelShapeStreamCodec;
+import g_mungus.zps.reactor.CavityShapes;
+import io.netty.buffer.Unpooled;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.phys.shapes.VoxelShape;
+import g_mungus.zps.reactor.Reactor;
+import g_mungus.zps.reactor.ReactorChamberNode;
+import g_mungus.zps.reactor.ReactorFailures;
+import g_mungus.zps.reactor.ReactorManager;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.gametest.framework.GameTest;
+import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.animal.Pig;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LeverBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.AttachFace;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.energy.IEnergyStorage;
+import net.minecraftforge.gametest.GameTestHolder;
+import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import org.valkyrienskies.kelvin.KelvinMod;
+import org.valkyrienskies.kelvin.api.DuctNetwork;
+import org.valkyrienskies.kelvin.api.DuctNodePos;
+import org.valkyrienskies.kelvin.api.GasType;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * The fusion reactor as a whole: a sealed shell becomes a reactor with one chamber node, the
+ * functional wall blocks move gas and energy the way they should, and the failures take it apart.
+ *
+ * <p>Every test builds a 5x5x5 shell around a 3x3x3 cavity, corner {@link #MIN} to {@link #MAX}.
+ */
+@GameTestHolder(ZPSMod.MOD_ID)
+@PrefixGameTestTemplate(false)
+public class FusionReactorGameTests {
+
+    private static final String TEMPLATE = "gametest/flat_11x9x11";
+
+    private static final BlockPos MIN = new BlockPos(3, 1, 3);
+    private static final BlockPos MAX = new BlockPos(7, 5, 7);
+    /** Lowest interior cell: where the chamber node lives. */
+    private static final BlockPos HOST = MIN.offset(1, 1, 1);
+    /** Middle of the west wall, and the block just outside it. */
+    private static final BlockPos WEST_WALL = new BlockPos(3, 3, 5);
+    private static final BlockPos OUTSIDE_WEST = WEST_WALL.west();
+    /** Middle of the east wall, and the block just outside it. */
+    private static final BlockPos EAST_WALL = new BlockPos(7, 3, 5);
+    private static final BlockPos OUTSIDE_EAST = EAST_WALL.east();
+    /** Two spots on the north wall, and the blocks just outside them. */
+    private static final BlockPos NORTH_WALL_A = new BlockPos(5, 3, 3);
+    private static final BlockPos NORTH_WALL_B = new BlockPos(4, 3, 3);
+    private static final BlockPos OUTSIDE_NORTH_A = NORTH_WALL_A.north();
+    private static final BlockPos OUTSIDE_NORTH_B = NORTH_WALL_B.north();
+
+    private static final int SMALL_WALLS = 54;
+    private static final double EPSILON = 1e-9;
+
+    // --- helpers ------------------------------------------------------------------------------
+
+    private static DuctNetwork<?> kelvin() {
+        return KelvinMod.INSTANCE.forceGetKelvin();
+    }
+
+    private static DuctNodePos node(GameTestHelper helper, BlockPos relative) {
+        return GasEdgeNegotiator.nodePos(helper.getLevel(), helper.absolutePos(relative));
+    }
+
+    private static ReactorManager manager(GameTestHelper helper) {
+        return ReactorManager.get(helper.getLevel());
+    }
+
+    private static Reactor reactorAt(GameTestHelper helper, BlockPos relative) {
+        List<Reactor> reactors = manager(helper).reactorsAt(helper.absolutePos(relative));
+        if (reactors.size() != 1) {
+            helper.fail("Expected exactly one reactor at " + relative + ", found " + reactors.size());
+            throw new IllegalStateException();
+        }
+        return reactors.get(0);
+    }
+
+    private static double massOf(GameTestHelper helper, BlockPos relative, GasType gas) {
+        return kelvin().getGasMassAt(node(helper, relative)).getOrDefault(gas, 0.0);
+    }
+
+    private static double totalMass(GameTestHelper helper, BlockPos relative) {
+        double total = 0;
+        for (double mass : kelvin().getGasMassAt(node(helper, relative)).values()) {
+            total += mass;
+        }
+        return total;
+    }
+
+    /** Put the chamber at a temperature by writing its energy; gas already there stays. */
+    private static void setChamberTemperature(GameTestHelper helper, double temperature) {
+        DuctNodePos host = node(helper, HOST);
+        double current = kelvin().getTemperatureAt(host);
+        kelvin().modHeatEnergy(host, (temperature - current) * kelvin().getNodeHeatCapacity(host));
+    }
+
+    /** A whiff of ash in the chamber, so it counts as holding gas and keeps its heat. */
+    private static void seedChamber(GameTestHelper helper) {
+        kelvin().addGasAtTemperature(node(helper, HOST), ModGases.AETHER, 0.01, 300.0);
+    }
+
+    private static BlockState facing(BlockState state, Direction direction) {
+        return state.setValue(ReactorPortBlock.FACING, direction);
+    }
+
+    private static BlockState input() {
+        return ModBlocks.REACTOR_PORT.get().defaultBlockState().setValue(ReactorPortBlock.MODE, ReactorPortMode.INPUT);
+    }
+
+    private static BlockState output() {
+        return ModBlocks.REACTOR_PORT.get().defaultBlockState().setValue(ReactorPortBlock.MODE, ReactorPortMode.OUTPUT);
+    }
+
+    /**
+     * Open a port: a lit lever on the outer face of the wall block above it. The lever strongly
+     * powers that plating, and the port reads the plating's signal. The port's own outer face
+     * stays free for whatever duct the test hangs on it. A lever set down already lit tells only
+     * its own neighbours, unlike one that is pulled, so the port is told to read again.
+     */
+    private static void openPort(GameTestHelper helper, BlockPos wall, Direction outward) {
+        helper.setBlock(wall.above().relative(outward), Blocks.LEVER.defaultBlockState()
+                .setValue(LeverBlock.FACE, AttachFace.WALL)
+                .setValue(LeverBlock.FACING, outward)
+                .setValue(LeverBlock.POWERED, true));
+        if (!(helper.getBlockEntity(wall) instanceof ReactorPortBlockEntity port)) {
+            helper.fail("No reactor port at " + wall);
+            throw new IllegalStateException();
+        }
+        port.refreshRedstoneLevel();
+    }
+
+    /** Keep the fuel in: the port passes everything but Flux, the way an exhaust should. */
+    private static void holdBackFlux(GameTestHelper helper, BlockPos relative) {
+        if (!(helper.getBlockEntity(relative) instanceof ReactorPortBlockEntity port)) {
+            helper.fail("No reactor port at " + relative);
+            throw new IllegalStateException();
+        }
+        port.setSettings(port.getMode(), new GasFilter(Set.of(ModGases.FLUX.getResourceLocation())));
+    }
+
+    /**
+     * Build the shell, plating everywhere except where {@code overrides} says otherwise. The
+     * overrides go in first so the reactor forms once, complete.
+     */
+    private static void buildShell(GameTestHelper helper, Map<BlockPos, BlockState> overrides) {
+        BlockState plating = ModBlocks.REINFORCED_PLATING.get().defaultBlockState();
+        for (Map.Entry<BlockPos, BlockState> override : overrides.entrySet()) {
+            helper.setBlock(override.getKey(), override.getValue());
+        }
+        for (BlockPos pos : BlockPos.betweenClosed(MIN, MAX)) {
+            boolean edge = pos.getX() == MIN.getX() || pos.getX() == MAX.getX()
+                    || pos.getY() == MIN.getY() || pos.getY() == MAX.getY()
+                    || pos.getZ() == MIN.getZ() || pos.getZ() == MAX.getZ();
+            if (edge && !overrides.containsKey(pos)) {
+                helper.setBlock(pos, plating);
+            }
+        }
+    }
+
+    private static void buildShell(GameTestHelper helper) {
+        buildShell(helper, Map.of());
+    }
+
+    private static CreativeGasGeneratorBlockEntity placeGenerator(GameTestHelper helper, BlockPos relative,
+                                                                  double rate, double temperature) {
+        helper.setBlock(relative, ModBlocks.CREATIVE_GAS_GENERATOR.get().defaultBlockState());
+        BlockEntity blockEntity = helper.getBlockEntity(relative);
+        if (!(blockEntity instanceof CreativeGasGeneratorBlockEntity generator)) {
+            helper.fail("The gas source has no block entity");
+            throw new IllegalStateException();
+        }
+        generator.setSettings(ModGases.FLUX.getResourceLocation(), rate, temperature);
+        return generator;
+    }
+
+    // --- detection ----------------------------------------------------------------------------
+
+    @GameTest(template = TEMPLATE)
+    public static void sealingRegistersReactor(GameTestHelper helper) {
+        buildShell(helper);
+
+        Reactor reactor = reactorAt(helper, WEST_WALL);
+        helper.assertTrue(reactor.host().equals(helper.absolutePos(HOST)),
+                "Host should be the lowest interior cell, was " + reactor.host());
+        helper.assertTrue(reactor.volume() == 27, "Volume should be 27, was " + reactor.volume());
+        helper.assertTrue(reactor.wallCount() == SMALL_WALLS, "Wall count should be 54, was " + reactor.wallCount());
+        helper.assertTrue(kelvin().getNodeAt(node(helper, HOST)) instanceof ReactorChamberNode,
+                "The chamber node should exist at the host");
+        helper.assertTrue(manager(helper).reactorForInterior(helper.absolutePos(HOST.above())) == reactor,
+                "Interior cells should map to the reactor");
+        helper.assertTrue(manager(helper).reactorsAt(helper.absolutePos(MIN)).isEmpty(),
+                "A corner block has no face on the cavity and is not part of the reactor");
+        helper.succeed();
+    }
+
+    // --- script getters ---------------------------------------------------------------------
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void gettersReadTheChamberFromItsWall(GameTestHelper helper) {
+        buildShell(helper);
+        seedChamber(helper);
+        setChamberTemperature(helper, 5_000.0);
+
+        // Kelvin works a node's pressure out on its own tick, so give it a few before reading.
+        helper.runAfterDelay(10, () -> {
+            ServerLevel level = helper.getLevel();
+            BlockPos wall = helper.absolutePos(WEST_WALL);
+            ReactorManager.ChamberReading reading = manager(helper).reading(level, reactorAt(helper, WEST_WALL));
+            helper.assertTrue(reading != null, "A sealed shell should have a chamber to read");
+
+            double pressure = ZPSScriptGetters.reactorPressure(level, wall);
+            double temperature = ZPSScriptGetters.reactorTemperature(level, wall);
+            helper.assertTrue(pressure > 0 && pressure == reading.pressurePa(),
+                    "reactor_pressure should be the chamber's " + reading.pressurePa() + " Pa, was " + pressure);
+            helper.assertTrue(Math.abs(temperature - 5_000.0) < 1.0,
+                    "reactor_temperature should be the chamber's 5000 K, was " + temperature);
+            helper.assertTrue(ZPSScriptGetters.reactorOutput(level, wall) == 0,
+                    "reactor_output should be zero with no exchanger drawing, was "
+                            + ZPSScriptGetters.reactorOutput(level, wall));
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void gettersReadZeroAwayFromAReactor(GameTestHelper helper) {
+        buildShell(helper);
+        seedChamber(helper);
+
+        ServerLevel level = helper.getLevel();
+        // A corner has no face on the cavity, so it is wall by tag but part of no reactor.
+        BlockPos corner = helper.absolutePos(MIN);
+        helper.assertTrue(ZPSScriptGetters.reactorPressure(level, corner) == 0.0
+                        && ZPSScriptGetters.reactorTemperature(level, corner) == 0.0
+                        && ZPSScriptGetters.reactorOutput(level, corner) == 0,
+                "Getters pointed at a block on no reactor should all read zero");
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void reactorGettersAreOfferedForTaggedWall(GameTestHelper helper) {
+        for (String name : List.of("reactor_pressure", "reactor_temperature", "reactor_output")) {
+            ScriptGetter<?> getter = ZPSCommands.getGetter(name);
+            helper.assertTrue(getter != null, "No getter is registered as " + name);
+            Set<ResourceLocation> blocks = getter.resolveAssociatedBlocks();
+            helper.assertTrue(blocks != null
+                            && blocks.contains(ZPSMod.resource("reinforced_plating"))
+                            && blocks.contains(ZPSMod.resource("reactor_port")),
+                    name + " should resolve the reactor wall tag to its blocks, got " + blocks);
+            helper.assertTrue(!getter.appliesToAny(Set.of(ZPSMod.resource("gas_gauge"))),
+                    name + " should not be offered for a block outside the tag");
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void breakingAWallDissolves(GameTestHelper helper) {
+        buildShell(helper);
+        reactorAt(helper, WEST_WALL);
+
+        helper.setBlock(WEST_WALL, Blocks.AIR.defaultBlockState());
+
+        helper.assertTrue(manager(helper).reactorsAt(helper.absolutePos(EAST_WALL)).isEmpty(),
+                "The reactor should be gone once the shell leaks");
+        helper.assertTrue(kelvin().getNodeAt(node(helper, HOST)) == null,
+                "The chamber node should be gone with it");
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void resealingRegistersAgain(GameTestHelper helper) {
+        buildShell(helper);
+        helper.setBlock(WEST_WALL, Blocks.AIR.defaultBlockState());
+        helper.setBlock(WEST_WALL, ModBlocks.REINFORCED_PLATING.get().defaultBlockState());
+
+        Reactor reactor = reactorAt(helper, WEST_WALL);
+        helper.assertTrue(reactor.wallCount() == SMALL_WALLS, "The rebuilt reactor should be whole");
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void extraOuterLayerIsIgnored(GameTestHelper helper) {
+        buildShell(helper);
+        Reactor before = reactorAt(helper, WEST_WALL);
+
+        // A slab of plating against the whole west face, one block out.
+        for (int y = MIN.getY(); y <= MAX.getY(); y++) {
+            for (int z = MIN.getZ(); z <= MAX.getZ(); z++) {
+                helper.setBlock(new BlockPos(MIN.getX() - 1, y, z), ModBlocks.REINFORCED_PLATING.get().defaultBlockState());
+            }
+        }
+
+        Reactor after = reactorAt(helper, WEST_WALL);
+        helper.assertTrue(after == before, "The reactor should be untouched by blocks outside its wall");
+        helper.assertTrue(after.wallCount() == SMALL_WALLS, "Outer blocks do not count as wall");
+        helper.assertTrue(manager(helper).reactorsAt(helper.absolutePos(OUTSIDE_WEST)).isEmpty(),
+                "An outer block is not part of the reactor");
+        helper.succeed();
+    }
+
+    // --- fuel injector ------------------------------------------------------------------------
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void injectorLetsFuelIn(GameTestHelper helper) {
+        buildShell(helper, Map.of(WEST_WALL,
+                facing(input(), Direction.WEST)));
+        openPort(helper, WEST_WALL, Direction.WEST);
+        placeGenerator(helper, OUTSIDE_WEST, 0.001, 300.0);
+
+        helper.succeedWhen(() -> helper.assertTrue(massOf(helper, HOST, ModGases.FLUX) > 0,
+                "Flux should reach the chamber through the injector"));
+    }
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void injectorNeverLetsGasOut(GameTestHelper helper) {
+        buildShell(helper, Map.of(WEST_WALL,
+                facing(input(), Direction.WEST)));
+        // Wide open, so it is the check valve alone that holds the chamber in.
+        openPort(helper, WEST_WALL, Direction.WEST);
+        // A generator at rest, so the injector's outer face is joined to something.
+        placeGenerator(helper, OUTSIDE_WEST, 0.0, 300.0);
+        kelvin().addGasAtTemperature(node(helper, HOST), ModGases.AETHER, 1.0, 300.0);
+
+        helper.runAfterDelay(60, () -> {
+            helper.assertTrue(totalMass(helper, WEST_WALL) < EPSILON,
+                    "Nothing should flow back out through the injector, found " + totalMass(helper, WEST_WALL));
+            helper.assertTrue(totalMass(helper, OUTSIDE_WEST) < EPSILON,
+                    "Nothing should reach the supply line");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void misorientedInjectorIsInert(GameTestHelper helper) {
+        // Facing along the wall rather than out of it: still seals, but serves no reactor.
+        buildShell(helper, Map.of(WEST_WALL,
+                facing(input(), Direction.NORTH)));
+
+        Reactor reactor = reactorAt(helper, WEST_WALL);
+        helper.assertTrue(reactor.wallCount() == SMALL_WALLS, "The shell should still seal");
+        helper.assertTrue(manager(helper).reactorServedBy(helper.absolutePos(WEST_WALL), Direction.NORTH) == null,
+                "A block facing along the wall serves nothing");
+        helper.succeed();
+    }
+
+    // --- exhaust port -------------------------------------------------------------------------
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void exhaustDrawsAetherNotFluxAndCools(GameTestHelper helper) {
+        buildShell(helper, Map.of(EAST_WALL,
+                facing(output(), Direction.EAST)));
+        openPort(helper, EAST_WALL, Direction.EAST);
+        holdBackFlux(helper, EAST_WALL);
+        DuctNodePos host = node(helper, HOST);
+        // Equal parts fuel and ash: the reaction is inhibited, so the flux stays put.
+        kelvin().addGasAtTemperature(host, ModGases.FLUX, 0.05, 300.0);
+        kelvin().addGasAtTemperature(host, ModGases.AETHER, 0.05, 300.0);
+        setChamberTemperature(helper, 60_000.0);
+
+        // Only a few ticks: once enough ash is drawn off the reaction resumes and eats the flux,
+        // which is the point of the exhaust but not what this test is checking.
+        helper.runAfterDelay(4, () -> {
+            double drawn = massOf(helper, EAST_WALL, ModGases.AETHER);
+            helper.assertTrue(drawn > 0, "Aether should have reached the exhaust stub");
+            helper.assertTrue(massOf(helper, EAST_WALL, ModGases.FLUX) < EPSILON,
+                    "Flux must never leave through the exhaust");
+            helper.assertTrue(Math.abs(massOf(helper, HOST, ModGases.FLUX) - 0.05) < 1e-6,
+                    "The chamber's flux should be untouched");
+            helper.assertTrue(massOf(helper, HOST, ModGases.AETHER) < 0.05,
+                    "The chamber's aether should be going down");
+            double temperature = kelvin().getTemperatureAt(node(helper, EAST_WALL));
+            helper.assertTrue(temperature <= ReactorTuning.EXHAUST_OUTLET_TEMPERATURE_K + 1.0,
+                    "The stub should be cooled to the outlet temperature, was " + temperature);
+            helper.succeed();
+        });
+    }
+
+    // --- heat exchanger -----------------------------------------------------------------------
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 400)
+    public static void exchangerHeatsFromCreativeCell(GameTestHelper helper) {
+        buildShell(helper, Map.of(WEST_WALL,
+                facing(ModBlocks.HEAT_EXCHANGER.get().defaultBlockState(), Direction.WEST)));
+        helper.setBlock(OUTSIDE_WEST, ModBlocks.CREATIVE_POWER_CELL.get().defaultBlockState());
+        seedChamber(helper);
+
+        helper.runAfterDelay(20, () -> helper.assertTrue(
+                kelvin().getTemperatureAt(node(helper, HOST)) > 1000.0, "The chamber should be heating"));
+        helper.runAfterDelay(300, () -> {
+            double temperature = kelvin().getTemperatureAt(node(helper, HOST));
+            double cutoff = ZPSConfig.exchangerTemperatureK();
+            helper.assertTrue(temperature >= cutoff - 1000.0 && temperature <= cutoff + 3000.0,
+                    "Heating should stop at the cutoff, was " + temperature);
+            helper.assertTrue(reactorAt(helper, WEST_WALL).hasIgnited(), "The reactor should have ignited");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void exchangerGeneratesIntoPowerCell(GameTestHelper helper) {
+        buildShell(helper, Map.of(WEST_WALL,
+                facing(ModBlocks.HEAT_EXCHANGER.get().defaultBlockState(), Direction.WEST)));
+        helper.setBlock(OUTSIDE_WEST, ModBlocks.POWER_CELL.get().defaultBlockState());
+        seedChamber(helper);
+        setChamberTemperature(helper, 90_000.0);
+
+        int ticks = 20;
+        helper.runAfterDelay(ticks, () -> {
+            BlockEntity cell = helper.getBlockEntity(OUTSIDE_WEST);
+            IEnergyStorage energy = cell == null ? null : cell.getCapability(ForgeCapabilities.ENERGY, Direction.EAST).orElse(null);
+            helper.assertTrue(energy != null, "The power cell should expose energy");
+            int stored = energy.getEnergyStored();
+            int perTick = ReactorTuning.EXCHANGER_FE_PER_TICK;
+            helper.assertTrue(stored >= perTick * (ticks - 3) && stored <= perTick * ticks,
+                    "Expected about " + perTick + " FE/t into the cell, got " + stored + " over " + ticks + " ticks");
+            helper.assertTrue(kelvin().getTemperatureAt(node(helper, HOST)) < 90_000.0,
+                    "Generating should cool the chamber");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void exchangerStopsAtTheFloor(GameTestHelper helper) {
+        buildShell(helper, Map.of(WEST_WALL,
+                facing(ModBlocks.HEAT_EXCHANGER.get().defaultBlockState(), Direction.WEST)));
+        helper.setBlock(OUTSIDE_WEST, ModBlocks.POWER_CELL.get().defaultBlockState());
+        double floor = ZPSConfig.exchangerTemperatureK();
+        seedChamber(helper);
+        setChamberTemperature(helper, floor + 500.0);
+
+        helper.runAfterDelay(60, () -> {
+            double temperature = kelvin().getTemperatureAt(node(helper, HOST));
+            helper.assertTrue(temperature >= floor - 1.0 && temperature <= floor + 1.0,
+                    "The exchanger should stop at the floor, chamber was " + temperature);
+            helper.succeed();
+        });
+    }
+
+    // --- empty chamber ------------------------------------------------------------------------
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void emptyChamberCoolsAfterTheGrace(GameTestHelper helper) {
+        buildShell(helper);
+        setChamberTemperature(helper, 60_000.0);
+        int grace = ReactorTuning.EMPTY_GRACE_TICKS;
+
+        helper.runAfterDelay(grace - 5, () -> helper.assertTrue(
+                Math.abs(chamberTemperature(helper) - 60_000.0) < 1.0,
+                "Within the grace period the chamber should hold its heat, was " + chamberTemperature(helper)));
+        helper.runAfterDelay(grace + 60, () -> {
+            double temperature = chamberTemperature(helper);
+            helper.assertTrue(temperature < 59_000.0,
+                    "An empty chamber should be losing heat by now, was " + temperature);
+            helper.assertTrue(temperature > ReactorManager.AMBIENT_TEMPERATURE_K,
+                    "Cooling should approach ambient, not overshoot it, was " + temperature);
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void chamberWithGasKeepsItsHeat(GameTestHelper helper) {
+        buildShell(helper);
+        seedChamber(helper);
+        // Below ignition, so nothing reacts and the only thing that could move the heat is us.
+        setChamberTemperature(helper, 40_000.0);
+
+        helper.runAfterDelay(ReactorTuning.EMPTY_GRACE_TICKS + 60, () -> {
+            helper.assertTrue(Math.abs(chamberTemperature(helper) - 40_000.0) < 1.0,
+                    "A chamber with gas in it should hold its heat, was " + chamberTemperature(helper));
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void emptyChamberRefusesExchangerHeat(GameTestHelper helper) {
+        buildShell(helper, Map.of(WEST_WALL,
+                facing(ModBlocks.HEAT_EXCHANGER.get().defaultBlockState(), Direction.WEST)));
+        helper.setBlock(OUTSIDE_WEST, ModBlocks.CREATIVE_POWER_CELL.get().defaultBlockState());
+        double start = chamberTemperature(helper);
+
+        helper.runAfterDelay(60, () -> {
+            helper.assertTrue(chamberTemperature(helper) <= start + 1.0,
+                    "An empty chamber must not take heat from an exchanger, went from " + start
+                            + " to " + chamberTemperature(helper));
+            helper.assertTrue(reactorAt(helper, WEST_WALL).feInLastTick() == 0,
+                    "No FE should be flowing into an empty chamber");
+            // Gas arrives: heating should start.
+            seedChamber(helper);
+        });
+        helper.runAfterDelay(120, () -> {
+            helper.assertTrue(chamberTemperature(helper) > 1000.0,
+                    "Once there is gas the exchanger should heat the chamber, was " + chamberTemperature(helper));
+            helper.succeed();
+        });
+    }
+
+    // --- reaction -----------------------------------------------------------------------------
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void fluxFusesInAHotChamber(GameTestHelper helper) {
+        buildShell(helper);
+        DuctNodePos host = node(helper, HOST);
+        kelvin().addGasAtTemperature(host, ModGases.FLUX, 0.01, 300.0);
+        setChamberTemperature(helper, 60_000.0);
+
+        helper.runAfterDelay(5, () -> {
+            helper.assertTrue(massOf(helper, HOST, ModGases.FLUX) < 1e-6, "The flux should have fused");
+            helper.assertTrue(massOf(helper, HOST, ModGases.AETHER) > 0.009, "Aether should have formed");
+            helper.assertTrue(kelvin().getTemperatureAt(host) > 61_000.0,
+                    "Fusion should heat the chamber, was " + kelvin().getTemperatureAt(host));
+            helper.succeed();
+        });
+    }
+
+    // --- hazards ------------------------------------------------------------------------------
+
+    /** The middle of the cavity floor: the cavity is three cells across, so this is its centre column. */
+    private static final Vec3 CAVITY_FLOOR = new Vec3(5.5, 2.0, 5.5);
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void litReactorBurnsWhatIsInside(GameTestHelper helper) {
+        buildShell(helper);
+        Pig pig = helper.spawnWithNoFreeWill(EntityType.PIG, CAVITY_FLOOR);
+        seedChamber(helper);
+        setChamberTemperature(helper, ZPSConfig.reactorIgnitionTemperatureK() + 5_000.0);
+
+        helper.runAfterDelay(5, () -> {
+            helper.assertTrue(reactorAt(helper, WEST_WALL).isLit(), "The reactor should register as lit");
+            helper.assertTrue(pig.getHealth() < pig.getMaxHealth(), "The pig should have been hurt");
+            helper.assertTrue(pig.isOnFire(), "The pig should be on fire");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void coldReactorLeavesWhatIsInsideAlone(GameTestHelper helper) {
+        buildShell(helper);
+        Pig pig = helper.spawnWithNoFreeWill(EntityType.PIG, CAVITY_FLOOR);
+        seedChamber(helper);
+        setChamberTemperature(helper, ZPSConfig.reactorIgnitionTemperatureK() - 5_000.0);
+
+        helper.runAfterDelay(20, () -> {
+            helper.assertFalse(reactorAt(helper, WEST_WALL).isLit(), "The reactor should not be lit");
+            helper.assertTrue(pig.getHealth() == pig.getMaxHealth(), "The pig should be unhurt");
+            helper.assertFalse(pig.isOnFire(), "The pig should not be on fire");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void litReactorSparesWhatIsOutside(GameTestHelper helper) {
+        buildShell(helper);
+        // Standing on the arena floor, which is the layer the shell's bottom wall is set into, against the
+        // outside of the west wall.
+        Pig pig = helper.spawnWithNoFreeWill(EntityType.PIG, new Vec3(OUTSIDE_WEST.getX() + 0.5, 2.0, 5.5));
+        seedChamber(helper);
+        setChamberTemperature(helper, ZPSConfig.reactorIgnitionTemperatureK() + 5_000.0);
+
+        helper.runAfterDelay(20, () -> {
+            helper.assertTrue(reactorAt(helper, WEST_WALL).isLit(), "The reactor should register as lit");
+            helper.assertTrue(pig.getHealth() == pig.getMaxHealth(), "The pig should be unhurt");
+            helper.assertFalse(pig.isOnFire(), "The pig should not be on fire");
+            helper.succeed();
+        });
+    }
+
+    // --- failures -----------------------------------------------------------------------------
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void meltBreachRemovesOneWall(GameTestHelper helper) {
+        buildShell(helper);
+        Reactor reactor = reactorAt(helper, WEST_WALL);
+        setChamberTemperature(helper, ZPSConfig.reactorMeltTemperatureK() + 50_000.0);
+
+        helper.runAfterDelay(5, () -> {
+            int missing = 0;
+            for (long wall : reactor.walls()) {
+                if (!helper.getLevel().getBlockState(BlockPos.of(wall)).is(ModBlocks.REINFORCED_PLATING.get())) {
+                    missing++;
+                }
+            }
+            helper.assertTrue(missing == 1, "Exactly one wall block should give way, " + missing + " did");
+            helper.assertTrue(manager(helper).reactorsAt(helper.absolutePos(EAST_WALL)).isEmpty(),
+                    "The reactor should be gone");
+            helper.assertTrue(kelvin().getNodeAt(node(helper, HOST)) == null, "The chamber node should be gone");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void breakingAHotWallBreaches(GameTestHelper helper) {
+        buildShell(helper);
+        setChamberTemperature(helper, ZPSConfig.reactorIgnitionTemperatureK() + 5_000.0);
+
+        // Let the reactor tick once so it knows it is lit, then open it.
+        helper.runAfterDelay(3, () -> {
+            helper.assertTrue(reactorAt(helper, WEST_WALL).isLit(), "The reactor should register as lit");
+            helper.setBlock(WEST_WALL, Blocks.AIR.defaultBlockState());
+            helper.assertTrue(manager(helper).reactorsAt(helper.absolutePos(EAST_WALL)).isEmpty(),
+                    "The reactor should be gone");
+            helper.succeed();
+        });
+    }
+
+    // --- persistence --------------------------------------------------------------------------
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void chamberSurvivesSaveAndLoad(GameTestHelper helper) {
+        buildShell(helper);
+        ServerLevel level = helper.getLevel();
+        DuctNodePos host = node(helper, HOST);
+        kelvin().addGasAtTemperature(host, ModGases.AETHER, 0.5, 300.0);
+        setChamberTemperature(helper, 70_000.0);
+
+        // Kelvin re-derives temperature from energy on its own tick; save after it has.
+        helper.runAfterDelay(2, () -> {
+            double energyBefore = kelvin().getHeatEnergy(host);
+            double temperatureBefore = kelvin().getTemperatureAt(host);
+            double massBefore = massOf(helper, HOST, ModGases.AETHER);
+            helper.assertTrue(temperatureBefore > 60_000.0, "The chamber should be hot before saving");
+
+            CompoundTag saved = manager(helper).save(new CompoundTag());
+            // Simulate the reload: the node is gone, a fresh manager comes back from disk.
+            kelvin().removeNode(host);
+            ReactorManager loaded = ReactorManager.load(saved);
+            Reactor reactor = loaded.reactorsAt(helper.absolutePos(WEST_WALL)).get(0);
+            loaded.ensureNode(level, reactor);
+
+            helper.assertTrue(kelvin().getNodeAt(host) instanceof ReactorChamberNode, "The node should be back");
+            helper.assertTrue(Math.abs(massOf(helper, HOST, ModGases.AETHER) - massBefore) < 1e-9, "The gas should be back");
+            helper.assertTrue(Math.abs(kelvin().getHeatEnergy(host) - energyBefore) < 1.0, "The energy should be back");
+            helper.assertTrue(Math.abs(kelvin().getTemperatureAt(host) - temperatureBefore) < 1.0,
+                    "The temperature should be back, was " + kelvin().getTemperatureAt(host));
+            helper.assertTrue(reactor.wallCount() == SMALL_WALLS, "Geometry should be back");
+            helper.succeed();
+        });
+    }
+
+    // --- reported bugs, kept failing until fixed ------------------------------------------------
+
+    private static IEnergyStorage energyAt(GameTestHelper helper, BlockPos relative, Direction side) {
+        BlockEntity blockEntity = helper.getBlockEntity(relative);
+        IEnergyStorage energy = blockEntity == null ? null : blockEntity.getCapability(ForgeCapabilities.ENERGY, side).orElse(null);
+        if (energy == null) {
+            helper.fail("No energy storage at " + relative + " on side " + side);
+            throw new IllegalStateException();
+        }
+        return energy;
+    }
+
+    private static double chamberTemperature(GameTestHelper helper) {
+        return kelvin().getTemperatureAt(node(helper, HOST));
+    }
+
+    /**
+     * Bug: after melting through the shell and patching the hole, a heater exchanger on a
+     * Creative Power Cell never heats the rebuilt chamber until the block is replaced.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 500)
+    public static void heaterRecoversAfterMeltAndPatch(GameTestHelper helper) {
+        buildShell(helper, Map.of(WEST_WALL,
+                facing(ModBlocks.HEAT_EXCHANGER.get().defaultBlockState(), Direction.WEST)));
+        helper.setBlock(OUTSIDE_WEST, ModBlocks.CREATIVE_POWER_CELL.get().defaultBlockState());
+        seedChamber(helper);
+
+        helper.runAfterDelay(160, () -> {
+            helper.assertTrue(chamberTemperature(helper) >= ZPSConfig.exchangerTemperatureK() - 1000.0,
+                    "The heater should have brought the chamber to the cutoff first, was " + chamberTemperature(helper));
+            // Then it runs hard for a while, well past the cutoff, before it gets away from us.
+            setChamberTemperature(helper, 90_000.0);
+        });
+        helper.runAfterDelay(200, () -> {
+            Reactor reactor = reactorAt(helper, WEST_WALL);
+
+            // Melt through a plain wall on the far side, then patch it.
+            ReactorFailures.breach(helper.getLevel(), reactor, helper.absolutePos(EAST_WALL), true);
+            helper.assertTrue(manager(helper).reactorsAt(helper.absolutePos(WEST_WALL)).isEmpty(),
+                    "The breach should have taken the reactor apart");
+            helper.assertTrue(!helper.getBlockState(EAST_WALL).is(ModBlocks.REINFORCED_PLATING.get()),
+                    "The breached wall should be gone");
+            helper.setBlock(EAST_WALL, ModBlocks.REINFORCED_PLATING.get().defaultBlockState());
+
+            reactorAt(helper, WEST_WALL);
+            helper.assertTrue(chamberTemperature(helper) < 1000.0,
+                    "The patched reactor should start cold, was " + chamberTemperature(helper));
+            // The breach vented the old chamber; the new one needs gas before it can be heated.
+            seedChamber(helper);
+        });
+        helper.runAfterDelay(340, () -> {
+            double temperature = chamberTemperature(helper);
+            helper.assertTrue(temperature > 5000.0,
+                    "The heater should be heating the patched reactor again, chamber is at " + temperature);
+            helper.succeed();
+        });
+    }
+
+    /**
+     * The same failure without the melt: a heater exchanger on a Creative Power Cell sits next
+     * to a chamber that runs well past the cutoff, then the chamber cools. It must heat again.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 400)
+    public static void heaterResumesAfterChamberCools(GameTestHelper helper) {
+        buildShell(helper, Map.of(WEST_WALL,
+                facing(ModBlocks.HEAT_EXCHANGER.get().defaultBlockState(), Direction.WEST)));
+        helper.setBlock(OUTSIDE_WEST, ModBlocks.CREATIVE_POWER_CELL.get().defaultBlockState());
+        seedChamber(helper);
+
+        // Well past the cutoff, the way a hard-running reactor is; the cell cannot take FE back.
+        helper.runAfterDelay(5, () -> setChamberTemperature(helper, 90_000.0));
+        helper.runAfterDelay(60, () -> setChamberTemperature(helper, 300.0));
+        helper.runAfterDelay(160, () -> {
+            double temperature = chamberTemperature(helper);
+            helper.assertTrue(temperature > 5000.0,
+                    "The heater should be heating the cooled chamber again, chamber is at " + temperature);
+            helper.succeed();
+        });
+    }
+
+    /**
+     * A reactor that is plainly producing power, sampled every tick over a steady-state window:
+     * it must read as lit and show FE out on every one of them.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 300)
+    public static void readoutReportsLitWhileProducing(GameTestHelper helper) {
+        BlockState exchangerNorth = facing(ModBlocks.HEAT_EXCHANGER.get().defaultBlockState(), Direction.NORTH);
+        Map<BlockPos, BlockState> overrides = new HashMap<>();
+        overrides.put(WEST_WALL, facing(input(), Direction.WEST));
+        overrides.put(EAST_WALL, facing(output(), Direction.EAST));
+        overrides.put(NORTH_WALL_A, exchangerNorth);
+        overrides.put(NORTH_WALL_B, exchangerNorth);
+        buildShell(helper, overrides);
+        openPort(helper, WEST_WALL, Direction.WEST);
+        openPort(helper, EAST_WALL, Direction.EAST);
+        // A whiff of Steam kept in as a buffer gas: fuel arrives by the milligram, and without it
+        // the chamber would count as empty and lose heat before the fuel has built up. Only a
+        // couple of grams, so its pressure does not hold the fuel line back.
+        if (!(helper.getBlockEntity(EAST_WALL) instanceof ReactorPortBlockEntity output)) {
+            helper.fail("No reactor port at " + EAST_WALL);
+            return;
+        }
+        output.setSettings(output.getMode(), new GasFilter(Set.of(
+                ModGases.FLUX.getResourceLocation(), ModGases.STEAM.getResourceLocation())));
+        kelvin().addGasAtTemperature(node(helper, HOST), ModGases.STEAM, 0.002, 300.0);
+        // Fuel in, ash out, power out: the whole loop, sized so the exchangers keep up.
+        placeGenerator(helper, OUTSIDE_WEST, 0.0008, 300.0);
+        helper.setBlock(OUTSIDE_EAST, facing(ModBlocks.VENT.get().defaultBlockState(), Direction.EAST));
+        helper.setBlock(OUTSIDE_NORTH_A, ModBlocks.POWER_CELL.get().defaultBlockState());
+        helper.setBlock(OUTSIDE_NORTH_B, ModBlocks.POWER_CELL.get().defaultBlockState());
+        setChamberTemperature(helper, 60_000.0);
+
+        int windowStart = 120;
+        int windowLength = 40;
+        int[] litTicks = {0};
+        int[] outputTicks = {0};
+        int[] energyAtStart = {0};
+        helper.runAtTickTime(windowStart - 1, () ->
+                energyAtStart[0] = energyAt(helper, OUTSIDE_NORTH_A, Direction.SOUTH).getEnergyStored());
+        for (int tick = windowStart; tick < windowStart + windowLength; tick++) {
+            helper.runAtTickTime(tick, () -> {
+                Reactor reactor = reactorAt(helper, WEST_WALL);
+                if (reactor.isLit()) {
+                    litTicks[0]++;
+                }
+                if (reactor.feOutLastTick() > 0) {
+                    outputTicks[0]++;
+                }
+            });
+        }
+        helper.runAtTickTime(windowStart + windowLength, () -> {
+            int gained = energyAt(helper, OUTSIDE_NORTH_A, Direction.SOUTH).getEnergyStored() - energyAtStart[0];
+            helper.assertTrue(gained > 0, "The power cell should be charging, so the reactor is plainly working");
+            helper.assertTrue(chamberTemperature(helper) >= ZPSConfig.reactorIgnitionTemperatureK(),
+                    "The chamber should be above ignition, was " + chamberTemperature(helper));
+            helper.assertTrue(outputTicks[0] == windowLength,
+                    "FE out should be reported every tick, was on " + outputTicks[0] + " of " + windowLength);
+            helper.assertTrue(litTicks[0] == windowLength,
+                    "A producing reactor should read as lit every tick, did on " + litTicks[0] + " of " + windowLength);
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Bug: FE pulled out of an exchanger by a consumer that extracts, the way a Step-Up
+     * Transformer does, is never counted, so the readout and the HUD show zero output.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void readoutCountsEnergyPulledFromExchanger(GameTestHelper helper) {
+        buildShell(helper, Map.of(NORTH_WALL_A,
+                facing(ModBlocks.HEAT_EXCHANGER.get().defaultBlockState(), Direction.NORTH)));
+        setChamberTemperature(helper, 90_000.0);
+
+        int[] pulled = {0};
+        for (int tick = 5; tick < 30; tick++) {
+            helper.runAtTickTime(tick, () -> pulled[0] += energyAt(helper, NORTH_WALL_A, Direction.NORTH)
+                    .extractEnergy(ReactorTuning.EXCHANGER_FE_PER_TICK, false));
+        }
+        helper.runAtTickTime(30, () -> {
+            helper.assertTrue(pulled[0] > 0, "Pulling from the exchanger should yield FE");
+            Reactor reactor = reactorAt(helper, NORTH_WALL_A);
+            HeatExchangerBlockEntity exchanger = (HeatExchangerBlockEntity) helper.getBlockEntity(NORTH_WALL_A);
+            helper.assertTrue(reactor.feOutLastTick() > 0,
+                    "The reactor should count FE pulled out of its exchanger, reported " + reactor.feOutLastTick());
+            helper.assertTrue(exchanger.getInfo() > 0,
+                    "The exchanger HUD should show FE pulled out of it, reported " + exchanger.getInfo());
+            helper.succeed();
+        });
+    }
+
+    // --- shape sync ---------------------------------------------------------------------------
+
+    /** The cavity survives the trip to the client: same cells, same open faces, same host. */
+    @GameTest(template = TEMPLATE)
+    public static void cavityShapeRoundTrips(GameTestHelper helper) {
+        buildShell(helper);
+        Reactor reactor = reactorAt(helper, WEST_WALL);
+        VoxelShape shape = reactor.shape();
+
+        FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
+        VoxelShapeStreamCodec.INSTANCE.encode(buffer, shape);
+        int bytes = buffer.readableBytes();
+        VoxelShape decoded = VoxelShapeStreamCodec.INSTANCE.decode(buffer);
+
+        helper.assertTrue(CavityShapes.isSupported(decoded), "The decoded shape should be a bit grid");
+        helper.assertTrue(CavityShapes.cellCount(decoded) == 27, "27 cells expected, got " + CavityShapes.cellCount(decoded));
+        helper.assertTrue(CavityShapes.lowestCell(decoded).equals(reactor.host()),
+                "Host should agree on both sides, got " + CavityShapes.lowestCell(decoded));
+        helper.assertTrue(decoded.bounds().equals(shape.bounds()), "Bounds should match");
+        int[] faces = {0};
+        CavityShapes.forAllFaces(decoded, (direction, x, y, z) -> faces[0]++);
+        helper.assertTrue(faces[0] == SMALL_WALLS, "A 3x3x3 cavity has 54 open faces, got " + faces[0]);
+        helper.assertTrue(bytes < 200, "A small cavity should be compact on the wire, was " + bytes + " bytes");
+        helper.succeed();
+    }
+}

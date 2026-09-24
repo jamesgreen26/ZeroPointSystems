@@ -7,6 +7,8 @@ import g_mungus.zps.blockentity.gas.DuctBlockEntity;
 import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity;
 import g_mungus.zps.blockentity.gas.VentBlockEntity;
 import g_mungus.zps.blockentity.gas.VaporizerBlockEntity;
+import g_mungus.zps.blockentity.reactor.HeatExchangerBlockEntity;
+import g_mungus.zps.blockentity.reactor.ReactorPortBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.*;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.registries.DeferredRegister;
@@ -168,4 +170,14 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("vaporizer",
                     () -> BlockEntityType.Builder.of(VaporizerBlockEntity::new,
                             ModBlocks.VAPORIZER.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<ReactorPortBlockEntity>> REACTOR_PORT =
+        BLOCK_ENTITIES.register("reactor_port",
+            () -> BlockEntityType.Builder.of(ReactorPortBlockEntity::new,
+                ModBlocks.REACTOR_PORT.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<HeatExchangerBlockEntity>> HEAT_EXCHANGER =
+        BLOCK_ENTITIES.register("heat_exchanger",
+            () -> BlockEntityType.Builder.of(HeatExchangerBlockEntity::new,
+                ModBlocks.HEAT_EXCHANGER.get()).build(null));
 }

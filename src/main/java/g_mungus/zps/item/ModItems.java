@@ -135,6 +135,18 @@ public class ModItems {
     public static final RegistryObject<Item> CREATIVE_GAS_GENERATOR = ITEMS.register("creative_gas_generator",
             () -> new BlockItem(ModBlocks.CREATIVE_GAS_GENERATOR.get(), new Item.Properties().rarity(Rarity.EPIC)));
 
+    public static final RegistryObject<Item> REINFORCED_PLATING = ITEMS.register("reinforced_plating",
+            () -> new BlockItem(ModBlocks.REINFORCED_PLATING.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> REINFORCED_GLASS = ITEMS.register("reinforced_glass",
+            () -> new BlockItem(ModBlocks.REINFORCED_GLASS.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> REACTOR_PORT = ITEMS.register("reactor_port",
+            () -> new BlockItem(ModBlocks.REACTOR_PORT.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> HEAT_EXCHANGER = ITEMS.register("heat_exchanger",
+            () -> new BlockItem(ModBlocks.HEAT_EXCHANGER.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> SCRIPT_BOOK = ITEMS.register("script_book",
             () -> new ScriptBookItem(new Item.Properties().rarity(Rarity.RARE)));
 

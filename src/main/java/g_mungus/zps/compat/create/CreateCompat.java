@@ -7,6 +7,7 @@ import com.simibubi.create.foundation.data.CreateRegistrate;
 import com.simibubi.create.infrastructure.ponder.AllCreatePonderTags;
 import com.tterrag.registrate.util.entry.RegistryEntry;
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.compat.create.commands.CreateScriptCommands;
@@ -31,6 +32,7 @@ public class CreateCompat {
     public static final RegistryEntry<SerialBusDisplayLinkSource> SERIAL_BUS_SOURCE = REG.displaySource("serial_bus", SerialBusDisplayLinkSource::new).register();
     public static final RegistryEntry<SerialBusManualDisplayLinkSource> SERIAL_BUS_MANUAL_SOURCE = REG.displaySource("serial_bus_manual", SerialBusManualDisplayLinkSource::new).register();
     public static final RegistryEntry<DataLecternDisplayTarget> DATA_LECTERN_TARGET = REG.displayTarget("data_lectern", DataLecternDisplayTarget::new).register();
+    public static final RegistryEntry<ReactorDisplaySource> REACTOR_STATUS_SOURCE = REG.displaySource("reactor_status", ReactorDisplaySource::new).register();
 
     public static void init(IEventBus modEventBus) {
         REG.registerEventListeners(modEventBus);
@@ -43,6 +45,8 @@ public class CreateCompat {
             DisplaySource.BY_BLOCK_ENTITY.add(ModBlockEntities.SERIAL_BUS.get(), SERIAL_BUS_SOURCE.get());
             DisplaySource.BY_BLOCK_ENTITY.add(ModBlockEntities.SERIAL_BUS.get(), SERIAL_BUS_MANUAL_SOURCE.get());
             DisplayTarget.BY_BLOCK_ENTITY.register(ModBlockEntities.DATA_LECTERN.get(), DATA_LECTERN_TARGET.get());
+            // Plating has no block entity, so the source hangs off the block itself.
+            DisplaySource.BY_BLOCK.add(ModBlocks.REINFORCED_PLATING.get(), REACTOR_STATUS_SOURCE.get());
         });
     }
 
@@ -67,6 +71,7 @@ public class CreateCompat {
     public static void registerPonderTagEntries(@NotNull PonderTagRegistrationHelper<ResourceLocation> helper) {
         helper.addToTag(AllCreatePonderTags.DISPLAY_SOURCES).add(ZPSMod.resource("serial_bus"));
         helper.addToTag(AllCreatePonderTags.DISPLAY_SOURCES).add(ZPSMod.resource("serial_bus_manual"));
+        helper.addToTag(AllCreatePonderTags.DISPLAY_SOURCES).add(ZPSMod.resource("reinforced_plating"));
         helper.addToTag(AllCreatePonderTags.DISPLAY_TARGETS).add(ZPSMod.resource("data_lectern"));
     }
 

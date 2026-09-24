@@ -43,6 +43,18 @@ import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
 import org.valkyrienskies.kelvin.impl.client.particle.DefaultGasParticleProvider;
 import g_mungus.zps.gas.ModParticles;
 import g_mungus.zps.client.debug.GasPressureOverlay;
+import g_mungus.zps.client.ponder.api.ReactorGlowElement;
+import g_mungus.zps.client.reactor.ClientReactors;
+import g_mungus.zps.client.reactor.ReactorGlowPreviews;
+import g_mungus.zps.client.reactor.ReactorGlowRenderer;
+import g_mungus.zps.client.reactor.ReactorWallOverlayRenderer;
+import g_mungus.zps.client.reactor.ReactorWallOverlayVisual;
+import g_mungus.zps.client.reactor.ReactorWallOverlays;
+import g_mungus.zps.client.reactor.WallCoats;
+import g_mungus.zps.item.ModItems;
+import net.minecraftforge.client.event.RegisterColorHandlersEvent;
+import net.minecraftforge.client.event.RegisterShadersEvent;
+import java.io.IOException;
 import net.minecraftforge.client.event.RegisterClientTooltipComponentFactoriesEvent;
 import g_mungus.zps.client.tooltip.ClientItemIconsTooltip;
 import g_mungus.zps.client.tooltip.ItemIconsTooltip;
@@ -92,10 +104,29 @@ public class ClientSetup {
         event.register(ConnectedModelLoader.NAME, ConnectedModelLoader.INSTANCE);
     }
 
+    /** The reactor glow's core shader. */
+    @SubscribeEvent
+    public static void onRegisterShaders(RegisterShadersEvent event) throws IOException {
+        ReactorGlowRenderer.onRegisterShaders(event);
+    }
+
     @SubscribeEvent
     public static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event) {
         // Connected-texture metadata is cached at bake time; drop it on reload so it is re-read.
         event.registerReloadListener((ResourceManagerReloadListener) resourceManager -> ConnectedTextureMeta.clear());
+        // Wall coats are built from baked models, which a reload replaces, and the glow meshes from them.
+        event.registerReloadListener((ResourceManagerReloadListener) resourceManager -> {
+            WallCoats.clear();
+            ClientReactors.invalidateMeshes();
+            ReactorGlowElement.releaseAll();
+        });
+    }
+
+    /** The item models carry the face overlay on tint index 0, shown in its unpowered colour. */
+    @SubscribeEvent
+    public static void onRegisterItemColors(RegisterColorHandlersEvent.Item event) {
+        event.register((stack, tintIndex) -> tintIndex == 0 ? 0xFF000000 | ReactorWallOverlays.OFF_COLOR : -1,
+                ModItems.REACTOR_PORT.get());
     }
 
     @SubscribeEvent
@@ -181,6 +212,12 @@ public class ClientSetup {
                     // The BER draws the rod as a fallback when Flywheel's backend is unavailable.
                     .neverSkipVanillaRender()
                     .apply();
+            BlockEntityRenderers.register(ModBlockEntities.REACTOR_PORT.get(), ReactorWallOverlayRenderer::new);
+            SimpleBlockEntityVisualizer.builder(ModBlockEntities.REACTOR_PORT.get())
+                    .factory(ReactorWallOverlayVisual::new)
+                    // The BER draws the overlay as a fallback when Flywheel's backend is unavailable.
+                    .neverSkipVanillaRender()
+                    .apply();
             BlockEntityRenderers.register(ModBlockEntities.POWER_CELL.get(), PowerCellBlockEntityRenderer::new);
             BlockEntityRenderers.register(ModBlockEntities.GAS_GAUGE.get(), GasGaugeBlockEntityRenderer::new);
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DENSE_CABLE_SEPARATOR.get(), RenderType.cutout());
@@ -188,6 +225,7 @@ public class ClientSetup {
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.SERIAL_BUS.get(), RenderType.translucent());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.RADIO_ANTENNA.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DATA_TRANSCRIBER.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer(ModBlocks.REINFORCED_GLASS.get(), RenderType.translucent());
 
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.SPACE_SCAFFOLD.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.SPACE_TRUSS.get(), RenderType.cutout());
@@ -198,6 +236,15 @@ public class ClientSetup {
             MinecraftForge.EVENT_BUS.addListener(AddressPadClientHooks::onRenderLevelStage);
             MinecraftForge.EVENT_BUS.addListener(GasPressureOverlay::onRenderLevelStage);
             MinecraftForge.EVENT_BUS.addListener(GasPressureOverlay::onPlayerTick);
+            MinecraftForge.EVENT_BUS.addListener(ClientReactors::onChunkLoad);
+            MinecraftForge.EVENT_BUS.addListener(ClientReactors::onChunkUnload);
+            MinecraftForge.EVENT_BUS.addListener(ClientReactors::onLevelUnload);
+            MinecraftForge.EVENT_BUS.addListener(ClientReactors::onLoggingOut);
+            MinecraftForge.EVENT_BUS.addListener(ClientReactors::onClientTick);
+            MinecraftForge.EVENT_BUS.addListener(ClientReactors::onRenderLevelStage);
+            MinecraftForge.EVENT_BUS.addListener(ReactorGlowPreviews::onRenderLevelStage);
+            MinecraftForge.EVENT_BUS.addListener(ReactorGlowPreviews::onLoggingOut);
+            MinecraftForge.EVENT_BUS.addListener(ReactorGlowElement::onLoggingOut);
         });
     }
 

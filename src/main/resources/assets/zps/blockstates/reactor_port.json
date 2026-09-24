@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "facing=north": {"model": "zps:block/reactor_port"},
+    "facing=east": {"model": "zps:block/reactor_port", "y": 90},
+    "facing=south": {"model": "zps:block/reactor_port", "y": 180},
+    "facing=west": {"model": "zps:block/reactor_port", "y": 270},
+    "facing=down": {"model": "zps:block/reactor_port", "x": 90},
+    "facing=up": {"model": "zps:block/reactor_port", "x": 270, "y":  180}
+  }
+}

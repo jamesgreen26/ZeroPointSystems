@@ -51,6 +51,12 @@
     "zps:caution_block",
     "zps:radiation_caution_block",
     "zps:void_caution_block",
-    "#zps:space_plating"
+    "#zps:space_plating",
+    "zps:vaporizer",
+    "zps:gas_gauge",
+    "zps:reinforced_plating",
+    "zps:reinforced_glass",
+    "zps:reactor_port",
+    "zps:heat_exchanger"
   ]
 }

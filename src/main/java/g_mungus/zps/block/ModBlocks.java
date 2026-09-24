@@ -5,6 +5,10 @@ import g_mungus.zps.block.gas.CreativeGasGeneratorBlock;
 import g_mungus.zps.block.gas.DuctBlock;
 import g_mungus.zps.block.gas.GasGaugeBlock;
 import g_mungus.zps.block.gas.VentBlock;
+import g_mungus.zps.block.reactor.HeatExchangerBlock;
+import g_mungus.zps.block.reactor.ReactorPortBlock;
+import g_mungus.zps.block.reactor.ReinforcedGlassBlock;
+import g_mungus.zps.block.reactor.ReinforcedPlatingBlock;
 import g_mungus.zps.block.gas.VaporizerBlock;
 import g_mungus.zps.block.cableNetwork.*;
 import g_mungus.zps.block.cableNetwork.light_pipe.*;
@@ -264,6 +268,36 @@ public class ModBlocks {
                     .sound(SoundType.NETHERITE_BLOCK)
                     .strength(2.0f)
                     .requiresCorrectToolForDrops()));
+
+    // Fusion reactor wall blocks. Pistons must not move them: the cavity they seal is tracked by
+    // position, and a moved block would leave a phantom wall behind.
+    public static final RegistryObject<Block> REINFORCED_PLATING = BLOCKS.register("reinforced_plating",
+            () -> new ReinforcedPlatingBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.5f)
+                    .requiresCorrectToolForDrops()
+                    .pushReaction(PushReaction.BLOCK)));
+
+    public static final RegistryObject<Block> REINFORCED_GLASS = BLOCKS.register("reinforced_glass",
+            () -> new ReinforcedGlassBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.5f)
+                    .requiresCorrectToolForDrops()
+                    .pushReaction(PushReaction.BLOCK)
+                    .noOcclusion()
+                    .isViewBlocking((state, level, pos) -> false)
+                    .isSuffocating((state, level, pos) -> false)));
+
+    public static final RegistryObject<Block> REACTOR_PORT = BLOCKS.register("reactor_port",
+            () -> new ReactorPortBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.5f)
+                    .requiresCorrectToolForDrops()
+                    .pushReaction(PushReaction.BLOCK)));
+
+    public static final RegistryObject<Block> HEAT_EXCHANGER = BLOCKS.register("heat_exchanger",
+            () -> new HeatExchangerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.5f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+                    .pushReaction(PushReaction.BLOCK)));
 
     public static final RegistryObject<Block> IMPACT_PISTON = BLOCKS.register("impact_piston",
             () -> new ImpactPistonBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)

@@ -1,8 +1,9 @@
 # Zero Point Systems — Block & Item Reference
 
 *A tech mod with computers, radios, production machines, and control systems.*
-Built for Forge 1.20.1 (modId `zps`). This document catalogs every functional
-block, then functional items, then resource/decorative blocks and crafting materials.
+Built for Forge 1.20.1 (modId `zps`). Requires Kotlin for Forge 4.11+ at runtime (the Kelvin gas
+library is bundled inside the jar). This document catalogs every functional block, then functional
+items, then resource/decorative blocks and crafting materials.
 
 ---
 
@@ -176,6 +177,8 @@ Ponder page lists the script commands and getters that block accepts.
 - Losing redstone power freezes the rod where it is (a resumed stroke still costs a full raise) and lets it settle back down limply; a stroke that reaches the top is committed and always lands, whatever the signal does meanwhile.
 - Energy only — no inventory: 8,192 FE buffer receiving up to 512 FE/tick, exposed on every face. Right-click opens a plain energy readout, and JEI shows every impact recipe under an "Impact Piston" tab.
 - Built-in recipes crack stone/deepslate/nether/polished-blackstone bricks and deepslate tiles, shatter any `#forge:glass` into nothing, and pound cobblestone → gravel, sandstone → sand, red sandstone → red sand. The three crushing recipes have a 1-in-20 chance of leaving a *suspicious* block instead, pre-buried with 1–2 random nuggets drawn from a per-material tag (`zps:resources_in_cobblestone` / `_sandstone` / `_red_sandstone`).
+- Ores are covered automatically: one recipe keyed on `#forge:ores_in_ground/stone` pounds any stone-hosted ore, modded ones included, into suspicious gravel holding what the ore would have dropped to a Fortune II pickaxe. It works through a result's `buried_drops` field (`{ "fortune": 2 }`), which rolls the struck block's own loot table at the moment of impact instead of burying a named item.
+- JEI lists what a suspicious result may be hiding as item icons under "May contain:", read from the result's `buried_item`. Those items also count as outputs of the recipe, so looking up how to obtain a nugget or a raw ore leads to the Impact Piston. For the ore recipe that is the `zps:stone_ores_in_ground_drops` item tag, which nobody maintains by hand: at the end of each data load the server fills it with the items named in the loot table of each block in `#forge:ores_in_ground/stone` (raw iron, diamond, and so on, minus the silk touch branch that returns the ore itself). Datapacks can still add to it.
 - Paired with a cobblestone generator and a Sieve, this makes some raw resources renewable: the piston pounds cobblestone into gravel — occasionally suspicious gravel — which falls through the Sieve below and gives up its buried copper, aluminum, and iron nuggets. Nine of each craft back into an ingot, so a single automated loop yields **copper, aluminum, and iron** indefinitely. The sandstone recipes do the same for iron and lithium (from sand) and gold and copper (from red sand), given a renewable sandstone supply.
 
 #### Sieve (`sieve`)
@@ -189,12 +192,22 @@ Ponder page lists the script commands and getters that block accepts.
 - Controlled by script commands from an adjacent Serial Bus: `take_items`, `put_items`, `use`, `shift_use`, and `drop_items`; accepts a new instruction about every 16 ticks.
 - Carries a single held stack and acts through a fake player, so `use`/`shift_use` can right-click blocks, place blocks/items, and fill or empty buckets with fluids at the target.
 - GUI settings control the per-action item count (1–64) and a range-preview toggle; transfers visually open chests/barrels/shulkers during the move.
-- Range and interaction are Valkyrien Skies-aware, working across ships/sublevels via world-space projection.
+- Range and interaction are Valkyrien Skies-aware, working across ships via world-space projection.
 
 #### Incomplete Robotic Arm (`incomplete_robotic_arm_0` / `_1` / `_2`)
 - The three placement/build stages of the Robotic Arm: right-click each with a Robotic Arm Segment to advance (0 → 1 → 2 → finished `robotic_arm`), consuming one segment per stage.
 - Share the finished arm's collision shape and play a repair sound/particles per segment; completing the arm grants the `robotic_arm_completed` advancement.
 - Purely inert until completed — no work, energy, or item storage.
+
+#### Beam Collector (`beam_collector`)
+- A six-way directional machine that projects a tractor beam, pulling items, entities (players included), particles and piston-pushable blocks toward its mouth. Runs while any block of it has a redstone signal and it has FE.
+- Blocks sharing a facing join into a square panel: 1x1, 2x2 or 3x3. Panel size sets the beam's width, its reach at full signal (8 / 15 / 30 blocks), its pooled storage (9 / 15 / 21 slots) and its FE buffer (8,192 FE per block, receive-only).
+- Each 1x1 column of the beam takes its nearest block, one at a time on a cooldown: blocks a piston could push come loose as falling blocks and are carried in, blocks a piston would break are broken and their drops carried in, and anything else (obsidian, block entities) ends the column and shields what is behind it.
+- Items and pulled blocks that reach the mouth are stored as themselves (stone stays stone); a suspicious block gives up its buried loot first. Blocks are only pulled loose while there is room for them. Automation can extract from any block of the panel but not insert.
+- Living entities are drawn to the mouth and held there. Only creative flight resists the pull.
+- Costs `columns x range x 8` FE per tick while running (64 for a single block at full range, 2,160 for a 3x3) and nothing else: what the beam is pulling never changes the cost.
+- Range is set by the strength of the redstone signal, each size spreading the fifteen steps over its own reach: a single block gains a block of range on every odd strength (up to 8), a 2x2 has a block a step (up to 15), a 3x3 two (up to 30). The GUI is the size of a chest's and shows the inventory and energy, with nothing to set. It has no script commands or getters and no config: it is run entirely by redstone, and its numbers are fixed. Every ripped block passes a fake-player interaction check and a cancellable break event, and the `zps:tractor_beam_immune` block and entity-type tags exempt things outright.
+- Works across Valkyrien Skies ships. A panel on a ship pulls entities, items and blocks from its own ship, from the world and from other ships, keeps what it carries moving with the ship, and draws its beam on the ship. A panel in the world pulls blocks off any ship that passes through its beam. Blocks on other ships are found by casting rays down each column with the level's own raycast, which Valkyrien Skies extends across ships. Falling blocks do not collide while a beam carries them, so they cannot jam on the way in; collision returns a tick after the beam lets go.
 
 ### 1.4 Power Generation & Storage
 
@@ -204,9 +217,11 @@ Ponder page lists the script commands and getters that block accepts.
 - Has a GUI (fuel slot + energy/burn readout) and a lit blockstate while burning; contents drop when broken.
 
 #### Power Cell (`power_cell`)
-- Bulk FE battery storing up to 2,097,152 FE (~2.1M), transferring up to 16,384 FE/tick in and out of any face.
-- Charges an inserted energy-capable item at 1,024 FE/tick via its charge slot and GUI.
-- Emits a comparator signal proportional to fill and shows a 0–9 visual fill level on the block.
+- Bulk FE battery storing up to 2,097,152 FE (~2.1M) per cell, transferring up to 16,384 FE/tick in and out of any face.
+- Multiblock: cells placed in a square column (1×1 to 3×3 wide, up to 32 tall) merge into one battery in the same way as Create's fluid tank. Only capacity scales with the cell count (transfer stays at 16,384 FE/tick and item charging at 1,024 FE/tick); the whole structure shares one charge slot and GUI, reachable from any cell, and any face accepts/provides energy for the pool. Placing a cell on the top or bottom of a structure fills the whole new layer from the stack (sneak to place a single cell).
+- Charges an inserted energy-capable item at 1,024 FE/tick via its charge slot and GUI, regardless of structure size.
+- Emits a comparator signal proportional to fill and shows the fill visually: the end plates and inset walls are drawn only on the structure's outer faces, and one divider ring rises through the whole structure.
+- The multiblock plumbing lives in `g_mungus.zps.multiblock` (`MultiblockPart`, `ConnectivityHandler`, `MultiblockBlockEntity`, `MultiblockBlockItem`) and is reusable for other blocks.
 
 #### Creative Power Cell (`creative_power_cell`)
 - Infinite FE source: pushes unlimited energy into every adjacent energy-accepting block each tick and never draws power itself.
@@ -214,6 +229,55 @@ Ponder page lists the script commands and getters that block accepts.
 - A creative/testing supply — it cannot be filled and has no finite buffer.
 
 ---
+
+### 1.5 Gas Network & Fusion Reactor
+
+Gas is simulated by the Kelvin library. Every gas block is a **node** with a volume, a pressure
+ceiling and a temperature ceiling; gas is tracked per node as mass in kilograms, at a pressure
+(Pa) and temperature (K), and flows along **edges** between face-adjacent nodes. Like the cable
+network, an edge only forms when both blocks agree: each side proposes what it wants on the face
+(a plain pipe, a check valve, a pump, an aperture) and the two proposals merge into one edge, so
+a valve or a machine can impose its behaviour on a connection it shares with an ordinary duct. A
+node pushed past its pressure ceiling explodes; past its temperature ceiling it is destroyed.
+Edges are rebuilt from the blocks after a reload, so networks survive relogs.
+
+ZPS registers two gases of its own — **Flux** (fusion fuel, hydrogen-like: very light, very high
+heat capacity) and, when Clockwork is absent, stand-ins for Clockwork's **Aether** and **Steam**
+under Clockwork's ids so recipes and reactions work either way. Kelvin's `kelvin:air` is always
+present.
+
+#### Gas Duct (`gas_duct`)
+- The plain pipe: 1 m³ node, 12.5 cm bore, connects on every face and imposes nothing, so whatever a neighbour proposes (a valve, a pump) defines the edge.
+- Bursts at about 16.4 MPa or 1,478 K. When a neighbour is blown away the face is left as a **leak** that bleeds gas into the world until something is placed against it again.
+
+#### Vent (`vent`)
+- A full-face plate bolted flat against whatever feeds it; the network joins on the back face only, so a vent always caps the end of a run. Placed facing the player like a dispenser (sneak to flip).
+- Dumps everything at its node into the world every tick and draws a particle jet whose speed follows the pressure that pushed it out.
+- A redstone signal shuts the outlet; the node keeps filling and its pressure keeps climbing until the signal drops.
+
+#### Gas Gauge (`gas_gauge`)
+- A dial plate bolted onto the back of a duct or machine; the needle reads the node behind it. Right-click sets the mode — **pressure** or **temperature** — and a lower and upper bound for the dial.
+- Emits a comparator signal from 0 at the lower bound to 15 at the upper, so a network can be regulated with ordinary redstone.
+
+#### Creative Gas Generator (`creative_gas_generator`)
+- Pushes a chosen gas into its own node every tick at a chosen rate (up to 10 kg/tick) and temperature (1–3,000 K); a rate of zero is the off switch. Right-click opens the settings.
+- Offers a connection on every face and has no pressure or temperature ceiling of its own, so the only limit is what the ducts hanging off it can carry — over-pressurising and bursting a line is exactly the feedback it exists to give.
+
+#### Vaporizer (`vaporizer`)
+- Turns items into gas using `zps:vaporizing` recipes: a shapeless set of up to three items, one or more gas outputs in kilograms, a minimum machine temperature and a temperature cost per craft.
+- The machine has its own temperature, starting at ambient (273.15 K). While a matching recipe is loaded but the machine is too cold, it spends FE from its 8,192 FE buffer to heat toward the recipe's minimum (40 FE per Kelvin, at most 80 FE/tick); once hot enough it vaporizes one item per ingredient, emits the gas at the temperature it reached, and then cools by the recipe's cost.
+- The gas collects in the block's own Kelvin tank node (4 m³) and leaves through a single one-way outlet on the top face (no other face connects), so gas on the line can never flow back into the machine; vaporizing pauses at 90% of the tank's pressure ceiling instead of bursting the block.
+- GUI shows the machine temperature (bottom-left, with a status tooltip), the FE bar, and a glass-fronted gas buffer whose tooltip lists each gas by mass plus the buffer's temperature and pressure. Automation may insert ingredients but never extract them.
+- Built-in recipe: blue ice + lithium ingot → Steam + Flux, needing 375 K and costing 100 K. Steam is Clockwork's gas when Clockwork is loaded and an identical stand-in otherwise, like Aether. JEI lists vaporizing recipes under a "Vaporizer" tab.
+
+#### Fusion Reactor (`reinforced_plating`, `reinforced_glass`, `reactor_port`, `heat_exchanger`)
+- There is no controller block. A reactor exists the moment a cavity of air is sealed on every side by blocks in the `zps:reactor_wall` tag (Reinforced Plating, Reinforced Glass, the Reactor Port and the Heat Exchanger); only blocks with a face on the cavity count, and the interior may span at most 14 blocks in any direction. The whole cavity becomes one well-mixed Kelvin node with the shell's thermal mass folded in.
+- **Reactor Port** is a wall block with a short pipe stub that joins the network on its outer face like any duct. Its right-click screen sets a direction and a gas filter. Everything mode-specific sits between the stub and the chamber: as an **input** it holds a check valve into the chamber, so gas goes in and never out (gas only enters while the supply line is at a higher pressure than the chamber); as an **output** it has no edge to the chamber at all and instead pumps gas out into its stub, so gas comes out and never goes in. The **gas filter** is a blacklist of any registered gases and applies in both directions, on the input valve and to what the output pump picks up; by default nothing is held back, so an exhaust that should keep the fuel in wants Flux blocked. The outer face carries a direction-specific indicator overlay that brightens with the redstone signal reaching the block, which narrows the input valve or slows the output pump, to nothing at full power. The output pump draws up to 5 g/tick of whatever passes its filter out of the chamber, cools it to 1,000 K so ordinary ducts can carry it, and stops once its line backs up past 8 MPa; the heat it strips is simply lost.
+- **Heat Exchanger** converts between chamber heat and FE through its outer face, both ways, at 1 FE = 1 kJ and up to 4,096 FE/tick. It accepts FE only while the chamber is below 55,000 K (so a big power source cannot cook the chamber on its own) and only draws FE out while the chamber is above 55,000 K (so the exchangers never pull a running reactor down to where a cold dose of fuel quenches it).
+- **Running it:** pump FE in through the exchangers to heat the chamber to ignition at **50,000 K**, then feed Flux. Fusion is a property of the gas, not the block: Kelvin's `flux_fusion` reaction converts 1 kg of Flux to 0.95 kg of Aether and releases 5 GJ wherever Flux is above 50,000 K, and is inhibited once Aether makes up 25% of the mix — which is what an output port with Flux blocked is for. The exchangers turn the resulting heat back into FE.
+- **Failure:** the chamber melts above **200,000 K**, blowing out one wall block, setting fire to the surroundings and igniting anything alive nearby. It **bursts** when its pressure exceeds **24 MPa**, whatever its shape or size, with a blast that grows with how far over the limit it went. Removing a wall from a lit reactor breaches it the same way; a cold one simply dissolves and is rescanned.
+- An **empty** chamber, one holding no more than 1 g of any gas, will not take heat from a Heat Exchanger, and after 20 ticks empty it loses 2% of its excess over ambient every tick until gas arrives. All three figures are server config values.
+- Ignition and meltdown each grant an advancement to every player within 32 blocks. A lit reactor glows across its whole cavity surface on the client. Temperatures, exchanger limits, exhaust rate and burst ratings are all server config values.
 
 ## 2. Functional Items
 
@@ -253,6 +317,9 @@ of functional quirks noted.
 - **Aluminum Plating (`aluminum_plating`)** — a metal building block that also auto-generates matching slab/stairs/wall variants.
 - **Suspicious Red Sand (`suspicious_red_sand`)** — vanilla suspicious sand in red: brushes out into red sand and holds one buried item. Produced by the Impact Piston's red sandstone recipe.
 - **Vanilla suspicious sand & gravel** are replaced with the same reinforced version — unlike vanilla they survive falling *and* being pushed by pistons with their buried payload intact, and now drop plain sand/gravel when broken (or when they fall somewhere they cannot land) rather than nothing.
+- **Pointed dripstone drips powder snow** — a stalactite whose supporting block has powder snow on top drips into the cauldron under its tip, filling an empty cauldron and then topping a powder snow cauldron up one layer per drip, at the same rate and range as vanilla water drips (snowflake particles mark an active tip). Water and lava drips are unchanged.
+- **Scooping snow from a powder snow cauldron** — sneak-use a powder snow cauldron with both hands empty to take one layer out as a snowball; a plain click behaves as before and bucket interactions are unchanged.
+- **Snow golems fill cauldrons** — a snow golem standing in or on a cauldron adds a layer of powder snow to it each tick (empty cauldrons included), the same footprint its snow trail uses; gated by mob griefing like the trail.
 
 ---
 

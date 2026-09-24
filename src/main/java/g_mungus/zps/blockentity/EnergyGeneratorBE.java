@@ -13,6 +13,7 @@ import java.util.List;
 
 public interface EnergyGeneratorBE extends HudInfoProvider<Integer> {
     long HUD_REQUEST_INTERVAL_TICKS = 10;
+    int HUD_AVERAGE_WINDOW_TICKS = 10;
 
     void setLastHudRefreshTick(long ticks);
 

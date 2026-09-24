@@ -1,6 +1,7 @@
 package g_mungus.zps.compat.jei;
 
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.client.screens.AssemblerScreen;
 import g_mungus.zps.compat.Compat;
 import g_mungus.zps.item.ModItems;
 import g_mungus.zps.recipe.ImpactRecipe;
@@ -13,6 +14,7 @@ import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandlerHelper;
+import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
@@ -87,6 +89,12 @@ public class ZPSJeiPlugin implements IModPlugin {
             registration.addRecipeCatalyst(assembler, CREATE_MECHANICAL_CRAFTING);
             registration.addRecipeCatalyst(assembler, CREATE_AUTOMATIC_SHAPED);
         }
+    }
+
+    /** Accepts ingredients dragged from JEI onto the assembler's pattern grid. */
+    @Override
+    public void registerGuiHandlers(IGuiHandlerRegistration registration) {
+        registration.addGhostIngredientHandler(AssemblerScreen.class, new AssemblerGhostIngredientHandler());
     }
 
     /** The "+" button on both categories the assembler can craft, stamping the recipe into its pattern. */

@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.serialization.JsonOps;
+import net.minecraft.advancements.critereon.StatePropertiesPredicate;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -47,7 +48,11 @@ public class ImpactRecipeSerializer implements RecipeSerializer<ImpactRecipe> {
         if (results.isEmpty()) {
             throw new JsonSyntaxException("An impact recipe needs at least one result");
         }
-        return new ImpactRecipe(recipeId, ingredient, results);
+        // Same shape as a loot table's block_state_property condition: {"level": "8"}.
+        Optional<StatePropertiesPredicate> properties = json.has("properties")
+                ? Optional.of(StatePropertiesPredicate.fromJson(json.get("properties")))
+                : Optional.empty();
+        return new ImpactRecipe(recipeId, ingredient, properties, results);
     }
 
     private static HolderSet<Block> readIngredient(JsonElement element) {
@@ -107,7 +112,13 @@ public class ImpactRecipeSerializer implements RecipeSerializer<ImpactRecipe> {
                             throw new JsonSyntaxException("Invalid impact result count: " + message);
                         })
                 : ImpactResult.DEFAULT_COUNT;
-        return ImpactResult.of(block, weight, buried, count);
+        Optional<BuriedDrops> buriedDrops = json.has("buried_drops")
+                ? Optional.of(BuriedDrops.CODEC.parse(JsonOps.INSTANCE, json.get("buried_drops"))
+                        .getOrThrow(false, message -> {
+                            throw new JsonSyntaxException("Invalid impact result buried_drops: " + message);
+                        }))
+                : Optional.empty();
+        return ImpactResult.of(block, weight, buried, count, buriedDrops);
     }
 
     @Override
@@ -132,9 +143,16 @@ public class ImpactRecipeSerializer implements RecipeSerializer<ImpactRecipe> {
             Optional<Ingredient> buried = buffer.readBoolean()
                     ? Optional.of(Ingredient.fromNetwork(buffer))
                     : Optional.empty();
-            results.add(ImpactResult.of(block, weight, buried, readCount(buffer)));
+            IntProvider count = readCount(buffer);
+            Optional<BuriedDrops> buriedDrops = buffer.readBoolean()
+                    ? Optional.of(BuriedDrops.read(buffer))
+                    : Optional.empty();
+            results.add(ImpactResult.of(block, weight, buried, count, buriedDrops));
         }
-        return new ImpactRecipe(recipeId, ingredient, results);
+        Optional<StatePropertiesPredicate> properties = buffer.readBoolean()
+                ? Optional.of(StatePropertiesPredicate.fromJson(GsonHelper.parse(buffer.readUtf())))
+                : Optional.empty();
+        return new ImpactRecipe(recipeId, ingredient, properties, results);
     }
 
     @Override
@@ -158,7 +176,11 @@ public class ImpactRecipeSerializer implements RecipeSerializer<ImpactRecipe> {
             buffer.writeBoolean(result.buriedItem().isPresent());
             result.buriedItem().ifPresent(buried -> buried.toNetwork(buffer));
             writeCount(buffer, result.count());
+            buffer.writeBoolean(result.buriedDrops().isPresent());
+            result.buriedDrops().ifPresent(drops -> BuriedDrops.write(buffer, drops));
         }
+        buffer.writeBoolean(recipe.properties().isPresent());
+        recipe.properties().ifPresent(predicate -> buffer.writeUtf(predicate.serializeToJson().toString()));
     }
 
     /**

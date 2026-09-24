@@ -1,11 +1,13 @@
 package g_mungus.zps.block;
 
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
-import g_mungus.zps.client.screens.RoboticArmClientHooks;
 import net.minecraft.core.BlockPos;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
@@ -19,8 +21,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -63,11 +63,38 @@ public class RoboticArmBlock extends BaseEntityBlock {
     @Override
     public @NotNull InteractionResult use(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
                                           @NotNull Player player, @NotNull InteractionHand hand,
-                                          @NotNull BlockHitResult hitResult) {
-        if (level.isClientSide) {
-            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> RoboticArmClientHooks.openRoboticArmScreen(pos));
+                                          @NotNull BlockHitResult hit) {
+        if (!(level.getBlockEntity(pos) instanceof RoboticArmBlockEntity roboticArm)) {
+            return InteractionResult.PASS;
+        }
+
+        ItemStack stack = player.getItemInHand(hand);
+        if (stack.isEmpty()) {
+            // Empty hand: take whatever the arm is holding.
+            if (hand != InteractionHand.MAIN_HAND || roboticArm.getHeldStack().isEmpty()) {
+                return InteractionResult.PASS;
+            }
+            if (!level.isClientSide) {
+                player.setItemInHand(hand, roboticArm.takeHeldStack());
+                playTransferSound(level, pos);
+            }
+            return InteractionResult.sidedSuccess(level.isClientSide);
+        }
+
+        // Holding something: give the arm as much of it as it can accept.
+        if (roboticArm.getAcceptableCount(stack) <= 0) {
+            return InteractionResult.PASS;
+        }
+        if (!level.isClientSide) {
+            int given = roboticArm.giveHeldItems(stack);
+            stack.shrink(given);
+            playTransferSound(level, pos);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
+    }
+
+    private static void playTransferSound(Level level, BlockPos pos) {
+        level.playSound(null, pos, SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 0.2F, 1.0F);
     }
 
     @Override

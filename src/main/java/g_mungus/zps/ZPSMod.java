@@ -13,6 +13,11 @@ import g_mungus.zps.gametest.RollingMillGameTests;
 import g_mungus.zps.gametest.AssemblerGameTests;
 import g_mungus.zps.gametest.BrushableBlockGameTests;
 import g_mungus.zps.gametest.ImpactPistonGameTests;
+import g_mungus.zps.gametest.ComposterDirtGameTests;
+import g_mungus.zps.gametest.DripstoneGameTests;
+import g_mungus.zps.gametest.PowderSnowCauldronGameTests;
+import g_mungus.zps.gametest.SnowGolemGameTests;
+import g_mungus.zps.block.PowderSnowCauldronScoop;
 import g_mungus.zps.item.ModCreativeTabs;
 import g_mungus.zps.item.ModItems;
 import g_mungus.zps.gametest.CableNetworkGameTests;
@@ -87,7 +92,10 @@ public final class ZPSMod {
     private void commonSetup(final FMLCommonSetupEvent event) {
         ZPSGamePackets.register();
         event.enqueueWork(ZPSMod::addBrushableBlocks);
+        // Vanilla's cauldron interaction maps are plain hash maps, not thread-safe to fill in parallel.
+        event.enqueueWork(PowderSnowCauldronScoop::register);
     }
+
 
     /**
      * Vanilla's brushable block entity only accepts the two blocks it ships with, and an invalid
@@ -109,5 +117,9 @@ public final class ZPSMod {
         event.register(AssemblerGameTests.class);
         event.register(ImpactPistonGameTests.class);
         event.register(BrushableBlockGameTests.class);
+        event.register(ComposterDirtGameTests.class);
+        event.register(DripstoneGameTests.class);
+        event.register(PowderSnowCauldronGameTests.class);
+        event.register(SnowGolemGameTests.class);
     }
 }

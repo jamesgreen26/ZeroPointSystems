@@ -8,6 +8,8 @@ import g_mungus.zps.ZPSMod;
 import g_mungus.zps.blockentity.AssemblerBlockEntity;
 import g_mungus.zps.menu.AssemblerMenu;
 import g_mungus.zps.mixin.RecipeBookComponentAccessor;
+import g_mungus.zps.networking.AssemblerPatternCellC2SPacket;
+import g_mungus.zps.networking.ZPSGamePackets;
 import g_mungus.zps.util.NumberFormatter;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
@@ -232,6 +234,15 @@ public class AssemblerScreen extends AbstractContainerScreen<AssemblerMenu> impl
             }
         }
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+    }
+
+    /**
+     * Stamps a pattern cell with an item the player isn't carrying — used by the JEI ghost-ingredient
+     * handler, since the normal click path can only stamp the carried stack. The cell is set server-side
+     * and comes back through the usual menu sync.
+     */
+    public void stampGhostFromDrag(int patternIndex, ItemStack stack) {
+        ZPSGamePackets.sendToServer(new AssemblerPatternCellC2SPacket(this.menu.containerId, patternIndex, stack));
     }
 
     @Override

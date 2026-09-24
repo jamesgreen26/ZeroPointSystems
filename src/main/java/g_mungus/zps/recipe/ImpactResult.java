@@ -22,8 +22,15 @@ import java.util.Optional;
  *                   ignored when there is no buried item. Written either as a plain number or as any
  *                   int provider, so {@code {"type": "minecraft:uniform", "value": {"min_inclusive":
  *                   1, "max_inclusive": 2}}} buries one or two.
+ * @param buriedDrops when present and {@code block} has a {@code BrushableBlockEntity}, the struck
+ *                   block's own loot table is rolled and its drops are buried instead, e.g.
+ *                   {@code {"fortune": 2}} for what a Fortune II pickaxe would have mined. The loot
+ *                   table sets its own counts, so {@code count} does not apply, and
+ *                   {@code buriedItem} stops being buried and becomes purely descriptive: it is
+ *                   what JEI lists under "May contain", since loot tables never reach the client.
  */
-public record ImpactResult(Holder<Block> block, int weight, Optional<Ingredient> buriedItem, IntProvider count) {
+public record ImpactResult(Holder<Block> block, int weight, Optional<Ingredient> buriedItem, IntProvider count,
+                           Optional<BuriedDrops> buriedDrops) {
     public static final int DEFAULT_WEIGHT = 1;
     public static final IntProvider DEFAULT_COUNT = ConstantInt.of(1);
     /** Nothing may be buried in a quantity a single stack cannot hold. */
@@ -33,7 +40,16 @@ public record ImpactResult(Holder<Block> block, int weight, Optional<Ingredient>
         this(block, weight, buriedItem, DEFAULT_COUNT);
     }
 
+    public ImpactResult(Holder<Block> block, int weight, Optional<Ingredient> buriedItem, IntProvider count) {
+        this(block, weight, buriedItem, count, Optional.empty());
+    }
+
     public static ImpactResult of(Block block, int weight, Optional<Ingredient> buriedItem, IntProvider count) {
-        return new ImpactResult(BuiltInRegistries.BLOCK.wrapAsHolder(block), weight, buriedItem, count);
+        return of(block, weight, buriedItem, count, Optional.empty());
+    }
+
+    public static ImpactResult of(Block block, int weight, Optional<Ingredient> buriedItem, IntProvider count,
+                                  Optional<BuriedDrops> buriedDrops) {
+        return new ImpactResult(BuiltInRegistries.BLOCK.wrapAsHolder(block), weight, buriedItem, count, buriedDrops);
     }
 }

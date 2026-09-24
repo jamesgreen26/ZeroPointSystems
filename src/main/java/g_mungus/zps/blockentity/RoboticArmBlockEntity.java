@@ -16,6 +16,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.Clearable;
 import net.minecraft.world.CompoundContainer;
 import net.minecraft.world.Container;
+import net.minecraft.world.WorldlyContainerHolder;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.WorldlyContainer;
@@ -53,6 +54,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.wrapper.SidedInvWrapper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -82,7 +84,6 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
     private PendingTransfer pendingTransfer = PendingTransfer.NONE;
     private BlockPos pendingTransferTargetPos = BlockPos.ZERO;
     private int retrieveAmount = 1;
-    private boolean viewRange = false;
     private boolean energyRanOutDuringMove = false;
     private Vec3 lastSwivelAxis = new Vec3(1.0, 0.0, 0.0);
     private transient FakePlayer usePlayer;
@@ -285,6 +286,43 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
         return heldStack;
     }
 
+    /** How many items of {@code stack} the hand could take right now: it holds a single stack, so only an empty hand or a matching, non-full stack accepts anything. */
+    public int getAcceptableCount(ItemStack stack) {
+        if (stack.isEmpty()) return 0;
+        if (heldStack.isEmpty()) return Math.min(stack.getCount(), stack.getMaxStackSize());
+        if (!ItemStack.isSameItemSameTags(heldStack, stack)) return 0;
+        return Math.min(stack.getCount(), Math.max(0, heldStack.getMaxStackSize() - heldStack.getCount()));
+    }
+
+    /** Hands over as much of {@code stack} as the arm can accept, without modifying {@code stack}. Returns the count taken. */
+    public int giveHeldItems(ItemStack stack) {
+        int accepted = getAcceptableCount(stack);
+        if (accepted <= 0) return 0;
+        if (heldStack.isEmpty()) {
+            heldStack = stack.copyWithCount(accepted);
+        } else {
+            heldStack.grow(accepted);
+        }
+        syncHeldStack();
+        return accepted;
+    }
+
+    /** Removes and returns everything the arm is holding. */
+    public ItemStack takeHeldStack() {
+        if (heldStack.isEmpty()) return ItemStack.EMPTY;
+        ItemStack taken = heldStack;
+        heldStack = ItemStack.EMPTY;
+        syncHeldStack();
+        return taken;
+    }
+
+    private void syncHeldStack() {
+        setChanged();
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_ALL);
+        }
+    }
+
     public Vec3 getLastSwivelAxis() {
         return lastSwivelAxis;
     }
@@ -363,7 +401,6 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
         tag.putInt("PendingTransfer", pendingTransfer.ordinal());
         tag.putLong("PendingTransferTargetPos", pendingTransferTargetPos.asLong());
         tag.putInt("RetrieveAmount", retrieveAmount);
-        tag.putBoolean("ViewRange", viewRange);
         tag.put("Energy", energyStorage.serializeNBT());
     }
 
@@ -376,7 +413,6 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
         pendingTransfer = PendingTransfer.byOrdinal(tag.getInt("PendingTransfer"));
         pendingTransferTargetPos = tag.contains("PendingTransferTargetPos", Tag.TAG_LONG) ? BlockPos.of(tag.getLong("PendingTransferTargetPos")) : BlockPos.ZERO;
         retrieveAmount = clampRetrieveAmount(tag.contains("RetrieveAmount", Tag.TAG_ANY_NUMERIC) ? tag.getInt("RetrieveAmount") : 1);
-        viewRange = tag.getBoolean("ViewRange");
         if (tag.contains("Energy")) {
             energyStorage.deserializeNBT(tag.get("Energy"));
         }
@@ -472,7 +508,14 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
     private @Nullable IItemHandler resolveTransferItemHandler(BlockPos targetPos, Direction side) {
         if (level == null) return null;
         BlockEntity blockEntity = level.getBlockEntity(targetPos);
-        if (blockEntity == null) return null;
+        if (blockEntity == null) {
+            // Blocks with no block entity can still hold a container, as the composter does.
+            BlockState targetState = level.getBlockState(targetPos);
+            if (targetState.getBlock() instanceof WorldlyContainerHolder holder) {
+                return new SidedInvWrapper(holder.getContainer(targetState, level, targetPos), side);
+            }
+            return null;
+        }
         return blockEntity.getCapability(ForgeCapabilities.ITEM_HANDLER, side).orElse(null);
     }
 
@@ -590,13 +633,8 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
         return retrieveAmount;
     }
 
-    public boolean isViewRange() {
-        return viewRange;
-    }
-
-    public void setArmSettings(int retrieveAmount, boolean viewRange) {
+    public void setArmSettings(int retrieveAmount) {
         this.retrieveAmount = clampRetrieveAmount(retrieveAmount);
-        this.viewRange = viewRange;
         setChanged();
         if (level != null) {
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_ALL);

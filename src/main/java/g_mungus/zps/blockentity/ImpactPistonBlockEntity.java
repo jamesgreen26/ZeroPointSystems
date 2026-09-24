@@ -1,6 +1,7 @@
 package g_mungus.zps.blockentity;
 
 import g_mungus.zps.ModSounds;
+import g_mungus.zps.recipe.BuriedDrops;
 import g_mungus.zps.recipe.ImpactInput;
 import g_mungus.zps.recipe.ImpactRecipe;
 import g_mungus.zps.recipe.ImpactResult;
@@ -35,6 +36,8 @@ import net.minecraftforge.energy.IEnergyStorage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -271,8 +274,16 @@ public class ImpactPistonBlockEntity extends BlockEntity {
             return;
         }
 
+        // The struck block's loot has to be rolled while the block (and any block entity) is still there.
+        List<ItemStack> drops = result.buriedDrops().map(buried -> rollDrops(below, struck, buried)).orElse(List.of());
         level.setBlockAndUpdate(below, replacement);
-        result.buriedItem().ifPresent(buried -> buryRandomItem(below, buried, result.count()));
+        if (result.buriedDrops().isPresent()) {
+            // The loot table is the whole answer here, even when it comes up empty: alongside
+            // buried drops the buried item only describes the contents, for JEI.
+            buryDrops(below, drops);
+        } else {
+            result.buriedItem().ifPresent(buried -> buryRandomItem(below, buried, result.count()));
+        }
         invalidateRecipeCache();
         cooldown = COOLDOWN_TICKS;
         setChanged();
@@ -297,6 +308,47 @@ public class ImpactPistonBlockEntity extends BlockEntity {
     /** Ties the property's value type back together, which {@code Property<?>} alone cannot express. */
     private static <T extends Comparable<T>> BlockState copyProperty(BlockState replacement, BlockState struck, Property<T> property) {
         return replacement.setValue(property, struck.getValue(property));
+    }
+
+    /**
+     * What mining {@code struck} with the recipe's notional pickaxe would have dropped, with stacks
+     * of the same item merged so that e.g. a loot table with several pools still buries one pile.
+     */
+    private List<ItemStack> rollDrops(BlockPos pos, BlockState struck, BuriedDrops buried) {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return List.of();
+        }
+        List<ItemStack> merged = new ArrayList<>();
+        for (ItemStack drop : Block.getDrops(struck, serverLevel, pos, level.getBlockEntity(pos), null, buried.createTool())) {
+            for (ItemStack existing : merged) {
+                if (drop.isEmpty()) {
+                    break;
+                }
+                if (ItemStack.isSameItemSameTags(existing, drop)) {
+                    int moved = Math.min(drop.getCount(), existing.getMaxStackSize() - existing.getCount());
+                    existing.grow(moved);
+                    drop.shrink(moved);
+                }
+            }
+            if (!drop.isEmpty()) {
+                merged.add(drop);
+            }
+        }
+        return merged;
+    }
+
+    /**
+     * A brushable block holds exactly one stack, so the first goes inside and anything the loot
+     * table produced beyond that spills out around the block rather than being silently lost.
+     */
+    private void buryDrops(BlockPos pos, List<ItemStack> drops) {
+        if (drops.isEmpty() || !(level.getBlockEntity(pos) instanceof BrushableBlockEntity)) {
+            return;
+        }
+        buryItem(level, pos, drops.get(0));
+        for (ItemStack overflow : drops.subList(1, drops.size())) {
+            Block.popResource(level, pos, overflow);
+        }
     }
 
     private void buryRandomItem(BlockPos pos, Ingredient buried, IntProvider count) {

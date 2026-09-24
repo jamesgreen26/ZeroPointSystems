@@ -2,11 +2,7 @@ package g_mungus.zps.block;
 
 import g_mungus.zps.blockentity.ImpactPistonBlockEntity;
 import g_mungus.zps.blockentity.ModBlockEntities;
-import g_mungus.zps.client.screens.ImpactPistonClientHooks;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
@@ -20,9 +16,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -74,17 +67,6 @@ public class ImpactPistonBlock extends BaseEntityBlock {
     @Override
     public BlockEntity newBlockEntity(@NotNull BlockPos pos, @NotNull BlockState state) {
         return ModBlockEntities.IMPACT_PISTON.get().create(pos, state);
-    }
-
-    /** The piston has no inventory, so the screen is a plain client-side readout of its energy. */
-    @Override
-    public @NotNull InteractionResult use(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
-                                          @NotNull Player player, @NotNull InteractionHand hand,
-                                          @NotNull BlockHitResult hit) {
-        if (level.isClientSide()) {
-            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ImpactPistonClientHooks.openImpactPistonScreen(pos));
-        }
-        return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
     @Nullable

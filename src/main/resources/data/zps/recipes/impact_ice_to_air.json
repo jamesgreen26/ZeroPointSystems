@@ -1,0 +1,7 @@
+{
+  "type": "zps:impact",
+  "ingredient": "#minecraft:ice",
+  "results": [
+    { "block": "minecraft:air" }
+  ]
+}

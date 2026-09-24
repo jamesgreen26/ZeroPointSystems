@@ -438,5 +438,8 @@
     "zps.display_source.serial_bus": "Raw Input Data",
     "zps.display_source.serial_bus_manual": "Stored Display Text",
 
-    "gui.recipebook.toggleRecipes.rollable": "Rollable"
+    "gui.recipebook.toggleRecipes.rollable": "Rollable",
+    "gui.zps.jei.impact.may_contain": "May contain:",
+    "gui.zps.jei.impact.requires_state": "Requires %s: %s",
+    "block.zps.composter_dirt": "Dirt-Filled Composter"
 }

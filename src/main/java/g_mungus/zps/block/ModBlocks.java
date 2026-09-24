@@ -225,6 +225,10 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
 
+    /** World-only: made by striking a full composter with the Impact Piston. Has no item on purpose. */
+    public static final RegistryObject<Block> COMPOSTER_DIRT = BLOCKS.register("composter_dirt",
+            () -> new ComposterDirtBlock(BlockBehaviour.Properties.copy(Blocks.COMPOSTER)));
+
     public static final RegistryObject<Block> IMPACT_PISTON = BLOCKS.register("impact_piston",
             () -> new ImpactPistonBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.5f)

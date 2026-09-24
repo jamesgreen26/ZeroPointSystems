@@ -2,8 +2,12 @@ package g_mungus.zps.networking;
 
 import g_mungus.zps.ZPSMod;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
+import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 
 public class ZPSGamePackets {
@@ -16,6 +20,21 @@ public class ZPSGamePackets {
     );
 
     private static int packetId = 0;
+
+    public static void sendToServer(Object packet) {
+        INSTANCE.sendToServer(packet);
+    }
+
+    public static void sendToPlayer(ServerPlayer player, Object packet) {
+        INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    /** To every player watching the chunk at chunkPos; nothing is sent when the chunk is not loaded. */
+    public static void sendToTrackingChunk(ServerLevel level, ChunkPos chunkPos, Object packet) {
+        if (level.hasChunk(chunkPos.x, chunkPos.z)) {
+            INSTANCE.send(PacketDistributor.TRACKING_CHUNK.with(() -> level.getChunk(chunkPos.x, chunkPos.z)), packet);
+        }
+    }
 
     public static void register() {
         INSTANCE.messageBuilder(OctoControlPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
@@ -90,10 +109,10 @@ public class ZPSGamePackets {
                 .consumerMainThread(AddressPadSetEntriesC2SPacket::handle)
                 .add();
 
-        INSTANCE.messageBuilder(RoboticArmSettingsC2SPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(RoboticArmSettingsC2SPacket::encode)
-                .decoder(RoboticArmSettingsC2SPacket::decode)
-                .consumerMainThread(RoboticArmSettingsC2SPacket::handle)
+        INSTANCE.messageBuilder(AssemblerPatternCellC2SPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(AssemblerPatternCellC2SPacket::encode)
+                .decoder(AssemblerPatternCellC2SPacket::decode)
+                .consumerMainThread(AssemblerPatternCellC2SPacket::handle)
                 .add();
     }
 }

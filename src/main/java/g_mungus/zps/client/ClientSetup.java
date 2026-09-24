@@ -38,6 +38,9 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ModelEvent;
 import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
+import net.minecraftforge.client.event.RegisterClientTooltipComponentFactoriesEvent;
+import g_mungus.zps.client.tooltip.ClientItemIconsTooltip;
+import g_mungus.zps.client.tooltip.ItemIconsTooltip;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModList;
@@ -60,6 +63,11 @@ public class ClientSetup {
             new ModelResourceLocation(ZPSMod.resource("power_drill"), "inventory");
     private static final ModelResourceLocation CHAINSAW_MODEL =
             new ModelResourceLocation(ZPSMod.resource("chainsaw"), "inventory");
+
+    @SubscribeEvent
+    public static void onRegisterTooltipComponents(RegisterClientTooltipComponentFactoriesEvent event) {
+        event.register(ItemIconsTooltip.class, ClientItemIconsTooltip::new);
+    }
 
     @SubscribeEvent
     public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {

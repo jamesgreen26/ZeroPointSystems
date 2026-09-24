@@ -136,15 +136,21 @@ public class AssemblerMenu extends RecipeBookMenu<CraftingContainer> {
         // the block entity so the parallel ingredient matcher stays in sync (manual = null = exact match).
         if (slotId >= GHOST_START && slotId < GHOST_END) {
             ItemStack carried = getCarried();
-            int patternIndex = slotId - GHOST_START;
-            if (carried.isEmpty() || button == 1) {
-                blockEntity.setPatternCell(patternIndex, null, ItemStack.EMPTY);
-            } else {
-                blockEntity.setPatternCell(patternIndex, null, carried);
-            }
+            stampPatternCell(slotId - GHOST_START, button == 1 ? ItemStack.EMPTY : carried);
             return;
         }
         super.clicked(slotId, button, clickType, player);
+    }
+
+    /**
+     * Sets one pattern cell to a display-only copy of {@code display} (empty clears it), matching exactly
+     * rather than by tag. Used by ghost-slot clicks and by the JEI ghost-drag packet.
+     */
+    public void stampPatternCell(int patternIndex, ItemStack display) {
+        if (patternIndex < 0 || patternIndex >= AssemblerBlockEntity.PATTERN_SLOTS) {
+            return;
+        }
+        blockEntity.setPatternCell(patternIndex, null, display);
     }
 
     /**

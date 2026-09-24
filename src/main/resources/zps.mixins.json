@@ -21,6 +21,7 @@
     "ponder.ScreenOpenerMixin"
   ],
   "mixins": [
+    "AbstractCauldronBlockMixin",
     "ArgumentTypeInfosMixin",
     "BlockBehaviourAccessor",
     "BlockBehaviourMixin",
@@ -35,7 +36,12 @@
     "LivingEntityMixin",
     "PistonBaseBlockMixin",
     "PistonMovingBlockEntityMixin",
+    "PointedDripstoneBlockInvoker",
+    "PointedDripstoneBlockMixin",
+    "PoiTypeMixin",
+    "PoiTypesMixin",
     "ServerLevelMixin",
+    "SnowGolemMixin",
     "StructureTemplateMixin",
     "WritableBookMixin",
     "WrittenBookMixin",

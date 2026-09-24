@@ -2,7 +2,7 @@
 
 Fusion Reactors are a very powerful multiblock which can be used to generate large amounts of FE.
 
-However, they are also tricky to set up and keep running. 
+However, they are also complex to set up and keep running. 
 This page should help you learn how to start and run a healthy reactor. 
 
 You can also ponder any block involved in reactor creation for a more visual tutorial on how to build one.
@@ -20,7 +20,7 @@ _(Both of which can be automated)_
 
 ## Starting the reaction
 
-The Flux will only react into Aether once the reactor is above 50,000K. If you attach Step-Down transformers
+The Flux will only react into Aether once the reactor temperature is above 50,000K. If you attach Step-Down transformers
 to the heat exchangers on your reactor, you can feed it FE to heat it up to the reaction temperature. 
 If you attach Step-Up transformers to the heat exchangers, you can siphon off heat from the reactor to generate FE.
 

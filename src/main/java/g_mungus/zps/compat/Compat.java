@@ -14,12 +14,17 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
+import org.jetbrains.annotations.Nullable;
+import org.valkyrienskies.kelvin.api.GasType;
 import shipwrights.genesis.space.Celestial;
+
+import java.util.List;
 
 @Mod.EventBusSubscriber
 public class Compat {
@@ -51,32 +56,68 @@ public class Compat {
 
     public static boolean isGenesisLoaded() {return ModList.get().isLoaded("genesis");}
 
+    public static boolean isClockworkLoaded() { return ModList.get().isLoaded("vs_clockwork"); }
+
     public static BlockPos toWorldPos(ServerLevel level, BlockPos pos) {
         if (isVSLoaded()) {
             Vec3 truePos = VSCompat.shipToWorld(level, pos);
             return new BlockPos((int) truePos.x, (int) truePos.y, (int) truePos.z);
-        } else {
-            return pos;
         }
+        return pos;
     }
 
-    public static Vec3 toWorldPos(ServerLevel level, Vec3 pos) {
+    public static Vec3 toWorldPos(Level level, Vec3 pos) {
         if (isVSLoaded()) {
             return VSCompat.shipToWorld(level, pos);
-        } else {
-            return pos;
         }
+        return pos;
     }
 
-    /// Transforms pos (in its own grid's coordinates) into the local space of the
-    /// grid managing anchorPos. Identity when VS is not loaded.
+    /// Projects pos (in the local grid space of the ship managing anchorPos) into world space.
+    /// anchorPos resolves which ship to use, so positions outside that ship's strict bounds still
+    /// transform correctly. Identity when VS is not loaded.
+    public static Vec3 toWorldPos(Level level, BlockPos anchorPos, Vec3 pos) {
+        if (isVSLoaded()) {
+            return VSCompat.shipToWorld(level, anchorPos, pos);
+        }
+        return pos;
+    }
+
+    /// Transforms pos (in its own grid's coordinates) into the local space of the ship managing
+    /// anchorPos. Identity when VS is not loaded.
     public static Vec3 toLocalSpaceOf(Level level, BlockPos anchorPos, Vec3 pos) {
         if (isVSLoaded()) {
             Vec3 worldPos = VSCompat.shipToWorld(level, pos);
             return VSCompat.worldToShip(level, anchorPos, worldPos);
-        } else {
-            return pos;
         }
+        return pos;
+    }
+
+    /// True when pos lies in the region VS keeps for its ships (the shipyard) but no ship owns it
+    /// any more: a ship has gone, and whatever is still at pos is a leftover with no place in the
+    /// world. False in the world proper, on a live ship, or when VS is not present.
+    public static boolean isOrphanedGridPos(Level level, BlockPos pos) {
+        if (isVSLoaded()) {
+            return VSCompat.isOrphanedShipyardPos(level, pos);
+        }
+        return false;
+    }
+
+    /// The moving grid (VS ship) that pos belongs to, or null when pos is in the world proper or VS
+    /// is not present.
+    public static @Nullable GridSpace gridOf(Level level, BlockPos pos) {
+        if (isVSLoaded()) {
+            return VSCompat.gridOf(level, pos);
+        }
+        return null;
+    }
+
+    /// Every moving grid that reaches into worldBounds. Empty when VS is not present.
+    public static List<GridSpace> gridsTouching(Level level, AABB worldBounds) {
+        if (isVSLoaded()) {
+            return VSCompat.gridsTouching(level, worldBounds);
+        }
+        return List.of();
     }
 
     @SubscribeEvent
@@ -95,6 +136,43 @@ public class Compat {
     public static void onModInit(IEventBus modEventBus) {
         if (isCreateLoaded()) {
             CreateCompat.init(modEventBus);
+        }
+    }
+
+    /** Clockwork's Steam when it is present, or the same gas defined here so ZPS can run without it. */
+    public static GasType getOrCreateSteamGas() {
+        if (isClockworkLoaded()) {
+            return ClockworkCompat.getSteamGas();
+        } else {
+            return new GasType(
+                    "Steam",
+                    ResourceLocation.fromNamespaceAndPath("vs_clockwork", "steam"),
+                    0.762,
+                    1.223e-5,
+                    2.2,
+                    0.031,
+                    111.0,
+                    1.4,
+                    ResourceLocation.fromNamespaceAndPath("kelvin", "textures/icons/steam.png")
+            );
+        }
+    }
+
+    public static GasType getOrCreateAetherGas() {
+        if (isClockworkLoaded()) {
+            return ClockworkCompat.getAetherGas();
+        } else {
+            return new GasType(
+                    "Aether",
+                    ResourceLocation.fromNamespaceAndPath("vs_clockwork", "aether"),
+                    0.166,
+                    1.96e-5,
+                    5.1832,
+                    0.151,
+                    79.4,
+                    1.66,
+                    ResourceLocation.fromNamespaceAndPath("kelvin", "textures/icons/helium.png")
+            );
         }
     }
 }

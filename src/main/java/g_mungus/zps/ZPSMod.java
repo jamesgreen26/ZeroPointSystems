@@ -17,6 +17,7 @@ import g_mungus.zps.gametest.ComposterDirtGameTests;
 import g_mungus.zps.gametest.DripstoneGameTests;
 import g_mungus.zps.gametest.PowderSnowCauldronGameTests;
 import g_mungus.zps.gametest.SnowGolemGameTests;
+import g_mungus.zps.gametest.PowerCellMultiblockGameTests;
 import g_mungus.zps.block.PowderSnowCauldronScoop;
 import g_mungus.zps.item.ModCreativeTabs;
 import g_mungus.zps.item.ModItems;
@@ -121,5 +122,6 @@ public final class ZPSMod {
         event.register(DripstoneGameTests.class);
         event.register(PowderSnowCauldronGameTests.class);
         event.register(SnowGolemGameTests.class);
+        event.register(PowerCellMultiblockGameTests.class);
     }
 }

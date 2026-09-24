@@ -1,0 +1,59 @@
+{
+	"format_version": "1.9.0",
+	"texture_size": [
+		32,
+		32
+	],
+	"textures": {
+		"0": "zps:block/power_cell",
+		"particle": "zps:block/power_cell"
+	},
+	"elements": [
+		{
+			"from": [
+				0,
+				0,
+				1
+			],
+			"to": [
+				1,
+				1.7778,
+				2
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						8.5,
+						15.1111,
+						9.0,
+						16.0
+					],
+					"texture": "#0"
+				}
+			}
+		},
+		{
+			"from": [
+				0,
+				1.7778,
+				1
+			],
+			"to": [
+				1,
+				2,
+				2
+			],
+			"faces": {
+				"north": {
+					"uv": [
+						0.5,
+						15.0,
+						1.0,
+						15.1111
+					],
+					"texture": "#0"
+				}
+			}
+		}
+	]
+}

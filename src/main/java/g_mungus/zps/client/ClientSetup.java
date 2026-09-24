@@ -91,6 +91,8 @@ public class ClientSetup {
         event.register(ROBOTIC_ARM_SEGMENT_BER_MODEL);
         event.register(ROBOTIC_ARM_SWIVEL_BASE_BER_MODEL);
         event.register(POWER_CELL_DIVIDER_BER_MODEL);
+        event.register(ZPSMod.resource("block/power_cell_divider_2x2"));
+        event.register(ZPSMod.resource("block/power_cell_divider_3x3"));
         event.register(PoweredToolItemRenderer.BASE_MODEL);
         event.register(PoweredToolItemRenderer.HEAD_MODEL);
         event.register(ChainsawItemRenderer.BLADE_MODEL);

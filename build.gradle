@@ -155,7 +155,7 @@ dependencies {
     // Players install Kotlin for Forge, which Kelvin needs as its language provider and which cannot be bundled.
     jarJar(modImplementation("org.valkyrienskies.kelvin:kelvin:${kelvin_version}")) {
         version {
-            strictly "[${kelvin_version},)"
+            strictly "[0.5.1,)"
             prefer "${kelvin_version}"
         }
     }

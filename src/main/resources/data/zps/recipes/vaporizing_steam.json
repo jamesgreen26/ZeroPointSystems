@@ -1,0 +1,16 @@
+{
+  "type": "zps:vaporizing",
+  "ingredients": [
+    {
+      "item": "minecraft:ice"
+    }
+  ],
+  "results": [
+    {
+      "gas": "vs_clockwork:steam",
+      "amount": 1.0
+    }
+  ],
+  "minTemperature": 375.0,
+  "temperatureCost": 100.0
+}

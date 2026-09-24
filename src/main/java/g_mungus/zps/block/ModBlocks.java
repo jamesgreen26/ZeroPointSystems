@@ -5,6 +5,7 @@ import g_mungus.zps.block.gas.CreativeGasGeneratorBlock;
 import g_mungus.zps.block.gas.DuctBlock;
 import g_mungus.zps.block.gas.GasGaugeBlock;
 import g_mungus.zps.block.gas.VentBlock;
+import g_mungus.zps.block.gas.VaporizerBlock;
 import g_mungus.zps.block.cableNetwork.*;
 import g_mungus.zps.block.cableNetwork.light_pipe.*;
 import g_mungus.zps.block.cableNetwork.properties.InsulationType;
@@ -232,6 +233,11 @@ public class ModBlocks {
     /** World-only: made by striking a full composter with the Impact Piston. Has no item on purpose. */
     public static final RegistryObject<Block> COMPOSTER_DIRT = BLOCKS.register("composter_dirt",
             () -> new ComposterDirtBlock(BlockBehaviour.Properties.copy(Blocks.COMPOSTER)));
+
+    public static final RegistryObject<Block> VAPORIZER = BLOCKS.register("vaporizer",
+            () -> new VaporizerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.5f)
+                    .requiresCorrectToolForDrops()));
 
     public static final RegistryObject<Block> VENT = BLOCKS.register("vent",
             () -> new VentBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)

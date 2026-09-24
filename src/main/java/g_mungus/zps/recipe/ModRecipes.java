@@ -47,4 +47,16 @@ public class ModRecipes {
 
     public static final RegistryObject<ImpactRecipeSerializer> IMPACT_SERIALIZER =
             RECIPE_SERIALIZERS.register("impact", ImpactRecipeSerializer::new);
+
+    /** Items to gas in the Vaporizer, gated and paid for in machine temperature. */
+    public static final RegistryObject<RecipeType<VaporizingRecipe>> VAPORIZING_TYPE =
+            RECIPE_TYPES.register("vaporizing", () -> new RecipeType<VaporizingRecipe>() {
+                @Override
+                public String toString() {
+                    return "zps:vaporizing";
+                }
+            });
+
+    public static final RegistryObject<VaporizingRecipeSerializer> VAPORIZING_SERIALIZER =
+            RECIPE_SERIALIZERS.register("vaporizing", VaporizingRecipeSerializer::new);
 }

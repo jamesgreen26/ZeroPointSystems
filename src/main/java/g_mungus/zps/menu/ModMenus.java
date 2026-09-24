@@ -25,4 +25,7 @@ public class ModMenus {
 
     public static final RegistryObject<MenuType<SieveMenu>> SIEVE =
             MENUS.register("sieve", () -> IForgeMenuType.create(SieveMenu::new));
+
+    public static final RegistryObject<MenuType<VaporizerMenu>> VAPORIZER =
+            MENUS.register("vaporizer", () -> IForgeMenuType.create(VaporizerMenu::new));
 }

@@ -468,5 +468,19 @@
     "gui.zps.gas_gauge.mode.temperature": "Temperature",
     "block.zps.gas_duct": "Gas Duct",
     "block.zps.creative_gas_generator": "Creative Gas Generator",
-    "block.zps.creative_gas_generator.zps_tooltip": "An infinite source of [Gas], only obtainable in Creative Mode."
+    "block.zps.creative_gas_generator.zps_tooltip": "An infinite source of [Gas], only obtainable in Creative Mode.",
+    "block.zps.vaporizer": "Vaporizer",
+    "block.zps.vaporizer.zps_tooltip": "Consumes FE to heat up, then vaporizes items into gas.\n\nEach recipe needs a minimum temperature and cools the machine when it runs. The gas collects in an internal buffer and leaves through the top.",
+    "gui.zps.vaporizer.temperature": "Machine temperature: %s",
+    "gui.zps.vaporizer.status.idle": "Idle: nothing to vaporize",
+    "gui.zps.vaporizer.status.heating": "Heating to %s",
+    "gui.zps.vaporizer.status.no_power": "No power: needs %s",
+    "gui.zps.vaporizer.status.vaporizing": "Vaporizing",
+    "gui.zps.vaporizer.status.output_full": "Gas buffer full",
+    "gui.zps.vaporizer.gas_buffer": "Gas buffer",
+    "gui.zps.vaporizer.gas_empty": "Empty",
+    "gui.zps.vaporizer.gas_line": "%s: %s",
+    "gui.zps.vaporizer.gas_temperature": "Temperature: %s",
+    "gui.zps.vaporizer.gas_pressure": "Pressure: %s",
+    "jei.zps.vaporizing.temperature_cost": "Temperature Cost: %s K"
 }

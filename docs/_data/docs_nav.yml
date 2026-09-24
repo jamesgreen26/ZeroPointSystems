@@ -22,6 +22,10 @@
   title: Mappers
   group: Script Language
   url: /mappers.html
+- key: reactors
+  title: Reactors
+  url: /reactors.html
+  group: Gameplay
 - key: create
   title: Create
   group: Integrations

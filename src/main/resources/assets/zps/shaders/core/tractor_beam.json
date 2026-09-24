@@ -1,6 +1,17 @@
 {
+    "blend": {
+        "func": "add",
+        "srcrgb": "srcalpha",
+        "dstrgb": "1"
+    },
     "vertex": "zps:tractor_beam",
     "fragment": "zps:tractor_beam",
+    "attributes": [
+        "Position",
+        "UV0",
+        "UV2",
+        "Color"
+    ],
     "samplers": [
     ],
     "uniforms": [

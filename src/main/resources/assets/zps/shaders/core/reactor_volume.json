@@ -1,6 +1,16 @@
 {
+    "blend": {
+        "func": "add",
+        "srcrgb": "srcalpha",
+        "dstrgb": "1"
+    },
     "vertex": "zps:reactor_volume",
     "fragment": "zps:reactor_volume",
+    "attributes": [
+        "Position",
+        "Color",
+        "Normal"
+    ],
     "samplers": [
         { "name": "Sampler0" }
     ],

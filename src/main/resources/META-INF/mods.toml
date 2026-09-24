@@ -41,6 +41,13 @@ ordering = "AFTER"
 side = "BOTH"
 
 [[dependencies.zps]]
+modId = "vs_clockwork"
+mandatory = false
+versionRange = "[0.5.7,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.zps]]
 modId = "kotlinforforge"
 mandatory = true
 versionRange = "[4.11.0,)"

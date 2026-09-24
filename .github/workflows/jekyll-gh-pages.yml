@@ -3,7 +3,7 @@ name: Deploy Jekyll Docs
 on:
   # Runs on pushes targeting the default branch
   push:
-    branches: ["master"]
+    branches: ["1.21.1"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:

@@ -38,6 +38,10 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ModelEvent;
 import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
+import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
+import org.valkyrienskies.kelvin.impl.client.particle.DefaultGasParticleProvider;
+import g_mungus.zps.gas.ModParticles;
+import g_mungus.zps.client.debug.GasPressureOverlay;
 import net.minecraftforge.client.event.RegisterClientTooltipComponentFactoriesEvent;
 import g_mungus.zps.client.tooltip.ClientItemIconsTooltip;
 import g_mungus.zps.client.tooltip.ItemIconsTooltip;
@@ -70,6 +74,14 @@ public class ClientSetup {
     }
 
     @SubscribeEvent
+    public static void onRegisterParticleProviders(RegisterParticleProvidersEvent event) {
+        // Kelvin's own gas particle renderer, driven by our sprite set.
+        event.registerSpriteSet(ModParticles.FLUX.get(), DefaultGasParticleProvider::new);
+        event.registerSpriteSet(ModParticles.AETHER.get(), DefaultGasParticleProvider::new);
+        event.registerSpriteSet(ModParticles.STEAM.get(), DefaultGasParticleProvider::new);
+    }
+
+    @SubscribeEvent
     public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
         ModKeybinds.register(event);
     }
@@ -98,6 +110,8 @@ public class ClientSetup {
         event.register(ChainsawItemRenderer.BLADE_MODEL);
         event.register(RollingMillBlockEntityRenderer.ROLLER_MODEL);
         event.register(ImpactPistonBlockEntityRenderer.ROD_MODEL);
+        event.register(GasGaugeBlockEntityRenderer.NEEDLE_MODEL);
+        event.register(GasGaugeBlockEntityRenderer.PRESSURE_NEEDLE_MODEL);
     }
 
     /**
@@ -166,6 +180,7 @@ public class ClientSetup {
                     .neverSkipVanillaRender()
                     .apply();
             BlockEntityRenderers.register(ModBlockEntities.POWER_CELL.get(), PowerCellBlockEntityRenderer::new);
+            BlockEntityRenderers.register(ModBlockEntities.GAS_GAUGE.get(), GasGaugeBlockEntityRenderer::new);
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DENSE_CABLE_SEPARATOR.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DATA_CABLE.get(), RenderType.translucent());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.SERIAL_BUS.get(), RenderType.translucent());
@@ -179,6 +194,8 @@ public class ClientSetup {
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.CATWALK.get(), RenderType.cutout());
 
             MinecraftForge.EVENT_BUS.addListener(AddressPadClientHooks::onRenderLevelStage);
+            MinecraftForge.EVENT_BUS.addListener(GasPressureOverlay::onRenderLevelStage);
+            MinecraftForge.EVENT_BUS.addListener(GasPressureOverlay::onPlayerTick);
         });
     }
 

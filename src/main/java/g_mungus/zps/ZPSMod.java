@@ -18,6 +18,14 @@ import g_mungus.zps.gametest.DripstoneGameTests;
 import g_mungus.zps.gametest.PowderSnowCauldronGameTests;
 import g_mungus.zps.gametest.SnowGolemGameTests;
 import g_mungus.zps.gametest.PowerCellMultiblockGameTests;
+import g_mungus.zps.gametest.DuctGameTests;
+import g_mungus.zps.gametest.GasEdgeGameTests;
+import g_mungus.zps.gametest.VentGameTests;
+import g_mungus.zps.gametest.CreativeGasGeneratorGameTests;
+import g_mungus.zps.gametest.GasGaugeGameTests;
+import g_mungus.zps.gametest.GasExposureGameTests;
+import g_mungus.zps.gas.ModGases;
+import g_mungus.zps.gas.ModParticles;
 import g_mungus.zps.block.PowderSnowCauldronScoop;
 import g_mungus.zps.item.ModCreativeTabs;
 import g_mungus.zps.item.ModItems;
@@ -67,6 +75,8 @@ public final class ZPSMod {
         ModCreativeTabs.register(modEventBus);
         ModEntities.ENTITIES.register(modEventBus);
         ModSounds.SOUNDS.register(modEventBus);
+        ModParticles.PARTICLE_TYPES.register(modEventBus);
+        ModGases.register();
         ZPSPaintings.PAINTING_VARIANTS.register(modEventBus);
 
         // Register common setup event
@@ -123,5 +133,11 @@ public final class ZPSMod {
         event.register(PowderSnowCauldronGameTests.class);
         event.register(SnowGolemGameTests.class);
         event.register(PowerCellMultiblockGameTests.class);
+        event.register(GasEdgeGameTests.class);
+        event.register(DuctGameTests.class);
+        event.register(VentGameTests.class);
+        event.register(CreativeGasGeneratorGameTests.class);
+        event.register(GasGaugeGameTests.class);
+        event.register(GasExposureGameTests.class);
     }
 }

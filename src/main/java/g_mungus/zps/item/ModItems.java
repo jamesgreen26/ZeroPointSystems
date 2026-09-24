@@ -120,6 +120,18 @@ public class ModItems {
     public static final RegistryObject<Item> IMPACT_PISTON = ITEMS.register("impact_piston",
             () -> new BlockItem(ModBlocks.IMPACT_PISTON.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> VENT = ITEMS.register("vent",
+            () -> new BlockItem(ModBlocks.VENT.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> GAS_GAUGE = ITEMS.register("gas_gauge",
+            () -> new BlockItem(ModBlocks.GAS_GAUGE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> GAS_DUCT = ITEMS.register("gas_duct",
+            () -> new BlockItem(ModBlocks.GAS_DUCT.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> CREATIVE_GAS_GENERATOR = ITEMS.register("creative_gas_generator",
+            () -> new BlockItem(ModBlocks.CREATIVE_GAS_GENERATOR.get(), new Item.Properties().rarity(Rarity.EPIC)));
+
     public static final RegistryObject<Item> SCRIPT_BOOK = ITEMS.register("script_book",
             () -> new ScriptBookItem(new Item.Properties().rarity(Rarity.RARE)));
 

@@ -1,6 +1,10 @@
 package g_mungus.zps.block;
 
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.block.gas.CreativeGasGeneratorBlock;
+import g_mungus.zps.block.gas.DuctBlock;
+import g_mungus.zps.block.gas.GasGaugeBlock;
+import g_mungus.zps.block.gas.VentBlock;
 import g_mungus.zps.block.cableNetwork.*;
 import g_mungus.zps.block.cableNetwork.light_pipe.*;
 import g_mungus.zps.block.cableNetwork.properties.InsulationType;
@@ -228,6 +232,32 @@ public class ModBlocks {
     /** World-only: made by striking a full composter with the Impact Piston. Has no item on purpose. */
     public static final RegistryObject<Block> COMPOSTER_DIRT = BLOCKS.register("composter_dirt",
             () -> new ComposterDirtBlock(BlockBehaviour.Properties.copy(Blocks.COMPOSTER)));
+
+    public static final RegistryObject<Block> VENT = BLOCKS.register("vent",
+            () -> new VentBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .sound(SoundType.NETHERITE_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+
+    public static final RegistryObject<Block> GAS_GAUGE = BLOCKS.register("gas_gauge",
+            () -> new GasGaugeBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+
+    public static final RegistryObject<Block> GAS_DUCT = BLOCKS.register("gas_duct",
+            () -> new DuctBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .sound(SoundType.NETHERITE_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+
+    public static final RegistryObject<Block> CREATIVE_GAS_GENERATOR = BLOCKS.register("creative_gas_generator",
+            () -> new CreativeGasGeneratorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .sound(SoundType.NETHERITE_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()));
 
     public static final RegistryObject<Block> IMPACT_PISTON = BLOCKS.register("impact_piston",
             () -> new ImpactPistonBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)

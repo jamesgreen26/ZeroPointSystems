@@ -1,0 +1,47 @@
+package g_mungus.zps.gas;
+
+import g_mungus.zps.ZPSMod;
+import net.minecraft.core.particles.ParticleType;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
+import org.valkyrienskies.kelvin.impl.client.particle.DefaultGasParticle;
+
+/**
+ * Particle types for ZPS's gases.
+ *
+ * <p>Kelvin can register a particle for a gas itself, but only into its own deferred registry,
+ * which it submits during its own construction — an entry added by another mod afterwards never
+ * resolves, and the client crashes dereferencing it. So ZPS registers its gas particles in its own
+ * namespace and hands Kelvin a picker pointing at them.
+ */
+public final class ModParticles {
+
+    private ModParticles() {
+    }
+
+    public static final DeferredRegister<ParticleType<?>> PARTICLE_TYPES =
+            DeferredRegister.create(ForgeRegistries.PARTICLE_TYPES, ZPSMod.MOD_ID);
+
+    /**
+     * Reuses Kelvin's gas particle, so ZPS gases look like every other gas.
+     *
+     * <p>The particle type carries the gas density, which drives the particle's buoyancy — flux is
+     * far lighter than air, so it rises hard. Not a method reference: the density parameter has a
+     * Kotlin default, so the class exposes both a no-arg and a one-arg constructor and
+     * {@code DefaultGasParticleType::new} is ambiguous.
+     */
+    public static final RegistryObject<DefaultGasParticle.DefaultGasParticleType> FLUX =
+            PARTICLE_TYPES.register("flux",
+                    () -> new DefaultGasParticle.DefaultGasParticleType((float) ModGases.FLUX_DENSITY));
+
+    /** For the Aether stand-in registered when Clockwork is absent; density of the stand-in gas. */
+    public static final RegistryObject<DefaultGasParticle.DefaultGasParticleType> AETHER =
+            PARTICLE_TYPES.register("aether",
+                    () -> new DefaultGasParticle.DefaultGasParticleType((float) ModGases.AETHER_DENSITY));
+
+    /** For the Steam stand-in registered when Clockwork is absent; density of the stand-in gas. */
+    public static final RegistryObject<DefaultGasParticle.DefaultGasParticleType> STEAM =
+            PARTICLE_TYPES.register("steam",
+                    () -> new DefaultGasParticle.DefaultGasParticleType((float) ModGases.STEAM_DENSITY));
+}

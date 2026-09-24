@@ -4,6 +4,7 @@ import g_mungus.zps.ZPSMod;
 import g_mungus.zps.blockentity.CreativePowerCellBlockEntity;
 import g_mungus.zps.blockentity.PowerCellBlockEntity;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
+import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.BookHolder;
 import g_mungus.zps.blockentity.light_pipe.RadioBlockEntity;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
@@ -146,6 +147,22 @@ public class ZPSScriptGetters {
                 ResourceLocation.parse("zps:int"),
                 scriptContext -> storedEnergy(scriptContext.level(), scriptContext.pos()),
                 Set.of("zps:power_cell", "zps:creative_power_cell")
+        ));
+
+        // Whatever the gauge's dial is set to show: pressure in Pascals or temperature in Kelvin,
+        // unscaled and unclamped by the bounds on the dial. Cycling the mode changes what this reads.
+        event.register(ScriptGetter.withBlocks(
+                "gauge_value",
+                Double.class,
+                ResourceLocation.parse("zps:double"),
+                scriptContext -> {
+                    BlockEntity be = scriptContext.level().getBlockEntity(scriptContext.pos());
+                    if (be instanceof GasGaugeBlockEntity gauge) {
+                        return gauge.getMeasuredValue();
+                    }
+                    return 0.0;
+                },
+                Set.of("zps:gas_gauge")
         ));
     }
 

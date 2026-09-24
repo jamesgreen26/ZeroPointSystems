@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": {
+      "item": "minecraft:iron_bars"
+    },
+    "I": {
+      "item": "zps:aluminum_ingot"
+    }
+  },
+  "pattern": [
+    "IBI"
+  ],
+  "result": {
+    "item": "zps:vent",
+    "count": 1
+  }
+}

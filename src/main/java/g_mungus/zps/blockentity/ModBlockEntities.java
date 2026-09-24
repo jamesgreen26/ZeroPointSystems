@@ -2,6 +2,10 @@ package g_mungus.zps.blockentity;
 
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
+import g_mungus.zps.blockentity.gas.DuctBlockEntity;
+import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity;
+import g_mungus.zps.blockentity.gas.VentBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.*;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.registries.DeferredRegister;
@@ -138,5 +142,24 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(SieveBlockEntity::new,
                             ModBlocks.SIEVE.get()).build(null));
 
-}
 
+    public static final RegistryObject<BlockEntityType<VentBlockEntity>> VENT =
+        BLOCK_ENTITIES.register("vent",
+            () -> BlockEntityType.Builder.of(VentBlockEntity::new,
+                ModBlocks.VENT.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<GasGaugeBlockEntity>> GAS_GAUGE =
+        BLOCK_ENTITIES.register("gas_gauge",
+            () -> BlockEntityType.Builder.of(GasGaugeBlockEntity::new,
+                ModBlocks.GAS_GAUGE.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<DuctBlockEntity>> DUCT =
+        BLOCK_ENTITIES.register("duct",
+            () -> BlockEntityType.Builder.of(DuctBlockEntity::new,
+                ModBlocks.GAS_DUCT.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<CreativeGasGeneratorBlockEntity>> CREATIVE_GAS_GENERATOR =
+        BLOCK_ENTITIES.register("creative_gas_generator",
+            () -> BlockEntityType.Builder.of(CreativeGasGeneratorBlockEntity::new,
+                ModBlocks.CREATIVE_GAS_GENERATOR.get()).build(null));
+}

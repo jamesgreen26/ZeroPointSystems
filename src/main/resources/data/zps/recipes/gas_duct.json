@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "item": "zps:aluminum_ingot"
+    }
+  },
+  "pattern": [
+    "III"
+  ],
+  "result": {
+    "item": "zps:gas_duct",
+    "count": 4
+  }
+}

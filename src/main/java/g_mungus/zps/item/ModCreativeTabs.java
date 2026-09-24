@@ -70,6 +70,10 @@ public class ModCreativeTabs {
                         ASSEMBLER,
                         IMPACT_PISTON,
                         SIEVE,
+                        VENT,
+                        GAS_GAUGE,
+                        GAS_DUCT,
+                        CREATIVE_GAS_GENERATOR,
 
                         SUSPICIOUS_RED_SAND,
 

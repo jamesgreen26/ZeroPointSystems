@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "zps:block/creative_gas_generator_top",
+    "side": "zps:block/creative_gas_generator_side"
+  }
+}

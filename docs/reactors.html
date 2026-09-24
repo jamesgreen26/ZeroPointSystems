@@ -3,7 +3,7 @@ layout: docs
 title: Reactors
 doc_key: reactors
 ---
-{% capture doc %}{% include_relative collisions.md %}{% endcapture %}
+{% capture doc %}{% include_relative reactors.md %}{% endcapture %}
 {%- capture image_base -%}{{ '/assets/images/' | relative_url }}{%- endcapture -%}
 {%- assign doc = doc | replace: 'zps:textures/gui/manual/', image_base -%}
 {{ doc | markdownify }}

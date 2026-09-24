@@ -239,6 +239,7 @@ public class SerialBusScreen extends Screen {
 
     @Override
     public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        this.renderBackground(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);
 
         graphics.drawCenteredString(this.font, TITLE, this.width / 2, titleY, TEXT_COLOUR);

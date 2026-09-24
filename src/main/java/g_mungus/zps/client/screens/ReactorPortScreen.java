@@ -197,6 +197,7 @@ public class ReactorPortScreen extends Screen implements GasFilterList.Host {
 
     @Override
     public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        this.renderBackground(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);
 
         int left = this.width / 2 - CONTROL_WIDTH / 2;

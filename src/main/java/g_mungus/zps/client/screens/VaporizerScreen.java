@@ -74,6 +74,7 @@ public class VaporizerScreen extends AbstractContainerScreen<VaporizerMenu> {
 
     @Override
     public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        this.renderBackground(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);
         this.renderTooltip(graphics, mouseX, mouseY);
         renderEnergyTooltip(graphics, mouseX, mouseY);

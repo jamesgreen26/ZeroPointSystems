@@ -42,6 +42,8 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ModelEvent;
 import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
+import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
+import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
 import org.valkyrienskies.kelvin.impl.client.particle.DefaultGasParticleProvider;
 import g_mungus.zps.gas.ModParticles;
@@ -95,6 +97,17 @@ public class ClientSetup {
         event.registerSpriteSet(ModParticles.FLUX.get(), DefaultGasParticleProvider::new);
         event.registerSpriteSet(ModParticles.AETHER.get(), DefaultGasParticleProvider::new);
         event.registerSpriteSet(ModParticles.STEAM.get(), DefaultGasParticleProvider::new);
+    }
+
+    @SubscribeEvent
+    public static void onRegisterGuiOverlays(RegisterGuiOverlaysEvent event) {
+        // Above the hotbar rather than over it: the player is still in the world while inside a duct.
+        event.registerAbove(VanillaGuiOverlay.HOTBAR.id(), "duct_travel", DuctTravelOverlay.INSTANCE);
+        // Under the whole HUD: the black takes the world away, while the hotbar, health and hunger
+        // stay in view across the crawl, as they would on any other ride.
+        event.registerBelowAll("duct_travel_fade", DuctTravelFade.INSTANCE);
+        // Where the experience bar is, which it stands in for while the player is in a vent.
+        event.registerAbove(VanillaGuiOverlay.EXPERIENCE_BAR.id(), "duct_travel_progress", DuctTravelProgressBar.INSTANCE);
     }
 
     @SubscribeEvent
@@ -194,6 +207,7 @@ public class ClientSetup {
         event.enqueueWork(() -> {
             EntityRenderers.register(ModEntities.OCTO_MOUNTING.get(), OctoMountingRenderer::new);
             EntityRenderers.register(ModEntities.DODECA_MOUNTING.get(), DodecaMountingRenderer::new);
+            EntityRenderers.register(ModEntities.DUCT_TRAVEL.get(), DuctTravelRenderer::new);
             MenuScreens.register(ModMenus.COAL_BURNER.get(), CoalBurnerScreen::new);
             MenuScreens.register(ModMenus.POWER_CELL.get(), PowerCellScreen::new);
             MenuScreens.register(ModMenus.ROLLING_MILL.get(), RollingMillScreen::new);
@@ -261,6 +275,11 @@ public class ClientSetup {
             MinecraftForge.EVENT_BUS.addListener(ReactorGlowPreviews::onLoggingOut);
             MinecraftForge.EVENT_BUS.addListener(ReactorGlowElement::onLoggingOut);
             MinecraftForge.EVENT_BUS.addListener(TractorBeamRenderer::onRenderLevelStage);
+            MinecraftForge.EVENT_BUS.addListener(DuctTravelClientHooks::onRenderPlayer);
+            MinecraftForge.EVENT_BUS.addListener(DuctTravelClientHooks::onRenderHand);
+            MinecraftForge.EVENT_BUS.addListener(DuctTravelClientHooks::onPlayerTick);
+            MinecraftForge.EVENT_BUS.addListener(DuctTravelProgressBar::onRenderGuiOverlay);
+            MinecraftForge.EVENT_BUS.addListener(DuctTravelSounds::onPlaySound);
         });
     }
 

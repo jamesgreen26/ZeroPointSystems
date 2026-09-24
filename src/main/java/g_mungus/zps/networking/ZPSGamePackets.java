@@ -157,6 +157,24 @@ public class ZPSGamePackets {
                 .consumerMainThread(ReactorPortSettingsC2SPacket::handle)
                 .add();
 
+        INSTANCE.messageBuilder(DuctCycleC2SPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(DuctCycleC2SPacket::encode)
+                .decoder(DuctCycleC2SPacket::decode)
+                .consumerMainThread(DuctCycleC2SPacket::handle)
+                .add();
+
+        INSTANCE.messageBuilder(DuctTravelStateS2CPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(DuctTravelStateS2CPacket::encode)
+                .decoder(DuctTravelStateS2CPacket::decode)
+                .consumerMainThread(DuctTravelStateS2CPacket::handle)
+                .add();
+
+        INSTANCE.messageBuilder(DuctCycleRefusedS2CPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(DuctCycleRefusedS2CPacket::encode)
+                .decoder(DuctCycleRefusedS2CPacket::decode)
+                .consumerMainThread(DuctCycleRefusedS2CPacket::handle)
+                .add();
+
         INSTANCE.messageBuilder(SerialBusSettingsC2SPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(SerialBusSettingsC2SPacket::encode)
                 .decoder(SerialBusSettingsC2SPacket::decode)

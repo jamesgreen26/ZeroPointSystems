@@ -7,7 +7,10 @@
   "client": [
     "AbstractContainerScreenMixin",
     "BlockElementMixin",
+    "ClientPacketListenerMixin",
     "CommandSuggestionsMixin",
+    "EntityRenderDispatcherMixin",
+    "LivingEntityRendererAccessor",
     "ParticleAccessor",
     "ParticleEngineMixin",
     "MultiPartBakedModelMixin",

@@ -28,6 +28,7 @@ import g_mungus.zps.gametest.VaporizerGameTests;
 import g_mungus.zps.gametest.FusionReactorGameTests;
 import g_mungus.zps.gametest.ReactorWallApertureGameTests;
 import g_mungus.zps.gametest.TractorBeamGameTests;
+import g_mungus.zps.gametest.DuctTravelGameTests;
 import g_mungus.zps.gas.ModGases;
 import g_mungus.zps.gas.ModParticles;
 import g_mungus.zps.block.PowderSnowCauldronScoop;
@@ -147,5 +148,6 @@ public final class ZPSMod {
         event.register(FusionReactorGameTests.class);
         event.register(ReactorWallApertureGameTests.class);
         event.register(TractorBeamGameTests.class);
+        event.register(DuctTravelGameTests.class);
     }
 }

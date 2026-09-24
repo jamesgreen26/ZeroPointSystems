@@ -5,6 +5,7 @@ import g_mungus.zps.block.gas.core.GasNodeBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.gas.VentBlockEntity;
 import g_mungus.zps.config.ZPSConfig;
+import g_mungus.zps.entity.DuctTravelEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -168,14 +169,9 @@ public class VentBlock extends GasNodeBlock implements EntityBlock {
             return InteractionResult.CONSUME;
         }
 
-        return enterDuct((ServerLevel) level, pos, player)
+        return DuctTravelEntity.enter((ServerLevel) level, pos, player)
                 ? InteractionResult.CONSUME
                 : InteractionResult.PASS;
-    }
-
-    /** Duct travel arrives with its own port; until then a vent cannot be climbed into. */
-    private static boolean enterDuct(ServerLevel level, BlockPos pos, Player player) {
-        return false;
     }
 
     // --- gas network ------------------------------------------------------------------------

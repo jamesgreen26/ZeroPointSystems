@@ -20,4 +20,15 @@ public class ModEntities {
         () -> EntityType.Builder.of(DodecaMountingEntity::new, MobCategory.MISC)
             .sized(0.5f, 0.5f)
             .build("dodeca_mounting_seat"));
-} 
+
+    /** The invisible vehicle a player rides while inside a duct run. Never spawned by command. */
+    public static final RegistryObject<EntityType<DuctTravelEntity>> DUCT_TRAVEL = ENTITIES.register("duct_travel",
+        () -> EntityType.Builder.of(DuctTravelEntity::new, MobCategory.MISC)
+            .sized(0.5f, 0.5f)
+            .noSummon()
+            // A hop can cross more than the default tracking range, and the rider's camera hangs
+            // off this entity's position, so it is tracked further out and updated every tick.
+            .clientTrackingRange(16)
+            .updateInterval(1)
+            .build("duct_travel"));
+}

@@ -95,6 +95,7 @@ repositories {
         url = 'https://maven.valkyrienskies.org'
         content {
             includeGroupByRegex "org.valkyrien.*"
+            includeModule "com.fasterxml.jackson.module", "jackson-module-kotlin"
         }
     }
     maven { url = "https://maven.bawnorton.com/releases" }
@@ -162,8 +163,15 @@ dependencies {
     modRuntimeOnly("thedarkcolour:kotlinforforge:${kotlinforforge_version}")
 
     // Kelvin needs Jackson at runtime. Valkyrien Skies bundles the same jars; without VS these are the copies.
-    ["com.fasterxml.jackson.module:jackson-module-kotlin",
-     "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor",
+    // The stock jackson-module-kotlin declares `requires kotlin.stdlib`, but KFF 4.x shades Kotlin into its own
+    // module, so the game dies at module resolution. VS's rubyfork build has no module-info and loads fine.
+    jarJar(implementation("com.fasterxml.jackson.module:jackson-module-kotlin:${jackson_version}-rubyfork")) {
+        version {
+            strictly "[${jackson_version}-rubyfork,)"
+            prefer "${jackson_version}-rubyfork"
+        }
+    }
+    ["com.fasterxml.jackson.dataformat:jackson-dataformat-cbor",
      "com.fasterxml.jackson.core:jackson-databind",
      "com.fasterxml.jackson.core:jackson-core",
      "com.fasterxml.jackson.core:jackson-annotations"].each { artifact ->

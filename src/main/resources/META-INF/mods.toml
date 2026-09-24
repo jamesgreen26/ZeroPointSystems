@@ -32,3 +32,17 @@ mandatory = true
 versionRange = "[1.2.0,)"
 ordering = "NONE"
 side = "BOTH"
+
+[[dependencies.zps]]
+modId = "kelvin"
+mandatory = true
+versionRange = "[1.20.1-0.5.0,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.zps]]
+modId = "kotlinforforge"
+mandatory = true
+versionRange = "[4.11.0,)"
+ordering = "NONE"
+side = "BOTH"

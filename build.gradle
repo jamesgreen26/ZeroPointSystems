@@ -98,6 +98,11 @@ repositories {
         }
     }
     maven { url = "https://maven.bawnorton.com/releases" }
+    maven {
+        name = "Kotlin for Forge"
+        url = "https://thedarkcolour.github.io/KotlinForForge/"
+        content { includeGroup "thedarkcolour" }
+    }
 }
 
 dependencies {
@@ -143,6 +148,32 @@ dependencies {
     modCompileOnly("maven.modrinth:valkyrien-skies:1.20.1-forge-2.4.10")
 
     modCompileOnly("maven.modrinth:vs-genesis:1.20.1-0.7.2")
+    // Clockwork really exists on 1.20.1; ZPS only reads its gas definitions when it is present.
+    modCompileOnly("maven.modrinth:create-clockwork:1.20.1-forge-0.5.6") { transitive = false }
+
+    // Kelvin (gas simulation) rides inside the ZPS jar; resolved from libs/ through the flatDir repo.
+    // Players install Kotlin for Forge, which Kelvin needs as its language provider and which cannot be bundled.
+    jarJar(modImplementation("org.valkyrienskies.kelvin:kelvin:${kelvin_version}")) {
+        version {
+            strictly "[${kelvin_version},)"
+            prefer "${kelvin_version}"
+        }
+    }
+    modRuntimeOnly("thedarkcolour:kotlinforforge:${kotlinforforge_version}")
+
+    // Kelvin needs Jackson at runtime. Valkyrien Skies bundles the same jars; without VS these are the copies.
+    ["com.fasterxml.jackson.module:jackson-module-kotlin",
+     "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor",
+     "com.fasterxml.jackson.core:jackson-databind",
+     "com.fasterxml.jackson.core:jackson-core",
+     "com.fasterxml.jackson.core:jackson-annotations"].each { artifact ->
+        jarJar(implementation("${artifact}:${jackson_version}")) {
+            version {
+                strictly "[${jackson_version},)"
+                prefer "${jackson_version}"
+            }
+        }
+    }
 
     //noinspection DifferentStdlibGradleVersion
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10")

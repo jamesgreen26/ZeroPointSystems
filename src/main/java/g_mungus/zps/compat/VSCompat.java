@@ -107,6 +107,10 @@ public class VSCompat {
                 && ship.minZ() <= bounds.maxZ && ship.maxZ() >= bounds.minZ;
     }
 
+    private static boolean isStatic(Ship ship) {
+        return ship instanceof ServerShip serverShip? serverShip.isStatic() : ship.getPrevTickTransform().equals(ship.getTransform());
+    }
+
     private record ShipSpace(Ship ship) implements GridSpace {
         @Override
         public Vec3 toLocal(Vec3 world) {
@@ -123,6 +127,7 @@ public class VSCompat {
         /// Linear plus angular, both of which VS gives per second.
         @Override
         public Vec3 velocityAt(Vec3 world) {
+            if (isStatic(ship)) return Vec3.ZERO;
             Vector3d arm = VectorConversionsMCKt.toJOML(world).sub(ship.getTransform().getPositionInWorld());
             Vector3d velocity = new Vector3d(ship.getAngularVelocity()).cross(arm).add(ship.getVelocity());
             return VectorConversionsMCKt.toMinecraft(velocity.div(20.0));

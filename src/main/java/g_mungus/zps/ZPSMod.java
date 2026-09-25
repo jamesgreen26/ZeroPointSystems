@@ -9,6 +9,7 @@ import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.entity.ModEntities;
 import g_mungus.zps.gametest.EnumPropertyWithAliasesGameTests;
 import g_mungus.zps.gametest.RoboticArmGameTests;
+import g_mungus.zps.gametest.CoalBurnerGameTests;
 import g_mungus.zps.gametest.RollingMillGameTests;
 import g_mungus.zps.gametest.AssemblerGameTests;
 import g_mungus.zps.gametest.BrushableBlockGameTests;
@@ -129,6 +130,7 @@ public final class ZPSMod {
         event.register(CableNetworkGameTests.class);
         event.register(EnumPropertyWithAliasesGameTests.class);
         event.register(RoboticArmGameTests.class);
+        event.register(CoalBurnerGameTests.class);
         event.register(RollingMillGameTests.class);
         event.register(AssemblerGameTests.class);
         event.register(ImpactPistonGameTests.class);

@@ -36,8 +36,9 @@ public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGenerato
 
     private final GeneratorEnergyStorage energyStorage = new GeneratorEnergyStorage();
     private final FuelItemStackHandler fuelInventory = new FuelItemStackHandler();
+    private final AutomationHandler automationHandler = new AutomationHandler();
     private final LazyOptional<IEnergyStorage> energy = LazyOptional.of(() -> energyStorage);
-    private final LazyOptional<IItemHandler> items = LazyOptional.of(() -> fuelInventory);
+    private final LazyOptional<IItemHandler> items = LazyOptional.of(() -> automationHandler);
     private final ContainerData dataAccess = new ContainerData() {
         @Override
         public int get(int index) {
@@ -82,8 +83,13 @@ public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGenerato
         return !stack.isEmpty() && ForgeHooks.getBurnTime(stack, RecipeType.SMELTING) > 0;
     }
 
+    /** GUI-facing handler (unrestricted, so players can take fuel back out). */
     public IItemHandler getFuelInventory() {
         return fuelInventory;
+    }
+
+    public IItemHandler getItemHandler(@Nullable Direction side) {
+        return automationHandler;
     }
 
     public void serverTick() {
@@ -282,6 +288,42 @@ public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGenerato
         @Override
         protected void onContentsChanged(int slot) {
             setChanged();
+        }
+    }
+
+    /** Like the furnace fuel slot: automation can only pull out leftovers that won't burn (empty buckets). */
+    private class AutomationHandler implements IItemHandler {
+        @Override
+        public int getSlots() {
+            return fuelInventory.getSlots();
+        }
+
+        @Override
+        public @NotNull ItemStack getStackInSlot(int slot) {
+            return fuelInventory.getStackInSlot(slot);
+        }
+
+        @Override
+        public @NotNull ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
+            return fuelInventory.insertItem(slot, stack, simulate);
+        }
+
+        @Override
+        public @NotNull ItemStack extractItem(int slot, int amount, boolean simulate) {
+            if (isFuel(fuelInventory.getStackInSlot(slot))) {
+                return ItemStack.EMPTY;
+            }
+            return fuelInventory.extractItem(slot, amount, simulate);
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return fuelInventory.getSlotLimit(slot);
+        }
+
+        @Override
+        public boolean isItemValid(int slot, @NotNull ItemStack stack) {
+            return fuelInventory.isItemValid(slot, stack);
         }
     }
 

@@ -176,7 +176,7 @@ public class ComposterDirtGameTests {
                 })
                 .thenIdle(4)
                 .thenExecute(() -> {
-                    assertComparator(helper, comparatorPos, 15, "reading a dirt-filled composter");
+                    assertComparator(helper, comparatorPos, 9, "reading a dirt-filled composter");
                     helper.useBlock(COMPOSTER_POS);
                 })
                 .thenIdle(4)

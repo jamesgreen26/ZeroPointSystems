@@ -91,10 +91,9 @@ public class ComposterDirtBlock extends Block implements WorldlyContainerHolder 
         return true;
     }
 
-    /** Full strength, where a vanilla composter tops out at 8: a clear "the dirt is ready" reading. */
     @Override
     public int getAnalogOutputSignal(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos) {
-        return Redstone.SIGNAL_MAX;
+        return 9;
     }
 
     @Override

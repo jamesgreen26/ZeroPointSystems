@@ -4,7 +4,6 @@ import g_mungus.zps.block.reactor.HeatExchangerBlock;
 import g_mungus.zps.blockentity.EnergyGeneratorBE;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.config.ZPSConfig;
-import g_mungus.zps.reactor.ReactorTuning;
 import g_mungus.zps.reactor.Reactor;
 import g_mungus.zps.reactor.ReactorChamberNode;
 import g_mungus.zps.reactor.ReactorManager;
@@ -38,8 +37,6 @@ import org.valkyrienskies.kelvin.api.DuctNodePos;
  * heat, and the reactor is busy losing what heat it has.
  */
 public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGeneratorBE {
-
-    private static final double JOULES_PER_FE = 1000.0;
 
     private final IEnergyStorage energyStorage = new ChamberEnergyStorage();
 
@@ -151,7 +148,7 @@ public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGener
             // Put back what the neighbour would not take after all.
             Chamber chamber = chamber();
             if (chamber != null) {
-                chamber.addHeat((extracted - received) * JOULES_PER_FE);
+                chamber.addHeat((extracted - received) * ZPSConfig.exchangerJoulesPerFe());
                 chamber.reactor().recordFeOut(received - extracted);
             }
             outThisTick -= extracted - received;
@@ -195,8 +192,8 @@ public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGener
         /** FE the chamber could give up right now, within this tick's cap. */
         private int spare(Chamber chamber) {
             double surplus = (chamber.temperature() - ZPSConfig.exchangerTemperatureK()) * chamber.heatCapacity();
-            int cap = ReactorTuning.EXCHANGER_FE_PER_TICK - outThisTick;
-            return (int) Math.max(0, Math.min(cap, surplus / JOULES_PER_FE));
+            int cap = ZPSConfig.standardTransferFePerTick() - outThisTick;
+            return (int) Math.max(0, Math.min(cap, surplus / ZPSConfig.exchangerJoulesPerFe()));
         }
 
         /** FE the chamber could take right now, within this tick's cap. */
@@ -204,7 +201,7 @@ public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGener
             if (chamber.isEmpty() || chamber.temperature() >= ZPSConfig.exchangerTemperatureK()) {
                 return 0;
             }
-            return Math.max(0, ReactorTuning.EXCHANGER_FE_PER_TICK - inThisTick);
+            return Math.max(0, ZPSConfig.standardTransferFePerTick() - inThisTick);
         }
 
         @Override
@@ -215,7 +212,7 @@ public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGener
             }
             int fe = Math.min(toReceive, room(chamber));
             if (fe > 0 && !simulate) {
-                chamber.addHeat(fe * JOULES_PER_FE);
+                chamber.addHeat(fe * ZPSConfig.exchangerJoulesPerFe());
                 chamber.reactor().recordFeIn(fe);
                 inThisTick += fe;
             }
@@ -230,7 +227,7 @@ public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGener
             }
             int fe = Math.min(toExtract, spare(chamber));
             if (fe > 0 && !simulate) {
-                chamber.addHeat(-fe * JOULES_PER_FE);
+                chamber.addHeat(-fe * ZPSConfig.exchangerJoulesPerFe());
                 chamber.reactor().recordFeOut(fe);
                 outThisTick += fe;
             }
@@ -246,7 +243,7 @@ public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGener
 
         @Override
         public int getMaxEnergyStored() {
-            return ReactorTuning.EXCHANGER_FE_PER_TICK;
+            return ZPSConfig.standardTransferFePerTick();
         }
 
         @Override

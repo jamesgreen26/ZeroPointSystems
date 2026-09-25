@@ -1,5 +1,6 @@
 package g_mungus.zps.blockentity;
 
+import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.menu.PowerCellMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -25,8 +26,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class CreativePowerCellBlockEntity extends BlockEntity implements EnergyStorageBE, MenuProvider, ItemChargingPowerCell {
-    private static final int ITEM_CHARGE_TRANSFER = 4_096;
-
     private static final IEnergyStorage CREATIVE_ENERGY = new IEnergyStorage() {
         @Override
         public int receiveEnergy(int maxReceive, boolean simulate) {
@@ -143,7 +142,7 @@ public class CreativePowerCellBlockEntity extends BlockEntity implements EnergyS
             if (!itemEnergy.canReceive()) {
                 return;
             }
-            int received = itemEnergy.receiveEnergy(ITEM_CHARGE_TRANSFER, false);
+            int received = itemEnergy.receiveEnergy(ZPSConfig.standardTransferFePerTick(), false);
             if (received > 0) {
                 chargeInventory.setStackInSlot(0, stack);
                 setChanged();

@@ -418,7 +418,7 @@
     "block.zps.lithium_ore.zps_tooltip": "A source of [Lithium].\n\nGenerates anywhere above [Y0].",
     "block.zps.deepslate_lithium_ore.zps_tooltip": "A source of [Lithium].\n\nGenerates anywhere below [Y0].",
     "block.zps.rolling_mill.zps_tooltip": "Consumes FE to roll metal.\n\nRolls ingots into rods and nuggets into wire.",
-    "block.zps.coal_burner.zps_tooltip": "Burns furnace fuel to generate 32 FE/tick.",
+    "block.zps.coal_burner.zps_tooltip": "Burns furnace fuel to generate %s FE/tick.",
     "block.zps.catwalk.zps_tooltip": "Can be placed on cable blocks to prevent upwards connection.",
     "block.zps.space_grating_block.zps_tooltip": "Can be placed on cable blocks to prevent connection in new directions.",
 

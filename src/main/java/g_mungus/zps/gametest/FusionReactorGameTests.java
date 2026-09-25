@@ -470,7 +470,7 @@ public class FusionReactorGameTests {
             IEnergyStorage energy = cell == null ? null : cell.getCapability(ForgeCapabilities.ENERGY, Direction.EAST).orElse(null);
             helper.assertTrue(energy != null, "The power cell should expose energy");
             int stored = energy.getEnergyStored();
-            int perTick = ReactorTuning.EXCHANGER_FE_PER_TICK;
+            int perTick = ZPSConfig.standardTransferFePerTick();
             helper.assertTrue(stored >= perTick * (ticks - 3) && stored <= perTick * ticks,
                     "Expected about " + perTick + " FE/t into the cell, got " + stored + " over " + ticks + " ticks");
             helper.assertTrue(kelvin().getTemperatureAt(node(helper, HOST)) < 90_000.0,
@@ -854,7 +854,7 @@ public class FusionReactorGameTests {
         int[] pulled = {0};
         for (int tick = 5; tick < 30; tick++) {
             helper.runAtTickTime(tick, () -> pulled[0] += energyAt(helper, NORTH_WALL_A, Direction.NORTH)
-                    .extractEnergy(ReactorTuning.EXCHANGER_FE_PER_TICK, false));
+                    .extractEnergy(ZPSConfig.standardTransferFePerTick(), false));
         }
         helper.runAtTickTime(30, () -> {
             helper.assertTrue(pulled[0] > 0, "Pulling from the exchanger should yield FE");

@@ -1,6 +1,7 @@
 package g_mungus.zps.item;
 
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.config.ZPSConfig;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.language.I18n;
@@ -16,9 +17,19 @@ import net.minecraftforge.fml.common.Mod;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
 
 @Mod.EventBusSubscriber(modid = ZPSMod.MOD_ID, value = Dist.CLIENT)
 public class ShiftTooltipHandler {
+
+    /**
+     * Format arguments for tooltips that quote a config value, keyed by the tooltip's translation
+     * key. Read each time the tooltip is drawn, so they follow the server's config.
+     */
+    private static final Map<String, Supplier<Object[]>> TOOLTIP_ARGS = Map.of(
+            "block.zps.coal_burner.zps_tooltip", () -> new Object[]{ZPSConfig.combustionGeneratorFePerTick()}
+    );
 
     public static boolean hasZpsTooltip(Item item) {
         String key = item.getDescriptionId() + ".zps_tooltip";
@@ -55,7 +66,9 @@ public class ShiftTooltipHandler {
 
             tooltip.add(CommonComponents.EMPTY);
 
-            for(String line: Component.translatable(key).getString().split("\n")) {
+            Supplier<Object[]> args = TOOLTIP_ARGS.get(key);
+            Component text = args == null ? Component.translatable(key) : Component.translatable(key, args.get());
+            for(String line: text.getString().split("\n")) {
                 tooltip.add(formatLine(line));
             }
         } else {

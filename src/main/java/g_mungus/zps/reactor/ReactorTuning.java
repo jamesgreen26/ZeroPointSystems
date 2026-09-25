@@ -21,9 +21,6 @@ public final class ReactorTuning {
     /** The share of an empty chamber's excess over ambient that it loses each tick. */
     public static final double EMPTY_COOLING_FRACTION = 0.005;
 
-    /** Heat Exchanger heating draw and generation cap, in FE per tick. */
-    public static final int EXCHANGER_FE_PER_TICK = 4096;
-
     /** Gas one Exhaust Port can draw out of the chamber, in kilograms per tick. */
     public static final double EXHAUST_KG_PER_TICK = 0.005;
 

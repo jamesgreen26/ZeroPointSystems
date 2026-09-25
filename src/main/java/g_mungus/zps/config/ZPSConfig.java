@@ -234,6 +234,34 @@ public class ZPSConfig {
         return intOr(reactorMaxInteriorExtent, REACTOR_MAX_INTERIOR_EXTENT_DEFAULT);
     }
 
+    // --- energy ---------------------------------------------------------------------------
+
+    private static ForgeConfigSpec.ConfigValue<Integer> combustionGeneratorFePerTick;
+    private static ForgeConfigSpec.ConfigValue<Double> exchangerJoulesPerFe;
+    private static ForgeConfigSpec.ConfigValue<Integer> standardTransferFePerTick;
+
+    public static final int COMBUSTION_GENERATOR_FE_PER_TICK_DEFAULT = 32;
+    public static final double EXCHANGER_JOULES_PER_FE_DEFAULT = 1000.0;
+    public static final int STANDARD_TRANSFER_FE_PER_TICK_DEFAULT = 4096;
+
+    /** FE a burning Combustion Generator makes each tick. */
+    public static int combustionGeneratorFePerTick() {
+        return intOr(combustionGeneratorFePerTick, COMBUSTION_GENERATOR_FE_PER_TICK_DEFAULT);
+    }
+
+    /** Joules of chamber heat one FE is worth to a Heat Exchanger, both ways. */
+    public static double exchangerJoulesPerFe() {
+        return doubleOr(exchangerJoulesPerFe, EXCHANGER_JOULES_PER_FE_DEFAULT);
+    }
+
+    /**
+     * The FE per tick a single energy link carries: a Heat Exchanger's draw and generation cap,
+     * a Step-Up Transformer's throughput, and the rate a Creative Power Cell charges items.
+     */
+    public static int standardTransferFePerTick() {
+        return intOr(standardTransferFePerTick, STANDARD_TRANSFER_FE_PER_TICK_DEFAULT);
+    }
+
     public static final ForgeConfigSpec SERVER_CONFIG_SPEC = buildServerConfig();
 
     private static ForgeConfigSpec buildServerConfig() {
@@ -276,6 +304,22 @@ public class ZPSConfig {
         reactorMaxInteriorExtent = builder
                 .comment("Largest interior size along any axis, in blocks.")
                 .defineInRange("MaxInteriorExtent", REACTOR_MAX_INTERIOR_EXTENT_DEFAULT, 1, 64);
+        builder.pop();
+
+        builder.comment("Energy.").push("Energy");
+        combustionGeneratorFePerTick = builder
+                .comment("FE a burning Combustion Generator makes each tick.")
+                .defineInRange("CombustionGeneratorFePerTick", COMBUSTION_GENERATOR_FE_PER_TICK_DEFAULT, 1, 1_000_000);
+        exchangerJoulesPerFe = builder
+                .comment("Joules of chamber heat one FE is worth to a Heat Exchanger, both when it",
+                         "heats the chamber and when it generates from it.")
+                .defineInRange("ExchangerJoulesPerFe", EXCHANGER_JOULES_PER_FE_DEFAULT, 1.0e-3, 1.0e12);
+        standardTransferFePerTick = builder
+                .comment("FE per tick a single energy link carries: a Heat Exchanger's draw and",
+                         "generation cap, a Step-Up Transformer's throughput, and the rate a",
+                         "Creative Power Cell charges items. Transformers already placed keep their",
+                         "buffer size until they are reloaded.")
+                .defineInRange("StandardTransferFePerTick", STANDARD_TRANSFER_FE_PER_TICK_DEFAULT, 1, 1_000_000_000);
         builder.pop();
 
         ductTravel = builder

@@ -15,6 +15,7 @@ import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ScriptContext;
 import g_mungus.zps.commands.api.ScriptGetter;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -231,13 +232,38 @@ public class ZPSScriptGetters {
      * window the reactor's displays use so it does not flicker. Zero where there is no reactor.
      */
     public static int reactorOutput(ServerLevel level, BlockPos wall) {
-        Reactor reactor = ReactorManager.get(level).reactorForWall(level, wall);
+        Reactor reactor = reactorAt(level, wall);
         return reactor == null ? 0 : reactor.feOutAverage(level.getGameTime());
     }
 
     private static ReactorManager.@Nullable ChamberReading chamberReading(ServerLevel level, BlockPos wall) {
+        Reactor reactor = reactorAt(level, wall);
+        return reactor == null ? null : ReactorManager.get(level).reading(level, reactor);
+    }
+
+    /**
+     * The reactor a wall block belongs to. Edge and corner blocks have no face on the cavity, so
+     * they are part of no reactor themselves; for those, the reactor of a touching wall block is
+     * used instead, face neighbours first so an edge prefers the wall it shares a face with.
+     */
+    private static @Nullable Reactor reactorAt(ServerLevel level, BlockPos wall) {
         ReactorManager manager = ReactorManager.get(level);
         Reactor reactor = manager.reactorForWall(level, wall);
-        return reactor == null ? null : manager.reading(level, reactor);
+        if (reactor != null || !level.getBlockState(wall).is(ReactorWallBlock.REACTOR_WALL)) {
+            return reactor;
+        }
+        for (Direction direction : Direction.values()) {
+            reactor = manager.reactorForWall(level, wall.relative(direction));
+            if (reactor != null) {
+                return reactor;
+            }
+        }
+        for (BlockPos neighbour : BlockPos.betweenClosed(wall.offset(-1, -1, -1), wall.offset(1, 1, 1))) {
+            reactor = manager.reactorForWall(level, neighbour);
+            if (reactor != null) {
+                return reactor;
+            }
+        }
+        return null;
     }
 }

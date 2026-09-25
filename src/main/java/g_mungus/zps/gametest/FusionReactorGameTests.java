@@ -254,17 +254,44 @@ public class FusionReactorGameTests {
         });
     }
 
+    /** Edges and corners are part of no reactor, but read the one whose walls they touch. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void gettersReadTheChamberFromEdgesAndCorners(GameTestHelper helper) {
+        buildShell(helper);
+        seedChamber(helper);
+        setChamberTemperature(helper, 5_000.0);
+
+        helper.runAfterDelay(10, () -> {
+            ServerLevel level = helper.getLevel();
+            double expected = ZPSScriptGetters.reactorPressure(level, helper.absolutePos(WEST_WALL));
+            helper.assertTrue(expected > 0, "The west wall should read the chamber's pressure");
+            // A corner, and the middle of the edge running up from it.
+            for (BlockPos relative : List.of(MIN, new BlockPos(MIN.getX(), 3, MIN.getZ()))) {
+                BlockPos pos = helper.absolutePos(relative);
+                double pressure = ZPSScriptGetters.reactorPressure(level, pos);
+                double temperature = ZPSScriptGetters.reactorTemperature(level, pos);
+                helper.assertTrue(pressure == expected,
+                        "reactor_pressure at " + relative + " should be " + expected + " Pa, was " + pressure);
+                helper.assertTrue(Math.abs(temperature - 5_000.0) < 1.0,
+                        "reactor_temperature at " + relative + " should be 5000 K, was " + temperature);
+            }
+            helper.succeed();
+        });
+    }
+
     @GameTest(template = TEMPLATE)
     public static void gettersReadZeroAwayFromAReactor(GameTestHelper helper) {
         buildShell(helper);
         seedChamber(helper);
 
         ServerLevel level = helper.getLevel();
-        // A corner has no face on the cavity, so it is wall by tag but part of no reactor.
-        BlockPos corner = helper.absolutePos(MIN);
-        helper.assertTrue(ZPSScriptGetters.reactorPressure(level, corner) == 0.0
-                        && ZPSScriptGetters.reactorTemperature(level, corner) == 0.0
-                        && ZPSScriptGetters.reactorOutput(level, corner) == 0,
+        // Wall by tag, but not touching the shell, so there is no reactor to fall back on.
+        BlockPos loose = new BlockPos(0, 1, 0);
+        helper.setBlock(loose, ModBlocks.REINFORCED_PLATING.get().defaultBlockState());
+        BlockPos pos = helper.absolutePos(loose);
+        helper.assertTrue(ZPSScriptGetters.reactorPressure(level, pos) == 0.0
+                        && ZPSScriptGetters.reactorTemperature(level, pos) == 0.0
+                        && ZPSScriptGetters.reactorOutput(level, pos) == 0,
                 "Getters pointed at a block on no reactor should all read zero");
         helper.succeed();
     }

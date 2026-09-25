@@ -8,9 +8,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.tags.ItemTags;
 import net.minecraft.world.MenuProvider;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.Containers;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -77,9 +75,7 @@ public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGenerato
     }
 
     public static boolean isFuel(ItemStack stack) {
-        return !stack.isEmpty()
-                && (stack.is(ItemTags.COALS) || stack.is(Items.COAL_BLOCK))
-                && stack.getBurnTime(RecipeType.SMELTING) > 0;
+        return !stack.isEmpty() && stack.getBurnTime(RecipeType.SMELTING) > 0;
     }
 
     public IItemHandler getFuelInventory() {
@@ -172,8 +168,10 @@ public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGenerato
 
         totalBurnTime = fuel.getBurnTime(RecipeType.SMELTING);
         burnTime = totalBurnTime;
+        // Like the furnace, leave the container behind (lava bucket -> bucket)
+        ItemStack remainder = fuel.getCraftingRemainingItem();
         fuel.shrink(1);
-        fuelInventory.setStackInSlot(0, fuel);
+        fuelInventory.setStackInSlot(0, fuel.isEmpty() ? remainder : fuel);
         setChanged();
     }
 

@@ -210,8 +210,8 @@ Ponder page lists the script commands and getters that block accepts.
 
 ### 1.4 Power Generation & Storage
 
-#### Coal Burner (`coal_burner`)
-- Burns coal-type fuels in a single fuel slot to generate 32 FE/tick; accepts anything in the `coals` tag plus Blocks of Coal (Coal/Charcoal ~80s each, a Block of Coal ~800s).
+#### Combustion Generator (`coal_burner`)
+- Burns furnace fuel to generate 32 FE/tick.
 - Buffers up to 8,192 FE and pushes up to 256 FE/tick out of any of its 6 faces into adjacent energy-accepting blocks; never accepts incoming FE.
 - Has a GUI (fuel slot + energy/burn readout) and a lit blockstate while burning; contents drop when broken.
 

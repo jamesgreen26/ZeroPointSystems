@@ -1,6 +1,7 @@
 package g_mungus.zps.blockentity;
 
 import g_mungus.zps.block.CoalBurnerBlock;
+import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.menu.CoalBurnerMenu;
 import g_mungus.zps.util.TickAverage;
 import net.minecraft.core.BlockPos;
@@ -30,7 +31,6 @@ import org.jetbrains.annotations.Nullable;
 public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGeneratorBE, MenuProvider {
     private static final int MAX_ENERGY = 8192;
     private static final int MAX_OUTPUT = 256;
-    private static final int FE_PER_TICK = 32;
 
     private final GeneratorEnergyStorage energyStorage = new GeneratorEnergyStorage();
     private final FuelItemStackHandler fuelInventory = new FuelItemStackHandler();
@@ -105,8 +105,8 @@ public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGenerato
             setChanged();
         } else if (burnTime > 0) {
             burnTime--;
-            energyStorage.generateEnergy(FE_PER_TICK);
-            currentProductionRate = FE_PER_TICK;
+            energyStorage.generateEnergy(ZPSConfig.combustionGeneratorFePerTick());
+            currentProductionRate = ZPSConfig.combustionGeneratorFePerTick();
             setChanged();
         }
 

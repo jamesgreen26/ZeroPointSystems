@@ -307,7 +307,7 @@ public final class Reactor {
                 extracting++;
             }
         }
-        return extracting * ReactorTuning.EXCHANGER_FE_PER_TICK;
+        return extracting * ZPSConfig.standardTransferFePerTick();
     }
 
     // --- persistence -------------------------------------------------------------------------

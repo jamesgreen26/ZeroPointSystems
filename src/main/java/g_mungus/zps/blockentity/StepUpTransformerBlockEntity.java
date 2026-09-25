@@ -30,11 +30,10 @@ public class StepUpTransformerBlockEntity extends NetworkTerminalImpl implements
     private final EnergyStorage energyHandler;
     private long lastHudInfoRequestTick = Long.MIN_VALUE;
 
-    private static final int MAX_TRANSFER = 4096;
 
     public StepUpTransformerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.STEPUP_TRANSFORMER.get(), pos, state);
-        this.energyHandler = new EnergyStorage(MAX_TRANSFER * 2, MAX_TRANSFER, MAX_TRANSFER);
+        this.energyHandler = new EnergyStorage(ZPSConfig.standardTransferFePerTick() * 2, ZPSConfig.standardTransferFePerTick(), ZPSConfig.standardTransferFePerTick());
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, StepUpTransformerBlockEntity blockEntity) {
@@ -45,7 +44,7 @@ public class StepUpTransformerBlockEntity extends NetworkTerminalImpl implements
         BlockPos targetPos = pos.relative(facing);
         BlockEntity targetEntity = level.getBlockEntity(targetPos);
 
-        int canStore = Math.min(MAX_TRANSFER, blockEntity.energyHandler.getMaxEnergyStored() - blockEntity.energyHandler.getEnergyStored());
+        int canStore = Math.min(ZPSConfig.standardTransferFePerTick(), blockEntity.energyHandler.getMaxEnergyStored() - blockEntity.energyHandler.getEnergyStored());
 
         if (targetEntity != null) {
             IEnergyStorage storage = level.getCapability(Capabilities.EnergyStorage.BLOCK, targetPos, targetEntity.getBlockState(), targetEntity, facing.getOpposite());
@@ -87,7 +86,7 @@ public class StepUpTransformerBlockEntity extends NetworkTerminalImpl implements
         // Second pass: distribute energy proportionally
         if (receivingTerminalCount.get() > 0) {
             int availableEnergy = blockEntity.energyHandler.getEnergyStored();
-            int energyPerTransformer = Math.min(availableEnergy, MAX_TRANSFER) / receivingTerminalCount.get(); // Send up to MAX_TRANSFER RF/t per transformer
+            int energyPerTransformer = Math.min(availableEnergy, ZPSConfig.standardTransferFePerTick()) / receivingTerminalCount.get(); // Send up to the standard transfer rate per transformer
             AtomicInteger transferredThisTick = new AtomicInteger();
             
             terminals.forEach(node -> {

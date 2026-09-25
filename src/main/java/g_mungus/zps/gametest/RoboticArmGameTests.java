@@ -14,6 +14,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LayeredCauldronBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.energy.IEnergyStorage;
@@ -159,6 +160,31 @@ public class RoboticArmGameTests {
         assertStack(helper, arm.getHeldStack(), new ItemStack(Items.COAL), TRANSFER_COUNT, "Arm after rejected give");
         assertStack(helper, player.getItemInHand(InteractionHand.MAIN_HAND), new ItemStack(Items.IRON_INGOT), 10, "Player hand after rejected give");
         helper.succeed();
+    }
+
+    /**
+     * Filling one bucket from a stack leaves the filled bucket with nowhere to go but the fake
+     * player's inventory. The arm keeps the rest of the stack and drops the filled bucket.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void use_bucketStackOnWaterCauldron_dropsFilledBucket(GameTestHelper helper) {
+        RoboticArmBlockEntity arm = placeLoadedArm(helper);
+        if (arm == null) return;
+        arm.getHeldStackAccess().setItem(0, new ItemStack(Items.BUCKET, 16));
+        helper.setBlock(TARGET_POS, Blocks.WATER_CAULDRON.defaultBlockState().setValue(LayeredCauldronBlock.LEVEL, 3));
+
+        if (!arm.UseAt(helper.absolutePos(TARGET_POS))) {
+            helper.fail("Robotic arm failed to start use");
+        }
+
+        helper.runAfterDelay(RoboticArmBlockEntity.MOVE_TIME_TICKS + 1, () -> {
+            if (!helper.getBlockState(TARGET_POS).is(Blocks.CAULDRON)) {
+                helper.fail("Expected the cauldron to be emptied, got " + helper.getBlockState(TARGET_POS), TARGET_POS);
+            }
+            assertStack(helper, arm.getHeldStack(), Items.BUCKET.getDefaultInstance(), 15, "arm held stack");
+            helper.assertItemEntityCountIs(Items.WATER_BUCKET, TARGET_POS, 2.0D, 1);
+            helper.succeed();
+        });
     }
 
     private static RoboticArmBlockEntity placeLoadedArm(GameTestHelper helper) {

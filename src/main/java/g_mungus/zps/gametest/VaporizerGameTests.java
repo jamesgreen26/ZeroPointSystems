@@ -29,8 +29,8 @@ import org.valkyrienskies.kelvin.api.GasType;
 import org.valkyrienskies.kelvin.api.NodeBehaviorType;
 
 /**
- * The Vaporizer against its test recipe — blue ice and a lithium ingot to 0.75 kg of Steam and
- * 0.25 kg of Flux, needing 375 K and costing 100 K: it heats on FE only when a recipe is waiting, vaporizes once
+ * The Vaporizer against its test recipe — blue ice and a lithium nugget to 0.3 kg of Steam and
+ * 0.7 kg of Flux, needing 375 K and costing 100 K: it heats on FE only when a recipe is waiting, vaporizes once
  * hot enough, pays the cost afterwards, and keeps its state across a reload.
  */
 @GameTestHolder(ZPSMod.MOD_ID)
@@ -44,8 +44,8 @@ public class VaporizerGameTests {
     /** The test recipe's figures, as registered in data. */
     private static final double RECIPE_MIN_TEMPERATURE = 375.0;
     private static final double RECIPE_COST = 100.0;
-    private static final double RECIPE_STEAM_KG = 0.9;
-    private static final double RECIPE_FLUX_KG = 0.1;
+    private static final double RECIPE_STEAM_KG = 0.3;
+    private static final double RECIPE_FLUX_KG = 0.7;
 
     private static DuctNodePos node(GameTestHelper helper, BlockPos relative) {
         return GasEdgeNegotiator.nodePos(helper.getLevel(), helper.absolutePos(relative));
@@ -94,7 +94,7 @@ public class VaporizerGameTests {
     private static void loadTestRecipe(VaporizerBlockEntity vaporizer) {
         IItemHandlerModifiable raw = rawInventory(vaporizer);
         raw.setStackInSlot(0, new ItemStack(Items.BLUE_ICE, SEED_COUNT));
-        raw.setStackInSlot(1, new ItemStack(ModItems.LITHIUM_INGOT.get(), SEED_COUNT));
+        raw.setStackInSlot(1, new ItemStack(ModItems.LITHIUM_NUGGET.get(), SEED_COUNT));
     }
 
     @GameTest(template = TEMPLATE)
@@ -230,7 +230,7 @@ public class VaporizerGameTests {
         VaporizerBlockEntity vaporizer = place(helper);
         fillEnergy(vaporizer);
         IItemHandlerModifiable raw = rawInventory(vaporizer);
-        raw.setStackInSlot(0, new ItemStack(ModItems.LITHIUM_INGOT.get(), 32));
+        raw.setStackInSlot(0, new ItemStack(ModItems.LITHIUM_NUGGET.get(), 32));
         raw.setStackInSlot(1, new ItemStack(Items.BLUE_ICE, 64));
         raw.setStackInSlot(2, new ItemStack(Items.BLUE_ICE, 10));
 
@@ -253,7 +253,7 @@ public class VaporizerGameTests {
         int energyBefore = vaporizer.getEnergyStorage(null).getEnergyStored();
         IItemHandlerModifiable raw = rawInventory(vaporizer);
         raw.setStackInSlot(0, new ItemStack(Items.BLUE_ICE, SEED_COUNT));
-        raw.setStackInSlot(1, new ItemStack(ModItems.LITHIUM_INGOT.get(), SEED_COUNT));
+        raw.setStackInSlot(1, new ItemStack(ModItems.LITHIUM_NUGGET.get(), SEED_COUNT));
         // The slots would refuse this through the capability; put it in raw, as a player could.
         raw.setStackInSlot(2, new ItemStack(Items.COBBLESTONE, 1));
 
@@ -275,7 +275,7 @@ public class VaporizerGameTests {
         fillEnergy(vaporizer);
         int energyBefore = vaporizer.getEnergyStorage(null).getEnergyStored();
         // Half the recipe: lithium alone matches nothing.
-        rawInventory(vaporizer).setStackInSlot(0, new ItemStack(ModItems.LITHIUM_INGOT.get(), SEED_COUNT));
+        rawInventory(vaporizer).setStackInSlot(0, new ItemStack(ModItems.LITHIUM_NUGGET.get(), SEED_COUNT));
 
         helper.runAfterDelay(40, () -> {
             if (vaporizer.getEnergyStorage(null).getEnergyStored() != energyBefore) {

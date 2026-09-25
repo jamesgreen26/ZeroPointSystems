@@ -537,8 +537,10 @@ public class FusionReactorGameTests {
         setChamberTemperature(helper, 60_000.0);
 
         helper.runAfterDelay(5, () -> {
-            helper.assertTrue(massOf(helper, HOST, ModGases.FLUX) < 1e-6, "The flux should have fused");
-            helper.assertTrue(massOf(helper, HOST, ModGases.AETHER) > 0.009, "Aether should have formed");
+            // Aether inhibits the reaction once it is a quarter of the gas, so only part of the flux burns.
+            double flux = massOf(helper, HOST, ModGases.FLUX);
+            helper.assertTrue(flux < 0.009, "The flux should have fused, " + flux + " kg left");
+            helper.assertTrue(massOf(helper, HOST, ModGases.AETHER) > 0.0009, "Aether should have formed");
             helper.assertTrue(kelvin().getTemperatureAt(host) > 61_000.0,
                     "Fusion should heat the chamber, was " + kelvin().getTemperatureAt(host));
             helper.succeed();

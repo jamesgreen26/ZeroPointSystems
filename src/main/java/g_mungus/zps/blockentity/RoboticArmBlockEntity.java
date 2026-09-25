@@ -20,6 +20,7 @@ import net.minecraft.world.Container;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.WorldlyContainer;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.BlockItem;
@@ -750,6 +751,30 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
         if (!(level instanceof ServerLevel serverLevel)) return;
 
         FakePlayer fakePlayer = getOrCreateUsePlayer(serverLevel);
+        useWithPlayer(serverLevel, fakePlayer, targetPos, shiftUse);
+        dropUsePlayerOverflow(serverLevel, fakePlayer);
+    }
+
+    /**
+     * Some interactions hand their result to the player's inventory rather than the hand, such as
+     * filling one bucket of a stack from a cauldron. The arm only holds the main hand, so anything
+     * else is dropped at the hand instead of being left in the fake player.
+     */
+    private void dropUsePlayerOverflow(ServerLevel serverLevel, FakePlayer fakePlayer) {
+        Inventory inventory = fakePlayer.getInventory();
+        Vec3 dropPosition = getCurrentHandWorldPosition();
+        for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+            if (slot == inventory.selected) continue;
+            ItemStack overflow = inventory.removeItemNoUpdate(slot);
+            if (overflow.isEmpty()) continue;
+            ItemEntity itemEntity = new ItemEntity(serverLevel, dropPosition.x, dropPosition.y, dropPosition.z, overflow);
+            itemEntity.setDeltaMovement(0.0D, 0.0D, 0.0D);
+            serverLevel.addFreshEntity(itemEntity);
+        }
+        fakePlayer.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+    }
+
+    private void useWithPlayer(ServerLevel serverLevel, FakePlayer fakePlayer, BlockPos targetPos, boolean shiftUse) {
         fakePlayer.setShiftKeyDown(shiftUse);
         fakePlayer.setItemInHand(InteractionHand.MAIN_HAND, heldStack.copy());
 

@@ -319,9 +319,14 @@ public class ModBlocks {
      * Vanilla suspicious sand, in red. Behaves exactly like the vanilla block — same strength,
      * sounds and brushing — but brushes out into red sand. Buried by the Impact Piston's red
      * sandstone recipe.
+     *
+     * <p>A plain {@link BrushableBlock}; {@code BrushableBlockMixin} makes it survive falling and
+     * piston movement with its payload. {@code ZPSMod} additionally registers it as a valid block
+     * for {@code BlockEntityType.BRUSHABLE_BLOCK}, without which its block entity would be
+     * discarded on chunk load.
      */
     public static final RegistryObject<Block> SUSPICIOUS_RED_SAND = BLOCKS.register("suspicious_red_sand",
-            () -> new ZPSBrushableBlock(Blocks.RED_SAND,
+            () -> new BrushableBlock(Blocks.RED_SAND,
                     BlockBehaviour.Properties.of()
                             .mapColor(MapColor.COLOR_ORANGE)
                             .instrument(NoteBlockInstrument.SNARE)

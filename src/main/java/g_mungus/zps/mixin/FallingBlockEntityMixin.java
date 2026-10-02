@@ -1,7 +1,7 @@
 package g_mungus.zps.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import g_mungus.zps.block.ZPSBrushableBlock;
+import g_mungus.zps.block.BrushablePayload;
 import g_mungus.zps.entity.Siftable;
 import g_mungus.zps.entity.TractorCargo;
 import net.minecraft.core.registries.Registries;
@@ -13,6 +13,7 @@ import net.minecraft.world.Containers;
 import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
+import net.minecraft.world.level.block.BrushableBlock;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
@@ -29,7 +30,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.List;
 
 /**
- * When a falling {@link ZPSBrushableBlock} cannot be placed and drops as an item instead, drop what
+ * When a falling {@link BrushableBlock} cannot be placed and drops as an item instead, drop what
  * it brushes into (sand / gravel) rather than the suspicious block.
  *
  * <p>A suspicious sand item is a misleading thing to hand back: the payload is gone by that point,
@@ -121,7 +122,7 @@ public class FallingBlockEntityMixin implements Siftable, TractorCargo {
             require = 3
     )
     private ItemLike zps$dropTurnsIntoInstead(ItemLike dropped) {
-        return dropped instanceof ZPSBrushableBlock brushable ? brushable.getTurnsInto() : dropped;
+        return dropped instanceof BrushableBlock brushable ? brushable.getTurnsInto() : dropped;
     }
 
     /**
@@ -132,7 +133,7 @@ public class FallingBlockEntityMixin implements Siftable, TractorCargo {
     @Override
     public void sift(IItemHandler inventory) {
         FallingBlockEntity self = (FallingBlockEntity) (Object) this;
-        if (!(self.getBlockState().getBlock() instanceof ZPSBrushableBlock brushable)
+        if (!(self.getBlockState().getBlock() instanceof BrushableBlock brushable)
                 || !(self.level() instanceof ServerLevel level)) {
             return;
         }
@@ -156,7 +157,7 @@ public class FallingBlockEntityMixin implements Siftable, TractorCargo {
     /**
      * The buried payload as items. A brushable block entity stores either an unrolled loot table
      * reference or, once brushing has already resolved it, the item itself; {@code blockData} is
-     * that block entity's NBT, snapshotted by {@link ZPSBrushableBlock#snapshot}.
+     * that block entity's NBT, snapshotted by {@link BrushablePayload#snapshot}.
      */
     private static List<ItemStack> zps$buriedLoot(ServerLevel level, FallingBlockEntity self) {
         CompoundTag data = self.blockData;

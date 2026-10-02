@@ -7,11 +7,12 @@ import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.Share;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import g_mungus.zps.block.MovedBlockEntityHolder;
-import g_mungus.zps.block.ZPSBrushableBlock;
+import g_mungus.zps.block.BrushablePayload;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.BrushableBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.piston.PistonBaseBlock;
 import net.minecraft.world.level.block.piston.PistonStructureResolver;
@@ -24,8 +25,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Lets {@link ZPSBrushableBlock} be moved by pistons, and snapshots its buried loot so the move
- * does not destroy it. Both halves are gated on the ZPS block type, so no other block-entity block
+ * Lets {@link BrushableBlock} be moved by pistons, and snapshots its buried loot so the move
+ * does not destroy it. Both halves are gated on {@code BrushableBlock}, so no other block-entity block
  * changes behaviour.
  *
  * <p>Push and sticky-pull share this code path: {@code triggerEvent} handles {@code
@@ -60,7 +61,7 @@ public class PistonBaseBlockMixin {
             boolean allowDestroy,
             Direction pistonDirection
     ) {
-        if (original && state.getBlock() instanceof ZPSBrushableBlock) {
+        if (original && state.getBlock() instanceof BrushableBlock) {
             return false;
         }
         return original;
@@ -91,10 +92,10 @@ public class PistonBaseBlockMixin {
 
         Map<BlockPos, CompoundTag> payloads = null;
         for (BlockPos pos : toPush) {
-            if (!(level.getBlockState(pos).getBlock() instanceof ZPSBrushableBlock)) {
+            if (!(level.getBlockState(pos).getBlock() instanceof BrushableBlock)) {
                 continue;
             }
-            CompoundTag payload = ZPSBrushableBlock.snapshot(level, pos);
+            CompoundTag payload = BrushablePayload.snapshot(level, pos);
             if (payload == null) {
                 continue;
             }
@@ -146,7 +147,7 @@ public class PistonBaseBlockMixin {
         Map<BlockPos, CompoundTag> payloads = shared.get();
         if (payloads == null
                 || isSourcePiston
-                || !(movedState.getBlock() instanceof ZPSBrushableBlock)
+                || !(movedState.getBlock() instanceof BrushableBlock)
                 || !(blockEntity instanceof MovedBlockEntityHolder holder)) {
             return blockEntity;
         }

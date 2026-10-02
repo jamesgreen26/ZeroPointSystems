@@ -37,7 +37,7 @@
     "BlockBehaviourMixin",
     "BlockEntityTypeAccessor",
     "BlockInWorldMixin",
-    "BlocksMixin",
+    "BrushableBlockMixin",
     "ClientboundCommandsPacketMixin",
     "EntityMixin",
     "FallingBlockEntityInvoker",

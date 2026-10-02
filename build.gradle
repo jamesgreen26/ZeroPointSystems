@@ -91,7 +91,6 @@ repositories {
             includeGroupByRegex "org.valkyrien.*"
         }
     }
-    maven { url = "https://maven.bawnorton.com/releases" }
     maven {
         name = "Kotlin for Forge"
         url = "https://thedarkcolour.github.io/KotlinForForge/"

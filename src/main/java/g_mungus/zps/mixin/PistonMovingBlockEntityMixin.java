@@ -2,7 +2,7 @@ package g_mungus.zps.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import g_mungus.zps.block.MovedBlockEntityHolder;
-import g_mungus.zps.block.ZPSBrushableBlock;
+import g_mungus.zps.block.BrushablePayload;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -20,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Carries a {@link ZPSBrushableBlock}'s buried loot across the two ticks a piston stroke takes.
+ * Carries a {@link net.minecraft.world.level.block.BrushableBlock}'s buried loot across the two ticks a piston stroke takes.
  *
  * <p>Vanilla's moving-piston block entity holds only the moved {@code BlockState}, so without this
  * the payload captured by {@code PistonBaseBlockMixin} would have nowhere to live.
@@ -89,7 +89,7 @@ public abstract class PistonMovingBlockEntityMixin extends BlockEntity implement
         if (this.zps$movedBlockEntityTag == null || this.level == null) {
             return;
         }
-        ZPSBrushableBlock.restore(this.level, this.worldPosition, this.zps$movedBlockEntityTag);
+        BrushablePayload.restore(this.level, this.worldPosition, this.zps$movedBlockEntityTag);
         this.zps$movedBlockEntityTag = null;
     }
 
@@ -116,7 +116,7 @@ public abstract class PistonMovingBlockEntityMixin extends BlockEntity implement
         if (payload == null) {
             return;
         }
-        ZPSBrushableBlock.restore(level, pos, payload);
+        BrushablePayload.restore(level, pos, payload);
         holder.zps$setMovedBlockEntityTag(null);
     }
 }

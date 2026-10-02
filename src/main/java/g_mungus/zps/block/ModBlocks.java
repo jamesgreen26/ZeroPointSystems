@@ -321,14 +321,13 @@ public class ModBlocks {
      * sounds and brushing — but brushes out into red sand. Buried by the Impact Piston's red
      * sandstone recipe.
      *
-     * <p>{@link ZPSBrushableBlock} rather than {@link BrushableBlock} so it survives falling and
-     * piston movement with its payload, matching the two vanilla blocks that
-     * {@code BlocksMixin} swaps out. {@code ZPSMod} additionally registers it as a valid block for
-     * {@code BlockEntityType.BRUSHABLE_BLOCK}, without which its block entity would be discarded
-     * on chunk load.
+     * <p>A plain {@link BrushableBlock}; {@code BrushableBlockMixin} makes it survive falling and
+     * piston movement with its payload. {@code ZPSMod} additionally registers it as a valid block
+     * for {@code BlockEntityType.BRUSHABLE_BLOCK}, without which its block entity would be
+     * discarded on chunk load.
      */
     public static final DeferredBlock<Block> SUSPICIOUS_RED_SAND = BLOCKS.register("suspicious_red_sand",
-            () -> new ZPSBrushableBlock(Blocks.RED_SAND, SoundEvents.BRUSH_SAND, SoundEvents.BRUSH_SAND_COMPLETED,
+            () -> new BrushableBlock(Blocks.RED_SAND, SoundEvents.BRUSH_SAND, SoundEvents.BRUSH_SAND_COMPLETED,
                     BlockBehaviour.Properties.of()
                             .mapColor(MapColor.COLOR_ORANGE)
                             .instrument(NoteBlockInstrument.SNARE)

@@ -1,7 +1,7 @@
 package g_mungus.zps.tractor;
 
 import com.mojang.authlib.GameProfile;
-import g_mungus.zps.block.ZPSBrushableBlock;
+import g_mungus.zps.block.BrushablePayload;
 import g_mungus.zps.compat.Compat;
 import g_mungus.zps.compat.GridSpace;
 import g_mungus.zps.entity.TractorCargo;
@@ -61,7 +61,7 @@ public final class BlockRipper {
     public static FallingBlockEntity pullLoose(ServerLevel level, BeamGeometry beam, @Nullable GridSpace carrier,
                                               BlockPos pos, BlockState state) {
         // Read before the block goes: this is the buried loot of a suspicious block.
-        CompoundTag blockData = state.hasBlockEntity() ? ZPSBrushableBlock.snapshot(level, pos) : null;
+        CompoundTag blockData = state.hasBlockEntity() ? BrushablePayload.snapshot(level, pos) : null;
 
         BlockState carried = state.hasProperty(BlockStateProperties.WATERLOGGED)
                 ? state.setValue(BlockStateProperties.WATERLOGGED, false)

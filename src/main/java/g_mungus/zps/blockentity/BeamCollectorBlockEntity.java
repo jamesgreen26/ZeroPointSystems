@@ -1,7 +1,7 @@
 package g_mungus.zps.blockentity;
 
 import g_mungus.zps.block.BeamCollectorBlock;
-import g_mungus.zps.block.ZPSBrushableBlock;
+import net.minecraft.world.level.block.BrushableBlock;
 import g_mungus.zps.client.tractor.TractorBeamClientHooks;
 import g_mungus.zps.compat.Compat;
 import g_mungus.zps.compat.GridSpace;
@@ -536,7 +536,7 @@ public class BeamCollectorBlockEntity extends MultiblockBlockEntity {
         }
         if (entity instanceof FallingBlockEntity falling) {
             Block block = falling.getBlockState().getBlock();
-            if (block instanceof ZPSBrushableBlock && falling instanceof Siftable siftable) {
+            if (block instanceof BrushableBlock && falling instanceof Siftable siftable) {
                 // Banks the buried loot and swaps in plain sand or gravel, which arrives here next tick.
                 siftable.sift(inventory);
                 return true;

@@ -31,7 +31,7 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import java.util.List;
 
 /**
- * Covers {@code ZPSBrushableBlock} plus the two piston mixins: vanilla suspicious sand and gravel
+ * Covers {@code BrushableBlockMixin} plus the two piston mixins: vanilla suspicious sand and gravel
  * must survive falling and being moved by a piston with their buried loot intact, and the payload
  * must never reach clients while the block is mid-stroke.
  */

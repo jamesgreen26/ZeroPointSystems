@@ -60,7 +60,8 @@ public class DataLecternBlock extends LecternBlock implements EntityBlock, Cable
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, CONNECTED, HAS_BOOK, POWERED);
+        super.createBlockStateDefinition(builder); // vanilla FACING, POWERED, HAS_BOOK + anything other mods inject
+        builder.add(CONNECTED);
     }
 
     @Override

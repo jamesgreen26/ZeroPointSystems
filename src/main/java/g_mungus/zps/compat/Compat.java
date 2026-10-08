@@ -2,10 +2,13 @@ package g_mungus.zps.compat;
 
 import net.minecraft.world.phys.AABB;
 import org.jetbrains.annotations.Nullable;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.RegisterScriptTypesEvent;
+import g_mungus.zps.commands.api.TargetApplicability;
 import g_mungus.zps.compat.computercraft.ComputerCraftCompat;
 import g_mungus.zps.compat.create.CreateCompat;
 import net.minecraft.core.BlockPos;
@@ -164,7 +167,13 @@ public class Compat {
             CreateCompat.registerScriptCommands(event);
         }
         if (isComputerCraftLoaded()) {
-            ComputerCraftCompat.registerScriptCommands(event);
+            // Computer APIs say nothing about where they apply; what is known about them is given here.
+            Map<String, TargetApplicability> apiApplicability = new HashMap<>();
+            if (isSableLoaded()) {
+                apiApplicability.put("sublevel", SableCompat.OnSubLevel.INSTANCE); // CC: Sable
+                apiApplicability.put("aero_universal_drag", SableCompat.OnSubLevel.INSTANCE);
+            }
+            ComputerCraftCompat.registerScriptCommands(event, apiApplicability);
         }
     }
 

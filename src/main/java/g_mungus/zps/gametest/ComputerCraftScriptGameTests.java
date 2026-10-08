@@ -12,8 +12,14 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Blocks;
+import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+import org.joml.Quaterniond;
+
+import java.util.List;
 
 /**
  * Script commands made from ComputerCraft peripherals. ComputerCraft is only on the classpath for
@@ -66,6 +72,37 @@ public class ComputerCraftScriptGameTests {
             helper.assertTrue(failure == null, "set_text_scale failed: " + failure);
             Double scale = evaluate(helper, monitor, "text_scale", BuiltInTypes.DOUBLE);
             helper.assertTrue(scale == 2.0, "text_scale should read the 2 it was set to, got " + scale);
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Computer APIs come through too, answering about where the command is aimed: CC: Sable's
+     * sublevel API, about a block lifted onto a sublevel. Its own batch, since a sublevel pauses
+     * physics for the whole level while it stands.
+     */
+    @GameTest(template = TEMPLATE, batch = "computerCraftSable", timeoutTicks = 100)
+    public static void sublevelApiAnswersAboutTheTarget(GameTestHelper helper) {
+        if (!Compat.isComputerCraftLoaded() || !Compat.isSableLoaded() || !ModList.get().isLoaded("cc_sable")) {
+            helper.succeed();
+            return;
+        }
+        ServerLevel level = helper.getLevel();
+        helper.setBlock(TARGET, Blocks.STONE);
+        BlockPos lifted = helper.absolutePos(TARGET);
+        helper.runAfterDelay(2, () -> {
+            SableBeamRig rig = SableBeamRig.assemble(level, lifted, lifted, List.of(lifted), new Quaterniond());
+            try {
+                BlockPos onPlot = rig.blocksLeft().get(0);
+                Double mass = evaluate(helper, onPlot, "sublevel_mass", BuiltInTypes.DOUBLE);
+                helper.assertTrue(mass != null && mass > 0, "sublevel_mass should weigh the lifted block, got " + mass);
+                ScriptCommandFailure failure = ZPSScripts.get().tryRun("sublevel_set_name \"zps\"", source(helper), onPlot);
+                helper.assertTrue(failure == null, "sublevel_set_name failed: " + failure);
+                String name = evaluate(helper, onPlot, "sublevel_name", BuiltInTypes.STRING);
+                helper.assertTrue("zps".equals(name), "sublevel_name should read the name it was given, got " + name);
+            } finally {
+                rig.remove();
+            }
             helper.succeed();
         });
     }

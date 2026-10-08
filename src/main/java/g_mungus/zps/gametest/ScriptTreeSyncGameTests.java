@@ -23,6 +23,7 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
+import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
@@ -136,6 +137,15 @@ public class ScriptTreeSyncGameTests {
                 List<String> onSubLevel = suggest(helper, decode(helper, Set.of(ScriptTarget.at(level, onPlot))), "if subl");
                 helper.assertTrue(onSubLevel.contains("sublevel"),
                         "sublevel should be offered for a block on a sublevel, got " + onSubLevel);
+                if (ModList.get().isLoaded("cc_sable")) {
+                    // CC: Sable's computer API, restricted the same way.
+                    List<String> apiOnGround = suggest(helper, decode(helper, Set.of(ScriptTarget.at(level, ground))), "if sublevel_");
+                    helper.assertTrue(apiOnGround.stream().noneMatch(word -> word.startsWith("sublevel_")),
+                            "CC: Sable's sublevel commands should not be offered off a sublevel, got " + apiOnGround);
+                    List<String> apiOnSubLevel = suggest(helper, decode(helper, Set.of(ScriptTarget.at(level, onPlot))), "if sublevel_");
+                    helper.assertTrue(apiOnSubLevel.contains("sublevel_is_in_plot_grid"),
+                            "CC: Sable's sublevel commands should be offered on a sublevel, got " + apiOnSubLevel);
+                }
             } finally {
                 rig.remove();
             }

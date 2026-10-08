@@ -217,6 +217,8 @@ dependencies {
     // against the whole mod. Players install it; local runs and gametests have it.
     compileOnly("cc.tweaked:cc-tweaked-${minecraft_version}-forge:${cc_tweaked_version}")
     localRuntime("cc.tweaked:cc-tweaked-${minecraft_version}-forge:${cc_tweaked_version}")
+    // CC: Sable, whose computer APIs the ComputerCraft compat makes script commands from.
+    localRuntime("maven.modrinth:cc-sable:j0UWQoMG") { transitive = false } // 1.3.4, NeoForge
 
     runtimeOnly("dev.engine-room.vanillin:vanillin-neoforge-$minecraft_version:$vanillin_version")
 

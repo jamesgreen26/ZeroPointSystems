@@ -10,10 +10,13 @@ import dan200.computercraft.core.asm.GenericMethod;
 import dan200.computercraft.impl.GenericSources;
 import g_mungus.munguscript.language.builtin.BuiltInTypes;
 import g_mungus.munguscript.language.node.ScriptNode;
+import g_mungus.munguscript.language.node.SimpleExecutor;
+import g_mungus.munguscript.language.node.SimpleGetter;
 import g_mungus.munguscript.language.type.ScriptType;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.BlockApplicability;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
+import g_mungus.zps.commands.api.TargetApplicability;
 import g_mungus.zps.commands.api.ZPSNodes;
 import g_mungus.zps.commands.api.ZPSScriptContext;
 import net.minecraft.core.BlockPos;
@@ -58,6 +61,10 @@ import java.util.Set;
  * Everything else, such as methods returning tables or taking several arguments, is left out. A
  * getter whose name is taken is left out too.
  *
+ * <p>Computer APIs other mods add, such as CC: Sable's {@code sublevel}, are taken by the same
+ * rules and named after the API ({@code sublevel_name}). They answer about where the command is
+ * aimed, as they would about where a computer stands.
+ *
  * <p>Finding the methods needs a level, so this registers nothing when scripts are first built,
  * and its commands appear when they are built again once the server has started.
  */
@@ -67,7 +74,12 @@ public final class ComputerCraftCompat {
     private ComputerCraftCompat() {
     }
 
-    public static void registerScriptCommands(RegisterScriptCommandsEvent event) {
+    /**
+     * @param apiApplicability which targets a computer API is for, by its name, where that is known;
+     *                         an API with none is for every block
+     */
+    public static void registerScriptCommands(RegisterScriptCommandsEvent event,
+                                              Map<String, ? extends TargetApplicability> apiApplicability) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         ServerLevel level = server == null ? null : server.overworld();
         if (level == null) {
@@ -77,6 +89,11 @@ public final class ComputerCraftCompat {
             register(event, discover(level));
         } catch (LinkageError | ReflectiveOperationException | RuntimeException e) {
             ZPSMod.LOGGER.error("Could not read ComputerCraft's peripherals; scripts get no commands for them", e);
+        }
+        try {
+            registerApis(event, LuaApis.discover(level, BlockPos.ZERO), apiApplicability);
+        } catch (LinkageError | RuntimeException e) {
+            ZPSMod.LOGGER.error("Could not read ComputerCraft's computer APIs; scripts get no commands for them", e);
         }
     }
 
@@ -170,6 +187,70 @@ public final class ComputerCraftCompat {
             }
         }
         ZPSMod.LOGGER.info("Scripts can use {} ComputerCraft getters and {} executors", registered, executors);
+    }
+
+    /**
+     * Computer APIs, such as CC: Sable's {@code sublevel}: their methods by the same rules as a
+     * peripheral's, named after the API, so {@code sublevel.getName()} is {@code sublevel_name}.
+     * They answer about where the command is aimed, as they would about where a computer stands,
+     * so they are for every block unless {@code apiApplicability} says otherwise.
+     */
+    private static void registerApis(RegisterScriptCommandsEvent event, List<LuaApis.Api> apis,
+                                     Map<String, ? extends TargetApplicability> apiApplicability) {
+        int getters = 0;
+        int executors = 0;
+        for (LuaApis.Api api : apis) {
+            @Nullable TargetApplicability applicability = apiApplicability.get(api.name());
+            for (Method method : api.methods()) {
+                Shape shape = Shape.of(method, false);
+                if (shape == null) {
+                    continue;
+                }
+                for (String luaName : LuaApis.luaNames(method)) {
+                    String prefix = snakeCase(api.name()) + "_";
+                    if (shape.argument() == null && shape.returns() != null && isQuery(luaName)) {
+                        String name = prefix + getterName(luaName);
+                        if (event.hasGetter(name)) {
+                            ZPSMod.LOGGER.warn("ComputerCraft's {}.{} would be the getter {}, which already exists; it gets none",
+                                    api.name(), luaName, name);
+                            continue;
+                        }
+                        event.register(apiGetter(name, api, method, shape.returns()).withApplicability(applicability));
+                        getters++;
+                    } else if (shape.argument() != null && !isQuestion(luaName)
+                            && (shape.returns() == null || shape.returns() == BuiltInTypes.BOOLEAN)) {
+                        event.register(apiExecutor(prefix + snakeCase(luaName), api, method, shape.argument())
+                                .withApplicability(applicability));
+                        executors++;
+                    }
+                }
+            }
+        }
+        ZPSMod.LOGGER.info("Scripts can use {} getters and {} executors from ComputerCraft computer APIs", getters, executors);
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static SimpleGetter<?> apiGetter(String name, LuaApis.Api api, Method method, ScriptType type) {
+        return ZPSNodes.getter(name, type, context -> {
+            Object[] result = callApi(api, method, context);
+            return result.length == 0 || result[0] == null ? emptyValue(type) : toScript(type, result[0]);
+        });
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static SimpleExecutor<?, ?> apiExecutor(String name, LuaApis.Api api, Method method, ScriptType type) {
+        return ZPSNodes.executor(name, type, (argument, context) -> {
+            Object[] result = callApi(api, method, context, argument);
+            return result.length > 0 && Boolean.FALSE.equals(result[0]) ? 0 : 1;
+        });
+    }
+
+    private static Object[] callApi(LuaApis.Api api, Method method, ZPSScriptContext context, Object... arguments) {
+        try {
+            return LuaApis.call(api, method, context.level(), context.pos(), arguments);
+        } catch (LuaException e) {
+            throw new IllegalStateException(e.getMessage(), e);
+        }
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -293,7 +374,7 @@ public final class ComputerCraftCompat {
             Type[] parameters = method.getGenericParameterTypes();
             for (int i = generic ? 1 : 0; i < parameters.length; i++) {
                 Class<?> raw = raw(parameters[i]);
-                if (raw == ILuaContext.class || raw == IComputerAccess.class) {
+                if (ILuaContext.class.isAssignableFrom(raw) || IComputerAccess.class.isAssignableFrom(raw)) {
                     continue;
                 }
                 if (raw == IArguments.class) {

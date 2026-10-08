@@ -3,9 +3,8 @@ package g_mungus.zps.client.ponder;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import g_mungus.zps.client.screens.components.MultiLineCommandSuggestions;
-import g_mungus.zps.networking.ExecutorBlocksS2CPacket;
-import g_mungus.zps.networking.GetterBlocksS2CPacket;
+import g_mungus.zps.client.screens.components.ScriptSyntaxHighlighter;
+import g_mungus.zps.client.script.ClientScripts;
 import net.createmod.catnip.gui.NavigatableSimiScreen;
 import net.createmod.catnip.gui.ScreenOpener;
 import net.createmod.catnip.gui.UIRenderHelper;
@@ -418,16 +417,16 @@ public class ZPSPonderTagScreen extends AbstractPonderScreen {
             return;
         }
 
-        List<String> executorNames = getSortedNames(ExecutorBlocksS2CPacket.command_names_by_block.getOrDefault(hoveredItemKey, Set.of()));
-        List<String> getterNames = getSortedNames(GetterBlocksS2CPacket.getter_names_by_block.getOrDefault(hoveredItemKey, Set.of()));
+        List<String> executorNames = getSortedNames(ClientScripts.executorNamesByBlock.getOrDefault(hoveredItemKey, List.of()));
+        List<String> getterNames = getSortedNames(ClientScripts.getterNamesByBlock.getOrDefault(hoveredItemKey, List.of()));
 
         if (executorNames.isEmpty() && getterNames.isEmpty()) {
             return;
         }
 
         tooltip.add(CommonComponents.EMPTY);
-        appendCommandGroup(tooltip, "Executors", executorNames, MultiLineCommandSuggestions.EXECUTOR_COLOR);
-        appendCommandGroup(tooltip, "Getters", getterNames, MultiLineCommandSuggestions.GETTER_COLOR);
+        appendCommandGroup(tooltip, "Executors", executorNames, ScriptSyntaxHighlighter.EXECUTOR_COLOR);
+        appendCommandGroup(tooltip, "Getters", getterNames, ScriptSyntaxHighlighter.GETTER_COLOR);
     }
 
     private static List<String> getSortedNames(Collection<String> names) {

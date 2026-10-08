@@ -1,6 +1,13 @@
 package g_mungus.zps.mixin;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.mojang.brigadier.CommandDispatcher;
+import g_mungus.zps.client.script.ClientScripts;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.network.protocol.game.ClientboundCommandsPacket;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import g_mungus.zps.client.DuctTravelFade;
 import g_mungus.zps.entity.DuctTravelEntity;
@@ -14,7 +21,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
 /**
- * Swaps vanilla's "Press Shift to Dismount" banner for the duct's own controls when the thing being
+ * Grafts the script tree into chat's command dispatcher (see {@link ClientScripts}), and swaps
+ * vanilla's "Press Shift to Dismount" banner for the duct's own controls when the thing being
  * boarded is a duct.
  *
  * <p>{@code handleSetEntityPassengersPacket} posts that message for every vehicle a player boards,
@@ -26,7 +34,21 @@ import org.spongepowered.asm.mixin.injection.At;
  * player out, so for anyone listening rather than reading that announcement is still correct.
  */
 @Mixin(ClientPacketListener.class)
-public class ClientPacketListenerMixin {
+public class ClientPacketListenerMixin implements ClientScripts.ScriptCommandsHolder {
+
+    @Shadow
+    private CommandDispatcher<SharedSuggestionProvider> commands;
+
+    /** Each commands packet makes a new dispatcher, so the scripts are grafted into every one. */
+    @Inject(method = "handleCommands", at = @At("TAIL"))
+    private void zps$graftScriptsAfterCommands(ClientboundCommandsPacket packet, CallbackInfo ci) {
+        zps$graftScripts();
+    }
+
+    @Override
+    public void zps$graftScripts() {
+        commands = ClientScripts.graft(commands);
+    }
 
     @WrapOperation(
             method = "handleSetEntityPassengersPacket",

@@ -1,187 +1,80 @@
 package g_mungus.zps.commands.content;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
+import g_mungus.munguscript.language.builtin.BuiltInTypes;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
+import g_mungus.zps.blockentity.light_pipe.RadioBlockEntity;
+import g_mungus.zps.commands.api.BlockApplicability;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
-import g_mungus.zps.commands.api.ScriptExecutor;
+import g_mungus.zps.commands.api.ZPSNodes;
+import g_mungus.zps.commands.api.ZPSScriptTypes;
+import g_mungus.zps.commands.content.arguments.AssemblerRecipeArgument;
 import g_mungus.zps.commands.content.executors.AssemblerRecipeCommand;
 import g_mungus.zps.commands.content.executors.RoboticArmItemCommand;
-import g_mungus.zps.commands.content.arguments.AssemblerRecipeArgument;
-import g_mungus.zps.blockentity.light_pipe.RadioBlockEntity;
 import g_mungus.zps.commands.content.executors.SetFrequencyCommand;
-import g_mungus.zps.commands.content.executors.SetRedstoneCommand;
 import g_mungus.zps.commands.content.executors.SetPageCommand;
-import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
-import net.minecraft.commands.arguments.coordinates.Coordinates;
-import net.minecraft.core.BlockPos;
+import g_mungus.zps.commands.content.executors.SetRedstoneCommand;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-
-import java.util.Set;
 
 @EventBusSubscriber(modid = ZPSMod.MOD_ID)
 public class ZPSScriptExecutors {
 
     @SubscribeEvent
     public static void onRegisterEvent(RegisterScriptCommandsEvent event) {
-        event.register(ScriptExecutor.simple(
-                "set_redstone",
-                Integer.class,
-                ResourceLocation.parse("zps:int"),
-                IntegerArgumentType.integer(0, 15),
+        event.register(ZPSNodes.executor("set_redstone", BuiltInTypes.INT, IntegerArgumentType.integer(0, 15),
                 (power, context) -> {
-                    SetRedstoneCommand.setRedstone(
-                            context.commandSource().getLevel(),
-                            context.pos(),
-                            power
-                    );
+                    SetRedstoneCommand.setRedstone(context.level(), context.pos(), power);
                     return 1;
-                }
-        ));
+                }));
 
-        event.register(ScriptExecutor.simpleWithBlocks(
-                "set_page",
-                Integer.class,
-                ResourceLocation.parse("zps:int"),
-                IntegerArgumentType.integer(1, 100),
-                (page, context) -> SetPageCommand.setPage(
-                        context.commandSource().getLevel(),
-                        context.pos(),
-                        page
-                ),
-                Set.of(ZPSMod.resource("data_lectern"), ResourceLocation.withDefaultNamespace("lectern"))
-        ));
+        BlockApplicability lecterns = BlockApplicability.of("zps:data_lectern", "minecraft:lectern");
 
-        event.register(ScriptExecutor.simpleWithBlocks(
-                "write_page",
-                String.class,
-                ResourceLocation.parse("zps:string"),
-                StringArgumentType.string(),
-                (text, context) -> SetPageCommand.writeToCurrentPage(
-                        context.commandSource().getLevel(),
-                        context.pos(),
-                        text
-                ),
-                Set.of(ZPSMod.resource("data_lectern"), ResourceLocation.withDefaultNamespace("lectern"))
-        ));
+        event.register(ZPSNodes.executor("set_page", BuiltInTypes.INT, IntegerArgumentType.integer(1, 100),
+                (page, context) -> SetPageCommand.setPage(context.level(), context.pos(), page))
+                .withApplicability(lecterns));
 
-        event.register(ScriptExecutor.simpleWithBlocks(
-                "set_frequency",
-                Integer.class,
-                ResourceLocation.parse("zps:int"),
+        event.register(ZPSNodes.executor("write_page", BuiltInTypes.STRING,
+                (text, context) -> SetPageCommand.writeToCurrentPage(context.level(), context.pos(), text))
+                .withApplicability(lecterns));
+
+        event.register(ZPSNodes.executor("set_frequency", BuiltInTypes.INT,
                 IntegerArgumentType.integer(RadioBlockEntity.MIN_FREQUENCY, RadioBlockEntity.MAX_FREQUENCY),
-                (frequency, context) -> SetFrequencyCommand.setFrequency(
-                        context.commandSource().getLevel(),
-                        context.pos(),
-                        frequency
-                ),
-                Set.of(ZPSMod.resource("radio_transmitter"), ZPSMod.resource("radio_receiver"))
-        ));
+                (frequency, context) -> SetFrequencyCommand.setFrequency(context.level(), context.pos(), frequency))
+                .withApplicability(BlockApplicability.of("zps:radio_transmitter", "zps:radio_receiver")));
 
-        event.register(new ScriptExecutor<>(
-                "take_items",
-                BlockPos.class,
-                ResourceLocation.parse("zps:block_pos"),
-                BlockPosArgument.blockPos(),
-                Coordinates.class,
-                (coordinates, context) -> coordinates.getBlockPos(context.commandSource()),
-                (targetPos, context) -> RoboticArmItemCommand.takeItems(
-                        context.commandSource().getLevel(),
-                        context.pos(),
-                        targetPos
-                ),
-                Set.of(ZPSMod.resource("robotic_arm"))
-        ));
+        BlockApplicability roboticArm = BlockApplicability.of("zps:robotic_arm");
 
-        event.register(new ScriptExecutor<>(
-                "put_items",
-                BlockPos.class,
-                ResourceLocation.parse("zps:block_pos"),
-                BlockPosArgument.blockPos(),
-                Coordinates.class,
-                (coordinates, context) -> coordinates.getBlockPos(context.commandSource()),
-                (targetPos, context) -> RoboticArmItemCommand.putItems(
-                        context.commandSource().getLevel(),
-                        context.pos(),
-                        targetPos
-                ),
-                Set.of(ZPSMod.resource("robotic_arm"))
-        ));
+        event.register(ZPSNodes.executor("take_items", ZPSScriptTypes.BLOCK_POS,
+                (target, context) -> RoboticArmItemCommand.takeItems(context.level(), context.pos(), target))
+                .withApplicability(roboticArm));
 
-        event.register(new ScriptExecutor<>(
-                "use",
-                BlockPos.class,
-                ResourceLocation.parse("zps:block_pos"),
-                BlockPosArgument.blockPos(),
-                Coordinates.class,
-                (coordinates, context) -> coordinates.getBlockPos(context.commandSource()),
-                (targetPos, context) -> RoboticArmItemCommand.useItem(
-                        context.commandSource().getLevel(),
-                        context.pos(),
-                        targetPos
-                ),
-                Set.of(ZPSMod.resource("robotic_arm"))
-        ));
+        event.register(ZPSNodes.executor("put_items", ZPSScriptTypes.BLOCK_POS,
+                (target, context) -> RoboticArmItemCommand.putItems(context.level(), context.pos(), target))
+                .withApplicability(roboticArm));
 
-        event.register(new ScriptExecutor<>(
-                "shift_use",
-                BlockPos.class,
-                ResourceLocation.parse("zps:block_pos"),
-                BlockPosArgument.blockPos(),
-                Coordinates.class,
-                (coordinates, context) -> coordinates.getBlockPos(context.commandSource()),
-                (targetPos, context) -> RoboticArmItemCommand.shiftUseItem(
-                        context.commandSource().getLevel(),
-                        context.pos(),
-                        targetPos
-                ),
-                Set.of(ZPSMod.resource("robotic_arm"))
-        ));
+        event.register(ZPSNodes.executor("use", ZPSScriptTypes.BLOCK_POS,
+                (target, context) -> RoboticArmItemCommand.useItem(context.level(), context.pos(), target))
+                .withApplicability(roboticArm));
 
-        event.register(new ScriptExecutor<>(
-                "drop_items",
-                BlockPos.class,
-                ResourceLocation.parse("zps:block_pos"),
-                BlockPosArgument.blockPos(),
-                Coordinates.class,
-                (coordinates, context) -> coordinates.getBlockPos(context.commandSource()),
-                (targetPos, context) -> RoboticArmItemCommand.dropItems(
-                        context.commandSource().getLevel(),
-                        context.pos(),
-                        targetPos
-                ),
-                Set.of(ZPSMod.resource("robotic_arm"))
-        ));
+        event.register(ZPSNodes.executor("shift_use", ZPSScriptTypes.BLOCK_POS,
+                (target, context) -> RoboticArmItemCommand.shiftUseItem(context.level(), context.pos(), target))
+                .withApplicability(roboticArm));
 
-        event.register(new ScriptExecutor<>(
-                "set_recipe",
-                String.class,
-                ResourceLocation.parse("zps:string"),
-                AssemblerRecipeArgument.recipe(),
-                ResourceLocation.class,
-                (id, context) -> id.toString(),
-                (recipeId, context) -> AssemblerRecipeCommand.setRecipe(
-                        context.level(),
-                        context.pos(),
-                        recipeId
-                ),
-                Set.of(ZPSMod.resource("assembler"))
-        ));
+        event.register(ZPSNodes.executor("drop_items", ZPSScriptTypes.BLOCK_POS,
+                (target, context) -> RoboticArmItemCommand.dropItems(context.level(), context.pos(), target))
+                .withApplicability(roboticArm));
 
-        event.register(ScriptExecutor.simpleWithBlocks(
-                "set_transfer_count",
-                Integer.class,
-                ResourceLocation.parse("zps:int"),
+        event.register(ZPSNodes.executor("set_transfer_count", BuiltInTypes.INT,
                 IntegerArgumentType.integer(RoboticArmBlockEntity.MIN_RETRIEVE_AMOUNT, RoboticArmBlockEntity.MAX_RETRIEVE_AMOUNT),
-                (transferCount, context) -> RoboticArmItemCommand.setTransferCount(
-                        context.commandSource().getLevel(),
-                        context.pos(),
-                        transferCount
-                ),
-                Set.of(ZPSMod.resource("robotic_arm"))
-        ));
+                (count, context) -> RoboticArmItemCommand.setTransferCount(context.level(), context.pos(), count))
+                .withApplicability(roboticArm));
+
+        event.register(ZPSNodes.executor("set_recipe", BuiltInTypes.STRING,
+                AssemblerRecipeArgument.recipe(), ResourceLocation.class, (id, context) -> id.toString(),
+                (recipeId, context) -> AssemblerRecipeCommand.setRecipe(context.level(), context.pos(), recipeId))
+                .withApplicability(BlockApplicability.of("zps:assembler")));
     }
 }

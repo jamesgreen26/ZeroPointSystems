@@ -5,9 +5,6 @@ import com.google.common.collect.Lists;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.Message;
 import com.mojang.brigadier.ParseResults;
-import com.mojang.brigadier.StringReader;
-import com.mojang.brigadier.builder.ArgumentBuilder;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContextBuilder;
 import com.mojang.brigadier.context.StringRange;
 import com.mojang.brigadier.context.SuggestionContext;
@@ -17,22 +14,14 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.LiteralCommandNode;
-
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import javax.annotation.Nullable;
-
-import g_mungus.zps.commands.api.ScriptExecutor;
-import g_mungus.zps.commands.api.ScriptGetter;
-import g_mungus.zps.commands.api_impl.ValueOfDispatchers;
-import g_mungus.zps.commands.api_impl.TypeKeys;
-import g_mungus.zps.commands.api_impl.ZPSCommands;
-import g_mungus.zps.commands.api_impl.aliases.ScriptAliases;
-import g_mungus.zps.commands.api_impl.arguments.OverloadedExecutorArgumentType;
-import g_mungus.zps.commands.api_impl.arguments.ValueOfOrLiteralArgumentType;
+import g_mungus.munguscript.engine.ScriptView;
+import g_mungus.munguscript.engine.preprocess.CommandPreProcessor;
+import g_mungus.munguscript.engine.preprocess.PreProcessContext;
+import g_mungus.munguscript.engine.preprocess.PreProcessDiagnostic;
+import g_mungus.munguscript.engine.preprocess.PreProcessed;
+import g_mungus.munguscript.engine.preprocess.SourceMap;
+import g_mungus.zps.client.script.ClientScripts;
+import g_mungus.zps.commands.preprocess.AddressPreProcessor;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -41,6 +30,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentUtils;
@@ -51,18 +41,38 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec2;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * Suggestions, usage hints and highlighting for a multi-line script editor, from the scripts the
+ * server sent ({@link ClientScripts}). Each line is a command, except for the {@code #def} alias
+ * definitions and comments at the top and {@code wait} lines, which the editor reads itself.
+ */
 @OnlyIn(Dist.CLIENT)
 public class MultiLineCommandSuggestions {
-    public static final int EXECUTOR_COLOR = ScriptSyntaxHighlighter.EXECUTOR_COLOR;
-    public static final int GETTER_COLOR = ScriptSyntaxHighlighter.GETTER_COLOR;
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("(\\s+)");
     private static final Pattern ALIAS_NAME_PATTERN = Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
+    private static final Pattern NAMED_ARGUMENT_USAGE = Pattern.compile("<[^<>]*:([^<>:]+)>");
     private static final String ALIAS_NAME_USAGE = "<alias>";
     private static final String EXPECTED_EQUALS_MESSAGE = "Expected '=' after alias name";
-    private static final ResourceLocation BOOLEAN_TYPE = ResourceLocation.parse("zps:boolean");
+    private static final String WAIT = "wait";
+    private static final String WAIT_USAGE = "<ticks: 1-64>";
+    private static final int MAX_WAIT = 64;
     final Minecraft minecraft;
-    private final CommandDispatcherProvider dispatcherProvider;
     private final Screen screen;
     final MultiLineEditBox input;
     final Font font;
@@ -73,46 +83,58 @@ public class MultiLineCommandSuggestions {
     final boolean anchorToBottom;
     final int fillColor;
     private final List<FormattedCharSequence> commandUsage = Lists.<FormattedCharSequence>newArrayList();
-    @Nullable
-    private final Set<ResourceLocation> connectedBlocks;
+    private final @Nullable Set<ResourceLocation> connectedBlocks;
+    private final Supplier<Map<String, BlockPos>> addresses;
     private int commandUsagePosition;
     private int commandUsageWidth;
-    @Nullable
-    private ParseResults<SharedSuggestionProvider> currentParse;
-    @Nullable
-    private CommandDispatcher<SharedSuggestionProvider> currentDispatcher;
-    @Nullable
-    private CompletableFuture<Suggestions> pendingSuggestions;
-    @Nullable
-    private MultiLineCommandSuggestions.SuggestionsList suggestions;
-    /**
-     * When set, the box holds one bare getter to mapper chain that has to yield this type, not a
-     * script command: suggestions, usage and highlighting all come from that type's value_of tree.
-     */
-    @Nullable
-    private ResourceLocation expressionTypeKey;
+    /** The current line as it was parsed: after pre-processing, so it reads differently from the box. */
+    private @Nullable ParseResults<SharedSuggestionProvider> currentParse;
+    private SourceMap currentMap = SourceMap.IDENTITY;
+    /** Where the command starts in the line: past a leading {@code /}. */
+    private int currentOffset;
+    private @Nullable CompletableFuture<Suggestions> pendingSuggestions;
+    private @Nullable MultiLineCommandSuggestions.SuggestionsList suggestions;
+    /** When set, the box holds one bare getter to mapper chain, not a script command. */
+    private boolean expressionMode;
     private boolean allowSuggestions;
     boolean keepSuggestions;
 
-    public MultiLineCommandSuggestions(Minecraft arg, CommandDispatcherProvider dispatcherProvider, Screen arg2, MultiLineEditBox arg3, Font arg4, boolean bl, boolean bl2, int i, int j, boolean bl3, int k, Set<ResourceLocation> connectedBlocks) {
-        this.connectedBlocks = connectedBlocks;
-        this.minecraft = arg;
-        this.dispatcherProvider = dispatcherProvider;
-        this.screen = arg2;
-        this.input = arg3;
-        this.font = arg4;
-        this.commandsOnly = bl;
-        this.onlyShowIfCursorPastError = bl2;
-        this.lineStartOffset = i;
-        this.suggestionLineLimit = j;
-        this.anchorToBottom = bl3;
-        this.fillColor = k;
-        arg3.setFormatter(this::formatChat);
+    // The script's pre-processing, made again when the script, its addresses or the scripts change.
+    private @Nullable PreparedScript prepared;
+    private final Map<String, List<ScriptSyntaxHighlighter.Span>> highlightCache = new HashMap<>();
+
+    private record PreparedScript(String text, Map<String, BlockPos> addresses, ScriptView<SharedSuggestionProvider> view,
+                                  CommandPreProcessor.Prepared script, Map<Integer, CommandPreProcessor.Prepared> before) {
     }
 
-    /** Turns the box into an expression box for chains yielding {@code typeKey}. */
-    public void setExpressionType(@Nullable ResourceLocation typeKey) {
-        this.expressionTypeKey = typeKey;
+    /**
+     * @param connectedBlocks the blocks a script written here can reach, or null when not known,
+     *                        which offers everything
+     * @param addresses       the addresses a script here can write as {@code @name}
+     */
+    public MultiLineCommandSuggestions(Minecraft minecraft, Screen screen, MultiLineEditBox input, Font font,
+                                       boolean commandsOnly, boolean onlyShowIfCursorPastError, int lineStartOffset,
+                                       int suggestionLineLimit, boolean anchorToBottom, int fillColor,
+                                       @Nullable Set<ResourceLocation> connectedBlocks,
+                                       Supplier<Map<String, BlockPos>> addresses) {
+        this.connectedBlocks = connectedBlocks;
+        this.addresses = addresses;
+        this.minecraft = minecraft;
+        this.screen = screen;
+        this.input = input;
+        this.font = font;
+        this.commandsOnly = commandsOnly;
+        this.onlyShowIfCursorPastError = onlyShowIfCursorPastError;
+        this.lineStartOffset = lineStartOffset;
+        this.suggestionLineLimit = suggestionLineLimit;
+        this.anchorToBottom = anchorToBottom;
+        this.fillColor = fillColor;
+        input.setFormatter(this::formatChat);
+    }
+
+    /** Turns the box into an expression box: one getter to mapper chain, read as text. */
+    public void setExpressionMode(boolean expressionMode) {
+        this.expressionMode = expressionMode;
     }
 
     /** Whether the suggestion popup is up, so callers can keep tooltips out from under it. */
@@ -148,11 +170,11 @@ public class MultiLineCommandSuggestions {
 
     public void showSuggestions(boolean bl) {
         if (this.pendingSuggestions != null && this.pendingSuggestions.isDone()) {
-            Suggestions suggestions = (Suggestions)this.pendingSuggestions.join();
+            Suggestions suggestions = this.pendingSuggestions.join();
             if (!suggestions.isEmpty()) {
                 int i = 0;
 
-                for (Suggestion suggestion : filterByConnectedBlocks(suggestions.getList())) {
+                for (Suggestion suggestion : suggestions.getList()) {
                     i = Math.max(i, this.font.width(suggestion.getText()));
                 }
 
@@ -176,13 +198,10 @@ public class MultiLineCommandSuggestions {
     }
 
     private List<Suggestion> sortSuggestions(Suggestions suggestions) {
-        // Use current line instead of full value
         String currentLine = getCurrentLine();
-        int lineStartPos = getLineStartPosition(getCurrentLineNumber());
-        int absoluteCursorPos = this.input.getCursorPosition();
-        int lineCursorPos = absoluteCursorPos - lineStartPos;
+        int lineCursorPos = this.input.getCursorPosition() - getLineStartPosition(getCurrentLineNumber());
 
-        String string = currentLine.substring(0, Math.min(lineCursorPos, currentLine.length()));
+        String string = currentLine.substring(0, Mth.clamp(lineCursorPos, 0, currentLine.length()));
         int i = getLastWordIndex(string);
         String string2 = string.substring(i).toLowerCase(Locale.ROOT);
         List<Suggestion> list = Lists.<Suggestion>newArrayList();
@@ -197,53 +216,18 @@ public class MultiLineCommandSuggestions {
         }
 
         list.addAll(list2);
-        return filterByConnectedBlocks(list);
-    }
-
-    private List<Suggestion> filterByConnectedBlocks(List<Suggestion> list) {
-        if (connectedBlocks == null) return list;
-        List<Suggestion> output = new ArrayList<>();
-
-        for (var suggestion : list) {
-            String command = suggestion.getText();
-
-            boolean knownCommand = false;
-            boolean appliesToConnectedBlocks = false;
-
-            for (ScriptExecutor<?, ?> executor : ZPSCommands.getExecutors(command)) {
-                knownCommand = true;
-                Set<ResourceLocation> associatedBlocks = executor.associatedBlocks();
-                if (associatedBlocks == null || associatedBlocks.stream().anyMatch(connectedBlocks::contains)) {
-                    appliesToConnectedBlocks = true;
-                    break;
-                }
-            }
-
-            if (!appliesToConnectedBlocks) {
-                ScriptGetter<?> getter = ZPSCommands.getGetter(command);
-                if (getter != null) {
-                    knownCommand = true;
-                    appliesToConnectedBlocks = getter.appliesToAny(connectedBlocks);
-                }
-            }
-
-            if (!knownCommand || appliesToConnectedBlocks) {
-                output.add(suggestion);
-            }
-        }
-
-        return output;
+        return list;
     }
 
     public void updateCommandInfo() {
-        // Get current line instead of full text
         String currentLine = getCurrentLine();
-        int lineStartPos = getLineStartPosition(getCurrentLineNumber());
-        int absoluteCursorPos = this.input.getCursorPosition();
-        int lineCursorPos = absoluteCursorPos - lineStartPos;
+        int currentLineNumber = getCurrentLineNumber();
+        int lineCursorPos = Mth.clamp(this.input.getCursorPosition() - getLineStartPosition(currentLineNumber),
+                0, currentLine.length());
 
         this.currentParse = null;
-        this.currentDispatcher = null;
+        this.currentMap = SourceMap.IDENTITY;
+        this.currentOffset = 0;
 
         if (!this.keepSuggestions) {
             this.input.setSuggestion(null);
@@ -252,54 +236,119 @@ public class MultiLineCommandSuggestions {
 
         this.commandUsage.clear();
 
-        if (this.expressionTypeKey != null) {
-            // No script around the line, so no aliases and none of the #def or command handling.
-            ValueOfOrLiteralArgumentType.setActiveExpressionAliases(Map.of());
-            OverloadedExecutorArgumentType.setActiveConnectedBlocks(connectedBlocks);
-            updateExpressionInfo(currentLine, lineCursorPos);
+        ScriptView<SharedSuggestionProvider> view = ClientScripts.view();
+        if (view == null || this.minecraft.getConnection() == null) {
+            this.pendingSuggestions = Suggestions.empty();
             return;
         }
 
-        int currentLineNumber = getCurrentLineNumber();
-        ValueOfOrLiteralArgumentType.setActiveExpressionAliases(aliasesBeforeLine(currentLineNumber));
-        OverloadedExecutorArgumentType.setActiveConnectedBlocks(connectedBlocks);
-
-        StringReader stringReader = new StringReader(currentLine);
-        boolean bl = stringReader.canRead() && stringReader.peek() == '/';
-        if (bl) {
-            stringReader.skip();
+        if (this.expressionMode) {
+            updateExpressionInfo(view, currentLine, lineCursorPos);
+            return;
         }
 
         if (isLeadingAliasDefinitionLine(currentLineNumber, currentLine)
                 || isAliasDefinitionPrefixLine(currentLineNumber, currentLine)) {
-            updateAliasDefinitionInfo(currentLine, lineCursorPos, currentLineNumber);
+            updateAliasDefinitionInfo(view, currentLine, lineCursorPos, currentLineNumber);
+            return;
+        }
+        if (isLeadingCommentLine(currentLineNumber, currentLine)) {
+            this.pendingSuggestions = Suggestions.empty();
             return;
         }
 
-        boolean bl2 = this.commandsOnly || bl;
-        if (bl2) {
-            CommandDispatcher<SharedSuggestionProvider> commandDispatcher = dispatcherWithAliases(currentLineNumber);
-            this.currentDispatcher = commandDispatcher;
-            if (this.currentParse == null) {
-                this.currentParse = commandDispatcher.parse(stringReader, this.minecraft.player.connection.getSuggestionsProvider());
-            }
-
-            int j = this.onlyShowIfCursorPastError ? stringReader.getCursor() : 1;
-            if (lineCursorPos >= j && (this.suggestions == null || !this.keepSuggestions)) {
-                // Get suggestions for the current line with line-relative cursor position
-                this.pendingSuggestions = commandDispatcher.getCompletionSuggestions(this.currentParse, lineCursorPos);
-                this.pendingSuggestions.thenRun(() -> {
-                    if (this.pendingSuggestions.isDone()) {
-                        this.updateUsageInfo();
-                    }
-                });
-            }
-        } else {
-            String string2 = currentLine.substring(0, Math.min(lineCursorPos, currentLine.length()));
-            int j = getLastWordIndex(string2);
-            Collection<String> collection = this.minecraft.player.connection.getSuggestionsProvider().getCustomTabSugggestions();
-            this.pendingSuggestions = SharedSuggestionProvider.suggest(collection, new SuggestionsBuilder(string2, j));
+        int offset = currentLine.startsWith("/") ? 1 : 0;
+        if (!this.commandsOnly && offset == 0) {
+            String typed = currentLine.substring(0, lineCursorPos);
+            Collection<String> collection = this.minecraft.getConnection().getSuggestionsProvider().getCustomTabSugggestions();
+            this.pendingSuggestions = SharedSuggestionProvider.suggest(collection, new SuggestionsBuilder(typed, getLastWordIndex(typed)));
+            return;
         }
+
+        String command = currentLine.substring(offset);
+        int cursor = lineCursorPos - offset;
+        this.currentOffset = offset;
+        if (isWaitLine(command)) {
+            updateWaitInfo(command, offset);
+            return;
+        }
+
+        SharedSuggestionProvider source = source();
+        CommandPreProcessor.Prepared script = prepared(view).script();
+        PreProcessed processed = script.process(command, new PreProcessContext(view.probe(source), null));
+        this.currentParse = view.parse(processed.command(), source);
+        this.currentMap = processed.sourceMap();
+
+        int shownFrom = this.onlyShowIfCursorPastError ? offset : 1;
+        if (lineCursorPos >= shownFrom && (this.suggestions == null || !this.keepSuggestions) && cursor >= 0) {
+            CompletableFuture<Suggestions> found = view.suggest(command, cursor, source, script)
+                    .thenApply(suggestions -> withWait(command, cursor, suggestions))
+                    .thenApply(suggestions -> shifted(suggestions, offset, currentLine));
+            this.pendingSuggestions = found;
+            found.thenRun(() -> {
+                if (this.pendingSuggestions == found && found.isDone()) {
+                    this.updateUsageInfo();
+                }
+            });
+        }
+    }
+
+    /** Offers {@code wait} alongside the commands, while the first word is being written. */
+    private static Suggestions withWait(String command, int cursor, Suggestions suggestions) {
+        String typed = command.substring(0, Math.min(cursor, command.length()));
+        if (typed.contains(" ") || !WAIT.startsWith(typed)) {
+            return suggestions;
+        }
+        List<Suggestion> list = new ArrayList<>(suggestions.getList());
+        list.add(new Suggestion(StringRange.between(0, typed.length()), WAIT));
+        return Suggestions.create(command, list);
+    }
+
+    private static Suggestions shifted(Suggestions suggestions, int offset, String line) {
+        if (offset == 0) {
+            return suggestions;
+        }
+        List<Suggestion> list = new ArrayList<>();
+        for (Suggestion suggestion : suggestions.getList()) {
+            StringRange range = suggestion.getRange();
+            list.add(new Suggestion(StringRange.between(range.getStart() + offset, range.getEnd() + offset),
+                    suggestion.getText(), suggestion.getTooltip()));
+        }
+        return Suggestions.create(line, list);
+    }
+
+    private SharedSuggestionProvider source() {
+        return ScriptSyntaxHighlighter.source(this.connectedBlocks);
+    }
+
+    /** The script's pre-processing: its aliases, then its addresses. */
+    private PreparedScript prepared(ScriptView<SharedSuggestionProvider> view) {
+        String text = this.input.getValue();
+        Map<String, BlockPos> addresses = this.addresses.get();
+        PreparedScript cached = this.prepared;
+        if (cached != null && cached.text().equals(text) && cached.addresses().equals(addresses) && cached.view() == view) {
+            return cached;
+        }
+        PreparedScript made = new PreparedScript(text, Map.copyOf(addresses), view,
+                prepare(view, Arrays.asList(text.split("\n", -1)), addresses), new HashMap<>());
+        this.prepared = made;
+        this.highlightCache.clear();
+        return made;
+    }
+
+    /** The pre-processing an {@code #def} line's own expression sees: the definitions above it. */
+    private CommandPreProcessor.Prepared preparedBefore(ScriptView<SharedSuggestionProvider> view, int lineNumber) {
+        PreparedScript script = prepared(view);
+        return script.before().computeIfAbsent(lineNumber, line -> {
+            List<String> lines = Arrays.asList(script.text().split("\n", -1));
+            return prepare(view, lines.subList(0, Math.min(line, lines.size())), script.addresses());
+        });
+    }
+
+    private CommandPreProcessor.Prepared prepare(ScriptView<SharedSuggestionProvider> view, List<String> lines,
+                                                 Map<String, BlockPos> addresses) {
+        return CommandPreProcessor.chain(List.of(view.aliases(), new AddressPreProcessor(addresses)))
+                .prepare(lines, new PreProcessContext(view.probe(source()), null));
     }
 
     private static int getLastWordIndex(String string) {
@@ -320,7 +369,6 @@ public class MultiLineCommandSuggestions {
     private int getCurrentLineNumber() {
         String value = this.input.getValue();
         int cursorPos = this.input.getCursorPosition();
-        int lineNumber = 0;
         int charCount = 0;
 
         String[] lines = value.split("\n", -1);
@@ -355,13 +403,24 @@ public class MultiLineCommandSuggestions {
         return "";
     }
 
+    // --- lines the editor reads itself -------------------------------------------------------------
+
     private boolean isLeadingAliasDefinitionLine(int lineNumber, String line) {
-        return ScriptAliases.startsWithDefinitionKeyword(line) && !hasEarlierExecutableLine(lineNumber);
+        return startsWithDefinitionKeyword(line) && !hasEarlierExecutableLine(lineNumber);
     }
 
     private boolean isAliasDefinitionPrefixLine(int lineNumber, String line) {
         String stripped = line.stripLeading();
         return isDefinitionKeywordPrefix(stripped) && !hasEarlierExecutableLine(lineNumber);
+    }
+
+    private boolean isLeadingCommentLine(int lineNumber, String line) {
+        return line.stripLeading().startsWith("#") && !hasEarlierExecutableLine(lineNumber);
+    }
+
+    private static boolean startsWithDefinitionKeyword(String line) {
+        String stripped = line.stripLeading();
+        return stripped.startsWith("#def") && (stripped.length() == 4 || Character.isWhitespace(stripped.charAt(4)));
     }
 
     private static boolean isDefinitionKeywordPrefix(String strippedLine) {
@@ -379,67 +438,53 @@ public class MultiLineCommandSuggestions {
         return false;
     }
 
-    /** The whole line is the expression, so there is no prefix to step over and no type to guess. */
-    private void updateExpressionInfo(String currentLine, int lineCursorPos) {
-        this.currentParse = null;
-        this.commandUsage.clear();
+    private static boolean isWaitLine(String command) {
+        return command.equals(WAIT) || command.startsWith(WAIT + " ");
+    }
+
+    private void updateWaitInfo(String command, int offset) {
+        this.pendingSuggestions = Suggestions.empty();
+        String ticks = command.substring(WAIT.length()).strip();
+        if (ticks.isEmpty() || !validWait(ticks)) {
+            Style style = ticks.isEmpty() ? ScriptSyntaxHighlighter.DEFAULT_STYLE : ScriptSyntaxHighlighter.UNPARSED_STYLE;
+            this.commandUsage.add(FormattedCharSequence.forward(WAIT_USAGE, style));
+            int width = this.font.width(WAIT_USAGE);
+            int absoluteStart = getLineStartPosition(getCurrentLineNumber()) + offset + WAIT.length() + 1;
+            this.commandUsagePosition = Mth.clamp(this.input.getScreenX(absoluteStart), 0,
+                    this.input.getScreenX(0) + this.input.getInnerWidth() - width);
+            this.commandUsageWidth = width;
+        }
+    }
+
+    private static boolean validWait(String ticks) {
+        try {
+            int value = Integer.parseInt(ticks);
+            return value >= 1 && value <= MAX_WAIT;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    /** The whole line is the expression, so there is no prefix to step over. */
+    private void updateExpressionInfo(ScriptView<SharedSuggestionProvider> view, String currentLine, int lineCursorPos) {
         this.commandUsagePosition = this.input.getScreenX(this.input.getCursorPosition());
         this.commandUsageWidth = this.screen.width;
 
-        this.pendingSuggestions = expressionSuggestions(currentLine, lineCursorPos);
+        this.pendingSuggestions = view.suggestExpression(currentLine, lineCursorPos, source(), null, null);
         this.suggestions = null;
         if (this.allowSuggestions && this.minecraft.options.autoSuggestions().get()) {
             this.showSuggestions(false);
         }
     }
 
-    private CompletableFuture<Suggestions> expressionSuggestions(String currentLine, int lineCursorPos) {
-        assert this.minecraft.player != null;
-        ResourceLocation typeKey = this.expressionTypeKey;
-        if (typeKey == null) {
-            return Suggestions.empty();
-        }
-
-        SharedSuggestionProvider source = this.minecraft.player.connection.getSuggestionsProvider();
-        var dispatcher = ValueOfOrLiteralArgumentType.valueOfDispatcherWithExpressionAliases(typeKey, Map.of(), source);
-        if (dispatcher == null) {
-            return Suggestions.empty();
-        }
-
-        String typed = currentLine.substring(0, Math.min(lineCursorPos, currentLine.length()));
-        List<Suggestion> suggestions = new ArrayList<>();
-        try {
-            @SuppressWarnings({"rawtypes", "unchecked"})
-            var rawDispatcher = (CommandDispatcher) dispatcher;
-            ParseResults<SharedSuggestionProvider> parseResults = rawDispatcher.parse(typed, source);
-            Suggestions dispatcherSuggestions = (Suggestions) rawDispatcher
-                    .getCompletionSuggestions(parseResults, typed.length())
-                    .join();
-            for (Suggestion suggestion : dispatcherSuggestions.getList()) {
-                // The sentinel that closes an expression is ours, not something to offer a player.
-                if (ValueOfDispatchers.TERMINAL_LITERAL.equals(suggestion.getText())) {
-                    continue;
-                }
-                suggestions.add(suggestion);
-            }
-        } catch (Exception ignored) {
-        }
-
-        // Same rule as a command line: only offer what the block on the other end can answer.
-        return CompletableFuture.completedFuture(
-                Suggestions.create(currentLine, filterByConnectedBlocks(suggestions)));
-    }
-
-    private void updateAliasDefinitionInfo(String currentLine, int lineCursorPos, int currentLineNumber) {
-        this.currentParse = null;
-        this.commandUsage.clear();
+    private void updateAliasDefinitionInfo(ScriptView<SharedSuggestionProvider> view, String currentLine,
+                                           int lineCursorPos, int currentLineNumber) {
         this.commandUsagePosition = this.input.getScreenX(this.input.getCursorPosition());
         this.commandUsageWidth = this.screen.width;
 
         if (currentLine.indexOf('=') != -1) {
-            ScriptAliases.ParsedScript parsedThroughLine = ScriptAliases.parse(scriptThroughLine(currentLineNumber));
-            for (ScriptAliases.Diagnostic diagnostic : parsedThroughLine.diagnostics()) {
-                if (diagnostic.lineIndex() == currentLineNumber) {
+            for (PreProcessDiagnostic diagnostic : preparedBefore(view, currentLineNumber + 1).diagnostics()) {
+                if (diagnostic.line() != null && diagnostic.line() == currentLineNumber) {
                     this.commandUsage.add(FormattedCharSequence.forward(diagnostic.message(), ScriptSyntaxHighlighter.UNPARSED_STYLE));
                 }
             }
@@ -447,55 +492,14 @@ public class MultiLineCommandSuggestions {
             this.commandUsage.add(FormattedCharSequence.forward(EXPECTED_EQUALS_MESSAGE, ScriptSyntaxHighlighter.UNPARSED_STYLE));
         }
 
-        this.pendingSuggestions = aliasDefinitionSuggestions(currentLine, lineCursorPos, currentLineNumber);
-        updateAliasDefinitionUsageInfo(currentLine, lineCursorPos, currentLineNumber);
+        this.pendingSuggestions = aliasDefinitionSuggestions(view, currentLine, lineCursorPos, currentLineNumber);
+        if (this.pendingSuggestions.join().isEmpty() && isCursorInAliasNamePosition(currentLine, lineCursorPos)) {
+            addAliasNameUsageHint(currentLine, currentLineNumber);
+        }
         this.suggestions = null;
         if (this.allowSuggestions && this.minecraft.options.autoSuggestions().get()) {
             this.showSuggestions(false);
         }
-    }
-
-    private void updateAliasDefinitionUsageInfo(String currentLine, int lineCursorPos, int currentLineNumber) {
-        if (this.pendingSuggestions == null || !this.pendingSuggestions.join().isEmpty()) {
-            return;
-        }
-
-        if (isCursorInAliasNamePosition(currentLine, lineCursorPos)) {
-            addAliasNameUsageHint(currentLine, currentLineNumber);
-            return;
-        }
-
-        AliasExpressionParse aliasParse = bestAliasExpressionParse(currentLine, lineCursorPos, currentLineNumber);
-        if (aliasParse == null) {
-            return;
-        }
-
-        SuggestionContext<SharedSuggestionProvider> suggestionContext =
-                aliasParse.parse().getContext().findSuggestionContext(aliasParse.expressionCursor());
-        assert this.minecraft.player != null;
-        Map<CommandNode<SharedSuggestionProvider>, String> smartUsage =
-                aliasParse.dispatcher().getSmartUsage(suggestionContext.parent, this.minecraft.player.connection.getSuggestionsProvider());
-
-        List<FormattedCharSequence> usageLines = Lists.newArrayList();
-        int width = 0;
-        Style style = Style.EMPTY.withColor(ChatFormatting.GRAY);
-        for (Entry<CommandNode<SharedSuggestionProvider>, String> entry : smartUsage.entrySet()) {
-            if (entry.getKey() instanceof LiteralCommandNode) {
-                continue;
-            }
-            String usage = simplifyUsage(entry.getValue());
-            usageLines.add(FormattedCharSequence.forward(usage, style));
-            width = Math.max(width, this.font.width(usage));
-        }
-
-        if (usageLines.isEmpty()) {
-            return;
-        }
-
-        this.commandUsage.addAll(usageLines);
-        int absoluteStart = getLineStartPosition(currentLineNumber) + aliasParse.expressionStart() + suggestionContext.startPos;
-        this.commandUsagePosition = Mth.clamp(this.input.getScreenX(absoluteStart), 0, this.input.getScreenX(0) + this.input.getInnerWidth() - width);
-        this.commandUsageWidth = width;
     }
 
     private boolean isCursorInAliasNamePosition(String currentLine, int lineCursorPos) {
@@ -586,7 +590,18 @@ public class MultiLineCommandSuggestions {
         return equalsSlot != -1 && equalsSlot < line.length();
     }
 
-    private CompletableFuture<Suggestions> aliasDefinitionSuggestions(String currentLine, int lineCursorPos, int currentLineNumber) {
+    /** Where the expression of an {@code #def} line starts: past the {@code =} and any spaces up to {@code limit}. */
+    private static int expressionStart(String line, int limit) {
+        int start = line.indexOf('=') + 1;
+        while (start < limit && Character.isWhitespace(line.charAt(start))) {
+            start++;
+        }
+        return start;
+    }
+
+    private CompletableFuture<Suggestions> aliasDefinitionSuggestions(ScriptView<SharedSuggestionProvider> view,
+                                                                      String currentLine, int lineCursorPos,
+                                                                      int currentLineNumber) {
         int equals = currentLine.indexOf('=');
         if (equals == -1 || lineCursorPos <= equals) {
             String stripped = currentLine.stripLeading();
@@ -609,256 +624,14 @@ public class MultiLineCommandSuggestions {
 
         // Never skip whitespace past the cursor: with the cursor inside the run of spaces after the '='
         // the expression is still empty and starts where the cursor is.
-        int cursor = Math.min(lineCursorPos, currentLine.length());
-        int expressionStart = equals + 1;
-        while (expressionStart < cursor && Character.isWhitespace(currentLine.charAt(expressionStart))) {
-            expressionStart++;
-        }
-
-        String typedExpression = currentLine.substring(expressionStart, cursor);
-        List<Suggestion> suggestions = new ArrayList<>();
-
-        assert this.minecraft.player != null;
-        Map<String, ScriptAliases.AliasDefinition> visibleAliases = aliasesBeforeLine(currentLineNumber);
-        for (ResourceLocation typeKey : TypeKeys.TYPE_KEY_TO_CLASS.keySet()) {
-            var dispatcher = ValueOfOrLiteralArgumentType.valueOfDispatcherWithExpressionAliases(
-                    typeKey,
-                    visibleAliases,
-                    this.minecraft.player.connection.getSuggestionsProvider()
-            );
-            if (dispatcher == null) {
-                continue;
-            }
-            try {
-                @SuppressWarnings({"rawtypes", "unchecked"})
-                var rawDispatcher = (CommandDispatcher) dispatcher;
-                ParseResults<SharedSuggestionProvider> parseResults = rawDispatcher.parse(
-                        typedExpression,
-                        this.minecraft.player.connection.getSuggestionsProvider()
-                );
-                Suggestions dispatcherSuggestions = (Suggestions) rawDispatcher
-                        .getCompletionSuggestions(parseResults, typedExpression.length())
-                        .join();
-                for (Suggestion suggestion : dispatcherSuggestions.getList()) {
-                    if (ValueOfDispatchers.TERMINAL_LITERAL.equals(suggestion.getText())) {
-                        continue;
-                    }
-                    suggestions.add(new Suggestion(
-                            StringRange.between(
-                                    suggestion.getRange().getStart() + expressionStart,
-                                    suggestion.getRange().getEnd() + expressionStart
-                            ),
-                            suggestion.getText(),
-                            suggestion.getTooltip()
-                    ));
-                }
-            } catch (Exception ignored) {
-            }
-        }
-
-        return CompletableFuture.completedFuture(Suggestions.create(currentLine, suggestions));
+        int start = expressionStart(currentLine, lineCursorPos);
+        String expression = currentLine.substring(start);
+        return view.suggestExpression(expression, lineCursorPos - start, source(), null,
+                        preparedBefore(view, currentLineNumber))
+                .thenApply(suggestions -> shifted(suggestions, start, currentLine));
     }
 
-    @Nullable
-    private AliasExpressionParse bestAliasExpressionParse(String currentLine, int lineCursorPos, int currentLineNumber) {
-        int equals = currentLine.indexOf('=');
-        if (equals == -1 || lineCursorPos <= equals) {
-            return null;
-        }
-
-        int cursor = Math.min(lineCursorPos, currentLine.length());
-        int expressionStart = equals + 1;
-        while (expressionStart < cursor && Character.isWhitespace(currentLine.charAt(expressionStart))) {
-            expressionStart++;
-        }
-
-        int expressionCursor = cursor - expressionStart;
-        String typedExpression = currentLine.substring(expressionStart, cursor);
-
-        assert this.minecraft.player != null;
-        SharedSuggestionProvider source = this.minecraft.player.connection.getSuggestionsProvider();
-        Map<String, ScriptAliases.AliasDefinition> visibleAliases = aliasesBeforeLine(currentLineNumber);
-        AliasExpressionParse bestParse = null;
-        int bestScore = -1;
-        for (ResourceLocation typeKey : TypeKeys.TYPE_KEY_TO_CLASS.keySet()) {
-            var dispatcher = ValueOfOrLiteralArgumentType.valueOfDispatcherWithExpressionAliases(
-                    typeKey,
-                    visibleAliases,
-                    source
-            );
-            if (dispatcher == null) {
-                continue;
-            }
-            try {
-                ParseResults<SharedSuggestionProvider> parse = dispatcher.parse(
-                        typedExpression,
-                        source
-                );
-                int score = parse.getReader().getCursor() * 10 - parse.getExceptions().size();
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestParse = new AliasExpressionParse(dispatcher, parse, expressionStart, expressionCursor);
-                }
-            } catch (Exception ignored) {
-            }
-        }
-        return bestParse;
-    }
-
-    private Map<String, ScriptAliases.AliasDefinition> aliasesBeforeLine(int lineNumber) {
-        return ScriptAliases.parse(scriptBeforeLine(lineNumber)).aliases();
-    }
-
-    private CommandDispatcher<SharedSuggestionProvider> dispatcherWithAliases(int lineNumber) {
-        CommandDispatcher<SharedSuggestionProvider> dispatcher = copyDispatcher(dispatcherProvider.get());
-        Map<String, ScriptAliases.AliasDefinition> aliases = aliasesBeforeLine(lineNumber);
-        if (aliases.isEmpty()) {
-            return dispatcher;
-        }
-
-        CommandNode<SharedSuggestionProvider> root = dispatcher.getRoot();
-        CommandNode<SharedSuggestionProvider> ifNode = root.getChild("if");
-        CommandNode<SharedSuggestionProvider> unlessNode = root.getChild("unless");
-        CommandNode<SharedSuggestionProvider> booleanExpressionRoot = firstNonNullRedirect(ifNode, unlessNode);
-        if (booleanExpressionRoot == null) {
-            return dispatcher;
-        }
-        for (ScriptAliases.AliasDefinition alias : aliases.values()) {
-            ResourceLocation outputType = inferAliasOutputType(alias);
-            if (outputType == null) {
-                continue;
-            }
-            CommandNode<SharedSuggestionProvider> aliasDestination =
-                    findNode(booleanExpressionRoot, "have-" + outputType + "-need-" + BOOLEAN_TYPE);
-            if (aliasDestination != null) {
-                booleanExpressionRoot.addChild(aliasCommandNode(alias.name(), aliasDestination));
-            }
-        }
-        return dispatcher;
-    }
-
-    @Nullable
-    private ResourceLocation inferAliasOutputType(ScriptAliases.AliasDefinition alias) {
-        String expression = ScriptAliases.resolveExpression(alias.expression(), alias.visibleAliases());
-        assert this.minecraft.player != null;
-        for (ResourceLocation typeKey : TypeKeys.TYPE_KEY_TO_CLASS.keySet()) {
-            var dispatcher = ValueOfDispatchers.get(typeKey);
-            if (dispatcher == null) {
-                continue;
-            }
-            try {
-                @SuppressWarnings({"rawtypes", "unchecked"})
-                var rawDispatcher = (CommandDispatcher) dispatcher;
-                var parse = rawDispatcher.parse(
-                        expression + " " + ValueOfDispatchers.TERMINAL_LITERAL,
-                        this.minecraft.player.connection.getSuggestionsProvider()
-                );
-                if (!parse.getReader().canRead() && parse.getExceptions().isEmpty()) {
-                    return typeKey;
-                }
-            } catch (Exception ignored) {
-            }
-        }
-        return null;
-    }
-
-    @Nullable
-    private static CommandNode<SharedSuggestionProvider> firstNonNullRedirect(@Nullable CommandNode<SharedSuggestionProvider> first, @Nullable CommandNode<SharedSuggestionProvider> second) {
-        if (first != null && first.getRedirect() != null) {
-            return first.getRedirect();
-        }
-        return second != null ? second.getRedirect() : null;
-    }
-
-    @Nullable
-    private static CommandNode<SharedSuggestionProvider> findNode(CommandNode<SharedSuggestionProvider> root, String name) {
-        Set<CommandNode<SharedSuggestionProvider>> visited = Collections.newSetFromMap(new IdentityHashMap<>());
-        return findNode(root, name, visited);
-    }
-
-    @Nullable
-    private static CommandNode<SharedSuggestionProvider> findNode(
-            CommandNode<SharedSuggestionProvider> node,
-            String name,
-            Set<CommandNode<SharedSuggestionProvider>> visited
-    ) {
-        if (!visited.add(node)) {
-            return null;
-        }
-        if (node.getName().equals(name)) {
-            return node;
-        }
-        for (CommandNode<SharedSuggestionProvider> child : node.getChildren()) {
-            CommandNode<SharedSuggestionProvider> found = findNode(child, name, visited);
-            if (found != null) {
-                return found;
-            }
-        }
-        if (node.getRedirect() != null) {
-            return findNode(node.getRedirect(), name, visited);
-        }
-        return null;
-    }
-
-    private static CommandNode<SharedSuggestionProvider> aliasCommandNode(String aliasName, CommandNode<SharedSuggestionProvider> root) {
-        return LiteralArgumentBuilder.<SharedSuggestionProvider>literal(aliasName)
-                .redirect(root)
-                .build();
-    }
-
-    private static CommandDispatcher<SharedSuggestionProvider> copyDispatcher(CommandDispatcher<SharedSuggestionProvider> original) {
-        CommandDispatcher<SharedSuggestionProvider> copy = new CommandDispatcher<>();
-        Map<CommandNode<SharedSuggestionProvider>, CommandNode<SharedSuggestionProvider>> copiedNodes = new IdentityHashMap<>();
-        copiedNodes.put(original.getRoot(), copy.getRoot());
-        for (CommandNode<SharedSuggestionProvider> child : original.getRoot().getChildren()) {
-            copy.getRoot().addChild(copyNode(child, copiedNodes));
-        }
-        return copy;
-    }
-
-    private static CommandNode<SharedSuggestionProvider> copyNode(
-            CommandNode<SharedSuggestionProvider> original,
-            Map<CommandNode<SharedSuggestionProvider>, CommandNode<SharedSuggestionProvider>> copiedNodes
-    ) {
-        CommandNode<SharedSuggestionProvider> existing = copiedNodes.get(original);
-        if (existing != null) {
-            return existing;
-        }
-
-        ArgumentBuilder<SharedSuggestionProvider, ?> builder = original.createBuilder();
-        if (original.getRedirect() != null) {
-            builder.forward(
-                    copyNode(original.getRedirect(), copiedNodes),
-                    original.getRedirectModifier(),
-                    original.isFork()
-            );
-        }
-
-        CommandNode<SharedSuggestionProvider> copy = builder.build();
-        copiedNodes.put(original, copy);
-        for (CommandNode<SharedSuggestionProvider> child : original.getChildren()) {
-            copy.addChild(copyNode(child, copiedNodes));
-        }
-        return copy;
-    }
-
-    private String scriptBeforeLine(int lineNumber) {
-        String[] lines = this.input.getValue().split("\n", -1);
-        StringBuilder out = new StringBuilder();
-        for (int i = 0; i < lineNumber && i < lines.length; i++) {
-            out.append(lines[i]).append('\n');
-        }
-        return out.toString();
-    }
-
-    private String scriptThroughLine(int lineNumber) {
-        String[] lines = this.input.getValue().split("\n", -1);
-        StringBuilder out = new StringBuilder();
-        for (int i = 0; i <= lineNumber && i < lines.length; i++) {
-            out.append(lines[i]).append('\n');
-        }
-        return out.toString();
-    }
+    // --- usage ---------------------------------------------------------------------------------------
 
     private static FormattedCharSequence getExceptionMessage(CommandSyntaxException commandSyntaxException) {
         Component component = ComponentUtils.fromMessage(commandSyntaxException.getRawMessage());
@@ -869,19 +642,21 @@ public class MultiLineCommandSuggestions {
     }
 
     private void updateUsageInfo() {
+        ParseResults<SharedSuggestionProvider> parse = this.currentParse;
+        if (parse == null || this.pendingSuggestions == null) {
+            return;
+        }
         boolean bl = false;
-        // Check if cursor is at end of current line instead of full text
         String currentLine = getCurrentLine();
-        int lineStartPos = getLineStartPosition(getCurrentLineNumber());
-        int lineCursorPos = this.input.getCursorPosition() - lineStartPos;
-        boolean hasArgumentPlaceholder = hasArgumentPlaceholder(this.currentParse);
+        int lineCursorPos = this.input.getCursorPosition() - getLineStartPosition(getCurrentLineNumber());
+        boolean hasArgumentPlaceholder = hasArgumentPlaceholder(parse);
 
         if (lineCursorPos == currentLine.length()) {
-            if (((Suggestions)this.pendingSuggestions.join()).isEmpty() && !this.currentParse.getExceptions().isEmpty() && !hasArgumentPlaceholder) {
+            if (this.pendingSuggestions.join().isEmpty() && !parse.getExceptions().isEmpty() && !hasArgumentPlaceholder) {
                 int i = 0;
 
-                for (Entry<CommandNode<SharedSuggestionProvider>, CommandSyntaxException> entry : this.currentParse.getExceptions().entrySet()) {
-                    CommandSyntaxException commandSyntaxException = (CommandSyntaxException)entry.getValue();
+                for (Entry<CommandNode<SharedSuggestionProvider>, CommandSyntaxException> entry : parse.getExceptions().entrySet()) {
+                    CommandSyntaxException commandSyntaxException = entry.getValue();
                     if (commandSyntaxException.getType() == CommandSyntaxException.BUILT_IN_EXCEPTIONS.literalIncorrect()) {
                         i++;
                     } else {
@@ -892,15 +667,15 @@ public class MultiLineCommandSuggestions {
                 if (i > 0) {
                     this.commandUsage.add(getExceptionMessage(CommandSyntaxException.BUILT_IN_EXCEPTIONS.dispatcherUnknownCommand().create()));
                 }
-            } else if (this.currentParse.getReader().canRead() && !hasArgumentPlaceholder) {
+            } else if (parse.getReader().canRead() && !hasArgumentPlaceholder) {
                 bl = true;
             }
         }
 
         this.commandUsagePosition = 0;
         this.commandUsageWidth = this.screen.width;
-        if (this.commandUsage.isEmpty() && !this.fillNodeUsage(ChatFormatting.GRAY) && bl && !hasArgumentPlaceholder) {
-            this.commandUsage.add(getExceptionMessage(Commands.getParseException(this.currentParse)));
+        if (this.commandUsage.isEmpty() && !this.fillNodeUsage(parse, lineCursorPos) && bl && !hasArgumentPlaceholder) {
+            this.commandUsage.add(getExceptionMessage(Commands.getParseException(parse)));
         }
 
         this.suggestions = null;
@@ -909,38 +684,47 @@ public class MultiLineCommandSuggestions {
         }
     }
 
-    private boolean fillNodeUsage(ChatFormatting arg) {
-        CommandContextBuilder<SharedSuggestionProvider> commandContextBuilder = this.currentParse.getContext();
-        // Use line-relative cursor position
-        int lineStartPos = getLineStartPosition(getCurrentLineNumber());
-        int lineCursorPos = this.input.getCursorPosition() - lineStartPos;
+    /**
+     * What the next argument wants, under where it starts. The parse is of the line after
+     * pre-processing, so it is only placed when the cursor is at the end of the line or nothing was
+     * rewritten; anywhere else it could be placed against the wrong word.
+     */
+    private boolean fillNodeUsage(ParseResults<SharedSuggestionProvider> parse, int lineCursorPos) {
+        String processed = parse.getReader().getString();
+        String command = getCurrentLine().substring(this.currentOffset);
+        int cursor = lineCursorPos - this.currentOffset;
+        int processedCursor;
+        if (this.currentMap == SourceMap.IDENTITY) {
+            processedCursor = cursor;
+        } else if (cursor == command.length()) {
+            processedCursor = processed.length();
+        } else {
+            return false;
+        }
+        if (processedCursor < 0 || processedCursor > processed.length()) {
+            return false;
+        }
 
-        SuggestionContext<SharedSuggestionProvider> suggestionContext = commandContextBuilder.findSuggestionContext(lineCursorPos);
-        assert this.minecraft.player != null;
-
+        CommandContextBuilder<SharedSuggestionProvider> commandContextBuilder = parse.getContext();
+        SuggestionContext<SharedSuggestionProvider> suggestionContext = commandContextBuilder.findSuggestionContext(processedCursor);
         Map<CommandNode<SharedSuggestionProvider>, String> map =
-                (this.currentDispatcher != null ? this.currentDispatcher : dispatcherProvider.get())
-                .getSmartUsage(suggestionContext.parent, this.minecraft.player.connection.getSuggestionsProvider());
+                new CommandDispatcher<SharedSuggestionProvider>().getSmartUsage(suggestionContext.parent, source());
         List<FormattedCharSequence> list = Lists.<FormattedCharSequence>newArrayList();
         int i = 0;
-        Style style = Style.EMPTY.withColor(arg);
+        Style style = Style.EMPTY.withColor(ChatFormatting.GRAY);
 
         for (Entry<CommandNode<SharedSuggestionProvider>, String> entry : map.entrySet()) {
             if (!(entry.getKey() instanceof LiteralCommandNode)) {
-                String usage = entry.getValue();
-
-                usage = simplifyUsage(usage);
-
+                String usage = simplifyUsage(entry.getValue());
                 list.add(FormattedCharSequence.forward(usage, style));
                 i = Math.max(i, this.font.width(usage));
             }
         }
 
-
         if (!list.isEmpty()) {
             this.commandUsage.addAll(list);
-            // Adjust screen position for line offset
-            int absoluteStartPos = suggestionContext.startPos + lineStartPos;
+            int start = this.currentMap.originalStart(suggestionContext.startPos) + this.currentOffset;
+            int absoluteStartPos = start + getLineStartPosition(getCurrentLineNumber());
             this.commandUsagePosition = Mth.clamp(this.input.getScreenX(absoluteStartPos), 0, this.input.getScreenX(0) + this.input.getInnerWidth() - i);
             this.commandUsageWidth = i;
             return true;
@@ -949,34 +733,17 @@ public class MultiLineCommandSuggestions {
         }
     }
 
+    /** An argument's usage as a player reads it: its hint, without the internal name or where it leads. */
     private static String simplifyUsage(String s) {
-        if (!s.startsWith("<zps:")) {
-            return s;
-        }
-
-        // remove any redirect hint
         int arrowIndex = s.indexOf(" -> ");
         if (arrowIndex != -1) {
             s = s.substring(0, arrowIndex);
         }
-
-        int lastColon = s.lastIndexOf(':');
-        int closingBracket = s.lastIndexOf('>');
-
-        if (lastColon != -1 && closingBracket != -1 && lastColon < closingBracket) {
-            String type = s.substring(lastColon + 1, closingBracket);
-            String result = "<" + type + ">";
-            if (result.equals("<compute>")) {
-                return "compute";
-            } else {
-                return result;
-            }
-        }
-
-        return s;
+        Matcher named = NAMED_ARGUMENT_USAGE.matcher(s);
+        return named.replaceAll("<$1>");
     }
 
-
+    // --- highlighting ----------------------------------------------------------------------------------
 
     private FormattedCharSequence formatChat(String string, int i, int lineNumber) {
         // 'string' is the visible portion of a line (after horizontal scrolling)
@@ -989,43 +756,92 @@ public class MultiLineCommandSuggestions {
         int visibleStart = Mth.clamp(i, 0, fullLine.length());
         int visibleLength = Math.min(string.length(), fullLine.length() - visibleStart);
 
-        if (this.expressionTypeKey != null) {
-            assert this.minecraft.player != null;
-            return ScriptSyntaxHighlighter.formatExpression(fullLine, visibleStart, visibleLength,
-                    this.expressionTypeKey, this.minecraft.player.connection.getSuggestionsProvider());
+        ScriptView<SharedSuggestionProvider> view = ClientScripts.view();
+        if (view == null || this.minecraft.getConnection() == null) {
+            return FormattedCharSequence.forward(string, Style.EMPTY);
         }
-
-        // Parse the full line
-        if (lineNumber >= 0 && isLeadingAliasDefinitionLine(lineNumber, fullLine)) {
-            return ScriptSyntaxHighlighter.formatAliasDefinition(fullLine, visibleStart, visibleLength,
-                    aliasesBeforeLine(lineNumber), this.minecraft.player.connection.getSuggestionsProvider());
+        try {
+            List<ScriptSyntaxHighlighter.Span> spans = lineSpans(view, fullLine, lineNumber);
+            return ScriptSyntaxHighlighter.sequence(fullLine, spans, visibleStart, visibleLength);
+        } catch (RuntimeException e) {
+            return FormattedCharSequence.forward(string, Style.EMPTY);
         }
+    }
 
-        // Parse the full line
-        if (this.commandsOnly || (!fullLine.isEmpty() && fullLine.charAt(0) == '/')) {
-            StringReader stringReader = new StringReader(fullLine);
-            boolean hasSlash = stringReader.canRead() && stringReader.peek() == '/';
-            if (hasSlash) {
-                stringReader.skip();
+    /** One line's colouring, kept until the script changes since it costs a parse to work out. */
+    private List<ScriptSyntaxHighlighter.Span> lineSpans(ScriptView<SharedSuggestionProvider> view, String line,
+                                                         int lineNumber) {
+        PreparedScript script = prepared(view);
+        String key = lineNumber + "\n" + line;
+        List<ScriptSyntaxHighlighter.Span> cached = this.highlightCache.get(key);
+        if (cached != null) {
+            return cached;
+        }
+        List<ScriptSyntaxHighlighter.Span> spans;
+        if (this.expressionMode) {
+            spans = ScriptSyntaxHighlighter.expressionSpans(line, 0, line, null, source());
+        } else if (lineNumber >= 0 && isLeadingAliasDefinitionLine(lineNumber, line)) {
+            spans = aliasDefinitionSpans(view, line, lineNumber);
+        } else if (lineNumber >= 0 && isLeadingCommentLine(lineNumber, line)) {
+            spans = List.of();
+        } else if (this.commandsOnly || line.startsWith("/")) {
+            int offset = line.startsWith("/") ? 1 : 0;
+            spans = isWaitLine(line.substring(offset))
+                    ? waitSpans(line, offset)
+                    : ScriptSyntaxHighlighter.commandSpans(line, script.script(), source());
+        } else {
+            spans = List.of();
+        }
+        this.highlightCache.put(key, spans);
+        return spans;
+    }
+
+    private static List<ScriptSyntaxHighlighter.Span> waitSpans(String line, int offset) {
+        List<ScriptSyntaxHighlighter.Span> spans = new ArrayList<>();
+        int keywordEnd = offset + WAIT.length();
+        spans.add(new ScriptSyntaxHighlighter.Span(StringRange.between(offset, keywordEnd), ScriptSyntaxHighlighter.EXECUTOR_STYLE));
+        int start = keywordEnd;
+        while (start < line.length() && line.charAt(start) == ' ') {
+            start++;
+        }
+        if (start < line.length()) {
+            String ticks = line.substring(start).strip();
+            spans.add(new ScriptSyntaxHighlighter.Span(StringRange.between(start, line.length()), validWait(ticks)
+                    ? ScriptSyntaxHighlighter.ARGUMENT_STYLE
+                    : ScriptSyntaxHighlighter.UNPARSED_STYLE));
+        }
+        return spans;
+    }
+
+    /** {@code #def name = expression}: the keyword and {@code =} plain, the name as a getter, the expression as one. */
+    private List<ScriptSyntaxHighlighter.Span> aliasDefinitionSpans(ScriptView<SharedSuggestionProvider> view,
+                                                                    String line, int lineNumber) {
+        List<ScriptSyntaxHighlighter.Span> spans = new ArrayList<>();
+        int nameStart = aliasNameStart(line);
+        if (nameStart == -1) {
+            return spans;
+        }
+        int nameEnd = aliasNameEnd(line);
+        int equals = line.indexOf('=');
+        if (nameEnd != -1) {
+            spans.add(new ScriptSyntaxHighlighter.Span(StringRange.between(nameStart, nameEnd), ScriptSyntaxHighlighter.GETTER_STYLE));
+        } else {
+            int end = equals == -1 ? line.length() : equals;
+            spans.add(new ScriptSyntaxHighlighter.Span(StringRange.between(nameStart, Math.max(nameStart, end)), ScriptSyntaxHighlighter.UNPARSED_STYLE));
+        }
+        if (equals == -1) {
+            int unexpected = equalsSlotStart(line);
+            if (unexpected != -1 && unexpected < line.length()) {
+                spans.add(new ScriptSyntaxHighlighter.Span(StringRange.between(unexpected, line.length()), ScriptSyntaxHighlighter.UNPARSED_STYLE));
             }
-
-            try {
-                assert this.minecraft.player != null;
-                Map<String, ScriptAliases.AliasDefinition> expressionAliases = lineNumber >= 0
-                        ? aliasesBeforeLine(lineNumber)
-                        : Map.of();
-                CommandDispatcher<SharedSuggestionProvider> commandDispatcher = lineNumber >= 0
-                        ? dispatcherWithAliases(lineNumber)
-                        : dispatcherProvider.get();
-                ParseResults<SharedSuggestionProvider> lineParseResults = commandDispatcher.parse(stringReader, this.minecraft.player.connection.getSuggestionsProvider());
-
-                return ScriptSyntaxHighlighter.formatCommand(lineParseResults, fullLine, visibleStart, visibleLength, expressionAliases);
-            } catch (Exception e) {
-                // If parsing fails, return unformatted
-                return FormattedCharSequence.forward(string, Style.EMPTY);
-            }
+            return spans;
         }
-        return FormattedCharSequence.forward(string, Style.EMPTY);
+        int start = expressionStart(line, line.length());
+        if (start < line.length()) {
+            spans.addAll(ScriptSyntaxHighlighter.expressionSpans(line.substring(start), start, line,
+                    preparedBefore(view, lineNumber), source()));
+        }
+        return spans;
     }
 
     @Nullable
@@ -1041,14 +857,6 @@ public class MultiLineCommandSuggestions {
         String input = parseResults.getReader().getString();
         int cursor = parseResults.getReader().getCursor();
         return ScriptSyntaxHighlighter.isArgumentPlaceholderAt(input, cursor);
-    }
-
-    private record AliasExpressionParse(
-            CommandDispatcher<SharedSuggestionProvider> dispatcher,
-            ParseResults<SharedSuggestionProvider> parse,
-            int expressionStart,
-            int expressionCursor
-    ) {
     }
 
     public void render(GuiGraphics arg, int i, int j) {

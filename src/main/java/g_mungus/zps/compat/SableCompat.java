@@ -9,11 +9,12 @@ import dev.ryanhcode.sable.companion.math.BoundingBox3ic;
 import dev.ryanhcode.sable.companion.math.Pose3d;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.SubLevel;
-import g_mungus.zps.ZPSMod;
+import g_mungus.munguscript.language.builtin.BuiltInTypes;
+import g_mungus.munguscript.language.type.ScriptType;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
-import g_mungus.zps.commands.api.ScriptGetter;
-import g_mungus.zps.commands.api.ScriptMapper;
-import g_mungus.zps.commands.api.ScriptMapper2;
+import g_mungus.zps.commands.api.RegisterScriptTypesEvent;
+import g_mungus.zps.commands.api.ZPSNodes;
+import g_mungus.zps.commands.api.ZPSScriptTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Position;
@@ -36,125 +37,78 @@ public final class SableCompat {
     private SableCompat() {
     }
 
+    /** A sublevel, or {@link #NO_SUBLEVEL} where there is none. Reads as its name where text is wanted. */
+    static final ScriptType<SubLevelAccess> SUBLEVEL = ScriptType.opaque(ZPSScriptTypes.key("sublevel"), SubLevelAccess.class)
+            .usableAs(BuiltInTypes.STRING, subLevel -> subLevel == SableCompat.NO_SUBLEVEL || subLevel.getName() == null ? "" : subLevel.getName());
+
+    static void registerScriptTypes(RegisterScriptTypesEvent event) {
+        event.register(SUBLEVEL);
+    }
+
     static void registerScriptCommands(RegisterScriptCommandsEvent event) {
-        event.register(new ScriptGetter<>(
-                "sublevel",
-                SubLevelAccess.class,
-                ZPSMod.resource("sublevel"),
-                context -> {
-                    SubLevelAccess subLevel = SableCompanion.INSTANCE.getContaining(context.level(), context.pos());
-                    return subLevel == null ? NO_SUBLEVEL : subLevel;
-                },
-                null
-        ));
+        event.register(ZPSNodes.getter("sublevel", SUBLEVEL, context -> {
+            SubLevelAccess subLevel = SableCompanion.INSTANCE.getContaining(context.level(), context.pos());
+            return subLevel == null ? NO_SUBLEVEL : subLevel;
+        }));
 
-        event.register(new ScriptMapper<>(
-                "name",
-                SubLevelAccess.class,
-                String.class,
-                ZPSMod.resource("sublevel"),
-                ZPSMod.resource("string"),
-                (subLevel, context) -> subLevel == NO_SUBLEVEL || subLevel.getName() == null ? "" : subLevel.getName()
-        ));
+        event.register(ZPSNodes.mapper("name", SUBLEVEL, BuiltInTypes.STRING,
+                (subLevel, context) -> subLevel == NO_SUBLEVEL || subLevel.getName() == null ? "" : subLevel.getName()));
 
-        event.register(new ScriptMapper<>(
-                "id",
-                SubLevelAccess.class,
-                String.class,
-                ZPSMod.resource("sublevel"),
-                ZPSMod.resource("string"),
-                (subLevel, context) -> subLevel == NO_SUBLEVEL ? "" : subLevel.getUniqueId().toString()
-        ));
+        event.register(ZPSNodes.mapper("id", SUBLEVEL, BuiltInTypes.STRING,
+                (subLevel, context) -> subLevel == NO_SUBLEVEL ? "" : subLevel.getUniqueId().toString()));
 
-        event.register(new ScriptMapper<>(
-                "pos",
-                SubLevelAccess.class,
-                Vec3.class,
-                ZPSMod.resource("sublevel"),
-                ZPSMod.resource("vec_pos"),
-                (subLevel, context) -> subLevel == NO_SUBLEVEL
-                        ? context.pos().getCenter()
-                        : toMinecraft(subLevel.logicalPose().position())
-        ));
+        event.register(ZPSNodes.mapper("pos", SUBLEVEL, ZPSScriptTypes.VEC_POS, (subLevel, context) -> subLevel == NO_SUBLEVEL
+                ? context.pos().getCenter()
+                : toMinecraft(subLevel.logicalPose().position())));
 
-        event.register(new ScriptMapper<>(
-                "world_vel",
-                SubLevelAccess.class,
-                Vec3.class,
-                ZPSMod.resource("sublevel"),
-                ZPSMod.resource("vec_dir"),
-                (subLevel, context) -> {
-                    if (subLevel == NO_SUBLEVEL) {
-                        return Vec3.ZERO;
-                    }
+        event.register(ZPSNodes.mapper("world_vel", SUBLEVEL, ZPSScriptTypes.VEC_DIR, (subLevel, context) -> {
+            if (subLevel == NO_SUBLEVEL) {
+                return Vec3.ZERO;
+            }
 
-                    Position position = context.pos().getCenter();
-                    return SableCompanion.INSTANCE.getVelocity(context.level(), position);
-                }
-        ));
+            Position position = context.pos().getCenter();
+            return SableCompanion.INSTANCE.getVelocity(context.level(), position);
+        }));
 
-        event.register(new ScriptMapper<>(
-                "local_vel",
-                SubLevelAccess.class,
-                Vec3.class,
-                ZPSMod.resource("sublevel"),
-                ZPSMod.resource("vec_dir"),
-                (subLevel, context) -> {
-                    if (subLevel == NO_SUBLEVEL) {
-                        return Vec3.ZERO;
-                    }
+        event.register(ZPSNodes.mapper("local_vel", SUBLEVEL, ZPSScriptTypes.VEC_DIR, (subLevel, context) -> {
+            if (subLevel == NO_SUBLEVEL) {
+                return Vec3.ZERO;
+            }
 
-                    Position position = context.pos().getCenter();
-                    Vec3 worldVelocity = SableCompanion.INSTANCE.getVelocity(context.level(), position);
-                    Vector3d localVelocity = new Vector3d(worldVelocity.x, worldVelocity.y, worldVelocity.z);
-                    subLevel.logicalPose().orientation().transformInverse(localVelocity);
-                    return new Vec3(localVelocity.x, localVelocity.y, localVelocity.z);
-                }
-        ));
+            Position position = context.pos().getCenter();
+            Vec3 worldVelocity = SableCompanion.INSTANCE.getVelocity(context.level(), position);
+            Vector3d localVelocity = new Vector3d(worldVelocity.x, worldVelocity.y, worldVelocity.z);
+            subLevel.logicalPose().orientation().transformInverse(localVelocity);
+            return new Vec3(localVelocity.x, localVelocity.y, localVelocity.z);
+        }));
 
-        event.register(new ScriptMapper<>(
-                "bounding_box",
-                SubLevelAccess.class,
-                Vec3.class,
-                ZPSMod.resource("sublevel"),
-                ZPSMod.resource("vec_box"),
-                (subLevel, context) -> {
-                    if (subLevel == NO_SUBLEVEL) {
-                        return Vec3.ZERO;
-                    }
+        event.register(ZPSNodes.mapper("bounding_box", SUBLEVEL, ZPSScriptTypes.VEC_BOX, (subLevel, context) -> {
+            if (subLevel == NO_SUBLEVEL) {
+                return Vec3.ZERO;
+            }
 
-                    // SubLevelAccess#boundingBox is the world-space AABB, which grows as the
-                    // sublevel rotates. The plot bounds are the local-space block extents.
-                    if (!(subLevel instanceof SubLevel fullSubLevel)) {
-                        return Vec3.ZERO;
-                    }
+            // SubLevelAccess#boundingBox is the world-space AABB, which grows as the
+            // sublevel rotates. The plot bounds are the local-space block extents.
+            if (!(subLevel instanceof SubLevel fullSubLevel)) {
+                return Vec3.ZERO;
+            }
 
-                    BoundingBox3ic bounds = fullSubLevel.getPlot().getBoundingBox();
-                    if (bounds.maxX() < bounds.minX() || bounds.maxY() < bounds.minY() || bounds.maxZ() < bounds.minZ()) {
-                        return Vec3.ZERO;
-                    }
+            BoundingBox3ic bounds = fullSubLevel.getPlot().getBoundingBox();
+            if (bounds.maxX() < bounds.minX() || bounds.maxY() < bounds.minY() || bounds.maxZ() < bounds.minZ()) {
+                return Vec3.ZERO;
+            }
 
-                    // Plot bounds are inclusive block coordinates.
-                    return new Vec3(
-                            bounds.maxX() - bounds.minX() + 1,
-                            bounds.maxY() - bounds.minY() + 1,
-                            bounds.maxZ() - bounds.minZ() + 1
-                    );
-                }
-        ));
+            // Plot bounds are inclusive block coordinates.
+            return new Vec3(
+                    bounds.maxX() - bounds.minX() + 1,
+                    bounds.maxY() - bounds.minY() + 1,
+                    bounds.maxZ() - bounds.minZ() + 1
+            );
+        }));
 
-        event.register(new ScriptMapper2<>(
-                "dir",
-                SubLevelAccess.class,
-                Vec3.class,
-                ZPSMod.resource("sublevel"),
-                ZPSMod.resource("vec_dir"),
-                "direction",
-                (subLevel, context) -> subLevelDirection(subLevel, context.argumentValue()),
-                EnumArgument.enumArgument(Direction.class),
-                Direction.class,
-                ZPSMod.resource("direction")
-        ));
+        event.register(ZPSNodes.rawArgumentMapper("dir", SUBLEVEL, ZPSScriptTypes.VEC_DIR, "direction",
+        EnumArgument.enumArgument(Direction.class), Direction.class,
+        (subLevel, direction, context) -> subLevelDirection(subLevel, direction)));
 
         // TODO: VSCompat registers a "mass" mapper (ship inertia mass scaled by its
         //  ship-to-world volume). The Sable companion API exposes no inertia/mass accessor

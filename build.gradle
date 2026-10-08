@@ -126,6 +126,17 @@ dependencies {
         }
     }
 
+    // The script language behind the Script Terminal and Serial Bus, built from ~/git/munguscript.
+    // Brigadier comes from the game.
+    jarJar(implementation("g_mungus:munguscript:0.1.0")) {
+        version {
+            strictly "[0.1.0,)"
+            prefer "0.1.0"
+        }
+    }
+    // Not a mod, so local runs need it on the classpath too, as for FreeTTS below.
+    additionalRuntimeClasspath("g_mungus:munguscript:0.1.0")
+
     jarJar(api("dev.ryanhcode.sable-companion:sable-companion-common-${project.minecraft_version}:[${project.sable_companion_version},)")) {
         version {
             prefer project.sable_companion_version

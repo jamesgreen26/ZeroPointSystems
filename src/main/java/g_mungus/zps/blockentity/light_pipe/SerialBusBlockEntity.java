@@ -1,18 +1,16 @@
 package g_mungus.zps.blockentity.light_pipe;
 
-import g_mungus.zps.ZPSMod;
+import g_mungus.munguscript.engine.preprocess.SourceMap;
+import g_mungus.munguscript.language.builtin.BuiltInTypes;
 import g_mungus.zps.block.cableNetwork.TransformerBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusMode;
 import g_mungus.zps.blockentity.ModBlockEntities;
-import g_mungus.zps.commands.api_impl.CommandTreeBuilder;
 import g_mungus.zps.commands.api_impl.ScriptCommandFailure;
-import g_mungus.zps.commands.api_impl.ZPSCommands;
-import g_mungus.zps.commands.api_impl.arguments.ValueOfExpression;
+import g_mungus.zps.commands.api_impl.ZPSScripts;
 import g_mungus.zps.compat.Compat;
 import g_mungus.zps.compat.create.CreateCompat;
-import g_mungus.zps.config.ZPSConfig;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
@@ -23,7 +21,6 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -63,12 +60,6 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
 
     /** How often a bus in GET mode reads the block it faces. */
     private static final int TICK_INTERVAL = 4;
-
-    /** The type a GET expression has to yield: what goes on the pipe is text. */
-    private static final ResourceLocation STRING_TYPE = ResourceLocation.parse("zps:string");
-
-    /** What turns a value of some other type into the text the pipe carries. */
-    private static final String AS_STRING_MAPPER = "as_string";
 
     /** How the last command went. {@link #NONE} until the bus has run anything. */
     public enum Outcome {
@@ -126,28 +117,9 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
             return;
         }
         String command = message.startsWith("/") ? message.substring(1) : message;
-        String executed = ZPSCommands.Paths.SCRIPT + getPosArgument() + command;
-        CommandSourceStack sourceStack = createCommandSourceStack(serverLevel);
-        ScriptCommandFailure failure = executeCommand(serverLevel, sourceStack, command, executed);
+        ScriptCommandFailure failure = ZPSScripts.get()
+                .tryRun(command, createCommandSourceStack(serverLevel), getAffectedBlockPos());
         recordOutcome(command, failure);
-    }
-
-    /** Runs the command and reports why it failed, or null if it ran. */
-    private @Nullable ScriptCommandFailure executeCommand(ServerLevel serverLevel, CommandSourceStack sourceStack,
-                                                          String command, String executed) {
-        try {
-            var commands = serverLevel.getServer().getCommands();
-            var parseResults = commands.getDispatcher().parse(executed, sourceStack);
-            commands.getDispatcher().execute(parseResults);
-            return null;
-        } catch (Exception e) {
-            ScriptCommandFailure failure = ScriptCommandFailure.describe(e, command, executed);
-            if (ZPSConfig.getScriptCommandFailureBehavior() == ZPSConfig.ScriptCommandFailureBehavior.LOG
-                    && !CommandTreeBuilder.isLoggedScriptCommandException(e)) {
-                ZPSMod.LOGGER.error("Script command failed\nCommand: /{}\nReason: {}", executed, failure.reason());
-            }
-            return failure;
-        }
     }
 
     private void recordOutcome(String command, @Nullable ScriptCommandFailure failure) {
@@ -209,10 +181,11 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
         }
         String value;
         try {
-            value = evaluateAsText(serverLevel, chain);
+            value = ZPSScripts.get().evaluate(chain, BuiltInTypes.STRING, createCommandSourceStack(serverLevel),
+                    getAffectedBlockPos());
         } catch (Exception e) {
             // Positions come back in the expression's own terms, which is what the screen marks up.
-            recordOutcome(chain, ScriptCommandFailure.describe(e, chain, chain));
+            recordOutcome(chain, ZPSScripts.get().describe(e, chain, chain, SourceMap.IDENTITY));
             send(serverLevel, "");
             return;
         }
@@ -230,28 +203,6 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
         sentValue = value_parsed;
         setChanged();
         updateSignal(serverLevel);
-    }
-
-    /**
-     * The chain's value as text. A chain that stops short of text — {@code pos} rather than
-     * {@code pos as_string} — is finished off with {@code as_string} rather than refused, since
-     * that mapper is the only way its value could have reached the pipe anyway.
-     *
-     * @throws Exception the original failure if the chain does not read as text and {@code as_string}
-     *                   cannot make it, that being the one worth explaining
-     */
-    private String evaluateAsText(ServerLevel serverLevel, String chain) throws Exception {
-        try {
-            return new ValueOfExpression<String>(chain, STRING_TYPE)
-                    .evaluate(createCommandSourceStack(serverLevel), getAffectedBlockPos());
-        } catch (Exception e) {
-            try {
-                return new ValueOfExpression<String>(chain + " " + AS_STRING_MAPPER, STRING_TYPE)
-                        .evaluate(createCommandSourceStack(serverLevel), getAffectedBlockPos());
-            } catch (Exception ignored) {
-                throw e;
-            }
-        }
     }
 
     // --- sending ------------------------------------------------------------------------------
@@ -410,11 +361,6 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
     }
 
     // --- command plumbing -------------------------------------------------------------------
-
-    private String getPosArgument() {
-        BlockPos pos = getAffectedBlockPos();
-        return " " + pos.getX() + " " + pos.getY() + " " + pos.getZ() + " ";
-    }
 
     /** The block the bus acts on: the one it faces. */
     public @NotNull BlockPos getAffectedBlockPos() {

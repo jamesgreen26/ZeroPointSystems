@@ -1,10 +1,11 @@
 package g_mungus.zps.compat;
 
-import g_mungus.zps.ZPSMod;
+import g_mungus.munguscript.language.builtin.BuiltInTypes;
+import g_mungus.munguscript.language.type.ScriptType;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
-import g_mungus.zps.commands.api.ScriptGetter;
-import g_mungus.zps.commands.api.ScriptMapper;
-import g_mungus.zps.commands.api.ScriptMapper2;
+import g_mungus.zps.commands.api.RegisterScriptTypesEvent;
+import g_mungus.zps.commands.api.ZPSNodes;
+import g_mungus.zps.commands.api.ZPSScriptTypes;
 import net.neoforged.neoforge.server.command.EnumArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -134,144 +135,73 @@ public class VSCompat {
         }
     }
 
+    /** A ship, or {@link #NO_SHIP} where there is none. Reads as its slug where text is wanted. */
+    static final ScriptType<Ship> SHIP = ScriptType.opaque(ZPSScriptTypes.key("ship"), Ship.class)
+            .usableAs(BuiltInTypes.STRING, ship -> ship == VSCompat.NO_SHIP ? "" : ship.getSlug());
+
+    static void registerScriptTypes(RegisterScriptTypesEvent event) {
+        event.register(SHIP);
+    }
+
     static void registerScriptCommands(RegisterScriptCommandsEvent event) {
-        event.register(new ScriptGetter<>(
-                "ship",
-                Ship.class,
-                ZPSMod.resource("ship"),
-                context -> {
-                    Ship ship = VSGameUtilsKt.getShipManagingPos(context.level(), context.pos());
-                    if (ship == null) {
-                        ship = NO_SHIP;
-                    }
-                    return ship;
-                },
-                null
-        ));
+        event.register(ZPSNodes.getter("ship", SHIP, context -> {
+            Ship ship = VSGameUtilsKt.getShipManagingPos(context.level(), context.pos());
+            return ship == null ? NO_SHIP : ship;
+        }));
 
-        event.register(new ScriptMapper<>(
-                "slug",
-                Ship.class,
-                String.class,
-                ZPSMod.resource("ship"),
-                ZPSMod.resource("string"),
-                (ship, context) -> ship == NO_SHIP ? "" : ship.getSlug()
-        ));
+        event.register(ZPSNodes.mapper("slug", SHIP, BuiltInTypes.STRING,
+                (ship, context) -> ship == NO_SHIP ? "" : ship.getSlug()));
 
-        event.register(new ScriptMapper<>(
-                "id",
-                Ship.class,
-                Integer.class,
-                ZPSMod.resource("ship"),
-                ZPSMod.resource("int"),
-                (ship, context) -> ship == NO_SHIP ? -1 : (int) ship.getId()
-        ));
+        event.register(ZPSNodes.mapper("id", SHIP, BuiltInTypes.INT,
+                (ship, context) -> ship == NO_SHIP ? -1 : (int) ship.getId()));
 
-        // Ship position as Vec3
-        event.register(new ScriptMapper<>(
-                "pos",
-                Ship.class,
-                Vec3.class,
-                ZPSMod.resource("ship"),
-                ZPSMod.resource("vec_pos"),
-                (ship, context) -> {
-                    if (ship == NO_SHIP) {
-                        return context.pos().getCenter();
-                    } else {
-                        return VectorConversionsMCKt.toMinecraft(ship.getTransform().getPositionInWorld());
-                    }
-                }
-        ));
+        event.register(ZPSNodes.mapper("pos", SHIP, ZPSScriptTypes.VEC_POS, (ship, context) -> ship == NO_SHIP
+                ? context.pos().getCenter()
+                : VectorConversionsMCKt.toMinecraft(ship.getTransform().getPositionInWorld())));
 
-        // Ship velocity as Vec3
-        event.register(new ScriptMapper<>(
-                "world_vel",
-                Ship.class,
-                Vec3.class,
-                ZPSMod.resource("ship"),
-                ZPSMod.resource("vec_dir"),
-                (ship, context) -> {
-                    if (ship == NO_SHIP) {
-                        return new Vec3(0, 0, 0);
-                    } else {
-                        return VectorConversionsMCKt.toMinecraft(ship.getVelocity());
-                    }
-                }
-        ));
+        event.register(ZPSNodes.mapper("world_vel", SHIP, ZPSScriptTypes.VEC_DIR, (ship, context) -> ship == NO_SHIP
+                ? new Vec3(0, 0, 0)
+                : VectorConversionsMCKt.toMinecraft(ship.getVelocity())));
 
-        // Ship local velocity (ship-space)
-        event.register(new ScriptMapper<>(
-                "local_vel",
-                Ship.class,
-                Vec3.class,
-                ZPSMod.resource("ship"),
-                ZPSMod.resource("vec_dir"),
-                (ship, context) -> {
-                    if (ship == NO_SHIP) {
-                        return new Vec3(0, 0, 0);
-                    }
+        // Ship-space velocity
+        event.register(ZPSNodes.mapper("local_vel", SHIP, ZPSScriptTypes.VEC_DIR, (ship, context) -> {
+            if (ship == NO_SHIP) {
+                return new Vec3(0, 0, 0);
+            }
+            var vel = ship.getVelocity();
+            var local = new Vector3d(vel.x(), vel.y(), vel.z());
+            ship.getTransform().getWorldToShip().transformDirection(local);
+            return new Vec3(local.x, local.y, local.z);
+        }));
 
-                    var vel = ship.getVelocity();
+        event.register(ZPSNodes.mapper("bounding_box", SHIP, ZPSScriptTypes.VEC_BOX, (ship, context) -> {
+            if (ship == NO_SHIP) {
+                return new Vec3(0, 0, 0);
+            }
+            AABBic aabb = ship.getShipAABB();
+            assert aabb != null;
+            return new Vec3(
+                    aabb.maxX() - aabb.minX(),
+                    aabb.maxY() - aabb.minY(),
+                    aabb.maxZ() - aabb.minZ()
+            ).scale(ship.getTransform().getShipToWorldScaling().x());
+        }));
 
-                    var local = new Vector3d(vel.x(), vel.y(), vel.z());
-                    ship.getTransform().getWorldToShip().transformDirection(local);
+        // A face of the ship, as a direction in the world
+        event.register(ZPSNodes.rawArgumentMapper("dir", SHIP, ZPSScriptTypes.VEC_DIR, "direction",
+                EnumArgument.enumArgument(Direction.class), Direction.class,
+                (ship, direction, context) -> shipDirection(ship, direction)));
 
-                    return new Vec3(local.x, local.y, local.z);
-                }
-        ));
-
-        // Ship box dimensions as Vec3
-        event.register(new ScriptMapper<>(
-                "bounding_box",
-                Ship.class,
-                Vec3.class,
-                ZPSMod.resource("ship"),
-                ZPSMod.resource("vec_box"),
-                (ship, context) -> {
-                    if (ship == NO_SHIP) {
-                        return new Vec3(0, 0, 0);
-                    }
-                    AABBic aabb = ship.getShipAABB();
-                    assert aabb != null;
-                    return new Vec3(
-                            aabb.maxX() - aabb.minX(),
-                            aabb.maxY() - aabb.minY(),
-                            aabb.maxZ() - aabb.minZ()
-                    ).scale(ship.getTransform().getShipToWorldScaling().x());
-                }
-        ));
-
-        // Ship direction vector in world space
-        event.register(new ScriptMapper2<>(
-                "dir",
-                Ship.class,
-                Vec3.class,
-                ZPSMod.resource("ship"),
-                ZPSMod.resource("vec_dir"),
-                "direction",
-                (ship, context) -> shipDirection(ship, context.argumentValue()),
-                EnumArgument.enumArgument(Direction.class),
-                Direction.class,
-                ZPSMod.resource("direction")
-        ));
-
-        // Ship mass scaled by shipToWorldScaling volume
-        event.register(new ScriptMapper<>(
-                "mass",
-                Ship.class,
-                Double.class,
-                ZPSMod.resource("ship"),
-                ZPSMod.resource("double"),
-                (ship, context) -> {
-                    if (ship == NO_SHIP) {
-                        return 0d;
-                    }
-                    double mass = ((ServerShip)ship).getInertiaData().getMass();
-                    org.joml.Vector3dc scaling = ship.getTransform().getShipToWorldScaling();
-                    double scalingVolume = scaling.x() * scaling.y() * scaling.z();
-                    return mass / scalingVolume;
-                }
-        ));
+        // Mass, scaled by the ship's scaled volume
+        event.register(ZPSNodes.mapper("mass", SHIP, BuiltInTypes.DOUBLE, (ship, context) -> {
+            if (ship == NO_SHIP) {
+                return 0d;
+            }
+            double mass = ((ServerShip) ship).getInertiaData().getMass();
+            org.joml.Vector3dc scaling = ship.getTransform().getShipToWorldScaling();
+            double scalingVolume = scaling.x() * scaling.y() * scaling.z();
+            return mass / scalingVolume;
+        }));
     }
 
     private static Vec3 shipDirection(Ship ship, Direction dir) {

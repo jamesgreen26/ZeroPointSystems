@@ -5,17 +5,18 @@ import com.google.common.collect.Multimap;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
 import com.simibubi.create.Create;
 import com.simibubi.create.foundation.blockEntity.SmartBlockEntity;
 import com.simibubi.create.foundation.blockEntity.behaviour.filtering.FilteringBehaviour;
 import com.simibubi.create.foundation.blockEntity.behaviour.filtering.SidedFilteringBehaviour;
 import com.simibubi.create.foundation.blockEntity.behaviour.scrollValue.ScrollOptionBehaviour;
 import com.simibubi.create.foundation.blockEntity.behaviour.scrollValue.ScrollValueBehaviour;
-import g_mungus.zps.ZPSMod;
+import g_mungus.munguscript.language.builtin.BuiltInTypes;
+import g_mungus.munguscript.language.node.ScriptNode;
+import g_mungus.zps.commands.api.BlockApplicability;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
-import g_mungus.zps.commands.api.ScriptContext;
-import g_mungus.zps.commands.api.ScriptExecutor;
+import g_mungus.zps.commands.api.ZPSNodes;
+import g_mungus.zps.commands.api.ZPSScriptTypes;
 import g_mungus.zps.mixin.create.ScrollValueBehaviourAccessor;
 import net.minecraft.commands.arguments.item.ItemArgument;
 import net.minecraft.commands.arguments.item.ItemInput;
@@ -27,13 +28,11 @@ import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.server.command.EnumArgument;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiFunction;
 
 public class CreateScriptCommands {
     private record ScrollBehaviorKey(String execName, Class<?> enumClass) {}
@@ -103,26 +102,14 @@ public class CreateScriptCommands {
         if (!filterBlocks.isEmpty()) {
             event.register(getFilterExecutor("set_filter", Set.copyOf(filterBlocks), event));
         }
-        event.register(ScriptExecutor.simpleWithBlocks(
-                "set_display_text",
-                String.class,
-                ZPSMod.resource("string"),
-                StringArgumentType.string(),
-                (text, context) -> SetDisplayTextCommand.setDisplayText(
-                        context.level(),
-                        context.pos(),
-                        text
-                ),
-                Set.of(Create.asResource("display_link"))
-        ));
+        event.register(ZPSNodes.executor("set_display_text", BuiltInTypes.STRING,
+                (text, context) -> SetDisplayTextCommand.setDisplayText(context.level(), context.pos(), text))
+                .withApplicability(BlockApplicability.of(Create.asResource("display_link").toString())));
     }
 
-    private static @NotNull ScriptExecutor<Integer, Integer> getIntExecutor(String displayName, ScrollValueBehaviour scrollValueBehaviour, Set<ResourceLocation> associatedBlocks) {
+    private static ScriptNode getIntExecutor(String displayName, ScrollValueBehaviour scrollValueBehaviour, Set<ResourceLocation> associatedBlocks) {
         ScrollValueBehaviourAccessor accessor = (ScrollValueBehaviourAccessor) scrollValueBehaviour;
-        return ScriptExecutor.simpleWithBlocks(
-                displayName,
-                Integer.class,
-                ZPSMod.resource("int"),
+        return ZPSNodes.executor(displayName, BuiltInTypes.INT,
                 IntegerArgumentType.integer(accessor.getMin(), accessor.getMax()),
                 (in, context) -> {
                     BlockEntity blockEntity = context.level().getBlockEntity(context.pos());
@@ -135,21 +122,15 @@ public class CreateScriptCommands {
                         }
                     }
                     return 0;
-                },
-                associatedBlocks
-        );
+                }).withApplicability(BlockApplicability.ofBlocks(associatedBlocks));
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private static @NotNull <T> ScriptExecutor<Integer, T> getEnumExecutor(String displayName, ScrollOptionBehaviour<?> scrollOptionBehaviour, Class<T> enumClass, Set<ResourceLocation> associatedBlocks) {
-        return new ScriptExecutor<>(
-                displayName,
-                Integer.class,
-                ZPSMod.resource("int"),
-                (ArgumentType<T>) EnumArgument.enumArgument((Class<Enum>) enumClass),
-                enumClass,
-                (BiFunction<T, ScriptContext, Integer>) (BiFunction<Enum<?>, ScriptContext, Integer>) (in, context) -> in.ordinal(),
-                (BiFunction<Integer, ScriptContext, Integer>) (in, context) -> {
+    private static ScriptNode getEnumExecutor(String displayName, ScrollOptionBehaviour<?> scrollOptionBehaviour, Class<?> enumClass, Set<ResourceLocation> associatedBlocks) {
+        return ZPSNodes.executor(displayName, BuiltInTypes.INT,
+                (ArgumentType<Enum>) (ArgumentType) EnumArgument.enumArgument((Class<Enum>) enumClass), Enum.class,
+                (in, context) -> in.ordinal(),
+                (in, context) -> {
                     BlockEntity blockEntity = context.level().getBlockEntity(context.pos());
                     if (blockEntity instanceof SmartBlockEntity smartBlockEntity) {
                         for (var behavior : smartBlockEntity.getAllBehaviours()) {
@@ -160,18 +141,12 @@ public class CreateScriptCommands {
                         }
                     }
                     return 0;
-                },
-                associatedBlocks
-        );
+                }).withApplicability(BlockApplicability.ofBlocks(associatedBlocks));
     }
 
-    private static @NotNull ScriptExecutor<ItemStack, ItemInput> getFilterExecutor(String displayName, Set<ResourceLocation> associatedBlocks, RegisterScriptCommandsEvent event) {
-        return new ScriptExecutor<>(
-                displayName,
-                ItemStack.class,
-                ZPSMod.resource("item"),
-                ItemArgument.item(event.buildContext()),
-                ItemInput.class,
+    private static ScriptNode getFilterExecutor(String displayName, Set<ResourceLocation> associatedBlocks, RegisterScriptCommandsEvent event) {
+        return ZPSNodes.executor(displayName, ZPSScriptTypes.ITEM,
+                ItemArgument.item(event.buildContext()), ItemInput.class,
                 (in, context) -> {
                     try {
                         return in.createItemStack(1, false);
@@ -190,8 +165,6 @@ public class CreateScriptCommands {
                         }
                     }
                     return 0;
-                },
-                associatedBlocks
-        );
+                }).withApplicability(BlockApplicability.ofBlocks(associatedBlocks));
     }
 }

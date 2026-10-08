@@ -7,7 +7,6 @@
   "client": [
     "BlockElementMixin",
     "ClientPacketListenerMixin",
-    "CommandSuggestionsMixin",
     "EntityRenderDispatcherMixin",
     "LivingEntityRendererAccessor",
     "ParticleAccessor",
@@ -35,7 +34,6 @@
     "BlockBehaviourMixin",
     "BlockInWorldMixin",
     "BrushableBlockMixin",
-    "ClientboundCommandsPacketMixin",
     "EntityMixin",
     "FallingBlockEntityInvoker",
     "FallingBlockEntityMixin",

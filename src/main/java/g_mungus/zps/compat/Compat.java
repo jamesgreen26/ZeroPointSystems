@@ -5,6 +5,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
+import g_mungus.zps.commands.api.RegisterScriptTypesEvent;
 import g_mungus.zps.compat.create.CreateCompat;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -136,6 +137,15 @@ public class Compat {
             return SableCompat.gridsTouching(level, worldBounds);
         }
         return List.of();
+    }
+
+    @SubscribeEvent
+    public static void onRegisterScriptTypesEvent(RegisterScriptTypesEvent event) {
+        if (isVSLoaded()) {
+            VSCompat.registerScriptTypes(event);
+        } else if (isSableLoaded()) {
+            SableCompat.registerScriptTypes(event);
+        }
     }
 
     @SubscribeEvent

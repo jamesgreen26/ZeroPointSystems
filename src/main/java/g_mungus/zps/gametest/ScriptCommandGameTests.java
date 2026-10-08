@@ -4,15 +4,15 @@ import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.light_pipe.BookHolder;
 import g_mungus.zps.commands.api_impl.ZPSCommands;
-import g_mungus.zps.commands.api_impl.ZPSScriptCommandSource;
-import g_mungus.zps.commands.api_impl.arguments.ValueOfExpression;
+import g_mungus.munguscript.language.builtin.BuiltInTypes;
+import g_mungus.munguscript.language.type.ScriptType;
+import g_mungus.zps.commands.api_impl.ZPSScripts;
 import g_mungus.zps.commands.content.executors.SetRedstoneCommand;
 import g_mungus.zps.util.BookComponents;
 import g_mungus.zps.util.BookPageTextLimiter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
@@ -27,53 +27,33 @@ import java.util.Locale;
 /**
  * Game tests for the ZPS script {@code value_of()} command feature.
  *
- * These tests validate end-to-end evaluation of inner expressions through the
- * dedicated per-type {@link g_mungus.zps.commands.api_impl.ValueOfDispatchers}
- * built during server startup.
+ * These tests validate end-to-end evaluation of expressions through the
+ * scripts the server built at startup ({@link ZPSScripts}).
  *
  * All tests use a flat 7×4×7 stone platform. The inner expressions use the
- * {@code pos} getter which returns the anchor position set on the
- * {@link ZPSScriptCommandSource}, so results are deterministic for any
- * absolute placement of the template.
+ * {@code pos} getter which returns the block a command is aimed at, so results
+ * are deterministic for any absolute placement of the template.
  */
 @GameTestHolder(ZPSMod.MOD_ID)
 @PrefixGameTestTemplate(false)
 public class ScriptCommandGameTests {
 
     private static final String TEMPLATE = "gametest/flat_7x4x7";
-    private static final ResourceLocation INT_KEY = ResourceLocation.parse("zps:int");
-    private static final ResourceLocation DOUBLE_KEY = ResourceLocation.parse("zps:double");
-    private static final ResourceLocation BOOLEAN_KEY = ResourceLocation.parse("zps:boolean");
-    private static final ResourceLocation STRING_KEY = ResourceLocation.parse("zps:string");
+    private static final ScriptType<Integer> INT_KEY = BuiltInTypes.INT;
+    private static final ScriptType<Double> DOUBLE_KEY = BuiltInTypes.DOUBLE;
+    private static final ScriptType<Boolean> BOOLEAN_KEY = BuiltInTypes.BOOLEAN;
+    private static final ScriptType<String> STRING_KEY = BuiltInTypes.STRING;
 
     // -------------------------------------------------------------------------
     // Helper
     // -------------------------------------------------------------------------
 
-    /**
-     * Creates a fresh {@link ZPSScriptCommandSource} anchored at {@code absPos},
-     * then evaluates {@code innerExpression} through the registered value_of
-     * dispatcher for {@code typeKey}.
-     *
-     * @return the {@link ZPSScriptCommandSource#pendingResult} after evaluation
-     */
-    @SuppressWarnings("unchecked")
+    /** What {@code value_of(innerExpression)} gives where {@code type} is wanted, aimed at {@code absPos}. */
     private static <T> T evalValueOf(GameTestHelper helper, BlockPos absPos,
-                                     String innerExpression, ResourceLocation typeKey) {
+                                     String innerExpression, ScriptType<T> type) {
         ServerLevel level = helper.getLevel();
-        MinecraftServer server = level.getServer();
-
-        ZPSScriptCommandSource innerSource = new ZPSScriptCommandSource(null);
-        innerSource.setPos(absPos);
-
-        // withSource swaps the CommandSource so our ZPSScriptCommandSource is visible
-        // to the inner dispatcher's getter/mapper lambdas via context.getSource().source
-        var innerStack = server.createCommandSourceStack()
-                .withSource(innerSource)
-                .withLevel(level);
-
-        ValueOfExpression<T> expr = new ValueOfExpression<>(innerExpression, typeKey);
-        return expr.evaluate(innerStack, absPos);
+        return ZPSScripts.get().evaluate(innerExpression, type,
+                level.getServer().createCommandSourceStack().withLevel(level), absPos);
     }
 
     private static int runScriptCommand(GameTestHelper helper, BlockPos absPos, String tail) {
@@ -235,8 +215,7 @@ public class ScriptCommandGameTests {
     /**
      * {@code value_of(pos x + value_of(pos y))} should return X + Y.
      *
-     * The inner {@code value_of(pos y)} is itself evaluated recursively via a
-     * fresh {@link ZPSScriptCommandSource}.
+     * The inner {@code value_of(pos y)} is itself evaluated recursively, in a run of its own.
      */
     @GameTest(template = TEMPLATE)
     public static void valueOf_nested_returnsXPlusY(GameTestHelper helper) {

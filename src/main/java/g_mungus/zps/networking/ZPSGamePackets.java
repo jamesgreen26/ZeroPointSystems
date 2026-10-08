@@ -18,8 +18,7 @@ public final class ZPSGamePackets {
         registrar.playToServer(RequestHudInfoC2SPacket.TYPE, RequestHudInfoC2SPacket.STREAM_CODEC, RequestHudInfoC2SPacket::handle);
         registrar.playToClient(ScriptComputerS2CPacket.TYPE, ScriptComputerS2CPacket.STREAM_CODEC, ScriptComputerS2CPacket::handle);
         registrar.playToClient(LoudspeakerTtsPacket.TYPE, LoudspeakerTtsPacket.STREAM_CODEC, LoudspeakerTtsPacket::handle);
-        registrar.playToClient(ExecutorBlocksS2CPacket.TYPE, ExecutorBlocksS2CPacket.STREAM_CODEC, ExecutorBlocksS2CPacket::handle);
-        registrar.playToClient(GetterBlocksS2CPacket.TYPE, GetterBlocksS2CPacket.STREAM_CODEC, GetterBlocksS2CPacket::handle);
+        registrar.playToClient(ScriptTreeS2CPacket.TYPE, ScriptTreeS2CPacket.STREAM_CODEC, ScriptTreeS2CPacket::handle);
         registrar.playToClient(HudInfoS2CPacket.TYPE, HudInfoS2CPacket.STREAM_CODEC, HudInfoS2CPacket::handle);
         registrar.playToClient(GasNodeSyncS2CPacket.TYPE, GasNodeSyncS2CPacket.STREAM_CODEC, GasNodeSyncS2CPacket::handle);
         registrar.playToServer(RequestGasDebugC2SPacket.TYPE, RequestGasDebugC2SPacket.STREAM_CODEC, RequestGasDebugC2SPacket::handle);

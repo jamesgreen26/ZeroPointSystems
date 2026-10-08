@@ -1,21 +1,20 @@
 package g_mungus.zps.blockentity.light_pipe;
 
-import com.mojang.brigadier.StringReader;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.light_pipe.ScriptTerminalBlock;
 import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.NetworkTerminalImpl;
-import g_mungus.zps.commands.api_impl.ValueOfDispatchers;
-import g_mungus.zps.commands.api_impl.aliases.ScriptAliases;
+import g_mungus.munguscript.engine.preprocess.CommandPreProcessor;
+import g_mungus.zps.commands.api_impl.ZPSScripts;
+import g_mungus.zps.commands.preprocess.AddressPreProcessor;
+import g_mungus.zps.commands.preprocess.CoordinatePreProcessor;
 import g_mungus.zps.item.AddressPadItem;
 import g_mungus.zps.networking.ScriptComputerC2SPacket;
 import g_mungus.zps.util.BookComponents;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -36,13 +35,11 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements LightPipeDataSender, ScriptComputer, Clearable {
     private ItemStack addressPad = ItemStack.EMPTY;
@@ -147,16 +144,16 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
     private boolean wasPowered = false;
     private int head = 0;
     private int tickDelay = 0;
-    private String lastParsedCommandsText = null;
-    private ScriptAliases.ParsedScript lastParsedScript = null;
+    private @Nullable PreparedScript preparedScript = null;
 
     public void tick() {
         BlockState blockState = getBlockState();
         if (!(blockState.getBlock() instanceof ScriptTerminalBlock) || level == null) return;
         boolean powered = blockState.getValue(ScriptTerminalBlock.POWERED);
 
-        ScriptAliases.ParsedScript parsedScript = getParsedScript();
-        List<String> commands = parsedScript.commands();
+        if (!(level instanceof ServerLevel serverLevel)) return;
+        PreparedScript script = getPreparedScript(serverLevel);
+        List<String> commands = script.commands();
 
         if (head >= commands.size()) head = 0;
         if (powered && !wasPowered) tickDelay = 0;
@@ -167,7 +164,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
             if (tickDelay <= 0) {
                 String command = commands.get(head);
                 if (command.startsWith("/")) command = command.substring(1);
-                processCommand(command, parsedScript.aliases());
+                processCommand(serverLevel, command, script);
                 head++;
             } else {
                 tickDelay--;
@@ -194,107 +191,74 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         return out;
     }
 
-    private ScriptAliases.ParsedScript getParsedScript() {
-        if (!allCommands.equals(lastParsedCommandsText) || lastParsedScript == null) {
-            lastParsedCommandsText = allCommands;
-            lastParsedScript = ScriptAliases.parse(allCommands);
+    /**
+     * The script as it runs: its commands, with alias definitions and blank lines left out, and the
+     * pre-processing each goes through. Prepared again when the script, the Address Pad or the
+     * server's scripts change.
+     */
+    private record PreparedScript(String text, Map<String, BlockPos> addresses, ZPSScripts scripts,
+                                  List<String> commands, CommandPreProcessor.Prepared preProcessing) {
+    }
+
+    private PreparedScript getPreparedScript(ServerLevel serverLevel) {
+        Map<String, BlockPos> addresses = getAddresses();
+        ZPSScripts scripts = ZPSScripts.get();
+        PreparedScript cached = preparedScript;
+        if (cached != null && cached.text().equals(allCommands) && cached.addresses().equals(addresses)
+                && cached.scripts() == scripts) {
+            return cached;
         }
-        return lastParsedScript;
+        CommandSourceStack origin = createTerminalCommandSourceStack(serverLevel, worldPosition, getBlockState());
+        List<String> lines = allCommands.lines().toList();
+        // A malformed alias definition is left out rather than stopping the script.
+        CommandPreProcessor.Prepared preProcessing = scripts.prepare(lines, origin, worldPosition,
+                List.of(new CoordinatePreProcessor(origin), new AddressPreProcessor(addresses)));
+        List<String> commands = new ArrayList<>();
+        for (int i = 0; i < lines.size(); i++) {
+            if (!preProcessing.consumedLines().contains(i) && !lines.get(i).isBlank()) {
+                commands.add(lines.get(i).strip());
+            }
+        }
+        PreparedScript prepared = new PreparedScript(allCommands, addresses, scripts, List.copyOf(commands), preProcessing);
+        preparedScript = prepared;
+        return prepared;
     }
 
     private void clearParsedScriptCache() {
-        lastParsedCommandsText = null;
-        lastParsedScript = null;
+        preparedScript = null;
     }
 
-    private void processCommand(String command, Map<String, ScriptAliases.AliasDefinition> aliases) {
+    private void processCommand(ServerLevel serverLevel, String command, PreparedScript script) {
         if (command.startsWith("wait ")) {
             executeWaitCommand(command);
             clearOutput();
         } else {
-            String resolvedCommand = ScriptAliases.resolveCommandExpressions(command, aliases, this::canParseBooleanExpression);
-            currentCommand = resolveAddresses(resolveCoordinates(resolvedCommand, level, worldPosition, getBlockState()));
+            CommandSourceStack origin = createTerminalCommandSourceStack(serverLevel, worldPosition, getBlockState());
+            currentCommand = script.scripts().process(script.preProcessing(), command, origin, worldPosition).command();
             updateSignal(level);
             tickDelay = delay - 1; // delay value from GUI (2t, 4t, 8t, or 16t)
         }
     }
 
-    private boolean canParseBooleanExpression(String expression) {
-        if (!(level instanceof ServerLevel serverLevel)) return false;
-        var dispatcher = ValueOfDispatchers.get(ResourceLocation.parse("zps:boolean"));
-        if (dispatcher == null) return false;
-
-        var parseResults = dispatcher.parse(expression + " " + ValueOfDispatchers.TERMINAL_LITERAL,
-                createTerminalCommandSourceStack(serverLevel, worldPosition, getBlockState()));
-        return !parseResults.getReader().canRead() && parseResults.getExceptions().isEmpty();
-    }
-
-    private String resolveAddresses(String command) {
-        if (!hasAddressPad()) return command;
-
-        var entries = AddressPadItem.getSortedEntries(addressPad).stream()
-                .sorted((a, b) -> Integer.compare(b.name().length(), a.name().length()))
-                .toList();
-
-        String result = command;
-        for (AddressPadItem.Entry entry : entries) {
-            String key = "@" + Pattern.quote(entry.name());
-            BlockPos pos = entry.pos();
-            String replacement = pos.getX() + " " + pos.getY() + " " + pos.getZ();
-            result = result.replaceAll("(?<![A-Za-z0-9._])" + key + "(?![A-Za-z0-9._])", replacement);
+    /** The Address Pad's entries by name, or none without a pad. */
+    @Override
+    public Map<String, BlockPos> getAddresses() {
+        if (!hasAddressPad()) {
+            return Map.of();
         }
-        return result;
+        Map<String, BlockPos> addresses = new HashMap<>();
+        for (AddressPadItem.Entry entry : AddressPadItem.getSortedEntries(addressPad)) {
+            addresses.put(entry.name(), entry.pos());
+        }
+        return addresses;
     }
 
     /// mostly just visible for testing
     public static String resolveCoordinates(String command, Level level, BlockPos worldPosition, BlockState blockState) {
         if (!(level instanceof ServerLevel serverLevel)) return command;
-        CommandSourceStack sourceStack = createTerminalCommandSourceStack(serverLevel, worldPosition, blockState);
-
-        // Tokenize by splitting on ( ) and spaces, preserving separators so they
-        // can be reconstructed around any resolved coordinate triplets.
-        List<String> tokens = new ArrayList<>();
-        List<String> separators = new ArrayList<>();
-        Matcher m = Pattern.compile("[^() ]+").matcher(command);
-        int lastEnd = 0;
-        while (m.find()) {
-            separators.add(command.substring(lastEnd, m.start()));
-            tokens.add(m.group());
-            lastEnd = m.end();
-        }
-        String trailingSep = command.substring(lastEnd);
-
-        StringBuilder result = new StringBuilder();
-        int i = 0;
-        while (i < tokens.size()) {
-            boolean replaced = false;
-            if (i + 2 < tokens.size()) {
-                String w0 = tokens.get(i), w1 = tokens.get(i + 1), w2 = tokens.get(i + 2);
-                boolean allRelative = w0.startsWith("~") && w1.startsWith("~") && w2.startsWith("~");
-                boolean allLocal = w0.startsWith("^") && w1.startsWith("^") && w2.startsWith("^");
-                if (allRelative || allLocal) {
-                    String triplet = w0 + " " + w1 + " " + w2;
-                    try {
-                        BlockPos pos = BlockPosArgument.blockPos()
-                                .parse(new StringReader(triplet))
-                                .getBlockPos(sourceStack);
-                        result.append(separators.get(i));
-                        result.append(pos.getX()).append(separators.get(i + 1))
-                              .append(pos.getY()).append(separators.get(i + 2))
-                              .append(pos.getZ());
-                        i += 3;
-                        replaced = true;
-                    } catch (CommandSyntaxException ignored) {}
-                }
-            }
-            if (!replaced) {
-                result.append(separators.get(i));
-                result.append(tokens.get(i));
-                i++;
-            }
-        }
-        result.append(trailingSep);
-        return result.toString();
+        CoordinatePreProcessor coordinates = new CoordinatePreProcessor(
+                createTerminalCommandSourceStack(serverLevel, worldPosition, blockState));
+        return coordinates.prepare(List.of(), null).process(command, null).command();
     }
 
     private static CommandSourceStack createTerminalCommandSourceStack(ServerLevel serverLevel, BlockPos worldPosition, BlockState blockState) {
@@ -394,15 +358,6 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         }
     }
 
-    @Override
-    public Set<String> getAvailableAddressNames() {
-        if (!hasAddressPad()) {
-            return Set.of();
-        }
-        return AddressPadItem.getSortedEntries(addressPad).stream()
-                .map(AddressPadItem.Entry::name)
-                .collect(Collectors.toSet());
-    }
 
     @Override
     protected void loadAdditional(net.minecraft.nbt.@NotNull CompoundTag tag, net.minecraft.core.HolderLookup.@NotNull Provider registries) {

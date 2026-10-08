@@ -10,8 +10,8 @@ import g_mungus.zps.blockentity.PowerCellBlockEntity;
 import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
 import g_mungus.zps.blockentity.reactor.HeatExchangerBlockEntity;
 import g_mungus.zps.blockentity.reactor.ReactorPortBlockEntity;
-import g_mungus.zps.commands.api.ScriptGetter;
-import g_mungus.zps.commands.api_impl.ZPSCommands;
+import g_mungus.zps.commands.api.BlockApplicability;
+import g_mungus.zps.commands.api_impl.ZPSScripts;
 import g_mungus.zps.commands.content.ZPSScriptGetters;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.reactor.ReactorTuning;
@@ -299,9 +299,9 @@ public class FusionReactorGameTests {
     @GameTest(template = TEMPLATE)
     public static void reactorGettersAreOfferedForTaggedWall(GameTestHelper helper) {
         for (String name : List.of("reactor_pressure", "reactor_temperature", "reactor_output")) {
-            ScriptGetter<?> getter = ZPSCommands.getGetter(name);
-            helper.assertTrue(getter != null, "No getter is registered as " + name);
-            Set<ResourceLocation> blocks = getter.resolveAssociatedBlocks();
+            helper.assertTrue(ZPSScripts.get().hasGetter(name), "No getter is registered as " + name);
+            BlockApplicability getter = ZPSScripts.get().getterApplicability(name);
+            Set<ResourceLocation> blocks = getter == null ? null : getter.resolve();
             helper.assertTrue(blocks != null
                             && blocks.contains(ZPSMod.resource("reinforced_plating"))
                             && blocks.contains(ZPSMod.resource("reactor_port")),

@@ -1,44 +1,34 @@
 package g_mungus.zps.commands.api_impl;
 
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.StringReader;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.mojang.brigadier.tree.CommandNode;
+import g_mungus.munguscript.language.node.ScriptExecutor;
+import g_mungus.munguscript.language.node.ScriptGetter;
+import g_mungus.munguscript.language.node.ScriptNode;
 import g_mungus.zps.ZPSMod;
-import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
-import g_mungus.zps.commands.api.ScriptExecutor;
-import g_mungus.zps.commands.api.ScriptGetter;
-import g_mungus.zps.commands.api.ScriptMapper;
-import g_mungus.zps.commands.api.ScriptNode;
+import g_mungus.zps.commands.api.BlockApplicability;
 import g_mungus.zps.commands.api_impl.debug.BrigadierCanvasExporter;
 import g_mungus.zps.commands.debug.PlaceBlockPanoramaCommand;
 import g_mungus.zps.commands.debug.ReactorDebugCommand;
 import g_mungus.zps.commands.debug.SetHeldItemEnergyCommand;
-import g_mungus.zps.networking.ExecutorBlocksS2CPacket;
-import g_mungus.zps.networking.GetterBlocksS2CPacket;
-import g_mungus.zps.networking.ZPSGamePackets;
-import net.minecraft.commands.CommandBuildContext;
+import g_mungus.zps.networking.ScriptTreeS2CPacket;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.BlockItem;
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.RegisterCommandsEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.neoforge.event.OnDatapackSyncEvent;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import javax.annotation.Nullable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -47,54 +37,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+/**
+ * Builds the scripts whenever the server builds its commands, offers them in chat as
+ * {@code /zps_script <pos> <command>}, and sends them to clients so their editors can read them.
+ */
 @EventBusSubscriber(modid = ZPSMod.MOD_ID)
 public class ZPSCommands {
 
     @SubscribeEvent
     public static void onRegisterCommandsEvent(RegisterCommandsEvent event) {
         CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
-        CommandBuildContext buildContext = event.getBuildContext();
+        ZPSScripts scripts = ZPSScripts.build(event.getBuildContext());
 
-        dispatcher.register(
-                Commands.literal(Paths.INTERNAL)
-                        .then(Commands.literal(Paths.EXECUTORS))
-                        .then(Commands.literal(Paths.MAPPERS))
-                        .then(Commands.literal(Paths.GETTERS))
-
-        );
-
-        dispatcher.register(
-                Commands.literal(Paths.SCRIPT)
-                        .requires(src -> src.hasPermission(2))
-                        .then(Commands.argument("position", BlockPosArgument.blockPos()).forward(dispatcher.getRoot()
-                                        .getChild(Paths.INTERNAL)
-                                        .getChild(Paths.EXECUTORS),
-                                context -> {
-                                    ZPSScriptCommandSource source = new ZPSScriptCommandSource(context.getSource().source);
-                                    source.setCommandInput(context.getInput());
-                                    source.setPos(BlockPosArgument.getBlockPos(context, "position"));
-                                    return List.of(context.getSource().withSource(source));
-                                }, false
-
-                        ))
-        );
-
-        // RegisterCommandsEvent fires again on /reload; without clearing, structurally
-        // identical nodes that lack value-based equality accumulate as duplicates and
-        // produce ambiguous duplicate branches in the rebuilt tree.
-        Registry.clear();
-        NeoForge.EVENT_BUS.post(new RegisterScriptCommandsEvent(Registry::register, buildContext));
-
-
-        CommandTreeBuilder commandTreeBuilder = new CommandTreeBuilder(dispatcher);
-
-
-        commandTreeBuilder.buildMappers();
-        commandTreeBuilder.buildGetters();
-        commandTreeBuilder.buildValueOfDispatchers();
-        commandTreeBuilder.buildConditionalExecutors();
-        commandTreeBuilder.buildExecutors();
+        // The script itself is one string here: a client grafts the script tree under this from what
+        // it was sent, so chat still suggests and colours the script, and the server reads it with
+        // the scripts' own dispatcher.
+        dispatcher.register(Commands.literal(Paths.SCRIPT)
+                .requires(source -> source.hasPermission(2))
+                .then(Commands.argument(Paths.POSITION, BlockPosArgument.blockPos())
+                        .then(Commands.argument(Paths.COMMAND, StringArgumentType.greedyString())
+                                .executes(ZPSCommands::runScriptCommand))));
 
         if (!FMLLoader.isProduction()) {
             dispatcher.register(PlaceBlockPanoramaCommand.COMMAND);
@@ -102,7 +66,7 @@ public class ZPSCommands {
             dispatcher.register(ReactorDebugCommand.COMMAND);
 
             try {
-                String output = new BrigadierCanvasExporter<CommandSourceStack>().export(dispatcher.getRoot().getChild(Paths.INTERNAL));
+                String output = new BrigadierCanvasExporter<CommandSourceStack>().export(scripts.tree());
                 Files.writeString(Path.of("commands.canvas"), output);
             } catch (Exception e) {
                 ZPSMod.LOGGER.warn("Command tree export failed", e);
@@ -110,156 +74,59 @@ public class ZPSCommands {
         }
     }
 
-
-
-    @Deprecated(forRemoval = true)
-    ///  use this to ensure that chained commands work properly
-    public static BlockPos getPosition(CommandContext<CommandSourceStack> context) {
+    private static int runScriptCommand(CommandContext<CommandSourceStack> context) {
         try {
-            return BlockPosArgument.getBlockPos(context, "position");
+            BlockPos target = BlockPosArgument.getBlockPos(context, Paths.POSITION);
+            String command = StringArgumentType.getString(context, Paths.COMMAND);
+            ScriptCommandFailure failure = ZPSScripts.get().tryRun(command, context.getSource(), target);
+            if (failure == null) {
+                return 1;
+            }
+            context.getSource().sendFailure(Component.literal(failure.reason()));
+            return 0;
         } catch (Exception e) {
-            try {
-                String input = context.getInput();
-                if (input.startsWith("/")) input = input.substring(1);
-                input = input.replace("zps_script ", "");
-
-                return BlockPosArgument.blockPos().parse(new StringReader(input)).getBlockPos(context.getSource());
-            } catch (CommandSyntaxException ex) {
-                throw new RuntimeException(ex);
-            }
+            context.getSource().sendFailure(Component.literal(String.valueOf(e.getMessage())));
+            return 0;
         }
     }
 
-    public static <S> CommandDispatcher<S> getScriptDispatcher(CommandDispatcher<S> rootDispatcher) {
-        CommandDispatcher<S> output = new CommandDispatcher<>();
-
-        CommandNode<S> sourceParent =
-                rootDispatcher.getRoot()
-                        .getChild(Paths.INTERNAL)
-                        .getChild(Paths.EXECUTORS);
-
-        if (sourceParent != null) {
-            for (CommandNode<S> child : sourceParent.getChildren()) {
-                output.getRoot().addChild(cloneNode(child));
-            }
-        }
-
-        output.register(
-                LiteralArgumentBuilder.<S>literal("wait").then(
-                RequiredArgumentBuilder.<S, Integer>argument("int", IntegerArgumentType.integer(1, 64))
-                        .executes((a) -> 1)));
-
-        return output;
-    }
-
-    private static <S> CommandNode<S> cloneNode(CommandNode<S> original) {
-        CommandNode<S> copy = original.createBuilder().build();
-
-        for (CommandNode<S> child : original.getChildren()) {
-            copy.addChild(cloneNode(child));
-        }
-
-        return copy;
-    }
-
-    @Nullable
-    public static ScriptExecutor<?, ?> getExecutor(String key) {
-        List<ScriptExecutor<?, ?>> executors = getExecutors(key);
-        return executors.isEmpty() ? null : executors.getFirst();
-    }
-
-    public static List<ScriptExecutor<?, ?>> getExecutors(String key) {
-        List<ScriptExecutor<?, ?>> executors = new ArrayList<>();
-        for (var executor : Registry.EXECUTORS) {
-            if (executor.displayName().equals(key)) {
-                executors.add(executor);
-            }
-        }
-        return executors;
-    }
-
-    @Nullable
-    public static ScriptGetter<?> getGetter(String key) {
-        for (var getter : Registry.GETTERS) {
-            if (getter.displayName().equals(key)) {
-                return getter;
-            }
-        }
-        return null;
-    }
-
-    @Nullable
-    public static ScriptMapper<?, ?> getMapper(String key) {
-        for (var mapper : Registry.MAPPERS) {
-            if (mapper.displayName().equals(key)) {
-                return mapper;
-            }
-        }
-        return null;
-    }
-
-    public static boolean isGetterName(String key) {
-        return getGetter(key) != null;
-    }
-
-    public static boolean isMapperName(String key) {
-        return getMapper(key) != null;
-    }
-
-    public static Set<String> getterNames() {
-        return Registry.GETTERS.stream()
-                .map(ScriptGetter::displayName)
-                .collect(java.util.stream.Collectors.toSet());
-    }
-
-
+    /** On joining, and to everyone after a reload: the scripts as they now stand. */
     @SubscribeEvent
-    public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+    public static void onDatapackSync(OnDatapackSyncEvent event) {
+        ZPSScripts scripts = ZPSScripts.getIfBuilt();
+        if (scripts == null) {
+            return;
+        }
+        ScriptTreeS2CPacket packet = new ScriptTreeS2CPacket(scripts.encodedTree(),
+                namesByBlock(scripts, ScriptExecutor.class), namesByBlock(scripts, ScriptGetter.class));
+        event.getRelevantPlayers().forEach(player -> PacketDistributor.sendToPlayer(player, packet));
+    }
 
+    /** The nodes of one kind each block is for, among blocks that have an item to show them by. */
+    private static Map<ResourceLocation, List<String>> namesByBlock(ZPSScripts scripts, Class<? extends ScriptNode> kind) {
         Set<ResourceLocation> blocksWithItems = BuiltInRegistries.ITEM.stream()
                 .filter(item -> item instanceof BlockItem)
-                .map(item -> ((BlockItem) item).getBlock())
-                .map(BuiltInRegistries.BLOCK::getKey)
+                .map(item -> BuiltInRegistries.BLOCK.getKey(((BlockItem) item).getBlock()))
                 .filter(Objects::nonNull)
-                .collect(java.util.stream.Collectors.toSet());
-
-        Map<ResourceLocation, List<String>> executorNamesByBlock = new HashMap<>();
-        Registry.EXECUTORS.stream()
-                .filter(e -> e.associatedBlocks() != null)
-                .forEach(executor -> executor.associatedBlocks().stream()
-                        .filter(blocksWithItems::contains)
-                        .forEach(block -> executorNamesByBlock
-                                .computeIfAbsent(block, ignored -> new ArrayList<>())
-                                .add(executor.displayName())));
-        executorNamesByBlock.replaceAll((block, names) -> names.stream()
-                .distinct()
-                .sorted(String::compareTo)
-                .toList());
-
-        PacketDistributor.sendToPlayer(player, new ExecutorBlocksS2CPacket(executorNamesByBlock));
-
-        Map<ResourceLocation, List<String>> getterNamesByBlock = new HashMap<>();
-        // Resolved here rather than at registration: a getter can name a block tag, and tags are
-        // only loaded once the server is up.
-        Registry.GETTERS.stream()
-                .filter(g -> g.associatedBlocks() != null)
-                .forEach(getter -> getter.resolveAssociatedBlocks().stream()
-                        .filter(blocksWithItems::contains)
-                        .forEach(block -> getterNamesByBlock
-                                .computeIfAbsent(block, ignored -> new ArrayList<>())
-                                .add(getter.displayName())));
-        getterNamesByBlock.values().forEach(names -> names.sort(String::compareTo));
-
-        PacketDistributor.sendToPlayer(player, new GetterBlocksS2CPacket(getterNamesByBlock));
+                .collect(Collectors.toSet());
+        Map<ResourceLocation, List<String>> names = new HashMap<>();
+        for (ScriptNode node : scripts.engine().nodes()) {
+            if (!kind.isInstance(node) || !(node.applicability() instanceof BlockApplicability blocks)) {
+                continue;
+            }
+            for (ResourceLocation block : blocks.resolve()) {
+                if (blocksWithItems.contains(block)) {
+                    names.computeIfAbsent(block, ignored -> new ArrayList<>()).add(node.displayName());
+                }
+            }
+        }
+        names.replaceAll((block, list) -> list.stream().distinct().sorted().toList());
+        return names;
     }
-
 
     public static class Paths {
         public static final String SCRIPT = "zps_script";
-        public static final String INTERNAL = "zps_hide";
-        public static final String MAPPERS = "MAPPERS";
-        public static final String GETTERS = "GETTERS";
-        public static final String EXECUTORS = "EXECUTORS";
+        public static final String POSITION = "position";
+        public static final String COMMAND = "command";
     }
 }

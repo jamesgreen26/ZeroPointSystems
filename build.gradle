@@ -70,6 +70,11 @@ repositories {
     mavenCentral()
 
     maven { url = "https://maven.createmod.net" }
+    maven {
+        name = "SquidDev (CC: Tweaked)"
+        url = "https://maven.squiddev.cc"
+        content { includeGroup "cc.tweaked" }
+    }
     maven { url = "https://maven.ftb.dev/releases" }
     maven { url = "https://maven.architectury.dev" }
     maven { url = "https://maven.theillusivec4.top/" }
@@ -206,6 +211,12 @@ dependencies {
     }
 
     implementation("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
+
+    // CC: Tweaked, for compat. On 1.21 its "forge" artifacts are the NeoForge build. The compat calls
+    // peripherals with no computer, which needs its internals as well as its API, so it compiles
+    // against the whole mod. Players install it; local runs and gametests have it.
+    compileOnly("cc.tweaked:cc-tweaked-${minecraft_version}-forge:${cc_tweaked_version}")
+    localRuntime("cc.tweaked:cc-tweaked-${minecraft_version}-forge:${cc_tweaked_version}")
 
     runtimeOnly("dev.engine-room.vanillin:vanillin-neoforge-$minecraft_version:$vanillin_version")
 

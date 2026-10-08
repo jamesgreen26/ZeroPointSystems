@@ -27,6 +27,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.neoforge.event.OnDatapackSyncEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.nio.file.Files;
@@ -88,6 +89,12 @@ public class ZPSCommands {
             context.getSource().sendFailure(Component.literal(String.valueOf(e.getMessage())));
             return 0;
         }
+    }
+
+    /** Now there are levels, for compat that finds its commands in one. Nobody has joined yet to be sent them. */
+    @SubscribeEvent
+    public static void onServerStarted(ServerStartedEvent event) {
+        ZPSScripts.rebuild();
     }
 
     /** On joining, and to everyone after a reload: the scripts as they now stand. */

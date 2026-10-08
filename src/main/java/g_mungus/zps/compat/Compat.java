@@ -6,6 +6,7 @@ import java.util.List;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.RegisterScriptTypesEvent;
+import g_mungus.zps.compat.computercraft.ComputerCraftCompat;
 import g_mungus.zps.compat.create.CreateCompat;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -51,6 +52,8 @@ public class Compat {
     }
 
     public static boolean isSableLoaded() { return ModList.get().isLoaded("sable"); }
+
+    public static boolean isComputerCraftLoaded() { return ModList.get().isLoaded("computercraft"); }
 
     public static boolean isClockworkLoaded() { return ModList.get().isLoaded("vs_clockwork"); }
 
@@ -159,6 +162,9 @@ public class Compat {
         }
         if (isCreateLoaded()) {
             CreateCompat.registerScriptCommands(event);
+        }
+        if (isComputerCraftLoaded()) {
+            ComputerCraftCompat.registerScriptCommands(event);
         }
     }
 

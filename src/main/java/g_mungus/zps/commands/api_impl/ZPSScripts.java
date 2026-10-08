@@ -50,9 +50,11 @@ public final class ZPSScripts {
     private final CommandDispatcher<CommandSourceStack> dispatcher = new CommandDispatcher<>();
     private final CommandNode<CommandSourceStack> grafted;
     private final ZPSHostCodec hostCodec;
+    private final CommandBuildContext buildContext;
     private volatile byte @Nullable [] encodedTree;
 
     private ZPSScripts(CommandBuildContext buildContext) {
+        this.buildContext = buildContext;
         ZPSScriptTypes.Registered registered = ZPSScriptTypes.collect();
         this.engine = MungusScript.engine(host, new BuildEnvironment(buildContext), registrar -> {
             registered.types().forEach(registrar::registerType);
@@ -71,6 +73,17 @@ public final class ZPSScripts {
         ZPSScripts scripts = new ZPSScripts(buildContext);
         current = scripts;
         return scripts;
+    }
+
+    /**
+     * Builds the scripts again from the same registries. Some compat finds its commands in the
+     * level, which does not exist yet when the server first registers its commands.
+     */
+    static void rebuild() {
+        ZPSScripts scripts = current;
+        if (scripts != null) {
+            build(scripts.buildContext);
+        }
     }
 
     /** The scripts the server is running. Only valid once the server has registered its commands. */

@@ -3,6 +3,7 @@ package g_mungus.zps.client.script;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+import g_mungus.zps.commands.api.ScriptTarget;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
@@ -18,13 +19,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 /**
- * The client's suggestion source, as a script editor uses it: it also knows which blocks the
- * script will be pointed at, so suggestions leave out what none of them can do.
+ * The client's suggestion source, as a script editor uses it: it also knows what the script will
+ * be aimed at, so suggestions leave out what applies to none of it.
  *
- * @param connectedBlocks the blocks the script can reach, or null when that is not known, which
- *                        leaves nothing out
+ * @param connectedTargets what the script can be aimed at, or null when that is not known, which
+ *                         leaves nothing out
  */
-public record EditorSuggestionSource(SharedSuggestionProvider delegate, @Nullable Set<ResourceLocation> connectedBlocks)
+public record EditorSuggestionSource(SharedSuggestionProvider delegate, @Nullable Set<ScriptTarget> connectedTargets)
         implements SharedSuggestionProvider {
 
     @Override

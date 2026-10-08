@@ -226,7 +226,7 @@ public class ScriptTerminalBlock extends CableComponentBlock implements EntityBl
                     scriptComputer.getLoop(),
                     scriptComputer.getDelay(),
                     scriptComputer.getValue(),
-                    scriptComputer.collectBlocks()
+                    scriptComputer.collectTargets()
                 );
                 ZPSGamePackets.INSTANCE.sendTo(packet, serverPlayer.connection.connection, NetworkDirection.PLAY_TO_CLIENT);
             }

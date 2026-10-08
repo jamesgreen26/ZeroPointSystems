@@ -171,7 +171,7 @@ public class Compat {
             Map<String, TargetApplicability> apiApplicability = new HashMap<>();
             if (isSableLoaded()) {
                 apiApplicability.put("sublevel", SableCompat.OnSubLevel.INSTANCE); // CC: Sable
-                apiApplicability.put("aero_universal_drag", SableCompat.OnSubLevel.INSTANCE);
+                apiApplicability.put("aero", SableCompat.OnSubLevel.INSTANCE);
             }
             ComputerCraftCompat.registerScriptCommands(event, apiApplicability);
         }

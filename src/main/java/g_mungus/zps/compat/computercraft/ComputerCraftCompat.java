@@ -75,8 +75,9 @@ public final class ComputerCraftCompat {
     }
 
     /**
-     * @param apiApplicability which targets a computer API is for, by its name, where that is known;
-     *                         an API with none is for every block
+     * @param apiApplicability which targets a computer API is for, where that is known: by the API's
+     *                         name for all of it, or by a command's name for just that one. Anything
+     *                         with neither is for every block
      */
     public static void registerScriptCommands(RegisterScriptCommandsEvent event,
                                               Map<String, ? extends TargetApplicability> apiApplicability) {
@@ -193,7 +194,8 @@ public final class ComputerCraftCompat {
      * Computer APIs, such as CC: Sable's {@code sublevel}: their methods by the same rules as a
      * peripheral's, named after the API, so {@code sublevel.getName()} is {@code sublevel_name}.
      * They answer about where the command is aimed, as they would about where a computer stands,
-     * so they are for every block unless {@code apiApplicability} says otherwise.
+     * so they are for every block unless {@code apiApplicability} says otherwise, for the command
+     * or its API.
      */
     private static void registerApis(RegisterScriptCommandsEvent event, List<LuaApis.Api> apis,
                                      Map<String, ? extends TargetApplicability> apiApplicability) {
@@ -215,18 +217,27 @@ public final class ComputerCraftCompat {
                                     api.name(), luaName, name);
                             continue;
                         }
-                        event.register(apiGetter(name, api, method, shape.returns()).withApplicability(applicability));
+                        event.register(apiGetter(name, api, method, shape.returns())
+                                .withApplicability(applicability(apiApplicability, name, applicability)));
                         getters++;
                     } else if (shape.argument() != null && !isQuestion(luaName)
                             && (shape.returns() == null || shape.returns() == BuiltInTypes.BOOLEAN)) {
-                        event.register(apiExecutor(prefix + snakeCase(luaName), api, method, shape.argument())
-                                .withApplicability(applicability));
+                        String name = prefix + snakeCase(luaName);
+                        event.register(apiExecutor(name, api, method, shape.argument())
+                                .withApplicability(applicability(apiApplicability, name, applicability)));
                         executors++;
                     }
                 }
             }
         }
         ZPSMod.LOGGER.info("Scripts can use {} getters and {} executors from ComputerCraft computer APIs", getters, executors);
+    }
+
+    /** What {@code apiApplicability} gives the command {@code name}, or else what it gives its API. */
+    private static @Nullable TargetApplicability applicability(Map<String, ? extends TargetApplicability> apiApplicability,
+                                                               String name, @Nullable TargetApplicability ofApi) {
+        TargetApplicability ofCommand = apiApplicability.get(name);
+        return ofCommand != null ? ofCommand : ofApi;
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})

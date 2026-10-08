@@ -6,6 +6,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.CommandNode;
 import g_mungus.munguscript.engine.MungusScript;
 import g_mungus.munguscript.engine.ScriptEngine;
+import g_mungus.munguscript.engine.codec.ScriptLanguageFile;
 import g_mungus.munguscript.engine.codec.ScriptTreeCodec;
 import g_mungus.munguscript.engine.preprocess.CommandPreProcessor;
 import g_mungus.munguscript.engine.preprocess.PreProcessContext;
@@ -24,6 +25,8 @@ import g_mungus.zps.config.ZPSConfig;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
+import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.common.NeoForge;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,6 +34,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -72,6 +77,9 @@ public final class ZPSScripts {
     static ZPSScripts build(CommandBuildContext buildContext) {
         ZPSScripts scripts = new ZPSScripts(buildContext);
         current = scripts;
+        if (!FMLLoader.isProduction()) {
+            scripts.exportLanguage();
+        }
         return scripts;
     }
 
@@ -185,6 +193,19 @@ public final class ZPSScripts {
     /** Whether a getter called {@code name} is registered. */
     public boolean hasGetter(String name) {
         return engine.nodes().stream().anyMatch(node -> node instanceof ScriptGetter<?> && node.displayName().equals(name));
+    }
+
+    /** Writes the language to {@code .mungus/zps_command_tree.mungustree} in the run folder, for editor tooling. */
+    private void exportLanguage() {
+        Path file = FMLPaths.GAMEDIR.get().resolve(".mungus").resolve("zps_command_tree.mungustree");
+        try {
+            Files.createDirectories(file.getParent());
+            try (DataOutputStream out = new DataOutputStream(Files.newOutputStream(file))) {
+                new ScriptLanguageFile().write(engine, grafted, ZPSMod.MOD_ID, out);
+            }
+        } catch (Exception e) {
+            ZPSMod.LOGGER.warn("Script language export failed", e);
+        }
     }
 
     /** The tree as clients receive it, encoded once per build. */

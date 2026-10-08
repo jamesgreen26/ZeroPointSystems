@@ -44,6 +44,8 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
     protected Button modeButton;
     protected Button delayButton;
     protected Button manualButton;
+    protected Button saveButton;
+    protected Button loadButton;
     protected MultiLineEditBox commandEdit;
     MultiLineCommandSuggestions commandSuggestions;
     private @Nullable TerminalDraft localDraft;
@@ -53,6 +55,11 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
     private static final String[] DELAY_KEYS = {"2t", "4t", "8t", "16t"};
     private static final int[] DELAY_VALUES = {2, 4, 8, 16};
     private static final Component OPEN_MANUAL_LABEL = Component.translatable("zps.screen.open_manual");
+    private static final Component SAVE_FILE_LABEL = Component.literal("Save");
+    private static final Component LOAD_FILE_LABEL = Component.literal("Load");
+    private static final Component SAVE_FILE_TOOLTIP = Component.literal("Save script to a " + ScriptFileScreen.EXTENSION + " file");
+    private static final Component LOAD_FILE_TOOLTIP = Component.literal("Load script from a " + ScriptFileScreen.EXTENSION + " file");
+    private static final int MAX_SCRIPT_LENGTH = 32500;
     private @Nullable Set<ScriptTarget> connectedTargets = null;
 
     public ScriptTerminalScreen(@Nullable ScriptComputer computer, boolean debug) {
@@ -106,12 +113,20 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
 
         if (!isInPonder()) {
             this.manualButton = this.addRenderableWidget(new ManualButton(4, this.height - 24));
+            this.saveButton = this.addRenderableWidget(
+                    Button.builder(SAVE_FILE_LABEL, arg -> this.openSaveScreen()).bounds(28, this.height - 24, 40, 20).build()
+            );
+            this.loadButton = this.addRenderableWidget(
+                    Button.builder(LOAD_FILE_LABEL, arg -> this.openLoadScreen()).bounds(72, this.height - 24, 40, 20).build()
+            );
         } else {
             this.manualButton = null;
+            this.saveButton = null;
+            this.loadButton = null;
         }
 
         this.commandEdit = new MultiLineEditBox(this.font, this.width / 2 - 150, 50, 300, this.height / 4 + 70, Component.translatable("advMode.command"));
-        this.commandEdit.setMaxLength(32500);
+        this.commandEdit.setMaxLength(MAX_SCRIPT_LENGTH);
         this.restoreEditorState();
         this.commandEdit.setResponder(this::onEdited);
         this.addWidget(this.commandEdit);
@@ -192,6 +207,10 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
         super.render(arg, i, j, f);
         if (this.manualButton != null && this.manualButton.isHoveredOrFocused()) {
             arg.renderTooltip(this.font, OPEN_MANUAL_LABEL, i, j);
+        } else if (this.saveButton != null && this.saveButton.isHovered()) {
+            arg.renderTooltip(this.font, SAVE_FILE_TOOLTIP, i, j);
+        } else if (this.loadButton != null && this.loadButton.isHovered()) {
+            arg.renderTooltip(this.font, LOAD_FILE_TOOLTIP, i, j);
         }
         this.commandSuggestions.render(arg, i, j);
     }
@@ -225,6 +244,25 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
         public void renderWidget(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
             super.renderWidget(graphics, mouseX, mouseY, partialTick);
             graphics.renderItem(MANUAL_BUTTON_ICON, this.getX() + 2, this.getY() + 2);
+        }
+    }
+
+    private void openSaveScreen() {
+        this.captureDraft();
+        if (this.minecraft != null) {
+            this.minecraft.setScreen(ScriptFileScreen.save(this, new ScriptFileScreen.ScriptFile(
+                    this.commandEdit.getValue(), DELAY_VALUES[this.delayIndex], this.isRepeatMode)));
+        }
+    }
+
+    private void openLoadScreen() {
+        this.captureDraft();
+        if (this.minecraft != null) {
+            this.minecraft.setScreen(ScriptFileScreen.load(this, MAX_SCRIPT_LENGTH, file -> {
+                boolean repeat = file.repeat() != null ? file.repeat() : this.isRepeatMode;
+                int delay = file.delay() != null ? this.findDelayIndex(file.delay(), this.delayIndex) : this.delayIndex;
+                this.localDraft = new TerminalDraft(file.script(), 0, repeat, delay);
+            }));
         }
     }
 
@@ -282,12 +320,16 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
     }
 
     private int findDelayIndex(final int delay) {
+        return this.findDelayIndex(delay, 1);
+    }
+
+    private int findDelayIndex(final int delay, final int fallback) {
         for (int i = 0; i < DELAY_VALUES.length; i++) {
             if (DELAY_VALUES[i] == delay) {
                 return i;
             }
         }
-        return 1;
+        return fallback;
     }
 
     private record TerminalDraft(String command, int cursorPosition, boolean repeatMode, int delayIndex) {

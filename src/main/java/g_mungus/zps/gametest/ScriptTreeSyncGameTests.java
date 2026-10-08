@@ -9,18 +9,24 @@ import g_mungus.munguscript.engine.host.Match;
 import g_mungus.munguscript.language.node.Applicability;
 import g_mungus.munguscript.language.node.ScriptContext;
 import g_mungus.zps.ZPSMod;
-import g_mungus.zps.commands.api.BlockApplicability;
+import g_mungus.zps.commands.api.ScriptTarget;
+import g_mungus.zps.commands.api.TargetApplicability;
 import g_mungus.zps.commands.api.ZPSScriptTypes;
 import g_mungus.zps.commands.api_impl.ZPSScripts;
 import g_mungus.zps.commands.sync.ZPSHostCodec;
+import g_mungus.zps.compat.Compat;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+
+import org.joml.Quaterniond;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -40,8 +46,8 @@ public class ScriptTreeSyncGameTests {
 
     private static final String TEMPLATE = "gametest/flat_7x4x7";
 
-    /** Offers a restricted node where one of {@code connected} is among its blocks, as the client does. */
-    private record Host(Set<ResourceLocation> connected) implements ScriptViewHost<CommandSourceStack> {
+    /** Offers a restricted node where it applies to one of {@code connected}, as the client does. */
+    private record Host(ServerLevel level, Set<ScriptTarget> connected) implements ScriptViewHost<CommandSourceStack> {
         @Override
         public Object hostContext(CommandSourceStack source) {
             return this;
@@ -49,7 +55,7 @@ public class ScriptTreeSyncGameTests {
 
         @Override
         public Match match(Applicability applicability, ScriptContext context) {
-            return applicability instanceof BlockApplicability blocks && !blocks.appliesToAny(connected)
+            return applicability instanceof TargetApplicability target && !target.appliesToAnyTarget(level, connected)
                     ? Match.NONE
                     : Match.EXPLICIT;
         }
@@ -60,16 +66,22 @@ public class ScriptTreeSyncGameTests {
         }
     }
 
-    private static ScriptView<CommandSourceStack> decode(GameTestHelper helper, Set<ResourceLocation> connected) {
+    private static ScriptView<CommandSourceStack> decode(GameTestHelper helper, Set<ScriptTarget> connected) {
         ServerLevel level = helper.getLevel();
         CommandBuildContext buildContext = CommandBuildContext.simple(level.registryAccess(), level.enabledFeatures());
         try {
-            return new ScriptTreeCodec(new ZPSHostCodec(buildContext)).decode(
+            ZPSScriptTypes.Registered registered = ZPSScriptTypes.collect();
+            return new ScriptTreeCodec(new ZPSHostCodec(buildContext, registered.applicabilities())).decode(
                     new DataInputStream(new ByteArrayInputStream(ZPSScripts.get().encodedTree())),
-                    new Host(connected), ZPSScriptTypes.all());
+                    new Host(level, connected), registered.types());
         } catch (IOException e) {
             throw new IllegalStateException("The script tree did not decode", e);
         }
+    }
+
+    /** A block of the kind {@code block} somewhere it is not. Only its kind is asked about. */
+    private static ScriptTarget anywhere(ResourceLocation block) {
+        return new ScriptTarget(BlockPos.ZERO, block);
     }
 
     private static List<String> suggest(GameTestHelper helper, ScriptView<CommandSourceStack> view, String command) {
@@ -92,13 +104,43 @@ public class ScriptTreeSyncGameTests {
 
     @GameTest(template = TEMPLATE)
     public static void decodedTreeLeavesOutWhatTheConnectedBlocksCannotDo(GameTestHelper helper) {
-        ScriptView<CommandSourceStack> stone = decode(helper, Set.of(ResourceLocation.withDefaultNamespace("stone")));
+        ScriptView<CommandSourceStack> stone = decode(helper, Set.of(anywhere(ResourceLocation.withDefaultNamespace("stone"))));
         helper.assertTrue(!suggest(helper, stone, "set_pa").contains("set_page"),
                 "set_page is for lecterns and should not be offered for stone");
-        ScriptView<CommandSourceStack> lectern = decode(helper, Set.of(ZPSMod.resource("data_lectern")));
+        ScriptView<CommandSourceStack> lectern = decode(helper, Set.of(anywhere(ZPSMod.resource("data_lectern"))));
         helper.assertTrue(suggest(helper, lectern, "set_pa").contains("set_page"),
                 "set_page should be offered for a data lectern");
         helper.succeed();
+    }
+
+    /** Its own batch: a sublevel pauses physics for the whole level while it stands. */
+    @GameTest(template = TEMPLATE, batch = "scriptSable", timeoutTicks = 100)
+    public static void sublevelIsOnlyOfferedForTargetsOnASublevel(GameTestHelper helper) {
+        if (!Compat.isSableLoaded()) {
+            helper.succeed();
+            return;
+        }
+        ServerLevel level = helper.getLevel();
+        BlockPos ground = helper.absolutePos(new BlockPos(1, 1, 1));
+        helper.setBlock(new BlockPos(1, 1, 1), Blocks.STONE);
+        BlockPos lifted = helper.absolutePos(new BlockPos(4, 1, 4));
+        helper.setBlock(new BlockPos(4, 1, 4), Blocks.STONE);
+
+        helper.runAfterDelay(2, () -> {
+            SableBeamRig rig = SableBeamRig.assemble(level, lifted, lifted, List.of(lifted), new Quaterniond());
+            try {
+                BlockPos onPlot = rig.blocksLeft().get(0);
+                List<String> onGround = suggest(helper, decode(helper, Set.of(ScriptTarget.at(level, ground))), "if subl");
+                helper.assertTrue(!onGround.contains("sublevel"),
+                        "sublevel should not be offered for a block on no sublevel, got " + onGround);
+                List<String> onSubLevel = suggest(helper, decode(helper, Set.of(ScriptTarget.at(level, onPlot))), "if subl");
+                helper.assertTrue(onSubLevel.contains("sublevel"),
+                        "sublevel should be offered for a block on a sublevel, got " + onSubLevel);
+            } finally {
+                rig.remove();
+            }
+            helper.succeed();
+        });
     }
 
     @GameTest(template = TEMPLATE)

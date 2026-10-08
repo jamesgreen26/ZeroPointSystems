@@ -12,7 +12,8 @@ import g_mungus.munguscript.engine.host.Match;
 import g_mungus.munguscript.language.node.Applicability;
 import g_mungus.munguscript.language.node.ScriptContext;
 import g_mungus.zps.ZPSMod;
-import g_mungus.zps.commands.api.BlockApplicability;
+import g_mungus.zps.commands.api.ScriptTarget;
+import g_mungus.zps.commands.api.TargetApplicability;
 import g_mungus.zps.commands.api.ZPSScriptTypes;
 import g_mungus.zps.commands.api_impl.ZPSCommands;
 import g_mungus.zps.commands.sync.ZPSHostCodec;
@@ -23,6 +24,7 @@ import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.commands.arguments.coordinates.Coordinates;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.Level;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -80,8 +82,9 @@ public final class ClientScripts {
         CommandBuildContext buildContext = CommandBuildContext.simple(connection.registryAccess(),
                 connection.enabledFeatures());
         try {
-            view = new ScriptTreeCodec(new ZPSHostCodec(buildContext))
-                    .decode(new DataInputStream(new ByteArrayInputStream(tree)), Host.INSTANCE, ZPSScriptTypes.all());
+            ZPSScriptTypes.Registered registered = ZPSScriptTypes.collect();
+            view = new ScriptTreeCodec(new ZPSHostCodec(buildContext, registered.applicabilities()))
+                    .decode(new DataInputStream(new ByteArrayInputStream(tree)), Host.INSTANCE, registered.types());
         } catch (IOException | RuntimeException e) {
             ZPSMod.LOGGER.error("Could not read the script tree the server sent; script editors will not suggest", e);
             view = null;
@@ -131,8 +134,8 @@ public final class ClientScripts {
     }
 
     /**
-     * Parses and suggests for the editors and chat. A node meant for some blocks is offered where
-     * the script can reach one of them; where that is not known, everything is offered.
+     * Parses and suggests for the editors and chat. A node meant for some targets is offered where
+     * the script can be aimed at one of them; where that is not known, everything is offered.
      */
     private static final class Host implements ScriptViewHost<SharedSuggestionProvider> {
         static final Host INSTANCE = new Host();
@@ -144,11 +147,12 @@ public final class ClientScripts {
 
         @Override
         public Match match(Applicability applicability, ScriptContext context) {
-            Set<ResourceLocation> connected = context.host(EditorSuggestionSource.class).connectedBlocks();
-            if (connected == null || !(applicability instanceof BlockApplicability blocks)) {
+            Set<ScriptTarget> connected = context.host(EditorSuggestionSource.class).connectedTargets();
+            Level level = Minecraft.getInstance().level;
+            if (connected == null || level == null || !(applicability instanceof TargetApplicability target)) {
                 return Match.UNRESTRICTED;
             }
-            return blocks.appliesToAny(connected) ? Match.EXPLICIT : Match.NONE;
+            return target.appliesToAnyTarget(level, connected) ? Match.EXPLICIT : Match.NONE;
         }
 
         @Override

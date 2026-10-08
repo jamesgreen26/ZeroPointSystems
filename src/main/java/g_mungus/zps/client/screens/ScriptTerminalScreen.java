@@ -5,6 +5,7 @@ import g_mungus.zps.blockentity.light_pipe.ScriptComputer;
 import g_mungus.zps.client.ponder.api.custom_screen_in_ponder_scene.PonderCompatibleScreen;
 import g_mungus.zps.client.screens.components.MultiLineEditBox;
 import g_mungus.zps.client.screens.components.MultiLineCommandSuggestions;
+import g_mungus.zps.commands.api.ScriptTarget;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.item.ModItems;
 import g_mungus.zps.manual.ModManuals;
@@ -17,7 +18,6 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -53,7 +53,7 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
     private static final String[] DELAY_KEYS = {"2t", "4t", "8t", "16t"};
     private static final int[] DELAY_VALUES = {2, 4, 8, 16};
     private static final Component OPEN_MANUAL_LABEL = Component.translatable("zps.screen.open_manual");
-    private Set<ResourceLocation> connectedBlocks = null;
+    private @Nullable Set<ScriptTarget> connectedTargets = null;
 
     public ScriptTerminalScreen(@Nullable ScriptComputer computer, boolean debug) {
         super(GameNarrator.NO_TITLE);
@@ -76,7 +76,7 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
     @Override
     protected void init() {
         if (isInPonder()) {
-            this.connectedBlocks = Set.of();
+            this.connectedTargets = Set.of();
         }
 
         this.restoreExecutionControls();
@@ -118,7 +118,7 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
         this.setInitialFocus(this.commandEdit);
 
         this.commandSuggestions = new MultiLineCommandSuggestions(this.minecraft, this, this.commandEdit, this.font, true, true, 0, 7, false,
-                Integer.MIN_VALUE, connectedBlocks, () -> this.computer != null ? this.computer.getAddresses() : Map.of());
+                Integer.MIN_VALUE, connectedTargets, () -> this.computer != null ? this.computer.getAddresses() : Map.of());
         this.commandSuggestions.setAllowSuggestions(true);
         this.commandSuggestions.updateCommandInfo();
     }
@@ -196,7 +196,7 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
         this.commandSuggestions.render(arg, i, j);
     }
 
-    public static void openWithData(BlockPos pos, String commandData, boolean loop, int delay, Set<ResourceLocation> connectedBlocks) {
+    public static void openWithData(BlockPos pos, String commandData, boolean loop, int delay, Set<ScriptTarget> connectedTargets) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) return;
 
@@ -206,7 +206,7 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
             screen.initialCommand = commandData;
             screen.initialLoop = loop;
             screen.initialDelay = delay;
-            screen.connectedBlocks = connectedBlocks;
+            screen.connectedTargets = connectedTargets;
             minecraft.setScreen(screen);
         }
     }

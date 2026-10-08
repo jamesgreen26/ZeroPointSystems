@@ -9,15 +9,19 @@ import dev.ryanhcode.sable.companion.math.BoundingBox3ic;
 import dev.ryanhcode.sable.companion.math.Pose3d;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.SubLevel;
+import g_mungus.zps.ZPSMod;
 import g_mungus.munguscript.language.builtin.BuiltInTypes;
 import g_mungus.munguscript.language.type.ScriptType;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.RegisterScriptTypesEvent;
+import g_mungus.zps.commands.api.ScriptTarget;
+import g_mungus.zps.commands.api.TargetApplicability;
 import g_mungus.zps.commands.api.ZPSNodes;
 import g_mungus.zps.commands.api.ZPSScriptTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Position;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -43,13 +47,31 @@ public final class SableCompat {
 
     static void registerScriptTypes(RegisterScriptTypesEvent event) {
         event.register(SUBLEVEL);
+        event.registerApplicability(OnSubLevel.TYPE);
+    }
+
+    /** For targets on a sublevel, such as the {@code sublevel} getter, which reads nothing elsewhere. */
+    enum OnSubLevel implements TargetApplicability {
+        INSTANCE;
+
+        static final Type<OnSubLevel> TYPE = new Type<>(ZPSMod.resource("on_sublevel"), StreamCodec.unit(INSTANCE));
+
+        @Override
+        public boolean appliesTo(Level level, ScriptTarget target) {
+            return isOnSubLevel(level, target.pos());
+        }
+
+        @Override
+        public Type<?> type() {
+            return TYPE;
+        }
     }
 
     static void registerScriptCommands(RegisterScriptCommandsEvent event) {
         event.register(ZPSNodes.getter("sublevel", SUBLEVEL, context -> {
             SubLevelAccess subLevel = SableCompanion.INSTANCE.getContaining(context.level(), context.pos());
             return subLevel == null ? NO_SUBLEVEL : subLevel;
-        }));
+        }).withApplicability(OnSubLevel.INSTANCE));
 
         event.register(ZPSNodes.mapper("name", SUBLEVEL, BuiltInTypes.STRING,
                 (subLevel, context) -> subLevel == NO_SUBLEVEL || subLevel.getName() == null ? "" : subLevel.getName()));
@@ -158,6 +180,11 @@ public final class SableCompat {
         return container != null
                 && container.inBounds(pos)
                 && SableCompanion.INSTANCE.getContaining(level, pos) == null;
+    }
+
+    /// Only call after verifying that Sable is loaded.
+    static boolean isOnSubLevel(Level level, BlockPos pos) {
+        return SableCompanion.INSTANCE.getContaining(level, pos) != null;
     }
 
     /// Only call after verifying that Sable is loaded.

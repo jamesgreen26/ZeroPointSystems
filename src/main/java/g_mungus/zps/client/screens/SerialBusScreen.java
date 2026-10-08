@@ -5,6 +5,7 @@ import g_mungus.zps.blockentity.light_pipe.SerialBusBlockEntity;
 import g_mungus.zps.client.screens.components.MultiLineCommandSuggestions;
 import g_mungus.zps.client.screens.components.MultiLineEditBox;
 import g_mungus.zps.client.screens.components.ScriptSyntaxHighlighter;
+import g_mungus.zps.commands.api.ScriptTarget;
 import g_mungus.zps.commands.api_impl.ScriptCommandFailure;
 import g_mungus.zps.networking.SerialBusSettingsC2SPacket;
 import g_mungus.zps.networking.ZPSGamePackets;
@@ -18,9 +19,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.util.FormattedCharSequence;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -158,7 +157,7 @@ public class SerialBusScreen extends Screen {
 
         MultiLineCommandSuggestions suggestions = new MultiLineCommandSuggestions(
                 this.minecraft, this, box, this.font,
-                false, false, 0, 7, false, Integer.MIN_VALUE, facedBlock(bus), Map::of);
+                false, false, 0, 7, false, Integer.MIN_VALUE, facedTarget(bus), Map::of);
         suggestions.setExpressionMode(true);
         suggestions.setAllowSuggestions(true);
         suggestions.updateCommandInfo();
@@ -166,16 +165,15 @@ public class SerialBusScreen extends Screen {
     }
 
     /**
-     * The block the bus reads, so the suggestions offer only what that block can answer — the same
+     * What the bus reads, so the suggestions offer only what that block can answer — the same
      * filtering the script terminal does, for the one bus this screen belongs to rather than every
      * bus on a network. Null when there is no bus to ask, which filters nothing.
      */
-    private @Nullable Set<ResourceLocation> facedBlock(@Nullable SerialBusBlockEntity bus) {
+    private @Nullable Set<ScriptTarget> facedTarget(@Nullable SerialBusBlockEntity bus) {
         if (bus == null || this.minecraft == null || this.minecraft.level == null) {
             return null;
         }
-        Block block = this.minecraft.level.getBlockState(bus.getAffectedBlockPos()).getBlock();
-        return Set.of(block.builtInRegistryHolder().key().location());
+        return Set.of(ScriptTarget.at(this.minecraft.level, bus.getAffectedBlockPos()));
     }
 
     /** Hands the bus what the player has set. Called for every edit, so there is nothing to apply. */

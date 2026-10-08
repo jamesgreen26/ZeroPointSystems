@@ -7,13 +7,13 @@ import g_mungus.munguscript.engine.ScriptView;
 import g_mungus.munguscript.engine.preprocess.CommandPreProcessor;
 import g_mungus.zps.client.script.ClientScripts;
 import g_mungus.zps.client.script.EditorSuggestionSource;
+import g_mungus.zps.commands.api.ScriptTarget;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -181,12 +181,12 @@ public final class ScriptSyntaxHighlighter {
         return startsAtBoundary && endsAtBoundary;
     }
 
-    /** The client's suggestion source, knowing which blocks a script can reach when that is given. */
-    public static SharedSuggestionProvider source(@Nullable Set<ResourceLocation> connectedBlocks) {
+    /** The client's suggestion source, knowing what a script can be aimed at when that is given. */
+    public static SharedSuggestionProvider source(@Nullable Set<ScriptTarget> connectedTargets) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.getConnection() == null) {
             throw new IllegalStateException("No connection to suggest with");
         }
-        return new EditorSuggestionSource(minecraft.getConnection().getSuggestionsProvider(), connectedBlocks);
+        return new EditorSuggestionSource(minecraft.getConnection().getSuggestionsProvider(), connectedTargets);
     }
 }

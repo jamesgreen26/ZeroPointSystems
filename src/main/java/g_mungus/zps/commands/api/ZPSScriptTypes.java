@@ -16,7 +16,9 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.NeoForge;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The script types ZPS adds to the built-in {@code int}, {@code double}, {@code string} and
@@ -60,13 +62,20 @@ public final class ZPSScriptTypes {
     }
 
     /**
-     * Every type ZPS and its compat register, built-ins aside. Server and client both build from
-     * this, so a tree sent from one reads on the other.
+     * Every type ZPS and its compat register, built-ins aside, and every kind of applicability.
+     * Server and client both build from this, so a tree sent from one reads on the other.
      */
-    public static List<ScriptType<?>> all() {
+    public static Registered collect() {
         List<ScriptType<?>> types = new ArrayList<>(CORE);
-        NeoForge.EVENT_BUS.post(new RegisterScriptTypesEvent(types::add));
-        return types;
+        Map<ResourceLocation, TargetApplicability.Type<?>> applicabilities = new LinkedHashMap<>();
+        applicabilities.put(BlockApplicability.TYPE.id(), BlockApplicability.TYPE);
+        NeoForge.EVENT_BUS.post(new RegisterScriptTypesEvent(types::add,
+                type -> applicabilities.put(type.id(), type)));
+        return new Registered(List.copyOf(types), Map.copyOf(applicabilities));
+    }
+
+    /** What {@link #collect} found: script types, and kinds of applicability by id. */
+    public record Registered(List<ScriptType<?>> types, Map<ResourceLocation, TargetApplicability.Type<?>> applicabilities) {
     }
 
     public static String formatDouble(double value) {

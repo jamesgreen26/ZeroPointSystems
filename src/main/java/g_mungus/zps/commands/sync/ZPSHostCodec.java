@@ -5,7 +5,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import g_mungus.munguscript.engine.codec.HostCodec;
 import g_mungus.munguscript.language.node.Applicability;
 import g_mungus.zps.ZPSMod;
-import g_mungus.zps.commands.api.BlockApplicability;
+import g_mungus.zps.commands.api.TargetApplicability;
 import io.netty.buffer.Unpooled;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.synchronization.ArgumentTypeInfo;
@@ -17,23 +17,27 @@ import net.minecraft.resources.ResourceLocation;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.Map;
 
 /**
  * Writes the parts of the script tree that are Minecraft's: argument types, through the same
- * serialisers the vanilla command packet uses, and the blocks a node is for, as block ids with any
- * tags already opened, since the client reads them as they stood on the server.
+ * serialisers the vanilla command packet uses, and which targets a node is for, each kind of
+ * {@link TargetApplicability} through its own codec.
  */
 public final class ZPSHostCodec implements HostCodec {
     /** Written in place of an argument type no serialiser is registered for. */
     private static final String UNKNOWN = "";
 
     private final CommandBuildContext buildContext;
+    private final Map<ResourceLocation, TargetApplicability.Type<?>> applicabilities;
 
-    /** @param buildContext what argument types that read registries are made with when read */
-    public ZPSHostCodec(CommandBuildContext buildContext) {
+    /**
+     * @param buildContext    what argument types that read registries are made with when read
+     * @param applicabilities the kinds of applicability that can be read, by id
+     */
+    public ZPSHostCodec(CommandBuildContext buildContext, Map<ResourceLocation, TargetApplicability.Type<?>> applicabilities) {
         this.buildContext = buildContext;
+        this.applicabilities = Map.copyOf(applicabilities);
     }
 
     @Override
@@ -94,23 +98,47 @@ public final class ZPSHostCodec implements HostCodec {
 
     @Override
     public void writeApplicability(DataOutput out, Applicability applicability) throws IOException {
-        Set<ResourceLocation> blocks = applicability instanceof BlockApplicability block ? block.resolve() : Set.of();
-        out.writeInt(blocks.size());
-        for (ResourceLocation id : blocks) {
-            out.writeUTF(id.toString());
+        if (!(applicability instanceof TargetApplicability target)) {
+            throw new IOException("No way to send applicability " + applicability);
+        }
+        writeApplicability(out, target.type(), target);
+    }
+
+    private static <T extends TargetApplicability> void writeApplicability(DataOutput out, TargetApplicability.Type<T> type,
+                                                                           TargetApplicability applicability) throws IOException {
+        FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
+        try {
+            @SuppressWarnings("unchecked")
+            T typed = (T) applicability;
+            type.codec().encode(buffer, typed);
+            byte[] bytes = new byte[buffer.readableBytes()];
+            buffer.readBytes(bytes);
+            out.writeUTF(type.id().toString());
+            out.writeInt(bytes.length);
+            out.write(bytes);
+        } finally {
+            buffer.release();
         }
     }
 
     @Override
     public Applicability readApplicability(DataInput in) throws IOException {
-        int count = in.readInt();
-        if (count < 0) {
-            throw new IOException("Negative block count: " + count);
+        String id = in.readUTF();
+        TargetApplicability.Type<?> type = applicabilities.get(ResourceLocation.parse(id));
+        if (type == null) {
+            throw new IOException("Unknown applicability " + id + "; is a mod on the server missing here?");
         }
-        Set<ResourceLocation> blocks = new LinkedHashSet<>();
-        for (int i = 0; i < count; i++) {
-            blocks.add(ResourceLocation.parse(in.readUTF()));
+        int length = in.readInt();
+        if (length < 0) {
+            throw new IOException("Negative length for applicability " + id);
         }
-        return BlockApplicability.ofBlocks(blocks);
+        byte[] bytes = new byte[length];
+        in.readFully(bytes);
+        FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.wrappedBuffer(bytes));
+        try {
+            return type.codec().decode(buffer);
+        } finally {
+            buffer.release();
+        }
     }
 }

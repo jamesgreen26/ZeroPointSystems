@@ -21,6 +21,7 @@ import g_mungus.munguscript.engine.preprocess.PreProcessDiagnostic;
 import g_mungus.munguscript.engine.preprocess.PreProcessed;
 import g_mungus.munguscript.engine.preprocess.SourceMap;
 import g_mungus.zps.client.script.ClientScripts;
+import g_mungus.zps.commands.api.ScriptTarget;
 import g_mungus.zps.commands.preprocess.AddressPreProcessor;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -83,7 +84,7 @@ public class MultiLineCommandSuggestions {
     final boolean anchorToBottom;
     final int fillColor;
     private final List<FormattedCharSequence> commandUsage = Lists.<FormattedCharSequence>newArrayList();
-    private final @Nullable Set<ResourceLocation> connectedBlocks;
+    private final @Nullable Set<ScriptTarget> connectedTargets;
     private final Supplier<Map<String, BlockPos>> addresses;
     private int commandUsagePosition;
     private int commandUsageWidth;
@@ -108,16 +109,16 @@ public class MultiLineCommandSuggestions {
     }
 
     /**
-     * @param connectedBlocks the blocks a script written here can reach, or null when not known,
-     *                        which offers everything
+     * @param connectedTargets what a script written here can be aimed at, or null when not known,
+     *                         which offers everything
      * @param addresses       the addresses a script here can write as {@code @name}
      */
     public MultiLineCommandSuggestions(Minecraft minecraft, Screen screen, MultiLineEditBox input, Font font,
                                        boolean commandsOnly, boolean onlyShowIfCursorPastError, int lineStartOffset,
                                        int suggestionLineLimit, boolean anchorToBottom, int fillColor,
-                                       @Nullable Set<ResourceLocation> connectedBlocks,
+                                       @Nullable Set<ScriptTarget> connectedTargets,
                                        Supplier<Map<String, BlockPos>> addresses) {
-        this.connectedBlocks = connectedBlocks;
+        this.connectedTargets = connectedTargets;
         this.addresses = addresses;
         this.minecraft = minecraft;
         this.screen = screen;
@@ -318,7 +319,7 @@ public class MultiLineCommandSuggestions {
     }
 
     private SharedSuggestionProvider source() {
-        return ScriptSyntaxHighlighter.source(this.connectedBlocks);
+        return ScriptSyntaxHighlighter.source(this.connectedTargets);
     }
 
     /** The script's pre-processing: its aliases, then its addresses. */

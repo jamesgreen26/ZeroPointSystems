@@ -6,17 +6,17 @@ import g_mungus.munguscript.engine.host.RunState;
 import g_mungus.munguscript.language.node.Applicability;
 import g_mungus.munguscript.language.node.ScriptContext;
 import g_mungus.zps.ZPSMod;
-import g_mungus.zps.commands.api.BlockApplicability;
+import g_mungus.zps.commands.api.ScriptTarget;
+import g_mungus.zps.commands.api.TargetApplicability;
 import g_mungus.zps.commands.api.ZPSScriptContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.BuiltInRegistries;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Runs scripts on the server. The run state and the block a command is aimed at travel on the
- * source as a {@link ZPSScriptCommandSource}; a node meant for some blocks is meant for the run
- * when the target is one of them.
+ * source as a {@link ZPSScriptCommandSource}; a node meant for some targets is meant for the run
+ * when the block it is aimed at is one of them.
  */
 final class ZPSScriptHost implements ScriptHost<CommandSourceStack> {
 
@@ -40,13 +40,11 @@ final class ZPSScriptHost implements ScriptHost<CommandSourceStack> {
 
     @Override
     public Match match(Applicability applicability, ScriptContext context) {
-        if (!(applicability instanceof BlockApplicability blocks)) {
+        if (!(applicability instanceof TargetApplicability target)) {
             return Match.UNRESTRICTED;
         }
         ZPSScriptContext zps = ZPSScriptContext.of(context);
-        return blocks.appliesTo(BuiltInRegistries.BLOCK.getKey(zps.level().getBlockState(zps.pos()).getBlock()))
-                ? Match.EXPLICIT
-                : Match.NONE;
+        return target.appliesTo(zps.level(), ScriptTarget.at(zps.level(), zps.pos())) ? Match.EXPLICIT : Match.NONE;
     }
 
     @Override

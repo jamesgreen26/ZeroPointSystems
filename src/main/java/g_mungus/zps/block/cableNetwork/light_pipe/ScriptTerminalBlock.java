@@ -225,7 +225,7 @@ public class ScriptTerminalBlock extends CableComponentBlock implements EntityBl
                     scriptComputer.getLoop(),
                     scriptComputer.getDelay(),
                     scriptComputer.getValue(),
-                    scriptComputer.collectBlocks()
+                    scriptComputer.collectTargets()
                 );
                 PacketDistributor.sendToPlayer(serverPlayer, packet);
             }

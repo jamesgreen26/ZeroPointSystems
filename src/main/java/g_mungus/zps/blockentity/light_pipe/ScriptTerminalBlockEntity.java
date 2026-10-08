@@ -7,6 +7,7 @@ import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.NetworkTerminalImpl;
 import g_mungus.munguscript.engine.preprocess.CommandPreProcessor;
+import g_mungus.zps.commands.api.ScriptTarget;
 import g_mungus.zps.commands.api_impl.ZPSScripts;
 import g_mungus.zps.commands.preprocess.AddressPreProcessor;
 import g_mungus.zps.commands.preprocess.CoordinatePreProcessor;
@@ -20,7 +21,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Clearable;
 import net.minecraft.world.Container;
@@ -174,17 +174,15 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         wasPowered = powered;
     }
 
-    @SuppressWarnings("deprecation")
-    public Set<ResourceLocation> collectBlocks() {
-        Set<ResourceLocation> out = new HashSet<>();
+    /** What the Serial Buses on this terminal's network face: what its script can be aimed at. */
+    public Set<ScriptTarget> collectTargets() {
+        Set<ScriptTarget> out = new HashSet<>();
         if (level instanceof ServerLevel serverLevel) {
             for (var terminal : getTerminals(Channels.MAIN)) {
                 BlockState blockState = serverLevel.getBlockState(terminal.pos());
                 if (blockState.is(ModBlocks.SERIAL_BUS.get())) {
-                    Block block = serverLevel.getBlockState(
-                            terminal.pos().offset(blockState.getValue(SerialBusBlock.FACING).getNormal())
-                    ).getBlock();
-                    out.add(block.builtInRegistryHolder().key().location());
+                    BlockPos faced = terminal.pos().offset(blockState.getValue(SerialBusBlock.FACING).getNormal());
+                    out.add(ScriptTarget.at(serverLevel, faced));
                 }
             }
         }

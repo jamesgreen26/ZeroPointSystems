@@ -53,12 +53,12 @@ public final class ZPSScripts {
     private volatile byte @Nullable [] encodedTree;
 
     private ZPSScripts(CommandBuildContext buildContext) {
-        List<ScriptType<?>> types = ZPSScriptTypes.all();
+        ZPSScriptTypes.Registered registered = ZPSScriptTypes.collect();
         this.engine = MungusScript.engine(host, new BuildEnvironment(buildContext), registrar -> {
-            types.forEach(registrar::registerType);
+            registered.types().forEach(registrar::registerType);
             NeoForge.EVENT_BUS.post(new RegisterScriptCommandsEvent(registrar::register, buildContext));
         });
-        this.hostCodec = new ZPSHostCodec(buildContext);
+        this.hostCodec = new ZPSHostCodec(buildContext, registered.applicabilities());
         this.grafted = LiteralArgumentBuilder.<CommandSourceStack>literal(GRAFT).build();
         dispatcher.getRoot().addChild(grafted);
         engine.graft(grafted);

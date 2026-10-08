@@ -81,6 +81,11 @@ repositories {
     mavenCentral()
 
     maven { url = "https://maven.createmod.net" }
+    maven {
+        name = "SquidDev (CC: Tweaked)"
+        url = "https://maven.squiddev.cc"
+        content { includeGroup "cc.tweaked" }
+    }
     maven { url = "https://api.modrinth.com/maven" }
     maven { url = "https://maven.ithundxr.dev/mirror" }
     flatDir {
@@ -157,6 +162,11 @@ dependencies {
     compileOnly("org.valkyrienskies.core:api:1.1.0+b714ef303e") { transitive = false }
     compileOnly("org.joml:joml-primitives:1.10.0")
     modCompileOnly("maven.modrinth:valkyrien-skies:1.20.1-forge-2.4.10")
+    // CC: Tweaked, for compat. The compat calls peripherals with no computer, which needs its internals
+    // as well as its API, so it compiles against the whole mod. Players install it; local runs and gametests have it.
+    modCompileOnly("cc.tweaked:cc-tweaked-${minecraft_version}-forge:${cc_tweaked_version}")
+    modRuntimeOnly("cc.tweaked:cc-tweaked-${minecraft_version}-forge:${cc_tweaked_version}")
+
 
     modCompileOnly("maven.modrinth:vs-genesis:1.20.1-0.7.2")
     // Clockwork really exists on 1.20.1; ZPS only reads its gas definitions when it is present.

@@ -28,6 +28,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.event.OnDatapackSyncEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.server.ServerStartedEvent;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -88,6 +89,12 @@ public class ZPSCommands {
             context.getSource().sendFailure(Component.literal(String.valueOf(e.getMessage())));
             return 0;
         }
+    }
+
+    /** Now there are levels, for compat that finds its commands in one. Nobody has joined yet to be sent them. */
+    @SubscribeEvent
+    public static void onServerStarted(ServerStartedEvent event) {
+        ZPSScripts.rebuild();
     }
 
     /** On joining, and to everyone after a reload: the scripts as they now stand. */

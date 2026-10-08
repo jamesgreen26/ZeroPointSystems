@@ -2,6 +2,7 @@ package g_mungus.zps.compat;
 
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.RegisterScriptTypesEvent;
+import g_mungus.zps.compat.computercraft.ComputerCraftCompat;
 import g_mungus.zps.compat.create.CreateCompat;
 import g_mungus.zps.compat.genesis.GenesisCompat;
 import net.minecraft.core.BlockPos;
@@ -57,6 +58,8 @@ public class Compat {
     }
 
     public static boolean isGenesisLoaded() {return ModList.get().isLoaded("genesis");}
+
+    public static boolean isComputerCraftLoaded() { return ModList.get().isLoaded("computercraft"); }
 
     public static boolean isClockworkLoaded() { return ModList.get().isLoaded("vs_clockwork"); }
 
@@ -143,6 +146,9 @@ public class Compat {
         }
         if (isGenesisLoaded()) {
             GenesisCompat.registerScriptCommands(event);
+        }
+        if (isComputerCraftLoaded()) {
+            ComputerCraftCompat.registerScriptCommands(event);
         }
     }
 

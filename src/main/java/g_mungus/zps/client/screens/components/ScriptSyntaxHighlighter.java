@@ -92,7 +92,7 @@ public final class ScriptSyntaxHighlighter {
         if (view == null) {
             return List.of();
         }
-        return spans(text, view.highlightExpression(expression, source, preProcessing), offset);
+        return spans(text, view.highlightDefinition(expression, source, preProcessing), offset);
     }
 
     /** The highlights, moved {@code offset} along; where they leave gaps, nothing. */

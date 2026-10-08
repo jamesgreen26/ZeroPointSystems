@@ -1046,8 +1046,10 @@ public class MultiLineCommandSuggestions {
             if (this.current < j) {
                 this.offset = Mth.clamp(this.current, 0, Math.max(this.suggestionList.size() - MultiLineCommandSuggestions.this.suggestionLineLimit, 0));
             } else if (this.current > k) {
+                // The selection becomes the last row shown. Vanilla adds lineStartOffset here, which is
+                // only right for chat's 1; with 0 the selection sits one row below the list, unseen.
                 this.offset = Mth.clamp(
-                        this.current + MultiLineCommandSuggestions.this.lineStartOffset - MultiLineCommandSuggestions.this.suggestionLineLimit,
+                        this.current + 1 - MultiLineCommandSuggestions.this.suggestionLineLimit,
                         0,
                         Math.max(this.suggestionList.size() - MultiLineCommandSuggestions.this.suggestionLineLimit, 0)
                 );

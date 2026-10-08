@@ -1,7 +1,14 @@
 package g_mungus.zps.compat;
 
+import net.minecraft.world.phys.AABB;
+import org.jetbrains.annotations.Nullable;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.RegisterScriptTypesEvent;
+import g_mungus.zps.commands.api.TargetApplicability;
 import g_mungus.zps.compat.computercraft.ComputerCraftCompat;
 import g_mungus.zps.compat.create.CreateCompat;
 import g_mungus.zps.compat.genesis.GenesisCompat;
@@ -16,18 +23,15 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
-import org.jetbrains.annotations.Nullable;
 import org.valkyrienskies.kelvin.api.GasType;
 import shipwrights.genesis.space.Celestial;
 
-import java.util.List;
 
 @Mod.EventBusSubscriber
 public class Compat {
@@ -148,7 +152,9 @@ public class Compat {
             GenesisCompat.registerScriptCommands(event);
         }
         if (isComputerCraftLoaded()) {
-            ComputerCraftCompat.registerScriptCommands(event);
+            // Computer APIs say nothing about where they apply; what is known about them is given here.
+            Map<String, TargetApplicability> apiApplicability = new HashMap<>();
+            ComputerCraftCompat.registerScriptCommands(event, apiApplicability);
         }
     }
 

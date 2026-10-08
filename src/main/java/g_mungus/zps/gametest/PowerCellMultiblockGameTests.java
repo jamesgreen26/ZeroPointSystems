@@ -4,8 +4,8 @@ import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.PowerCellBlock;
 import g_mungus.zps.blockentity.PowerCellBlockEntity;
-import g_mungus.zps.commands.api.ScriptGetter;
-import g_mungus.zps.commands.api_impl.ZPSCommands;
+import g_mungus.zps.commands.api.BlockApplicability;
+import g_mungus.zps.commands.api_impl.ZPSScripts;
 import g_mungus.zps.commands.content.ZPSScriptGetters;
 import g_mungus.zps.multiblock.ConnectivityHandler;
 import net.minecraft.core.BlockPos;
@@ -182,9 +182,10 @@ public class PowerCellMultiblockGameTests {
             helper.assertTrue(ZPSScriptGetters.storedEnergy(helper.getLevel(), helper.absolutePos(ORIGIN.below())) == 0,
                     "stored_energy away from a cell should read zero");
 
-            ScriptGetter<?> getter = ZPSCommands.getGetter("stored_energy");
-            helper.assertTrue(getter != null, "No getter is registered as stored_energy");
-            helper.assertTrue(getter.appliesToAny(Set.of(ZPSMod.resource("power_cell")))
+            helper.assertTrue(ZPSScripts.get().hasGetter("stored_energy"), "No getter is registered as stored_energy");
+            BlockApplicability getter = ZPSScripts.get().getterApplicability("stored_energy");
+            helper.assertTrue(getter != null
+                            && getter.appliesToAny(Set.of(ZPSMod.resource("power_cell")))
                             && getter.appliesToAny(Set.of(ZPSMod.resource("creative_power_cell")))
                             && !getter.appliesToAny(Set.of(ZPSMod.resource("gas_gauge"))),
                     "stored_energy should be offered for power cells only");

@@ -3,8 +3,7 @@ package g_mungus.zps.mixin.ponder;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import g_mungus.zps.client.ponder.ZPSPonderTags;
-import g_mungus.zps.networking.ExecutorBlocksS2CPacket;
-import g_mungus.zps.networking.GetterBlocksS2CPacket;
+import g_mungus.zps.client.script.ClientScripts;
 import net.createmod.ponder.foundation.PonderTag;
 import net.createmod.ponder.foundation.registration.PonderTagRegistry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -31,8 +30,8 @@ public abstract class PonderTagRegistryMixin {
         Set<ResourceLocation> out = new HashSet<>(original.call(tag));
 
         if (tag.equals(ZPSPonderTags.HAS_SCRIPT_CAPS)) {
-            out.addAll(ExecutorBlocksS2CPacket.command_capable_blocks);
-            out.addAll(GetterBlocksS2CPacket.getter_capable_blocks);
+            out.addAll(ClientScripts.commandCapableBlocks);
+            out.addAll(ClientScripts.getterCapableBlocks);
             out.removeIf(candidate -> !zps$isDynamicScriptCapItem(candidate));
         }
 
@@ -58,8 +57,8 @@ public abstract class PonderTagRegistryMixin {
 
     @Unique
     private static boolean zps$hasDynamicScriptCaps(ResourceLocation item) {
-        return ExecutorBlocksS2CPacket.command_capable_blocks.contains(item)
-                || GetterBlocksS2CPacket.getter_capable_blocks.contains(item);
+        return ClientScripts.commandCapableBlocks.contains(item)
+                || ClientScripts.getterCapableBlocks.contains(item);
     }
 
     @Unique

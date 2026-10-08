@@ -67,16 +67,10 @@ public class ZPSGamePackets {
                 .consumerMainThread(LoudspeakerTtsPacket::handle)
                 .add();
 
-        INSTANCE.messageBuilder(ExecutorBlocksS2CPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(ExecutorBlocksS2CPacket::encode)
-                .decoder(ExecutorBlocksS2CPacket::decode)
-                .consumerMainThread(ExecutorBlocksS2CPacket::handle)
-                .add();
-
-        INSTANCE.messageBuilder(GetterBlocksS2CPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(GetterBlocksS2CPacket::encode)
-                .decoder(GetterBlocksS2CPacket::decode)
-                .consumerMainThread(GetterBlocksS2CPacket::handle)
+        INSTANCE.messageBuilder(ScriptTreeS2CPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ScriptTreeS2CPacket::encode)
+                .decoder(ScriptTreeS2CPacket::decode)
+                .consumerMainThread(ScriptTreeS2CPacket::handle)
                 .add();
 
         INSTANCE.messageBuilder(RequestHudInfoC2SPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)

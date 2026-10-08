@@ -4,17 +4,15 @@ import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.light_pipe.BookHolder;
 import g_mungus.zps.commands.api_impl.ZPSCommands;
-import g_mungus.zps.commands.api_impl.ZPSScriptCommandSource;
-import g_mungus.zps.commands.api_impl.arguments.ValueOfExpression;
+import g_mungus.munguscript.language.builtin.BuiltInTypes;
+import g_mungus.munguscript.language.type.ScriptType;
+import g_mungus.zps.commands.api_impl.ZPSScripts;
 import g_mungus.zps.commands.content.executors.SetRedstoneCommand;
+import g_mungus.zps.util.BookComponents;
 import g_mungus.zps.util.BookPageTextLimiter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
@@ -24,56 +22,38 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
+import java.util.Locale;
+
 /**
  * Game tests for the ZPS script {@code value_of()} command feature.
  *
- * These tests validate end-to-end evaluation of inner expressions through the
- * dedicated per-type {@link g_mungus.zps.commands.api_impl.ValueOfDispatchers}
- * built during server startup.
+ * These tests validate end-to-end evaluation of expressions through the
+ * scripts the server built at startup ({@link ZPSScripts}).
  *
  * All tests use a flat 7×4×7 stone platform. The inner expressions use the
- * {@code pos} getter which returns the anchor position set on the
- * {@link ZPSScriptCommandSource}, so results are deterministic for any
- * absolute placement of the template.
+ * {@code pos} getter which returns the block a command is aimed at, so results
+ * are deterministic for any absolute placement of the template.
  */
 @GameTestHolder(ZPSMod.MOD_ID)
 @PrefixGameTestTemplate(false)
 public class ScriptCommandGameTests {
 
     private static final String TEMPLATE = "gametest/flat_7x4x7";
-    private static final ResourceLocation INT_KEY = ResourceLocation.parse("zps:int");
-    private static final ResourceLocation DOUBLE_KEY = ResourceLocation.parse("zps:double");
-    private static final ResourceLocation BOOLEAN_KEY = ResourceLocation.parse("zps:boolean");
-    private static final ResourceLocation STRING_KEY = ResourceLocation.parse("zps:string");
+    private static final ScriptType<Integer> INT_KEY = BuiltInTypes.INT;
+    private static final ScriptType<Double> DOUBLE_KEY = BuiltInTypes.DOUBLE;
+    private static final ScriptType<Boolean> BOOLEAN_KEY = BuiltInTypes.BOOLEAN;
+    private static final ScriptType<String> STRING_KEY = BuiltInTypes.STRING;
 
     // -------------------------------------------------------------------------
     // Helper
     // -------------------------------------------------------------------------
 
-    /**
-     * Creates a fresh {@link ZPSScriptCommandSource} anchored at {@code absPos},
-     * then evaluates {@code innerExpression} through the registered value_of
-     * dispatcher for {@code typeKey}.
-     *
-     * @return the {@link ZPSScriptCommandSource#pendingResult} after evaluation
-     */
-    @SuppressWarnings("unchecked")
+    /** What {@code value_of(innerExpression)} gives where {@code type} is wanted, aimed at {@code absPos}. */
     private static <T> T evalValueOf(GameTestHelper helper, BlockPos absPos,
-                                     String innerExpression, ResourceLocation typeKey) {
+                                     String innerExpression, ScriptType<T> type) {
         ServerLevel level = helper.getLevel();
-        MinecraftServer server = level.getServer();
-
-        ZPSScriptCommandSource innerSource = new ZPSScriptCommandSource(null);
-        innerSource.setPos(absPos);
-
-        // withSource swaps the CommandSource so our ZPSScriptCommandSource is visible
-        // to the inner dispatcher's getter/mapper lambdas via context.getSource().source
-        var innerStack = server.createCommandSourceStack()
-                .withSource(innerSource)
-                .withLevel(level);
-
-        ValueOfExpression<T> expr = new ValueOfExpression<>(innerExpression, typeKey);
-        return expr.evaluate(innerStack, absPos);
+        return ZPSScripts.get().evaluate(innerExpression, type,
+                level.getServer().createCommandSourceStack().withLevel(level), absPos);
     }
 
     private static int runScriptCommand(GameTestHelper helper, BlockPos absPos, String tail) {
@@ -82,10 +62,12 @@ public class ScriptCommandGameTests {
         String command = ZPSCommands.Paths.SCRIPT + " "
                 + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ() + " "
                 + tail;
-        return server.getCommands().performPrefixedCommand(
-                server.createCommandSourceStack().withLevel(level),
-                command
-        );
+        server.getCommands().performPrefixedCommand(server.createCommandSourceStack().withLevel(level), command);
+        return 1;
+    }
+
+    private static String formatCommandDouble(double value) {
+        return String.format(Locale.ROOT, "%.1f", value);
     }
 
     private static void assertStoredRedstone(GameTestHelper helper, BlockPos absPos, int expected, String context) {
@@ -129,17 +111,7 @@ public class ScriptCommandGameTests {
             return "";
         }
 
-        int page = holder.zps$getCurrentPage();
-        CompoundTag tag = book.getTag();
-        if (tag == null) {
-            return "";
-        }
-
-        ListTag pages = tag.getList("pages", Tag.TAG_STRING);
-        if (page < 0 || page >= pages.size()) {
-            return "";
-        }
-        return pages.getString(page);
+        return BookComponents.getPageText(book, holder.zps$getCurrentPage(), false);
     }
 
     // -------------------------------------------------------------------------
@@ -243,8 +215,7 @@ public class ScriptCommandGameTests {
     /**
      * {@code value_of(pos x + value_of(pos y))} should return X + Y.
      *
-     * The inner {@code value_of(pos y)} is itself evaluated recursively via a
-     * fresh {@link ZPSScriptCommandSource}.
+     * The inner {@code value_of(pos y)} is itself evaluated recursively, in a run of its own.
      */
     @GameTest(template = TEMPLATE)
     public static void valueOf_nested_returnsXPlusY(GameTestHelper helper) {
@@ -634,7 +605,7 @@ public class ScriptCommandGameTests {
         int result = runScriptCommand(
                 helper,
                 absPos,
-                "if pos x < value_of(pos y) set_redstone 3 else set_redstone 12"
+                "if pos x < value_of(pos x - 1) set_redstone 3 else set_redstone 12"
         );
         if (result != 1) {
             helper.fail("zps_script if/else returned " + result + " instead of 1");
@@ -1039,7 +1010,7 @@ public class ScriptCommandGameTests {
         int result = runScriptCommand(
                 helper,
                 absPos,
-                "if pos x < value_of(pos y + 200) set_redstone value_of(pos z | 1) else set_redstone 0"
+                "if pos x < value_of(pos x + 200) set_redstone value_of(pos z | 1) else set_redstone 0"
         );
         if (result != 1) {
             helper.fail("zps_script multiple value_of returned " + result + " instead of 1");
@@ -1082,14 +1053,17 @@ public class ScriptCommandGameTests {
         double targetX = absPos.getX() + 10.5;
         double targetY = absPos.getY() + 0.5;
         double targetZ = absPos.getZ() + 0.5;
+        String formattedTargetX = formatCommandDouble(targetX);
+        String formattedTargetY = formatCommandDouble(targetY);
+        String formattedTargetZ = formatCommandDouble(targetZ);
 
         int result = runScriptCommand(
                 helper,
                 absPos,
                 "set_redstone value_of(pos center direction_to "
-                        + targetX + " " + targetY + " " + targetZ
+                        + formattedTargetX + " " + formattedTargetY + " " + formattedTargetZ
                         + " dot value_of(pos center direction_to "
-                        + targetX + " " + targetY + " " + targetZ
+                        + formattedTargetX + " " + formattedTargetY + " " + formattedTargetZ
                         + ") * 15 rounded_down)"
         );
         if (result != 1) {

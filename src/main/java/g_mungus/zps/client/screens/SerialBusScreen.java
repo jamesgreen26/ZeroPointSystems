@@ -4,10 +4,8 @@ import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusMode;
 import g_mungus.zps.blockentity.light_pipe.SerialBusBlockEntity;
 import g_mungus.zps.client.screens.components.MultiLineCommandSuggestions;
 import g_mungus.zps.client.screens.components.MultiLineEditBox;
-import g_mungus.zps.client.screens.components.ScriptDispatcherProvider;
 import g_mungus.zps.client.screens.components.ScriptSyntaxHighlighter;
 import g_mungus.zps.commands.api_impl.ScriptCommandFailure;
-import g_mungus.zps.commands.api_impl.arguments.ValueOfOrLiteralArgumentType;
 import g_mungus.zps.networking.SerialBusSettingsC2SPacket;
 import g_mungus.zps.networking.ZPSGamePackets;
 import net.minecraft.ChatFormatting;
@@ -29,6 +27,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -63,9 +62,6 @@ public class SerialBusScreen extends Screen {
     private static final String ELLIPSIS = "...";
     private static final int BOX_HEIGHT = 18;
     private static final int FAULT_UNDERLINE_COLOUR = 0xFFFF5555;
-
-    /** A Get expression has to read as a chain yielding text: that is what goes on the pipe. */
-    private static final ResourceLocation STRING_TYPE = ResourceLocation.parse("zps:string");
 
     private static final int LABEL_COLOUR = 0xA0A0A0;
     private static final int TEXT_COLOUR = 0xFFFFFF;
@@ -161,9 +157,9 @@ public class SerialBusScreen extends Screen {
         expressionBox = box;
 
         MultiLineCommandSuggestions suggestions = new MultiLineCommandSuggestions(
-                this.minecraft, new ScriptDispatcherProvider(this.minecraft), this, box, this.font,
-                false, false, 0, 7, false, Integer.MIN_VALUE, facedBlock(bus));
-        suggestions.setExpressionType(STRING_TYPE);
+                this.minecraft, this, box, this.font,
+                false, false, 0, 7, false, Integer.MIN_VALUE, facedBlock(bus), Map::of);
+        suggestions.setExpressionMode(true);
         suggestions.setAllowSuggestions(true);
         suggestions.updateCommandInfo();
         expressionSuggestions = suggestions;
@@ -206,14 +202,6 @@ public class SerialBusScreen extends Screen {
             return true;
         }
         return super.keyPressed(key, scancode, modifiers);
-    }
-
-    @Override
-    public void onClose() {
-        // The suggestion machinery keeps what it is completing against in client-wide statics.
-        ValueOfOrLiteralArgumentType.setActiveAddressNames(Set.of());
-        ValueOfOrLiteralArgumentType.setActiveExpressionAliasNames(Set.of());
-        super.onClose();
     }
 
     @Override

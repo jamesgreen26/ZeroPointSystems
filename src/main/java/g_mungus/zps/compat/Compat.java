@@ -1,6 +1,7 @@
 package g_mungus.zps.compat;
 
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
+import g_mungus.zps.commands.api.RegisterScriptTypesEvent;
 import g_mungus.zps.compat.create.CreateCompat;
 import g_mungus.zps.compat.genesis.GenesisCompat;
 import net.minecraft.core.BlockPos;
@@ -118,6 +119,16 @@ public class Compat {
             return VSCompat.gridsTouching(level, worldBounds);
         }
         return List.of();
+    }
+
+    @SubscribeEvent
+    public static void onRegisterScriptTypesEvent(RegisterScriptTypesEvent event) {
+        if (isVSLoaded()) {
+            VSCompat.registerScriptTypes(event);
+        }
+        if (isGenesisLoaded()) {
+            GenesisCompat.registerScriptTypes(event);
+        }
     }
 
     @SubscribeEvent

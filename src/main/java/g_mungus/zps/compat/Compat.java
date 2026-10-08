@@ -17,6 +17,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModList;
@@ -131,7 +132,8 @@ public class Compat {
         }
     }
 
-    @SubscribeEvent
+    /** After ZPS's own, so compat that names getters at runtime can see which names are taken. */
+    @SubscribeEvent(priority = EventPriority.LOW)
     public static void onRegisterScriptCommandsEvent(RegisterScriptCommandsEvent event) {
         if (isVSLoaded()) {
             VSCompat.registerScriptCommands(event);

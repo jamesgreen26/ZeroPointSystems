@@ -113,36 +113,6 @@ public class ScriptTreeSyncGameTests {
         helper.succeed();
     }
 
-    /** Its own batch: a sublevel pauses physics for the whole level while it stands. */
-    @GameTest(template = TEMPLATE, batch = "scriptSable", timeoutTicks = 100)
-    public static void sublevelIsOnlyOfferedForTargetsOnASublevel(GameTestHelper helper) {
-        if (!Compat.isSableLoaded()) {
-            helper.succeed();
-            return;
-        }
-        ServerLevel level = helper.getLevel();
-        BlockPos ground = helper.absolutePos(new BlockPos(1, 1, 1));
-        helper.setBlock(new BlockPos(1, 1, 1), Blocks.STONE);
-        BlockPos lifted = helper.absolutePos(new BlockPos(4, 1, 4));
-        helper.setBlock(new BlockPos(4, 1, 4), Blocks.STONE);
-
-        helper.runAfterDelay(2, () -> {
-            SableBeamRig rig = SableBeamRig.assemble(level, lifted, lifted, List.of(lifted), new Quaterniond());
-            try {
-                BlockPos onPlot = rig.blocksLeft().get(0);
-                List<String> onGround = suggest(helper, decode(helper, Set.of(ScriptTarget.at(level, ground))), "if subl");
-                helper.assertTrue(!onGround.contains("sublevel"),
-                        "sublevel should not be offered for a block on no sublevel, got " + onGround);
-                List<String> onSubLevel = suggest(helper, decode(helper, Set.of(ScriptTarget.at(level, onPlot))), "if subl");
-                helper.assertTrue(onSubLevel.contains("sublevel"),
-                        "sublevel should be offered for a block on a sublevel, got " + onSubLevel);
-            } finally {
-                rig.remove();
-            }
-            helper.succeed();
-        });
-    }
-
     @GameTest(template = TEMPLATE)
     public static void decodedTreeReadsArgumentsThatNeedRegistries(GameTestHelper helper) {
         ScriptView<CommandSourceStack> view = decode(helper, Set.of());

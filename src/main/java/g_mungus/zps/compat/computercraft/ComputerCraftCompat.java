@@ -58,8 +58,8 @@ import java.util.Set;
  *   <li>A method that takes one number, string or boolean and returns nothing or a boolean is an
  *       executor, named in snake case, unless its name says it is a question.
  * </ul>
- * Everything else, such as methods returning tables or taking several arguments, is left out. A
- * getter whose name is taken is left out too.
+ * Everything else, such as methods returning tables or {@code MethodResult}s or taking several
+ * arguments, is left out. A getter whose name is taken is left out too.
  *
  * <p>Computer APIs other mods add, such as CC: Sable's {@code sublevel}, are taken by the same
  * rules and named after the API ({@code sublevel_name}). They answer about where the command is
@@ -404,6 +404,11 @@ public final class ComputerCraftCompat {
                 }
             }
             ScriptType<?> returns = scalar(method.getGenericReturnType());
+            if (returns == null && method.getReturnType() != void.class) {
+                // A value scripts cannot hold, such as a table or a MethodResult, is not nothing:
+                // Create's distanceTo answers through one, and as an executor would lose its answer.
+                return null;
+            }
             if (argument == null && returns == null) {
                 return null;
             }

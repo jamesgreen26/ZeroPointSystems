@@ -60,8 +60,9 @@ import java.util.regex.Pattern;
 
 /**
  * Suggestions, usage hints and highlighting for a multi-line script editor, from the scripts the
- * server sent ({@link ClientScripts}). Each line is a command, except for the {@code #def} alias
- * definitions and comments at the top and {@code wait} lines, which the editor reads itself.
+ * server sent ({@link ClientScripts}). Each line is a command, except for {@code #def} alias
+ * definitions, {@code #} comments and {@code wait} lines, which the editor reads itself; all may
+ * stand on any line, and a command uses only the aliases defined above it.
  */
 @OnlyIn(Dist.CLIENT)
 public class MultiLineCommandSuggestions {
@@ -248,12 +249,11 @@ public class MultiLineCommandSuggestions {
             return;
         }
 
-        if (isLeadingAliasDefinitionLine(currentLineNumber, currentLine)
-                || isAliasDefinitionPrefixLine(currentLineNumber, currentLine)) {
+        if (isAliasDefinitionLine(currentLine) || isAliasDefinitionPrefixLine(currentLine)) {
             updateAliasDefinitionInfo(view, currentLine, lineCursorPos, currentLineNumber);
             return;
         }
-        if (isLeadingCommentLine(currentLineNumber, currentLine)) {
+        if (isCommentLine(currentLine)) {
             this.pendingSuggestions = Suggestions.empty();
             return;
         }
@@ -275,7 +275,8 @@ public class MultiLineCommandSuggestions {
         }
 
         SharedSuggestionProvider source = source();
-        CommandPreProcessor.Prepared script = prepared(view).script();
+        // Only the aliases defined above this line.
+        CommandPreProcessor.Prepared script = prepared(view).script().at(currentLineNumber);
         PreProcessed processed = script.process(command, new PreProcessContext(view.probe(source), null));
         this.currentParse = view.parse(processed.command(), source);
         this.currentMap = processed.sourceMap();
@@ -406,17 +407,19 @@ public class MultiLineCommandSuggestions {
 
     // --- lines the editor reads itself -------------------------------------------------------------
 
-    private boolean isLeadingAliasDefinitionLine(int lineNumber, String line) {
-        return startsWithDefinitionKeyword(line) && !hasEarlierExecutableLine(lineNumber);
+    /** A {@code #def} line, which may stand on any line; the lines below it may use its alias. */
+    private static boolean isAliasDefinitionLine(String line) {
+        return startsWithDefinitionKeyword(line);
     }
 
-    private boolean isAliasDefinitionPrefixLine(int lineNumber, String line) {
-        String stripped = line.stripLeading();
-        return isDefinitionKeywordPrefix(stripped) && !hasEarlierExecutableLine(lineNumber);
+    /** A line on its way to being {@code #def}, so that it is offered. */
+    private static boolean isAliasDefinitionPrefixLine(String line) {
+        return isDefinitionKeywordPrefix(line.stripLeading());
     }
 
-    private boolean isLeadingCommentLine(int lineNumber, String line) {
-        return line.stripLeading().startsWith("#") && !hasEarlierExecutableLine(lineNumber);
+    /** A comment: any other {@code #} line, which may stand on any line. */
+    private static boolean isCommentLine(String line) {
+        return line.stripLeading().startsWith("#");
     }
 
     private static boolean startsWithDefinitionKeyword(String line) {
@@ -426,17 +429,6 @@ public class MultiLineCommandSuggestions {
 
     private static boolean isDefinitionKeywordPrefix(String strippedLine) {
         return strippedLine.startsWith("#") && "#def".startsWith(strippedLine);
-    }
-
-    private boolean hasEarlierExecutableLine(int lineNumber) {
-        String[] lines = this.input.getValue().split("\n", -1);
-        for (int i = 0; i < lineNumber && i < lines.length; i++) {
-            String trimmed = lines[i].strip();
-            if (!trimmed.isBlank() && !trimmed.startsWith("#")) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static boolean isWaitLine(String command) {
@@ -781,15 +773,15 @@ public class MultiLineCommandSuggestions {
         List<ScriptSyntaxHighlighter.Span> spans;
         if (this.expressionMode) {
             spans = ScriptSyntaxHighlighter.expressionSpans(line, 0, line, null, source());
-        } else if (lineNumber >= 0 && isLeadingAliasDefinitionLine(lineNumber, line)) {
+        } else if (lineNumber >= 0 && isAliasDefinitionLine(line)) {
             spans = aliasDefinitionSpans(view, line, lineNumber);
-        } else if (lineNumber >= 0 && isLeadingCommentLine(lineNumber, line)) {
+        } else if (lineNumber >= 0 && isCommentLine(line)) {
             spans = List.of();
         } else if (this.commandsOnly || line.startsWith("/")) {
             int offset = line.startsWith("/") ? 1 : 0;
             spans = isWaitLine(line.substring(offset))
                     ? waitSpans(line, offset)
-                    : ScriptSyntaxHighlighter.commandSpans(line, script.script(), source());
+                    : ScriptSyntaxHighlighter.commandSpans(line, script.script().at(lineNumber), source());
         } else {
             spans = List.of();
         }

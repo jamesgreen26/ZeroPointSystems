@@ -77,9 +77,9 @@ public final class ZPSScripts {
     static ZPSScripts build(CommandBuildContext buildContext) {
         ZPSScripts scripts = new ZPSScripts(buildContext);
         current = scripts;
-        if (!FMLLoader.isProduction()) {
-            scripts.exportLanguage();
-        }
+
+        scripts.exportLanguage();
+
         return scripts;
     }
 

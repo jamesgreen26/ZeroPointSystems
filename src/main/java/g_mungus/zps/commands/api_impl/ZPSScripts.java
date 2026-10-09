@@ -201,7 +201,7 @@ public final class ZPSScripts {
         try {
             Files.createDirectories(file.getParent());
             try (DataOutputStream out = new DataOutputStream(Files.newOutputStream(file))) {
-                new ScriptLanguageFile().write(engine, grafted, ZPSMod.MOD_ID, out);
+                new ScriptLanguageFile(ZPSArgumentShapes::of).write(engine, grafted, ZPSMod.MOD_ID, out);
             }
         } catch (Exception e) {
             ZPSMod.LOGGER.warn("Script language export failed", e);

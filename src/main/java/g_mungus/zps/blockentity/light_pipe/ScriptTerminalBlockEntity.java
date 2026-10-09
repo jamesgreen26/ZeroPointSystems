@@ -164,7 +164,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
             if (tickDelay <= 0) {
                 String command = commands.get(head);
                 if (command.startsWith("/")) command = command.substring(1);
-                processCommand(serverLevel, command, script);
+                processCommand(serverLevel, command, script, script.commandLines().get(head));
                 head++;
             } else {
                 tickDelay--;
@@ -190,12 +190,14 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
     }
 
     /**
-     * The script as it runs: its commands, with alias definitions and blank lines left out, and the
-     * pre-processing each goes through. Prepared again when the script, the Address Pad or the
-     * server's scripts change.
+     * The script as it runs: its commands, with comments, alias definitions and blank lines left
+     * out, the line each stands on, and the pre-processing each goes through, which uses only the
+     * aliases defined above it. Prepared again when the script, the Address Pad or the server's
+     * scripts change.
      */
     private record PreparedScript(String text, Map<String, BlockPos> addresses, ZPSScripts scripts,
-                                  List<String> commands, CommandPreProcessor.Prepared preProcessing) {
+                                  List<String> commands, List<Integer> commandLines,
+                                  CommandPreProcessor.Prepared preProcessing) {
     }
 
     private PreparedScript getPreparedScript(ServerLevel serverLevel) {
@@ -212,12 +214,15 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         CommandPreProcessor.Prepared preProcessing = scripts.prepare(lines, origin, worldPosition,
                 List.of(new CoordinatePreProcessor(origin), new AddressPreProcessor(addresses)));
         List<String> commands = new ArrayList<>();
+        List<Integer> commandLines = new ArrayList<>();
         for (int i = 0; i < lines.size(); i++) {
             if (!preProcessing.consumedLines().contains(i) && !lines.get(i).isBlank()) {
                 commands.add(lines.get(i).strip());
+                commandLines.add(i);
             }
         }
-        PreparedScript prepared = new PreparedScript(allCommands, addresses, scripts, List.copyOf(commands), preProcessing);
+        PreparedScript prepared = new PreparedScript(allCommands, addresses, scripts, List.copyOf(commands),
+                List.copyOf(commandLines), preProcessing);
         preparedScript = prepared;
         return prepared;
     }
@@ -226,13 +231,15 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         preparedScript = null;
     }
 
-    private void processCommand(ServerLevel serverLevel, String command, PreparedScript script) {
+    /** @param line the script line the command stands on, whose aliases it uses */
+    private void processCommand(ServerLevel serverLevel, String command, PreparedScript script, int line) {
         if (command.startsWith("wait ")) {
             executeWaitCommand(command);
             clearOutput();
         } else {
             CommandSourceStack origin = createTerminalCommandSourceStack(serverLevel, worldPosition, getBlockState());
-            currentCommand = script.scripts().process(script.preProcessing(), command, origin, worldPosition).command();
+            currentCommand = script.scripts().process(script.preProcessing().at(line), command, origin, worldPosition)
+                    .command();
             updateSignal(level);
             tickDelay = delay - 1; // delay value from GUI (2t, 4t, 8t, or 16t)
         }

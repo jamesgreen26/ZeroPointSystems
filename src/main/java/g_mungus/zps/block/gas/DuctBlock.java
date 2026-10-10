@@ -14,6 +14,8 @@ import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -183,6 +185,31 @@ public class DuctBlock extends GasNodeBlock
     @Override
     protected boolean useShapeForLightOcclusion(@NotNull BlockState state) {
         return true;
+    }
+
+    /**
+     * Faces travel with the block: each horizontal face's value moves to wherever the transform
+     * sends it, so connections and leaks keep pointing at the same neighbours in a rotated or
+     * mirrored structure. Up and down are never touched by either.
+     */
+    @Override
+    protected @NotNull BlockState rotate(@NotNull BlockState state, @NotNull Rotation rotation) {
+        BlockState result = state;
+        for (Direction direction : Direction.Plane.HORIZONTAL) {
+            result = result.setValue(propertyFor(rotation.rotate(direction)),
+                    state.getValue(propertyFor(direction)));
+        }
+        return result;
+    }
+
+    @Override
+    protected @NotNull BlockState mirror(@NotNull BlockState state, @NotNull Mirror mirror) {
+        BlockState result = state;
+        for (Direction direction : Direction.Plane.HORIZONTAL) {
+            result = result.setValue(propertyFor(mirror.mirror(direction)),
+                    state.getValue(propertyFor(direction)));
+        }
+        return result;
     }
 
     @Override

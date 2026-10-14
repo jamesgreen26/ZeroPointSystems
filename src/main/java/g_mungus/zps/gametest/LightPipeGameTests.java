@@ -18,6 +18,7 @@ import g_mungus.zps.blockentity.light_pipe.DataLecternBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.ScriptTerminalBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.SerialBusBlockEntity;
 import g_mungus.zps.networking.ScriptComputerC2SPacket;
+import g_mungus.zps.commands.content.TerminalLines;
 import g_mungus.zps.commands.api_impl.ScriptCommandFailure;
 import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
 import g_mungus.zps.compat.create.CreateCompat;
@@ -323,8 +324,8 @@ public final class LightPipeGameTests {
         ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
                 "#var lvl = 0",
                 "if " + target(helper, VAR_BUS_A) + " return 5",
-                "wait 2",
-                "receive lvl"));
+                "wait   2",
+                "receive \t lvl"));
         if (terminal == null) {
             return;
         }
@@ -334,6 +335,33 @@ public final class LightPipeGameTests {
                         + " (receive: " + terminal.getLastReceiveFailure() + ")");
             }
         });
+    }
+
+    /** {@code wait} and {@code receive} take any whitespace around their argument, and only as a separate word. */
+    @GameTest(template = TEMPLATE)
+    public static void terminalLines_toleratesWhitespace(GameTestHelper helper) {
+        List<String> problems = new java.util.ArrayList<>();
+        check(problems, "wait  2 cycles", TerminalLines.waitCycles("wait  2"), 2);
+        check(problems, "wait tab cycles", TerminalLines.waitCycles("wait\t3 "), 3);
+        check(problems, "bare wait is a wait", TerminalLines.isWait("wait"), true);
+        check(problems, "bare wait has no cycles", TerminalLines.waitCycles("wait"), null);
+        check(problems, "wait 64 is in range", TerminalLines.waitCycles("wait 64"), 64);
+        check(problems, "wait 65 is out of range", TerminalLines.waitCycles("wait 65"), null);
+        check(problems, "wait 0 is out of range", TerminalLines.waitCycles("wait 0"), null);
+        check(problems, "waiting is not a wait", TerminalLines.isWait("waiting 2"), false);
+        check(problems, "receive name", TerminalLines.argument("receive   lvl ", TerminalLines.RECEIVE), "lvl");
+        check(problems, "receiver is not a receive", TerminalLines.isReceive("receiver lvl"), false);
+        if (!problems.isEmpty()) {
+            helper.fail(String.join("; ", problems));
+            return;
+        }
+        helper.succeed();
+    }
+
+    private static void check(List<String> problems, String what, Object actual, Object expected) {
+        if (!java.util.Objects.equals(actual, expected)) {
+            problems.add(what + ": expected " + expected + ", got " + actual);
+        }
     }
 
     /** A clear is held back {@link TextDisplayBlockEntity#CLEAR_HOLD_TICKS} ticks, then lands. */

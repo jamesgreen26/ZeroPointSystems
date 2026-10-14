@@ -97,6 +97,8 @@ wait 2
 set_redstone 0
 ```
 
+`<cycles>` is a whole number from 1 to 64. Anything else, or no number at all, waits one cycle.
+
 `wait` behaves like an executor, but cannot be used with `if`, `unless`, or `else`.
 
 It always runs when reached, and delays the dispatch of following commands.

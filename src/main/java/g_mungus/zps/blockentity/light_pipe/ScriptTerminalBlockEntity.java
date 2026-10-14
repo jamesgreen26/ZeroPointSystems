@@ -10,6 +10,7 @@ import g_mungus.munguscript.engine.preprocess.CommandPreProcessor;
 import g_mungus.munguscript.engine.preprocess.ScriptVariable;
 import g_mungus.zps.commands.api.ScriptTarget;
 import g_mungus.zps.commands.api_impl.ZPSScripts;
+import g_mungus.zps.commands.content.TerminalLines;
 import g_mungus.zps.commands.preprocess.AddressPreProcessor;
 import g_mungus.zps.commands.preprocess.CoordinatePreProcessor;
 import g_mungus.zps.item.AddressPadItem;
@@ -146,7 +147,6 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
     private int tickDelay = 0;
     private @Nullable PreparedScript preparedScript = null;
 
-    private static final String RECEIVE = "receive";
     /** The values the script's variables have received, as received, by name; the rest stand at their declared literal. */
     private final Map<String, String> variableValues = new HashMap<>();
     /** What arrived on the pipe in the blank tick after the last command this terminal sent. */
@@ -249,11 +249,11 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
 
     /** @param line the script line the command stands on, whose aliases it uses */
     private void processCommand(ServerLevel serverLevel, String command, PreparedScript script, int line) {
-        if (command.startsWith("wait ")) {
+        if (TerminalLines.isWait(command)) {
             executeWaitCommand(command);
             clearOutput();
-        } else if (command.equals(RECEIVE) || command.startsWith(RECEIVE + " ")) {
-            receive(command.substring(RECEIVE.length()).strip(), script, line);
+        } else if (TerminalLines.isReceive(command)) {
+            receive(TerminalLines.argument(command, TerminalLines.RECEIVE), script, line);
             clearOutput();
             tickDelay = delay - 1;
         } else {
@@ -358,17 +358,10 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         return variableValues.get(name);
     }
 
+    /** Waits the cycles asked for, or one cycle if the argument is missing or not a whole number from 1 to 64. */
     private void executeWaitCommand(String command) {
-        try {
-            int cycles = Integer.parseInt(command.substring(5));
-            if (cycles > 0) {
-                tickDelay = (delay * cycles) - 1;
-            } else {
-                tickDelay = delay - 1;
-            }
-        } catch (Exception e) {
-            tickDelay = delay - 1;
-        }
+        Integer cycles = TerminalLines.waitCycles(command);
+        tickDelay = delay * (cycles != null ? cycles : 1) - 1;
     }
 
 

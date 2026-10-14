@@ -21,6 +21,7 @@ import g_mungus.munguscript.engine.preprocess.PreProcessDiagnostic;
 import g_mungus.munguscript.engine.preprocess.PreProcessed;
 import g_mungus.munguscript.engine.preprocess.SourceMap;
 import g_mungus.zps.client.script.ClientScripts;
+import g_mungus.zps.commands.content.TerminalLines;
 import g_mungus.zps.commands.api.ScriptTarget;
 import g_mungus.zps.commands.preprocess.AddressPreProcessor;
 import net.minecraft.ChatFormatting;
@@ -72,13 +73,12 @@ public class MultiLineCommandSuggestions {
     private static final Pattern NAMED_ARGUMENT_USAGE = Pattern.compile("<[^<>]*:([^<>:]+)>");
     private static final String ALIAS_NAME_USAGE = "<alias>";
     private static final String EXPECTED_EQUALS_MESSAGE = "Expected '=' after alias name";
-    private static final String WAIT = "wait";
-    private static final String RECEIVE = "receive";
+    private static final String WAIT = TerminalLines.WAIT;
+    private static final String RECEIVE = TerminalLines.RECEIVE;
     private static final String RECEIVE_USAGE = "<variable>";
     private static final String DEFINE = "#def";
     private static final String DECLARE = "#var";
-    private static final String WAIT_USAGE = "<ticks: 1-64>";
-    private static final int MAX_WAIT = 64;
+    private static final String WAIT_USAGE = "<cycles: 1-" + TerminalLines.MAX_WAIT_CYCLES + ">";
     final Minecraft minecraft;
     private final Screen screen;
     final MultiLineEditBox input;
@@ -455,10 +455,49 @@ public class MultiLineCommandSuggestions {
         return strippedLine.startsWith("#") && (DEFINE.startsWith(strippedLine) || DECLARE.startsWith(strippedLine));
     }
 
-    // --- receive ---------------------------------------------------------------------------------------
+    // --- wait and receive ------------------------------------------------------------------------------
+
+    /** Where the first non-whitespace character at or after {@code from} is. */
+    private static int skipWhitespace(String text, int from) {
+        int at = from;
+        while (at < text.length() && Character.isWhitespace(text.charAt(at))) {
+            at++;
+        }
+        return at;
+    }
+
+    /** Where {@code keyword}'s argument starts in {@code command}, past any whitespace either side of it. */
+    private static int argumentStart(String command, String keyword) {
+        return skipWhitespace(command, skipWhitespace(command, 0) + keyword.length());
+    }
+
+    /** Shows {@code usage} where the argument of the current line's {@code keyword} belongs. */
+    private void showArgumentUsage(String usage, Style style, String command, String keyword, int offset, int lineNumber) {
+        this.commandUsage.add(FormattedCharSequence.forward(usage, style));
+        int width = this.font.width(usage);
+        int absoluteStart = getLineStartPosition(lineNumber) + offset + skipWhitespace(command, 0) + keyword.length() + 1;
+        this.commandUsagePosition = Mth.clamp(this.input.getScreenX(absoluteStart), 0,
+                this.input.getScreenX(0) + this.input.getInnerWidth() - width);
+        this.commandUsageWidth = width;
+    }
+
+    /** The keyword plain as an executor, then its argument in {@code argumentStyle}. */
+    private static List<ScriptSyntaxHighlighter.Span> keywordLineSpans(String line, int offset, String keyword,
+                                                                       Style argumentStyle) {
+        List<ScriptSyntaxHighlighter.Span> spans = new ArrayList<>();
+        int keywordStart = skipWhitespace(line, offset);
+        int keywordEnd = keywordStart + keyword.length();
+        spans.add(new ScriptSyntaxHighlighter.Span(StringRange.between(keywordStart, keywordEnd), ScriptSyntaxHighlighter.EXECUTOR_STYLE));
+        int start = skipWhitespace(line, keywordEnd);
+        int end = line.stripTrailing().length();
+        if (start < end) {
+            spans.add(new ScriptSyntaxHighlighter.Span(StringRange.between(start, end), argumentStyle));
+        }
+        return spans;
+    }
 
     private static boolean isReceiveLine(String command) {
-        return command.equals(RECEIVE) || command.startsWith(RECEIVE + " ");
+        return TerminalLines.isReceive(command);
     }
 
     /** The variables declared above {@code lineNumber}, which a {@code receive} there may name. */
@@ -470,28 +509,21 @@ public class MultiLineCommandSuggestions {
     private void updateReceiveInfo(ScriptView<SharedSuggestionProvider> view, String command, int cursor,
                                    int offset, int lineNumber) {
         Set<String> variables = variablesAbove(view, lineNumber);
-        int nameStart = RECEIVE.length();
-        while (nameStart < command.length() && command.charAt(nameStart) == ' ') {
-            nameStart++;
-        }
-        String name = command.substring(Math.min(nameStart, command.length())).strip();
-        if (cursor >= nameStart && command.length() > RECEIVE.length()) {
+        String name = TerminalLines.argument(command, RECEIVE);
+        int keywordEnd = skipWhitespace(command, 0) + RECEIVE.length();
+        int nameStart = argumentStart(command, RECEIVE);
+        if (cursor > keywordEnd && cursor >= nameStart) {
             SuggestionsBuilder builder = new SuggestionsBuilder(command, nameStart);
-            String typed = command.substring(nameStart, Math.max(nameStart, Math.min(cursor, command.length())));
+            String typed = command.substring(nameStart, Math.min(cursor, command.length()));
             variables.stream().filter(variable -> variable.startsWith(typed)).sorted().forEach(builder::suggest);
             this.pendingSuggestions = builder.buildFuture()
                     .thenApply(suggestions -> shifted(suggestions, offset, getCurrentLine()));
         } else {
             this.pendingSuggestions = Suggestions.empty();
         }
-        if (name.isEmpty() || !variables.contains(name)) {
-            Style style = name.isEmpty() ? ScriptSyntaxHighlighter.DEFAULT_STYLE : ScriptSyntaxHighlighter.UNPARSED_STYLE;
-            this.commandUsage.add(FormattedCharSequence.forward(RECEIVE_USAGE, style));
-            int width = this.font.width(RECEIVE_USAGE);
-            int absoluteStart = getLineStartPosition(lineNumber) + offset + RECEIVE.length() + 1;
-            this.commandUsagePosition = Mth.clamp(this.input.getScreenX(absoluteStart), 0,
-                    this.input.getScreenX(0) + this.input.getInnerWidth() - width);
-            this.commandUsageWidth = width;
+        if (name == null || name.isEmpty() || !variables.contains(name)) {
+            Style style = name == null || name.isEmpty() ? ScriptSyntaxHighlighter.DEFAULT_STYLE : ScriptSyntaxHighlighter.UNPARSED_STYLE;
+            showArgumentUsage(RECEIVE_USAGE, style, command, RECEIVE, offset, lineNumber);
         }
         this.suggestions = null;
         if (this.allowSuggestions && this.minecraft.options.autoSuggestions().get()) {
@@ -501,48 +533,28 @@ public class MultiLineCommandSuggestions {
 
     private List<ScriptSyntaxHighlighter.Span> receiveSpans(ScriptView<SharedSuggestionProvider> view, String line,
                                                             int offset, int lineNumber) {
-        List<ScriptSyntaxHighlighter.Span> spans = new ArrayList<>();
-        int keywordEnd = offset + RECEIVE.length();
-        spans.add(new ScriptSyntaxHighlighter.Span(StringRange.between(offset, keywordEnd), ScriptSyntaxHighlighter.EXECUTOR_STYLE));
-        int start = keywordEnd;
-        while (start < line.length() && line.charAt(start) == ' ') {
-            start++;
-        }
-        if (start < line.length()) {
-            String name = line.substring(start).strip();
-            spans.add(new ScriptSyntaxHighlighter.Span(StringRange.between(start, line.length()),
-                    variablesAbove(view, lineNumber).contains(name)
-                            ? ScriptSyntaxHighlighter.GETTER_STYLE
-                            : ScriptSyntaxHighlighter.UNPARSED_STYLE));
-        }
-        return spans;
+        String name = TerminalLines.argument(line.substring(offset), RECEIVE);
+        return keywordLineSpans(line, offset, RECEIVE, name != null && variablesAbove(view, lineNumber).contains(name)
+                ? ScriptSyntaxHighlighter.GETTER_STYLE
+                : ScriptSyntaxHighlighter.UNPARSED_STYLE);
     }
 
     private static boolean isWaitLine(String command) {
-        return command.equals(WAIT) || command.startsWith(WAIT + " ");
+        return TerminalLines.isWait(command);
     }
 
     private void updateWaitInfo(String command, int offset) {
         this.pendingSuggestions = Suggestions.empty();
-        String ticks = command.substring(WAIT.length()).strip();
-        if (ticks.isEmpty() || !validWait(ticks)) {
-            Style style = ticks.isEmpty() ? ScriptSyntaxHighlighter.DEFAULT_STYLE : ScriptSyntaxHighlighter.UNPARSED_STYLE;
-            this.commandUsage.add(FormattedCharSequence.forward(WAIT_USAGE, style));
-            int width = this.font.width(WAIT_USAGE);
-            int absoluteStart = getLineStartPosition(getCurrentLineNumber()) + offset + WAIT.length() + 1;
-            this.commandUsagePosition = Mth.clamp(this.input.getScreenX(absoluteStart), 0,
-                    this.input.getScreenX(0) + this.input.getInnerWidth() - width);
-            this.commandUsageWidth = width;
+        String cycles = TerminalLines.argument(command, WAIT);
+        if (cycles == null || cycles.isEmpty() || !validWait(command)) {
+            Style style = cycles == null || cycles.isEmpty() ? ScriptSyntaxHighlighter.DEFAULT_STYLE : ScriptSyntaxHighlighter.UNPARSED_STYLE;
+            showArgumentUsage(WAIT_USAGE, style, command, WAIT, offset, getCurrentLineNumber());
         }
     }
 
-    private static boolean validWait(String ticks) {
-        try {
-            int value = Integer.parseInt(ticks);
-            return value >= 1 && value <= MAX_WAIT;
-        } catch (NumberFormatException e) {
-            return false;
-        }
+    /** Whether a {@code wait} line asks for a whole number of cycles in range. */
+    private static boolean validWait(String command) {
+        return TerminalLines.waitCycles(command) != null;
     }
 
     /** The whole line is the expression, so there is no prefix to step over. */
@@ -892,20 +904,9 @@ public class MultiLineCommandSuggestions {
     }
 
     private static List<ScriptSyntaxHighlighter.Span> waitSpans(String line, int offset) {
-        List<ScriptSyntaxHighlighter.Span> spans = new ArrayList<>();
-        int keywordEnd = offset + WAIT.length();
-        spans.add(new ScriptSyntaxHighlighter.Span(StringRange.between(offset, keywordEnd), ScriptSyntaxHighlighter.EXECUTOR_STYLE));
-        int start = keywordEnd;
-        while (start < line.length() && line.charAt(start) == ' ') {
-            start++;
-        }
-        if (start < line.length()) {
-            String ticks = line.substring(start).strip();
-            spans.add(new ScriptSyntaxHighlighter.Span(StringRange.between(start, line.length()), validWait(ticks)
-                    ? ScriptSyntaxHighlighter.ARGUMENT_STYLE
-                    : ScriptSyntaxHighlighter.UNPARSED_STYLE));
-        }
-        return spans;
+        return keywordLineSpans(line, offset, WAIT, validWait(line.substring(offset))
+                ? ScriptSyntaxHighlighter.ARGUMENT_STYLE
+                : ScriptSyntaxHighlighter.UNPARSED_STYLE);
     }
 
     /** {@code #def name = expression}: the keyword and {@code =} plain, the name as a getter, the expression as one. */

@@ -247,6 +247,17 @@ public class ClientSetup {
                     // The BER draws the overlay as a fallback when Flywheel's backend is unavailable.
                     .neverSkipVanillaRender()
                     .apply();
+            BlockEntityRenderers.register(ModBlockEntities.SERIAL_BUS.get(), RedstoneBandRenderer::new);
+            SimpleBlockEntityVisualizer.builder(ModBlockEntities.SERIAL_BUS.get())
+                    .factory(RedstoneBandVisual::new)
+                    // The BER draws the band as a fallback when Flywheel's backend is unavailable.
+                    .neverSkipVanillaRender()
+                    .apply();
+            BlockEntityRenderers.register(ModBlockEntities.REDSTONE_CONVERTER.get(), RedstoneBandRenderer::new);
+            SimpleBlockEntityVisualizer.builder(ModBlockEntities.REDSTONE_CONVERTER.get())
+                    .factory(RedstoneBandVisual::new)
+                    .neverSkipVanillaRender()
+                    .apply();
             BlockEntityRenderers.register(ModBlockEntities.POWER_CELL.get(), PowerCellBlockEntityRenderer::new);
             BlockEntityRenderers.register(ModBlockEntities.GAS_GAUGE.get(), GasGaugeBlockEntityRenderer::new);
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DENSE_CABLE_SEPARATOR.get(), RenderType.cutout());

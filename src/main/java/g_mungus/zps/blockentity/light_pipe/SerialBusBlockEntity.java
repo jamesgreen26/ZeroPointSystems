@@ -11,6 +11,7 @@ import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.RedstoneBandSource;
 import g_mungus.zps.commands.api_impl.ScriptCommandFailure;
 import g_mungus.zps.commands.api_impl.ZPSScripts;
+import g_mungus.zps.commands.content.TerminalLines;
 import g_mungus.zps.compat.Compat;
 import g_mungus.zps.compat.create.CreateCompat;
 import net.minecraft.commands.CommandSource;
@@ -82,11 +83,6 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
     private @Nullable String pendingAnswer;
     /** The answer while it is on the pipe, for the instant the bus is sending it. */
     private @Nullable String answering;
-    /**
-     * How many buses are sending an answer right now. An answer is a value, not a command, so no
-     * bus runs text that arrives while one is on the pipe.
-     */
-    private static int answerDepth;
     /** The power {@code set_redstone} last asked for, emitted into the block the bus faces. */
     private int redstoneOutput;
 
@@ -101,7 +97,8 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
     @Override
     public void acceptText(int channel, String message) {
         // In GET mode the bus is the one talking; whatever else is on the pipe is not ours to run.
-        if (mode == SerialBusMode.GET || answerDepth > 0 && !message.isEmpty()) {
+        // An answer is a value, not a command: its prefix says so to every bus that hears it.
+        if (mode == SerialBusMode.GET || TerminalLines.providedValue(message) != null) {
             return;
         }
         boolean suppressCommand = shouldSuppressCommandsForDisplayLink();
@@ -137,24 +134,23 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
     }
 
     /**
-     * Puts the answer on the pipe and takes it off again at once, inside the terminal's clear. It
-     * is there for no time at all, so it can never collide with the terminal's next command, and
-     * everything listening in that blank tick, the terminal included, has heard it.
+     * Puts the answer on the pipe, as {@code provide_value <value>}, and takes it off again at once,
+     * inside the terminal's clear. It is there for no time at all, so it can never collide with the
+     * terminal's next command, and everything listening in that blank tick, the terminal included,
+     * has heard it.
      */
     private void sendAnswer() {
         if (level == null || level.isClientSide) {
             return;
         }
-        answering = pendingAnswer;
+        answering = TerminalLines.provideValue(pendingAnswer);
         pendingAnswer = null;
-        answerDepth++;
         try {
             updateSignal(level);
             answering = null;
             updateSignal(level);
         } finally {
             answering = null;
-            answerDepth--;
         }
     }
 

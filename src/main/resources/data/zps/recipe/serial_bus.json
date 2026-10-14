@@ -6,9 +6,9 @@
     "D": { "tag": "c:ingots/space_metal" },
     "E": { "tag": "c:ingots/space_metal" },
     "F": { "tag": "c:ingots/space_metal" },
-    "G": { "item": "minecraft:quartz" },
+    "G": { "item": "minecraft:redstone" },
     "H": { "item": "minecraft:quartz" },
-    "I": { "item": "minecraft:quartz" }
+    "I": { "item": "minecraft:redstone" }
   },
   "pattern": [
     " B ",

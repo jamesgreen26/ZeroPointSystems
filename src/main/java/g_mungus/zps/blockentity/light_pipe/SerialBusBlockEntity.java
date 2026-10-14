@@ -8,6 +8,7 @@ import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusBlock;
 import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusMode;
 import g_mungus.zps.blockentity.ModBlockEntities;
+import g_mungus.zps.blockentity.RedstoneBandSource;
 import g_mungus.zps.commands.api_impl.ScriptCommandFailure;
 import g_mungus.zps.commands.api_impl.ZPSScripts;
 import g_mungus.zps.compat.Compat;
@@ -50,7 +51,7 @@ import java.util.Objects;
  * the offending part of the command marked. The record only travels when it changes, so a bus fed
  * the same command every tick costs nothing on the wire.
  */
-public class SerialBusBlockEntity extends AbstractTextDataReceiver implements LightPipeDataSender {
+public class SerialBusBlockEntity extends AbstractTextDataReceiver implements LightPipeDataSender, RedstoneBandSource {
 
     private static final String MODE_TAG = "Mode";
     private static final String LAST_COMMAND_TAG = "LastCommand";
@@ -157,6 +158,11 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
         return redstoneOutput;
     }
 
+    @Override
+    public int getBandLevel() {
+        return redstoneOutput;
+    }
+
     /** Server only. Emits {@code power} into the faced block, as a repeater pointed into it would. */
     public void setRedstoneOutput(int power) {
         if (level == null || level.isClientSide || power == redstoneOutput) {
@@ -164,6 +170,8 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
         }
         redstoneOutput = power;
         setChanged();
+        // Clients draw the output as the band around the bus.
+        syncToClients();
         SerialBusBlock.updateNeighborsInFront(level, worldPosition, getBlockState());
     }
 
@@ -428,14 +436,12 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
     protected void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.saveAdditional(tag, registries);
         saveRecord(tag);
-        tag.putInt(REDSTONE_OUTPUT_TAG, redstoneOutput);
     }
 
     @Override
     protected void loadAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.loadAdditional(tag, registries);
         loadRecord(tag);
-        redstoneOutput = tag.getInt(REDSTONE_OUTPUT_TAG);
     }
 
     private void saveRecord(CompoundTag tag) {
@@ -444,6 +450,7 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
         tag.putString(LAST_OUTCOME_TAG, lastOutcome.name());
         tag.putString(EXPRESSION_TAG, expression);
         tag.putString(SENT_VALUE_TAG, sentValue);
+        tag.putInt(REDSTONE_OUTPUT_TAG, redstoneOutput);
         if (lastFailure != null) {
             tag.put(LAST_FAILURE_TAG, lastFailure.save(new CompoundTag()));
         }
@@ -454,6 +461,7 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
         lastCommand = tag.getString(LAST_COMMAND_TAG);
         expression = tag.getString(EXPRESSION_TAG);
         sentValue = tag.getString(SENT_VALUE_TAG);
+        redstoneOutput = tag.getInt(REDSTONE_OUTPUT_TAG);
         lastOutcome = Outcome.NONE;
         try {
             if (tag.contains(LAST_OUTCOME_TAG, Tag.TAG_STRING)) {
@@ -466,7 +474,7 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
                 : null;
     }
 
-    /** The mode and the last command's record go to clients, for the screen. */
+    /** The mode and the last command's record go to clients, for the screen, and the output for the band. */
     @Override
     public @NotNull CompoundTag getUpdateTag(HolderLookup.@NotNull Provider registries) {
         CompoundTag tag = super.getUpdateTag(registries);

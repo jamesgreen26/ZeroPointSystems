@@ -8,9 +8,11 @@ import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.stats.Stats;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -100,6 +102,15 @@ public class TextDisplayBlock extends CableComponentBlock implements EntityBlock
         if (!state.equals(newState)) {
             level.setBlock(pos, newState, 3);
             updateNetwork(pos, level);
+        }
+    }
+
+    /** Scheduled by the block entity when the pipe goes blank, to clear the text a little later. */
+    @Override
+    public void tick(@NotNull BlockState state, @NotNull ServerLevel level, @NotNull BlockPos pos,
+                        @NotNull RandomSource random) {
+        if (level.getBlockEntity(pos) instanceof TextDisplayBlockEntity display) {
+            display.tickPendingClear();
         }
     }
 

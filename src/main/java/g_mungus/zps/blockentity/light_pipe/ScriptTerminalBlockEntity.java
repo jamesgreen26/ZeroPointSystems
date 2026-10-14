@@ -166,6 +166,8 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
                 processCommand(serverLevel, command, script, script.commandLines().get(head));
                 head++;
             } else {
+                // A command is on the pipe for one tick only; the delay still spaces the next one.
+                clearOutput();
                 tickDelay--;
             }
         } else clearOutput();

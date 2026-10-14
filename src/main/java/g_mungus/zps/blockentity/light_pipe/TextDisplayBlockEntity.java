@@ -14,11 +14,51 @@ import org.jetbrains.annotations.Nullable;
 public class TextDisplayBlockEntity extends AbstractTextDataReceiver {
 
     private static final String COLOR_TAG = "Color";
+    private static final String CLEAR_AT_TAG = "ClearAt";
+
+    /** How long a display holds its text after the pipe goes blank, so one-tick sends stay readable. */
+    public static final int CLEAR_HOLD_TICKS = 8;
 
     private DyeColor textColor = DyeColor.WHITE;
+    /** The game time a pending clear lands at, or -1 with none pending. */
+    private long clearAt = -1;
 
     public TextDisplayBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.TEXT_DISPLAY.get(), pos, state);
+    }
+
+    /**
+     * New text shows at once; a clear is held back {@link #CLEAR_HOLD_TICKS} ticks, and dropped if
+     * text arrives in the meantime. A second clear while one is pending does not push it back.
+     */
+    @Override
+    public void acceptText(int channel, String message) {
+        if (!message.isEmpty() || level == null || level.isClientSide) {
+            clearAt = -1;
+            super.acceptText(channel, message);
+            return;
+        }
+        if (currentDisplayText.isEmpty() || clearAt >= 0) {
+            return;
+        }
+        clearAt = level.getGameTime() + CLEAR_HOLD_TICKS;
+        setChanged();
+        level.scheduleTick(worldPosition, getBlockState().getBlock(), CLEAR_HOLD_TICKS);
+    }
+
+    /** From the block's scheduled tick: lands the pending clear once its time has come. */
+    public void tickPendingClear() {
+        if (clearAt < 0 || level == null) {
+            return;
+        }
+        long remaining = clearAt - level.getGameTime();
+        if (remaining > 0) {
+            // A tick left over from a clear that was cancelled and then pending again.
+            level.scheduleTick(worldPosition, getBlockState().getBlock(), (int) remaining);
+            return;
+        }
+        clearAt = -1;
+        super.acceptText(0, "");
     }
 
     public String getDisplayText() {
@@ -67,6 +107,9 @@ public class TextDisplayBlockEntity extends AbstractTextDataReceiver {
     protected void saveAdditional(@NotNull CompoundTag tag) {
         super.saveAdditional(tag);
         tag.putString(COLOR_TAG, textColor.getName());
+        if (clearAt >= 0) {
+            tag.putLong(CLEAR_AT_TAG, clearAt);
+        }
     }
 
     @Override
@@ -74,5 +117,6 @@ public class TextDisplayBlockEntity extends AbstractTextDataReceiver {
         super.load(tag);
         // Same storage format as vanilla sign text: the dye's registry name.
         textColor = DyeColor.byName(tag.getString(COLOR_TAG), DyeColor.WHITE);
+        clearAt = tag.contains(CLEAR_AT_TAG) ? tag.getLong(CLEAR_AT_TAG) : -1;
     }
 }

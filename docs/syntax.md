@@ -191,3 +191,46 @@ Later aliases with the same name replace earlier aliases for following declarati
 Alias bodies must start with a getter or an earlier alias, then may continue with mappers.
 
 ---
+
+## Variables
+
+A variable is a value the Script Terminal keeps between lines. A Serial Bus can be asked for a value, and the terminal stores it for later lines to use, at any bus on the network.
+
+Declare one with `#var <name> = <literal>`:
+
+```
+#var page = 1
+```
+
+- The value must be a literal: a number, `true` or `false`, or a string. Use `#def` for getters and mappers.
+- A variable has no fixed type: like a literal alias, it is whatever its current value reads as. A value that does not suit the place it is used fails on that line, like any other command.
+- Names follow the alias rules. A variable cannot be declared twice, and cannot share a name with an alias: whichever is lower in the script is an error.
+
+A variable is used like an alias, wherever an expression starts. Each line carries the variable's value as it stands when the line is sent, so every bus sees the same value. An alias may use a variable declared above it, and takes its value the same way.
+
+```
+set_redstone value_of(page)
+if page > 8 set_redstone 15 else set_redstone 0
+```
+
+### Asking a Serial Bus for a value
+
+Every command the terminal sends stays on the Data Cable for one tick, then the cable goes blank until the next command. A bus can answer in that blank tick:
+
+- `return <value>` is an executor. The bus that runs it answers with the value in the blank tick that follows. Use `if pos == ...` to pick which bus answers.
+- `receive <name>` stores the answer from the most recent blank tick in a variable declared above it. Like `wait`, it works only on the Script Terminal, cannot be used with `if`, `unless` or `else`, and takes one cycle.
+
+```
+#var page = 1
+if pos == @lectern return value_of(get_page)
+receive page
+if pos == @lamp set_redstone value_of(page)
+```
+
+`wait` and `receive` send nothing, so they have no blank tick of their own: a `wait` between a `return` and its `receive` does not lose the answer.
+
+`receive` stores whatever value arrived. It leaves the variable unchanged only if nothing was received, or if more than one bus answered.
+
+Variables keep their values across loop passes, and go back to their declared literals when the script is edited and at the start of each new powered run.
+
+---

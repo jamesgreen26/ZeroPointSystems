@@ -77,6 +77,15 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
     private String expression = "";
     /** The last value put on the pipe. Kept across a reload so downstream displays survive one. */
     private String sentValue = "";
+    /** What {@code return} asked the bus to answer with, sent when the terminal's output next clears. */
+    private @Nullable String pendingAnswer;
+    /** The answer while it is on the pipe, for the instant the bus is sending it. */
+    private @Nullable String answering;
+    /**
+     * How many buses are sending an answer right now. An answer is a value, not a command, so no
+     * bus runs text that arrives while one is on the pipe.
+     */
+    private static int answerDepth;
     /** The power {@code set_redstone} last asked for, emitted into the block the bus faces. */
     private int redstoneOutput;
 
@@ -91,7 +100,7 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
     @Override
     public void acceptText(int channel, String message) {
         // In GET mode the bus is the one talking; whatever else is on the pipe is not ours to run.
-        if (mode == SerialBusMode.GET) {
+        if (mode == SerialBusMode.GET || answerDepth > 0 && !message.isEmpty()) {
             return;
         }
         boolean suppressCommand = shouldSuppressCommandsForDisplayLink();
@@ -114,6 +123,46 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
         if (suppressCommand && level instanceof ServerLevel serverLevel) {
             CreateCompat.tickDisplayLinkSource(serverLevel, getAffectedBlockPos());
         }
+        if (message.isEmpty() && pendingAnswer != null) {
+            sendAnswer();
+        }
+    }
+
+    // --- answering ------------------------------------------------------------------------------
+
+    /** From {@code return}: the value to answer with when the terminal's output next clears. */
+    public void setPendingAnswer(String value) {
+        pendingAnswer = value;
+    }
+
+    /**
+     * Puts the answer on the pipe and takes it off again at once, inside the terminal's clear. It
+     * is there for no time at all, so it can never collide with the terminal's next command, and
+     * everything listening in that blank tick, the terminal included, has heard it.
+     */
+    private void sendAnswer() {
+        if (level == null || level.isClientSide) {
+            return;
+        }
+        answering = pendingAnswer;
+        pendingAnswer = null;
+        answerDepth++;
+        try {
+            updateSignal(level);
+            answering = null;
+            updateSignal(level);
+        } finally {
+            answering = null;
+            answerDepth--;
+        }
+    }
+
+    /** What the bus puts on the pipe: its reading in GET mode, otherwise only an answer being sent. */
+    private String outgoing() {
+        if (mode == SerialBusMode.GET) {
+            return sentValue;
+        }
+        return answering == null ? "" : answering;
     }
 
     private void executeCommand(String message) {
@@ -236,12 +285,10 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
 
     @Override
     public String provideNextDisplayText(int length) {
-        if (mode != SerialBusMode.GET) {
-            // Blank senders do not count towards a network's signal, so a bus that is executing
-            // stays invisible to everything else on the pipe, exactly as it was before GET existed.
-            return "";
-        }
-        return sentValue.substring(0, Math.min(sentValue.length(), length));
+        // Blank senders do not count towards a network's signal, so a bus that is executing stays
+        // invisible to everything else on the pipe, but for the instant it sends an answer.
+        String text = outgoing();
+        return text.substring(0, Math.min(text.length(), length));
     }
 
     /**
@@ -261,7 +308,7 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
                 if (!(level.getBlockEntity(terminal.pos()) instanceof LightPipeDataReceiver.Text receiver)) {
                     continue;
                 }
-                String text = clear ? sentValue : garbled(receiver.getMaxLength());
+                String text = clear ? outgoing() : garbled(receiver.getMaxLength());
                 receiver.acceptText(terminal.channel(), text.substring(0, Math.min(text.length(), receiver.getMaxLength())));
             }
         } finally {
@@ -271,7 +318,7 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
 
     /** As the interface's own check, but counting the bus once from its own field rather than twice. */
     private boolean isClearSignal(Level level) {
-        int senders = sentValue.isBlank() ? 0 : 1;
+        int senders = outgoing().isBlank() ? 0 : 1;
         for (NetworkNode terminal : getTerminals(Channels.MAIN)) {
             if (terminal.pos().equals(getBlockPos())) continue;
             BlockEntity be = level.getBlockEntity(terminal.pos());
@@ -334,6 +381,7 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
             return;
         }
         mode = newMode;
+        pendingAnswer = null;
         // The record describes what the old mode was doing, and the counter belongs to a run that
         // is over. Leaving GET also takes the bus's value off the pipe, so displays do not sit on
         // a reading that nothing is refreshing any more.

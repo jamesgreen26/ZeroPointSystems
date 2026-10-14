@@ -17,6 +17,8 @@ public interface LightPipeDataSender extends NetworkTerminal {
         boolean clear = isClearSignal(level);
 
         for (NetworkNode terminal : getTerminals(Channels.MAIN)) {
+            // A block that both sends and receives, such as the Script Terminal, must not hear itself.
+            if (terminal.pos().equals(getWorldPos())) continue;
             BlockEntity be = level.getBlockEntity(terminal.pos());
             int channel = terminal.channel();
             if (be instanceof LightPipeDataReceiver.Text receiver) {

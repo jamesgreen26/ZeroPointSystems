@@ -241,7 +241,99 @@ public final class LightPipeGameTests {
         });
     }
 
-    /** Two buses answering at once leave the variable alone. */
+    /**
+     * An answer is on the cable for one tick, like a terminal's command: the bus has taken it off
+     * again while a Text Display still holds it, and the terminal has kept it for {@code receive}.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void scriptVariable_answerIsOnTheCableForOneTick(GameTestHelper helper) {
+        BlockPos displayPos = new BlockPos(1, 1, 4);
+        ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
+                "#var lvl = 0",
+                "if " + target(helper, VAR_BUS_A) + " return 5",
+                "wait 4",
+                "receive lvl"));
+        if (terminal == null) {
+            return;
+        }
+        helper.setBlock(displayPos, display(Direction.WEST));
+        helper.runAfterDelay(5, () -> {
+            SerialBusBlockEntity busA = serialBusEntity(helper, VAR_BUS_A);
+            if (busA == null) {
+                return;
+            }
+            String sending = busA.provideNextDisplayText(100);
+            String shown = displayText(helper, displayPos);
+            if (!sending.isEmpty() || !"provide_value 5".equals(shown)) {
+                helper.fail("Expected the answer off the cable but still on the display, the bus sends \""
+                        + sending + "\" and the display shows \"" + shown + "\"");
+            }
+        });
+        helper.succeedWhen(() -> {
+            if (!"5".equals(terminal.getVariableValue("lvl"))) {
+                helper.fail("Expected the terminal to keep the answer for receive, got " + terminal.getVariableValue("lvl")
+                        + " (receive: " + terminal.getLastReceiveFailure() + ")");
+            }
+        });
+    }
+
+    /** An answer belongs to the line before it: a command sent in between loses it for a later {@code receive}. */
+    @GameTest(template = TEMPLATE)
+    public static void scriptVariable_commandBetweenReturnAndReceiveLosesTheAnswer(GameTestHelper helper) {
+        ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
+                "#var lvl = 0",
+                "if " + target(helper, VAR_BUS_A) + " return 5",
+                "if " + target(helper, VAR_BUS_B) + " set_redstone 3",
+                "receive lvl"));
+        if (terminal == null) {
+            return;
+        }
+        helper.runAfterDelay(12, () -> {
+            String failure = terminal.getLastReceiveFailure();
+            if (busOutput(helper, VAR_BUS_B) != 3) {
+                helper.fail("Expected the command in between to run, bus B emits " + busOutput(helper, VAR_BUS_B));
+                return;
+            }
+            if (terminal.getVariableValue("lvl") != null || failure == null || !failure.startsWith("Nothing was received")) {
+                helper.fail("Expected the answer to be lost to the command in between, got value "
+                        + terminal.getVariableValue("lvl") + " and failure " + failure);
+                return;
+            }
+            helper.succeed();
+        });
+    }
+
+    /**
+     * The command after an answer reaches the cable clean, never garbled with the answer, on the
+     * shortest delay where the answer comes off in the very tick the command goes on.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void scriptVariable_commandAfterAnAnswerArrivesClean(GameTestHelper helper) {
+        ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
+                "if " + target(helper, VAR_BUS_A) + " return 5",
+                "if " + target(helper, VAR_BUS_B) + " set_redstone 7",
+                "if " + target(helper, VAR_BUS_A) + " return 6",
+                "if " + target(helper, VAR_BUS_B) + " set_redstone 9"));
+        if (terminal == null) {
+            return;
+        }
+        helper.runAfterDelay(12, () -> {
+            SerialBusBlockEntity busB = serialBusEntity(helper, VAR_BUS_B);
+            if (busB == null) {
+                return;
+            }
+            String expected = "if " + target(helper, VAR_BUS_B) + " set_redstone 9";
+            if (busB.getLastOutcome() != SerialBusBlockEntity.Outcome.SUCCESS || !expected.equals(busB.getLastCommand())
+                    || busOutput(helper, VAR_BUS_B) != 9) {
+                helper.fail("Expected bus B to run each command clean, its last was \"" + busB.getLastCommand()
+                        + "\" (" + busB.getLastOutcome() + ") emitting " + busOutput(helper, VAR_BUS_B));
+                return;
+            }
+            helper.succeed();
+        });
+    }
+
+    /** Two buses answering at once garble the cable, so nothing is received and the variable is left alone. */
     @GameTest(template = TEMPLATE)
     public static void scriptVariable_twoAnswersLeaveTheVariableAlone(GameTestHelper helper) {
         ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
@@ -253,8 +345,8 @@ public final class LightPipeGameTests {
         }
         helper.runAfterDelay(10, () -> {
             String failure = terminal.getLastReceiveFailure();
-            if (terminal.getVariableValue("lvl") != null || failure == null || !failure.startsWith("2 answers")) {
-                helper.fail("Expected two answers to be refused, got value " + terminal.getVariableValue("lvl")
+            if (terminal.getVariableValue("lvl") != null || failure == null || !failure.startsWith("Nothing was received")) {
+                helper.fail("Expected two answers to garble the cable, got value " + terminal.getVariableValue("lvl")
                         + " and failure " + failure);
                 return;
             }

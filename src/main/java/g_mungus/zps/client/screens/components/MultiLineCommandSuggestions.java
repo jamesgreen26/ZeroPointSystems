@@ -60,9 +60,10 @@ import java.util.regex.Pattern;
 
 /**
  * Suggestions, usage hints and highlighting for a multi-line script editor, from the scripts the
- * server sent ({@link ClientScripts}). Each line is a command, except for {@code #def} alias
- * definitions, {@code #} comments and {@code wait} lines, which the editor reads itself; all may
- * stand on any line, and a command uses only the aliases defined above it.
+ * server sent ({@link ClientScripts}). Each line is a command, except for {@code #def} alias and
+ * {@code #var} variable definitions, {@code #} comments, and {@code wait} and {@code receive} lines,
+ * which the editor reads itself; all may stand on any line, and a command uses only the aliases and
+ * variables defined above it.
  */
 @OnlyIn(Dist.CLIENT)
 public class MultiLineCommandSuggestions {
@@ -72,6 +73,10 @@ public class MultiLineCommandSuggestions {
     private static final String ALIAS_NAME_USAGE = "<alias>";
     private static final String EXPECTED_EQUALS_MESSAGE = "Expected '=' after alias name";
     private static final String WAIT = "wait";
+    private static final String RECEIVE = "receive";
+    private static final String RECEIVE_USAGE = "<variable>";
+    private static final String DEFINE = "#def";
+    private static final String DECLARE = "#var";
     private static final String WAIT_USAGE = "<ticks: 1-64>";
     private static final int MAX_WAIT = 64;
     final Minecraft minecraft;
@@ -273,6 +278,10 @@ public class MultiLineCommandSuggestions {
             updateWaitInfo(command, offset);
             return;
         }
+        if (isReceiveLine(command)) {
+            updateReceiveInfo(view, command, cursor, offset, currentLineNumber);
+            return;
+        }
 
         SharedSuggestionProvider source = source();
         // Only the aliases defined above this line.
@@ -295,14 +304,18 @@ public class MultiLineCommandSuggestions {
         }
     }
 
-    /** Offers {@code wait} alongside the commands, while the first word is being written. */
+    /** Offers {@code wait} and {@code receive} alongside the commands, while the first word is being written. */
     private static Suggestions withWait(String command, int cursor, Suggestions suggestions) {
         String typed = command.substring(0, Math.min(cursor, command.length()));
-        if (typed.contains(" ") || !WAIT.startsWith(typed)) {
+        if (typed.contains(" ")) {
             return suggestions;
         }
         List<Suggestion> list = new ArrayList<>(suggestions.getList());
-        list.add(new Suggestion(StringRange.between(0, typed.length()), WAIT));
+        for (String keyword : List.of(WAIT, RECEIVE)) {
+            if (keyword.startsWith(typed)) {
+                list.add(new Suggestion(StringRange.between(0, typed.length()), keyword));
+            }
+        }
         return Suggestions.create(command, list);
     }
 
@@ -423,12 +436,86 @@ public class MultiLineCommandSuggestions {
     }
 
     private static boolean startsWithDefinitionKeyword(String line) {
+        return definitionKeyword(line) != null;
+    }
+
+    /** {@code #def} or {@code #var}, when the line starts with one followed by a space or nothing. */
+    private static @Nullable String definitionKeyword(String line) {
         String stripped = line.stripLeading();
-        return stripped.startsWith("#def") && (stripped.length() == 4 || Character.isWhitespace(stripped.charAt(4)));
+        for (String keyword : List.of(DEFINE, DECLARE)) {
+            if (stripped.startsWith(keyword)
+                    && (stripped.length() == keyword.length() || Character.isWhitespace(stripped.charAt(keyword.length())))) {
+                return keyword;
+            }
+        }
+        return null;
     }
 
     private static boolean isDefinitionKeywordPrefix(String strippedLine) {
-        return strippedLine.startsWith("#") && "#def".startsWith(strippedLine);
+        return strippedLine.startsWith("#") && (DEFINE.startsWith(strippedLine) || DECLARE.startsWith(strippedLine));
+    }
+
+    // --- receive ---------------------------------------------------------------------------------------
+
+    private static boolean isReceiveLine(String command) {
+        return command.equals(RECEIVE) || command.startsWith(RECEIVE + " ");
+    }
+
+    /** The variables declared above {@code lineNumber}, which a {@code receive} there may name. */
+    private Set<String> variablesAbove(ScriptView<SharedSuggestionProvider> view, int lineNumber) {
+        return prepared(view).script().at(lineNumber).variables().keySet();
+    }
+
+    /** Suggests the variables declared above, and shows {@code <variable>} until one is named. */
+    private void updateReceiveInfo(ScriptView<SharedSuggestionProvider> view, String command, int cursor,
+                                   int offset, int lineNumber) {
+        Set<String> variables = variablesAbove(view, lineNumber);
+        int nameStart = RECEIVE.length();
+        while (nameStart < command.length() && command.charAt(nameStart) == ' ') {
+            nameStart++;
+        }
+        String name = command.substring(Math.min(nameStart, command.length())).strip();
+        if (cursor >= nameStart && command.length() > RECEIVE.length()) {
+            SuggestionsBuilder builder = new SuggestionsBuilder(command, nameStart);
+            String typed = command.substring(nameStart, Math.max(nameStart, Math.min(cursor, command.length())));
+            variables.stream().filter(variable -> variable.startsWith(typed)).sorted().forEach(builder::suggest);
+            this.pendingSuggestions = builder.buildFuture()
+                    .thenApply(suggestions -> shifted(suggestions, offset, getCurrentLine()));
+        } else {
+            this.pendingSuggestions = Suggestions.empty();
+        }
+        if (name.isEmpty() || !variables.contains(name)) {
+            Style style = name.isEmpty() ? ScriptSyntaxHighlighter.DEFAULT_STYLE : ScriptSyntaxHighlighter.UNPARSED_STYLE;
+            this.commandUsage.add(FormattedCharSequence.forward(RECEIVE_USAGE, style));
+            int width = this.font.width(RECEIVE_USAGE);
+            int absoluteStart = getLineStartPosition(lineNumber) + offset + RECEIVE.length() + 1;
+            this.commandUsagePosition = Mth.clamp(this.input.getScreenX(absoluteStart), 0,
+                    this.input.getScreenX(0) + this.input.getInnerWidth() - width);
+            this.commandUsageWidth = width;
+        }
+        this.suggestions = null;
+        if (this.allowSuggestions && this.minecraft.options.autoSuggestions().get()) {
+            this.showSuggestions(false);
+        }
+    }
+
+    private List<ScriptSyntaxHighlighter.Span> receiveSpans(ScriptView<SharedSuggestionProvider> view, String line,
+                                                            int offset, int lineNumber) {
+        List<ScriptSyntaxHighlighter.Span> spans = new ArrayList<>();
+        int keywordEnd = offset + RECEIVE.length();
+        spans.add(new ScriptSyntaxHighlighter.Span(StringRange.between(offset, keywordEnd), ScriptSyntaxHighlighter.EXECUTOR_STYLE));
+        int start = keywordEnd;
+        while (start < line.length() && line.charAt(start) == ' ') {
+            start++;
+        }
+        if (start < line.length()) {
+            String name = line.substring(start).strip();
+            spans.add(new ScriptSyntaxHighlighter.Span(StringRange.between(start, line.length()),
+                    variablesAbove(view, lineNumber).contains(name)
+                            ? ScriptSyntaxHighlighter.GETTER_STYLE
+                            : ScriptSyntaxHighlighter.UNPARSED_STYLE));
+        }
+        return spans;
     }
 
     private static boolean isWaitLine(String command) {
@@ -514,12 +601,13 @@ public class MultiLineCommandSuggestions {
 
     private void addAliasNameUsageHint(String currentLine, int currentLineNumber) {
         boolean positionUsage = this.commandUsage.isEmpty();
-        this.commandUsage.add(FormattedCharSequence.forward(ALIAS_NAME_USAGE, ScriptSyntaxHighlighter.DEFAULT_STYLE));
+        String usage = DECLARE.equals(definitionKeyword(currentLine)) ? RECEIVE_USAGE : ALIAS_NAME_USAGE;
+        this.commandUsage.add(FormattedCharSequence.forward(usage, ScriptSyntaxHighlighter.DEFAULT_STYLE));
         if (!positionUsage) {
             return;
         }
 
-        int width = this.font.width(ALIAS_NAME_USAGE);
+        int width = this.font.width(usage);
         int absoluteStart = getLineStartPosition(currentLineNumber) + aliasNameStart(currentLine);
         this.commandUsagePosition = Mth.clamp(this.input.getScreenX(absoluteStart), 0, this.input.getScreenX(0) + this.input.getInnerWidth() - width);
         this.commandUsageWidth = width;
@@ -531,11 +619,12 @@ public class MultiLineCommandSuggestions {
         while (cursor < line.length() && Character.isWhitespace(line.charAt(cursor))) {
             cursor++;
         }
-        if (!line.startsWith("#def", cursor)) {
+        String keyword = definitionKeyword(line);
+        if (keyword == null) {
             return -1;
         }
 
-        cursor += "#def".length();
+        cursor += keyword.length();
         if (cursor >= line.length() || !Character.isWhitespace(line.charAt(cursor))) {
             return -1;
         }
@@ -601,7 +690,11 @@ public class MultiLineCommandSuggestions {
             if (isDefinitionKeywordPrefix(stripped)) {
                 int keywordStart = currentLine.length() - stripped.length();
                 SuggestionsBuilder builder = new SuggestionsBuilder(currentLine, keywordStart);
-                builder.suggest("#def ");
+                for (String keyword : List.of(DEFINE, DECLARE)) {
+                    if (keyword.startsWith(stripped)) {
+                        builder.suggest(keyword + " ");
+                    }
+                }
                 return builder.buildFuture();
             }
 
@@ -615,6 +708,10 @@ public class MultiLineCommandSuggestions {
             return Suggestions.empty();
         }
 
+        // A variable's value is a literal, so there is no expression to suggest.
+        if (DECLARE.equals(definitionKeyword(currentLine))) {
+            return Suggestions.empty();
+        }
         // Never skip whitespace past the cursor: with the cursor inside the run of spaces after the '='
         // the expression is still empty and starts where the cursor is.
         int start = expressionStart(currentLine, lineCursorPos);
@@ -779,9 +876,14 @@ public class MultiLineCommandSuggestions {
             spans = List.of();
         } else if (this.commandsOnly || line.startsWith("/")) {
             int offset = line.startsWith("/") ? 1 : 0;
-            spans = isWaitLine(line.substring(offset))
-                    ? waitSpans(line, offset)
-                    : ScriptSyntaxHighlighter.commandSpans(line, script.script().at(lineNumber), source());
+            String command = line.substring(offset);
+            if (isWaitLine(command)) {
+                spans = waitSpans(line, offset);
+            } else if (lineNumber >= 0 && isReceiveLine(command)) {
+                spans = receiveSpans(view, line, offset, lineNumber);
+            } else {
+                spans = ScriptSyntaxHighlighter.commandSpans(line, script.script().at(lineNumber), source());
+            }
         } else {
             spans = List.of();
         }

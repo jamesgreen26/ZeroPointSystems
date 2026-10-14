@@ -9,12 +9,15 @@ import g_mungus.zps.block.cableNetwork.light_pipe.DataCombinator;
 import g_mungus.zps.block.cableNetwork.light_pipe.DataComparator;
 import g_mungus.zps.block.cableNetwork.light_pipe.DataLecternBlock;
 import g_mungus.zps.block.cableNetwork.light_pipe.DataTranscriberBlock;
+import g_mungus.zps.block.cableNetwork.light_pipe.ScriptTerminalBlock;
 import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusBlock;
 import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusMode;
 import g_mungus.zps.block.cableNetwork.light_pipe.TextDisplayBlock;
 import g_mungus.zps.blockentity.RedstoneConverterBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.DataLecternBlockEntity;
+import g_mungus.zps.blockentity.light_pipe.ScriptTerminalBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.SerialBusBlockEntity;
+import g_mungus.zps.networking.ScriptComputerC2SPacket;
 import g_mungus.zps.commands.api_impl.ScriptCommandFailure;
 import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
 import g_mungus.zps.compat.create.CreateCompat;
@@ -33,6 +36,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+
+import java.util.List;
 
 @GameTestHolder(ZPSMod.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -150,6 +155,162 @@ public final class LightPipeGameTests {
             return "";
         }
         return BookComponents.getPageText(lectern.getBook(), lectern.getPage(), false);
+    }
+
+    // --- script variables ------------------------------------------------------------------------
+
+    private static final BlockPos VAR_BUS_A = new BlockPos(2, 1, 3);
+    private static final BlockPos VAR_BUS_B = new BlockPos(4, 1, 3);
+    private static final BlockPos VAR_TERMINAL = new BlockPos(3, 1, 5);
+
+    /**
+     * Two buses facing north onto stone at x 2 and x 4, a pipe behind them, and a Script Terminal
+     * running {@code script} on the shortest delay, powered once the script is in.
+     */
+    private static ScriptTerminalBlockEntity variableRig(GameTestHelper helper, String script) {
+        for (BlockPos bus : List.of(VAR_BUS_A, VAR_BUS_B)) {
+            helper.setBlock(bus.north(), Blocks.STONE.defaultBlockState());
+            helper.setBlock(bus, serialBus(Direction.NORTH));
+        }
+        for (int x = 2; x <= 4; x++) {
+            helper.setBlock(new BlockPos(x, 1, 4), lightPipe());
+        }
+        helper.setBlock(VAR_TERMINAL, ModBlocks.SCRIPT_TERMINAL.get().defaultBlockState()
+                .setValue(ScriptTerminalBlock.FACING, Direction.SOUTH));
+        if (!(helper.getBlockEntity(VAR_TERMINAL) instanceof ScriptTerminalBlockEntity terminal)) {
+            helper.fail("Expected a script terminal at " + VAR_TERMINAL);
+            return null;
+        }
+        terminal.acceptUpdatePacket(new ScriptComputerC2SPacket(helper.absolutePos(VAR_TERMINAL), false, 2, script));
+        helper.setBlock(VAR_TERMINAL.south(), Blocks.REDSTONE_BLOCK);
+        return terminal;
+    }
+
+    /** {@code pos == x y z} for the block a bus faces. */
+    private static String target(GameTestHelper helper, BlockPos bus) {
+        BlockPos abs = helper.absolutePos(bus.north());
+        return "pos == " + abs.getX() + " " + abs.getY() + " " + abs.getZ();
+    }
+
+    /** One bus answers, the terminal keeps the value, and a later line hands it to another bus. */
+    @GameTest(template = TEMPLATE)
+    public static void scriptVariable_valueTravelsFromOneBusToAnother(GameTestHelper helper) {
+        ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
+                "#var lvl = 0",
+                "if " + target(helper, VAR_BUS_A) + " return 7",
+                "receive lvl",
+                "if " + target(helper, VAR_BUS_B) + " set_redstone value_of(lvl)"));
+        if (terminal == null) {
+            return;
+        }
+        helper.succeedWhen(() -> {
+            int output = busOutput(helper, VAR_BUS_B);
+            if (output != 7) {
+                helper.fail("Expected bus B to emit the received 7, got " + output
+                        + " (receive: " + terminal.getLastReceiveFailure() + ")");
+            }
+            if (busOutput(helper, VAR_BUS_A) != 0) {
+                helper.fail("Expected bus A to be left alone, got " + busOutput(helper, VAR_BUS_A));
+            }
+        });
+    }
+
+    /** An answer is a value: another bus hearing it must not run it as a command. */
+    @GameTest(template = TEMPLATE)
+    public static void scriptVariable_answerIsNotRunByOtherBuses(GameTestHelper helper) {
+        ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
+                "#var text = x",
+                "if " + target(helper, VAR_BUS_A) + " return \"set_redstone 9\"",
+                "receive text"));
+        if (terminal == null) {
+            return;
+        }
+        helper.runAfterDelay(10, () -> {
+            if (!"set_redstone 9".equals(terminal.getVariableValue("text"))) {
+                helper.fail("Expected the terminal to receive the text, got " + terminal.getVariableValue("text")
+                        + " (receive: " + terminal.getLastReceiveFailure() + ")");
+                return;
+            }
+            if (busOutput(helper, VAR_BUS_B) != 0 || busOutput(helper, VAR_BUS_A) != 0) {
+                helper.fail("Expected no bus to run the answer, got outputs " + busOutput(helper, VAR_BUS_A)
+                        + " and " + busOutput(helper, VAR_BUS_B));
+                return;
+            }
+            helper.succeed();
+        });
+    }
+
+    /** Two buses answering at once leave the variable alone. */
+    @GameTest(template = TEMPLATE)
+    public static void scriptVariable_twoAnswersLeaveTheVariableAlone(GameTestHelper helper) {
+        ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
+                "#var lvl = 0",
+                "return 3",
+                "receive lvl"));
+        if (terminal == null) {
+            return;
+        }
+        helper.runAfterDelay(10, () -> {
+            String failure = terminal.getLastReceiveFailure();
+            if (terminal.getVariableValue("lvl") != null || failure == null || !failure.startsWith("2 answers")) {
+                helper.fail("Expected two answers to be refused, got value " + terminal.getVariableValue("lvl")
+                        + " and failure " + failure);
+                return;
+            }
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Any value is received, whatever the variable was declared as; one that does not suit where
+     * it is used fails there, on the bus that runs the line.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void scriptVariable_anyValueIsReceivedAndAMisfitFailsWhereUsed(GameTestHelper helper) {
+        ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
+                "#var lvl = 0",
+                "if " + target(helper, VAR_BUS_A) + " return hello",
+                "receive lvl",
+                "if " + target(helper, VAR_BUS_B) + " set_redstone value_of(lvl)"));
+        if (terminal == null) {
+            return;
+        }
+        helper.runAfterDelay(12, () -> {
+            if (!"hello".equals(terminal.getVariableValue("lvl")) || terminal.getLastReceiveFailure() != null) {
+                helper.fail("Expected 'hello' to be received, got value " + terminal.getVariableValue("lvl")
+                        + " and failure " + terminal.getLastReceiveFailure());
+                return;
+            }
+            SerialBusBlockEntity busB = serialBusEntity(helper, VAR_BUS_B);
+            if (busB == null) {
+                return;
+            }
+            if (busB.getLastOutcome() != SerialBusBlockEntity.Outcome.FAILURE || busOutput(helper, VAR_BUS_B) != 0) {
+                helper.fail("Expected bus B to fail on set_redstone 'hello', got " + busB.getLastOutcome()
+                        + " with output " + busOutput(helper, VAR_BUS_B));
+                return;
+            }
+            helper.succeed();
+        });
+    }
+
+    /** {@code wait} sends nothing, so the answer to the line before it is still there to receive. */
+    @GameTest(template = TEMPLATE)
+    public static void scriptVariable_waitBetweenReturnAndReceiveKeepsTheAnswer(GameTestHelper helper) {
+        ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
+                "#var lvl = 0",
+                "if " + target(helper, VAR_BUS_A) + " return 5",
+                "wait 2",
+                "receive lvl"));
+        if (terminal == null) {
+            return;
+        }
+        helper.succeedWhen(() -> {
+            if (!"5".equals(terminal.getVariableValue("lvl"))) {
+                helper.fail("Expected 5 after the wait, got " + terminal.getVariableValue("lvl")
+                        + " (receive: " + terminal.getLastReceiveFailure() + ")");
+            }
+        });
     }
 
     /** A clear is held back {@link TextDisplayBlockEntity#CLEAR_HOLD_TICKS} ticks, then lands. */

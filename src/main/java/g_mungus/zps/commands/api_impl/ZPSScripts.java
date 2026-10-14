@@ -38,6 +38,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * One build of the script language on the server: the engine made from every registered node, in
@@ -172,7 +173,13 @@ public final class ZPSScripts {
     /** One command of a script {@link #prepare}d for {@code target}. */
     public PreProcessed process(CommandPreProcessor.Prepared prepared, String command, CommandSourceStack base,
                                 BlockPos target) {
-        return prepared.process(command, context(base, target));
+        return process(prepared, command, base, target, Map.of());
+    }
+
+    /** As {@link #process}, with the script's variables at {@code variables}: values by name, as received. */
+    public PreProcessed process(CommandPreProcessor.Prepared prepared, String command, CommandSourceStack base,
+                                BlockPos target, Map<String, String> variables) {
+        return prepared.process(command, context(base, target).withVariables(variables));
     }
 
     private PreProcessContext context(CommandSourceStack base, BlockPos target) {

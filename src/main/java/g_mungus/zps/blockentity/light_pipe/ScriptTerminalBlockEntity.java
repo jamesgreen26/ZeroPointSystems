@@ -7,6 +7,7 @@ import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.NetworkTerminalImpl;
 import g_mungus.munguscript.engine.preprocess.CommandPreProcessor;
+import g_mungus.munguscript.engine.preprocess.ScriptVariable;
 import g_mungus.zps.commands.api.ScriptTarget;
 import g_mungus.zps.commands.api_impl.ZPSScripts;
 import g_mungus.zps.commands.preprocess.AddressPreProcessor;
@@ -41,7 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements LightPipeDataSender, ScriptComputer, Clearable {
+public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements LightPipeDataSender, LightPipeDataReceiver.Text, ScriptComputer, Clearable {
     private ItemStack addressPad = ItemStack.EMPTY;
     private final Container addressPadAccess = new Container() {
         @Override
@@ -146,6 +147,16 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
     private int tickDelay = 0;
     private @Nullable PreparedScript preparedScript = null;
 
+    private static final String RECEIVE = "receive";
+    /** The values the script's variables have received, as received, by name; the rest stand at their declared literal. */
+    private final Map<String, String> variableValues = new HashMap<>();
+    /** What arrived on the pipe in the blank tick after the last command this terminal sent. */
+    private final List<String> heard = new ArrayList<>();
+    /** The game time of that blank tick, or -1 before the first. */
+    private long blankTick = -1;
+    /** Why the last {@code receive} left its variable alone, or null if it did not. */
+    private @Nullable String lastReceiveFailure;
+
     public void tick() {
         BlockState blockState = getBlockState();
         if (!(blockState.getBlock() instanceof ScriptTerminalBlock) || level == null) return;
@@ -156,7 +167,11 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         List<String> commands = script.commands();
 
         if (head >= commands.size()) head = 0;
-        if (powered && !wasPowered) tickDelay = 0;
+        if (powered && !wasPowered) {
+            tickDelay = 0;
+            // Each powered run starts from the declared values.
+            variableValues.clear();
+        }
 
         boolean shouldContinue = head > 0;
         boolean shouldRestart = powered && (!wasPowered || loop);
@@ -238,10 +253,14 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         if (command.startsWith("wait ")) {
             executeWaitCommand(command);
             clearOutput();
+        } else if (command.equals(RECEIVE) || command.startsWith(RECEIVE + " ")) {
+            receive(command.substring(RECEIVE.length()).strip(), script, line);
+            clearOutput();
+            tickDelay = delay - 1;
         } else {
             CommandSourceStack origin = createTerminalCommandSourceStack(serverLevel, worldPosition, getBlockState());
-            currentCommand = script.scripts().process(script.preProcessing().at(line), command, origin, worldPosition)
-                    .command();
+            currentCommand = script.scripts().process(script.preProcessing().at(line), command, origin, worldPosition,
+                    variableValues).command();
             updateSignal(level);
             tickDelay = delay - 1; // delay value from GUI (2t, 4t, 8t, or 16t)
         }
@@ -288,11 +307,56 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         );
     }
 
+    /**
+     * Takes the last command off the pipe. The tick this happens in is the blank tick after it, when
+     * a Serial Bus may answer, so what arrives for the rest of it is kept for {@code receive}.
+     */
     private void clearOutput() {
         if (!currentCommand.isEmpty()) {
             currentCommand = "";
+            heard.clear();
+            blankTick = level == null ? -1 : level.getGameTime();
             updateSignal(level);
         }
+    }
+
+    /** Only what arrives in the blank tick after a command counts, as an answer to it. */
+    @Override
+    public void acceptText(int channel, String message) {
+        if (level == null || level.isClientSide || message.isBlank() || level.getGameTime() != blankTick) {
+            return;
+        }
+        heard.add(message);
+    }
+
+    /**
+     * Stores the one value the last blank tick carried in the variable {@code name}, declared above
+     * {@code line}. Any value is stored; one that does not suit where a later line uses it fails on
+     * that line. With nothing, or more than one value, the variable is left as it was.
+     */
+    private void receive(String name, PreparedScript script, int line) {
+        ScriptVariable variable = script.preProcessing().at(line).variables().get(name);
+        if (variable == null) {
+            lastReceiveFailure = "'" + name + "' is not a variable declared above this line";
+        } else if (heard.isEmpty()) {
+            lastReceiveFailure = "Nothing was received for '" + name + "'";
+        } else if (heard.size() > 1) {
+            lastReceiveFailure = heard.size() + " answers arrived at once for '" + name + "'";
+        } else {
+            variableValues.put(name, heard.get(0));
+            lastReceiveFailure = null;
+        }
+        setChanged();
+    }
+
+    /** Why the last {@code receive} left its variable alone, or null if it did not. */
+    public @Nullable String getLastReceiveFailure() {
+        return lastReceiveFailure;
+    }
+
+    /** The value the variable {@code name} last received, or null while it stands at its declared literal. */
+    public @Nullable String getVariableValue(String name) {
+        return variableValues.get(name);
     }
 
     private void executeWaitCommand(String command) {
@@ -311,6 +375,10 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
 
     @Override
     public void acceptUpdatePacket(ScriptComputerC2SPacket packet) {
+        if (!packet.contents().equals(allCommands)) {
+            // An edited script starts its variables again from their declared values.
+            variableValues.clear();
+        }
         allCommands = packet.contents();
         loop = packet.loop();
         delay = packet.delay();
@@ -360,6 +428,9 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         tag.putBoolean("Loop", loop);
         tag.putInt("Delay", delay);
         tag.putBoolean("WasPowered", wasPowered);
+        net.minecraft.nbt.CompoundTag variables = new net.minecraft.nbt.CompoundTag();
+        variableValues.forEach(variables::putString);
+        tag.put("Variables", variables);
         if (!addressPad.isEmpty()) {
             tag.put("AddressPad", BookComponents.save(registries, addressPad));
         }
@@ -374,6 +445,9 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         loop = tag.getBoolean("Loop");
         delay = tag.getInt("Delay");
         wasPowered = tag.getBoolean("WasPowered");
+        variableValues.clear();
+        net.minecraft.nbt.CompoundTag variables = tag.getCompound("Variables");
+        variables.getAllKeys().forEach(key -> variableValues.put(key, variables.getString(key)));
         if (tag.contains("AddressPad", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
             addressPad = BookComponents.parse(registries, tag.getCompound("AddressPad"));
         } else {

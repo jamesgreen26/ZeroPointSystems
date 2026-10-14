@@ -108,6 +108,7 @@ Ponder page lists the script commands and getters that block accepts.
 - Supports control flow and getters (e.g. `if block == minecraft:piston[facing=up] set_redstone 15`), `wait <n>` pauses, and looping while power is held.
 - Resolves relative/local coordinates (`~ ~ ~`, `^ ^ ^`), and when an Address Pad book is inserted, resolves `@name` labels to stored coordinates.
 - A leading block of `#def name = expression` lines declares reusable aliases (including `value_of(...)` getter expressions) that later commands expand, with in-editor suggestions and diagnostics for bad or conflicting declarations.
+- `#var name = literal` declares a variable the terminal keeps between lines: a Serial Bus answers with `return <value>` in the blank tick after a command, and `receive <name>` stores the answer, so a reading at one machine can drive commands at another.
 - Accepts an Address Pad item (Shift+right-click to remove); the pad drops when the terminal is broken.
 - Failing commands are ignored; the `ScriptCommandFailureBehavior` server config switches between silent failure (default) and a concise log line naming the command and reason.
 

@@ -152,6 +152,64 @@ public final class LightPipeGameTests {
         return BookComponents.getPageText(lectern.getBook(), lectern.getPage(), false);
     }
 
+    /** A clear is held back {@link TextDisplayBlockEntity#CLEAR_HOLD_TICKS} ticks, then lands. */
+    @GameTest(template = TEMPLATE)
+    public static void textDisplay_holdsTextBrieflyAfterClear(GameTestHelper helper) {
+        BlockPos displayPos = new BlockPos(3, 1, 3);
+        helper.setBlock(displayPos, display(Direction.WEST));
+        TextDisplayBlockEntity display = textDisplayEntity(helper, displayPos);
+        if (display == null) {
+            return;
+        }
+        display.acceptText(0, "held");
+        display.acceptText(0, "");
+
+        int hold = TextDisplayBlockEntity.CLEAR_HOLD_TICKS;
+        helper.runAfterDelay(hold - 1, () -> {
+            if (!"held".equals(display.getDisplayText())) {
+                helper.fail("Expected the text to be held just before the clear lands, got \"" + display.getDisplayText() + "\"");
+            }
+        });
+        helper.runAfterDelay(hold + 1, () -> {
+            if (!display.getDisplayText().isEmpty()) {
+                helper.fail("Expected the text to be cleared after the hold, got \"" + display.getDisplayText() + "\"");
+                return;
+            }
+            helper.succeed();
+        });
+    }
+
+    /** New text replaces the old at once, and cancels a clear that was pending. */
+    @GameTest(template = TEMPLATE)
+    public static void textDisplay_newTextShowsAtOnceAndCancelsPendingClear(GameTestHelper helper) {
+        BlockPos displayPos = new BlockPos(3, 1, 3);
+        helper.setBlock(displayPos, display(Direction.WEST));
+        TextDisplayBlockEntity display = textDisplayEntity(helper, displayPos);
+        if (display == null) {
+            return;
+        }
+        display.acceptText(0, "first");
+        display.acceptText(0, "second");
+        if (!"second".equals(display.getDisplayText())) {
+            helper.fail("Expected new text to show at once, got \"" + display.getDisplayText() + "\"");
+            return;
+        }
+        display.acceptText(0, "");
+        display.acceptText(0, "third");
+        if (!"third".equals(display.getDisplayText())) {
+            helper.fail("Expected text after a clear to show at once, got \"" + display.getDisplayText() + "\"");
+            return;
+        }
+
+        helper.runAfterDelay(TextDisplayBlockEntity.CLEAR_HOLD_TICKS + 2, () -> {
+            if (!"third".equals(display.getDisplayText())) {
+                helper.fail("Expected the cancelled clear not to land, got \"" + display.getDisplayText() + "\"");
+                return;
+            }
+            helper.succeed();
+        });
+    }
+
     @GameTest(template = TEMPLATE)
     public static void dataLectern_turnPageUpdatesConnectedDisplay(GameTestHelper helper) {
         BlockPos displayPos = new BlockPos(3, 1, 3);
@@ -895,7 +953,8 @@ public final class LightPipeGameTests {
             }
             serialBus.setMode(SerialBusMode.EXECUTE);
         });
-        helper.runAtTickTime(15L, () -> {
+        // The display holds its text a little after the pipe goes blank.
+        helper.runAtTickTime(11L + TextDisplayBlockEntity.CLEAR_HOLD_TICKS, () -> {
             String shown = displayText(helper, displayPos);
             if (!shown.isEmpty()) {
                 helper.fail("Expected the display to clear when the bus stopped sending, it shows \"" + shown + "\"");

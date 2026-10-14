@@ -351,6 +351,10 @@ public final class LightPipeGameTests {
         check(problems, "waiting is not a wait", TerminalLines.isWait("waiting 2"), false);
         check(problems, "receive name", TerminalLines.argument("receive   lvl ", TerminalLines.RECEIVE), "lvl");
         check(problems, "receiver is not a receive", TerminalLines.isReceive("receiver lvl"), false);
+        check(problems, "answer value", TerminalLines.providedValue("provide_value  a b "), " a b ");
+        check(problems, "empty answer", TerminalLines.providedValue("provide_value "), "");
+        check(problems, "bare provide_value is no answer", TerminalLines.providedValue("provide_value"), null);
+        check(problems, "plain text is no answer", TerminalLines.providedValue("5"), null);
         if (!problems.isEmpty()) {
             helper.fail(String.join("; ", problems));
             return;

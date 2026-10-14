@@ -319,13 +319,19 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         }
     }
 
-    /** Only what arrives in the blank tick after a command counts, as an answer to it. */
+    /**
+     * Only an answer, {@code provide_value <value>}, that arrives in the blank tick after a command
+     * counts, and only its value is kept. Any other text on the cable is not an answer.
+     */
     @Override
     public void acceptText(int channel, String message) {
-        if (level == null || level.isClientSide || message.isBlank() || level.getGameTime() != blankTick) {
+        if (level == null || level.isClientSide || level.getGameTime() != blankTick) {
             return;
         }
-        heard.add(message);
+        String value = TerminalLines.providedValue(message);
+        if (value != null) {
+            heard.add(value);
+        }
     }
 
     /**

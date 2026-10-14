@@ -4,6 +4,7 @@ import com.simibubi.create.AllBlocks;
 import com.simibubi.create.content.redstone.displayLink.DisplayLinkBlockEntity;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.block.cableNetwork.TransformerBlock;
 import g_mungus.zps.block.cableNetwork.light_pipe.DataCombinator;
 import g_mungus.zps.block.cableNetwork.light_pipe.DataComparator;
 import g_mungus.zps.block.cableNetwork.light_pipe.DataLecternBlock;
@@ -11,13 +12,13 @@ import g_mungus.zps.block.cableNetwork.light_pipe.DataTranscriberBlock;
 import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusBlock;
 import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusMode;
 import g_mungus.zps.block.cableNetwork.light_pipe.TextDisplayBlock;
+import g_mungus.zps.blockentity.RedstoneConverterBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.DataLecternBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.SerialBusBlockEntity;
 import g_mungus.zps.commands.api_impl.ScriptCommandFailure;
 import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
 import g_mungus.zps.compat.create.CreateCompat;
 import g_mungus.zps.compat.create.DisplayLinkManualTextAccessor;
-import g_mungus.zps.commands.content.executors.SetRedstoneCommand;
 import g_mungus.zps.util.BookComponents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -100,6 +101,11 @@ public final class LightPipeGameTests {
             return null;
         }
         return display;
+    }
+
+    /** The power a bus is emitting into the block it faces, or -1 without a bus. */
+    private static int busOutput(GameTestHelper helper, BlockPos serialBusPos) {
+        return helper.getBlockEntity(serialBusPos) instanceof SerialBusBlockEntity bus ? bus.getRedstoneOutput() : -1;
     }
 
     private static SerialBusBlockEntity serialBusEntity(GameTestHelper helper, BlockPos relPos) {
@@ -341,7 +347,7 @@ public final class LightPipeGameTests {
 
         setWritableBook(helper, inputPos, "set_redstone 9");
 
-        int afterFirst = SetRedstoneCommand.getRedstonePowerAt(helper.getLevel(), helper.absolutePos(targetPos));
+        int afterFirst = busOutput(helper, serialBusPos);
         if (afterFirst != 9) {
             helper.fail("Expected combinator-fed serial bus to set redstone 9, got " + afterFirst);
             return;
@@ -350,11 +356,15 @@ public final class LightPipeGameTests {
         // Clear the target, then re-send the identical input. The combined output does not
         // change, so a change-only combinator would leave the target at 0; a correct one
         // re-fires the serial bus and restores 9.
-        SetRedstoneCommand.setRedstone(helper.getLevel(), helper.absolutePos(targetPos), 0);
+        SerialBusBlockEntity bus = serialBusEntity(helper, serialBusPos);
+        if (bus == null) {
+            return;
+        }
+        bus.setRedstoneOutput(0);
         setWritableBook(helper, inputPos, "set_redstone 9");
 
         helper.succeedWhen(() -> {
-            int actual = SetRedstoneCommand.getRedstonePowerAt(helper.getLevel(), helper.absolutePos(targetPos));
+            int actual = busOutput(helper, serialBusPos);
             if (actual != 9) {
                 helper.fail("Expected re-triggered input to re-execute serial bus (redstone 9), got " + actual);
             }
@@ -487,12 +497,62 @@ public final class LightPipeGameTests {
             return;
         }
 
-        int stored = SetRedstoneCommand.getRedstonePowerAt(helper.getLevel(), helper.absolutePos(targetPos));
+        int stored = busOutput(helper, serialBusPos);
         if (stored != 9) {
             helper.fail("Expected serial bus command to set redstone 9, got " + stored);
             return;
         }
         helper.succeed();
+    }
+
+    /**
+     * The bus emits like a repeater pointed into the block it faces: that block is strongly
+     * powered and lights a lamp beyond it, while a lamp beside the bus stays dark.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_setRedstonePowersFacedBlockOnly(GameTestHelper helper) {
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        BlockPos beyondTargetPos = new BlockPos(3, 1, 1);
+        BlockPos besideBusPos = new BlockPos(2, 1, 3);
+        helper.setBlock(beyondTargetPos, Blocks.REDSTONE_LAMP);
+        helper.setBlock(besideBusPos, Blocks.REDSTONE_LAMP);
+
+        if (feedSerialBus(helper, serialBusPos, "set_redstone 15") == null) {
+            return;
+        }
+
+        helper.succeedWhen(() -> {
+            helper.assertBlockProperty(beyondTargetPos, RedstoneLampBlock.LIT, true);
+            helper.assertBlockProperty(besideBusPos, RedstoneLampBlock.LIT, false);
+        });
+    }
+
+    /** A bus aimed at a Redstone Converter feeds it even when it is not on the converter's input face. */
+    @GameTest(template = TEMPLATE)
+    public static void serialBus_setRedstoneFeedsRedstoneConverterFromAnySide(GameTestHelper helper) {
+        BlockPos converterPos = new BlockPos(3, 1, 2);
+        BlockPos serialBusPos = new BlockPos(3, 1, 3);
+        BlockPos cablePos = new BlockPos(3, 1, 4);
+        BlockPos senderPos = new BlockPos(3, 1, 5);
+
+        helper.setBlock(converterPos, ModBlocks.REDSTONE_CONVERTER.get().defaultBlockState()
+                .setValue(TransformerBlock.FACING, Direction.EAST));
+        helper.setBlock(serialBusPos, serialBus(Direction.NORTH));
+        helper.setBlock(cablePos, lightPipe());
+        helper.setBlock(senderPos, lectern(Direction.SOUTH));
+
+        setWritableBook(helper, senderPos, "set_redstone 11");
+
+        helper.succeedWhen(() -> {
+            if (!(helper.getBlockEntity(converterPos) instanceof RedstoneConverterBlockEntity converter)) {
+                helper.fail("Expected a redstone converter at " + converterPos);
+                return;
+            }
+            int supplied = converter.getCurrentSuppliedSignal(0);
+            if (supplied != 11) {
+                helper.fail("Expected the converter to take 11 from the bus, got " + supplied);
+            }
+        });
     }
 
     @GameTest(template = TEMPLATE)
@@ -649,7 +709,7 @@ public final class LightPipeGameTests {
         serialBus.setMode(SerialBusMode.GET);
         setWritableBook(helper, senderPos, "set_redstone 9");
 
-        int stored = SetRedstoneCommand.getRedstonePowerAt(helper.getLevel(), helper.absolutePos(targetPos));
+        int stored = busOutput(helper, serialBusPos);
         if (stored != 0) {
             helper.fail("Expected a bus in Get mode to leave the target alone, got redstone " + stored);
             return;
@@ -921,7 +981,7 @@ public final class LightPipeGameTests {
 
         setWritableBook(helper, senderPos, "set_redstone 9");
 
-        int stored = SetRedstoneCommand.getRedstonePowerAt(helper.getLevel(), helper.absolutePos(displayLinkPos));
+        int stored = busOutput(helper, serialBusPos);
         if (stored != 0) {
             helper.fail("Expected passive Serial Bus display source to suppress script command execution, got redstone " + stored);
             return;
@@ -949,7 +1009,7 @@ public final class LightPipeGameTests {
 
         setWritableBook(helper, senderPos, "set_redstone 9");
 
-        int stored = SetRedstoneCommand.getRedstonePowerAt(helper.getLevel(), helper.absolutePos(displayLinkPos));
+        int stored = busOutput(helper, serialBusPos);
         if (stored != 9) {
             helper.fail("Expected display link not sourcing from serial bus to allow script command execution, got redstone " + stored);
             return;

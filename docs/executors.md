@@ -12,7 +12,7 @@ Available on: any target block
 
 | Executor       | Argument | Description                                     |
 |----------------|----------|-------------------------------------------------|
-| `set_redstone` | `<0-15>` | Provides a redstone signal to the target block. |
+| `set_redstone` | `<0-15>` | The Serial Bus emits a redstone signal into the target block, like a repeater facing it. |
 
 Examples:
 

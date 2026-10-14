@@ -1,59 +1,21 @@
 package g_mungus.zps.commands.content.executors;
 
-import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.tree.CommandNode;
-import g_mungus.zps.ZPSMod;
-import g_mungus.zps.commands.api_impl.ZPSCommands;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
+import g_mungus.zps.blockentity.light_pipe.SerialBusBlockEntity;
+import g_mungus.zps.commands.api.ZPSScriptContext;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.redstone.NeighborUpdater;
 
 public class SetRedstoneCommand {
-    public static final ResourceLocation DATA_LOCATION = ZPSMod.resource("redstone");
 
-    public static int getRedstonePowerAt(ServerLevel level, BlockPos pos) {
-        CompoundTag root = level.getServer().getCommandStorage().get(DATA_LOCATION);
-        String dimension = getDimensionKey(level);
-        if (!root.contains(dimension)) {
-            return 0;
-        } else {
-            CompoundTag tag = root.getCompound(dimension);
-            String key = Long.toString(pos.asLong());
-            return tag.getInt(key);
+    /**
+     * Has the Serial Bus running the command emit {@code power} out of its front face. The bus is
+     * the command's source, so a command run from anywhere else has nothing to emit from.
+     */
+    public static int setRedstone(ZPSScriptContext context, int power) {
+        BlockPos terminal = BlockPos.containing(context.commandSource().getPosition());
+        if (context.level().getBlockEntity(terminal) instanceof SerialBusBlockEntity bus) {
+            bus.setRedstoneOutput(power);
+            return 1;
         }
+        return 0;
     }
-
-    public static void setRedstone(ServerLevel level, BlockPos pos, int power) {
-        CompoundTag root = level.getServer().getCommandStorage().get(DATA_LOCATION);
-        String dimension = getDimensionKey(level);
-        CompoundTag tag;
-        if (!root.contains(dimension)) {
-            tag = new CompoundTag();
-            root.put(dimension, tag);
-        } else {
-            tag = root.getCompound(dimension);
-        }
-
-        String key = Long.toString(pos.asLong());
-        if (power == 0 || level.getBlockState(pos).canBeReplaced()) {
-            tag.remove(key);
-        } else {
-            tag.putInt(key, power);
-        }
-        level.getServer().getCommandStorage().set(DATA_LOCATION, root);
-
-        for (var dir : NeighborUpdater.UPDATE_ORDER) {
-            BlockPos neighbor = pos.offset(dir.getNormal());
-            level.neighborChanged(pos, level.getBlockState(neighbor).getBlock(), neighbor);
-        }
-    }
-
-    private static String getDimensionKey(ServerLevel level) {
-        return level.dimension().location().toString();
-    }
-
 }

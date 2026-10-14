@@ -6,10 +6,12 @@ import g_mungus.zps.blockentity.light_pipe.SerialBusBlockEntity;
 import g_mungus.zps.client.screens.SerialBusClientHooks;
 import g_mungus.zps.item.ModItems;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
@@ -80,6 +82,48 @@ public class SerialBusBlock extends TransformerBlock {
         };
     }
 
+    // --- redstone ------------------------------------------------------------------------------
+
+    /**
+     * A bus emits what {@code set_redstone} last asked for out of its front face only, like a
+     * repeater: the faced block is strongly powered, and nothing else around the bus is.
+     */
+    @Override
+    @SuppressWarnings("deprecation")
+    public boolean isSignalSource(@NotNull BlockState state) {
+        return true;
+    }
+
+    @Override
+    public boolean canConnectRedstone(BlockState state, BlockGetter level, BlockPos pos, @Nullable Direction direction) {
+        return direction == state.getValue(FACING).getOpposite();
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public int getDirectSignal(@NotNull BlockState state, @NotNull BlockGetter level, @NotNull BlockPos pos,
+                               @NotNull Direction direction) {
+        return getSignal(state, level, pos, direction);
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public int getSignal(@NotNull BlockState state, @NotNull BlockGetter level, @NotNull BlockPos pos,
+                         @NotNull Direction direction) {
+        if (direction != state.getValue(FACING).getOpposite()) {
+            return 0;
+        }
+        return level.getBlockEntity(pos) instanceof SerialBusBlockEntity bus ? bus.getRedstoneOutput() : 0;
+    }
+
+    /** Tells the faced block, and what is around it, that the bus's output changed, as a repeater does. */
+    public static void updateNeighborsInFront(Level level, BlockPos pos, BlockState state) {
+        Direction facing = state.getValue(FACING);
+        BlockPos front = pos.relative(facing);
+        level.neighborChanged(front, state.getBlock(), pos);
+        level.updateNeighborsAtExceptFromFacing(front, state.getBlock(), facing.getOpposite());
+    }
+
     /**
      * Breaking a bus that was sending takes its value off the pipe, so downstream displays do not
      * hold a reading that nothing is refreshing. The block entity has to be asked before the
@@ -89,9 +133,14 @@ public class SerialBusBlock extends TransformerBlock {
     @SuppressWarnings("deprecation")
     public void onRemove(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
                          @NotNull BlockState newState, boolean moved) {
+        boolean wasPowering = false;
         if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof SerialBusBlockEntity bus) {
             bus.clearSentValue();
+            wasPowering = bus.getRedstoneOutput() > 0;
         }
         super.onRemove(state, level, pos, newState, moved);
+        if (wasPowering) {
+            updateNeighborsInFront(level, pos, state);
+        }
     }
 }

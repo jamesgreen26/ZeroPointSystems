@@ -5,6 +5,7 @@ import g_mungus.munguscript.language.builtin.BuiltInTypes;
 import g_mungus.zps.block.cableNetwork.TransformerBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
+import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusBlock;
 import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusMode;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.commands.api_impl.ScriptCommandFailure;
@@ -57,6 +58,7 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
     private static final String LAST_FAILURE_TAG = "LastFailure";
     private static final String EXPRESSION_TAG = "Expression";
     private static final String SENT_VALUE_TAG = "SentValue";
+    private static final String REDSTONE_OUTPUT_TAG = "RedstoneOutput";
 
     /** How often a bus in GET mode reads the block it faces. */
     private static final int TICK_INTERVAL = 4;
@@ -75,6 +77,8 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
     private String expression = "";
     /** The last value put on the pipe. Kept across a reload so downstream displays survive one. */
     private String sentValue = "";
+    /** The power {@code set_redstone} last asked for, emitted into the block the bus faces. */
+    private int redstoneOutput;
 
     private int tickCounter;
     /** Guards against a network that leads back here pushing us into our own updateSignal. */
@@ -145,6 +149,22 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
         return level != null
                 && Compat.isCreateLoaded()
                 && CreateCompat.isActiveSerialBusDisplayLinkSource(level, getAffectedBlockPos(), getBlockPos());
+    }
+
+    // --- redstone ------------------------------------------------------------------------------
+
+    public int getRedstoneOutput() {
+        return redstoneOutput;
+    }
+
+    /** Server only. Emits {@code power} into the faced block, as a repeater pointed into it would. */
+    public void setRedstoneOutput(int power) {
+        if (level == null || level.isClientSide || power == redstoneOutput) {
+            return;
+        }
+        redstoneOutput = power;
+        setChanged();
+        SerialBusBlock.updateNeighborsInFront(level, worldPosition, getBlockState());
     }
 
     public String getCurrentText() {
@@ -408,12 +428,14 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
     protected void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.saveAdditional(tag, registries);
         saveRecord(tag);
+        tag.putInt(REDSTONE_OUTPUT_TAG, redstoneOutput);
     }
 
     @Override
     protected void loadAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.loadAdditional(tag, registries);
         loadRecord(tag);
+        redstoneOutput = tag.getInt(REDSTONE_OUTPUT_TAG);
     }
 
     private void saveRecord(CompoundTag tag) {

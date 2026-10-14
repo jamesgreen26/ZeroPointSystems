@@ -149,10 +149,8 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
 
     /** The values the script's variables have received, as received, by name; the rest stand at their declared literal. */
     private final Map<String, String> variableValues = new HashMap<>();
-    /** What arrived on the pipe in the blank tick after the last command this terminal sent. */
-    private final List<String> heard = new ArrayList<>();
-    /** The game time of that blank tick, or -1 before the first. */
-    private long blankTick = -1;
+    /** The value of the last answer to reach the cable since this terminal last sent a line, or null. */
+    private @Nullable String answer;
     /** Why the last {@code receive} left its variable alone, or null if it did not. */
     private @Nullable String lastReceiveFailure;
 
@@ -260,6 +258,8 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
             CommandSourceStack origin = createTerminalCommandSourceStack(serverLevel, worldPosition, getBlockState());
             currentCommand = script.scripts().process(script.preProcessing().at(line), command, origin, worldPosition,
                     variableValues).command();
+            // An answer belongs to the line before it.
+            answer = null;
             updateSignal(level);
             tickDelay = delay - 1; // delay value from GUI (2t, 4t, 8t, or 16t)
         }
@@ -306,49 +306,43 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         );
     }
 
-    /**
-     * Takes the last command off the pipe. The tick this happens in is the blank tick after it, when
-     * a Serial Bus may answer, so what arrives for the rest of it is kept for {@code receive}.
-     */
+    /** Takes the last command off the pipe, which is when a Serial Bus may answer it. */
     private void clearOutput() {
         if (!currentCommand.isEmpty()) {
             currentCommand = "";
-            heard.clear();
-            blankTick = level == null ? -1 : level.getGameTime();
             updateSignal(level);
         }
     }
 
     /**
-     * Only an answer, {@code provide_value <value>}, that arrives in the blank tick after a command
-     * counts, and only its value is kept. Any other text on the cable is not an answer.
+     * Keeps an answer that reaches the cable, {@code provide_value <value>}, for {@code receive},
+     * until this terminal sends its next line. An answer is on the cable for a tick only, so it is
+     * kept after it goes. Any other signal, garble from two answers included, is no answer.
      */
     @Override
     public void acceptText(int channel, String message) {
-        if (level == null || level.isClientSide || level.getGameTime() != blankTick) {
+        if (level == null || level.isClientSide) {
             return;
         }
         String value = TerminalLines.providedValue(message);
         if (value != null) {
-            heard.add(value);
+            answer = value;
         }
     }
 
     /**
-     * Stores the one value the last blank tick carried in the variable {@code name}, declared above
-     * {@code line}. Any value is stored; one that does not suit where a later line uses it fails on
-     * that line. With nothing, or more than one value, the variable is left as it was.
+     * Stores the value of the answer to the last line sent in the variable {@code name}, declared
+     * above {@code line}. Any value is stored; one that does not suit where a later line uses it
+     * fails on that line. With no answer, the variable is left as it was.
      */
     private void receive(String name, PreparedScript script, int line) {
         ScriptVariable variable = script.preProcessing().at(line).variables().get(name);
         if (variable == null) {
             lastReceiveFailure = "'" + name + "' is not a variable declared above this line";
-        } else if (heard.isEmpty()) {
+        } else if (answer == null) {
             lastReceiveFailure = "Nothing was received for '" + name + "'";
-        } else if (heard.size() > 1) {
-            lastReceiveFailure = heard.size() + " answers arrived at once for '" + name + "'";
         } else {
-            variableValues.put(name, heard.get(0));
+            variableValues.put(name, answer);
             lastReceiveFailure = null;
         }
         setChanged();

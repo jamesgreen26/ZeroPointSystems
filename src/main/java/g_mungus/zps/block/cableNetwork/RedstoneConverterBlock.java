@@ -3,10 +3,9 @@ package g_mungus.zps.block.cableNetwork;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.RedstoneConverterBlockEntity;
-import g_mungus.zps.commands.content.executors.SetRedstoneCommand;
+import g_mungus.zps.blockentity.light_pipe.SerialBusBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -52,8 +51,12 @@ public class RedstoneConverterBlock extends TransformerBlock {
         BlockPos sourcePos = pos.offset(facing.getNormal());
         int power = level.getDirectSignal(sourcePos, facing);
 
-        if (level instanceof ServerLevel serverLevel) {
-            power = Math.max(power, SetRedstoneCommand.getRedstonePowerAt(serverLevel, pos));
+        // A Serial Bus aimed at the converter feeds it from whichever side it is on.
+        for (Direction side : Direction.values()) {
+            if (level.getBlockEntity(pos.relative(side)) instanceof SerialBusBlockEntity bus
+                    && bus.getAffectedBlockPos().equals(pos)) {
+                power = Math.max(power, bus.getRedstoneOutput());
+            }
         }
 
         BlockEntity blockEntity = level.getBlockEntity(pos);

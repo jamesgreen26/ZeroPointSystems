@@ -2,15 +2,17 @@ package g_mungus.zps.gametest;
 
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusBlock;
+import g_mungus.zps.blockentity.light_pipe.SerialBusBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.BookHolder;
 import g_mungus.zps.commands.api_impl.ZPSCommands;
 import g_mungus.munguscript.language.builtin.BuiltInTypes;
 import g_mungus.munguscript.language.type.ScriptType;
 import g_mungus.zps.commands.api_impl.ZPSScripts;
-import g_mungus.zps.commands.content.executors.SetRedstoneCommand;
 import g_mungus.zps.util.BookComponents;
 import g_mungus.zps.util.BookPageTextLimiter;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.MinecraftServer;
@@ -19,6 +21,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
@@ -56,14 +60,28 @@ public class ScriptCommandGameTests {
                 level.getServer().createCommandSourceStack().withLevel(level), absPos);
     }
 
+    /**
+     * Runs the command from a Serial Bus facing {@code absPos} from the south, since
+     * {@code set_redstone} needs a bus to emit from.
+     */
     private static int runScriptCommand(GameTestHelper helper, BlockPos absPos, String tail) {
         ServerLevel level = helper.getLevel();
         MinecraftServer server = level.getServer();
+        BlockPos busPos = commandBus(absPos);
+        BlockState bus = ModBlocks.SERIAL_BUS.get().defaultBlockState().setValue(SerialBusBlock.FACING, Direction.NORTH);
+        if (!level.getBlockState(busPos).equals(bus)) {
+            level.setBlockAndUpdate(busPos, bus);
+        }
         String command = ZPSCommands.Paths.SCRIPT + " "
                 + absPos.getX() + " " + absPos.getY() + " " + absPos.getZ() + " "
                 + tail;
-        server.getCommands().performPrefixedCommand(server.createCommandSourceStack().withLevel(level), command);
+        server.getCommands().performPrefixedCommand(server.createCommandSourceStack().withLevel(level)
+                .withPosition(Vec3.atCenterOf(busPos)), command);
         return 1;
+    }
+
+    private static BlockPos commandBus(BlockPos absPos) {
+        return absPos.south();
     }
 
     private static String formatCommandDouble(double value) {
@@ -71,9 +89,10 @@ public class ScriptCommandGameTests {
     }
 
     private static void assertStoredRedstone(GameTestHelper helper, BlockPos absPos, int expected, String context) {
-        int actual = SetRedstoneCommand.getRedstonePowerAt(helper.getLevel(), absPos);
+        int actual = helper.getLevel().getBlockEntity(commandBus(absPos)) instanceof SerialBusBlockEntity bus
+                ? bus.getRedstoneOutput() : -1;
         if (actual != expected) {
-            helper.fail(context + ": expected stored redstone " + expected + ", got " + actual);
+            helper.fail(context + ": expected bus redstone output " + expected + ", got " + actual);
         }
     }
 

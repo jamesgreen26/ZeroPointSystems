@@ -26,8 +26,7 @@ public class ZPSScriptExecutors {
     public static void onRegisterEvent(RegisterScriptCommandsEvent event) {
         event.register(ZPSNodes.executor("set_redstone", BuiltInTypes.INT, IntegerArgumentType.integer(0, 15),
                 (power, context) -> {
-                    SetRedstoneCommand.setRedstone(context.level(), context.pos(), power);
-                    return 1;
+                    return SetRedstoneCommand.setRedstone(context, power);
                 }));
 
         BlockApplicability lecterns = BlockApplicability.of("zps:data_lectern", "minecraft:lectern");

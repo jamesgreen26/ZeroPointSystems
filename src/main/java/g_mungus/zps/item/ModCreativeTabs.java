@@ -165,7 +165,6 @@ public class ModCreativeTabs {
 
     public static void addToVanillaTabs(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == CreativeModeTabs.OP_BLOCKS) {
-            event.accept(ModItems.REDSTONE_WAND.get());
         }
     }
 

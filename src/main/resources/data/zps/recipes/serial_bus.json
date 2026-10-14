@@ -15,13 +15,13 @@
       "tag": "forge:ingots/space_metal"
     },
     "G": {
-      "item": "minecraft:quartz"
+      "item": "minecraft:redstone"
     },
     "H": {
       "item": "minecraft:quartz"
     },
     "I": {
-      "item": "minecraft:quartz"
+      "item": "minecraft:redstone"
     }
   },
   "pattern": [

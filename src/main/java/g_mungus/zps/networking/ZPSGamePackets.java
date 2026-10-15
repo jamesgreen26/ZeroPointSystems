@@ -12,8 +12,8 @@ public final class ZPSGamePackets {
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
-        registrar.playToServer(OctoControlPacket.TYPE, OctoControlPacket.STREAM_CODEC, OctoControlPacket::handle);
-        registrar.playToServer(DodecaControlPacket.TYPE, DodecaControlPacket.STREAM_CODEC, DodecaControlPacket::handle);
+        registrar.playToServer(ControllerInputC2SPacket.TYPE, ControllerInputC2SPacket.STREAM_CODEC, ControllerInputC2SPacket::handle);
+        registrar.playToServer(ControllerKeysC2SPacket.TYPE, ControllerKeysC2SPacket.STREAM_CODEC, ControllerKeysC2SPacket::handle);
         registrar.playToServer(ScriptComputerC2SPacket.TYPE, ScriptComputerC2SPacket.STREAM_CODEC, ScriptComputerC2SPacket::handle);
         registrar.playToServer(RequestHudInfoC2SPacket.TYPE, RequestHudInfoC2SPacket.STREAM_CODEC, RequestHudInfoC2SPacket::handle);
         registrar.playToClient(ScriptComputerS2CPacket.TYPE, ScriptComputerS2CPacket.STREAM_CODEC, ScriptComputerS2CPacket::handle);

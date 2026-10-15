@@ -1,19 +1,15 @@
 package g_mungus.zps.block.cableNetwork;
 
-import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.core.BuiltinCableStandards;
 import g_mungus.zps.block.cableNetwork.core.CableComponentBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.block.cableNetwork.core.NetworkNode;
-import g_mungus.zps.blockentity.DodecaControllerBlockEntity;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -78,20 +74,7 @@ public class DodecaControllerBlock extends CableComponentBlock implements Entity
 
     @Override
     protected @NotNull InteractionResult useComponent(BlockState state, Level level, BlockPos pos, @NotNull Player player, @NotNull InteractionHand hand, BlockHitResult arg6) {
-        ItemStack itemInHand = player.getItemInHand(hand);
-        if (itemInHand.is(ModBlocks.DENSE_CABLES.get().asItem()) || itemInHand.is(ModBlocks.DENSE_CABLE_SEPARATOR.get().asItem())) {
-            return InteractionResult.PASS;
-        }
-
-        if (level.isClientSide()) return InteractionResult.SUCCESS;
-
-        BlockEntity blockEntity = level.getBlockEntity(pos);
-
-        if (blockEntity instanceof DodecaControllerBlockEntity) {
-            ((DodecaControllerBlockEntity) blockEntity).startRiding(player, false, pos, state, (ServerLevel) level);
-            return InteractionResult.CONSUME;
-        }
-        return InteractionResult.PASS;
+        return ControllerInteraction.use(state, level, pos, player, hand);
     }
 
     @Override

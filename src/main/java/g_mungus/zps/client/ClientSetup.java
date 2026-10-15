@@ -14,6 +14,7 @@ import g_mungus.zps.client.recipebook.ModRecipeBookCategories;
 import g_mungus.zps.client.renderer.*;
 import g_mungus.zps.client.screens.AssemblerScreen;
 import g_mungus.zps.client.screens.CoalBurnerScreen;
+import g_mungus.zps.client.screens.ControllerClientHooks;
 import g_mungus.zps.client.debug.GasPressureOverlay;
 import g_mungus.zps.client.ponder.api.ReactorGlowElement;
 import g_mungus.zps.client.reactor.ClientReactors;
@@ -58,7 +59,6 @@ import net.neoforged.neoforge.client.event.RegisterShadersEvent;
 import net.neoforged.neoforge.client.event.RegisterRecipeBookCategoriesEvent;
 import net.neoforged.neoforge.client.event.RegisterClientTooltipComponentFactoriesEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
-import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import net.neoforged.neoforge.client.event.ModelEvent;
@@ -92,11 +92,6 @@ public class ClientSetup {
     @SubscribeEvent
     public static void onRegisterTooltipComponents(RegisterClientTooltipComponentFactoriesEvent event) {
         event.register(ItemIconsTooltip.class, ClientItemIconsTooltip::new);
-    }
-
-    @SubscribeEvent
-    public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
-        ModKeybinds.register(event);
     }
 
     @SubscribeEvent
@@ -290,6 +285,8 @@ public class ClientSetup {
             NeoForge.EVENT_BUS.addListener(DuctTravelClientHooks::onPlayerTick);
             NeoForge.EVENT_BUS.addListener(DuctTravelProgressBar::onRenderGuiLayer);
             NeoForge.EVENT_BUS.addListener(DuctTravelSounds::onPlaySound);
+            NeoForge.EVENT_BUS.addListener(ControllerClientHooks::onClientTick);
+            NeoForge.EVENT_BUS.addListener(ControllerClientHooks::onInteraction);
         });
     }
 

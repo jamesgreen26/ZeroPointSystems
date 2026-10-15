@@ -40,12 +40,33 @@ Produced by: `block`
 | Mapper | Output | Description |
 |--------|--------|-------------|
 | `== <block predicate>` | Boolean | True if the block state matches the predicate (supports block properties) |
+| `id` | String | The block's id, such as `"minecraft:stone"`, without its properties |
 
 Examples:
 
 ```
 if block == minecraft:stone set_redstone 15
 if block == minecraft:piston[facing=up] set_redstone 15
+if block id == value_of(page_contents) set_redstone 15
+```
+
+---
+
+## Item
+
+Produced by: `held_item`
+
+| Mapper | Output | Description |
+|--------|--------|-------------|
+| `== <item predicate>` | Boolean | True if the item matches the predicate |
+| `count` | Int | The stack size; `0` for an empty hand |
+| `id` | String | The item's id, such as `"minecraft:stone"`; `"minecraft:air"` for an empty hand |
+
+`==` only takes an item written in the script. To compare against text the script reads or receives, compare the `id`:
+
+```
+if held_item == minecraft:lava_bucket use 6 1 4
+if held_item id == value_of(page_contents get_line 0) use 6 1 4
 ```
 
 ---

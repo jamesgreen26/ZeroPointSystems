@@ -38,6 +38,7 @@
     "FallingBlockEntityInvoker",
     "FallingBlockEntityMixin",
     "FallingBlockEntitySyncMixin",
+    "GameTestRegistryMixin",
     "ItemEntityMixin",
     "LecternBlockEntityMixin",
     "LivingEntityMixin",

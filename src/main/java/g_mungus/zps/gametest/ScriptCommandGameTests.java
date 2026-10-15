@@ -13,6 +13,8 @@ import g_mungus.zps.commands.api_impl.ZPSScripts;
 import g_mungus.zps.networking.ScriptComputerC2SPacket;
 import g_mungus.zps.util.BookComponents;
 import g_mungus.zps.util.BookPageTextLimiter;
+import g_mungus.zps.blockentity.RoboticArmBlockEntity;
+import g_mungus.zps.item.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
@@ -515,6 +517,55 @@ public class ScriptCommandGameTests {
      * {@code if <cond> && value_of(<cond>) ... else ...} should pick the branch
      * from the combined condition when run as a real script command.
      */
+    /** {@code value_of(block id)} should give the target block's id, without its properties. */
+    @GameTest(template = TEMPLATE)
+    public static void valueOf_blockId_returnsBlockId(GameTestHelper helper) {
+        BlockPos relPos = new BlockPos(3, 1, 3);
+        helper.setBlock(relPos, Blocks.PISTON);
+
+        String result = evalValueOf(helper, helper.absolutePos(relPos), "block id", STRING_KEY);
+        if (!"minecraft:piston".equals(result)) {
+            helper.fail("value_of(block id): expected minecraft:piston, got " + result);
+            return;
+        }
+        helper.succeed();
+    }
+
+    /**
+     * {@code value_of(held_item id)} should give the held item's id, {@code minecraft:air} for an empty hand, and
+     * compare as a string.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void valueOf_heldItemId_returnsItemId(GameTestHelper helper) {
+        BlockPos relPos = new BlockPos(3, 1, 3);
+        helper.setBlock(relPos, ModBlocks.ROBOTIC_ARM.get());
+        BlockPos absPos = helper.absolutePos(relPos);
+        if (!(helper.getLevel().getBlockEntity(absPos) instanceof RoboticArmBlockEntity arm)) {
+            helper.fail("Expected a robotic arm at " + absPos);
+            return;
+        }
+
+        String empty = evalValueOf(helper, absPos, "held_item id", STRING_KEY);
+        if (!"minecraft:air".equals(empty)) {
+            helper.fail("value_of(held_item id) with an empty hand: expected minecraft:air, got " + empty);
+            return;
+        }
+
+        arm.giveHeldItems(new ItemStack(ModItems.DATA_CABLE.get(), 3));
+        String held = evalValueOf(helper, absPos, "held_item id", STRING_KEY);
+        if (!"zps:data_cable".equals(held)) {
+            helper.fail("value_of(held_item id): expected zps:data_cable, got " + held);
+            return;
+        }
+        Boolean matches = evalValueOf(helper, absPos, "held_item id == \"zps:data_cable\"", BOOLEAN_KEY);
+        Boolean differs = evalValueOf(helper, absPos, "held_item id == \"zps:cable\"", BOOLEAN_KEY);
+        if (!Boolean.TRUE.equals(matches) || !Boolean.FALSE.equals(differs)) {
+            helper.fail("held_item id == ...: expected true then false, got " + matches + " then " + differs);
+            return;
+        }
+        helper.succeed();
+    }
+
     @GameTest(template = TEMPLATE)
     public static void zpsScript_ifWithAnd_usesCombinedCondition(GameTestHelper helper) {
         BlockPos absPos = prepareCommandTarget(helper);

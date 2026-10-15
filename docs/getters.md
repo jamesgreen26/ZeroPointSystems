@@ -88,7 +88,7 @@ The following getter requires the target block to be a `Robotic Arm`.
 | `held_item` | Item   | The item currently held in the arm's hand. Returns an empty stack if the hand is empty. |
 | `transfer_count` | Int | The maximum stack size moved by `take_items`, `put_items`, and `drop_items`. |
 
-The resulting Item can be compared against an item predicate with `==`, or its stack size read with `count`.
+The resulting Item can be compared against an item predicate with `==`, its stack size read with `count`, or its id read as text with `id`.
 
 Examples:
 

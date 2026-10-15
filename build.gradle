@@ -33,6 +33,8 @@ neoForge {
         gameTestServer {
             type = "gameTestServer"
             systemProperty 'neoforge.enabledGameTestNamespaces', 'zps'
+            // ./gradlew runGameTestServer -PgametestFilter=name,other runs only the tests whose names contain one
+            systemProperty 'zps.gametestFilter', (project.findProperty('gametestFilter') ?: '').toString()
         }
     }
 

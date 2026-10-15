@@ -174,6 +174,9 @@ public class TextDisplayBlock extends CableComponentBlock implements EntityBlock
                                           @NotNull Player player, @NotNull InteractionHand hand,
                                           @NotNull BlockHitResult hit) {
         ItemStack stack = player.getItemInHand(hand);
+        if (stack.isEmpty() && hand == InteractionHand.MAIN_HAND) {
+            return useWithoutItem(state, level, pos, player, hit);
+        }
         if (!(stack.getItem() instanceof DyeItem dye)) {
             return super.use(state, level, pos, player, hand, hit);
         }
@@ -198,6 +201,29 @@ public class TextDisplayBlock extends CableComponentBlock implements EntityBlock
             stack.shrink(1);
         }
         return InteractionResult.SUCCESS;
+    }
+
+    /**
+     * Shift-using the display with an empty hand cycles its font size between the
+     * default and 2x. Like dyes, it applies to every block of a merged display.
+     */
+    private @NotNull InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
+        if (!player.isShiftKeyDown() || !(level.getBlockEntity(pos) instanceof TextDisplayBlockEntity clicked)) {
+            return InteractionResult.PASS;
+        }
+        if (level.isClientSide) {
+            return InteractionResult.SUCCESS;
+        }
+
+        boolean large = !clicked.isLargeText();
+        for (BlockPos displayPos : getDisplayPositions(state, pos)) {
+            if (level.getBlockEntity(displayPos) instanceof TextDisplayBlockEntity display) {
+                display.setLargeText(large);
+            }
+        }
+        level.playSound(null, pos, SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.BLOCKS, 0.3F, large ? 0.6F : 0.5F);
+        level.gameEvent(GameEvent.BLOCK_CHANGE, pos, GameEvent.Context.of(player, state));
+        return InteractionResult.CONSUME;
     }
 
     /** All block positions that make up the (possibly multi-block) display containing {@code pos}. */

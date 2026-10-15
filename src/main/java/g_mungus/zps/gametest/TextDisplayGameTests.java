@@ -483,4 +483,61 @@ public class TextDisplayGameTests {
         helper.assertTrue(dye.getCount() == 1, "Creative players should not consume the dye");
         helper.succeed();
     }
+
+    // -------------------------------------------------------------------------
+    // Font size
+    // -------------------------------------------------------------------------
+
+    private static InteractionResult useEmptyHand(GameTestHelper helper, BlockPos pos, Player player) {
+        BlockPos abs = helper.absolutePos(pos);
+        BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(abs), Direction.NORTH, abs, false);
+        return helper.getBlockState(pos).use(helper.getLevel(), player, net.minecraft.world.InteractionHand.MAIN_HAND, hit);
+    }
+
+    private static boolean isLargeAt(GameTestHelper helper, BlockPos pos) {
+        if (!(helper.getBlockEntity(pos) instanceof TextDisplayBlockEntity display)) {
+            throw new GameTestAssertException("No text display block entity at " + pos);
+        }
+        return display.isLargeText();
+    }
+
+    /** Shift-using a merged 2×2 display with an empty hand cycles every block's font size, and back. */
+    @GameTest(template = TEMPLATE)
+    public static void fontSize_shiftUseCyclesWholeMergedDisplay(GameTestHelper helper) {
+        BlockPos a = new BlockPos(3, 2, 3);
+        BlockPos b = new BlockPos(4, 2, 3);
+        BlockPos c = new BlockPos(3, 1, 3);
+        BlockPos d = new BlockPos(4, 1, 3);
+        BlockPos lone = new BlockPos(1, 1, 3); // not part of the 2×2
+        for (BlockPos p : new BlockPos[]{a, b, c, d, lone}) {
+            helper.setBlock(p, display(Direction.NORTH));
+        }
+        helper.assertTrue(!isLargeAt(helper, a), "Default font size should be 1x");
+
+        Player player = helper.makeMockPlayer();
+        player.setShiftKeyDown(true);
+        InteractionResult result = useEmptyHand(helper, d, player);
+        helper.assertTrue(result.consumesAction(), "Shift-use should be consumed, got " + result);
+        for (BlockPos p : new BlockPos[]{a, b, c, d}) {
+            helper.assertTrue(isLargeAt(helper, p), "Merged display block at " + p + " should be 2x");
+        }
+        helper.assertTrue(!isLargeAt(helper, lone), "Unrelated display should stay 1x");
+
+        useEmptyHand(helper, a, player);
+        for (BlockPos p : new BlockPos[]{a, b, c, d}) {
+            helper.assertTrue(!isLargeAt(helper, p), "Merged display block at " + p + " should be back to 1x");
+        }
+        helper.succeed();
+    }
+
+    /** Using the display with an empty hand without sneaking leaves the font size alone. */
+    @GameTest(template = TEMPLATE)
+    public static void fontSize_plainUseDoesNothing(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(3, 1, 3);
+        helper.setBlock(pos, display(Direction.NORTH));
+
+        useEmptyHand(helper, pos, helper.makeMockPlayer());
+        helper.assertTrue(!isLargeAt(helper, pos), "Font size should stay 1x without sneaking");
+        helper.succeed();
+    }
 }

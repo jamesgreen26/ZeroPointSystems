@@ -4,13 +4,11 @@ import g_mungus.zps.block.cableNetwork.TransformerBlock;
 import g_mungus.zps.block.cableNetwork.core.BuiltinCableStandards;
 import g_mungus.zps.blockentity.light_pipe.SerialBusBlockEntity;
 import g_mungus.zps.client.screens.SerialBusClientHooks;
-import g_mungus.zps.item.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -32,13 +30,11 @@ public class SerialBusBlock extends TransformerBlock {
     }
 
     /**
-     * Cladding the cable comes first, as on every cable; any other click opens the bus's screen.
-     * No inventory, so nothing for a container menu to hold: the screen is opened straight from
-     * the client, the way the reactor port's is.
-     * <p>
-     * Holding a piece of the wiring itself is a build action, not a request for the screen: a
-     * data cable, script terminal, text display or any cladding item falls through so the block
-     * is placed against the bus instead.
+     * Cladding the cable comes first, as on every cable. Otherwise only an empty main hand opens the
+     * bus's screen; anything held goes on to its own use, such as placing a block against the bus,
+     * and the off hand never opens it, so an item in the main hand cannot fall through to it. No
+     * inventory, so nothing for a container menu to hold: the screen is opened straight from the
+     * client, the way the reactor port's is.
      */
     @Override
     protected InteractionResult useComponent(BlockState state, Level level, BlockPos pos, Player player,
@@ -47,22 +43,13 @@ public class SerialBusBlock extends TransformerBlock {
         if (clad != InteractionResult.PASS) {
             return clad;
         }
-        if (isBuildItem(player.getItemInHand(hand))) {
+        if (hand != InteractionHand.MAIN_HAND || !player.getItemInHand(hand).isEmpty()) {
             return InteractionResult.PASS;
         }
         if (level.isClientSide()) {
             SerialBusClientHooks.openScreen(pos);
         }
         return InteractionResult.sidedSuccess(level.isClientSide());
-    }
-
-    private static boolean isBuildItem(ItemStack stack) {
-        return stack.is(ModItems.DATA_CABLE.get())
-            || stack.is(ModItems.SCRIPT_TERMINAL.get())
-            || stack.is(ModItems.TEXT_DISPLAY.get())
-            || stack.is(ModItems.CABLE_INSULATION.get())
-            || stack.is(ModItems.CATWALK.get())
-            || stack.is(ModItems.SPACE_GRATING_BLOCK.get());
     }
 
     @Override

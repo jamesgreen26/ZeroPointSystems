@@ -146,4 +146,10 @@ public class DodecaMountingEntity extends Entity implements StandingVehicleEntit
     public @NotNull Vec3 getPassengerRidingPosition(@NotNull Entity p_294938_) {
         return super.getPassengerRidingPosition(p_294938_).add(0, 0.1, 0);
     }
+
+    /// Riders stand on the floor already, so they step off exactly where they are instead of popping up onto the seat.
+    @Override
+    public @NotNull Vec3 getDismountLocationForPassenger(@NotNull LivingEntity passenger) {
+        return passenger.position();
+    }
 }

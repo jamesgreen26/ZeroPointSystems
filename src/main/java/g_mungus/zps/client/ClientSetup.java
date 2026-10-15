@@ -17,6 +17,16 @@ import java.util.List;
 
 import g_mungus.zps.client.renderer.*;
 import g_mungus.zps.client.screens.CoalBurnerScreen;
+import g_mungus.zps.client.screens.ControllerClientHooks;
+import g_mungus.zps.client.debug.GasPressureOverlay;
+import g_mungus.zps.client.ponder.api.ReactorGlowElement;
+import g_mungus.zps.client.reactor.ClientReactors;
+import g_mungus.zps.client.reactor.ReactorGlowPreviews;
+import g_mungus.zps.client.reactor.ReactorGlowRenderer;
+import g_mungus.zps.client.reactor.ReactorWallOverlayRenderer;
+import g_mungus.zps.client.reactor.ReactorWallOverlayVisual;
+import g_mungus.zps.client.reactor.ReactorWallOverlays;
+import g_mungus.zps.gas.ModParticles;
 import g_mungus.zps.client.screens.PowerCellScreen;
 import g_mungus.zps.client.screens.RollingMillScreen;
 import g_mungus.zps.client.screens.AssemblerScreen;
@@ -41,20 +51,10 @@ import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ModelEvent;
 import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
-import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
 import org.valkyrienskies.kelvin.impl.client.particle.DefaultGasParticleProvider;
-import g_mungus.zps.gas.ModParticles;
-import g_mungus.zps.client.debug.GasPressureOverlay;
-import g_mungus.zps.client.ponder.api.ReactorGlowElement;
-import g_mungus.zps.client.reactor.ClientReactors;
-import g_mungus.zps.client.reactor.ReactorGlowPreviews;
-import g_mungus.zps.client.reactor.ReactorGlowRenderer;
-import g_mungus.zps.client.reactor.ReactorWallOverlayRenderer;
-import g_mungus.zps.client.reactor.ReactorWallOverlayVisual;
-import g_mungus.zps.client.reactor.ReactorWallOverlays;
 import g_mungus.zps.client.reactor.WallCoats;
 import g_mungus.zps.item.ModItems;
 import net.minecraftforge.client.event.RegisterColorHandlersEvent;
@@ -108,11 +108,6 @@ public class ClientSetup {
         event.registerBelowAll("duct_travel_fade", DuctTravelFade.INSTANCE);
         // Where the experience bar is, which it stands in for while the player is in a vent.
         event.registerAbove(VanillaGuiOverlay.EXPERIENCE_BAR.id(), "duct_travel_progress", DuctTravelProgressBar.INSTANCE);
-    }
-
-    @SubscribeEvent
-    public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
-        ModKeybinds.register(event);
     }
 
     @SubscribeEvent
@@ -291,6 +286,8 @@ public class ClientSetup {
             MinecraftForge.EVENT_BUS.addListener(DuctTravelClientHooks::onPlayerTick);
             MinecraftForge.EVENT_BUS.addListener(DuctTravelProgressBar::onRenderGuiOverlay);
             MinecraftForge.EVENT_BUS.addListener(DuctTravelSounds::onPlaySound);
+            MinecraftForge.EVENT_BUS.addListener(ControllerClientHooks::onClientTick);
+            MinecraftForge.EVENT_BUS.addListener(ControllerClientHooks::onInteraction);
         });
     }
 

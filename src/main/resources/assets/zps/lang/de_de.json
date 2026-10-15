@@ -31,22 +31,9 @@
 
     "creativetab.zps_tab": "Zero Point Systems",
 
-    "key.zps.a": "kanal A",
-    "key.zps.b": "kanal B",
-    "key.zps.c": "kanal C",
-    "key.zps.d": "kanal D",
-    "key.zps.e": "kanal E",
-    "key.zps.f": "kanal F",
-    "key.zps.g": "kanal G",
-    "key.zps.h": "kanal H",
-    "key.zps.i": "kanal I",
-    "key.zps.j": "kanal J",
-    "key.zps.k": "kanal K",
-    "key.zps.l": "kanal L",
 
     "sounds.zps.keystroke": "Tastatur klackert",
     "sounds.zps.static": "Rauschen zischt",
-    "sounds.zps.arm_move": "Roboterarm bewegt sich",
+    "sounds.zps.arm_move": "Roboterarm bewegt sich"
 
-    "key.categories.zps": "Zero Point Systems"
 }

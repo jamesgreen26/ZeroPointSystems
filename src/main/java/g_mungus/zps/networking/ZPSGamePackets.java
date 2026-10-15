@@ -37,16 +37,16 @@ public class ZPSGamePackets {
     }
 
     public static void register() {
-        INSTANCE.messageBuilder(OctoControlPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(OctoControlPacket::encode)
-                .decoder(OctoControlPacket::decode)
-                .consumerMainThread(OctoControlPacket::handle)
+        INSTANCE.messageBuilder(ControllerInputC2SPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(ControllerInputC2SPacket::encode)
+                .decoder(ControllerInputC2SPacket::decode)
+                .consumerMainThread(ControllerInputC2SPacket::handle)
                 .add();
 
-        INSTANCE.messageBuilder(DodecaControlPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(DodecaControlPacket::encode)
-                .decoder(DodecaControlPacket::decode)
-                .consumerMainThread(DodecaControlPacket::handle)
+        INSTANCE.messageBuilder(ControllerKeysC2SPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(ControllerKeysC2SPacket::encode)
+                .decoder(ControllerKeysC2SPacket::decode)
+                .consumerMainThread(ControllerKeysC2SPacket::handle)
                 .add();
 
         INSTANCE.messageBuilder(ScriptComputerC2SPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)

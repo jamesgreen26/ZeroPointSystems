@@ -325,19 +325,6 @@
 
     "creativetab.zps_tab": "Zero Point Systems",
 
-    "key.zps.a": "Channel A",
-    "key.zps.b": "Channel B",
-    "key.zps.c": "Channel C",
-    "key.zps.d": "Channel D",
-    "key.zps.e": "Channel E",
-    "key.zps.f": "Channel F",
-    "key.zps.g": "Channel G",
-    "key.zps.h": "Channel H",
-    "key.zps.i": "Channel I",
-    "key.zps.j": "Channel J",
-    "key.zps.k": "Channel K",
-    "key.zps.l": "Channel L",
-    "key.categories.zps": "Zero Point Systems",
 
 
     "zps.ponder.cable.header": "Cables",
@@ -580,6 +567,11 @@
     "item.zps.beam_collector": "Beam Collector",
     "block.zps.beam_collector.zps_tooltip": "Projects a beam that pulls in items, mobs and blocks. Items and blocks that reach it are stored inside.\n\nPlace blocks facing the same way in a square (up to 3x3) to form a larger panel with a longer beam and more storage.\n\nRuns only when receiving a Redstone signal, and consumes FE while running. The signal strength sets the beam's range.",
     "zps.duct.sealed": "The vent is sealed shut.",
+    "zps.controller.side.left": "Left",
+    "zps.controller.side.right": "Right",
+    "zps.controller.side.back": "Back",
+    "zps.controller.side.down": "Down",
+    "zps.controller.mount_hint": "Press %s on the Controller again to Dismount",
     "zps.duct.mount_hint": "Press %s to Exit, %s/%s to Crawl Through",
     "zps.duct.hud.title": "Vent %s / %s",
     "zps.duct.hud.entry": "%s, %s, %s \u00b7 where you got in",

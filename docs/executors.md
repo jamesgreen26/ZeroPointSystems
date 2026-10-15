@@ -108,12 +108,13 @@ Unlike other executors, the argument is a **block position** (`x y z`) telling t
 | `use`         | `<x y z>` | Right-clicks the target with the held item (place a block, fill/empty a bucket, use an item, ...). |
 | `shift_use`   | `<x y z>` | Sneak right-clicks the target with the held item.                                                  |
 | `drop_items`  | `<x y z>` | Drops held items into the world at the target position as item entities.                           |
-| `break_block` | `<x y z>` | Breaks the target block at once, as if mining it with an iron pickaxe. Drops go into the hand.     |
+| `break`       | `<x y z>` | Breaks the target block at once, as if mining it with an iron pickaxe. Drops go into the hand.     |
+| `silk_break`  | `<x y z>` | Like `break`, but with a silk touch iron pickaxe, so the block itself drops (glass, stone, ores).  |
 | `set_transfer_count` | `<int>` | Sets the maximum stack size moved by `take_items`, `put_items`, and `drop_items` (1-64). |
 
 `take_items`, `put_items`, and `drop_items` move at most the **transfer amount** configured in the arm's GUI (1–64) per instruction; any remainder stays in the arm's hand. `use` and `shift_use` interact with the held item and do not transfer a quantity.
 
-`break_block` only works on blocks an iron pickaxe can mine. Drops that don't fit in the hand fall into the world.
+`break` and `silk_break` only work on blocks an iron pickaxe can mine. Drops that don't fit in the hand fall into the world.
 
 Examples:
 
@@ -122,7 +123,8 @@ take_items 1 3 5
 put_items 0 1 2
 set_transfer_count 16
 drop_items 0 2 2
-break_block 1 1 3
+break 1 1 3
+silk_break 1 2 3
 ```
 
 ```

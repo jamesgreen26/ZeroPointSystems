@@ -259,6 +259,66 @@ public class RoboticArmGameTests {
         });
     }
 
+    /** Silk touch keeps stone as stone. */
+    @GameTest(template = TEMPLATE)
+    public static void silkBreak_emptyHand_holdsTheBlock(GameTestHelper helper) {
+        RoboticArmBlockEntity arm = placeLoadedArm(helper);
+        if (arm == null) return;
+        arm.takeHeldStack();
+        helper.setBlock(TARGET_POS, Blocks.STONE);
+
+        if (!arm.SilkBreakBlockAt(helper.absolutePos(TARGET_POS))) {
+            helper.fail("Robotic arm failed to start silk breaking stone");
+        }
+
+        helper.runAfterDelay(RoboticArmBlockEntity.MOVE_TIME_TICKS + 1, () -> {
+            helper.assertBlockPresent(Blocks.AIR, TARGET_POS);
+            assertStack(helper, arm.getHeldStack(), Items.STONE.getDefaultInstance(), 1, "arm held stack");
+            helper.succeed();
+        });
+    }
+
+    /** Glass drops nothing to a plain break, and itself to a silk one. */
+    @GameTest(template = TEMPLATE)
+    public static void silkBreak_glass_dropsOnlyWithSilk(GameTestHelper helper) {
+        RoboticArmBlockEntity arm = placeLoadedArm(helper);
+        if (arm == null) return;
+        arm.takeHeldStack();
+        helper.setBlock(TARGET_POS, Blocks.GLASS);
+
+        if (!arm.BreakBlockAt(helper.absolutePos(TARGET_POS))) {
+            helper.fail("Robotic arm failed to start breaking glass");
+        }
+
+        helper.runAfterDelay(RoboticArmBlockEntity.MOVE_TIME_TICKS + 1, () -> {
+            helper.assertBlockPresent(Blocks.AIR, TARGET_POS);
+            if (!arm.getHeldStack().isEmpty()) {
+                helper.fail("Expected nothing from a plain glass break, got " + arm.getHeldStack());
+            }
+            helper.setBlock(TARGET_POS, Blocks.GLASS);
+            if (!arm.SilkBreakBlockAt(helper.absolutePos(TARGET_POS))) {
+                helper.fail("Robotic arm failed to start silk breaking glass");
+            }
+            helper.runAfterDelay(RoboticArmBlockEntity.MOVE_TIME_TICKS + 1, () -> {
+                helper.assertBlockPresent(Blocks.AIR, TARGET_POS);
+                assertStack(helper, arm.getHeldStack(), Items.GLASS.getDefaultInstance(), 1, "arm held stack");
+                helper.succeed();
+            });
+        });
+    }
+
+    /** Silk touch doesn't make an iron pickaxe mine obsidian. */
+    @GameTest(template = TEMPLATE)
+    public static void silkBreak_tooHardForIronPickaxe_isRefused(GameTestHelper helper) {
+        RoboticArmBlockEntity arm = placeLoadedArm(helper);
+        if (arm == null) return;
+        helper.setBlock(TARGET_POS, Blocks.OBSIDIAN);
+        if (arm.SilkBreakBlockAt(helper.absolutePos(TARGET_POS))) {
+            helper.fail("Robotic arm accepted silk breaking obsidian");
+        }
+        helper.succeed();
+    }
+
     /** Obsidian needs a diamond pickaxe and bedrock can't be broken at all, so the arm doesn't even move. */
     @GameTest(template = TEMPLATE)
     public static void breakBlock_tooHardForIronPickaxe_isRefused(GameTestHelper helper) {

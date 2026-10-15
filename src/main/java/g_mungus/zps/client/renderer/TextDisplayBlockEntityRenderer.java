@@ -83,12 +83,18 @@ public class TextDisplayBlockEntityRenderer implements BlockEntityRenderer<TextD
         int originX = (layout.textOffset.x() * cellSize) - 64 - minDisplayableCol * cellSize;
         int originY = (layout.textOffset.y() * cellSize) - 64 - minDisplayableRow * cellSize;
 
+        // Large text draws every glyph at this many font pixels per font unit. The
+        // per-block windows and grid origin stay in 1x pixels; only the glyph layout
+        // works in scaled units. Row counts are even, so scaled rows never straddle
+        // a block boundary.
+        int textScale = blockEntity.getTextScale();
+
         // Word-aware line breaking. Every piece of a multi-block display sees the
         // full text and the same budget, so they all compute identical breaks and
         // positions. Each glyph advances by its natural width, and a line wraps once
         // its real pixel width would overrun the display.
-        int lineBudget = maxCols * cellSize;
-        List<Glyph> glyphs = layoutGlyphs(text, lineBudget, maxRows);
+        int lineBudget = maxCols * cellSize / textScale;
+        List<Glyph> glyphs = layoutGlyphs(text, lineBudget, maxRows / textScale);
 
         // The window (in pixels from logical column 0) that belongs to this block.
         int minDisplayableX = minDisplayableCol * cellSize;
@@ -97,10 +103,14 @@ public class TextDisplayBlockEntityRenderer implements BlockEntityRenderer<TextD
         // Same text colour a dyed sign uses for this dye.
         int textColor = blockEntity.getTextColor().getTextColor();
 
+        poseStack.scale(textScale, textScale, 1);
+
         for (Glyph glyph : glyphs) {
+            float pixelX = glyph.x() * textScale;
+            int pixelRow = glyph.row() * textScale;
             boolean isWithinDisplayableBounds =
-                    glyph.x() >= minDisplayableX && glyph.x() < maxDisplayableX &&
-                    glyph.row() >= minDisplayableRow && glyph.row() < maxDisplayableRow;
+                    pixelX >= minDisplayableX && pixelX < maxDisplayableX &&
+                    pixelRow >= minDisplayableRow && pixelRow < maxDisplayableRow;
 
             if (!isWithinDisplayableBounds) {
                 continue;
@@ -108,8 +118,8 @@ public class TextDisplayBlockEntityRenderer implements BlockEntityRenderer<TextD
 
             this.font.drawInBatch(
                     String.valueOf(glyph.c()),
-                    originX + glyph.x(),
-                    originY + glyph.row() * cellSize,
+                    (float) originX / textScale + glyph.x(),
+                    (float) originY / textScale + glyph.row() * cellSize,
                     textColor,
                     false,
                     poseStack.last().pose(),

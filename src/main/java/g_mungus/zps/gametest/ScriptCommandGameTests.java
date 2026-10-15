@@ -594,6 +594,20 @@ public class ScriptCommandGameTests {
         helper.succeed();
     }
 
+    /** A {@code value_of(...)} outside 0 to 15 is brought into range, since only a literal is checked. */
+    @GameTest(template = TEMPLATE)
+    public static void zpsScript_setRedstoneValueOfIsCoercedIntoRange(GameTestHelper helper) {
+        BlockPos absPos = prepareCommandTarget(helper);
+
+        // "pos y & 0" is 0 wherever the test runs. Above first, so the 0 after it cannot be the
+        // bus's starting output.
+        runScriptCommand(helper, absPos, "set_redstone value_of(pos y & 0 + 100)");
+        assertStoredRedstone(helper, absPos, 15, "zps_script value_of above range");
+        runScriptCommand(helper, absPos, "set_redstone value_of(pos y & 0 - 68)");
+        assertStoredRedstone(helper, absPos, 0, "zps_script value_of below range");
+        helper.succeed();
+    }
+
     /**
      * Executor arguments should accept {@code value_of(...)} in the same way they
      * do through the internal helper path.
@@ -1001,12 +1015,13 @@ public class ScriptCommandGameTests {
     @GameTest(template = TEMPLATE)
     public static void zpsScript_nestedValueOfInExecutor_setsComputedRedstone(GameTestHelper helper) {
         BlockPos absPos = prepareCommandTarget(helper);
-        int expected = absPos.getX() + (absPos.getX() - absPos.getY());
+        // Masked to 0-15, since set_redstone brings anything else into range.
+        int expected = (absPos.getX() + (absPos.getX() - absPos.getY())) & 15;
 
         int result = runScriptCommand(
                 helper,
                 absPos,
-                "set_redstone value_of(pos x + value_of(pos x - value_of(pos y)))"
+                "set_redstone value_of(pos x + value_of(pos x - value_of(pos y)) & 15)"
         );
         if (result != 1) {
             helper.fail("zps_script nested value_of returned " + result + " instead of 1");
@@ -1024,12 +1039,12 @@ public class ScriptCommandGameTests {
     @GameTest(template = TEMPLATE)
     public static void zpsScript_multipleValueOfInSingleCommand_usesBothResults(GameTestHelper helper) {
         BlockPos absPos = prepareCommandTarget(helper);
-        int expected = absPos.getZ() | 1;
+        int expected = (absPos.getZ() | 1) & 15;
 
         int result = runScriptCommand(
                 helper,
                 absPos,
-                "if pos x < value_of(pos x + 200) set_redstone value_of(pos z | 1) else set_redstone 0"
+                "if pos x < value_of(pos x + 200) set_redstone value_of(pos z | 1 & 15) else set_redstone 0"
         );
         if (result != 1) {
             helper.fail("zps_script multiple value_of returned " + result + " instead of 1");

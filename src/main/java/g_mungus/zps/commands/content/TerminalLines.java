@@ -3,7 +3,7 @@ package g_mungus.zps.commands.content;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * The lines only a Script Terminal runs itself, {@code wait <cycles>} and {@code receive <name>},
+ * The lines only a Script Terminal runs itself, {@code wait <cycles>} and {@code receive_value <name>},
  * read the same way by the terminal and by the script editor. Any run of whitespace separates the
  * keyword from its argument.
  *
@@ -12,7 +12,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class TerminalLines {
     public static final String WAIT = "wait";
-    public static final String RECEIVE = "receive";
+    public static final String RECEIVE_VALUE = "receive_value";
     public static final String PROVIDE_VALUE = "provide_value";
     /** The most cycles one {@code wait} may ask for. */
     public static final int MAX_WAIT_CYCLES = 64;
@@ -52,8 +52,8 @@ public final class TerminalLines {
         return argument(line, WAIT) != null;
     }
 
-    public static boolean isReceive(String line) {
-        return argument(line, RECEIVE) != null;
+    public static boolean isReceiveValue(String line) {
+        return argument(line, RECEIVE_VALUE) != null;
     }
 
     /**

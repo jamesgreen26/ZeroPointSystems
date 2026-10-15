@@ -46,7 +46,7 @@ import java.util.Objects;
  * evaluates its expression, a getter to mapper chain yielding a string, and pushes the result to the
  * network when it differs from what it last sent.
  *
- * <p>In EXECUTE mode it sends only to answer: after running {@code return}, it puts
+ * <p>In EXECUTE mode it sends only to answer: after running {@code request_value}, it puts
  * {@code provide_value <value>} on the cable once the rest of the cable goes blank, for one tick,
  * as the terminal does its commands. It is a {@link #isReactive reactive} sender for that.
  *
@@ -82,7 +82,7 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
     private String expression = "";
     /** The last value put on the pipe. Kept across a reload so downstream displays survive one. */
     private String sentValue = "";
-    /** What {@code return} asked the bus to answer with, sent once the rest of the cable is blank. */
+    /** What {@code request_value} asked the bus to answer with, sent once the rest of the cable is blank. */
     private @Nullable String pendingAnswer;
     /** The answer while it is on the pipe, for the tick it went on in. */
     private @Nullable String answering;
@@ -128,7 +128,7 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
 
     // --- answering ------------------------------------------------------------------------------
 
-    /** From {@code return}: the value to answer with when the terminal's output next clears. */
+    /** From {@code request_value}: the value to answer with when the terminal's output next clears. */
     public void setPendingAnswer(String value) {
         pendingAnswer = value;
     }

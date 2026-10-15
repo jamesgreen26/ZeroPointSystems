@@ -219,19 +219,19 @@ if page > 8 set_redstone 15 else set_redstone 0
 
 Every command the terminal sends stays on the Data Cable for one tick, then the cable goes blank until the next command. A bus can answer while it is blank:
 
-- `return <value>` is an executor. The bus that runs it puts the value on the cable when the cable goes blank, for one tick. Use `if pos == ...` to pick which bus answers.
-- `receive <name>` stores the answer to the last command sent in a variable declared above it. The terminal keeps that answer until it sends another command. Like `wait`, it works only on the Script Terminal and cannot be used with `if`, `unless` or `else`. Unlike `wait`, it takes no time: the line after it runs straight away. A looping script still takes at least 2 ticks per pass, however many free lines it has.
+- `request_value <value>` is an executor. The bus that runs it puts the value on the cable when the cable goes blank, for one tick. Use `if pos == ...` to pick which bus answers.
+- `receive_value <name>` stores the answer to the last command sent in a variable declared above it. The terminal keeps that answer until it sends another command. Like `wait`, it works only on the Script Terminal and cannot be used with `if`, `unless` or `else`. Unlike `wait`, it takes no time: the line after it runs straight away. A looping script still takes at least 2 ticks per pass, however many free lines it has.
 
 ```
 #var page = 1
-if pos == @lectern return value_of(get_page)
-receive page
+if pos == @lectern request_value value_of(get_page)
+receive_value page
 if pos == @lamp set_redstone value_of(page)
 ```
 
-`wait` and `receive` send nothing, so a `wait` between a `return` and its `receive` does not lose the answer.
+`wait` and `receive_value` send nothing, so a `wait` between a `request_value` and its `receive_value` does not lose the answer.
 
-`receive` stores whatever value was answered. It leaves the variable unchanged only if there is no answer, or if more than one bus answered: two answers at once are two senders, which garble the cable like any others.
+`receive_value` stores whatever value was answered. It leaves the variable unchanged only if there is no answer, or if more than one bus answered: two answers at once are two senders, which garble the cable like any others.
 
 Variables keep their values across loop passes, and go back to their declared literals when the script is edited and at the start of each new powered run.
 

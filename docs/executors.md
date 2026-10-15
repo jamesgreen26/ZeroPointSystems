@@ -13,14 +13,14 @@ Available on: any target block
 | Executor       | Argument | Description                                     |
 |----------------|----------|-------------------------------------------------|
 | `set_redstone` | `<0-15>` | The Serial Bus emits a redstone signal into the target block, like a repeater facing it. |
-| `return`       | `<value>` | The Serial Bus answers with the value, for a Script Terminal's `receive`. See [Variables](syntax.md#variables). |
+| `request_value` | `<value>` | The Serial Bus answers with the value, for a Script Terminal's `receive_value`. See [Variables](syntax.md#variables). |
 
 Examples:
 
 ```
 set_redstone 15
 set_redstone value_of(get_page - 1)
-if pos == @lectern return value_of(get_page)
+if pos == @lectern request_value value_of(get_page)
 ```
 
 ---

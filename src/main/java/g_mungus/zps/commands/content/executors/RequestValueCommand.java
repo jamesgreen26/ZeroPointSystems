@@ -4,11 +4,11 @@ import g_mungus.zps.blockentity.light_pipe.SerialBusBlockEntity;
 import g_mungus.zps.commands.api.ZPSScriptContext;
 import net.minecraft.core.BlockPos;
 
-public class ReturnCommand {
+public class RequestValueCommand {
 
     /**
      * Has the Serial Bus running the command answer with {@code value} in the blank tick that
-     * follows, for a Script Terminal's {@code receive}. The bus is the command's source, so a
+     * follows, for a Script Terminal's {@code receive_value}. The bus is the command's source, so a
      * command run from anywhere else has nothing to answer from.
      */
     public static int answer(ZPSScriptContext context, String value) {

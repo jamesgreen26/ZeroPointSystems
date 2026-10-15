@@ -10,6 +10,7 @@ import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.BlockApplicability;
 import g_mungus.zps.commands.api_impl.debug.BrigadierCanvasExporter;
 import g_mungus.zps.commands.debug.PlaceBlockPanoramaCommand;
+import g_mungus.zps.commands.debug.armchain.ArmChainKitCommand;
 import g_mungus.zps.commands.debug.ReactorDebugCommand;
 import g_mungus.zps.commands.debug.SetHeldItemEnergyCommand;
 import g_mungus.zps.networking.ScriptTreeS2CPacket;
@@ -65,6 +66,7 @@ public class ZPSCommands {
             dispatcher.register(PlaceBlockPanoramaCommand.COMMAND);
             dispatcher.register(SetHeldItemEnergyCommand.COMMAND);
             dispatcher.register(ReactorDebugCommand.COMMAND);
+            dispatcher.register(ArmChainKitCommand.COMMAND);
 
             try {
                 String output = new BrigadierCanvasExporter<CommandSourceStack>().export(scripts.tree());

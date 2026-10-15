@@ -10,14 +10,20 @@ import dev.engine_room.flywheel.lib.visual.SimpleTickableVisual;
 import g_mungus.zps.block.reactor.ReactorPortBlock;
 import g_mungus.zps.block.reactor.ReactorPortMode;
 import g_mungus.zps.blockentity.reactor.ReactorPortBlockEntity;
+import dev.engine_room.flywheel.api.visual.SectionTrackedVisual;
+import it.unimi.dsi.fastutil.longs.LongArraySet;
+import it.unimi.dsi.fastutil.longs.LongSet;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.function.Consumer;
 
 /**
  * Draws a port's indicator overlay on its outer face, tinted by the redstone level it receives:
- * dark when unpowered, up to a full glow at fifteen. The level arrives with the block entity's
+ * dark when unpowered, up to bright red at fifteen. It is lit by the block in front of that face,
+ * as the face itself is: the port is solid, so its own position is always dark. The level arrives with the block entity's
  * update packet and the mode with the block state, so the visual polls both once a tick and only
  * touches the instance when one moves. A mode change swaps the instance for one on the other
  * mode's model, since an instance belongs to the instancer it was made by.
@@ -52,6 +58,22 @@ public class ReactorWallOverlayVisual extends AbstractBlockEntityVisual<ReactorP
         lastLevel = -1;
         orient(ReactorPortBlock.facing(state));
         tint(blockEntity.getRedstoneLevel());
+        relight(outside(), overlay);
+    }
+
+    private BlockPos outside() {
+        return pos.relative(ReactorPortBlock.facing(blockEntity.getBlockState()));
+    }
+
+    /** Light changes are wanted from the section in front of the face as well as the port's own. */
+    @Override
+    public void setSectionCollector(SectionTrackedVisual.SectionCollector sectionCollector) {
+        lightSections = sectionCollector;
+        // Usually the same section; LongSet.of throws on a duplicate, so the set is built up instead.
+        LongSet sections = new LongArraySet(2);
+        sections.add(SectionPos.asLong(pos));
+        sections.add(SectionPos.asLong(outside()));
+        lightSections.sections(sections);
     }
 
     private void orient(Direction facing) {
@@ -73,7 +95,7 @@ public class ReactorWallOverlayVisual extends AbstractBlockEntityVisual<ReactorP
 
     @Override
     public void updateLight(float partialTick) {
-        // Unlit material: the tint is the whole story.
+        relight(outside(), overlay);
     }
 
     @Override

@@ -92,7 +92,7 @@ public final class RedstoneBand {
     private RedstoneBand() {
     }
 
-    /** The band's tint for a redstone level, as packed RGB: the converter's dark red up to the port's glow. */
+    /** The band's tint for a redstone level, as packed RGB: the converter's dark red up to the port's bright red. */
     public static int tintRgb(int level) {
         float t = level / 15f;
         return lerpChannel(t, 16) << 16 | lerpChannel(t, 8) << 8 | lerpChannel(t, 0);
@@ -135,10 +135,10 @@ public final class RedstoneBand {
     }
 
     private static Model model(float[][] quads, String name) {
-        // Unlit and unshaded: the band is a lamp, its brightness comes from the tint alone.
-        Material material = SimpleMaterial.builderOf(Materials.CUTOUT_UNSHADED_BLOCK)
+        // Lit and shaded like the plate it is painted on: the tint says how strong the signal is,
+        // the world says how bright it is where the block stands.
+        Material material = SimpleMaterial.builderOf(Materials.CUTOUT_BLOCK)
                 .texture(TEXTURE)
-                .useLight(false)
                 .ambientOcclusion(false)
                 .mipmap(false)
                 .build();

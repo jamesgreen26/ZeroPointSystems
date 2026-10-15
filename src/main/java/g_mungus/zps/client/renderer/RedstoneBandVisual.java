@@ -15,8 +15,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import java.util.function.Consumer;
 
 /**
- * Draws a block's redstone band, tinted by its redstone level: dark at zero, up to a full glow at
- * fifteen. The level arrives with the block entity's update packet and the facing and cladding
+ * Draws a block's redstone band, tinted by its redstone level: dark at zero, up to bright red at
+ * fifteen, and lit by the world like the rest of the block. The level arrives with the block entity's update packet and the facing and cladding
  * with the block state, so the visual polls them once a tick and only touches the instance when
  * one moves.
  */
@@ -69,7 +69,8 @@ public class RedstoneBandVisual<T extends BlockEntity & RedstoneBandSource> exte
 
     @Override
     public void updateLight(float partialTick) {
-        // Unlit material: the tint is the whole story.
+        // The band is on the block's own plate, which lets light in, so its own light is the right one.
+        relight(band);
     }
 
     @Override

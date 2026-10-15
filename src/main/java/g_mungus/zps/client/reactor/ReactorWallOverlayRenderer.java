@@ -6,7 +6,8 @@ import dev.engine_room.flywheel.api.visualization.VisualizationManager;
 import g_mungus.zps.block.reactor.ReactorPortBlock;
 import g_mungus.zps.block.reactor.ReactorPortMode;
 import g_mungus.zps.blockentity.reactor.ReactorPortBlockEntity;
-import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.core.Direction;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
@@ -47,6 +48,12 @@ public class ReactorWallOverlayRenderer implements BlockEntityRenderer<ReactorPo
             return;
         }
 
+        // The port is solid, so its own light is always dark; the face is lit by what is in front of it.
+        Direction facing = ReactorPortBlock.facing(blockEntity.getBlockState());
+        int light = blockEntity.getLevel() != null
+                ? LevelRenderer.getLightColor(blockEntity.getLevel(), blockEntity.getBlockPos().relative(facing))
+                : packedLight;
+
         int rgb = ReactorWallOverlays.tintRgb(blockEntity.getRedstoneLevel());
         int r = (rgb >> 16) & 0xFF;
         int g = (rgb >> 8) & 0xFF;
@@ -54,28 +61,27 @@ public class ReactorWallOverlayRenderer implements BlockEntityRenderer<ReactorPo
 
         poseStack.pushPose();
         poseStack.translate(0.5f, 0.5f, 0.5f);
-        poseStack.mulPose(ReactorWallOverlays.rotationFor(ReactorPortBlock.facing(blockEntity.getBlockState())));
+        poseStack.mulPose(ReactorWallOverlays.rotationFor(facing));
         poseStack.translate(-0.5f, -0.5f, -0.5f);
 
         // The same quad as the Flywheel mesh: the north face, u east to west, v top to bottom.
         PoseStack.Pose pose = poseStack.last();
         VertexConsumer consumer = bufferSource.getBuffer(renderTypes.get(blockEntity.getMode()));
-        vertex(consumer, pose, 1f, 1f, 0f, 0f, r, g, b);
-        vertex(consumer, pose, 1f, 0f, 0f, 1f, r, g, b);
-        vertex(consumer, pose, 0f, 0f, 1f, 1f, r, g, b);
-        vertex(consumer, pose, 0f, 1f, 1f, 0f, r, g, b);
+        vertex(consumer, pose, 1f, 1f, 0f, 0f, r, g, b, light);
+        vertex(consumer, pose, 1f, 0f, 0f, 1f, r, g, b, light);
+        vertex(consumer, pose, 0f, 0f, 1f, 1f, r, g, b, light);
+        vertex(consumer, pose, 0f, 1f, 1f, 0f, r, g, b, light);
 
         poseStack.popPose();
     }
 
     private static void vertex(VertexConsumer consumer, PoseStack.Pose pose,
-                               float x, float y, float u, float v, int r, int g, int b) {
+                               float x, float y, float u, float v, int r, int g, int b, int light) {
         consumer.addVertex(pose, x, y, -LIFT)
                 .setColor(r, g, b, 255)
                 .setUv(u, v)
                 .setOverlay(OverlayTexture.NO_OVERLAY)
-                // A lamp: lit by its tint, not by the world.
-                .setLight(LightTexture.FULL_BRIGHT)
+                .setLight(light)
                 .setNormal(pose, 0f, 0f, -1f);
     }
 }

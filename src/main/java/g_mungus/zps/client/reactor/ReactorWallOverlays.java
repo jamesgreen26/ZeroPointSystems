@@ -91,11 +91,11 @@ public final class ReactorWallOverlays {
     }
 
     private static Model overlay(String block, ResourceLocation texture) {
-        // Unlit and unshaded: the overlay is a lamp, its brightness comes from the tint alone.
-        Material material = SimpleMaterial.builderOf(Materials.CUTOUT_UNSHADED_BLOCK)
+        // Lit and shaded like the face it is painted on: the tint says how strong the signal is,
+        // the world says how bright it is in front of the port.
+        Material material = SimpleMaterial.builderOf(Materials.CUTOUT_BLOCK)
                 .texture(texture)
                 .polygonOffset(true)
-                .useLight(false)
                 .ambientOcclusion(false)
                 .mipmap(false)
                 .build();

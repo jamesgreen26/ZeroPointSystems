@@ -291,8 +291,8 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
         return startBreak(targetPos, true);
     }
 
+    /** The hand moves whatever is at the target, as for the other commands; the block is checked on arrival. */
     private boolean startBreak(BlockPos targetPos, boolean silk) {
-        if (!canBreak(targetPos, silk)) return false;
         pendingTransfer = silk ? PendingTransfer.SILK_BREAK : PendingTransfer.BREAK;
         pendingTransferTargetPos = targetPos;
         return moveHandTo(targetPos);

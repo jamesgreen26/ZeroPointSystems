@@ -114,7 +114,7 @@ Unlike other executors, the argument is a **block position** (`x y z`) telling t
 
 `take_items`, `put_items`, and `drop_items` move at most the **transfer amount** configured in the arm's GUI (1–64) per instruction; any remainder stays in the arm's hand. `use` and `shift_use` interact with the held item and do not transfer a quantity.
 
-`break` and `silk_break` only work on blocks an iron pickaxe can mine. Drops that don't fit in the hand fall into the world.
+`break` and `silk_break` only break blocks an iron pickaxe can mine; the hand still moves to anything else but leaves it. Drops that don't fit in the hand fall into the world.
 
 Examples:
 

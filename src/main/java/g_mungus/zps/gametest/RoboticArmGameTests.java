@@ -309,40 +309,62 @@ public class RoboticArmGameTests {
 
     /** Silk touch doesn't make an iron pickaxe mine obsidian. */
     @GameTest(template = TEMPLATE)
-    public static void silkBreak_tooHardForIronPickaxe_isRefused(GameTestHelper helper) {
+    public static void silkBreak_tooHardForIronPickaxe_isLeft(GameTestHelper helper) {
         RoboticArmBlockEntity arm = placeLoadedArm(helper);
         if (arm == null) return;
+        arm.takeHeldStack();
         helper.setBlock(TARGET_POS, Blocks.OBSIDIAN);
-        if (arm.SilkBreakBlockAt(helper.absolutePos(TARGET_POS))) {
-            helper.fail("Robotic arm accepted silk breaking obsidian");
+        if (!arm.SilkBreakBlockAt(helper.absolutePos(TARGET_POS))) {
+            helper.fail("Robotic arm refused to move to the obsidian");
         }
-        helper.succeed();
+        helper.runAfterDelay(RoboticArmBlockEntity.MOVE_TIME_TICKS + 1, () -> {
+            helper.assertBlockPresent(Blocks.OBSIDIAN, TARGET_POS);
+            if (!arm.getHeldStack().isEmpty()) {
+                helper.fail("Expected an empty hand, got " + arm.getHeldStack());
+            }
+            helper.succeed();
+        });
     }
 
-    /** Obsidian needs a diamond pickaxe and bedrock can't be broken at all, so the arm doesn't even move. */
+    /** Obsidian needs a diamond pickaxe, so the hand goes there, as for any command, but leaves it. */
     @GameTest(template = TEMPLATE)
-    public static void breakBlock_tooHardForIronPickaxe_isRefused(GameTestHelper helper) {
+    public static void breakBlock_tooHardForIronPickaxe_isLeft(GameTestHelper helper) {
         RoboticArmBlockEntity arm = placeLoadedArm(helper);
         if (arm == null) return;
-        BlockPos bedrockPos = TARGET_POS.east();
+        arm.takeHeldStack();
         helper.setBlock(TARGET_POS, Blocks.OBSIDIAN);
-        helper.setBlock(bedrockPos, Blocks.BEDROCK);
 
-        if (arm.BreakBlockAt(helper.absolutePos(TARGET_POS))) {
-            helper.fail("Robotic arm accepted breaking obsidian");
-        }
-        if (arm.BreakBlockAt(helper.absolutePos(bedrockPos))) {
-            helper.fail("Robotic arm accepted breaking bedrock");
-        }
-        if (arm.BreakBlockAt(helper.absolutePos(TARGET_POS.above()))) {
-            helper.fail("Robotic arm accepted breaking air");
+        if (!arm.BreakBlockAt(helper.absolutePos(TARGET_POS))) {
+            helper.fail("Robotic arm refused to move to the obsidian");
         }
 
         helper.runAfterDelay(RoboticArmBlockEntity.MOVE_TIME_TICKS + 1, () -> {
             helper.assertBlockPresent(Blocks.OBSIDIAN, TARGET_POS);
-            helper.assertBlockPresent(Blocks.BEDROCK, bedrockPos);
-            if (arm.isMoving()) {
-                helper.fail("Robotic arm moved for a refused break");
+            if (!arm.getHandBlockPos().equals(helper.absolutePos(TARGET_POS))) {
+                helper.fail("Expected the hand at the obsidian, got " + arm.getHandBlockPos());
+            }
+            if (!arm.getHeldStack().isEmpty()) {
+                helper.fail("Expected an empty hand, got " + arm.getHeldStack());
+            }
+            helper.succeed();
+        });
+    }
+
+    /** Bedrock can't be broken at all; the hand still goes there. */
+    @GameTest(template = TEMPLATE)
+    public static void breakBlock_bedrock_isLeft(GameTestHelper helper) {
+        RoboticArmBlockEntity arm = placeLoadedArm(helper);
+        if (arm == null) return;
+        helper.setBlock(TARGET_POS, Blocks.BEDROCK);
+
+        if (!arm.BreakBlockAt(helper.absolutePos(TARGET_POS))) {
+            helper.fail("Robotic arm refused to move to the bedrock");
+        }
+
+        helper.runAfterDelay(RoboticArmBlockEntity.MOVE_TIME_TICKS + 1, () -> {
+            helper.assertBlockPresent(Blocks.BEDROCK, TARGET_POS);
+            if (!arm.getHandBlockPos().equals(helper.absolutePos(TARGET_POS))) {
+                helper.fail("Expected the hand at the bedrock, got " + arm.getHandBlockPos());
             }
             helper.succeed();
         });

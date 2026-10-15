@@ -1,5 +1,6 @@
 package g_mungus.zps.entity;
 
+import net.minecraft.world.phys.Vec3;
 import g_mungus.zps.block.cableNetwork.OctoControllerBlock;
 import g_mungus.zps.blockentity.OctoControllerBlockEntity;
 import g_mungus.zps.client.ModKeybinds;
@@ -146,5 +147,11 @@ public class OctoMountingEntity extends Entity implements StandingVehicleEntity 
     @Override
     public double getPassengersRidingOffset() {
         return super.getPassengersRidingOffset() - 0.025;
+    }
+
+    /// Riders stand on the floor already, so they step off exactly where they are instead of popping up onto the seat.
+    @Override
+    public @NotNull Vec3 getDismountLocationForPassenger(@NotNull LivingEntity passenger) {
+        return passenger.position();
     }
 }

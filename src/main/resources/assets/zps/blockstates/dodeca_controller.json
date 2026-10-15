@@ -1,18 +1,33 @@
 {
   "variants": {
-    "facing=north": {
+    "facing=north,active=false": {
       "model": "zps:block/dodeca_controller"
     },
-    "facing=east": {
+    "facing=north,active=true": {
+      "model": "zps:block/dodeca_controller_active"
+    },
+    "facing=east,active=false": {
       "model": "zps:block/dodeca_controller",
       "y": 90
     },
-    "facing=south": {
+    "facing=east,active=true": {
+      "model": "zps:block/dodeca_controller_active",
+      "y": 90
+    },
+    "facing=south,active=false": {
       "model": "zps:block/dodeca_controller",
       "y": 180
     },
-    "facing=west": {
+    "facing=south,active=true": {
+      "model": "zps:block/dodeca_controller_active",
+      "y": 180
+    },
+    "facing=west,active=false": {
       "model": "zps:block/dodeca_controller",
+      "y": 270
+    },
+    "facing=west,active=true": {
+      "model": "zps:block/dodeca_controller_active",
       "y": 270
     }
   }

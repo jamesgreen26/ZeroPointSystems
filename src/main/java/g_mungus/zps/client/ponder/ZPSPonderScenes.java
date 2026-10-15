@@ -1,5 +1,6 @@
 package g_mungus.zps.client.ponder;
 
+import g_mungus.zps.block.cableNetwork.ControllerInteraction;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.CableBlock;
 import g_mungus.zps.block.cableNetwork.DenseCableSeparatorBlock;
@@ -283,6 +284,18 @@ public class ZPSPonderScenes {
         builder.idle(20);
     }
 
+    /** A ridden controller's screen lights up; nothing rides it in a ponder, so it is switched by hand. */
+    private static void setControllerActive(SceneBuilder builder, SceneBuildingUtil util, boolean active) {
+        // Not PonderExtras.modifyBlockStates: that skips blocks already in the wanted state as the
+        // scene starts, which would leave a controller lit by the earlier call on when switching off.
+        util.select().everywhere().forEach(pos -> {
+            BlockState state = builder.getScene().getWorld().getBlockState(pos);
+            if (state.hasProperty(ControllerInteraction.ACTIVE)) {
+                builder.world().modifyBlock(pos, it -> it.setValue(ControllerInteraction.ACTIVE, active), false);
+            }
+        });
+    }
+
     public static void octoControllerTutorial(SceneBuilder builder, SceneBuildingUtil util) {
         builder.configureBasePlate(0, 0, 7);
         builder.title("octo_controller", "Octo-Controller");
@@ -306,6 +319,7 @@ public class ZPSPonderScenes {
                 entity.moveTo(3.5, 2, 1.5);
             }
         });
+        setControllerActive(builder, util, true);
         builder.idle(40);
         builder.overlay().showText(60).text("By default, WASD and Space, Q, Left Shift and E control the 8 redstone outputs.");
         builder.idle(20);
@@ -326,7 +340,15 @@ public class ZPSPonderScenes {
         builder.world().toggleRedstonePower(util.select().position(5, 3, 5));
         builder.idle(20);
         builder.overlay().showText(60).text("Interact with the controller again to step off.");
-        builder.idle(70);
+        builder.idle(20);
+        builder.world().modifyEntity(piglin, entity -> {
+            if (entity instanceof AbstractPiglin it) {
+                it.swing(InteractionHand.MAIN_HAND);
+                entity.moveTo(3.5, 2, 1);
+            }
+        });
+        setControllerActive(builder, util, false);
+        builder.idle(50);
         builder.overlay().showText(60).text("Sneak and interact with an empty hand to choose the key for each output.");
         builder.idle(70);
     }

@@ -2,7 +2,7 @@ package g_mungus.zps.client.screens;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import g_mungus.zps.blockentity.ControllerBlockEntity;
-import g_mungus.zps.blockentity.DodecaControllerBlockEntity;
+import g_mungus.zps.client.ControllerLayout;
 import g_mungus.zps.networking.ControllerKeysC2SPacket;
 import g_mungus.zps.networking.ZPSGamePackets;
 import net.minecraft.ChatFormatting;
@@ -33,9 +33,8 @@ public class ControllerKeysScreen extends Screen {
 
     private static final Component RESET = Component.translatable("controls.resetAll");
 
-    /** The Dense Cable Separator's channel colours, in channel order: green, blue, red, purple. */
-    private static final int[] CHANNEL_COLOURS = {0xFF0C871F, 0xFF115E92, 0xFF870C28, 0xFF5D26A8};
-    private static final int CHANNELS_PER_SIDE = 4;
+    private static final int[] CHANNEL_COLOURS = ControllerLayout.CHANNEL_COLOURS;
+    private static final int CHANNELS_PER_SIDE = ControllerLayout.CHANNELS_PER_SIDE;
 
     private static final int BUTTON_WIDTH = 90;
     /** Room for the side names between the title and the first row. */
@@ -65,12 +64,8 @@ public class ControllerKeysScreen extends Screen {
         for (int i = 0; i < keys.length; i++) {
             keys[i] = controller.getKey(i);
         }
-        // Channels A-D, E-H and I-L leave from one side each; the rider faces the block, so the
-        // block's clockwise side is on their left.
-        boolean dodeca = controller instanceof DodecaControllerBlockEntity;
-        String[] sideKeys = dodeca ? new String[]{"left", "right", "back"} : new String[]{"down", "back"};
-        // Shown left to right as the rider sees them, so back sits between left and right.
-        this.sideColumns = dodeca ? new int[]{0, 2, 1} : new int[]{0, 1};
+        String[] sideKeys = ControllerLayout.sides(controller);
+        this.sideColumns = ControllerLayout.sideColumns(controller);
         this.sides = new Component[sideKeys.length];
         for (int i = 0; i < sideKeys.length; i++) {
             sides[i] = Component.translatable("zps.controller.side." + sideKeys[i]);

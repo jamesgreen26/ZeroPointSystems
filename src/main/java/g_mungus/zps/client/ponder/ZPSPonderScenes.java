@@ -49,7 +49,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.piglin.AbstractPiglin;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -303,19 +302,12 @@ public class ZPSPonderScenes {
         builder.world().modifyEntity(piglin, entity -> {
             if (entity instanceof AbstractPiglin it) {
                 it.swing(InteractionHand.MAIN_HAND);
+                // A rider stands on the controller's seat, so the piglin just steps onto it.
                 entity.moveTo(3.5, 2, 1.5);
-
-                Entity seat = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse("minecraft:armor_stand")).create(entity.level());
-                if (seat instanceof ArmorStand) {
-                    seat.setInvisible(true);
-                    seat.setNoGravity(true);
-
-                    entity.startRiding(seat, true);
-                }
             }
         });
         builder.idle(40);
-        builder.overlay().showText(60).text("Use arrow keys and WASD to control the 8 redstone outputs.");
+        builder.overlay().showText(60).text("By default, WASD and Space, Q, Left Shift and E control the 8 redstone outputs.");
         builder.idle(20);
         builder.world().toggleRedstonePower(util.select().position(1, 3, 5));
         builder.idle(8);
@@ -333,6 +325,10 @@ public class ZPSPonderScenes {
         builder.idle(8);
         builder.world().toggleRedstonePower(util.select().position(5, 3, 5));
         builder.idle(20);
+        builder.overlay().showText(60).text("Interact with the controller again to step off.");
+        builder.idle(70);
+        builder.overlay().showText(60).text("Sneak and interact with an empty hand to choose the key for each output.");
+        builder.idle(70);
     }
 
 

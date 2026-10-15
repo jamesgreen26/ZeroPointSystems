@@ -186,6 +186,126 @@ public class RoboticArmGameTests {
         });
     }
 
+    @GameTest(template = TEMPLATE)
+    public static void breakBlock_emptyHand_holdsTheDrop(GameTestHelper helper) {
+        RoboticArmBlockEntity arm = placeLoadedArm(helper);
+        if (arm == null) return;
+        arm.takeHeldStack();
+        helper.setBlock(TARGET_POS, Blocks.STONE);
+
+        if (!arm.BreakBlockAt(helper.absolutePos(TARGET_POS))) {
+            helper.fail("Robotic arm failed to start breaking stone");
+        }
+
+        helper.runAfterDelay(RoboticArmBlockEntity.MOVE_TIME_TICKS + 1, () -> {
+            helper.assertBlockPresent(Blocks.AIR, TARGET_POS);
+            assertStack(helper, arm.getHeldStack(), Items.COBBLESTONE.getDefaultInstance(), 1, "arm held stack");
+            helper.assertItemEntityCountIs(Items.COBBLESTONE, TARGET_POS, 2.0D, 0);
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void breakBlock_matchingHeldStack_topsItUp(GameTestHelper helper) {
+        RoboticArmBlockEntity arm = placeLoadedArm(helper);
+        if (arm == null) return;
+        arm.getHeldStackAccess().setItem(0, new ItemStack(Items.COBBLESTONE, 5));
+        helper.setBlock(TARGET_POS, Blocks.STONE);
+
+        if (!arm.BreakBlockAt(helper.absolutePos(TARGET_POS))) {
+            helper.fail("Robotic arm failed to start breaking stone");
+        }
+
+        helper.runAfterDelay(RoboticArmBlockEntity.MOVE_TIME_TICKS + 1, () -> {
+            assertStack(helper, arm.getHeldStack(), Items.COBBLESTONE.getDefaultInstance(), 6, "arm held stack");
+            helper.succeed();
+        });
+    }
+
+    /** The arm holds coal, so the raw iron has nowhere to go but the world. */
+    @GameTest(template = TEMPLATE)
+    public static void breakBlock_otherHeldItem_dropsTheDrop(GameTestHelper helper) {
+        RoboticArmBlockEntity arm = placeLoadedArm(helper);
+        if (arm == null) return;
+        helper.setBlock(TARGET_POS, Blocks.IRON_ORE);
+
+        if (!arm.BreakBlockAt(helper.absolutePos(TARGET_POS))) {
+            helper.fail("Robotic arm failed to start breaking iron ore");
+        }
+
+        helper.runAfterDelay(RoboticArmBlockEntity.MOVE_TIME_TICKS + 1, () -> {
+            helper.assertBlockPresent(Blocks.AIR, TARGET_POS);
+            assertStack(helper, arm.getHeldStack(), Items.COAL.getDefaultInstance(), TRANSFER_COUNT, "arm held stack");
+            helper.assertItemEntityCountIs(Items.RAW_IRON, TARGET_POS, 2.0D, 1);
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void breakBlock_fullHeldStack_dropsTheDrop(GameTestHelper helper) {
+        RoboticArmBlockEntity arm = placeLoadedArm(helper);
+        if (arm == null) return;
+        arm.getHeldStackAccess().setItem(0, new ItemStack(Items.COBBLESTONE, 64));
+        helper.setBlock(TARGET_POS, Blocks.STONE);
+
+        if (!arm.BreakBlockAt(helper.absolutePos(TARGET_POS))) {
+            helper.fail("Robotic arm failed to start breaking stone");
+        }
+
+        helper.runAfterDelay(RoboticArmBlockEntity.MOVE_TIME_TICKS + 1, () -> {
+            assertStack(helper, arm.getHeldStack(), Items.COBBLESTONE.getDefaultInstance(), 64, "arm held stack");
+            helper.assertItemEntityCountIs(Items.COBBLESTONE, TARGET_POS, 2.0D, 1);
+            helper.succeed();
+        });
+    }
+
+    /** Obsidian needs a diamond pickaxe and bedrock can't be broken at all, so the arm doesn't even move. */
+    @GameTest(template = TEMPLATE)
+    public static void breakBlock_tooHardForIronPickaxe_isRefused(GameTestHelper helper) {
+        RoboticArmBlockEntity arm = placeLoadedArm(helper);
+        if (arm == null) return;
+        BlockPos bedrockPos = TARGET_POS.east();
+        helper.setBlock(TARGET_POS, Blocks.OBSIDIAN);
+        helper.setBlock(bedrockPos, Blocks.BEDROCK);
+
+        if (arm.BreakBlockAt(helper.absolutePos(TARGET_POS))) {
+            helper.fail("Robotic arm accepted breaking obsidian");
+        }
+        if (arm.BreakBlockAt(helper.absolutePos(bedrockPos))) {
+            helper.fail("Robotic arm accepted breaking bedrock");
+        }
+        if (arm.BreakBlockAt(helper.absolutePos(TARGET_POS.above()))) {
+            helper.fail("Robotic arm accepted breaking air");
+        }
+
+        helper.runAfterDelay(RoboticArmBlockEntity.MOVE_TIME_TICKS + 1, () -> {
+            helper.assertBlockPresent(Blocks.OBSIDIAN, TARGET_POS);
+            helper.assertBlockPresent(Blocks.BEDROCK, bedrockPos);
+            if (arm.isMoving()) {
+                helper.fail("Robotic arm moved for a refused break");
+            }
+            helper.succeed();
+        });
+    }
+
+    /** The block is checked again when the hand arrives, in case it changed on the way. */
+    @GameTest(template = TEMPLATE)
+    public static void breakBlock_blockHardenedDuringMove_isLeft(GameTestHelper helper) {
+        RoboticArmBlockEntity arm = placeLoadedArm(helper);
+        if (arm == null) return;
+        helper.setBlock(TARGET_POS, Blocks.STONE);
+
+        if (!arm.BreakBlockAt(helper.absolutePos(TARGET_POS))) {
+            helper.fail("Robotic arm failed to start breaking stone");
+        }
+        helper.setBlock(TARGET_POS, Blocks.OBSIDIAN);
+
+        helper.runAfterDelay(RoboticArmBlockEntity.MOVE_TIME_TICKS + 1, () -> {
+            helper.assertBlockPresent(Blocks.OBSIDIAN, TARGET_POS);
+            helper.succeed();
+        });
+    }
+
     private static RoboticArmBlockEntity placeLoadedArm(GameTestHelper helper) {
         helper.setBlock(ARM_POS, ModBlocks.ROBOTIC_ARM.get());
 

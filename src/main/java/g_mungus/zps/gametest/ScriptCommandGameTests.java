@@ -531,6 +531,33 @@ public class ScriptCommandGameTests {
         helper.succeed();
     }
 
+    /** {@code break_block} reaches the arm through the script command. */
+    @GameTest(template = TEMPLATE)
+    public static void breakBlock_scriptCommand_breaksIntoHand(GameTestHelper helper) {
+        BlockPos relPos = new BlockPos(3, 1, 3);
+        BlockPos targetRel = new BlockPos(2, 1, 3);
+        helper.setBlock(relPos, ModBlocks.ROBOTIC_ARM.get());
+        helper.setBlock(targetRel, Blocks.STONE);
+        BlockPos absPos = helper.absolutePos(relPos);
+        if (!(helper.getLevel().getBlockEntity(absPos) instanceof RoboticArmBlockEntity arm)) {
+            helper.fail("Expected a robotic arm at " + absPos);
+            return;
+        }
+        var energy = arm.getEnergyStorage(null);
+        energy.receiveEnergy(energy.getMaxEnergyStored(), false);
+
+        BlockPos target = helper.absolutePos(targetRel);
+        runScriptCommand(helper, absPos, "break_block " + target.getX() + " " + target.getY() + " " + target.getZ());
+
+        helper.runAfterDelay(RoboticArmBlockEntity.MOVE_TIME_TICKS + 1, () -> {
+            helper.assertBlockPresent(Blocks.AIR, targetRel);
+            if (!arm.getHeldStack().is(Items.COBBLESTONE) || arm.getHeldStack().getCount() != 1) {
+                helper.fail("break_block: expected 1 cobblestone in hand, got " + arm.getHeldStack());
+            }
+            helper.succeed();
+        });
+    }
+
     /**
      * {@code value_of(held_item id)} should give the held item's id, {@code minecraft:air} for an empty hand, and
      * compare as a string.

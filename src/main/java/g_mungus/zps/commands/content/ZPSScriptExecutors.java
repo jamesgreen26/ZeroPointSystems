@@ -77,6 +77,10 @@ public class ZPSScriptExecutors {
                 (target, context) -> RoboticArmItemCommand.dropItems(context.level(), context.pos(), target))
                 .withApplicability(roboticArm));
 
+        event.register(ZPSNodes.executor("break_block", ZPSScriptTypes.BLOCK_POS,
+                (target, context) -> RoboticArmItemCommand.breakBlock(context.level(), context.pos(), target))
+                .withApplicability(roboticArm));
+
         event.register(ZPSNodes.executor("set_transfer_count", BuiltInTypes.INT,
                 IntegerArgumentType.integer(RoboticArmBlockEntity.MIN_RETRIEVE_AMOUNT, RoboticArmBlockEntity.MAX_RETRIEVE_AMOUNT),
                 (count, context) -> RoboticArmItemCommand.setTransferCount(context.level(), context.pos(), count))

@@ -47,6 +47,14 @@ public class RoboticArmItemCommand {
         return 0;
     }
 
+    public static int breakBlock(ServerLevel serverLevel, BlockPos armPos, BlockPos targetPos) {
+        BlockEntity blockEntity = serverLevel.getBlockEntity(armPos);
+        if (blockEntity instanceof RoboticArmBlockEntity roboticArm) {
+            return roboticArm.BreakBlockAt(targetPos) ? 1 : 0;
+        }
+        return 0;
+    }
+
     public static int setTransferCount(ServerLevel serverLevel, BlockPos armPos, int transferCount) {
         BlockEntity blockEntity = serverLevel.getBlockEntity(armPos);
         if (blockEntity instanceof RoboticArmBlockEntity roboticArm) {

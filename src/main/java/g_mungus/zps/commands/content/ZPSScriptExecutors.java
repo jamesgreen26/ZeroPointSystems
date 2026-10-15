@@ -14,7 +14,7 @@ import g_mungus.zps.commands.content.executors.AssemblerRecipeCommand;
 import g_mungus.zps.commands.content.executors.RoboticArmItemCommand;
 import g_mungus.zps.commands.content.executors.SetFrequencyCommand;
 import g_mungus.zps.commands.content.executors.SetPageCommand;
-import g_mungus.zps.commands.content.executors.ReturnCommand;
+import g_mungus.zps.commands.content.executors.RequestValueCommand;
 import g_mungus.zps.commands.content.executors.SetRedstoneCommand;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -31,8 +31,8 @@ public class ZPSScriptExecutors {
                 }));
 
         // Any value is usable as a string, so this takes whatever it is given.
-        event.register(ZPSNodes.executor("return", BuiltInTypes.STRING,
-                (value, context) -> ReturnCommand.answer(context, value)));
+        event.register(ZPSNodes.executor("request_value", BuiltInTypes.STRING,
+                (value, context) -> RequestValueCommand.answer(context, value)));
 
         BlockApplicability lecterns = BlockApplicability.of("zps:data_lectern", "minecraft:lectern");
 

@@ -62,7 +62,7 @@ import java.util.regex.Pattern;
 /**
  * Suggestions, usage hints and highlighting for a multi-line script editor, from the scripts the
  * server sent ({@link ClientScripts}). Each line is a command, except for {@code #def} alias and
- * {@code #var} variable definitions, {@code #} comments, and {@code wait} and {@code receive} lines,
+ * {@code #var} variable definitions, {@code #} comments, and {@code wait} and {@code receive_value} lines,
  * which the editor reads itself; all may stand on any line, and a command uses only the aliases and
  * variables defined above it.
  */
@@ -74,7 +74,7 @@ public class MultiLineCommandSuggestions {
     private static final String ALIAS_NAME_USAGE = "<alias>";
     private static final String EXPECTED_EQUALS_MESSAGE = "Expected '=' after alias name";
     private static final String WAIT = TerminalLines.WAIT;
-    private static final String RECEIVE = TerminalLines.RECEIVE;
+    private static final String RECEIVE_VALUE = TerminalLines.RECEIVE_VALUE;
     private static final String RECEIVE_USAGE = "<variable>";
     private static final String DEFINE = "#def";
     private static final String DECLARE = "#var";
@@ -304,14 +304,14 @@ public class MultiLineCommandSuggestions {
         }
     }
 
-    /** Offers {@code wait} and {@code receive} alongside the commands, while the first word is being written. */
+    /** Offers {@code wait} and {@code receive_value} alongside the commands, while the first word is being written. */
     private static Suggestions withWait(String command, int cursor, Suggestions suggestions) {
         String typed = command.substring(0, Math.min(cursor, command.length()));
         if (typed.contains(" ")) {
             return suggestions;
         }
         List<Suggestion> list = new ArrayList<>(suggestions.getList());
-        for (String keyword : List.of(WAIT, RECEIVE)) {
+        for (String keyword : List.of(WAIT, RECEIVE_VALUE)) {
             if (keyword.startsWith(typed)) {
                 list.add(new Suggestion(StringRange.between(0, typed.length()), keyword));
             }
@@ -455,7 +455,7 @@ public class MultiLineCommandSuggestions {
         return strippedLine.startsWith("#") && (DEFINE.startsWith(strippedLine) || DECLARE.startsWith(strippedLine));
     }
 
-    // --- wait and receive ------------------------------------------------------------------------------
+    // --- wait and receive_value ------------------------------------------------------------------------
 
     /** Where the first non-whitespace character at or after {@code from} is. */
     private static int skipWhitespace(String text, int from) {
@@ -497,10 +497,10 @@ public class MultiLineCommandSuggestions {
     }
 
     private static boolean isReceiveLine(String command) {
-        return TerminalLines.isReceive(command);
+        return TerminalLines.isReceiveValue(command);
     }
 
-    /** The variables declared above {@code lineNumber}, which a {@code receive} there may name. */
+    /** The variables declared above {@code lineNumber}, which a {@code receive_value} there may name. */
     private Set<String> variablesAbove(ScriptView<SharedSuggestionProvider> view, int lineNumber) {
         return prepared(view).script().at(lineNumber).variables().keySet();
     }
@@ -509,9 +509,9 @@ public class MultiLineCommandSuggestions {
     private void updateReceiveInfo(ScriptView<SharedSuggestionProvider> view, String command, int cursor,
                                    int offset, int lineNumber) {
         Set<String> variables = variablesAbove(view, lineNumber);
-        String name = TerminalLines.argument(command, RECEIVE);
-        int keywordEnd = skipWhitespace(command, 0) + RECEIVE.length();
-        int nameStart = argumentStart(command, RECEIVE);
+        String name = TerminalLines.argument(command, RECEIVE_VALUE);
+        int keywordEnd = skipWhitespace(command, 0) + RECEIVE_VALUE.length();
+        int nameStart = argumentStart(command, RECEIVE_VALUE);
         if (cursor > keywordEnd && cursor >= nameStart) {
             SuggestionsBuilder builder = new SuggestionsBuilder(command, nameStart);
             String typed = command.substring(nameStart, Math.min(cursor, command.length()));
@@ -523,7 +523,7 @@ public class MultiLineCommandSuggestions {
         }
         if (name == null || name.isEmpty() || !variables.contains(name)) {
             Style style = name == null || name.isEmpty() ? ScriptSyntaxHighlighter.DEFAULT_STYLE : ScriptSyntaxHighlighter.UNPARSED_STYLE;
-            showArgumentUsage(RECEIVE_USAGE, style, command, RECEIVE, offset, lineNumber);
+            showArgumentUsage(RECEIVE_USAGE, style, command, RECEIVE_VALUE, offset, lineNumber);
         }
         this.suggestions = null;
         if (this.allowSuggestions && this.minecraft.options.autoSuggestions().get()) {
@@ -533,8 +533,8 @@ public class MultiLineCommandSuggestions {
 
     private List<ScriptSyntaxHighlighter.Span> receiveSpans(ScriptView<SharedSuggestionProvider> view, String line,
                                                             int offset, int lineNumber) {
-        String name = TerminalLines.argument(line.substring(offset), RECEIVE);
-        return keywordLineSpans(line, offset, RECEIVE, name != null && variablesAbove(view, lineNumber).contains(name)
+        String name = TerminalLines.argument(line.substring(offset), RECEIVE_VALUE);
+        return keywordLineSpans(line, offset, RECEIVE_VALUE, name != null && variablesAbove(view, lineNumber).contains(name)
                 ? ScriptSyntaxHighlighter.GETTER_STYLE
                 : ScriptSyntaxHighlighter.UNPARSED_STYLE);
     }

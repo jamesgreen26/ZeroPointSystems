@@ -226,8 +226,8 @@ public final class LightPipeGameTests {
     public static void scriptVariable_valueTravelsFromOneBusToAnother(GameTestHelper helper) {
         ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
                 "#var lvl = 0",
-                "if " + target(helper, VAR_BUS_A) + " return 7",
-                "receive lvl",
+                "if " + target(helper, VAR_BUS_A) + " request_value 7",
+                "receive_value lvl",
                 "if " + target(helper, VAR_BUS_B) + " set_redstone value_of(lvl)"));
         if (terminal == null) {
             return;
@@ -249,8 +249,8 @@ public final class LightPipeGameTests {
     public static void scriptVariable_answerIsNotRunByOtherBuses(GameTestHelper helper) {
         ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
                 "#var text = x",
-                "if " + target(helper, VAR_BUS_A) + " return \"set_redstone 9\"",
-                "receive text"));
+                "if " + target(helper, VAR_BUS_A) + " request_value \"set_redstone 9\"",
+                "receive_value text"));
         if (terminal == null) {
             return;
         }
@@ -271,16 +271,16 @@ public final class LightPipeGameTests {
 
     /**
      * An answer is on the cable for one tick, like a terminal's command: the bus has taken it off
-     * again while a Text Display still holds it, and the terminal has kept it for {@code receive}.
+     * again while a Text Display still holds it, and the terminal has kept it for {@code receive_value}.
      */
     @GameTest(template = TEMPLATE)
     public static void scriptVariable_answerIsOnTheCableForOneTick(GameTestHelper helper) {
         BlockPos displayPos = new BlockPos(1, 1, 4);
         ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
                 "#var lvl = 0",
-                "if " + target(helper, VAR_BUS_A) + " return 5",
+                "if " + target(helper, VAR_BUS_A) + " request_value 5",
                 "wait 4",
-                "receive lvl"));
+                "receive_value lvl"));
         if (terminal == null) {
             return;
         }
@@ -305,14 +305,14 @@ public final class LightPipeGameTests {
         });
     }
 
-    /** An answer belongs to the line before it: a command sent in between loses it for a later {@code receive}. */
+    /** An answer belongs to the line before it: a command sent in between loses it for a later {@code receive_value}. */
     @GameTest(template = TEMPLATE)
-    public static void scriptVariable_commandBetweenReturnAndReceiveLosesTheAnswer(GameTestHelper helper) {
+    public static void scriptVariable_commandBetweenRequestAndReceiveLosesTheAnswer(GameTestHelper helper) {
         ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
                 "#var lvl = 0",
-                "if " + target(helper, VAR_BUS_A) + " return 5",
+                "if " + target(helper, VAR_BUS_A) + " request_value 5",
                 "if " + target(helper, VAR_BUS_B) + " set_redstone 3",
-                "receive lvl"));
+                "receive_value lvl"));
         if (terminal == null) {
             return;
         }
@@ -338,9 +338,9 @@ public final class LightPipeGameTests {
     @GameTest(template = TEMPLATE)
     public static void scriptVariable_commandAfterAnAnswerArrivesClean(GameTestHelper helper) {
         ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
-                "if " + target(helper, VAR_BUS_A) + " return 5",
+                "if " + target(helper, VAR_BUS_A) + " request_value 5",
                 "if " + target(helper, VAR_BUS_B) + " set_redstone 7",
-                "if " + target(helper, VAR_BUS_A) + " return 6",
+                "if " + target(helper, VAR_BUS_A) + " request_value 6",
                 "if " + target(helper, VAR_BUS_B) + " set_redstone 9"));
         if (terminal == null) {
             return;
@@ -362,22 +362,22 @@ public final class LightPipeGameTests {
     }
 
     /**
-     * {@code receive} takes no time: on a 4 tick delay the line after it runs in the same tick, 4
-     * ticks after the {@code return}, where a cycle for the receive would put it 8 ticks after.
+     * {@code receive_value} takes no time: on a 4 tick delay the line after it runs in the same tick, 4
+     * ticks after the {@code request_value}, where a cycle for the receive_value would put it 8 ticks after.
      */
     @GameTest(template = TEMPLATE)
     public static void scriptVariable_receiveTakesNoTime(GameTestHelper helper) {
         ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
                 "#var lvl = 0",
-                "if " + target(helper, VAR_BUS_A) + " return 5",
-                "receive lvl",
+                "if " + target(helper, VAR_BUS_A) + " request_value 5",
+                "receive_value lvl",
                 "if " + target(helper, VAR_BUS_B) + " set_redstone value_of(lvl)"), 4, false);
         if (terminal == null) {
             return;
         }
         helper.runAfterDelay(6, () -> {
             if (busOutput(helper, VAR_BUS_B) != 5) {
-                helper.fail("Expected the line after receive to have run by now, bus B emits "
+                helper.fail("Expected the line after receive_value to have run by now, bus B emits "
                         + busOutput(helper, VAR_BUS_B) + " (receive: " + terminal.getLastReceiveFailure() + ")");
                 return;
             }
@@ -390,8 +390,8 @@ public final class LightPipeGameTests {
     public static void scriptVariable_loopOfFreeLinesDoesNotSpin(GameTestHelper helper) {
         ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
                 "#var lvl = 0",
-                "receive lvl",
-                "receive lvl"), 2, true);
+                "receive_value lvl",
+                "receive_value lvl"), 2, true);
         if (terminal == null) {
             return;
         }
@@ -410,8 +410,8 @@ public final class LightPipeGameTests {
     public static void scriptVariable_twoAnswersLeaveTheVariableAlone(GameTestHelper helper) {
         ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
                 "#var lvl = 0",
-                "return 3",
-                "receive lvl"));
+                "request_value 3",
+                "receive_value lvl"));
         if (terminal == null) {
             return;
         }
@@ -434,8 +434,8 @@ public final class LightPipeGameTests {
     public static void scriptVariable_anyValueIsReceivedAndAMisfitFailsWhereUsed(GameTestHelper helper) {
         ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
                 "#var lvl = 0",
-                "if " + target(helper, VAR_BUS_A) + " return hello",
-                "receive lvl",
+                "if " + target(helper, VAR_BUS_A) + " request_value hello",
+                "receive_value lvl",
                 "if " + target(helper, VAR_BUS_B) + " set_redstone value_of(lvl)"));
         if (terminal == null) {
             return;
@@ -461,12 +461,12 @@ public final class LightPipeGameTests {
 
     /** {@code wait} sends nothing, so the answer to the line before it is still there to receive. */
     @GameTest(template = TEMPLATE)
-    public static void scriptVariable_waitBetweenReturnAndReceiveKeepsTheAnswer(GameTestHelper helper) {
+    public static void scriptVariable_waitBetweenRequestAndReceiveKeepsTheAnswer(GameTestHelper helper) {
         ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
                 "#var lvl = 0",
-                "if " + target(helper, VAR_BUS_A) + " return 5",
+                "if " + target(helper, VAR_BUS_A) + " request_value 5",
                 "wait   2",
-                "receive \t lvl"));
+                "receive_value \t lvl"));
         if (terminal == null) {
             return;
         }
@@ -478,7 +478,7 @@ public final class LightPipeGameTests {
         });
     }
 
-    /** {@code wait} and {@code receive} take any whitespace around their argument, and only as a separate word. */
+    /** {@code wait} and {@code receive_value} take any whitespace around their argument, and only as a separate word. */
     @GameTest(template = TEMPLATE)
     public static void terminalLines_toleratesWhitespace(GameTestHelper helper) {
         List<String> problems = new java.util.ArrayList<>();
@@ -490,8 +490,8 @@ public final class LightPipeGameTests {
         check(problems, "wait 65 is out of range", TerminalLines.waitCycles("wait 65"), null);
         check(problems, "wait 0 is out of range", TerminalLines.waitCycles("wait 0"), null);
         check(problems, "waiting is not a wait", TerminalLines.isWait("waiting 2"), false);
-        check(problems, "receive name", TerminalLines.argument("receive   lvl ", TerminalLines.RECEIVE), "lvl");
-        check(problems, "receiver is not a receive", TerminalLines.isReceive("receiver lvl"), false);
+        check(problems, "receive_value name", TerminalLines.argument("receive_value   lvl ", TerminalLines.RECEIVE_VALUE), "lvl");
+        check(problems, "receive_values is not a receive_value", TerminalLines.isReceiveValue("receive_values lvl"), false);
         check(problems, "answer value", TerminalLines.providedValue("provide_value  a b "), " a b ");
         check(problems, "empty answer", TerminalLines.providedValue("provide_value "), "");
         check(problems, "bare provide_value is no answer", TerminalLines.providedValue("provide_value"), null);

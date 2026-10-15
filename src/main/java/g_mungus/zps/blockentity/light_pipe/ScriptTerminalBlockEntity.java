@@ -156,7 +156,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
 
     /** The value of the last answer to reach the cable since this terminal last sent a line, or null. */
     private @Nullable String answer;
-    /** Why the last {@code receive} left its variable alone, or null if it did not. */
+    /** Why the last {@code receive_value} left its variable alone, or null if it did not. */
     private @Nullable String lastReceiveFailure;
 
     public void tick() {
@@ -276,9 +276,9 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         if (TerminalLines.isWait(command)) {
             executeWaitCommand(command);
             clearOutput();
-        } else if (TerminalLines.isReceive(command)) {
+        } else if (TerminalLines.isReceiveValue(command)) {
             // Free: the answer it reads arrived when the line before it left the cable.
-            receive(TerminalLines.argument(command, TerminalLines.RECEIVE), script, line);
+            receive(TerminalLines.argument(command, TerminalLines.RECEIVE_VALUE), script, line);
             return true;
         } else {
             CommandSourceStack origin = createTerminalCommandSourceStack(serverLevel, worldPosition, getBlockState());
@@ -342,7 +342,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
     }
 
     /**
-     * Keeps an answer that reaches the cable, {@code provide_value <value>}, for {@code receive},
+     * Keeps an answer that reaches the cable, {@code provide_value <value>}, for {@code receive_value},
      * until this terminal sends its next line. An answer is on the cable for a tick only, so it is
      * kept after it goes. Any other signal, garble from two answers included, is no answer.
      */
@@ -375,7 +375,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         setChanged();
     }
 
-    /** Why the last {@code receive} left its variable alone, or null if it did not. */
+    /** Why the last {@code receive_value} left its variable alone, or null if it did not. */
     public @Nullable String getLastReceiveFailure() {
         return lastReceiveFailure;
     }

@@ -192,6 +192,11 @@ public final class LightPipeGameTests {
      * running {@code script} on the shortest delay, powered once the script is in.
      */
     private static ScriptTerminalBlockEntity variableRig(GameTestHelper helper, String script) {
+        return variableRig(helper, script, 2, false);
+    }
+
+    /** As {@link #variableRig(GameTestHelper, String)}, on {@code delay} ticks a command, looping if asked. */
+    private static ScriptTerminalBlockEntity variableRig(GameTestHelper helper, String script, int delay, boolean loop) {
         for (BlockPos bus : List.of(VAR_BUS_A, VAR_BUS_B)) {
             helper.setBlock(bus.north(), Blocks.STONE.defaultBlockState());
             helper.setBlock(bus, serialBus(Direction.NORTH));
@@ -205,7 +210,7 @@ public final class LightPipeGameTests {
             helper.fail("Expected a script terminal at " + VAR_TERMINAL);
             return null;
         }
-        terminal.acceptUpdatePacket(new ScriptComputerC2SPacket(helper.absolutePos(VAR_TERMINAL), false, 2, script));
+        terminal.acceptUpdatePacket(new ScriptComputerC2SPacket(helper.absolutePos(VAR_TERMINAL), loop, delay, script));
         helper.setBlock(VAR_TERMINAL.south(), Blocks.REDSTONE_BLOCK);
         return terminal;
     }
@@ -350,6 +355,50 @@ public final class LightPipeGameTests {
                     || busOutput(helper, VAR_BUS_B) != 9) {
                 helper.fail("Expected bus B to run each command clean, its last was \"" + busB.getLastCommand()
                         + "\" (" + busB.getLastOutcome() + ") emitting " + busOutput(helper, VAR_BUS_B));
+                return;
+            }
+            helper.succeed();
+        });
+    }
+
+    /**
+     * {@code receive} takes no time: on a 4 tick delay the line after it runs in the same tick, 4
+     * ticks after the {@code return}, where a cycle for the receive would put it 8 ticks after.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void scriptVariable_receiveTakesNoTime(GameTestHelper helper) {
+        ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
+                "#var lvl = 0",
+                "if " + target(helper, VAR_BUS_A) + " return 5",
+                "receive lvl",
+                "if " + target(helper, VAR_BUS_B) + " set_redstone value_of(lvl)"), 4, false);
+        if (terminal == null) {
+            return;
+        }
+        helper.runAfterDelay(6, () -> {
+            if (busOutput(helper, VAR_BUS_B) != 5) {
+                helper.fail("Expected the line after receive to have run by now, bus B emits "
+                        + busOutput(helper, VAR_BUS_B) + " (receive: " + terminal.getLastReceiveFailure() + ")");
+                return;
+            }
+            helper.succeed();
+        });
+    }
+
+    /** A looping script of nothing but free lines still takes time per pass, rather than spinning in a tick. */
+    @GameTest(template = TEMPLATE)
+    public static void scriptVariable_loopOfFreeLinesDoesNotSpin(GameTestHelper helper) {
+        ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
+                "#var lvl = 0",
+                "receive lvl",
+                "receive lvl"), 2, true);
+        if (terminal == null) {
+            return;
+        }
+        helper.runAfterDelay(10, () -> {
+            String failure = terminal.getLastReceiveFailure();
+            if (failure == null || !failure.startsWith("Nothing was received")) {
+                helper.fail("Expected the looping receives to run, got failure " + failure);
                 return;
             }
             helper.succeed();

@@ -220,7 +220,7 @@ if page > 8 set_redstone 15 else set_redstone 0
 Every command the terminal sends stays on the Data Cable for one tick, then the cable goes blank until the next command. A bus can answer while it is blank:
 
 - `return <value>` is an executor. The bus that runs it puts the value on the cable when the cable goes blank, for one tick. Use `if pos == ...` to pick which bus answers.
-- `receive <name>` stores the answer to the last command sent in a variable declared above it. The terminal keeps that answer until it sends another command. Like `wait`, it works only on the Script Terminal, cannot be used with `if`, `unless` or `else`, and takes one cycle.
+- `receive <name>` stores the answer to the last command sent in a variable declared above it. The terminal keeps that answer until it sends another command. Like `wait`, it works only on the Script Terminal and cannot be used with `if`, `unless` or `else`. Unlike `wait`, it takes no time: the line after it runs straight away. A looping script still takes at least 2 ticks per pass, however many free lines it has.
 
 ```
 #var page = 1

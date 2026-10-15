@@ -149,6 +149,11 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
 
     /** The values the script's variables have received, as received, by name; the rest stand at their declared literal. */
     private final Map<String, String> variableValues = new HashMap<>();
+    /** The fewest ticks one pass through the script may take, so a script of free lines cannot spin. */
+    private static final int MIN_PASS_TICKS = 2;
+    /** The game time the current pass through the script started. */
+    private long passStartedAt = Long.MIN_VALUE / 2;
+
     /** The value of the last answer to reach the cable since this terminal last sent a line, or null. */
     private @Nullable String answer;
     /** Why the last {@code receive} left its variable alone, or null if it did not. */
@@ -174,10 +179,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         boolean shouldRestart = powered && (!wasPowered || loop);
         if ((shouldContinue || shouldRestart) && !commands.isEmpty()) {
             if (tickDelay <= 0) {
-                String command = commands.get(head);
-                if (command.startsWith("/")) command = command.substring(1);
-                processCommand(serverLevel, command, script, script.commandLines().get(head));
-                head++;
+                runLines(serverLevel, script, commands);
             } else {
                 // A command is on the pipe for one tick only; the delay still spaces the next one.
                 clearOutput();
@@ -245,15 +247,39 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         preparedScript = null;
     }
 
-    /** @param line the script line the command stands on, whose aliases it uses */
-    private void processCommand(ServerLevel serverLevel, String command, PreparedScript script, int line) {
+    /**
+     * Runs the line at {@code head}, and the lines after it while they take no time, up to the end
+     * of the script. A new pass starts only {@link #MIN_PASS_TICKS} after the last one did, so a
+     * looping script of free lines cannot run forever within a tick.
+     */
+    private void runLines(ServerLevel serverLevel, PreparedScript script, List<String> commands) {
+        if (head == 0) {
+            if (serverLevel.getGameTime() < passStartedAt + MIN_PASS_TICKS) {
+                return;
+            }
+            passStartedAt = serverLevel.getGameTime();
+        }
+        boolean free;
+        do {
+            String command = commands.get(head);
+            if (command.startsWith("/")) command = command.substring(1);
+            free = processCommand(serverLevel, command, script, script.commandLines().get(head));
+            head++;
+        } while (free && head < commands.size());
+    }
+
+    /**
+     * @param line the script line the command stands on, whose aliases it uses
+     * @return whether the line took no time, so the next may run in the same tick
+     */
+    private boolean processCommand(ServerLevel serverLevel, String command, PreparedScript script, int line) {
         if (TerminalLines.isWait(command)) {
             executeWaitCommand(command);
             clearOutput();
         } else if (TerminalLines.isReceive(command)) {
+            // Free: the answer it reads arrived when the line before it left the cable.
             receive(TerminalLines.argument(command, TerminalLines.RECEIVE), script, line);
-            clearOutput();
-            tickDelay = delay - 1;
+            return true;
         } else {
             CommandSourceStack origin = createTerminalCommandSourceStack(serverLevel, worldPosition, getBlockState());
             currentCommand = script.scripts().process(script.preProcessing().at(line), command, origin, worldPosition,
@@ -263,6 +289,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
             updateSignal(level);
             tickDelay = delay - 1; // delay value from GUI (2t, 4t, 8t, or 16t)
         }
+        return false;
     }
 
     /** The Address Pad's entries by name, or none without a pad. */

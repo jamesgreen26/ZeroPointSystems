@@ -60,12 +60,12 @@ public class ZPSScriptGetters {
                 ItemStack book = holder.zps$getBook();
                 if (book == null) return "";
                 int page = holder.zps$getCurrentPage();
-                return BookComponents.getPageText(book, page, false).replace("\n", "\\n");
+                return BookComponents.getPageText(book, page, false);
             }
             return "";
         }).withApplicability(lecterns));
 
-        // Header first and \n line breaks, so load_script takes it back as it was.
+        // Header first, so load_script takes it back as it was.
         event.register(ZPSNodes.getter("script_contents", BuiltInTypes.STRING,
                 context -> context.level().getBlockEntity(context.pos()) instanceof ScriptTerminalBlockEntity terminal
                         ? terminal.scriptContents() : "")

@@ -45,8 +45,7 @@ public class SetPageCommand {
                         pages.add(StringTag.valueOf(""));
                         holder.zps$onPageAdded();
                     }
-                    String normalizedText = text.replace("\\n", "\n");
-                    pages.set(page, StringTag.valueOf(BookPageTextLimiter.truncateToDisplayableLength(normalizedText)));
+                    pages.set(page, StringTag.valueOf(BookPageTextLimiter.truncateToDisplayableLength(text)));
                     holder.zps$onPageWritten();
                 }
             }));

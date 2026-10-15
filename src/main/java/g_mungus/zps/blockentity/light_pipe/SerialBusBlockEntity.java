@@ -285,12 +285,10 @@ public class SerialBusBlockEntity extends AbstractTextDataReceiver implements Li
 
     /** Puts a value on the pipe, walking the network only when it is not the one already there. */
     private void send(ServerLevel serverLevel, String value) {
-        String value_parsed = value.replace("\\n", "\n");
-
-        if (value_parsed.equals(sentValue)) {
+        if (value.equals(sentValue)) {
             return;
         }
-        sentValue = value_parsed;
+        sentValue = value;
         setChanged();
         updateSignal(serverLevel);
     }

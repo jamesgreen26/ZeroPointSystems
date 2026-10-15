@@ -45,7 +45,7 @@ public class ZPSScriptExecutors {
                 (text, context) -> SetPageCommand.writeToCurrentPage(context.level(), context.pos(), text))
                 .withApplicability(lecterns));
 
-        // Line breaks are the two characters \n, and a "# 4t REPEAT" first line sets the terminal's settings.
+        // A "# 4t REPEAT" first line sets the terminal's delay and mode.
         event.register(ZPSNodes.executor("load_script", BuiltInTypes.STRING,
                 (script, context) -> LoadScriptCommand.load(context.level(), context.pos(), script))
                 .withApplicability(BlockApplicability.of("zps:script_terminal")));

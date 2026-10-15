@@ -46,7 +46,7 @@ The following getters require the target block to be a `Data Lectern` or a vanil
 | Getter | Output | Description |
 |--------|--------|-------------|
 | `page_number` | Int | The current page number of the book, 1-based. Returns `0` if there is no book. |
-| `page_contents` | String | The text content of the current page, with lines separated by `\n`. Returns an empty string if there is no book or the page is blank. |
+| `page_contents` | String | The text content of the current page, line breaks included. Returns an empty string if there is no book or the page is blank. |
 
 Examples:
 
@@ -68,7 +68,7 @@ The following getter requires the target block to be a `Script Terminal`.
 
 | Getter            | Output | Description |
 |-------------------|--------|-------------|
-| `script_contents` | String | The terminal's script as a `.mungus` file holds it: a `# 4t REPEAT` style header line, then the script, with lines separated by `\n`. `load_script` takes it back unchanged. |
+| `script_contents` | String | The terminal's script as a `.mungus` file holds it: a `# 4t REPEAT` style header line, then the script. `load_script` takes it back unchanged. |
 
 Examples:
 

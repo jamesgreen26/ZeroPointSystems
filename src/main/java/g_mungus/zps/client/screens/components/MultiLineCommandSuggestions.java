@@ -12,11 +12,14 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestion;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+import com.mojang.brigadier.LiteralMessage;
 import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import g_mungus.munguscript.engine.ScriptView;
 import g_mungus.munguscript.engine.preprocess.CommandPreProcessor;
 import g_mungus.munguscript.engine.preprocess.PreProcessContext;
+import g_mungus.munguscript.engine.preprocess.PreProcessorToken;
+import g_mungus.munguscript.engine.preprocess.ScriptVariable;
 import g_mungus.munguscript.engine.preprocess.PreProcessDiagnostic;
 import g_mungus.munguscript.engine.preprocess.PreProcessed;
 import g_mungus.munguscript.engine.preprocess.SourceMap;
@@ -92,6 +95,8 @@ public class MultiLineCommandSuggestions {
     private final List<FormattedCharSequence> commandUsage = Lists.<FormattedCharSequence>newArrayList();
     private final @Nullable Set<ScriptTarget> connectedTargets;
     private final Supplier<Map<String, BlockPos>> addresses;
+    /** The values the script's variables have received, by name; the rest stand at their declared literal. */
+    private Supplier<Map<String, String>> variableValues = Map::of;
     private int commandUsagePosition;
     private int commandUsageWidth;
     /** The current line as it was parsed: after pre-processing, so it reads differently from the box. */
@@ -142,6 +147,85 @@ public class MultiLineCommandSuggestions {
     /** Turns the box into an expression box: one getter to mapper chain, read as text. */
     public void setExpressionMode(boolean expressionMode) {
         this.expressionMode = expressionMode;
+    }
+
+    /** Where the current values of the script's variables come from, for their tooltips. */
+    public void setVariableValues(Supplier<Map<String, String>> variableValues) {
+        this.variableValues = variableValues;
+    }
+
+    /** A variable's current value, or its declared literal if it has received none. */
+    private String variableValue(ScriptVariable variable) {
+        String value = this.variableValues.get().get(variable.name());
+        return value != null ? value : variable.initial();
+    }
+
+    /**
+     * The engine's suggestions describe a variable by its declared literal; this puts its current
+     * value in their place, as the hover tooltip shows it.
+     */
+    private Suggestions withVariableValues(Suggestions suggestions, CommandPreProcessor.Prepared scope) {
+        Map<String, ScriptVariable> declared = scope.variables();
+        if (declared.isEmpty()) {
+            return suggestions;
+        }
+        List<Suggestion> list = new ArrayList<>();
+        for (Suggestion suggestion : suggestions.getList()) {
+            ScriptVariable variable = declared.get(suggestion.getText());
+            list.add(variable == null ? suggestion
+                    : new Suggestion(suggestion.getRange(), suggestion.getText(), new LiteralMessage(variableValue(variable))));
+        }
+        return new Suggestions(suggestions.getRange(), list);
+    }
+
+    /**
+     * What the alias or variable at {@code index} in the script stands for, for a tooltip, the same
+     * as its suggestion's: an alias's expression, or a variable's current value. Null when no alias
+     * or variable is there.
+     */
+    public @Nullable Component hoverTooltip(int index) {
+        ScriptView<SharedSuggestionProvider> view = ClientScripts.view();
+        String text = this.input.getValue();
+        if (view == null || index < 0 || index >= text.length() || this.expressionMode) {
+            return null;
+        }
+        int lineStart = text.lastIndexOf('\n', index - 1) + 1;
+        int lineEnd = text.indexOf('\n', index);
+        String line = text.substring(lineStart, lineEnd < 0 ? text.length() : lineEnd);
+        int column = index - lineStart;
+        int lineNumber = (int) text.substring(0, lineStart).chars().filter(c -> c == '\n').count();
+        if (!isAliasDefinitionLine(line) && isCommentLine(line)) {
+            return null;
+        }
+        int start = column;
+        while (start > 0 && isNameChar(line.charAt(start - 1))) {
+            start--;
+        }
+        int end = column;
+        while (end < line.length() && isNameChar(line.charAt(end))) {
+            end++;
+        }
+        if (start == end) {
+            return null;
+        }
+        String name = line.substring(start, end);
+        // A definition's own name is defined by its line; anywhere else, only what is above counts.
+        boolean definedHere = isAliasDefinitionLine(line) && start == aliasNameStart(line);
+        CommandPreProcessor.Prepared scope = prepared(view).script().at(definedHere ? lineNumber + 1 : lineNumber);
+        ScriptVariable variable = scope.variables().get(name);
+        if (variable != null) {
+            return Component.literal(variableValue(variable));
+        }
+        for (PreProcessorToken token : scope.tokens()) {
+            if (token.placement() == PreProcessorToken.Placement.EXPRESSION && token.text().equals(name)) {
+                return Component.literal(token.description());
+            }
+        }
+        return null;
+    }
+
+    private static boolean isNameChar(char c) {
+        return Character.isLetterOrDigit(c) || c == '_';
     }
 
     /** Whether the suggestion popup is up, so callers can keep tooltips out from under it. */
@@ -293,6 +377,7 @@ public class MultiLineCommandSuggestions {
         int shownFrom = this.onlyShowIfCursorPastError ? offset : 1;
         if (lineCursorPos >= shownFrom && (this.suggestions == null || !this.keepSuggestions) && cursor >= 0) {
             CompletableFuture<Suggestions> found = view.suggest(command, cursor, source, script)
+                    .thenApply(suggestions -> withVariableValues(suggestions, script))
                     .thenApply(suggestions -> withWait(command, cursor, suggestions))
                     .thenApply(suggestions -> shifted(suggestions, offset, currentLine));
             this.pendingSuggestions = found;
@@ -515,7 +600,9 @@ public class MultiLineCommandSuggestions {
         if (cursor > keywordEnd && cursor >= nameStart) {
             SuggestionsBuilder builder = new SuggestionsBuilder(command, nameStart);
             String typed = command.substring(nameStart, Math.min(cursor, command.length()));
-            variables.stream().filter(variable -> variable.startsWith(typed)).sorted().forEach(builder::suggest);
+            Map<String, ScriptVariable> declared = prepared(view).script().at(lineNumber).variables();
+            variables.stream().filter(variable -> variable.startsWith(typed)).sorted()
+                    .forEach(variable -> builder.suggest(variable, new LiteralMessage(variableValue(declared.get(variable)))));
             this.pendingSuggestions = builder.buildFuture()
                     .thenApply(suggestions -> shifted(suggestions, offset, getCurrentLine()));
         } else {
@@ -728,8 +815,9 @@ public class MultiLineCommandSuggestions {
         // the expression is still empty and starts where the cursor is.
         int start = expressionStart(currentLine, lineCursorPos);
         String expression = currentLine.substring(start);
-        return view.suggestExpression(expression, lineCursorPos - start, source(), null,
-                        preparedBefore(view, currentLineNumber))
+        CommandPreProcessor.Prepared before = preparedBefore(view, currentLineNumber);
+        return view.suggestExpression(expression, lineCursorPos - start, source(), null, before)
+                .thenApply(suggestions -> withVariableValues(suggestions, before))
                 .thenApply(suggestions -> shifted(suggestions, start, currentLine));
     }
 

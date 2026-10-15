@@ -23,4 +23,9 @@ public interface ScriptComputer {
     default Map<String, BlockPos> getAddresses() {
         return Map.of();
     }
+
+    /** The values the script's variables have received, by name; the rest stand at their declared literal. */
+    default Map<String, String> getVariableValues() {
+        return Map.of();
+    }
 }

@@ -423,6 +423,36 @@ public class MultiLineEditBox extends AbstractWidget implements Renderable {
 		}
 	}
 
+	/**
+	 * The index in the text of the character under the screen point, or -1 when the point is not
+	 * over a character: outside the box, below the last line or past the end of its line.
+	 */
+	public int indexAt(double mouseX, double mouseY) {
+		if (!this.isMouseOver(mouseX, mouseY)) {
+			return -1;
+		}
+		int x = Mth.floor(mouseX) - this.getX();
+		int y = Mth.floor(mouseY) - this.getY();
+		if (this.bordered) {
+			x -= 4;
+			y -= 4;
+		}
+		String[] lines = this.value.split("\n", -1);
+		int lineIndex = y / LINE_HEIGHT + this.verticalScrollLine;
+		if (y < 0 || lineIndex >= lines.length) {
+			return -1;
+		}
+		int lineStart = 0;
+		for (int i = 0; i < lineIndex; i++) {
+			lineStart += lines[i].length() + 1;
+		}
+		String line = lines[lineIndex];
+		int scrollOffset = Math.min(this.displayPos, line.length());
+		String visiblePart = this.font.plainSubstrByWidth(line.substring(scrollOffset), this.getInnerWidth());
+		int column = this.font.plainSubstrByWidth(visiblePart, Math.max(0, x)).length() + scrollOffset;
+		return column < line.length() ? lineStart + column : -1;
+	}
+
 	@Override
 	public void onClick(double d, double e) {
 		int clickX = Mth.floor(d) - this.getX();

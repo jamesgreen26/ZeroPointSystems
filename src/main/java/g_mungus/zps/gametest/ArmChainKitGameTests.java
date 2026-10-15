@@ -29,7 +29,7 @@ public class ArmChainKitGameTests {
 
     private static final String TEMPLATE = "gametest/flat_11x9x11";
     private static final int KITS = 2;
-    private static final int TIMEOUT = KITS * ArmChain.KIT_SIZE * (ArmChain.CHAIN_LINES + 2) * ArmChain.DELAY + 1200;
+    private static final int TIMEOUT = KITS * ArmChain.KIT_LINES * ArmChain.DELAY + 1200;
 
     @GameTest(template = TEMPLATE, timeoutTicks = TIMEOUT)
     public static void kitBuildsArmsOnTheFloor(GameTestHelper helper) {

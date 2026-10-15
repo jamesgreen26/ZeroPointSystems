@@ -191,8 +191,8 @@ Ponder page lists the script commands and getters that block accepts.
 
 #### Robotic Arm (`robotic_arm`)
 - A scriptable arm that moves its hand to any block within 4 blocks, taking 15 ticks per move and consuming 8 FE/tick while moving (8,192 FE capacity, receive-only).
-- Controlled by script commands from an adjacent Serial Bus: `take_items`, `put_items`, `use`, `shift_use`, `drop_items`, and `break_block`; accepts a new instruction about every 16 ticks.
-- Carries a single held stack and acts through a fake player, so `use`/`shift_use` can right-click blocks, place blocks/items, and fill or empty buckets with fluids at the target. `break_block` mines the target instantly as an iron pickaxe would, catching the drops in the hand.
+- Controlled by script commands from an adjacent Serial Bus: `take_items`, `put_items`, `use`, `shift_use`, `drop_items`, `break` and `silk_break`; accepts a new instruction about every 16 ticks.
+- Carries a single held stack and acts through a fake player, so `use`/`shift_use` can right-click blocks, place blocks/items, and fill or empty buckets with fluids at the target. `break` mines the target instantly as an iron pickaxe would (`silk_break` with silk touch), catching the drops in the hand.
 - GUI settings control the per-action item count (1–64) and a range-preview toggle; transfers visually open chests/barrels/shulkers during the move.
 - Range and interaction are Valkyrien Skies-aware, working across ships via world-space projection.
 

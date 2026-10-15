@@ -6,6 +6,8 @@ import g_mungus.zps.compat.Compat;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.Connection;
@@ -27,6 +29,7 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.stats.Stats;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.BucketPickup;
@@ -285,8 +288,17 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
     }
 
     public boolean BreakBlockAt(BlockPos targetPos) {
-        if (!canBreak(targetPos)) return false;
-        pendingTransfer = PendingTransfer.BREAK;
+        return startBreak(targetPos, false);
+    }
+
+    /** Breaks as {@link #BreakBlockAt} does, but with a silk touch pickaxe. */
+    public boolean SilkBreakBlockAt(BlockPos targetPos) {
+        return startBreak(targetPos, true);
+    }
+
+    private boolean startBreak(BlockPos targetPos, boolean silk) {
+        if (!canBreak(targetPos, silk)) return false;
+        pendingTransfer = silk ? PendingTransfer.SILK_BREAK : PendingTransfer.BREAK;
         pendingTransferTargetPos = targetPos;
         return moveHandTo(targetPos);
     }
@@ -472,8 +484,8 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
             return;
         }
 
-        if (pendingTransfer == PendingTransfer.BREAK) {
-            tryBreakAt(pendingTransferTargetPos);
+        if (pendingTransfer == PendingTransfer.BREAK || pendingTransfer == PendingTransfer.SILK_BREAK) {
+            tryBreakAt(pendingTransferTargetPos, pendingTransfer == PendingTransfer.SILK_BREAK);
             pendingTransfer = PendingTransfer.NONE;
             return;
         }
@@ -974,26 +986,35 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
     }
 
     /** Only blocks an iron pickaxe can harvest: not air, fluids, unbreakable blocks, or ones needing a better tool. */
-    private boolean canBreak(BlockPos targetPos) {
+    private boolean canBreak(BlockPos targetPos, boolean silk) {
         if (!(level instanceof ServerLevel serverLevel)) return false;
         BlockState state = serverLevel.getBlockState(targetPos);
         if (state.isAir() || state.getBlock() instanceof LiquidBlock) return false;
         if (state.getDestroySpeed(serverLevel, targetPos) < 0.0F) return false;
         FakePlayer fakePlayer = getOrCreateUsePlayer(serverLevel);
-        fakePlayer.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.IRON_PICKAXE));
+        fakePlayer.setItemInHand(InteractionHand.MAIN_HAND, breakingTool(serverLevel, silk));
         boolean canHarvest = state.canHarvestBlock(serverLevel, targetPos, fakePlayer);
         fakePlayer.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
         return canHarvest;
     }
 
+    /** An iron pickaxe, with silk touch for a silk break. */
+    private static ItemStack breakingTool(ServerLevel serverLevel, boolean silk) {
+        ItemStack pickaxe = new ItemStack(Items.IRON_PICKAXE);
+        if (silk) {
+            pickaxe.enchant(Enchantments.SILK_TOUCH, 1);
+        }
+        return pickaxe;
+    }
+
     /** Breaks the block at once as a player with an iron pickaxe would; {@link #onBlockDrops} puts what fits in the hand. */
-    private void tryBreakAt(BlockPos targetPos) {
+    private void tryBreakAt(BlockPos targetPos, boolean silk) {
         if (!(level instanceof ServerLevel serverLevel)) return;
         // The block may have changed while the hand was moving
-        if (!canBreak(targetPos)) return;
+        if (!canBreak(targetPos, silk)) return;
 
         FakePlayer fakePlayer = getOrCreateUsePlayer(serverLevel);
-        fakePlayer.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.IRON_PICKAXE));
+        fakePlayer.setItemInHand(InteractionHand.MAIN_HAND, breakingTool(serverLevel, silk));
         Vec3 armWorldCenter = Compat.toWorldPos(serverLevel, Vec3.atCenterOf(worldPosition));
         Vec3 handWorldCenter = Compat.toWorldPos(serverLevel, Vec3.atCenterOf(handBlockPos));
         positionUsePlayer(fakePlayer, armWorldCenter, handWorldCenter, false);
@@ -1081,7 +1102,8 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
         USE,
         SHIFT_USE,
         DROP,
-        BREAK;
+        BREAK,
+        SILK_BREAK;
 
         static PendingTransfer byOrdinal(int value) {
             if (value < 0 || value >= values().length) return NONE;

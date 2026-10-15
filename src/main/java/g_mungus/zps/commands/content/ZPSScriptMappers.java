@@ -9,6 +9,7 @@ import g_mungus.zps.commands.content.executors.DimensionIndexCommand;
 import net.minecraft.commands.arguments.blocks.BlockPredicateArgument;
 import net.minecraft.commands.arguments.item.ItemPredicateArgument;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.pattern.BlockInWorld;
@@ -81,6 +82,11 @@ public class ZPSScriptMappers {
                 (stack, predicate, context) -> predicate.test(stack)));
         event.register(ZPSNodes.mapper("count", ZPSScriptTypes.ITEM, BuiltInTypes.INT,
                 (stack, context) -> stack.getCount()));
+        // Ids as text, to compare against strings a script reads or receives, which == cannot take
+        event.register(ZPSNodes.mapper("id", ZPSScriptTypes.BLOCK_STATE, BuiltInTypes.STRING,
+                (state, context) -> BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString()));
+        event.register(ZPSNodes.mapper("id", ZPSScriptTypes.ITEM, BuiltInTypes.STRING,
+                (stack, context) -> BuiltInRegistries.ITEM.getKey(stack.getItem()).toString()));
 
         // Dimensions
         event.register(ZPSNodes.mapper("index", ZPSScriptTypes.DIMENSION, BuiltInTypes.INT,

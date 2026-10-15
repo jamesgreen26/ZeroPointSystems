@@ -172,7 +172,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         if (powered && !wasPowered) {
             tickDelay = 0;
             // Each powered run starts from the declared values.
-            variableValues.clear();
+            resetVariables();
         }
 
         boolean shouldContinue = head > 0;
@@ -371,8 +371,42 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         } else {
             variableValues.put(name, answer);
             lastReceiveFailure = null;
+            syncVariables();
         }
         setChanged();
+    }
+
+    private void resetVariables() {
+        if (!variableValues.isEmpty()) {
+            variableValues.clear();
+            syncVariables();
+        }
+    }
+
+    /** Clients show the current values when a variable is hovered in the editor. */
+    private void syncVariables() {
+        setChanged();
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
+        }
+    }
+
+    /** The values the script's variables have received, by name; the rest stand at their declared literal. */
+    @Override
+    public Map<String, String> getVariableValues() {
+        return Map.copyOf(variableValues);
+    }
+
+    private void writeVariables(net.minecraft.nbt.CompoundTag tag) {
+        net.minecraft.nbt.CompoundTag variables = new net.minecraft.nbt.CompoundTag();
+        variableValues.forEach(variables::putString);
+        tag.put("Variables", variables);
+    }
+
+    private void readVariables(net.minecraft.nbt.CompoundTag tag) {
+        variableValues.clear();
+        net.minecraft.nbt.CompoundTag variables = tag.getCompound("Variables");
+        variables.getAllKeys().forEach(key -> variableValues.put(key, variables.getString(key)));
     }
 
     /** Why the last {@code receive_value} left its variable alone, or null if it did not. */
@@ -396,7 +430,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
     public void acceptUpdatePacket(ScriptComputerC2SPacket packet) {
         if (!packet.contents().equals(allCommands)) {
             // An edited script starts its variables again from their declared values.
-            variableValues.clear();
+            resetVariables();
         }
         allCommands = packet.contents();
         loop = packet.loop();
@@ -447,9 +481,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         tag.putBoolean("Loop", loop);
         tag.putInt("Delay", delay);
         tag.putBoolean("WasPowered", wasPowered);
-        net.minecraft.nbt.CompoundTag variables = new net.minecraft.nbt.CompoundTag();
-        variableValues.forEach(variables::putString);
-        tag.put("Variables", variables);
+        writeVariables(tag);
         if (!addressPad.isEmpty()) {
             tag.put("AddressPad", addressPad.save(new net.minecraft.nbt.CompoundTag()));
         }
@@ -463,9 +495,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         loop = tag.getBoolean("Loop");
         delay = tag.getInt("Delay");
         wasPowered = tag.getBoolean("WasPowered");
-        variableValues.clear();
-        net.minecraft.nbt.CompoundTag variables = tag.getCompound("Variables");
-        variables.getAllKeys().forEach(key -> variableValues.put(key, variables.getString(key)));
+        readVariables(tag);
         if (tag.contains("AddressPad", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
             addressPad = ItemStack.of(tag.getCompound("AddressPad"));
         } else {
@@ -480,6 +510,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         tag.putBoolean("Loop", loop);
         tag.putInt("Delay", delay);
         tag.putBoolean("WasPowered", wasPowered);
+        writeVariables(tag);
         if (!addressPad.isEmpty()) {
             tag.put("AddressPad", addressPad.save(new net.minecraft.nbt.CompoundTag()));
         }
@@ -506,6 +537,7 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
         loop = tag.getBoolean("Loop");
         delay = tag.getInt("Delay");
         wasPowered = tag.getBoolean("WasPowered");
+        readVariables(tag);
         if (tag.contains("AddressPad", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
             addressPad = ItemStack.of(tag.getCompound("AddressPad"));
         } else {

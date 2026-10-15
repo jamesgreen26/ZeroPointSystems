@@ -135,6 +135,7 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
         this.commandSuggestions = new MultiLineCommandSuggestions(this.minecraft, this, this.commandEdit, this.font, true, true, 0, 7, false,
                 Integer.MIN_VALUE, connectedTargets, () -> this.computer != null ? this.computer.getAddresses() : Map.of());
         this.commandSuggestions.setAllowSuggestions(true);
+        this.commandSuggestions.setVariableValues(() -> this.computer != null ? this.computer.getVariableValues() : Map.of());
         this.commandSuggestions.updateCommandInfo();
     }
 
@@ -206,6 +207,11 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
             arg.renderTooltip(this.font, SAVE_FILE_TOOLTIP, i, j);
         } else if (this.loadButton != null && this.loadButton.isHovered()) {
             arg.renderTooltip(this.font, LOAD_FILE_TOOLTIP, i, j);
+        } else if (!this.commandSuggestions.isShowingSuggestions()) {
+            Component hovered = this.commandSuggestions.hoverTooltip(this.commandEdit.indexAt(i, j));
+            if (hovered != null) {
+                arg.renderTooltip(this.font, hovered, i, j);
+            }
         }
         this.commandSuggestions.render(arg, i, j);
     }

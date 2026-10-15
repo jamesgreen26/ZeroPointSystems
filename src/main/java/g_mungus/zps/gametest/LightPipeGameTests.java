@@ -241,6 +241,10 @@ public final class LightPipeGameTests {
             if (busOutput(helper, VAR_BUS_A) != 0) {
                 helper.fail("Expected bus A to be left alone, got " + busOutput(helper, VAR_BUS_A));
             }
+            String synced = terminal.getUpdateTag().getCompound("Variables").getString("lvl");
+            if (!"7".equals(synced)) {
+                helper.fail("Expected the received value to go to clients, the update tag has \"" + synced + "\"");
+            }
         });
     }
 

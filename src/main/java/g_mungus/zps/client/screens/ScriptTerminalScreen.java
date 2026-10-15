@@ -2,6 +2,8 @@ package g_mungus.zps.client.screens;
 
 import g_mungus.zps.ModSounds;
 import g_mungus.zps.blockentity.light_pipe.ScriptComputer;
+import g_mungus.zps.blockentity.light_pipe.ScriptFile;
+import g_mungus.zps.blockentity.light_pipe.ScriptTerminalBlockEntity;
 import g_mungus.zps.client.ponder.api.custom_screen_in_ponder_scene.PonderCompatibleScreen;
 import g_mungus.zps.client.screens.components.MultiLineEditBox;
 import g_mungus.zps.client.screens.components.MultiLineCommandSuggestions;
@@ -53,13 +55,13 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
     private boolean isRepeatMode = false;
     private int delayIndex = 1;
     private static final String[] DELAY_KEYS = {"2t", "4t", "8t", "16t"};
-    private static final int[] DELAY_VALUES = {2, 4, 8, 16};
+    private static final int[] DELAY_VALUES = ScriptTerminalBlockEntity.DELAY_VALUES;
     private static final Component OPEN_MANUAL_LABEL = Component.translatable("zps.screen.open_manual");
     private static final Component SAVE_FILE_LABEL = Component.literal("Save");
     private static final Component LOAD_FILE_LABEL = Component.literal("Load");
     private static final Component SAVE_FILE_TOOLTIP = Component.literal("Save script to a " + ScriptFileScreen.EXTENSION + " file");
     private static final Component LOAD_FILE_TOOLTIP = Component.literal("Load script from a " + ScriptFileScreen.EXTENSION + " file");
-    private static final int MAX_SCRIPT_LENGTH = 32500;
+    private static final int MAX_SCRIPT_LENGTH = ScriptTerminalBlockEntity.MAX_SCRIPT_LENGTH;
     private @Nullable Set<ScriptTarget> connectedTargets = null;
 
     public ScriptTerminalScreen(@Nullable ScriptComputer computer, boolean debug) {
@@ -256,7 +258,7 @@ public class ScriptTerminalScreen extends PonderCompatibleScreen {
     private void openSaveScreen() {
         this.captureDraft();
         if (this.minecraft != null) {
-            this.minecraft.setScreen(ScriptFileScreen.save(this, new ScriptFileScreen.ScriptFile(
+            this.minecraft.setScreen(ScriptFileScreen.save(this, new ScriptFile(
                     this.commandEdit.getValue(), DELAY_VALUES[this.delayIndex], this.isRepeatMode)));
         }
     }

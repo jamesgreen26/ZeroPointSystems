@@ -1,6 +1,7 @@
 package g_mungus.zps.client.screens;
 
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.blockentity.light_pipe.ScriptFile;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -25,7 +26,6 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -38,7 +38,6 @@ public class ScriptFileScreen extends Screen {
     public static final String EXTENSION = ".mungus";
     private static final String FOLDER_NAME = "zps_scripts";
     private static final Pattern VALID_NAME = Pattern.compile("[^/\\\\:*?\"<>|]+");
-    private static final Pattern HEADER = Pattern.compile("#\\s*(\\d+)t\\s+(IMPULSE|REPEAT)\\s*", Pattern.CASE_INSENSITIVE);
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
     private static final Component SAVE_TITLE = Component.literal("Save Script");
@@ -50,35 +49,6 @@ public class ScriptFileScreen extends Screen {
     private static final Component EMPTY_LABEL = Component.literal("No " + EXTENSION + " files in " + FOLDER_NAME);
 
     public enum Mode { SAVE, LOAD }
-
-    /**
-     * A script plus the terminal settings from its header. {@code delay} and {@code repeat} are null when the file
-     * has no header.
-     */
-    public record ScriptFile(String script, @Nullable Integer delay, @Nullable Boolean repeat) {
-        public String serialize() {
-            if (this.delay == null || this.repeat == null) return this.script;
-            return "# " + this.delay + "t " + (this.repeat ? "REPEAT" : "IMPULSE") + "\n" + this.script;
-        }
-
-        public static ScriptFile parse(String content) {
-            content = content.replace("\r\n", "\n");
-            int newline = content.indexOf('\n');
-            String firstLine = newline < 0 ? content : content.substring(0, newline);
-            Matcher header = HEADER.matcher(firstLine);
-            if (!header.matches()) {
-                return new ScriptFile(content, null, null);
-            }
-            String script = newline < 0 ? "" : content.substring(newline + 1);
-            Integer delay;
-            try {
-                delay = Integer.parseInt(header.group(1));
-            } catch (NumberFormatException e) {
-                delay = null;
-            }
-            return new ScriptFile(script, delay, header.group(2).equalsIgnoreCase("REPEAT"));
-        }
-    }
 
     private final Screen parent;
     private final Mode mode;

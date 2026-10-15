@@ -48,6 +48,37 @@ write_page value_of(dimension as_string)
 
 ---
 
+## Script Terminal
+
+The following command requires the target block to be a `Script Terminal`.
+
+| Executor      | Argument   | Description |
+|---------------|------------|-------------|
+| `load_script` | `<string>` | Replaces the terminal's script, as if a player loaded it from a `.mungus` file. |
+
+Lines are separated by `\n`. If the first line is a header such as `# 4t REPEAT` or `# 8t IMPULSE`, it sets the terminal's delay and mode and is not part of the script. Without a header, the terminal keeps its current delay and mode. A header delay other than 2, 4, 8 or 16 keeps the current delay.
+
+Inside a quoted string, write `"` as `\"` and `\` as `\\`. A value from `value_of()` needs no escaping. Loading the script the terminal already has, with the same delay and mode, changes nothing. Scripts over 32500 characters are skipped, and one line on the cable holds at most 3600 characters.
+
+Examples:
+
+```
+load_script "# 4t REPEAT\nif redstone > 0 set_redstone 15"
+load_script "write_page \"hi (there)\""
+load_script value_of(code)
+```
+
+Copying one terminal to another, with a Serial Bus facing each:
+
+```
+#var code = none
+if pos == @source request_value value_of(script_contents)
+receive_value code
+if pos == @copy load_script value_of(code)
+```
+
+---
+
 ## Radio Transmitter / Radio Receiver
 
 The following command requires the target block to be a `Radio Transmitter` or `Radio Receiver`.

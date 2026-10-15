@@ -151,7 +151,7 @@ Produced by: `pos x/y/z` (Vec Pos), `vec_dir length/dot`, `vec_box volume`, `int
 
 ## String
 
-Produced by: `read_page`, `pos as_string`, `dimension as_string`, `int as_string`, `double as_string`, `boolean as_string`, `ship slug`, `sublevel name`, `sublevel id`
+Produced by: `read_page`, `script_contents`, `pos as_string`, `dimension as_string`, `int as_string`, `double as_string`, `boolean as_string`, `ship slug`, `sublevel name`, `sublevel id`
 
 | Mapper | Output | Description |
 |--------|--------|-------------|
@@ -167,6 +167,8 @@ Produced by: `read_page`, `pos as_string`, `dimension as_string`, `int as_string
 | `as_block_pos` | BlockPos | Parse as `"x y z"` format |
 | `as_boolean` | Boolean | Parse `"true"` / `"false"` (case-insensitive) |
 | `as_dimension` | Dimension | Treat as a dimension key |
+
+In a quoted string, write a line break as `\n`, a `"` as `\"` and a `\` as `\\`.
 
 Examples:
 

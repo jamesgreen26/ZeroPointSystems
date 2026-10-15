@@ -7,6 +7,7 @@ import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.NetworkTerminalImpl;
 import g_mungus.munguscript.engine.preprocess.CommandPreProcessor;
+import g_mungus.munguscript.language.builtin.BuiltInTypes;
 import g_mungus.munguscript.engine.preprocess.ScriptVariable;
 import g_mungus.zps.commands.api.ScriptTarget;
 import g_mungus.zps.commands.api_impl.ZPSScripts;
@@ -37,6 +38,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -44,6 +46,10 @@ import java.util.Map;
 import java.util.Set;
 
 public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements LightPipeDataSender, LightPipeDataReceiver.Text, ScriptComputer, Clearable {
+    /** The ticks between lines a terminal can be set to. */
+    public static final int[] DELAY_VALUES = {2, 4, 8, 16};
+    public static final int MAX_SCRIPT_LENGTH = 32500;
+
     private ItemStack addressPad = ItemStack.EMPTY;
     private final Container addressPadAccess = new Container() {
         @Override
@@ -429,13 +435,49 @@ public class ScriptTerminalBlockEntity extends NetworkTerminalImpl implements Li
 
     @Override
     public void acceptUpdatePacket(ScriptComputerC2SPacket packet) {
-        if (!packet.contents().equals(allCommands)) {
+        setScript(packet.contents(), packet.loop(), packet.delay());
+    }
+
+    /**
+     * Loads {@code pasted} as if a player had loaded it from a {@code .mungus} file and pressed Done: a
+     * {@code # 4t REPEAT} header on the first line sets the delay and mode and is left out, and the two characters
+     * {@code \n} break lines, as in every script string. A header delay the terminal has no setting for keeps the
+     * current one. Loading the script the terminal already has, with the same settings, changes nothing, so a
+     * looping sender does not keep restarting it.
+     *
+     * @return false, changing nothing, if the script is too long
+     */
+    public boolean loadScript(String pasted) {
+        ScriptFile file = ScriptFile.parse(pasted.replace(BuiltInTypes.ESCAPED_NEWLINE, "\n"));
+        if (file.script().length() > MAX_SCRIPT_LENGTH) {
+            return false;
+        }
+        boolean newLoop = file.repeat() != null ? file.repeat() : loop;
+        int newDelay = file.delay() != null && Arrays.stream(DELAY_VALUES).anyMatch(d -> d == file.delay())
+                ? file.delay() : delay;
+        if (!file.script().equals(allCommands) || newLoop != loop || newDelay != delay) {
+            setScript(file.script(), newLoop, newDelay);
+        }
+        return true;
+    }
+
+    /**
+     * The script as a {@code .mungus} file holds it, header first, with its line breaks as the two characters
+     * {@code \n}: what {@link #loadScript} takes back.
+     */
+    public String scriptContents() {
+        return new ScriptFile(allCommands, delay, loop).serialize().replace("\r\n", "\n")
+                .replace("\n", BuiltInTypes.ESCAPED_NEWLINE);
+    }
+
+    private void setScript(String contents, boolean loop, int delay) {
+        if (!contents.equals(allCommands)) {
             // An edited script starts its variables again from their declared values.
             resetVariables();
         }
-        allCommands = packet.contents();
-        loop = packet.loop();
-        delay = packet.delay();
+        allCommands = contents;
+        this.loop = loop;
+        this.delay = delay;
         head = 0;
         clearParsedScriptCache();
         setChanged();

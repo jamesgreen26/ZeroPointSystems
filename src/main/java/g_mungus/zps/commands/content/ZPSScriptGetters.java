@@ -8,6 +8,7 @@ import g_mungus.zps.blockentity.RoboticArmBlockEntity;
 import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.BookHolder;
 import g_mungus.zps.blockentity.light_pipe.RadioBlockEntity;
+import g_mungus.zps.blockentity.light_pipe.ScriptTerminalBlockEntity;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.BlockApplicability;
 import g_mungus.zps.commands.api.ZPSNodes;
@@ -63,6 +64,12 @@ public class ZPSScriptGetters {
             }
             return "";
         }).withApplicability(lecterns));
+
+        // Header first and \n line breaks, so load_script takes it back as it was.
+        event.register(ZPSNodes.getter("script_contents", BuiltInTypes.STRING,
+                context -> context.level().getBlockEntity(context.pos()) instanceof ScriptTerminalBlockEntity terminal
+                        ? terminal.scriptContents() : "")
+                .withApplicability(BlockApplicability.of("zps:script_terminal")));
 
         BlockApplicability roboticArm = BlockApplicability.of("zps:robotic_arm");
 

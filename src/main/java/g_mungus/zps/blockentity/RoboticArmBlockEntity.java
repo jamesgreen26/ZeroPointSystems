@@ -31,6 +31,7 @@ import net.minecraft.stats.Stats;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.BucketPickup;
 import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.LiquidBlockContainer;
 import net.minecraft.world.level.block.entity.BarrelBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -52,8 +53,10 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.wrapper.SidedInvWrapper;
 import org.jetbrains.annotations.NotNull;
@@ -91,6 +94,8 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
     private final RoboticArmEnergyStorage energyStorage;
     private final LazyOptional<IEnergyStorage> energyCapability;
     private static final ConcurrentLinkedQueue<DelayedContainerCloseJob> delayedContainerCloseJobs = new ConcurrentLinkedQueue<>();
+    /** The arm whose break is in progress, so {@link #onBlockDrops} can hand it the drops. Server thread only. */
+    private static @Nullable RoboticArmBlockEntity breakingArm;
     private final Container heldStackAccess = new Container() {
         @Override
         public int getContainerSize() {
@@ -279,6 +284,13 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
         return moveHandTo(targetPos);
     }
 
+    public boolean BreakBlockAt(BlockPos targetPos) {
+        if (!canBreak(targetPos)) return false;
+        pendingTransfer = PendingTransfer.BREAK;
+        pendingTransferTargetPos = targetPos;
+        return moveHandTo(targetPos);
+    }
+
     public Container getHeldStackAccess() {
         return heldStackAccess;
     }
@@ -456,6 +468,12 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
 
         if (pendingTransfer == PendingTransfer.DROP) {
             tryDropAt(pendingTransferTargetPos);
+            pendingTransfer = PendingTransfer.NONE;
+            return;
+        }
+
+        if (pendingTransfer == PendingTransfer.BREAK) {
+            tryBreakAt(pendingTransferTargetPos);
             pendingTransfer = PendingTransfer.NONE;
             return;
         }
@@ -955,6 +973,57 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
         return usePlayer;
     }
 
+    /** Only blocks an iron pickaxe can harvest: not air, fluids, unbreakable blocks, or ones needing a better tool. */
+    private boolean canBreak(BlockPos targetPos) {
+        if (!(level instanceof ServerLevel serverLevel)) return false;
+        BlockState state = serverLevel.getBlockState(targetPos);
+        if (state.isAir() || state.getBlock() instanceof LiquidBlock) return false;
+        if (state.getDestroySpeed(serverLevel, targetPos) < 0.0F) return false;
+        FakePlayer fakePlayer = getOrCreateUsePlayer(serverLevel);
+        fakePlayer.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.IRON_PICKAXE));
+        boolean canHarvest = state.canHarvestBlock(serverLevel, targetPos, fakePlayer);
+        fakePlayer.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+        return canHarvest;
+    }
+
+    /** Breaks the block at once as a player with an iron pickaxe would; {@link #onBlockDrops} puts what fits in the hand. */
+    private void tryBreakAt(BlockPos targetPos) {
+        if (!(level instanceof ServerLevel serverLevel)) return;
+        // The block may have changed while the hand was moving
+        if (!canBreak(targetPos)) return;
+
+        FakePlayer fakePlayer = getOrCreateUsePlayer(serverLevel);
+        fakePlayer.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.IRON_PICKAXE));
+        Vec3 armWorldCenter = Compat.toWorldPos(serverLevel, Vec3.atCenterOf(worldPosition));
+        Vec3 handWorldCenter = Compat.toWorldPos(serverLevel, Vec3.atCenterOf(handBlockPos));
+        positionUsePlayer(fakePlayer, armWorldCenter, handWorldCenter, false);
+
+        breakingArm = this;
+        try {
+            fakePlayer.gameMode.destroyBlock(targetPos);
+        } finally {
+            breakingArm = null;
+            // The pickaxe is only borrowed for the break
+            fakePlayer.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            dropUsePlayerOverflow(serverLevel, fakePlayer);
+        }
+    }
+
+    /** Forge 1.20.1 has no drops event: a drop is caught as its item entity joins the level mid-break. */
+    @SubscribeEvent(priority = EventPriority.LOW)
+    public static void onBlockDrops(EntityJoinLevelEvent event) {
+        RoboticArmBlockEntity arm = breakingArm;
+        if (arm == null || event.getLevel() != arm.level || !(event.getEntity() instanceof ItemEntity drop)) return;
+        // Whatever the hand can't take stays on the entity and drops into the world
+        ItemStack stack = drop.getItem().copy();
+        stack.shrink(arm.giveHeldItems(stack));
+        if (stack.isEmpty()) {
+            event.setCanceled(true);
+        } else {
+            drop.setItem(stack);
+        }
+    }
+
     private void tryDropAt(BlockPos targetPos) {
         if (level == null || level.isClientSide) return;
         if (heldStack.isEmpty()) return;
@@ -1011,7 +1080,8 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
         DEPOSIT,
         USE,
         SHIFT_USE,
-        DROP;
+        DROP,
+        BREAK;
 
         static PendingTransfer byOrdinal(int value) {
             if (value < 0 || value >= values().length) return NONE;

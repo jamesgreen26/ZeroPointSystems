@@ -39,7 +39,7 @@ import java.util.List;
  * In the kit's frame (forward the way the chain grows, side toward the loader, up), the floor the first arm stands
  * on is at up 1, with the burner and cell under it at up 0:
  * <pre>
- *   side 0: data line, catwalk                    side 3: loader terminal, data cable
+ *   side 0: data line                             side 3: loader terminal, data cable
  *   side 1: chain terminal, data cable, bus, arm   side 4: data cable, loader bus, loader, loader Step-Down
  *   side 2: lever block (lever on top), Step-Up    side 5: double chest
  *           over the cell, power line, barrel
@@ -49,8 +49,8 @@ import java.util.List;
 public final class ArmChainKit {
     public static final ResourceLocation TEMPLATE = ZPSMod.resource("arm_chain_kit");
     public static final Vec3i SIZE = new Vec3i(5, 3, 6);
-    /** Arms the chest holds kits for: as many whole pairs as fit in a double chest. */
-    public static final int ARMS = 6;
+    /** Arms the chest holds kits for: as many as fit in a double chest. */
+    public static final int ARMS = 54 / ArmChain.KIT_SIZE;
 
     private static final int CELL_CHARGE = 500_000;
 

@@ -13,7 +13,6 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
@@ -30,7 +29,7 @@ public class ArmChainKitGameTests {
 
     private static final String TEMPLATE = "gametest/flat_11x9x11";
     private static final int KITS = 2;
-    private static final int TIMEOUT = KITS * 8 * (ArmChain.CHAIN_LINES + 2) * ArmChain.DELAY + 1200;
+    private static final int TIMEOUT = KITS * ArmChain.KIT_SIZE * (ArmChain.CHAIN_LINES + 2) * ArmChain.DELAY + 1200;
 
     @GameTest(template = TEMPLATE, timeoutTicks = TIMEOUT)
     public static void kitBuildsArmsOnTheFloor(GameTestHelper helper) {
@@ -48,7 +47,7 @@ public class ArmChainKitGameTests {
         template.placeInWorld(helper.getLevel(), at, at, new StructurePlaceSettings(), helper.getLevel().random, Block.UPDATE_ALL);
 
         Container supply = ArmChainKit.supply(helper.getLevel(), at.offset(ArmChainKit.CHEST));
-        for (int slot = KITS * 8; slot < supply.getContainerSize(); slot++) {
+        for (int slot = KITS * ArmChain.KIT_SIZE; slot < supply.getContainerSize(); slot++) {
             supply.setItem(slot, ItemStack.EMPTY);
         }
         helper.pullLever(corner.offset(ArmChainKit.LEVER));
@@ -62,9 +61,6 @@ public class ArmChainKitGameTests {
                 helper.assertBlockPresent(ModBlocks.ROBOTIC_ARM.get(), arm);
                 assertFacing(helper, arm.west(), ModBlocks.SERIAL_BUS.get(), Direction.EAST);
                 assertFacing(helper, arm.east(), ModBlocks.STEPDOWN_TRANSFORMER.get(), Direction.WEST);
-            }
-            for (int f = 1; f <= 2 * KITS; f++) {
-                helper.assertBlockPresent(Blocks.RAIL, frame.at(f, 2, -1));
             }
         });
     }

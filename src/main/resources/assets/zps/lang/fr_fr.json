@@ -295,7 +295,9 @@
 
     "zps.ponder.octo_controller.header": "Controlleur Octogonal",
     "zps.ponder.octo_controller.text_1": "Interagissez avec le contrôleur octogonal pour le contrôler.",
-    "zps.ponder.octo_controller.text_2": "Utilisez les touches fléchées et ZQSD pour contrôler les 8 sorties de redstone.",
+    "zps.ponder.octo_controller.text_2": "Par défaut, ZQSD ainsi qu'Espace, A, Maj gauche et E contrôlent les 8 sorties de redstone.",
+    "zps.ponder.octo_controller.text_3": "Interagissez à nouveau avec le contrôleur pour en descendre.",
+    "zps.ponder.octo_controller.text_4": "Interagissez en vous accroupissant, la main vide, pour choisir la touche de chaque sortie.",
 
     "zps.ponder.data_cable.header": "Câbles de données",
     "zps.ponder.data_cable.text_1": "Les Câbles de données envoient des informations sous forme de texte entre blocs compatibles.",

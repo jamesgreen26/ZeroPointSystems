@@ -1,5 +1,6 @@
 package g_mungus.zps.blockentity;
 
+import g_mungus.zps.block.cableNetwork.ControllerInteraction;
 import g_mungus.zps.entity.ControllerSeatEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -79,6 +80,20 @@ public abstract class ControllerBlockEntity<T extends ControllerSeatEntity> exte
         }
     }
 
+    /** Lights the screen while someone is riding; the seat keeps this in step with its rider. */
+    public void setActive(boolean active) {
+        if (level == null || level.isClientSide) return;
+        BlockState state = getBlockState();
+        if (state.hasProperty(ControllerInteraction.ACTIVE) && state.getValue(ControllerInteraction.ACTIVE) != active) {
+            level.setBlock(worldPosition, state.setValue(ControllerInteraction.ACTIVE, active), Block.UPDATE_CLIENTS);
+        }
+    }
+
+    public boolean isActive() {
+        BlockState state = getBlockState();
+        return state.hasProperty(ControllerInteraction.ACTIVE) && state.getValue(ControllerInteraction.ACTIVE);
+    }
+
     private void supplySignal(int channel, int strength) {
         if (outputSignals.get(channel) == strength) return;
         outputSignals.put(channel, strength);
@@ -135,6 +150,7 @@ public abstract class ControllerBlockEntity<T extends ControllerSeatEntity> exte
     public void handleUpdateTag(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         loadKeys(tag);
     }
+
 
     @Override
     public @Nullable Packet<ClientGamePacketListener> getUpdatePacket() {

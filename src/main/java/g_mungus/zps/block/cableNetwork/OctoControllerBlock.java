@@ -41,12 +41,13 @@ public class OctoControllerBlock extends CableComponentBlock implements EntityBl
                         .setValue(FACING, Direction.NORTH)
                         .setValue(BACK, false)
                         .setValue(DOWN, false)
+                        .setValue(ControllerInteraction.ACTIVE, false)
         );
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, BACK, DOWN);
+        builder.add(FACING, BACK, DOWN, ControllerInteraction.ACTIVE);
     }
 
     @Nullable

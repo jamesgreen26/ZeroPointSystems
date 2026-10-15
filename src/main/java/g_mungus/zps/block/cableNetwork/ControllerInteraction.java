@@ -12,12 +12,16 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 
 /**
  * Using an Octo- or Dodeca-Controller: sneak with an empty hand to set its keys, otherwise step on, or
  * off again if this is the controller being ridden.
  */
-final class ControllerInteraction {
+public final class ControllerInteraction {
+    /** Lit while someone is riding the controller; set by its block entity. */
+    public static final BooleanProperty ACTIVE = BooleanProperty.create("active");
+
     private ControllerInteraction() {}
 
     static InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand) {

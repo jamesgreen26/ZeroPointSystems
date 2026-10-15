@@ -41,6 +41,7 @@ import g_mungus.zps.item.ModComponents;
 import g_mungus.zps.item.ModItems;
 import g_mungus.zps.item.PoweredToolItem;
 import g_mungus.zps.gametest.CableNetworkGameTests;
+import g_mungus.zps.gametest.ControllerGameTests;
 import g_mungus.zps.gas.ModGases;
 import g_mungus.zps.gas.ModParticles;
 import g_mungus.zps.gametest.CreativeGasGeneratorGameTests;
@@ -122,6 +123,7 @@ public final class ZPSMod {
     private static void registerGameTests(RegisterGameTestsEvent event) {
         event.register(TextDisplayGameTests.class);
         event.register(CableNetworkGameTests.class);
+        event.register(ControllerGameTests.class);
         event.register(EnumPropertyWithAliasesGameTests.class);
         event.register(RoboticArmGameTests.class);
         event.register(CoalBurnerGameTests.class);

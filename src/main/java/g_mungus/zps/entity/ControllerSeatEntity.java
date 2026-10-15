@@ -48,7 +48,11 @@ public abstract class ControllerSeatEntity extends Entity implements StandingVeh
         this.baseTick();
 
         boolean linked = findController();
-        if (!level().isClientSide && !(linked && !getPassengers().isEmpty())) {
+        if (level().isClientSide) return;
+        if (linked && !getPassengers().isEmpty()) {
+            // Every tick rather than on boarding: a rider who logged out on the seat comes back on it.
+            blockEntity.setActive(true);
+        } else {
             cleanupAndDiscard();
         }
     }
@@ -81,10 +85,28 @@ public abstract class ControllerSeatEntity extends Entity implements StandingVeh
     }
 
     private void cleanupAndDiscard() {
+        release();
+        this.discard();
+    }
+
+    private void release() {
         if (blockEntity != null) {
             blockEntity.setPressed(0);
+            blockEntity.setActive(false);
         }
-        this.discard();
+    }
+
+    /**
+     * However the seat goes — its rider leaving, logging out on it, or a command — the controller
+     * goes dark. Not when its chunk unloads: the block is unloading with it, and the seat comes back
+     * with the chunk to sort it out then.
+     */
+    @Override
+    public void onRemovedFromLevel() {
+        super.onRemovedFromLevel();
+        if (!level().isClientSide && getRemovalReason() != RemovalReason.UNLOADED_TO_CHUNK) {
+            release();
+        }
     }
 
     @Override

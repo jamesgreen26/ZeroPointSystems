@@ -43,12 +43,13 @@ public class DodecaControllerBlock extends CableComponentBlock implements Entity
                         .setValue(BACK, false)
                         .setValue(LEFT, false)
                         .setValue(RIGHT, false)
+                        .setValue(ControllerInteraction.ACTIVE, false)
         );
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, BACK, LEFT, RIGHT);
+        builder.add(FACING, BACK, LEFT, RIGHT, ControllerInteraction.ACTIVE);
     }
 
     @Nullable

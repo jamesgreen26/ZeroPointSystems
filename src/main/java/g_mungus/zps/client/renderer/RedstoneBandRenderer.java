@@ -6,7 +6,6 @@ import dev.engine_room.flywheel.api.visualization.VisualizationManager;
 import g_mungus.zps.block.cableNetwork.TransformerBlock;
 import g_mungus.zps.blockentity.RedstoneBandSource;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
@@ -53,8 +52,7 @@ public class RedstoneBandRenderer<T extends BlockEntity & RedstoneBandSource> im
                         .color(r, g, b, 255)
                         .uv(quad[at + 3], quad[at + 4])
                         .overlayCoords(OverlayTexture.NO_OVERLAY)
-                        // A lamp: lit by its tint, not by the world.
-                        .uv2(LightTexture.FULL_BRIGHT)
+                        .uv2(packedLight)
                         .normal(pose.normal(), quad[20], quad[21], quad[22]).endVertex();
             }
         }

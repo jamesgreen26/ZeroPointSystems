@@ -102,7 +102,7 @@ A direction vector. Produced by: `vec_pos direction_to`, `ship world_vel`, `ship
 
 ## Int
 
-Produced by: `pos x/y/z`, `redstone`, `get_page`, `double rounded_down/rounded_up`, `ship id`, `dimension index`, `string as_int`
+Produced by: `pos x/y/z`, `redstone`, `page_number`, `double rounded_down/rounded_up`, `ship id`, `dimension index`, `string as_int`
 
 | Mapper | Output | Description |
 |--------|--------|-------------|
@@ -124,7 +124,7 @@ Examples:
 
 ```
 if redstone > 7 set_redstone 15
-set_redstone value_of(get_page - 1)
+set_redstone value_of(page_number - 1)
 set_redstone value_of(pos x & 15)
 ```
 
@@ -151,7 +151,7 @@ Produced by: `pos x/y/z` (Vec Pos), `vec_dir length/dot`, `vec_box volume`, `int
 
 ## String
 
-Produced by: `read_page`, `script_contents`, `pos as_string`, `dimension as_string`, `int as_string`, `double as_string`, `boolean as_string`, `ship slug`, `sublevel name`, `sublevel id`
+Produced by: `page_contents`, `script_contents`, `pos as_string`, `dimension as_string`, `int as_string`, `double as_string`, `boolean as_string`, `ship slug`, `sublevel name`, `sublevel id`
 
 | Mapper | Output | Description |
 |--------|--------|-------------|
@@ -173,12 +173,12 @@ In a quoted string, write a line break as `\n`, a `"` as `\"` and a `\` as `\\`.
 Examples:
 
 ```
-if read_page == "open" set_redstone 15
+if page_contents == "open" set_redstone 15
 write_page value_of(pos as_string)
 write_page value_of(pos as_string <+ "Pos: ")
-set_redstone value_of(read_page lines)
-write_page value_of(read_page remove_line 1)
-write_page value_of(read_page split ", ")
+set_redstone value_of(page_contents lines)
+write_page value_of(page_contents remove_line 1)
+write_page value_of(page_contents split ", ")
 ```
 
 ---
@@ -197,9 +197,9 @@ Examples:
 
 ```
 if pos x > 0 && value_of(pos z > 0) set_redstone 15
-if read_page == "open" || value_of(redstone > 0) set_redstone 15
+if page_contents == "open" || value_of(redstone > 0) set_redstone 15
 write_page value_of(redstone > 7 as_string)
-if read_page as_boolean set_redstone 15
+if page_contents as_boolean set_redstone 15
 ```
 
 ---

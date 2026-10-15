@@ -248,6 +248,99 @@ public final class LightPipeGameTests {
         });
     }
 
+    /**
+     * A script can travel as a value: one bus answers with it, the terminal keeps it, and another
+     * bus loads it into the Script Terminal it faces, header and all. No escaping beyond the literal's own.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void loadScript_valueFromVariableLoadsAnotherTerminal(GameTestHelper helper) {
+        ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
+                "#var code = x",
+                "if " + target(helper, VAR_BUS_A) + " request_value \"# 8t REPEAT\\nif redstone > 0 set_redstone 5\\n# (a \\\"note\\\")\"",
+                "receive_value code",
+                "if " + target(helper, VAR_BUS_B) + " load_script value_of(code)"));
+        if (terminal == null) {
+            return;
+        }
+        helper.setBlock(VAR_BUS_B.north(), ModBlocks.SCRIPT_TERMINAL.get());
+        String expected = "if redstone > 0 set_redstone 5\n# (a \"note\")";
+        helper.succeedWhen(() -> {
+            if (!(helper.getBlockEntity(VAR_BUS_B.north()) instanceof ScriptTerminalBlockEntity loaded)) {
+                helper.fail("Expected a script terminal in front of bus B");
+                return;
+            }
+            if (!expected.equals(loaded.getValue()) || !loaded.getLoop() || loaded.getDelay() != 8) {
+                helper.fail("Expected the loaded terminal to hold \"" + expected + "\" on 8t repeat, got \""
+                        + loaded.getValue() + "\" " + loaded.getDelay() + "t loop=" + loaded.getLoop()
+                        + " (receive: " + terminal.getLastReceiveFailure() + ")");
+            }
+        });
+    }
+
+    /** One bus reads a terminal's {@code script_contents} and another loads it into a second terminal: a copy. */
+    @GameTest(template = TEMPLATE)
+    public static void scriptContents_copiesOneTerminalToAnother(GameTestHelper helper) {
+        ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
+                "#var code = x",
+                "if " + target(helper, VAR_BUS_A) + " request_value value_of(script_contents)",
+                "receive_value code",
+                "if " + target(helper, VAR_BUS_B) + " load_script value_of(code)"));
+        if (terminal == null) {
+            return;
+        }
+        String source = "# say \"hi\" (twice)\nif redstone > 0 set_redstone 5";
+        helper.setBlock(VAR_BUS_A.north(), ModBlocks.SCRIPT_TERMINAL.get());
+        helper.setBlock(VAR_BUS_B.north(), ModBlocks.SCRIPT_TERMINAL.get());
+        if (!(helper.getBlockEntity(VAR_BUS_A.north()) instanceof ScriptTerminalBlockEntity original)) {
+            helper.fail("Expected a script terminal in front of bus A");
+            return;
+        }
+        original.acceptUpdatePacket(new ScriptComputerC2SPacket(original.getPos(), true, 16, source));
+        helper.succeedWhen(() -> {
+            if (!(helper.getBlockEntity(VAR_BUS_B.north()) instanceof ScriptTerminalBlockEntity copy)) {
+                helper.fail("Expected a script terminal in front of bus B");
+                return;
+            }
+            if (!source.equals(copy.getValue()) || !copy.getLoop() || copy.getDelay() != 16) {
+                helper.fail("Expected the copy to hold \"" + source + "\" on 16t repeat, got \""
+                        + copy.getValue() + "\" " + copy.getDelay() + "t loop=" + copy.getLoop()
+                        + " (receive: " + terminal.getLastReceiveFailure() + ")");
+            }
+        });
+    }
+
+    /** Loading the script a terminal already holds changes nothing, so its received values stay. */
+    @GameTest(template = TEMPLATE)
+    public static void loadScript_sameScriptKeepsVariables(GameTestHelper helper) {
+        ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
+                "#var lvl = 0",
+                "if " + target(helper, VAR_BUS_A) + " request_value 7",
+                "receive_value lvl"));
+        if (terminal == null) {
+            return;
+        }
+        helper.runAfterDelay(10, () -> {
+            if (!"7".equals(terminal.getVariableValue("lvl"))) {
+                helper.fail("Expected lvl to be received as 7 first, got " + terminal.getVariableValue("lvl"));
+                return;
+            }
+            if (!terminal.loadScript(terminal.getValue())) {
+                helper.fail("Expected the same script to load");
+                return;
+            }
+            if (!"7".equals(terminal.getVariableValue("lvl"))) {
+                helper.fail("Expected reloading the same script to keep lvl at 7, got " + terminal.getVariableValue("lvl"));
+                return;
+            }
+            terminal.loadScript("#var lvl = 0");
+            if ("7".equals(terminal.getVariableValue("lvl"))) {
+                helper.fail("Expected a different script to start lvl again");
+                return;
+            }
+            helper.succeed();
+        });
+    }
+
     /** An answer is a value: another bus hearing it must not run it as a command. */
     @GameTest(template = TEMPLATE)
     public static void scriptVariable_answerIsNotRunByOtherBuses(GameTestHelper helper) {

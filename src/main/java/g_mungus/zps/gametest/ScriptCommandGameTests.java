@@ -3,12 +3,14 @@ package g_mungus.zps.gametest;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.cableNetwork.light_pipe.SerialBusBlock;
+import g_mungus.zps.blockentity.light_pipe.ScriptTerminalBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.SerialBusBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.BookHolder;
 import g_mungus.zps.commands.api_impl.ZPSCommands;
 import g_mungus.munguscript.language.builtin.BuiltInTypes;
 import g_mungus.munguscript.language.type.ScriptType;
 import g_mungus.zps.commands.api_impl.ZPSScripts;
+import g_mungus.zps.networking.ScriptComputerC2SPacket;
 import g_mungus.zps.util.BookComponents;
 import g_mungus.zps.util.BookPageTextLimiter;
 import net.minecraft.core.BlockPos;
@@ -1165,5 +1167,90 @@ public class ScriptCommandGameTests {
                         + expected.length() + ", got length " + actual.length());
             }
         });
+    }
+
+    // -------------------------------------------------------------------------
+    // load_script
+    // -------------------------------------------------------------------------
+
+    /** A Script Terminal at the command target, holding {@code script} on 2t, impulse. */
+    private static ScriptTerminalBlockEntity prepareTerminalCommandTarget(GameTestHelper helper, String script) {
+        BlockPos relPos = new BlockPos(3, 1, 3);
+        helper.setBlock(relPos, ModBlocks.SCRIPT_TERMINAL.get());
+        if (!(helper.getBlockEntity(relPos) instanceof ScriptTerminalBlockEntity terminal)) {
+            helper.fail("Expected a script terminal at " + relPos);
+            return null;
+        }
+        terminal.acceptUpdatePacket(new ScriptComputerC2SPacket(terminal.getPos(), false, 2, script));
+        return terminal;
+    }
+
+    private static void assertTerminal(GameTestHelper helper, ScriptTerminalBlockEntity terminal,
+                                       String script, boolean loop, int delay, String context) {
+        if (!terminal.getValue().equals(script) || terminal.getLoop() != loop || terminal.getDelay() != delay) {
+            helper.fail(context + ": expected \"" + script + "\" " + delay + "t loop=" + loop + ", got \""
+                    + terminal.getValue() + "\" " + terminal.getDelay() + "t loop=" + terminal.getLoop());
+        }
+    }
+
+    /**
+     * A literal script keeps its quotes, brackets and comments, breaks lines at {@code \n}, and its
+     * header sets the terminal's delay and mode.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void loadScript_literalWithHeader_setsScriptAndSettings(GameTestHelper helper) {
+        ScriptTerminalBlockEntity terminal = prepareTerminalCommandTarget(helper, "set_redstone 1");
+        if (terminal == null) return;
+
+        runScriptCommand(helper, terminal.getPos(),
+                "load_script \"# 4t REPEAT\\nwrite_page \\\"hi (there)\\\"\\n# note (inner)\"");
+
+        assertTerminal(helper, terminal, "write_page \"hi (there)\"\n# note (inner)", true, 4, "load_script literal");
+        helper.succeed();
+    }
+
+    /**
+     * Without a header the settings stay; a header delay the terminal has no setting for keeps the
+     * current one. A line break written {@code \\n} reads as {@code \n} does.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void loadScript_missingOrUnknownHeaderKeepsSettings(GameTestHelper helper) {
+        ScriptTerminalBlockEntity terminal = prepareTerminalCommandTarget(helper, "");
+        if (terminal == null) return;
+
+        runScriptCommand(helper, terminal.getPos(), "load_script \"set_redstone 3\"");
+        assertTerminal(helper, terminal, "set_redstone 3", false, 2, "load_script without header");
+
+        runScriptCommand(helper, terminal.getPos(), "load_script \"# 5t REPEAT\\\\nset_redstone 4\"");
+        assertTerminal(helper, terminal, "set_redstone 4", true, 2, "load_script with 5t header");
+        helper.succeed();
+    }
+
+    /** A script longer than the terminal holds is refused and the terminal left alone. */
+    @GameTest(template = TEMPLATE)
+    public static void loadScript_tooLongIsRefused(GameTestHelper helper) {
+        ScriptTerminalBlockEntity terminal = prepareTerminalCommandTarget(helper, "set_redstone 1");
+        if (terminal == null) return;
+
+        if (terminal.loadScript("x".repeat(ScriptTerminalBlockEntity.MAX_SCRIPT_LENGTH + 1))) {
+            helper.fail("Expected an over-long script to be refused");
+        }
+        assertTerminal(helper, terminal, "set_redstone 1", false, 2, "load_script too long");
+        helper.succeed();
+    }
+
+    /** {@code script_contents} gives the script header first with {@code \n} line breaks, as {@code load_script} takes it. */
+    @GameTest(template = TEMPLATE)
+    public static void scriptContents_givesHeaderAndScript(GameTestHelper helper) {
+        ScriptTerminalBlockEntity terminal = prepareTerminalCommandTarget(helper, "write_page \"hi (there)\"\n# note");
+        if (terminal == null) return;
+        terminal.loadScript("# 8t REPEAT\n" + terminal.getValue());
+
+        String contents = evalValueOf(helper, terminal.getPos(), "script_contents", STRING_KEY);
+        String expected = "# 8t REPEAT\\nwrite_page \"hi (there)\"\\n# note";
+        if (!expected.equals(contents)) {
+            helper.fail("Expected script_contents \"" + expected + "\", got \"" + contents + "\"");
+        }
+        helper.succeed();
     }
 }

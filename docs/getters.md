@@ -62,6 +62,23 @@ write_page value_of(read_page + " (edited)")
 
 ---
 
+## Script Terminal
+
+The following getter requires the target block to be a `Script Terminal`.
+
+| Getter            | Output | Description |
+|-------------------|--------|-------------|
+| `script_contents` | String | The terminal's script as a `.mungus` file holds it: a `# 4t REPEAT` style header line, then the script, with lines separated by `\n`. `load_script` takes it back unchanged. |
+
+Examples:
+
+```
+if script_contents lines > 20 set_redstone 15
+write_page value_of(script_contents)
+```
+
+---
+
 ## Robotic Arm
 
 The following getter requires the target block to be a `Robotic Arm`.

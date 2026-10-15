@@ -110,6 +110,7 @@ Ponder page lists the script commands and getters that block accepts.
 - Resolves relative/local coordinates (`~ ~ ~`, `^ ^ ^`), and when an Address Pad book is inserted, resolves `@name` labels to stored coordinates.
 - A leading block of `#def name = expression` lines declares reusable aliases (including `value_of(...)` getter expressions) that later commands expand, with in-editor suggestions and diagnostics for bad or conflicting declarations.
 - `#var name = literal` declares a variable the terminal keeps between lines: a Serial Bus answers with `request_value <value>` in the blank tick after a command, and `receive_value <name>` stores the answer, so a reading at one machine can drive commands at another.
+- Scripts can program other terminals: `load_script <text>`, aimed at a Script Terminal, replaces its script as if a player loaded it from a `.mungus` file, with `\n` line breaks and an optional `# 4t REPEAT` first line setting its delay and mode; the `script_contents` getter reads a terminal's script back in the same form, so scripts can copy terminals.
 - Accepts an Address Pad item (Shift+right-click to remove); the pad drops when the terminal is broken.
 - Failing commands are ignored; the `ScriptCommandFailureBehavior` server config switches between silent failure (default) and a concise log line naming the command and reason.
 

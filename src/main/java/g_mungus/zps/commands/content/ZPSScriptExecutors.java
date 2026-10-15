@@ -11,6 +11,7 @@ import g_mungus.zps.commands.api.ZPSNodes;
 import g_mungus.zps.commands.api.ZPSScriptTypes;
 import g_mungus.zps.commands.content.arguments.AssemblerRecipeArgument;
 import g_mungus.zps.commands.content.executors.AssemblerRecipeCommand;
+import g_mungus.zps.commands.content.executors.LoadScriptCommand;
 import g_mungus.zps.commands.content.executors.RoboticArmItemCommand;
 import g_mungus.zps.commands.content.executors.SetFrequencyCommand;
 import g_mungus.zps.commands.content.executors.SetPageCommand;
@@ -43,6 +44,11 @@ public class ZPSScriptExecutors {
         event.register(ZPSNodes.executor("write_page", BuiltInTypes.STRING,
                 (text, context) -> SetPageCommand.writeToCurrentPage(context.level(), context.pos(), text))
                 .withApplicability(lecterns));
+
+        // Line breaks are the two characters \n, and a "# 4t REPEAT" first line sets the terminal's settings.
+        event.register(ZPSNodes.executor("load_script", BuiltInTypes.STRING,
+                (script, context) -> LoadScriptCommand.load(context.level(), context.pos(), script))
+                .withApplicability(BlockApplicability.of("zps:script_terminal")));
 
         event.register(ZPSNodes.executor("set_frequency", BuiltInTypes.INT,
                 IntegerArgumentType.integer(RadioBlockEntity.MIN_FREQUENCY, RadioBlockEntity.MAX_FREQUENCY),

@@ -19,8 +19,8 @@ Examples:
 
 ```
 set_redstone 15
-set_redstone value_of(get_page - 1)
-if pos == @lectern request_value value_of(get_page)
+set_redstone value_of(page_number - 1)
+if pos == @lectern request_value value_of(page_number)
 ```
 
 ---

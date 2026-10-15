@@ -45,19 +45,19 @@ The following getters require the target block to be a `Data Lectern` or a vanil
 
 | Getter | Output | Description |
 |--------|--------|-------------|
-| `get_page` | Int | The current page number of the book, 1-based. Returns `0` if there is no book. |
-| `read_page` | String | The text content of the current page. Returns an empty string if there is no book or the page is blank. |
+| `page_number` | Int | The current page number of the book, 1-based. Returns `0` if there is no book. |
+| `page_contents` | String | The text content of the current page, with lines separated by `\n`. Returns an empty string if there is no book or the page is blank. |
 
 Examples:
 
 ```
-if get_page > 3 set_redstone 15
-set_page value_of(get_page + 1)
+if page_number > 3 set_redstone 15
+set_page value_of(page_number + 1)
 ```
 
 ```
-if read_page == "open" set_redstone 15
-write_page value_of(read_page + " (edited)")
+if page_contents == "open" set_redstone 15
+write_page value_of(page_contents + " (edited)")
 ```
 
 ---

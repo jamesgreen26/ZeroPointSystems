@@ -116,7 +116,7 @@ Ponder page lists the script commands and getters that block accepts.
 #### Data Lectern (`data_lectern`)
 - Holds a written or writable book and outputs the text of its current page onto the Data Cable network as a sender.
 - Emits a redstone signal scaled to the current page position (like a vanilla lectern), with a GUI for turning pages.
-- Readable/writable by scripts: `get_page`/`read_page` getters and `set_page`/`write_page` executors target it (and vanilla lecterns).
+- Readable/writable by scripts: `page_number`/`page_contents` getters and `set_page`/`write_page` executors target it (and vanilla lecterns).
 - Right-click opens the page GUI; Shift+right-click takes the book back out into your inventory.
 
 #### Data Transcriber (`data_transcriber`)

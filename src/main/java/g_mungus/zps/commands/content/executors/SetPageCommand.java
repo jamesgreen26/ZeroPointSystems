@@ -38,8 +38,7 @@ public class SetPageCommand {
                         BookComponents.setWritablePage(book, BookComponents.getPageCount(book), "");
                         holder.zps$onPageAdded();
                     }
-                    String normalizedText = text.replace("\\n", "\n");
-                    BookComponents.setWritablePage(book, page, BookPageTextLimiter.truncateToDisplayableLength(normalizedText));
+                    BookComponents.setWritablePage(book, page, BookPageTextLimiter.truncateToDisplayableLength(text));
                     holder.zps$onPageWritten();
                 }
             }));

@@ -158,17 +158,17 @@ Produced by: `page_contents`, `script_contents`, `pos as_string`, `dimension as_
 | `== <string>` | Boolean | Equality |
 | `+ <string>` | String | Concatenation |
 | `<+ <string>` | String | Prepends the given string |
-| `lines` | Int | Splits by `\n` and returns the number of lines |
-| `get_line <int>` | String | Splits by `\n` and returns the line at that index, or `""` if out of bounds |
-| `remove_line <int>` | String | Splits by `\n` and removes the line at that index; unchanged if out of bounds |
-| `split <string>` | String | Replaces every occurrence of the given delimiter with `\n` |
+| `lines` | Int | Splits at line breaks and returns the number of lines |
+| `get_line <int>` | String | Splits at line breaks and returns the line at that index, or `""` if out of bounds |
+| `remove_line <int>` | String | Splits at line breaks and removes the line at that index; unchanged if out of bounds |
+| `split <string>` | String | Replaces every occurrence of the given delimiter with a line break |
 | `as_int` | Int | Parse as integer |
 | `as_double` | Double | Parse as double |
 | `as_block_pos` | BlockPos | Parse as `"x y z"` format |
 | `as_boolean` | Boolean | Parse `"true"` / `"false"` (case-insensitive) |
 | `as_dimension` | Dimension | Treat as a dimension key |
 
-In a quoted string, write a line break as `\n`, a `"` as `\"` and a `\` as `\\`.
+In a quoted string, write a line break as `\n`, a `"` as `\"` and a `\` as `\\`. Escapes belong only to script text: a string's value holds real line breaks, and getters, executors and variables pass them on unchanged.
 
 Examples:
 

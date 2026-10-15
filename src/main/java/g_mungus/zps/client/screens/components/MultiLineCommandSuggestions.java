@@ -154,10 +154,13 @@ public class MultiLineCommandSuggestions {
         this.variableValues = variableValues;
     }
 
-    /** A variable's current value, or its declared literal if it has received none. */
+    /**
+     * A variable's current value, or its declared literal if it has received none. A tooltip is one line, so line
+     * breaks in the value show as {@code \n}, as a script would write them.
+     */
     private String variableValue(ScriptVariable variable) {
         String value = this.variableValues.get().get(variable.name());
-        return value != null ? value : variable.initial();
+        return value != null ? value.replace("\r", "").replace("\n", "\\n") : variable.initial();
     }
 
     /**

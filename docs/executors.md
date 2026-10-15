@@ -56,9 +56,9 @@ The following command requires the target block to be a `Script Terminal`.
 |---------------|------------|-------------|
 | `load_script` | `<string>` | Replaces the terminal's script, as if a player loaded it from a `.mungus` file. |
 
-Lines are separated by `\n`. If the first line is a header such as `# 4t REPEAT` or `# 8t IMPULSE`, it sets the terminal's delay and mode and is not part of the script. Without a header, the terminal keeps its current delay and mode. A header delay other than 2, 4, 8 or 16 keeps the current delay.
+The string's lines are the script's lines; in a quoted string, write a line break as `\n`. If the first line is a header such as `# 4t REPEAT` or `# 8t IMPULSE`, it sets the terminal's delay and mode and is not part of the script. Without a header, the terminal keeps its current delay and mode. A header delay other than 2, 4, 8 or 16 keeps the current delay.
 
-Inside a quoted string, write `"` as `\"` and `\` as `\\`. A value from `value_of()` needs no escaping. Loading the script the terminal already has, with the same delay and mode, changes nothing. Scripts over 32500 characters are skipped, and one line on the cable holds at most 3600 characters.
+Inside a quoted string, write `"` as `\"` and `\` as `\\`, so an escape inside the loaded script is written `\\n`. A value from `value_of()` needs no escaping: its line breaks and backslashes arrive as they are. Loading the script the terminal already has, with the same delay and mode, changes nothing. Scripts over 32500 characters are skipped, and one line on the cable holds at most 3600 characters.
 
 Examples:
 

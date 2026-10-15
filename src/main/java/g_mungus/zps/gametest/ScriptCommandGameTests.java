@@ -322,89 +322,89 @@ public class ScriptCommandGameTests {
     }
 
     /**
-     * {@code value_of(pos as_string + "\\nalpha\\n" lines)} should count escaped
-     * newline separators and preserve the trailing empty line.
+     * {@code value_of(pos as_string + "\nalpha\n" lines)} should count line
+     * breaks and preserve the trailing empty line.
      */
     @GameTest(template = TEMPLATE)
-    public static void valueOf_stringLines_countsEscapedNewlines(GameTestHelper helper) {
+    public static void valueOf_stringLines_countsLineBreaks(GameTestHelper helper) {
         BlockPos absPos = helper.absolutePos(new BlockPos(4, 1, 3));
 
-        Integer result = evalValueOf(helper, absPos, "pos as_string + \"\\\\nalpha\\\\n\" lines", INT_KEY);
+        Integer result = evalValueOf(helper, absPos, "pos as_string + \"\\nalpha\\n\" lines", INT_KEY);
 
         if (result == null || result != 3) {
-            helper.fail("value_of(pos as_string + \"\\\\nalpha\\\\n\" lines): expected 3, got " + result);
+            helper.fail("value_of(pos as_string + \"\\nalpha\\n\" lines): expected 3, got " + result);
             return;
         }
         helper.succeed();
     }
 
     /**
-     * {@code value_of(pos as_string + "\\nalpha\\nbeta" get_line 3)} should
-     * return the requested escaped-newline-delimited segment using 1-based
+     * {@code value_of(pos as_string + "\nalpha\nbeta" get_line 3)} should
+     * return the requested line using 1-based
      * indexing.
      */
     @GameTest(template = TEMPLATE)
     public static void valueOf_stringGetLine_returnsIndexedLine(GameTestHelper helper) {
         BlockPos absPos = helper.absolutePos(new BlockPos(4, 1, 3));
 
-        String result = evalValueOf(helper, absPos, "pos as_string + \"\\\\nalpha\\\\nbeta\" get_line 3", STRING_KEY);
+        String result = evalValueOf(helper, absPos, "pos as_string + \"\\nalpha\\nbeta\" get_line 3", STRING_KEY);
 
         if (!"beta".equals(result)) {
-            helper.fail("value_of(pos as_string + \"\\\\nalpha\\\\nbeta\" get_line 3): expected beta, got " + result);
+            helper.fail("value_of(pos as_string + \"\\nalpha\\nbeta\" get_line 3): expected beta, got " + result);
             return;
         }
         helper.succeed();
     }
 
     /**
-     * {@code value_of(pos as_string + "\\nalpha" get_line 5)} should return an
+     * {@code value_of(pos as_string + "\nalpha" get_line 5)} should return an
      * empty string when the requested index is out of bounds.
      */
     @GameTest(template = TEMPLATE)
     public static void valueOf_stringGetLine_outOfBoundsReturnsEmptyString(GameTestHelper helper) {
         BlockPos absPos = helper.absolutePos(new BlockPos(4, 1, 3));
 
-        String result = evalValueOf(helper, absPos, "pos as_string + \"\\\\nalpha\" get_line 5", STRING_KEY);
+        String result = evalValueOf(helper, absPos, "pos as_string + \"\\nalpha\" get_line 5", STRING_KEY);
 
         if (!"".equals(result)) {
-            helper.fail("value_of(pos as_string + \"\\\\nalpha\" get_line 5): expected empty string, got " + result);
+            helper.fail("value_of(pos as_string + \"\\nalpha\" get_line 5): expected empty string, got " + result);
             return;
         }
         helper.succeed();
     }
 
     /**
-     * {@code value_of(pos as_string + "\\nalpha\\nbeta" remove_line 2)} should
-     * drop the requested escaped-newline-delimited segment (1-based) and rejoin
-     * the rest with escaped newlines.
+     * {@code value_of(pos as_string + "\nalpha\nbeta" remove_line 2)} should
+     * drop the requested line (1-based) and rejoin
+     * the rest with line breaks.
      */
     @GameTest(template = TEMPLATE)
     public static void valueOf_stringRemoveLine_removesIndexedLine(GameTestHelper helper) {
         BlockPos absPos = helper.absolutePos(new BlockPos(4, 1, 3));
 
-        String result = evalValueOf(helper, absPos, "pos as_string + \"\\\\nalpha\\\\nbeta\" remove_line 2", STRING_KEY);
-        String expected = absPos.getX() + " " + absPos.getY() + " " + absPos.getZ() + "\\nbeta";
+        String result = evalValueOf(helper, absPos, "pos as_string + \"\\nalpha\\nbeta\" remove_line 2", STRING_KEY);
+        String expected = absPos.getX() + " " + absPos.getY() + " " + absPos.getZ() + "\nbeta";
 
         if (!expected.equals(result)) {
-            helper.fail("value_of(pos as_string + \"\\\\nalpha\\\\nbeta\" remove_line 2): expected " + expected + ", got " + result);
+            helper.fail("value_of(pos as_string + \"\\nalpha\\nbeta\" remove_line 2): expected " + expected + ", got " + result);
             return;
         }
         helper.succeed();
     }
 
     /**
-     * {@code value_of(pos as_string + "\\nalpha" remove_line 5)} should return
+     * {@code value_of(pos as_string + "\nalpha" remove_line 5)} should return
      * the input unchanged when the requested index is out of bounds.
      */
     @GameTest(template = TEMPLATE)
     public static void valueOf_stringRemoveLine_outOfBoundsReturnsUnchanged(GameTestHelper helper) {
         BlockPos absPos = helper.absolutePos(new BlockPos(4, 1, 3));
 
-        String result = evalValueOf(helper, absPos, "pos as_string + \"\\\\nalpha\" remove_line 5", STRING_KEY);
-        String expected = absPos.getX() + " " + absPos.getY() + " " + absPos.getZ() + "\\nalpha";
+        String result = evalValueOf(helper, absPos, "pos as_string + \"\\nalpha\" remove_line 5", STRING_KEY);
+        String expected = absPos.getX() + " " + absPos.getY() + " " + absPos.getZ() + "\nalpha";
 
         if (!expected.equals(result)) {
-            helper.fail("value_of(pos as_string + \"\\\\nalpha\" remove_line 5): expected " + expected + ", got " + result);
+            helper.fail("value_of(pos as_string + \"\\nalpha\" remove_line 5): expected " + expected + ", got " + result);
             return;
         }
         helper.succeed();
@@ -412,14 +412,14 @@ public class ScriptCommandGameTests {
 
     /**
      * {@code value_of(pos as_string split " " lines)} should replace every
-     * delimiter with an escaped newline, so the "x y z" string becomes three lines.
+     * delimiter with a line break, so the "x y z" string becomes three lines.
      */
     @GameTest(template = TEMPLATE)
     public static void valueOf_stringSplit_replacesDelimiterWithNewline(GameTestHelper helper) {
         BlockPos absPos = helper.absolutePos(new BlockPos(4, 1, 3));
 
         String split = evalValueOf(helper, absPos, "pos as_string split \" \"", STRING_KEY);
-        String expected = absPos.getX() + "\\n" + absPos.getY() + "\\n" + absPos.getZ();
+        String expected = absPos.getX() + "\n" + absPos.getY() + "\n" + absPos.getZ();
         if (!expected.equals(split)) {
             helper.fail("value_of(pos as_string split \" \"): expected " + expected + ", got " + split);
             return;
@@ -503,7 +503,7 @@ public class ScriptCommandGameTests {
             return;
         }
 
-        Boolean upperCase = evalValueOf(helper, absPos, "pos as_string <+ \"TRUE\\\\n\" get_line 1 as_boolean", BOOLEAN_KEY);
+        Boolean upperCase = evalValueOf(helper, absPos, "pos as_string <+ \"TRUE\\n\" get_line 1 as_boolean", BOOLEAN_KEY);
         if (!Boolean.TRUE.equals(upperCase)) {
             helper.fail("\"TRUE\" as_boolean: expected true, got " + upperCase);
             return;
@@ -1211,7 +1211,7 @@ public class ScriptCommandGameTests {
 
     /**
      * Without a header the settings stay; a header delay the terminal has no setting for keeps the
-     * current one. A line break written {@code \\n} reads as {@code \n} does.
+     * current one.
      */
     @GameTest(template = TEMPLATE)
     public static void loadScript_missingOrUnknownHeaderKeepsSettings(GameTestHelper helper) {
@@ -1221,7 +1221,7 @@ public class ScriptCommandGameTests {
         runScriptCommand(helper, terminal.getPos(), "load_script \"set_redstone 3\"");
         assertTerminal(helper, terminal, "set_redstone 3", false, 2, "load_script without header");
 
-        runScriptCommand(helper, terminal.getPos(), "load_script \"# 5t REPEAT\\\\nset_redstone 4\"");
+        runScriptCommand(helper, terminal.getPos(), "load_script \"# 5t REPEAT\\nset_redstone 4\"");
         assertTerminal(helper, terminal, "set_redstone 4", true, 2, "load_script with 5t header");
         helper.succeed();
     }
@@ -1239,7 +1239,7 @@ public class ScriptCommandGameTests {
         helper.succeed();
     }
 
-    /** {@code script_contents} gives the script header first with {@code \n} line breaks, as {@code load_script} takes it. */
+    /** {@code script_contents} gives the script header first, as {@code load_script} takes it. */
     @GameTest(template = TEMPLATE)
     public static void scriptContents_givesHeaderAndScript(GameTestHelper helper) {
         ScriptTerminalBlockEntity terminal = prepareTerminalCommandTarget(helper, "write_page \"hi (there)\"\n# note");
@@ -1247,10 +1247,32 @@ public class ScriptCommandGameTests {
         terminal.loadScript("# 8t REPEAT\n" + terminal.getValue());
 
         String contents = evalValueOf(helper, terminal.getPos(), "script_contents", STRING_KEY);
-        String expected = "# 8t REPEAT\\nwrite_page \"hi (there)\"\\n# note";
+        String expected = "# 8t REPEAT\nwrite_page \"hi (there)\"\n# note";
         if (!expected.equals(contents)) {
             helper.fail("Expected script_contents \"" + expected + "\", got \"" + contents + "\"");
         }
         helper.succeed();
+    }
+
+    /** Writing a page's own contents back leaves it as it was, line breaks and backslashes included. */
+    @GameTest(template = TEMPLATE)
+    public static void writePage_ownContentsLeavesPageUnchanged(GameTestHelper helper) {
+        BlockPos absPos = prepareLecternCommandTarget(helper);
+        if (!(helper.getLevel().getBlockEntity(absPos) instanceof BookHolder holder) || holder.zps$getBook() == null) {
+            helper.fail("Expected a lectern with a book at " + absPos);
+            return;
+        }
+        String page = "line one\nline \\n two";
+        BookComponents.setWritablePage(holder.zps$getBook(), 0, page);
+
+        runScriptCommand(helper, absPos, "write_page value_of(page_contents)");
+        helper.runAfterDelay(2, () -> {
+            String actual = getCurrentPageContents(helper, absPos);
+            if (!page.equals(actual)) {
+                helper.fail("Expected the page to stay \"" + page + "\", got \"" + actual + "\"");
+                return;
+            }
+            helper.succeed();
+        });
     }
 }

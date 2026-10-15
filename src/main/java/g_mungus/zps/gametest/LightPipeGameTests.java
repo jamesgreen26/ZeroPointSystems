@@ -254,7 +254,10 @@ public final class LightPipeGameTests {
         });
     }
 
-    /** One bus reads a terminal's {@code script_contents} and another loads it into a second terminal: a copy. */
+    /**
+     * One bus reads a terminal's {@code script_contents} and another loads it into a second terminal: an exact
+     * copy, an escaped line break inside one of its strings included.
+     */
     @GameTest(template = TEMPLATE)
     public static void scriptContents_copiesOneTerminalToAnother(GameTestHelper helper) {
         ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
@@ -265,7 +268,7 @@ public final class LightPipeGameTests {
         if (terminal == null) {
             return;
         }
-        String source = "# say \"hi\" (twice)\nif redstone > 0 set_redstone 5";
+        String source = "# say \"hi\" (twice)\nwrite_page \"a\\nb\"\nif redstone > 0 set_redstone 5";
         helper.setBlock(VAR_BUS_A.north(), ModBlocks.SCRIPT_TERMINAL.get());
         helper.setBlock(VAR_BUS_B.north(), ModBlocks.SCRIPT_TERMINAL.get());
         if (!(helper.getBlockEntity(VAR_BUS_A.north()) instanceof ScriptTerminalBlockEntity original)) {
@@ -281,6 +284,35 @@ public final class LightPipeGameTests {
             if (!source.equals(copy.getValue()) || !copy.getLoop() || copy.getDelay() != 16) {
                 helper.fail("Expected the copy to hold \"" + source + "\" on 16t repeat, got \""
                         + copy.getValue() + "\" " + copy.getDelay() + "t loop=" + copy.getLoop()
+                        + " (receive: " + terminal.getLastReceiveFailure() + ")");
+            }
+        });
+    }
+
+    /** A book page's lines reach a terminal as its script: {@code page_contents} keeps them as they are. */
+    @GameTest(template = TEMPLATE)
+    public static void loadScript_fromLecternPage(GameTestHelper helper) {
+        ScriptTerminalBlockEntity terminal = variableRig(helper, String.join("\n",
+                "#var code = none",
+                "if " + target(helper, VAR_BUS_A) + " request_value value_of(page_contents)",
+                "receive_value code",
+                "if " + target(helper, VAR_BUS_B) + " load_script value_of(code)"));
+        if (terminal == null) {
+            return;
+        }
+        String page = "# 4t IMPULSE\nset_redstone 3\nwrite_page \"x\\ny\"";
+        helper.setBlock(VAR_BUS_A.north(), lectern(Direction.NORTH));
+        setWritableBook(helper, VAR_BUS_A.north(), page);
+        helper.setBlock(VAR_BUS_B.north(), ModBlocks.SCRIPT_TERMINAL.get());
+        String expected = "set_redstone 3\nwrite_page \"x\\ny\"";
+        helper.succeedWhen(() -> {
+            if (!(helper.getBlockEntity(VAR_BUS_B.north()) instanceof ScriptTerminalBlockEntity loaded)) {
+                helper.fail("Expected a script terminal in front of bus B");
+                return;
+            }
+            if (!expected.equals(loaded.getValue()) || loaded.getDelay() != 4 || loaded.getLoop()) {
+                helper.fail("Expected the terminal to hold \"" + expected + "\" on 4t impulse, got \""
+                        + loaded.getValue() + "\" " + loaded.getDelay() + "t loop=" + loaded.getLoop()
                         + " (receive: " + terminal.getLastReceiveFailure() + ")");
             }
         });

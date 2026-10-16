@@ -1,6 +1,7 @@
 package g_mungus.zps.client.video;
 
 import g_mungus.zps.blockentity.light_pipe.ScriptTerminalBlockEntity;
+import g_mungus.zps.client.renderer.text.VideoTextVisualizer;
 import org.junit.jupiter.api.Test;
 import org.w3c.dom.Node;
 
@@ -101,8 +102,8 @@ public class ImageVideoConverterTest {
 
     /** The pixels of one script line, tags taken off. */
     private static String pixels(String line) {
-        assertTrue(line.startsWith(ImageVideoConverter.OPEN_TAG) && line.endsWith(ImageVideoConverter.CLOSE_TAG), line);
-        return line.substring(ImageVideoConverter.OPEN_TAG.length(), line.length() - ImageVideoConverter.CLOSE_TAG.length());
+        assertTrue(line.startsWith(ImageVideoConverter.Palette.RGB.openTag()) && line.endsWith(ImageVideoConverter.Palette.RGB.closeTag()), line);
+        return line.substring(ImageVideoConverter.Palette.RGB.openTag().length(), line.length() - ImageVideoConverter.Palette.RGB.closeTag().length());
     }
 
     @Test
@@ -153,7 +154,7 @@ public class ImageVideoConverterTest {
             frames.add(new TestFrame(solid(10, 10, level(3, 3, 3))));
         }
         String script = convert(frames).script();
-        assertEquals(16 * (ImageVideoConverter.OPEN_TAG.length() + PIXELS + ImageVideoConverter.CLOSE_TAG.length()) + 15,
+        assertEquals(16 * (ImageVideoConverter.Palette.RGB.openTag().length() + PIXELS + ImageVideoConverter.Palette.RGB.closeTag().length()) + 15,
                 script.length());
         assertTrue(script.length() <= ScriptTerminalBlockEntity.MAX_SCRIPT_LENGTH);
     }
@@ -279,6 +280,37 @@ public class ImageVideoConverterTest {
     @Test
     void highProfileMp4KeepsSixteenFramesOfTwenty() throws IOException {
         checkColourVideo("/video/colours_high.mp4");
+    }
+
+    @Test
+    void huePixelsTakeTheNearestHue() {
+        ImageVideoConverter.Palette hue = ImageVideoConverter.Palette.HUE;
+        assertEquals(' ', hue.pixel(0xFF0000), "red is code 0");
+        assertEquals('_', hue.pixel(0x7F00FF), "purple, at 270 degrees, is code 63");
+        assertEquals('@', hue.pixel(0x00FF48), "video_hue's own colour for code 32 maps back to it");
+        // Past purple: magenta at 300 degrees is nearer purple, pink at 345 nearer red.
+        assertEquals('_', hue.pixel(0xFF00FF));
+        assertEquals(' ', hue.pixel(0xFF0040));
+        // Brightness is not kept, but a dark colour is unlit.
+        assertEquals(hue.pixel(0xFF0000), hue.pixel(0x800000));
+        assertEquals(ImageVideoConverter.Palette.UNLIT, hue.pixel(0x300000));
+        assertEquals(ImageVideoConverter.Palette.UNLIT, hue.pixel(0x000000));
+    }
+
+    @Test
+    void everyHueColourMapsBackToItsCode() {
+        for (int code = 0; code < 64; code++) {
+            int colour = VideoTextVisualizer.hue(code);
+            assertEquals((char) (' ' + code), ImageVideoConverter.Palette.HUE.pixel(colour), "code " + code);
+        }
+    }
+
+    @Test
+    void hueFramesAreTaggedForVideoHue() throws IOException {
+        byte[] png = still(solid(44, 44, 0x00FFFF), "png");
+        String script = ImageVideoConverter.convert(new ByteArrayInputStream(png), ImageVideoConverter.Palette.HUE).script();
+        // Cyan is 180 degrees: code 42.
+        assertEquals("<video_hue>" + "J".repeat(PIXELS) + "</video_hue>", script);
     }
 
     @Test

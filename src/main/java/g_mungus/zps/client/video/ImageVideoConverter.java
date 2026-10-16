@@ -17,6 +17,7 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.stream.ImageInputStream;
+import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
@@ -29,15 +30,15 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Turns a GIF, MP4, PNG or JPEG into a script of {@code video_rgb} frames for a 3x3 text display:
- * one frame per line, each 44x44 pixels wrapped in its tag, so a reader can show frame {@code f}
+ * Turns a GIF, MP4, PNG or JPEG into a script of {@code video_rgb} or {@code video_hue} frames
+ * for a 3x3 text display: one frame per line, each 44x44 pixels wrapped in its tag, so a reader can show frame {@code f}
  * with {@code script_contents get_line value_of(f + 2)}. A PNG or JPEG is one frame.
  *
  * <p>GIF frames are rebuilt as the GIF draws them, since a GIF frame may change only part of the
  * picture. MP4s are decoded with JCodec, which reads H.264 video. Up to {@link #MAX_FRAMES} frames
  * are kept, spread as evenly as possible over the animation.
  * Each frame is fitted inside the square with black bars, averaging the source pixels behind every
- * display pixel, and set in the nearest of {@code video_rgb}'s 64 colours.
+ * display pixel, and set in the nearest pixel of the chosen {@link Palette}.
  */
 public final class ImageVideoConverter {
 
@@ -45,8 +46,64 @@ public final class ImageVideoConverter {
     public static final int SIZE = 44;
     /** As many frames as fit in a Script Terminal's 32,500 characters. */
     public static final int MAX_FRAMES = 16;
-    public static final String OPEN_TAG = "<video_rgb>";
-    public static final String CLOSE_TAG = "</video_rgb>";
+
+    /** The text visualizers frames can be written for, and how a colour becomes each one's pixel. */
+    public enum Palette {
+        /** {@code video_rgb}: the nearest of 64 colours, two bits each of red, green and blue. */
+        RGB("video_rgb") {
+            @Override
+            public char pixel(int rgb) {
+                int red = Math.round(((rgb >> 16) & 0xFF) / 85f);
+                int green = Math.round(((rgb >> 8) & 0xFF) / 85f);
+                int blue = Math.round((rgb & 0xFF) / 85f);
+                return (char) (' ' + (red << 4 | green << 2 | blue));
+            }
+        },
+        /**
+         * {@code video_hue}: the nearest of 64 hues from red to purple, at full brightness, so only
+         * the colour's hue survives. Pinks and magentas, past purple, go to whichever end is nearer.
+         * A dark colour is an unlit pixel instead, since the hues have no black.
+         */
+        HUE("video_hue") {
+            @Override
+            public char pixel(int rgb) {
+                float[] hsb = Color.RGBtoHSB((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF, null);
+                if (hsb[2] < DARK) {
+                    return UNLIT;
+                }
+                float degrees = hsb[0] * 360;
+                int code;
+                if (degrees <= 270) {
+                    code = Math.round(degrees / 270 * 63);
+                } else {
+                    code = degrees <= 315 ? 63 : 0;
+                }
+                return (char) (' ' + code);
+            }
+        };
+
+        /** Below this brightness a hue pixel is unlit. */
+        private static final float DARK = 0.25f;
+        /** Not printable ASCII, so drawn as an unlit pixel; one a script file holds safely. */
+        static final char UNLIT = '\u00B7';
+
+        public final String name;
+
+        Palette(String name) {
+            this.name = name;
+        }
+
+        public String openTag() {
+            return "<" + name + ">";
+        }
+
+        public String closeTag() {
+            return "</" + name + ">";
+        }
+
+        /** The pixel nearest {@code rgb}. */
+        public abstract char pixel(int rgb);
+    }
 
     /** Past these the image is refused rather than decoded. */
     static final int MAX_SOURCE_FRAMES = 5000;
@@ -98,11 +155,16 @@ public final class ImageVideoConverter {
     public record Result(String script, Format format, int sourceFrames, int frames, double ticksPerFrame) {
     }
 
+    /** {@link #convert(InputStream, Palette)} for {@code video_rgb}. */
     public static Result convert(InputStream image) throws IOException {
+        return convert(image, Palette.RGB);
+    }
+
+    public static Result convert(InputStream image, Palette palette) throws IOException {
         byte[] data = image.readAllBytes();
         Format format = Format.of(data);
         if (format == Format.MP4) {
-            return convertVideo(data);
+            return convertVideo(data, palette);
         }
         try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(data))) {
             if (input == null) {
@@ -115,7 +177,7 @@ public final class ImageVideoConverter {
             ImageReader reader = readers.next();
             try {
                 reader.setInput(input, false, false);
-                return format == Format.GIF ? convertGif(reader) : convertStill(reader, format);
+                return format == Format.GIF ? convertGif(reader, palette) : convertStill(reader, format, palette);
             } catch (RuntimeException e) {
                 // ImageIO's readers throw unchecked exceptions on some malformed files.
                 throw new IOException("Not a readable " + format + ": " + e.getMessage(), e);
@@ -126,10 +188,10 @@ public final class ImageVideoConverter {
     }
 
     /** The first picture of a PNG or JPEG as the only frame. */
-    private static Result convertStill(ImageReader reader, Format format) throws IOException {
+    private static Result convertStill(ImageReader reader, Format format, Palette palette) throws IOException {
         checkSize(reader.getWidth(0), reader.getHeight(0));
         BufferedImage image = reader.read(0);
-        return new Result(frameLine(fit(image, SIZE)), format, 1, 1, 0);
+        return new Result(frameLine(fit(image, SIZE), palette), format, 1, 1, 0);
     }
 
     /**
@@ -139,7 +201,7 @@ public final class ImageVideoConverter {
      * from the frames themselves, since H.264 may store frames out of the order they are shown in.
      * Only a frame that is nearer some kept time than any before it is converted.
      */
-    private static Result convertVideo(byte[] data) throws IOException {
+    private static Result convertVideo(byte[] data, Palette palette) throws IOException {
         try {
             FrameGrab grab = FrameGrab.createFrameGrab(ByteBufferSeekableByteChannel.readFromByteBuffer(ByteBuffer.wrap(data)));
             DemuxerTrackMeta meta = grab.getVideoTrack().getMeta();
@@ -189,7 +251,7 @@ public final class ImageVideoConverter {
                 throw new IOException("No frames could be decoded");
             }
             double ticksPerFrame = duration * 20 / frames.size();
-            return new Result(script(frames), Format.MP4, count, frames.size(), ticksPerFrame);
+            return new Result(script(frames, palette), Format.MP4, count, frames.size(), ticksPerFrame);
         } catch (JCodecException | RuntimeException e) {
             // JCodec reads only H.264, and throws unchecked exceptions on what it cannot decode.
             throw new IOException("Not a readable MP4 (only H.264 video is supported): " + e.getMessage(), e);
@@ -234,7 +296,7 @@ public final class ImageVideoConverter {
         }
     }
 
-    private static Result convertGif(ImageReader reader) throws IOException {
+    private static Result convertGif(ImageReader reader, Palette palette) throws IOException {
         int count = reader.getNumImages(true);
         if (count <= 0) {
             throw new IOException("The GIF has no frames");
@@ -288,17 +350,17 @@ public final class ImageVideoConverter {
         }
 
         double ticksPerFrame = totalDelayCs / 100.0 * 20 / kept.size();
-        return new Result(script(kept), Format.GIF, count, kept.size(), ticksPerFrame);
+        return new Result(script(kept, palette), Format.GIF, count, kept.size(), ticksPerFrame);
     }
 
     /** The frames one to a line. */
-    private static String script(List<int[]> frames) {
+    private static String script(List<int[]> frames, Palette palette) {
         StringBuilder script = new StringBuilder();
         for (int i = 0; i < frames.size(); i++) {
             if (i > 0) {
                 script.append('\n');
             }
-            script.append(frameLine(frames.get(i)));
+            script.append(frameLine(frames.get(i), palette));
         }
         return script.toString();
     }
@@ -356,19 +418,18 @@ public final class ImageVideoConverter {
 
     /** The {@code video_rgb} character nearest in colour to {@code rgb}. */
     static char pixel(int rgb) {
-        int red = Math.round(((rgb >> 16) & 0xFF) / 85f);
-        int green = Math.round(((rgb >> 8) & 0xFF) / 85f);
-        int blue = Math.round((rgb & 0xFF) / 85f);
-        return (char) (' ' + (red << 4 | green << 2 | blue));
+        return Palette.RGB.pixel(rgb);
     }
 
-    static String frameLine(int[] pixels) {
-        StringBuilder line = new StringBuilder(OPEN_TAG.length() + pixels.length + CLOSE_TAG.length());
-        line.append(OPEN_TAG);
+    static String frameLine(int[] pixels, Palette palette) {
+        String open = palette.openTag();
+        String close = palette.closeTag();
+        StringBuilder line = new StringBuilder(open.length() + pixels.length + close.length());
+        line.append(open);
         for (int rgb : pixels) {
-            line.append(pixel(rgb));
+            line.append(palette.pixel(rgb));
         }
-        return line.append(CLOSE_TAG).toString();
+        return line.append(close).toString();
     }
 
     // --- GIF frames ----------------------------------------------------------------------------

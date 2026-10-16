@@ -33,8 +33,9 @@ import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * {@code /zps_client convert_gif <url> <name>}: downloads a GIF, MP4, PNG or JPEG and saves it as
- * {@code <name>.mungus} in the scripts folder, as {@code video_rgb} frames for a 3x3 text display. See
+ * {@code /zps_client convert_gif <url> <name> [rgb|hue]}: downloads a GIF, MP4, PNG or JPEG and
+ * saves it as {@code <name>.mungus} in the scripts folder, as {@code video_rgb} frames (the default)
+ * or {@code video_hue} frames for a 3x3 text display. A name with spaces goes in quotes. See
  * {@link ImageVideoConverter}. The download and conversion run off the game thread; the result is
  * reported in chat.
  */
@@ -53,13 +54,17 @@ public final class ImageScriptCommand {
             Commands.literal("zps_client")
                     .then(Commands.literal("convert_gif")
                             .then(Commands.argument(ARG_URL, UrlArgument.INSTANCE)
-                                    .then(Commands.argument(ARG_NAME, StringArgumentType.greedyString())
-                                            .executes(ImageScriptCommand::run))));
+                                    .then(Commands.argument(ARG_NAME, StringArgumentType.string())
+                                            .executes(context -> run(context, ImageVideoConverter.Palette.RGB))
+                                            .then(Commands.literal("rgb")
+                                                    .executes(context -> run(context, ImageVideoConverter.Palette.RGB)))
+                                            .then(Commands.literal("hue")
+                                                    .executes(context -> run(context, ImageVideoConverter.Palette.HUE))))));
 
     private ImageScriptCommand() {
     }
 
-    private static int run(CommandContext<CommandSourceStack> context) {
+    private static int run(CommandContext<CommandSourceStack> context, ImageVideoConverter.Palette palette) {
         URI url = context.getArgument(ARG_URL, URI.class);
         String name = StringArgumentType.getString(context, ARG_NAME);
         Path target = ScriptFileScreen.scriptPath(name);
@@ -85,7 +90,7 @@ public final class ImageScriptCommand {
                         if (response.statusCode() / 100 != 2) {
                             throw new IOException("The server answered " + response.statusCode());
                         }
-                        return ImageVideoConverter.convert(new LimitedInputStream(body, MAX_DOWNLOAD_BYTES));
+                        return ImageVideoConverter.convert(new LimitedInputStream(body, MAX_DOWNLOAD_BYTES), palette);
                     } catch (IOException e) {
                         throw new ConversionException(e.getMessage(), e);
                     }

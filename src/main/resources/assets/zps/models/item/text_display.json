@@ -1,3 +1,3 @@
 {
-  "parent": "zps:block/video_display"
+  "parent": "zps:block/text_display"
 }

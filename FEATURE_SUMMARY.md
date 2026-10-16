@@ -128,8 +128,8 @@ Ponder page lists the script commands and getters that block accepts.
 #### Text Display (`text_display`)
 - Receives text from a Data Cable and renders it on the block face for players to read.
 - Emits a redstone signal proportional to how full the display is (text length vs. capacity).
-- Adjacent Text Displays auto-merge into larger multi-block screens (2×1, 1×2, or 2×2) to show more text.
-- Text is laid out proportionally with word-aware line breaks that stay aligned across the blocks of a merged screen, and holds up to 3,600 characters on a full 2×2.
+- Adjacent Text Displays auto-merge into larger multi-block screens, any rectangle up to 3×3, to show more text.
+- Text is laid out proportionally with word-aware line breaks that stay aligned across the blocks of a merged screen, and holds up to 3,600 characters.
 
 #### Data Comparator (`data_comparator`)
 - Compares the text from two Data Cable inputs and outputs redstone based on the selected mode; Shift+right-click cycles the mode.

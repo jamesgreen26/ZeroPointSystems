@@ -82,6 +82,21 @@ public class ScriptFileScreen extends Screen {
         return Minecraft.getInstance().gameDirectory.toPath().resolve(FOLDER_NAME);
     }
 
+    /**
+     * Where a script named {@code name} is kept, with or without {@link #EXTENSION}, or null if the name
+     * is not one a file can have.
+     */
+    public static @Nullable Path scriptPath(String name) {
+        name = name.strip();
+        if (name.toLowerCase().endsWith(EXTENSION)) {
+            name = name.substring(0, name.length() - EXTENSION.length()).strip();
+        }
+        if (name.isEmpty() || name.startsWith(".") || !VALID_NAME.matcher(name).matches()) {
+            return null;
+        }
+        return folder().resolve(name + EXTENSION);
+    }
+
     @Override
     protected void init() {
         try {
@@ -189,18 +204,13 @@ public class ScriptFileScreen extends Screen {
 
     private void trySave() {
         if (this.nameEdit == null || this.minecraft == null) return;
-        String name = this.nameEdit.getValue().strip();
-        if (name.toLowerCase().endsWith(EXTENSION)) {
-            name = name.substring(0, name.length() - EXTENSION.length()).strip();
-        }
-        if (name.isEmpty() || name.startsWith(".") || !VALID_NAME.matcher(name).matches()) {
+        Path target = scriptPath(this.nameEdit.getValue());
+        if (target == null) {
             this.error = Component.literal("Invalid file name");
             return;
         }
-
-        Path target = folder().resolve(name + EXTENSION);
         if (Files.exists(target)) {
-            String displayName = name;
+            String displayName = target.getFileName().toString();
             this.minecraft.setScreen(new ConfirmScreen(
                     overwrite -> {
                         if (overwrite) {
@@ -209,7 +219,7 @@ public class ScriptFileScreen extends Screen {
                             this.minecraft.setScreen(this);
                         }
                     },
-                    Component.literal("Overwrite " + displayName + EXTENSION + "?"),
+                    Component.literal("Overwrite " + displayName + "?"),
                     Component.literal("A script with this name already exists.")
             ));
             return;

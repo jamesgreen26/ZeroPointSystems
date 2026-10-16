@@ -16,6 +16,7 @@ public class TextDisplayBlockEntity extends AbstractTextDataReceiver {
     private static final String COLOR_TAG = "Color";
     private static final String CLEAR_AT_TAG = "ClearAt";
     private static final String LARGE_TEXT_TAG = "LargeText";
+    private static final String GLOWING_TEXT_TAG = "GlowingText";
 
     /** How long a display holds its text after the pipe goes blank, so one-tick sends stay readable. */
     public static final int CLEAR_HOLD_TICKS = 8;
@@ -23,6 +24,8 @@ public class TextDisplayBlockEntity extends AbstractTextDataReceiver {
     private DyeColor textColor = DyeColor.WHITE;
     /** Text renders at twice the default font size. */
     private boolean largeText = false;
+    /** Text renders at full brightness, like a sign's after a glow ink sac. */
+    private boolean glowingText = false;
     /** The game time a pending clear lands at, or -1 with none pending. */
     private long clearAt = -1;
 
@@ -88,6 +91,23 @@ public class TextDisplayBlockEntity extends AbstractTextDataReceiver {
         return true;
     }
 
+    public boolean isGlowingText() {
+        return glowingText;
+    }
+
+    /** Sets whether the text glows, mirroring a glow ink sac on a sign. Returns {@code false} if unchanged. */
+    public boolean setGlowingText(boolean glowing) {
+        if (glowing == glowingText) {
+            return false;
+        }
+        glowingText = glowing;
+        setChanged();
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
+        }
+        return true;
+    }
+
     public boolean isLargeText() {
         return largeText;
     }
@@ -133,6 +153,7 @@ public class TextDisplayBlockEntity extends AbstractTextDataReceiver {
         super.saveAdditional(tag);
         tag.putString(COLOR_TAG, textColor.getName());
         tag.putBoolean(LARGE_TEXT_TAG, largeText);
+        tag.putBoolean(GLOWING_TEXT_TAG, glowingText);
         if (clearAt >= 0) {
             tag.putLong(CLEAR_AT_TAG, clearAt);
         }
@@ -144,6 +165,7 @@ public class TextDisplayBlockEntity extends AbstractTextDataReceiver {
         // Same storage format as vanilla sign text: the dye's registry name.
         textColor = DyeColor.byName(tag.getString(COLOR_TAG), DyeColor.WHITE);
         largeText = tag.getBoolean(LARGE_TEXT_TAG);
+        glowingText = tag.getBoolean(GLOWING_TEXT_TAG);
         clearAt = tag.contains(CLEAR_AT_TAG) ? tag.getLong(CLEAR_AT_TAG) : -1;
     }
 }

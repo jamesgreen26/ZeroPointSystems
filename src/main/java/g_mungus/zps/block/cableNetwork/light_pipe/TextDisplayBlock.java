@@ -8,6 +8,7 @@ import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.stats.Stats;
@@ -17,6 +18,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -37,6 +39,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
 public class TextDisplayBlock extends CableComponentBlock implements EntityBlock {
 
@@ -163,9 +166,10 @@ public class TextDisplayBlock extends CableComponentBlock implements EntityBlock
     }
 
     /**
-     * Using a dye on the display recolours its text, the same way a dye recolours
-     * a vanilla sign (see {@code SignBlock#useItemOn}). Every block of a merged
-     * multi-block display takes the colour so the text isn't left half-dyed.
+     * Using a dye on the display recolours its text, and a glow ink sac makes it
+     * glow (an ink sac takes the glow off again), the same way they work on a
+     * vanilla sign (see {@code SignBlock#useItemOn}). Every block of a merged
+     * multi-block display takes the change so the text isn't left half-done.
      */
     @Override
     public @NotNull InteractionResult use(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
@@ -175,7 +179,18 @@ public class TextDisplayBlock extends CableComponentBlock implements EntityBlock
         if (stack.isEmpty() && hand == InteractionHand.MAIN_HAND) {
             return useWithoutItem(state, level, pos, player, hit);
         }
-        if (!(stack.getItem() instanceof DyeItem dye)) {
+        Predicate<TextDisplayBlockEntity> apply;
+        SoundEvent sound;
+        if (stack.getItem() instanceof DyeItem dye) {
+            apply = display -> display.setTextColor(dye.getDyeColor());
+            sound = SoundEvents.DYE_USE;
+        } else if (stack.is(Items.GLOW_INK_SAC)) {
+            apply = display -> display.setGlowingText(true);
+            sound = SoundEvents.GLOW_INK_SAC_USE;
+        } else if (stack.is(Items.INK_SAC)) {
+            apply = display -> display.setGlowingText(false);
+            sound = SoundEvents.INK_SAC_USE;
+        } else {
             return super.use(state, level, pos, player, hand, hit);
         }
         if (level.isClientSide) {
@@ -185,15 +200,15 @@ public class TextDisplayBlock extends CableComponentBlock implements EntityBlock
         boolean changed = false;
         for (BlockPos displayPos : getDisplayPositions(state, pos)) {
             if (level.getBlockEntity(displayPos) instanceof TextDisplayBlockEntity display) {
-                changed |= display.setTextColor(dye.getDyeColor());
+                changed |= apply.test(display);
             }
         }
         if (!changed) {
             return InteractionResult.PASS;
         }
 
-        level.playSound(null, pos, SoundEvents.DYE_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
-        player.awardStat(Stats.ITEM_USED.get(dye));
+        level.playSound(null, pos, sound, SoundSource.BLOCKS, 1.0F, 1.0F);
+        player.awardStat(Stats.ITEM_USED.get(stack.getItem()));
         level.gameEvent(GameEvent.BLOCK_CHANGE, pos, GameEvent.Context.of(player, state));
         if (!player.isCreative()) {
             stack.shrink(1);

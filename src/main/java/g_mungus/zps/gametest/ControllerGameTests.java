@@ -28,7 +28,7 @@ public class ControllerGameTests {
         BlockState state = ModBlocks.OCTO_CONTROLLER.get().defaultBlockState()
                 .setValue(OctoControllerBlock.FACING, Direction.NORTH);
         helper.setBlock(CONTROLLER, state);
-        Player player = helper.makeMockPlayer();
+        Player player = helper.makeMockSurvivalPlayer();
         if (!(helper.getBlockEntity(CONTROLLER) instanceof OctoControllerBlockEntity controller)) {
             helper.fail("No controller block entity");
             return player;

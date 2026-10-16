@@ -120,6 +120,10 @@
     "mass": 200
   },
   {
+    "block": "zps:space_metal_ladder",
+    "mass": 50
+  },
+  {
     "block": "zps:space_mesh_block",
     "mass": 200
   },

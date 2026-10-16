@@ -153,6 +153,7 @@ public class ModCreativeTabs {
                         SPACE_MESH_BLOCK,
                         CATWALK,
                         CATWALK_STAIRS,
+                        SPACE_METAL_LADDER,
                         SMALL_INDUSTRIAL_LIGHT,
                         INDUSTRIAL_LIGHT,
                         LARGE_INDUSTRIAL_LIGHT,

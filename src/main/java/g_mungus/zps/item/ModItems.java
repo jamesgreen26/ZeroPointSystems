@@ -254,6 +254,9 @@ public class ModItems {
     public static final DeferredItem<Item> SPACE_MESH_BLOCK = ITEMS.register("space_mesh_block",
             () -> new BlockItem(ModBlocks.SPACE_MESH_BLOCK.get(), new Item.Properties()));
 
+    public static final DeferredItem<Item> SPACE_METAL_LADDER = ITEMS.register("space_metal_ladder",
+            () -> new BlockItem(ModBlocks.SPACE_METAL_LADDER.get(), new Item.Properties()));
+
     public static final DeferredItem<Item> CATWALK = ITEMS.register("catwalk",
             () -> new CatwalkBlockItem(ModBlocks.CATWALK.get(), new Item.Properties()));
 

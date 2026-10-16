@@ -2,6 +2,7 @@ package g_mungus.zps.client.renderer.text;
 
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.DyeColor;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +34,61 @@ public final class VideoTextVisualizer implements TextVisualizer {
             glyphs.add(VisualGlyph.pixel(color(text.charAt(i))));
         }
         return glyphs;
+    }
+
+    /** The sides of the pictures that fill a 1x1, 2x2 and 3x3 display. */
+    static final int[] PICTURE_SIDES = {12, 28, 44};
+
+    /**
+     * A picture the size of a full 1x1, 2x2 or 3x3 display, centred on this one: when it is
+     * bigger, the middle of it shows. The picture is either that many pixels with no line breaks,
+     * or rows of that many pixels, one per line. Anything else is laid out as text.
+     */
+    @Override
+    public @Nullable Cell[] place(String text, int columns, int rows) {
+        String[] lines = text.split("\n", -1);
+        int lineCount = lines.length > 1 && lines[lines.length - 1].isEmpty() ? lines.length - 1 : lines.length;
+        int side = -1;
+        for (int candidate : PICTURE_SIDES) {
+            boolean fits = lines.length == 1
+                    ? text.length() == candidate * candidate
+                    : lineCount == candidate && allLength(lines, lineCount, candidate);
+            if (fits) {
+                side = candidate;
+            }
+        }
+        if (side == -1) {
+            return null;
+        }
+        int left = Math.floorDiv(columns - side, 2);
+        int top = Math.floorDiv(rows - side, 2);
+
+        Cell[] cells = new Cell[text.length()];
+        int x = 0;
+        int y = 0;
+        for (int i = 0; i < text.length(); i++) {
+            if (text.charAt(i) == '\n') {
+                x = 0;
+                y++;
+                continue;
+            }
+            if (x == side) {
+                x = 0;
+                y++;
+            }
+            cells[i] = new Cell(left + x, top + y);
+            x++;
+        }
+        return cells;
+    }
+
+    private static boolean allLength(String[] lines, int count, int length) {
+        for (int i = 0; i < count; i++) {
+            if (lines[i].length() != length) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public int color(char c) {

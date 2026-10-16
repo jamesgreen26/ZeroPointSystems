@@ -1,6 +1,7 @@
 package g_mungus.zps.client.renderer.text;
 
 import net.minecraft.world.item.DyeColor;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -36,4 +37,18 @@ public interface TextVisualizer {
      * @param dye the display's dye colour
      */
     List<VisualGlyph> visualize(String text, DyeColor dye);
+
+    /** A place on a display's grid of square cells, each one text row high and as wide. Row 0 is the top. */
+    record Cell(int column, int row) {
+    }
+
+    /**
+     * Where each char of {@code text} goes when this visualizer's tag holds all the display shows,
+     * on a display {@code columns} by {@code rows} cells big; or null to lay the text out as words,
+     * as text usually is. A char with no cell, or with a cell off the display, is not drawn. This is
+     * how a visualizer decides what part of its text shows when there is too much for the display.
+     */
+    default @Nullable Cell[] place(String text, int columns, int rows) {
+        return null;
+    }
 }

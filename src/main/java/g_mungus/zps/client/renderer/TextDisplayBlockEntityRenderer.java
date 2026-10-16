@@ -6,6 +6,7 @@ import com.mojang.math.Axis;
 import g_mungus.zps.block.cableNetwork.light_pipe.DisplayLayout;
 import g_mungus.zps.block.cableNetwork.light_pipe.TextDisplayBlock;
 import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
+import g_mungus.zps.client.renderer.text.TextVisualizer;
 import g_mungus.zps.client.renderer.text.TextVisualizers;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
@@ -111,9 +112,15 @@ public class TextDisplayBlockEntityRenderer implements BlockEntityRenderer<TextD
         // positions. Each glyph advances by its natural width, and a line wraps once
         // its real pixel width would overrun the display.
         int lineBudget = maxCols * cellSize / textScale;
-        // Tags pick the visualizer for each part of the text, which picks each char's glyph and colour.
-        List<TextVisualizers.VisualChar> chars = TextVisualizers.visualize(text, blockEntity.getTextColor());
-        List<Glyph> glyphs = layoutGlyphs(chars, lineBudget, maxRows / textScale);
+        int columns = maxCols / textScale;
+        int rows = maxRows / textScale;
+        // Text that one visualizer has all of may be placed by it, such as a video centred and
+        // cropped to fit. Otherwise tags pick the visualizer for each part of the text, which picks
+        // each char's glyph and colour, and the text flows as words.
+        TextVisualizers.Placed placed = TextVisualizers.place(text, blockEntity.getTextColor(), columns, rows);
+        List<Glyph> glyphs = placed != null
+                ? placeGlyphs(placed, columns, rows, cellSize)
+                : layoutGlyphs(TextVisualizers.visualize(text, blockEntity.getTextColor()), lineBudget, rows);
 
         // Glowing text ignores the light level, as on a sign touched with a glow ink sac.
         int textLight = blockEntity.isGlowingText() ? LightTexture.FULL_BRIGHT : packedLight;
@@ -172,6 +179,18 @@ public class TextDisplayBlockEntityRenderer implements BlockEntityRenderer<TextD
 
     /** A single positioned character. {@code x} is font pixels from logical column 0. */
     private record Glyph(TextVisualizers.VisualChar c, int row, float x) {}
+
+    /** The glyphs in the cells their visualizer placed them in, leaving out any off the display. */
+    private static List<Glyph> placeGlyphs(TextVisualizers.Placed placed, int columns, int rows, int cellSize) {
+        List<Glyph> glyphs = new ArrayList<>();
+        for (int i = 0; i < placed.chars().size(); i++) {
+            TextVisualizer.Cell cell = placed.cells()[i];
+            if (cell != null && cell.column() >= 0 && cell.column() < columns && cell.row() >= 0 && cell.row() < rows) {
+                glyphs.add(new Glyph(placed.chars().get(i), cell.row(), cell.column() * cellSize));
+            }
+        }
+        return glyphs;
+    }
 
     /**
      * Lays the text out into positioned glyphs with word-aware line breaking.

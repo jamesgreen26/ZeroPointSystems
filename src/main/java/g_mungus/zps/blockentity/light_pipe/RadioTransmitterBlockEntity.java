@@ -25,9 +25,13 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
         super(ModBlockEntities.RADIO_TRANSMITTER.get(), pos, state);
     }
 
+    private static final String CLEAR_AT_TAG = "ClearAt";
+
     private String currentDisplayText = "";
     private int radioFrequency = MIN_FREQUENCY;
     private int antennas = 0;
+    /** The game time a pending clear lands at, or -1 with none pending. */
+    private long clearAt = -1;
 
     @Override
     public void cycleFrequencies() {
@@ -76,8 +80,42 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
         }
     }
 
+    /**
+     * New text transmits at once; a clear is held back {@link TextDisplayBlockEntity#CLEAR_HOLD_TICKS}
+     * ticks, and dropped if text arrives in the meantime, so one-tick sends stay on air long enough
+     * to be picked up. A second clear while one is pending does not push it back.
+     */
     @Override
     public void acceptText(int channel, String message) {
+        if (!message.isEmpty() || level == null || level.isClientSide) {
+            clearAt = -1;
+            setText(message);
+            return;
+        }
+        if (currentDisplayText.isEmpty() || clearAt >= 0) {
+            return;
+        }
+        clearAt = level.getGameTime() + TextDisplayBlockEntity.CLEAR_HOLD_TICKS;
+        setChanged();
+        level.scheduleTick(worldPosition, getBlockState().getBlock(), TextDisplayBlockEntity.CLEAR_HOLD_TICKS);
+    }
+
+    /** From the block's scheduled tick: lands the pending clear once its time has come. */
+    public void tickPendingClear() {
+        if (clearAt < 0 || level == null) {
+            return;
+        }
+        long remaining = clearAt - level.getGameTime();
+        if (remaining > 0) {
+            // A tick left over from a clear that was cancelled and then pending again.
+            level.scheduleTick(worldPosition, getBlockState().getBlock(), (int) remaining);
+            return;
+        }
+        clearAt = -1;
+        setText("");
+    }
+
+    private void setText(String message) {
         if (!message.equals(currentDisplayText)) {
             currentDisplayText = message;
             setChanged();
@@ -163,6 +201,9 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
         tag.putString("DisplayText", currentDisplayText);
         tag.putInt("RadioFrequency", radioFrequency);
         tag.putInt("AntennaStrength", antennas);
+        if (clearAt >= 0) {
+            tag.putLong(CLEAR_AT_TAG, clearAt);
+        }
     }
 
     @Override
@@ -173,6 +214,7 @@ public class RadioTransmitterBlockEntity extends NetworkTerminalImpl implements 
             radioFrequency = tag.getInt("RadioFrequency");
         }
         antennas = tag.getInt("AntennaStrength");
+        clearAt = tag.contains(CLEAR_AT_TAG) ? tag.getLong(CLEAR_AT_TAG) : -1;
         if (level instanceof ServerLevel) {
             updateAntennaStrength(level);
         }

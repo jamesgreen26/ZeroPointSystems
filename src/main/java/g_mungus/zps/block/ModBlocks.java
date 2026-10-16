@@ -392,6 +392,16 @@ public class ModBlocks {
             )
     );
 
+    public static final RegistryObject<Block> SPACE_METAL_LADDER = BLOCKS.register("space_metal_ladder",
+            () -> new SpaceMetalLadderBlock(BlockBehaviour.Properties.of()
+                    .strength(3.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.NETHERITE_BLOCK)
+                    .pushReaction(PushReaction.DESTROY)
+                    .noOcclusion()
+            )
+    );
+
     public static final RegistryObject<Block> SPACE_MESH_BLOCK = BLOCKS.register("space_mesh_block",
             () -> new Block(BlockBehaviour.Properties.of()
                     .strength(3.0f)

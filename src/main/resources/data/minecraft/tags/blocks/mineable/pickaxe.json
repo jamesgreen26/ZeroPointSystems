@@ -46,6 +46,7 @@
     "zps:incomplete_robotic_arm_2",
     "zps:space_truss",
     "zps:space_scaffold",
+    "zps:space_metal_ladder",
     "zps:space_mesh_block",
     "zps:space_grating_block",
     "zps:catwalk",

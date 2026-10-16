@@ -21,6 +21,7 @@ public class SimpleBlockGenerator {
                 }
               }
               """.formatted(name);
+        json = ConnectingModels.wrap(name, json);
         String path = BlockDataGenerator.FOLDER + "assets/zps/models/block/decor/" + name + ".json";
 
         FileWriter.writeFile(path, json);

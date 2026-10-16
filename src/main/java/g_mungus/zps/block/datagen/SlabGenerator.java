@@ -50,6 +50,7 @@ public class SlabGenerator {
                 }
               }
               """.formatted(name);
+        json = ConnectingModels.wrap(name, json);
         String path = BlockDataGenerator.FOLDER + "assets/zps/models/block/decor/" + name + "_slab.json";
 
         FileWriter.writeFile(path, json);
@@ -66,6 +67,7 @@ public class SlabGenerator {
                 }
               }
               """.formatted(name);
+        json = ConnectingModels.wrap(name, json);
         String path = BlockDataGenerator.FOLDER + "assets/zps/models/block/decor/" + name + "_slab_top.json";
 
         FileWriter.writeFile(path, json);

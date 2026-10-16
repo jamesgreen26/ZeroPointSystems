@@ -32,11 +32,15 @@ public class ConnectedGeometry implements IUnbakedGeometry<ConnectedGeometry> {
     @Nullable
     private final BlockModel uvLocked;
     private final List<ConnectionRule> rules;
+    /** {@code match_surface}: a neighbour only connects where its shape carries on the face's surface. */
+    private final boolean matchSurface;
 
-    public ConnectedGeometry(BlockModel inner, @Nullable BlockModel uvLocked, List<ConnectionRule> rules) {
+    public ConnectedGeometry(BlockModel inner, @Nullable BlockModel uvLocked, List<ConnectionRule> rules,
+                             boolean matchSurface) {
         this.inner = inner;
         this.uvLocked = uvLocked;
         this.rules = rules;
+        this.matchSurface = matchSurface;
     }
 
     @Override
@@ -59,7 +63,7 @@ public class ConnectedGeometry implements IUnbakedGeometry<ConnectedGeometry> {
         RandomSource rand = RandomSource.create(42L);
         ResourceLocation renderTypeHint = context.getRenderTypeHint();
         RenderTypeGroup renderTypes = renderTypeHint == null ? RenderTypeGroup.EMPTY : context.getRenderType(renderTypeHint);
-        return new ConnectingBakedModel(baked, rules, null, rand, renderTypes);
+        return new ConnectingBakedModel(baked, rules, matchSurface, null, rand, renderTypes);
     }
 
     /** Presents the free and UV-locked bakes of one model as a single quad source. */

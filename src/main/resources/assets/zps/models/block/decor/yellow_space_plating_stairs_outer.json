@@ -1,4 +1,25 @@
 {
+  "loader": "zps:model",
+  "type": "connecting",
+  "match_surface": true,
+  "connections": [
+    {
+      "type": "match_block",
+      "block": "zps:yellow_space_plating"
+    },
+    {
+      "type": "match_block",
+      "block": "zps:yellow_space_plating_stairs"
+    },
+    {
+      "type": "match_block",
+      "block": "zps:yellow_space_plating_slab"
+    },
+    {
+      "type": "match_block",
+      "block": "zps:yellow_space_plating_wall"
+    }
+  ],
   "parent": "minecraft:block/outer_stairs",
   "textures": {
     "bottom": "zps:block/decor/yellow_space_plating",

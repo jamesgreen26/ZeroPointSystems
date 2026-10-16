@@ -1,6 +1,27 @@
-  {
-    "parent": "minecraft:block/template_wall_post",
-    "textures": {
-      "wall": "zps:block/decor/gray_space_plating"
+{
+  "loader": "zps:model",
+  "type": "connecting",
+  "match_surface": true,
+  "connections": [
+    {
+      "type": "match_block",
+      "block": "zps:gray_space_plating"
+    },
+    {
+      "type": "match_block",
+      "block": "zps:gray_space_plating_stairs"
+    },
+    {
+      "type": "match_block",
+      "block": "zps:gray_space_plating_slab"
+    },
+    {
+      "type": "match_block",
+      "block": "zps:gray_space_plating_wall"
     }
+  ],
+  "parent": "minecraft:block/template_wall_post",
+  "textures": {
+    "wall": "zps:block/decor/gray_space_plating"
   }
+}

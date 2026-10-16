@@ -270,6 +270,7 @@ public class StairGenerator {
                 }
               }
               """.formatted(name);
+        json = ConnectingModels.wrap(name, json);
         String path = BlockDataGenerator.FOLDER + "assets/zps/models/block/decor/" + name + "_stairs.json";
 
         FileWriter.writeFile(path, json);
@@ -286,6 +287,7 @@ public class StairGenerator {
                 }
               }
               """.formatted(name);
+        json = ConnectingModels.wrap(name, json);
         String path = BlockDataGenerator.FOLDER + "assets/zps/models/block/decor/" + name + "_stairs_outer.json";
 
         FileWriter.writeFile(path, json);
@@ -302,6 +304,7 @@ public class StairGenerator {
                 }
               }
               """.formatted(name);
+        json = ConnectingModels.wrap(name, json);
         String path = BlockDataGenerator.FOLDER + "assets/zps/models/block/decor/" + name + "_stairs_inner.json";
 
         FileWriter.writeFile(path, json);

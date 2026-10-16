@@ -50,6 +50,7 @@ public class WallGenerator {
                   }
                 }
               """.formatted(name);
+        json = ConnectingModels.wrap(name, json);
         String path = BlockDataGenerator.FOLDER + "assets/zps/models/block/decor/" + name + "_wall_side.json";
 
         FileWriter.writeFile(path, json);
@@ -64,6 +65,7 @@ public class WallGenerator {
                   }
                 }
               """.formatted(name);
+        json = ConnectingModels.wrap(name, json);
         String path = BlockDataGenerator.FOLDER + "assets/zps/models/block/decor/" + name + "_wall_post.json";
 
         FileWriter.writeFile(path, json);
@@ -78,6 +80,7 @@ public class WallGenerator {
                   }
                 }
               """.formatted(name);
+        json = ConnectingModels.wrap(name, json);
         String path = BlockDataGenerator.FOLDER + "assets/zps/models/block/decor/" + name + "_wall_side_tall.json";
 
         FileWriter.writeFile(path, json);
@@ -92,6 +95,7 @@ public class WallGenerator {
                   }
                 }
               """.formatted(name);
+        json = ConnectingModels.wrap(name, json);
         String path = BlockDataGenerator.FOLDER + "assets/zps/models/item/" + name + "_wall.json";
 
         FileWriter.writeFile(path, json);

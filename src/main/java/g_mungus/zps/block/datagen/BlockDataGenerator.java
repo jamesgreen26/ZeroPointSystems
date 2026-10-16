@@ -108,18 +108,23 @@ public class BlockDataGenerator {
         FileWriter.writeFile(path, new TagJsonModel(slabs, false).toJsonString());
     }
 
+    /** The registry name of the {@code type} shape of the {@code name} block family. */
+    static String blockName(String name, BlockType type) {
+        return switch (type) {
+            case simple -> name;
+            case stairs -> name + "_stairs";
+            case slab -> name + "_slab";
+            case wall -> name + "_wall";
+            case pillar -> name + "_pillar";
+            case fence -> name + "_fence";
+        };
+    }
+
     private static void generateSpacePlatingTag() {
         List<String> entries = new ArrayList<>();
         blocksToDatagen.forEach((name, types) -> {
             for (BlockType type : types) {
-                entries.add("zps:" + switch (type) {
-                    case simple -> name;
-                    case stairs -> name + "_stairs";
-                    case slab -> name + "_slab";
-                    case wall -> name + "_wall";
-                    case pillar -> name + "_pillar";
-                    case fence -> name + "_fence";
-                });
+                entries.add("zps:" + blockName(name, type));
             }
         });
         String path = FOLDER + "data/zps/tags/blocks/space_plating.json";

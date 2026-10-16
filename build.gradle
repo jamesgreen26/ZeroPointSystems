@@ -144,6 +144,15 @@ dependencies {
     // Not a mod, so local runs need it on the classpath too, as for FreeTTS below.
     additionalRuntimeClasspath("g_mungus:munguscript:0.1.0")
 
+    // H.264 decoding for MP4s in /zps_client convert_gif. Not a mod, so local runs need it on the classpath too.
+    jarJar(implementation("org.jcodec:jcodec:${project.jcodec_version}")) {
+        version {
+            strictly "[${project.jcodec_version},)"
+            prefer project.jcodec_version
+        }
+    }
+    additionalRuntimeClasspath("org.jcodec:jcodec:${project.jcodec_version}")
+
     jarJar(api("dev.ryanhcode.sable-companion:sable-companion-common-${project.minecraft_version}:[${project.sable_companion_version},)")) {
         version {
             prefer project.sable_companion_version

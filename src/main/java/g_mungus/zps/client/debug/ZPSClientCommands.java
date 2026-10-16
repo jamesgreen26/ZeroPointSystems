@@ -1,6 +1,7 @@
 package g_mungus.zps.client.debug;
 
 import com.mojang.brigadier.CommandDispatcher;
+import g_mungus.zps.client.video.ImageScriptCommand;
 import net.minecraft.commands.CommandSourceStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
@@ -14,6 +15,7 @@ public class ZPSClientCommands {
     @SubscribeEvent
     public static void registerClientCommands(RegisterClientCommandsEvent event) {
         CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
+        dispatcher.register(ImageScriptCommand.COMMAND);
 
         if (!FMLLoader.isProduction()) {
             dispatcher.register(ShowScreenCommand.COMMAND);

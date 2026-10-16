@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class VideoTextVisualizerTest {
@@ -72,5 +74,45 @@ public class VideoTextVisualizerTest {
         assertEquals(3, glyphs.size());
         assertTrue(glyphs.stream().allMatch(TextVisualizer.VisualGlyph::pixel));
         assertEquals(0xFF0000, glyphs.get(0).color());
+    }
+
+    @Test
+    void onlyFullDisplayPicturesArePlaced() {
+        assertNotNull(RGB.place("x".repeat(12 * 12), 28, 28));
+        assertNotNull(RGB.place("x".repeat(28 * 28), 28, 28));
+        assertNotNull(RGB.place("x".repeat(44 * 44), 28, 28));
+        // Not one of the three sizes: laid out as text.
+        assertNull(RGB.place("x".repeat(30 * 30), 28, 28));
+        assertNull(RGB.place("x".repeat(44 * 22), 44, 12));
+        assertNull(RGB.place("x".repeat(44 * 44 - 1), 28, 28));
+        // Rows must all be as long as there are rows.
+        assertNull(RGB.place(("x".repeat(12) + "\n").repeat(11) + "x".repeat(11), 12, 12));
+        assertNull(RGB.place(("x".repeat(12) + "\n").repeat(13), 12, 12));
+    }
+
+    @Test
+    void biggerPictureIsCroppedToItsMiddle() {
+        // 44x44 on a 28x28 display: 8 columns and rows cut off each side.
+        TextVisualizer.Cell[] cells = RGB.place("x".repeat(44 * 44), 28, 28);
+        assertEquals(new TextVisualizer.Cell(-8, -8), cells[0]);
+        assertEquals(new TextVisualizer.Cell(0, 0), cells[8 * 44 + 8]);
+        assertEquals(new TextVisualizer.Cell(27, 27), cells[35 * 44 + 35]);
+    }
+
+    @Test
+    void smallerPictureIsCentred() {
+        TextVisualizer.Cell[] cells = RGB.place("x".repeat(12 * 12), 44, 44);
+        assertEquals(new TextVisualizer.Cell(16, 16), cells[0]);
+        assertEquals(new TextVisualizer.Cell(27, 27), cells[143]);
+    }
+
+    @Test
+    void lineBreaksMakeTheRows() {
+        // Twelve rows of twelve, a trailing break adding no row, centred on a 28x28 display.
+        TextVisualizer.Cell[] cells = RGB.place(("x".repeat(12) + "\n").repeat(12), 28, 28);
+        assertEquals(new TextVisualizer.Cell(8, 8), cells[0]);
+        assertNull(cells[12]);
+        assertEquals(new TextVisualizer.Cell(8, 9), cells[13]);
+        assertEquals(new TextVisualizer.Cell(19, 19), cells[11 * 13 + 11]);
     }
 }

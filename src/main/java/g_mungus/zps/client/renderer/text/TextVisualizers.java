@@ -1,6 +1,7 @@
 package g_mungus.zps.client.renderer.text;
 
 import net.minecraft.world.item.DyeColor;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -83,6 +84,47 @@ public final class TextVisualizers {
         }
         append(out, text.substring(plainStart), dye, fallback);
         return out;
+    }
+
+    /** The chars a display shows, each in the cell its visualizer placed it in. */
+    public record Placed(List<VisualChar> chars, TextVisualizer.Cell[] cells) {
+    }
+
+    /**
+     * The text placed by its visualizer, when it is one tagged run with nothing but whitespace
+     * around it and that visualizer places what it is given; null otherwise, to lay it out as words.
+     *
+     * @see TextVisualizer#place
+     */
+    public static @Nullable Placed place(String text, DyeColor dye, int columns, int rows) {
+        return place(text, dye, columns, rows, REGISTRY);
+    }
+
+    /** {@link #place(String, DyeColor, int, int)} against the given visualizers. */
+    public static @Nullable Placed place(String text, DyeColor dye, int columns, int rows,
+                                         Map<String, TextVisualizer> visualizers) {
+        String whole = text.strip();
+        if (!whole.startsWith("<")) {
+            return null;
+        }
+        int openEnd = whole.indexOf('>');
+        if (openEnd == -1) {
+            return null;
+        }
+        String name = whole.substring(1, openEnd);
+        TextVisualizer visualizer = visualizers.get(name);
+        String closeTag = "</" + name + ">";
+        if (visualizer == null || whole.indexOf(closeTag, openEnd + 1) != whole.length() - closeTag.length()) {
+            return null;
+        }
+        String run = whole.substring(openEnd + 1, whole.length() - closeTag.length());
+        TextVisualizer.Cell[] cells = visualizer.place(run, columns, rows);
+        if (cells == null || cells.length != run.length()) {
+            return null;
+        }
+        List<VisualChar> chars = new ArrayList<>(run.length());
+        append(chars, run, dye, visualizer);
+        return new Placed(chars, cells);
     }
 
     private static void append(List<VisualChar> out, String run, DyeColor dye, TextVisualizer visualizer) {

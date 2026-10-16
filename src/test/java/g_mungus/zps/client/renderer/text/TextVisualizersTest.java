@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class TextVisualizersTest {
 
@@ -67,5 +68,43 @@ public class TextVisualizersTest {
     @Test
     void tagsDoNotNest() {
         assertEquals("<SHOUT>A</shout>b", drawn("<shout><shout>a</shout></shout>b"));
+    }
+
+    /** Places every char in the first row, one cell apart. */
+    private static final TextVisualizer ROW = new TextVisualizer() {
+        @Override
+        public List<VisualGlyph> visualize(String text, DyeColor dye) {
+            return text.chars().mapToObj(c -> new VisualGlyph((char) c, 0)).toList();
+        }
+
+        @Override
+        public Cell[] place(String text, int columns, int rows) {
+            Cell[] cells = new Cell[text.length()];
+            for (int i = 0; i < cells.length; i++) {
+                cells[i] = new Cell(i, 0);
+            }
+            return cells;
+        }
+    };
+
+    private static final Map<String, TextVisualizer> PLACING =
+            Map.of(TextVisualizers.DEFAULT_NAME, TextVisualizers.DEFAULT, "row", ROW, "shout", SHOUT);
+
+    @Test
+    void textAllInOnePlacingTagIsPlaced() {
+        TextVisualizers.Placed placed = TextVisualizers.place("\n <row>ab</row> \n", DyeColor.WHITE, 12, 12, PLACING);
+        assertEquals(2, placed.chars().size());
+        assertEquals('b', placed.chars().get(1).glyph());
+        assertEquals(new TextVisualizer.Cell(1, 0), placed.cells()[1]);
+    }
+
+    @Test
+    void anythingElseFlowsAsWords() {
+        // Text around the tag, two tags, an unclosed tag, and a visualizer that does not place.
+        assertNull(TextVisualizers.place("x <row>ab</row>", DyeColor.WHITE, 12, 12, PLACING));
+        assertNull(TextVisualizers.place("<row>a</row><row>b</row>", DyeColor.WHITE, 12, 12, PLACING));
+        assertNull(TextVisualizers.place("<row>ab", DyeColor.WHITE, 12, 12, PLACING));
+        assertNull(TextVisualizers.place("<shout>ab</shout>", DyeColor.WHITE, 12, 12, PLACING));
+        assertNull(TextVisualizers.place("plain", DyeColor.WHITE, 12, 12, PLACING));
     }
 }

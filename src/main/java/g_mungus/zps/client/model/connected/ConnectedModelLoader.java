@@ -31,15 +31,17 @@ public class ConnectedModelLoader implements IGeometryLoader<ConnectedGeometry> 
         List<ConnectionRule> rules = ConnectionRule.parse(
                 jsonObject.has("connections") ? GsonHelper.getAsJsonArray(jsonObject, "connections") : null);
         Set<String> uvLockTextures = readUvLockTextures(jsonObject);
+        boolean matchSurface = GsonHelper.getAsBoolean(jsonObject, "match_surface", false);
 
         JsonObject stripped = jsonObject.deepCopy();
         stripped.remove("loader");
         stripped.remove("type");
         stripped.remove("connections");
         stripped.remove("uvlock_textures");
+        stripped.remove("match_surface");
 
         if (uvLockTextures.isEmpty()) {
-            return new ConnectedGeometry(BlockModel.fromString(stripped.toString()), null, rules);
+            return new ConnectedGeometry(BlockModel.fromString(stripped.toString()), null, rules, matchSurface);
         }
         if (!stripped.has("elements")) {
             throw new JsonParseException("uvlock_textures requires the model to declare its own elements");
@@ -69,7 +71,7 @@ public class ConnectedModelLoader implements IGeometryLoader<ConnectedGeometry> 
 
         BlockModel free = withElements(stripped, freeElements);
         BlockModel locked = lockedElements.isEmpty() ? null : withElements(stripped, lockedElements);
-        return new ConnectedGeometry(free, locked, rules);
+        return new ConnectedGeometry(free, locked, rules, matchSurface);
     }
 
     private static Set<String> readUvLockTextures(JsonObject jsonObject) {

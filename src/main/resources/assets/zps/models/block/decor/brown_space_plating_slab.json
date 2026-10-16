@@ -1,4 +1,25 @@
 {
+  "loader": "zps:model",
+  "type": "connecting",
+  "match_surface": true,
+  "connections": [
+    {
+      "type": "match_block",
+      "block": "zps:brown_space_plating"
+    },
+    {
+      "type": "match_block",
+      "block": "zps:brown_space_plating_stairs"
+    },
+    {
+      "type": "match_block",
+      "block": "zps:brown_space_plating_slab"
+    },
+    {
+      "type": "match_block",
+      "block": "zps:brown_space_plating_wall"
+    }
+  ],
   "parent": "minecraft:block/slab",
   "textures": {
     "bottom": "zps:block/decor/brown_space_plating",

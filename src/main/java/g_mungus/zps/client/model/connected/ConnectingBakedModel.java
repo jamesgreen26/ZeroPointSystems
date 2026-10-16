@@ -13,6 +13,9 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.neoforge.client.ChunkRenderTypeSet;
 import net.neoforged.neoforge.client.RenderTypeGroup;
 import net.neoforged.neoforge.client.model.BakedModelWrapper;
@@ -35,8 +38,19 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
      * Identifies one neighbour lookup: the world direction of the face being drawn, and the offset from the
      * block being rendered to the neighbour. Keyed by face as well as offset because a rule may care which
      * face it is drawing — the same neighbour can connect on one face of a block and not on another.
+     * With {@code match_surface}, {@code probe} is where the face's edge meets the neighbour; the neighbour only
+     * connects if its shape carries the surface on somewhere along it.
      */
-    public record Neighbour(Direction face, Vec3i offset) {}
+    public record Neighbour(Direction face, Vec3i offset, @Nullable Probe probe) {}
+
+    /**
+     * A stretch of the face's plane just inside the neighbour, in the neighbour's own block coordinates: the
+     * shared edge for a side neighbour, or a single point ({@code from == to}) for a diagonal one.
+     */
+    public record Probe(Vec3 from, Vec3 to) {}
+
+    /** How far, in blocks, a surface probe sits inside the neighbour and either side of the face's plane. */
+    private static final double PROBE_INSET = 1 / 64.0;
 
     /** Maps each relevant neighbour lookup to whether it connects, for the block being rendered. */
     public static final ModelProperty<Map<Neighbour, Boolean>> CONNECTIONS = new ModelProperty<>();
@@ -48,13 +62,15 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
     private final List<List<BakedQuad>> itemBySide;
     private final BakedModel itemModel;
     private final List<ConnectionRule> rules;
+    private final boolean matchSurface;
     private final Set<Neighbour> neighbours;
     private final RenderTypeGroup renderTypes;
 
-    public ConnectingBakedModel(BakedModel original, List<ConnectionRule> rules, BlockState owner, RandomSource rand,
-                                RenderTypeGroup renderTypes) {
+    public ConnectingBakedModel(BakedModel original, List<ConnectionRule> rules, boolean matchSurface,
+                                BlockState owner, RandomSource rand, RenderTypeGroup renderTypes) {
         super(original);
         this.rules = rules;
+        this.matchSurface = matchSurface;
         this.renderTypes = renderTypes;
         this.staticBySide = new ArrayList<>(SIDE_COUNT);
         this.connectingBySide = new ArrayList<>(SIDE_COUNT);
@@ -106,7 +122,7 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
             ConnectedTextureMeta.Meta meta = ConnectedTextureMeta.get(quad.getSprite().contents().name()).orElse(null);
             int tileCount = quad.getSprite().contents().width() / quad.getSprite().contents().height();
             if (meta != null && meta.pieced() && tileCount >= PiecedLayout.TILE_COUNT) {
-                ConnectingFace face = new ConnectingFace(quad, tileCount);
+                ConnectingFace face = new ConnectingFace(quad, tileCount, matchSurface);
                 connectingBySide.get(sideIndex).add(face);
                 face.emit(itemBySide.get(sideIndex), null);
                 lookups.addAll(face.neighbours());
@@ -138,10 +154,65 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
         for (Neighbour neighbour : neighbours) {
             Vec3i offset = neighbour.offset();
             cursor.setWithOffset(pos, offset.getX(), offset.getY(), offset.getZ());
-            connections.put(neighbour,
-                    ConnectionRule.anyMatch(rules, state, level.getBlockState(cursor), neighbour.face()));
+            BlockState other = level.getBlockState(cursor);
+            boolean connects = ConnectionRule.anyMatch(rules, state, other, neighbour.face())
+                    && (neighbour.probe() == null
+                        || continuesSurface(other.getShape(level, cursor), neighbour.face(), neighbour.probe()));
+            connections.put(neighbour, connects);
         }
         return modelData.derive().with(CONNECTIONS, connections).build();
+    }
+
+    /**
+     * Whether a shape is solid just behind the probe and open just in front of it — i.e. has a face there — at
+     * any point along it. The probe is split wherever a box of the shape starts or ends, and each stretch is
+     * tested at its middle, so a test point never lands on a box's boundary. (A single midpoint test did: the
+     * side of a wall's arm is centred exactly on the edge of the post at the end of a run.)
+     */
+    private static boolean continuesSurface(VoxelShape shape, Direction face, Probe probe) {
+        List<AABB> boxes = shape.toAabbs();
+        Vec3 normal = Vec3.atLowerCornerOf(face.getNormal()).scale(PROBE_INSET);
+        Vec3 span = probe.to().subtract(probe.from());
+        List<Double> cuts = new ArrayList<>();
+        cuts.add(0.0);
+        cuts.add(1.0);
+        for (AABB box : boxes) {
+            for (Direction.Axis axis : Direction.Axis.values()) {
+                double length = span.get(axis);
+                if (length != 0) {
+                    addCut(cuts, (box.min(axis) - probe.from().get(axis)) / length);
+                    addCut(cuts, (box.max(axis) - probe.from().get(axis)) / length);
+                }
+            }
+        }
+        cuts.sort(null);
+        for (int i = 0; i + 1 < cuts.size(); i++) {
+            double a = cuts.get(i);
+            double b = cuts.get(i + 1);
+            if (b - a < 1e-6) {
+                continue;
+            }
+            Vec3 point = probe.from().add(span.scale((a + b) * 0.5));
+            if (contains(boxes, point.subtract(normal)) && !contains(boxes, point.add(normal))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void addCut(List<Double> cuts, double t) {
+        if (t > 0 && t < 1) {
+            cuts.add(t);
+        }
+    }
+
+    private static boolean contains(List<AABB> boxes, Vec3 point) {
+        for (AABB box : boxes) {
+            if (box.contains(point)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -178,11 +249,20 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
     }
 
     /**
-     * Pre-computed geometry for one connecting face. Holds the four texture-space corner positions, per-vertex
-     * texture-space coordinates (to preserve winding), the world-space neighbour directions for the texture axes,
-     * and a template vertex array used to copy colour/light/normal data into the generated sub-quads.
+     * Pre-computed geometry for one connecting face. The face is mapped onto a 16px tile through its UVs, and
+     * split at the tile's centre into up to four pieces, one per tile corner, each clipped to the part of the
+     * tile the face actually covers — so a slab's half-height side only draws the two lower corners. Holds the
+     * four texture-space corner positions, per-vertex texture-space coordinates (to preserve winding), the
+     * world-space neighbour directions for the texture axes, and a template vertex array used to copy
+     * colour/light/normal data into the generated sub-quads.
      */
     private static final class ConnectingFace {
+        /**
+         * How close, in tile pixels, a face must come to the tile's edge to count as reaching it. Generous because
+         * baking shrinks UVs a little towards the sprite's centre; model faces sit on whole pixels anyway.
+         */
+        private static final float EDGE_SLACK = 0.5f;
+
         private final int[] template; // original 4-vertex data; position+uv are overwritten per sub-quad
         private final TextureAtlasSprite sprite;
         private final int tintIndex;
@@ -190,12 +270,18 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
         private final boolean shade;
         private final boolean hasAmbientOcclusion;
         private final int tileCount;
+        private final boolean matchSurface;
         private final float u0;
         private final float u1;
         private final float v0;
         private final float v1;
         private final int spriteWidth;
         private final int spriteHeight;
+        // the face's extent on the tile, in tile pixels (0-16)
+        private final float sMin;
+        private final float sMax;
+        private final float tMin;
+        private final float tMax;
         // texture-space corner positions
         private final Vector3f topLeft;
         private final Vector3f topRight;
@@ -207,8 +293,17 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
         // world offsets of texture +u and +v axes
         private final Vec3i axisU;
         private final Vec3i axisV;
+        private final List<Piece> pieces = new ArrayList<>();
 
-        ConnectingFace(BakedQuad quad, int tileCount) {
+        /**
+         * One tile corner clipped to the face, with the lookups that choose its tile. A null lookup is an edge
+         * the piece does not reach: its tile border is never drawn, so it counts as connected.
+         */
+        private record Piece(int corner, float sLo, float sHi, float tLo, float tHi,
+                             @Nullable Neighbour horizontal, @Nullable Neighbour vertical,
+                             @Nullable Neighbour diagonal) {}
+
+        ConnectingFace(BakedQuad quad, int tileCount, boolean matchSurface) {
             this.template = quad.getVertices().clone();
             this.sprite = quad.getSprite();
             this.tintIndex = quad.getTintIndex();
@@ -216,6 +311,7 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
             this.shade = quad.isShade();
             this.hasAmbientOcclusion = quad.hasAmbientOcclusion();
             this.tileCount = tileCount;
+            this.matchSurface = matchSurface;
             this.u0 = sprite.getU0();
             this.u1 = sprite.getU1();
             this.v0 = sprite.getV0();
@@ -224,28 +320,33 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
             this.spriteHeight = sprite.contents().height();
 
             Vector3f[] positions = new Vector3f[4];
-            float[] us = new float[4];
-            float[] vs = new float[4];
-            float uMin = Float.MAX_VALUE, uMax = -Float.MAX_VALUE, vMin = Float.MAX_VALUE, vMax = -Float.MAX_VALUE;
+            float[] ss = new float[4];
+            float[] ts = new float[4];
+            float sLow = Float.MAX_VALUE, sHigh = -Float.MAX_VALUE, tLow = Float.MAX_VALUE, tHigh = -Float.MAX_VALUE;
             for (int k = 0; k < 4; k++) {
                 int base = k * IQuadTransformer.STRIDE;
                 positions[k] = new Vector3f(
                         Float.intBitsToFloat(template[base + IQuadTransformer.POSITION]),
                         Float.intBitsToFloat(template[base + IQuadTransformer.POSITION + 1]),
                         Float.intBitsToFloat(template[base + IQuadTransformer.POSITION + 2]));
-                us[k] = Float.intBitsToFloat(template[base + IQuadTransformer.UV0]);
-                vs[k] = Float.intBitsToFloat(template[base + IQuadTransformer.UV0 + 1]);
-                uMin = Math.min(uMin, us[k]);
-                uMax = Math.max(uMax, us[k]);
-                vMin = Math.min(vMin, vs[k]);
-                vMax = Math.max(vMax, vs[k]);
+                // The model's 0-16 UVs span the whole strip, so they map straight onto one tile.
+                ss[k] = 16f * (Float.intBitsToFloat(template[base + IQuadTransformer.UV0]) - u0) / (u1 - u0);
+                ts[k] = 16f * (Float.intBitsToFloat(template[base + IQuadTransformer.UV0 + 1]) - v0) / (v1 - v0);
+                sLow = Math.min(sLow, ss[k]);
+                sHigh = Math.max(sHigh, ss[k]);
+                tLow = Math.min(tLow, ts[k]);
+                tHigh = Math.max(tHigh, ts[k]);
             }
-            float uMid = (uMin + uMax) * 0.5f;
-            float vMid = (vMin + vMax) * 0.5f;
+            this.sMin = sLow;
+            this.sMax = sHigh;
+            this.tMin = tLow;
+            this.tMax = tHigh;
+            float sMid = (sMin + sMax) * 0.5f;
+            float tMid = (tMin + tMax) * 0.5f;
             Vector3f tl = null, tr = null, bl = null, br = null;
             for (int k = 0; k < 4; k++) {
-                boolean right = us[k] > uMid;
-                boolean bottom = vs[k] > vMid;
+                boolean right = ss[k] > sMid;
+                boolean bottom = ts[k] > tMid;
                 vertexRight[k] = right;
                 vertexBottom[k] = bottom;
                 if (!right && !bottom) tl = positions[k];
@@ -259,15 +360,57 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
             this.bottomRight = br;
             this.axisU = dominantAxis(new Vector3f(topRight).sub(topLeft));
             this.axisV = dominantAxis(new Vector3f(bottomLeft).sub(topLeft));
+
+            for (int corner = 0; corner < 4; corner++) {
+                addPiece(corner);
+            }
         }
 
-        /** All neighbour lookups this face may query (4 corners x {H, V, D}). */
+        private void addPiece(int corner) {
+            int cu = corner & 1;        // 0 = left column, 1 = right column
+            int cv = (corner >> 1) & 1; // 0 = top row, 1 = bottom row
+            float sLo = Math.max(sMin, cu * 8f);
+            float sHi = Math.min(sMax, cu * 8f + 8f);
+            float tLo = Math.max(tMin, cv * 8f);
+            float tHi = Math.min(tMax, cv * 8f + 8f);
+            if (sHi - sLo < EDGE_SLACK || tHi - tLo < EDGE_SLACK) {
+                return;
+            }
+            boolean reachesU = cu == 0 ? sMin <= EDGE_SLACK : sMax >= 16f - EDGE_SLACK;
+            boolean reachesV = cv == 0 ? tMin <= EDGE_SLACK : tMax >= 16f - EDGE_SLACK;
+            float sEdge = cu * 16f;
+            float tEdge = cv * 16f;
+            pieces.add(new Piece(corner, sLo, sHi, tLo, tHi,
+                    reachesU ? lookup(horizontal(corner), sEdge, tLo, sEdge, tHi) : null,
+                    reachesV ? lookup(vertical(corner), sLo, tEdge, sHi, tEdge) : null,
+                    reachesU && reachesV ? lookup(diagonal(corner), sEdge, tEdge, sEdge, tEdge) : null));
+        }
+
+        /** The lookup for a neighbour, probed along the tile edge from {@code (s0, t0)} to {@code (s1, t1)}. */
+        private Neighbour lookup(Vec3i offset, float s0, float t0, float s1, float t1) {
+            if (!matchSurface) {
+                return new Neighbour(direction, offset, null);
+            }
+            return new Neighbour(direction, offset, new Probe(inside(offset, s0, t0), inside(offset, s1, t1)));
+        }
+
+        /** The point on the face at {@code (s, t)}, moved just past the shared edge into the neighbour. */
+        private Vec3 inside(Vec3i offset, float s, float t) {
+            Vector3f point = position(s, t);
+            double into = 1 - PROBE_INSET;
+            return new Vec3(
+                    point.x - offset.getX() * into,
+                    point.y - offset.getY() * into,
+                    point.z - offset.getZ() * into);
+        }
+
+        /** All neighbour lookups this face may query (up to 4 pieces x {H, V, D}). */
         Set<Neighbour> neighbours() {
             Set<Neighbour> lookups = new HashSet<>();
-            for (int corner = 0; corner < 4; corner++) {
-                lookups.add(new Neighbour(direction, horizontal(corner)));
-                lookups.add(new Neighbour(direction, vertical(corner)));
-                lookups.add(new Neighbour(direction, diagonal(corner)));
+            for (Piece piece : pieces) {
+                if (piece.horizontal() != null) lookups.add(piece.horizontal());
+                if (piece.vertical() != null) lookups.add(piece.vertical());
+                if (piece.diagonal() != null) lookups.add(piece.diagonal());
             }
             return lookups;
         }
@@ -287,47 +430,47 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
         }
 
         void emit(List<BakedQuad> out, @Nullable Map<Neighbour, Boolean> connections) {
-            for (int corner = 0; corner < 4; corner++) {
-                boolean h = connected(connections, horizontal(corner));
-                boolean v = connected(connections, vertical(corner));
-                boolean d = connected(connections, diagonal(corner));
-                int tile = PiecedLayout.tileIndex(h, v, d);
-                out.add(buildCorner(corner, tile));
+            for (Piece piece : pieces) {
+                boolean h = connected(connections, piece.horizontal());
+                boolean v = connected(connections, piece.vertical());
+                boolean d = connected(connections, piece.diagonal());
+                out.add(buildPiece(piece, PiecedLayout.tileIndex(h, v, d)));
             }
         }
 
-        private boolean connected(@Nullable Map<Neighbour, Boolean> connections, Vec3i offset) {
-            return connections != null && connections.getOrDefault(new Neighbour(direction, offset), Boolean.FALSE);
+        private static boolean connected(@Nullable Map<Neighbour, Boolean> connections, @Nullable Neighbour lookup) {
+            if (lookup == null) {
+                return true;
+            }
+            return connections != null && connections.getOrDefault(lookup, Boolean.FALSE);
         }
 
-        private BakedQuad buildCorner(int corner, int tile) {
-            int cu = corner & 1;        // 0 = left column, 1 = right column
-            int cv = (corner >> 1) & 1; // 0 = top row, 1 = bottom row
+        private BakedQuad buildPiece(Piece piece, int tile) {
             int[] vertices = new int[template.length];
             for (int k = 0; k < 4; k++) {
                 int base = k * IQuadTransformer.STRIDE;
                 System.arraycopy(template, base, vertices, base, IQuadTransformer.STRIDE);
-                int sk = vertexRight[k] ? 1 : 0;
-                int tk = vertexBottom[k] ? 1 : 0;
+                float s = vertexRight[k] ? piece.sHi() : piece.sLo();
+                float t = vertexBottom[k] ? piece.tHi() : piece.tLo();
 
-                float a = (cu + sk) * 0.5f;
-                float b = (cv + tk) * 0.5f;
-                Vector3f position = bilinear(a, b);
+                Vector3f position = position(s, t);
                 vertices[base + IQuadTransformer.POSITION] = Float.floatToRawIntBits(position.x);
                 vertices[base + IQuadTransformer.POSITION + 1] = Float.floatToRawIntBits(position.y);
                 vertices[base + IQuadTransformer.POSITION + 2] = Float.floatToRawIntBits(position.z);
 
-                float pixelU = 16f * tile + cu * 8f + sk * 8f;
-                float pixelV = cv * 8f + tk * 8f;
+                float pixelU = 16f * tile + s;
                 float atlasU = u0 + (pixelU / spriteWidth) * (u1 - u0);
-                float atlasV = v0 + (pixelV / spriteHeight) * (v1 - v0);
+                float atlasV = v0 + (t / spriteHeight) * (v1 - v0);
                 vertices[base + IQuadTransformer.UV0] = Float.floatToRawIntBits(atlasU);
                 vertices[base + IQuadTransformer.UV0 + 1] = Float.floatToRawIntBits(atlasV);
             }
             return new BakedQuad(vertices, tintIndex, direction, sprite, shade, hasAmbientOcclusion);
         }
 
-        private Vector3f bilinear(float a, float b) {
+        /** The point on the face at tile pixel {@code (s, t)}. */
+        private Vector3f position(float s, float t) {
+            float a = sMax > sMin ? (s - sMin) / (sMax - sMin) : 0;
+            float b = tMax > tMin ? (t - tMin) / (tMax - tMin) : 0;
             Vector3f top = new Vector3f(topLeft).lerp(topRight, a);
             Vector3f bottom = new Vector3f(bottomLeft).lerp(bottomRight, a);
             return top.lerp(bottom, b);

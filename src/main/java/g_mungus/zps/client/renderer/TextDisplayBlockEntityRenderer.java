@@ -1,23 +1,30 @@
 package g_mungus.zps.client.renderer;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import g_mungus.zps.block.cableNetwork.light_pipe.DisplayLayout;
 import g_mungus.zps.block.cableNetwork.light_pipe.TextDisplayBlock;
 import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
+import g_mungus.zps.client.renderer.text.TextVisualizers;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
+import org.joml.Matrix4f;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class TextDisplayBlockEntityRenderer implements BlockEntityRenderer<TextDisplayBlockEntity> {
+
+    /** A pixel is as wide as a row is high, so pixels tile as squares. */
+    private static final int PIXEL_SIZE = 8;
 
     final Font font;
 
@@ -104,10 +111,10 @@ public class TextDisplayBlockEntityRenderer implements BlockEntityRenderer<TextD
         // positions. Each glyph advances by its natural width, and a line wraps once
         // its real pixel width would overrun the display.
         int lineBudget = maxCols * cellSize / textScale;
-        List<Glyph> glyphs = layoutGlyphs(text, lineBudget, maxRows / textScale);
+        // Tags pick the visualizer for each part of the text, which picks each char's glyph and colour.
+        List<TextVisualizers.VisualChar> chars = TextVisualizers.visualize(text, blockEntity.getTextColor());
+        List<Glyph> glyphs = layoutGlyphs(chars, lineBudget, maxRows / textScale);
 
-        // Same text colour a dyed sign uses for this dye.
-        int textColor = blockEntity.getTextColor().getTextColor();
         // Glowing text ignores the light level, as on a sign touched with a glow ink sac.
         int textLight = blockEntity.isGlowingText() ? LightTexture.FULL_BRIGHT : packedLight;
 
@@ -124,11 +131,18 @@ public class TextDisplayBlockEntityRenderer implements BlockEntityRenderer<TextD
                 continue;
             }
 
+            float x = (float) originX / textScale + glyph.x();
+            float y = (float) originY / textScale + glyph.row() * cellSize;
+            if (glyph.c().pixel()) {
+                drawPixel(poseStack, bufferSource, x, y, PIXEL_SIZE, glyph.c().color(), textLight);
+                continue;
+            }
+
             this.font.drawInBatch(
-                    String.valueOf(glyph.c()),
-                    (float) originX / textScale + glyph.x(),
-                    (float) originY / textScale + glyph.row() * cellSize,
-                    textColor,
+                    String.valueOf(glyph.c().glyph()),
+                    x,
+                    y,
+                    glyph.c().color(),
                     false,
                     poseStack.last().pose(),
                     bufferSource,
@@ -141,33 +155,49 @@ public class TextDisplayBlockEntityRenderer implements BlockEntityRenderer<TextD
         poseStack.popPose();
     }
 
+    /**
+     * A filled square, lit like the text: one texture pixel of the block at default size. The
+     * corners go in the order the font gives a glyph's, so it faces the same way.
+     */
+    private static void drawPixel(PoseStack poseStack, MultiBufferSource bufferSource, float x, float y, float size,
+                                  int color, int light) {
+        Matrix4f pose = poseStack.last().pose();
+        int argb = 0xFF000000 | color;
+        VertexConsumer buffer = bufferSource.getBuffer(RenderType.textBackground());
+        buffer.vertex(pose, x, y, 0).color(argb).uv2(light).endVertex();
+        buffer.vertex(pose, x, y + size, 0).color(argb).uv2(light).endVertex();
+        buffer.vertex(pose, x + size, y + size, 0).color(argb).uv2(light).endVertex();
+        buffer.vertex(pose, x + size, y, 0).color(argb).uv2(light).endVertex();
+    }
+
     /** A single positioned character. {@code x} is font pixels from logical column 0. */
-    private record Glyph(char c, int row, float x) {}
+    private record Glyph(TextVisualizers.VisualChar c, int row, float x) {}
 
     /**
      * Lays the text out into positioned glyphs with word-aware line breaking.
      * Words move to the next line as a unit when they no longer fit; a word wider
      * than a whole line is hard-broken across lines. Explicit newlines start a new
-     * row. Glyphs on rows past {@code maxRows} are dropped.
+     * row. Glyphs on rows past {@code maxRows} are dropped. Spaces and newlines are
+     * read from the text as written; widths come from the glyphs drawn.
      */
-    private List<Glyph> layoutGlyphs(String text, int lineBudget, int maxRows) {
+    private List<Glyph> layoutGlyphs(List<TextVisualizers.VisualChar> text, int lineBudget, int maxRows) {
         List<Glyph> glyphs = new ArrayList<>();
         int row = 0;
         float lineWidth = 0f;
         int i = 0;
-        int length = text.length();
+        int length = text.size();
 
         while (i < length && row < maxRows) {
-            char c = text.charAt(i);
+            TextVisualizers.VisualChar c = text.get(i);
 
-            if (c == '\n') {
+            if (c.source() == '\n') {
                 row++;
                 lineWidth = 0f;
                 i++;
                 continue;
             }
 
-            if (c == ' ') {
+            if (c.source() == ' ' && !c.pixel()) {
                 glyphs.add(new Glyph(c, row, lineWidth));
                 lineWidth += advance(c);
                 i++;
@@ -177,8 +207,8 @@ public class TextDisplayBlockEntityRenderer implements BlockEntityRenderer<TextD
             // Measure the whole word ahead so it can wrap as a unit.
             int end = i;
             float wordWidth = 0f;
-            while (end < length && text.charAt(end) != ' ' && text.charAt(end) != '\n') {
-                wordWidth += advance(text.charAt(end));
+            while (end < length && !isBreak(text.get(end))) {
+                wordWidth += advance(text.get(end));
                 end++;
             }
 
@@ -189,7 +219,7 @@ public class TextDisplayBlockEntityRenderer implements BlockEntityRenderer<TextD
             }
 
             for (int k = i; k < end && row < maxRows; k++) {
-                char wc = text.charAt(k);
+                TextVisualizers.VisualChar wc = text.get(k);
                 float charWidth = advance(wc);
 
                 // A word too wide for any line is hard-broken as we go.
@@ -210,8 +240,16 @@ public class TextDisplayBlockEntityRenderer implements BlockEntityRenderer<TextD
         return glyphs;
     }
 
-    private float advance(char c) {
-        return this.font.width(String.valueOf(c));
+    /** A space or newline as written ends a word; a pixel never does, since it is drawn. */
+    private static boolean isBreak(TextVisualizers.VisualChar c) {
+        return c.source() == '\n' || (c.source() == ' ' && !c.pixel());
+    }
+
+    private float advance(TextVisualizers.VisualChar c) {
+        if (c.pixel()) {
+            return PIXEL_SIZE;
+        }
+        return this.font.width(String.valueOf(c.glyph()));
     }
 
 }

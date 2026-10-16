@@ -107,6 +107,10 @@ public class ZPSScriptMappers {
                 }));
         event.register(ZPSNodes.mapper("as_dimension", BuiltInTypes.STRING, ZPSScriptTypes.DIMENSION,
                 (text, context) -> text));
+
+        // Writing a character by its code, such as one pixel of a text display's video
+        event.register(ZPSNodes.mapper("as_char", BuiltInTypes.INT, BuiltInTypes.STRING,
+                (code, context) -> charOf(code)));
     }
 
     /** A block that is {@code state}, as a block predicate tests one, with no world behind it. */
@@ -122,6 +126,14 @@ public class ZPSScriptMappers {
     public interface BlockInWorldMutable {
         void zps$setState(BlockState state);
         void zps$setCachedEntity(boolean b);
+    }
+
+    /**
+     * The character with Unicode code point {@code code}, as text: 65 is {@code A}. A code no
+     * character has gives a space, so a script drawing a video row never stops on a bad value.
+     */
+    private static String charOf(int code) {
+        return Character.isValidCodePoint(code) ? Character.toString(code) : " ";
     }
 
     private static boolean parseBoolean(String value) {

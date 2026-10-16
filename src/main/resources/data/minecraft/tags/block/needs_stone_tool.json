@@ -44,6 +44,7 @@
     "zps:space_truss",
     "zps:space_scaffold",
     "zps:space_metal_ladder",
+    "zps:space_door",
     "zps:space_mesh_block",
     "zps:space_grating_block",
     "zps:catwalk",

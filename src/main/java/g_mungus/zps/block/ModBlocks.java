@@ -26,6 +26,7 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockSetType;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import net.minecraft.world.level.material.MapColor;
@@ -394,6 +395,24 @@ public class ModBlocks {
 
     public static final DeferredBlock<Block> SPACE_METAL_LADDER = BLOCKS.register("space_metal_ladder",
             () -> new SpaceMetalLadderBlock(BlockBehaviour.Properties.of()
+                    .strength(3.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.NETHERITE_BLOCK)
+                    .pushReaction(PushReaction.DESTROY)
+                    .noOcclusion()
+            )
+    );
+
+    /** Metal sounds, but opened by hand like a wooden door. */
+    public static final BlockSetType SPACE_METAL_SET = BlockSetType.register(new BlockSetType("zps:space_metal",
+            true, true, false, BlockSetType.PressurePlateSensitivity.MOBS, SoundType.NETHERITE_BLOCK,
+            SoundEvents.IRON_DOOR_CLOSE, SoundEvents.IRON_DOOR_OPEN,
+            SoundEvents.IRON_TRAPDOOR_CLOSE, SoundEvents.IRON_TRAPDOOR_OPEN,
+            SoundEvents.METAL_PRESSURE_PLATE_CLICK_OFF, SoundEvents.METAL_PRESSURE_PLATE_CLICK_ON,
+            SoundEvents.STONE_BUTTON_CLICK_OFF, SoundEvents.STONE_BUTTON_CLICK_ON));
+
+    public static final DeferredBlock<Block> SPACE_DOOR = BLOCKS.register("space_door",
+            () -> new DoorBlock(SPACE_METAL_SET, BlockBehaviour.Properties.of()
                     .strength(3.0f)
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.NETHERITE_BLOCK)

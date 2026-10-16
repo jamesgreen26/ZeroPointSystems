@@ -5,6 +5,7 @@ import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.BeamCollectorBlockItem;
 import g_mungus.zps.multiblock.MultiblockBlockItem;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.DoubleHighBlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -256,6 +257,9 @@ public class ModItems {
 
     public static final DeferredItem<Item> SPACE_METAL_LADDER = ITEMS.register("space_metal_ladder",
             () -> new BlockItem(ModBlocks.SPACE_METAL_LADDER.get(), new Item.Properties()));
+
+    public static final DeferredItem<Item> SPACE_DOOR = ITEMS.register("space_door",
+            () -> new DoubleHighBlockItem(ModBlocks.SPACE_DOOR.get(), new Item.Properties()));
 
     public static final DeferredItem<Item> CATWALK = ITEMS.register("catwalk",
             () -> new CatwalkBlockItem(ModBlocks.CATWALK.get(), new Item.Properties()));

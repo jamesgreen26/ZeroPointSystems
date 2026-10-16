@@ -517,6 +517,35 @@ public class ScriptCommandGameTests {
      * {@code if <cond> && value_of(<cond>) ... else ...} should pick the branch
      * from the combined condition when run as a real script command.
      */
+    /** {@code as_char} should give the character with that code, and a space for a code no character has. */
+    @GameTest(template = TEMPLATE)
+    public static void valueOf_asChar_writesCharacterByCode(GameTestHelper helper) {
+        BlockPos absPos = helper.absolutePos(new BlockPos(3, 1, 3));
+        String offset = " - " + absPos.getX();
+
+        String letter = evalValueOf(helper, absPos, "pos x" + offset + " + 65 as_char", STRING_KEY);
+        if (!"A".equals(letter)) {
+            helper.fail("65 as_char: expected A, got " + letter);
+            return;
+        }
+        String joined = evalValueOf(helper, absPos, "pos x" + offset + " + 80 as_char + value_of(pos x" + offset + " + 95 as_char)", STRING_KEY);
+        if (!"P_".equals(joined)) {
+            helper.fail("80 as_char + 95 as_char: expected P_, got " + joined);
+            return;
+        }
+        String negative = evalValueOf(helper, absPos, "pos x" + offset + " - 1 as_char", STRING_KEY);
+        if (!" ".equals(negative)) {
+            helper.fail("-1 as_char: expected a space, got \"" + negative + "\"");
+            return;
+        }
+        String tooHigh = evalValueOf(helper, absPos, "pos x" + offset + " + " + (Character.MAX_CODE_POINT + 1) + " as_char", STRING_KEY);
+        if (!" ".equals(tooHigh)) {
+            helper.fail((Character.MAX_CODE_POINT + 1) + " as_char: expected a space, got \"" + tooHigh + "\"");
+            return;
+        }
+        helper.succeed();
+    }
+
     /** {@code value_of(block id)} should give the target block's id, without its properties. */
     @GameTest(template = TEMPLATE)
     public static void valueOf_blockId_returnsBlockId(GameTestHelper helper) {

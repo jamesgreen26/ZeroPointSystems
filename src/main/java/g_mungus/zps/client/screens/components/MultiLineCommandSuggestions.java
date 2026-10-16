@@ -26,7 +26,6 @@ import g_mungus.munguscript.engine.preprocess.SourceMap;
 import g_mungus.zps.client.script.ClientScripts;
 import g_mungus.zps.commands.content.TerminalLines;
 import g_mungus.zps.commands.api.ScriptTarget;
-import g_mungus.zps.commands.preprocess.AddressPreProcessor;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -49,9 +48,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -61,6 +58,18 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static g_mungus.zps.client.screens.components.ScriptLineHighlighter.aliasNameEnd;
+import static g_mungus.zps.client.screens.components.ScriptLineHighlighter.aliasNameStart;
+import static g_mungus.zps.client.screens.components.ScriptLineHighlighter.definitionKeyword;
+import static g_mungus.zps.client.screens.components.ScriptLineHighlighter.equalsSlotStart;
+import static g_mungus.zps.client.screens.components.ScriptLineHighlighter.expressionStart;
+import static g_mungus.zps.client.screens.components.ScriptLineHighlighter.isAliasDefinitionLine;
+import static g_mungus.zps.client.screens.components.ScriptLineHighlighter.isCommentLine;
+import static g_mungus.zps.client.screens.components.ScriptLineHighlighter.isReceiveLine;
+import static g_mungus.zps.client.screens.components.ScriptLineHighlighter.isWaitLine;
+import static g_mungus.zps.client.screens.components.ScriptLineHighlighter.skipWhitespace;
+import static g_mungus.zps.client.screens.components.ScriptLineHighlighter.validWait;
 
 /**
  * Suggestions, usage hints and highlighting for a multi-line script editor, from the scripts the
@@ -72,15 +81,14 @@ import java.util.regex.Pattern;
 @OnlyIn(Dist.CLIENT)
 public class MultiLineCommandSuggestions {
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("(\\s+)");
-    private static final Pattern ALIAS_NAME_PATTERN = Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
     private static final Pattern NAMED_ARGUMENT_USAGE = Pattern.compile("<[^<>]*:([^<>:]+)>");
     private static final String ALIAS_NAME_USAGE = "<alias>";
     private static final String EXPECTED_EQUALS_MESSAGE = "Expected '=' after alias name";
-    private static final String WAIT = TerminalLines.WAIT;
-    private static final String RECEIVE_VALUE = TerminalLines.RECEIVE_VALUE;
+    private static final String WAIT = ScriptLineHighlighter.WAIT;
+    private static final String RECEIVE_VALUE = ScriptLineHighlighter.RECEIVE_VALUE;
     private static final String RECEIVE_USAGE = "<variable>";
-    private static final String DEFINE = "#def";
-    private static final String DECLARE = "#var";
+    private static final String DEFINE = ScriptLineHighlighter.DEFINE;
+    private static final String DECLARE = ScriptLineHighlighter.DECLARE;
     private static final String WAIT_USAGE = "<cycles: 1-" + TerminalLines.MAX_WAIT_CYCLES + ">";
     final Minecraft minecraft;
     private final Screen screen;
@@ -111,13 +119,8 @@ public class MultiLineCommandSuggestions {
     private boolean allowSuggestions;
     boolean keepSuggestions;
 
-    // The script's pre-processing, made again when the script, its addresses or the scripts change.
-    private @Nullable PreparedScript prepared;
-    private final Map<String, List<ScriptSyntaxHighlighter.Span>> highlightCache = new HashMap<>();
-
-    private record PreparedScript(String text, Map<String, BlockPos> addresses, ScriptView<SharedSuggestionProvider> view,
-                                  CommandPreProcessor.Prepared script, Map<Integer, CommandPreProcessor.Prepared> before) {
-    }
+    // The script's pre-processing and colouring, made again when the script, its addresses or the scripts change.
+    private final ScriptLineHighlighter highlighter;
 
     /**
      * @param connectedTargets what a script written here can be aimed at, or null when not known,
@@ -136,6 +139,7 @@ public class MultiLineCommandSuggestions {
         this.input = input;
         this.font = font;
         this.commandsOnly = commandsOnly;
+        this.highlighter = new ScriptLineHighlighter(commandsOnly, connectedTargets);
         this.onlyShowIfCursorPastError = onlyShowIfCursorPastError;
         this.lineStartOffset = lineStartOffset;
         this.suggestionLineLimit = suggestionLineLimit;
@@ -147,6 +151,7 @@ public class MultiLineCommandSuggestions {
     /** Turns the box into an expression box: one getter to mapper chain, read as text. */
     public void setExpressionMode(boolean expressionMode) {
         this.expressionMode = expressionMode;
+        this.highlighter.setExpressionMode(expressionMode);
     }
 
     /** Where the current values of the script's variables come from, for their tooltips. */
@@ -425,34 +430,17 @@ public class MultiLineCommandSuggestions {
     }
 
     /** The script's pre-processing: its aliases, then its addresses. */
-    private PreparedScript prepared(ScriptView<SharedSuggestionProvider> view) {
-        String text = this.input.getValue();
-        Map<String, BlockPos> addresses = this.addresses.get();
-        PreparedScript cached = this.prepared;
-        if (cached != null && cached.text().equals(text) && cached.addresses().equals(addresses) && cached.view() == view) {
-            return cached;
-        }
-        PreparedScript made = new PreparedScript(text, Map.copyOf(addresses), view,
-                prepare(view, Arrays.asList(text.split("\n", -1)), addresses), new HashMap<>());
-        this.prepared = made;
-        this.highlightCache.clear();
-        return made;
+    private ScriptLineHighlighter.PreparedScript prepared(ScriptView<SharedSuggestionProvider> view) {
+        return this.highlighter.prepared(view, this.input.getValue(), this.addresses.get());
     }
 
     /** The pre-processing an {@code #def} line's own expression sees: the definitions above it. */
     private CommandPreProcessor.Prepared preparedBefore(ScriptView<SharedSuggestionProvider> view, int lineNumber) {
-        PreparedScript script = prepared(view);
-        return script.before().computeIfAbsent(lineNumber, line -> {
-            List<String> lines = Arrays.asList(script.text().split("\n", -1));
-            return prepare(view, lines.subList(0, Math.min(line, lines.size())), script.addresses());
-        });
+        return this.highlighter.preparedBefore(view, this.input.getValue(), this.addresses.get(), lineNumber);
     }
 
-    private CommandPreProcessor.Prepared prepare(ScriptView<SharedSuggestionProvider> view, List<String> lines,
-                                                 Map<String, BlockPos> addresses) {
-        return CommandPreProcessor.chain(List.of(view.aliases(), new AddressPreProcessor(addresses)))
-                .prepare(lines, new PreProcessContext(view.probe(source()), null));
-    }
+
+
 
     private static int getLastWordIndex(String string) {
         if (Strings.isNullOrEmpty(string)) {
@@ -508,36 +496,14 @@ public class MultiLineCommandSuggestions {
 
     // --- lines the editor reads itself -------------------------------------------------------------
 
-    /** A {@code #def} line, which may stand on any line; the lines below it may use its alias. */
-    private static boolean isAliasDefinitionLine(String line) {
-        return startsWithDefinitionKeyword(line);
-    }
 
     /** A line on its way to being {@code #def}, so that it is offered. */
     private static boolean isAliasDefinitionPrefixLine(String line) {
         return isDefinitionKeywordPrefix(line.stripLeading());
     }
 
-    /** A comment: any other {@code #} line, which may stand on any line. */
-    private static boolean isCommentLine(String line) {
-        return line.stripLeading().startsWith("#");
-    }
 
-    private static boolean startsWithDefinitionKeyword(String line) {
-        return definitionKeyword(line) != null;
-    }
 
-    /** {@code #def} or {@code #var}, when the line starts with one followed by a space or nothing. */
-    private static @Nullable String definitionKeyword(String line) {
-        String stripped = line.stripLeading();
-        for (String keyword : List.of(DEFINE, DECLARE)) {
-            if (stripped.startsWith(keyword)
-                    && (stripped.length() == keyword.length() || Character.isWhitespace(stripped.charAt(keyword.length())))) {
-                return keyword;
-            }
-        }
-        return null;
-    }
 
     private static boolean isDefinitionKeywordPrefix(String strippedLine) {
         return strippedLine.startsWith("#") && (DEFINE.startsWith(strippedLine) || DECLARE.startsWith(strippedLine));
@@ -545,14 +511,6 @@ public class MultiLineCommandSuggestions {
 
     // --- wait and receive_value ------------------------------------------------------------------------
 
-    /** Where the first non-whitespace character at or after {@code from} is. */
-    private static int skipWhitespace(String text, int from) {
-        int at = from;
-        while (at < text.length() && Character.isWhitespace(text.charAt(at))) {
-            at++;
-        }
-        return at;
-    }
 
     /** Where {@code keyword}'s argument starts in {@code command}, past any whitespace either side of it. */
     private static int argumentStart(String command, String keyword) {
@@ -569,24 +527,7 @@ public class MultiLineCommandSuggestions {
         this.commandUsageWidth = width;
     }
 
-    /** The keyword plain as an executor, then its argument in {@code argumentStyle}. */
-    private static List<ScriptSyntaxHighlighter.Span> keywordLineSpans(String line, int offset, String keyword,
-                                                                       Style argumentStyle) {
-        List<ScriptSyntaxHighlighter.Span> spans = new ArrayList<>();
-        int keywordStart = skipWhitespace(line, offset);
-        int keywordEnd = keywordStart + keyword.length();
-        spans.add(new ScriptSyntaxHighlighter.Span(StringRange.between(keywordStart, keywordEnd), ScriptSyntaxHighlighter.EXECUTOR_STYLE));
-        int start = skipWhitespace(line, keywordEnd);
-        int end = line.stripTrailing().length();
-        if (start < end) {
-            spans.add(new ScriptSyntaxHighlighter.Span(StringRange.between(start, end), argumentStyle));
-        }
-        return spans;
-    }
 
-    private static boolean isReceiveLine(String command) {
-        return TerminalLines.isReceiveValue(command);
-    }
 
     /** The variables declared above {@code lineNumber}, which a {@code receive_value} there may name. */
     private Set<String> variablesAbove(ScriptView<SharedSuggestionProvider> view, int lineNumber) {
@@ -621,17 +562,7 @@ public class MultiLineCommandSuggestions {
         }
     }
 
-    private List<ScriptSyntaxHighlighter.Span> receiveSpans(ScriptView<SharedSuggestionProvider> view, String line,
-                                                            int offset, int lineNumber) {
-        String name = TerminalLines.argument(line.substring(offset), RECEIVE_VALUE);
-        return keywordLineSpans(line, offset, RECEIVE_VALUE, name != null && variablesAbove(view, lineNumber).contains(name)
-                ? ScriptSyntaxHighlighter.GETTER_STYLE
-                : ScriptSyntaxHighlighter.UNPARSED_STYLE);
-    }
 
-    private static boolean isWaitLine(String command) {
-        return TerminalLines.isWait(command);
-    }
 
     private void updateWaitInfo(String command, int offset) {
         this.pendingSuggestions = Suggestions.empty();
@@ -642,10 +573,6 @@ public class MultiLineCommandSuggestions {
         }
     }
 
-    /** Whether a {@code wait} line asks for a whole number of cycles in range. */
-    private static boolean validWait(String command) {
-        return TerminalLines.waitCycles(command) != null;
-    }
 
     /** The whole line is the expression, so there is no prefix to step over. */
     private void updateExpressionInfo(ScriptView<SharedSuggestionProvider> view, String currentLine, int lineCursorPos) {
@@ -715,55 +642,8 @@ public class MultiLineCommandSuggestions {
         this.commandUsageWidth = width;
     }
 
-    /** Index where the alias name begins, or -1 if the {@code #def} keyword is not yet followed by whitespace. */
-    private static int aliasNameStart(String line) {
-        int cursor = 0;
-        while (cursor < line.length() && Character.isWhitespace(line.charAt(cursor))) {
-            cursor++;
-        }
-        String keyword = definitionKeyword(line);
-        if (keyword == null) {
-            return -1;
-        }
 
-        cursor += keyword.length();
-        if (cursor >= line.length() || !Character.isWhitespace(line.charAt(cursor))) {
-            return -1;
-        }
-        while (cursor < line.length() && Character.isWhitespace(line.charAt(cursor))) {
-            cursor++;
-        }
-        return cursor;
-    }
 
-    /** Index just past the alias name, or -1 if no valid name has been typed yet. */
-    private static int aliasNameEnd(String line) {
-        int nameStart = aliasNameStart(line);
-        if (nameStart == -1) {
-            return -1;
-        }
-
-        Matcher nameMatcher = ALIAS_NAME_PATTERN.matcher(line);
-        nameMatcher.region(nameStart, line.length());
-        return nameMatcher.lookingAt() ? nameMatcher.end() : -1;
-    }
-
-    /**
-     * Index where the {@code =} belongs: the first non-whitespace character after a whitespace-terminated
-     * alias name, or the end of the line when only whitespace follows. -1 when the name is not terminated.
-     */
-    private static int equalsSlotStart(String line) {
-        int nameEnd = aliasNameEnd(line);
-        if (nameEnd == -1 || nameEnd >= line.length() || !Character.isWhitespace(line.charAt(nameEnd))) {
-            return -1;
-        }
-
-        int cursor = nameEnd;
-        while (cursor < line.length() && Character.isWhitespace(line.charAt(cursor))) {
-            cursor++;
-        }
-        return cursor;
-    }
 
     /** True when something other than {@code =} has been typed where the {@code =} belongs. */
     private static boolean hasTextInsteadOfEquals(String line) {
@@ -774,14 +654,6 @@ public class MultiLineCommandSuggestions {
         return equalsSlot != -1 && equalsSlot < line.length();
     }
 
-    /** Where the expression of an {@code #def} line starts: past the {@code =} and any spaces up to {@code limit}. */
-    private static int expressionStart(String line, int limit) {
-        int start = line.indexOf('=') + 1;
-        while (start < limit && Character.isWhitespace(line.charAt(start))) {
-            start++;
-        }
-        return start;
-    }
 
     private CompletableFuture<Suggestions> aliasDefinitionSuggestions(ScriptView<SharedSuggestionProvider> view,
                                                                       String currentLine, int lineCursorPos,
@@ -954,82 +826,16 @@ public class MultiLineCommandSuggestions {
             return FormattedCharSequence.forward(string, Style.EMPTY);
         }
         try {
-            List<ScriptSyntaxHighlighter.Span> spans = lineSpans(view, fullLine, lineNumber);
+            List<ScriptSyntaxHighlighter.Span> spans = this.highlighter.lineSpans(view, this.input.getValue(),
+                    this.addresses.get(), fullLine, lineNumber);
             return ScriptSyntaxHighlighter.sequence(fullLine, spans, visibleStart, visibleLength);
         } catch (RuntimeException e) {
             return FormattedCharSequence.forward(string, Style.EMPTY);
         }
     }
 
-    /** One line's colouring, kept until the script changes since it costs a parse to work out. */
-    private List<ScriptSyntaxHighlighter.Span> lineSpans(ScriptView<SharedSuggestionProvider> view, String line,
-                                                         int lineNumber) {
-        PreparedScript script = prepared(view);
-        String key = lineNumber + "\n" + line;
-        List<ScriptSyntaxHighlighter.Span> cached = this.highlightCache.get(key);
-        if (cached != null) {
-            return cached;
-        }
-        List<ScriptSyntaxHighlighter.Span> spans;
-        if (this.expressionMode) {
-            spans = ScriptSyntaxHighlighter.expressionSpans(line, 0, line, null, source());
-        } else if (lineNumber >= 0 && isAliasDefinitionLine(line)) {
-            spans = aliasDefinitionSpans(view, line, lineNumber);
-        } else if (lineNumber >= 0 && isCommentLine(line)) {
-            spans = List.of();
-        } else if (this.commandsOnly || line.startsWith("/")) {
-            int offset = line.startsWith("/") ? 1 : 0;
-            String command = line.substring(offset);
-            if (isWaitLine(command)) {
-                spans = waitSpans(line, offset);
-            } else if (lineNumber >= 0 && isReceiveLine(command)) {
-                spans = receiveSpans(view, line, offset, lineNumber);
-            } else {
-                spans = ScriptSyntaxHighlighter.commandSpans(line, script.script().at(lineNumber), source());
-            }
-        } else {
-            spans = List.of();
-        }
-        this.highlightCache.put(key, spans);
-        return spans;
-    }
 
-    private static List<ScriptSyntaxHighlighter.Span> waitSpans(String line, int offset) {
-        return keywordLineSpans(line, offset, WAIT, validWait(line.substring(offset))
-                ? ScriptSyntaxHighlighter.ARGUMENT_STYLE
-                : ScriptSyntaxHighlighter.UNPARSED_STYLE);
-    }
 
-    /** {@code #def name = expression}: the keyword and {@code =} plain, the name as a getter, the expression as one. */
-    private List<ScriptSyntaxHighlighter.Span> aliasDefinitionSpans(ScriptView<SharedSuggestionProvider> view,
-                                                                    String line, int lineNumber) {
-        List<ScriptSyntaxHighlighter.Span> spans = new ArrayList<>();
-        int nameStart = aliasNameStart(line);
-        if (nameStart == -1) {
-            return spans;
-        }
-        int nameEnd = aliasNameEnd(line);
-        int equals = line.indexOf('=');
-        if (nameEnd != -1) {
-            spans.add(new ScriptSyntaxHighlighter.Span(StringRange.between(nameStart, nameEnd), ScriptSyntaxHighlighter.GETTER_STYLE));
-        } else {
-            int end = equals == -1 ? line.length() : equals;
-            spans.add(new ScriptSyntaxHighlighter.Span(StringRange.between(nameStart, Math.max(nameStart, end)), ScriptSyntaxHighlighter.UNPARSED_STYLE));
-        }
-        if (equals == -1) {
-            int unexpected = equalsSlotStart(line);
-            if (unexpected != -1 && unexpected < line.length()) {
-                spans.add(new ScriptSyntaxHighlighter.Span(StringRange.between(unexpected, line.length()), ScriptSyntaxHighlighter.UNPARSED_STYLE));
-            }
-            return spans;
-        }
-        int start = expressionStart(line, line.length());
-        if (start < line.length()) {
-            spans.addAll(ScriptSyntaxHighlighter.expressionSpans(line.substring(start), start, line,
-                    preparedBefore(view, lineNumber), source()));
-        }
-        return spans;
-    }
 
     @Nullable
     static String calculateSuggestionSuffix(String string, String string2) {

@@ -140,6 +140,7 @@ Produced by: `pos x/y/z`, `redstone`, `page_number`, `double rounded_down/rounde
 | `* <double>` | Double | Multiplication |
 | `/ <double>` | Double | Division |
 | `as_string` | String | Converts to string |
+| `as_char` | String | The character with that code (`65 as_char` is `A`); a space for a code no character has |
 
 Examples:
 
@@ -172,7 +173,7 @@ Produced by: `pos x/y/z` (Vec Pos), `vec_dir length/dot`, `vec_box volume`, `int
 
 ## String
 
-Produced by: `page_contents`, `script_contents`, `pos as_string`, `dimension as_string`, `int as_string`, `double as_string`, `boolean as_string`, `ship slug`, `sublevel name`, `sublevel id`
+Produced by: `page_contents`, `script_contents`, `pos as_string`, `dimension as_string`, `int as_string`, `int as_char`, `double as_string`, `boolean as_string`, `ship slug`, `sublevel name`, `sublevel id`
 
 | Mapper | Output | Description |
 |--------|--------|-------------|

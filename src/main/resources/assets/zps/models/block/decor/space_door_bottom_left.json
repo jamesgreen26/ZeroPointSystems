@@ -1,8 +1,22 @@
 {
-  "parent": "minecraft:block/door_bottom_left",
+  "ambientocclusion": false,
   "render_type": "minecraft:cutout",
   "textures": {
-    "bottom": "zps:block/decor/space_door_bottom",
-    "top": "zps:block/decor/space_door_top"
-  }
+    "door": "zps:block/decor/space_door_bottom",
+    "edge": "zps:block/decor/space_door_edge",
+    "particle": "zps:block/decor/space_door_bottom"
+  },
+  "elements": [
+    {
+      "from": [0, 0, 0],
+      "to": [3, 16, 16],
+      "faces": {
+        "north": {"uv": [6, 0, 9, 16], "texture": "#edge", "cullface": "north"},
+        "east": {"uv": [16, 0, 0, 16], "texture": "#door"},
+        "south": {"uv": [9, 0, 12, 16], "texture": "#edge", "cullface": "south"},
+        "west": {"uv": [0, 0, 16, 16], "texture": "#door", "cullface": "west"},
+        "down": {"uv": [12, 16, 15, 0], "texture": "#edge", "cullface": "down"}
+      }
+    }
+  ]
 }

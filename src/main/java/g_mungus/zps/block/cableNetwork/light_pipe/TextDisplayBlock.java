@@ -7,7 +7,6 @@ import g_mungus.zps.block.cableNetwork.core.NetworkNode;
 import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -21,7 +20,6 @@ import net.minecraft.world.item.DyeItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.Mirror;
@@ -37,18 +35,18 @@ import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Vector2i;
-import org.joml.Vector2ic;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public class TextDisplayBlock extends CableComponentBlock implements EntityBlock {
 
     public static final BooleanProperty CONNECTED = BooleanProperty.create("connected");
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+
+    /** The biggest a merged display gets along either side, in blocks. */
+    public static final int MAX_DISPLAY_SIZE = 3;
+    /** The size of the merged display this block belongs to, and where in it the block sits. */
     public static final EnumProperty<DisplayLayout> LAYOUT = EnumProperty.create("layout", DisplayLayout.class);
 
 
@@ -224,214 +222,135 @@ public class TextDisplayBlock extends CableComponentBlock implements EntityBlock
 
     /** All block positions that make up the (possibly multi-block) display containing {@code pos}. */
     public List<BlockPos> getDisplayPositions(BlockState state, BlockPos pos) {
-        Vec3i left = state.getValue(FACING).getNormal().cross(Direction.UP.getNormal());
-        return getExistingDisplayPositions(pos, state.getValue(LAYOUT), left);
+        return DisplayGroup.of(state, pos).cells();
+    }
+
+    // -------------------------------------------------------------------------
+    // Merging
+    //
+    // Displays facing the same way merge into rectangles of up to
+    // MAX_DISPLAY_SIZE x MAX_DISPLAY_SIZE. A placed block joins the biggest
+    // rectangle around it that is full of displays and only swallows existing
+    // displays whole, so building never splits a display that is already up.
+    // Breaking a block releases the rest of its display, and each released block
+    // merges again the same way.
+    // -------------------------------------------------------------------------
+
+    @Override
+    public void onPlace(BlockState newState, Level level, BlockPos pos, BlockState oldState, boolean moved) {
+        super.onPlace(newState, level, pos, oldState, moved);
+        if (level.isClientSide) {
+            return;
+        }
+        boolean turned = oldState.is(this) && oldState.getValue(FACING) != newState.getValue(FACING);
+        if (oldState.is(this) && !turned) {
+            // A state change from merging, or the connection flag.
+            return;
+        }
+        if (turned) {
+            release(level, DisplayGroup.of(oldState, pos), pos);
+        }
+        merge(level, pos);
     }
 
     @Override
-    public BlockState updateShape(
-            BlockState state,
-            Direction direction,
-            BlockState neighborState,
-            LevelAccessor level,
-            BlockPos pos,
-            BlockPos neighborPos
-    ) {
-        DisplayLayout layout = state.getValue(LAYOUT);
-
-        Vec3i facing = state.getValue(FACING).getNormal();
-        Vec3i left = facing.cross(Direction.UP.getNormal());
-
-        // All positions we are allowed to connect to
-        Set<BlockPos> connectable =
-                new HashSet<>(getConnectableDisplayPositions(pos, layout, left, facing));
-
-        // Positions that will form the merged display
-        Set<BlockPos> merged = new HashSet<>(getExistingDisplayPositions(pos, layout, left));
-
-        for (BlockPos candidatePos : connectable) {
-            BlockState other = level.getBlockState(candidatePos);
-
-            // Basic eligibility
-            if (!other.is(state.getBlock())) continue;
-            if (!other.hasProperty(FACING)) continue;
-            if (other.getValue(FACING) != state.getValue(FACING)) continue;
-            if (!other.hasProperty(LAYOUT)) continue;
-
-            DisplayLayout otherLayout = other.getValue(LAYOUT);
-
-            // Get all blocks that the neighbor already occupies
-            List<BlockPos> otherExisting =
-                    getExistingDisplayPositions(candidatePos, otherLayout, left);
-
-            // Safety rule:
-            // ALL of the neighbor's blocks must be within our connectable region
-            boolean fullyContained = true;
-            for (BlockPos p : otherExisting) {
-                if (!connectable.contains(p)) {
-                    fullyContained = false;
-                    break;
-                }
-            }
-
-            if (!fullyContained) continue;
-
-            merged.addAll(otherExisting);
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
+        super.onRemove(state, level, pos, newState, moved);
+        if (!level.isClientSide && !newState.is(this)) {
+            release(level, DisplayGroup.of(state, pos), pos);
         }
+    }
 
-        merged.removeIf(p -> {
-            BlockState s = level.getBlockState(p);
-            return !s.is(state.getBlock())
-                    || !s.hasProperty(FACING)
-                    || s.getValue(FACING) != state.getValue(FACING);
-        });
-        LayoutResult layoutResult;
-        boolean needsRecalculation;
-
-        do {
-            needsRecalculation = false;
-            layoutResult = resolveLayoutFromPositions(pos, merged, left, layout);
-            for(BlockPos block : layoutResult.blocks) {
-                if (block.equals(pos)) continue;
-                BlockState blockState = level.getBlockState(block);
-                DisplayLayout displayLayout = blockState.getValue(LAYOUT);
-                List<BlockPos> blockExisting = getExistingDisplayPositions(block, displayLayout, left);
-                if (!layoutResult.blocks.containsAll(blockExisting)) {
-                    // If pos is already a member of block's existing group, adopt
-                    // that group rather than discarding it.  This handles the case
-                    // where a freshly-placed boundary block (e.g. the centre column
-                    // of a 3×2 grid) finds a competing 2×2 first, but another block
-                    // has already claimed it in a different 2×2.
-                    if (blockExisting.contains(pos)) {
-                        Set<BlockPos> adoptSet = new HashSet<>(blockExisting);
-                        LayoutResult adopted = resolveLayoutFromPositions(pos, adoptSet, left, layout);
-                        if (isGroupValid(adopted.blocks, pos, level, left)) {
-                            return state.setValue(LAYOUT, adopted.layout);
-                        }
-                    }
-                    blockExisting.forEach(merged::remove);
-                    merged.add(pos);
-                    needsRecalculation = true;
-                }
+    /** Splits {@code group} into single blocks, minus {@code gone}, and merges each one again. */
+    private void release(Level level, DisplayGroup group, BlockPos gone) {
+        List<BlockPos> released = new ArrayList<>();
+        for (BlockPos cell : group.cells()) {
+            BlockState cellState = level.getBlockState(cell);
+            if (cell.equals(gone) || !isMemberOf(cellState, group)) {
+                continue;
             }
-        } while (needsRecalculation);
-
-        return state.setValue(LAYOUT, layoutResult.layout);
+            setGroup(level, cell, cellState, 1, 1, 0, 0);
+            released.add(cell);
+        }
+        // Reading order, so the result does not depend on which block went.
+        for (BlockPos cell : released) {
+            BlockState cellState = level.getBlockState(cell);
+            if (cellState.is(this) && cellState.getValue(LAYOUT) == DisplayLayout.SINGLE_1x1) {
+                merge(level, cell);
+            }
+        }
     }
 
     /**
-     * Returns true if every member of {@code group} (other than {@code origin})
-     * has existing display positions that are fully contained within the group.
-     * Used to validate a candidate adoption group before committing to it.
+     * Joins the block at {@code pos} into the biggest rectangle of displays around it,
+     * preferring wider rectangles on a tie since text runs sideways.
      */
-    private boolean isGroupValid(Set<BlockPos> group, BlockPos origin, LevelAccessor level, Vec3i left) {
-        for (BlockPos member : group) {
-            if (member.equals(origin)) continue;
-            BlockState memberState = level.getBlockState(member);
-            if (!memberState.is(this) || !memberState.hasProperty(LAYOUT)) return false;
-            List<BlockPos> memberExisting = getExistingDisplayPositions(member, memberState.getValue(LAYOUT), left);
-            if (!group.containsAll(memberExisting)) return false;
+    private void merge(Level level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        if (!state.is(this)) {
+            return;
+        }
+        Direction facing = state.getValue(FACING);
+        DisplayGroup best = new DisplayGroup(pos, facing, 1, 1);
+        for (int width = MAX_DISPLAY_SIZE; width >= 1; width--) {
+            for (int height = MAX_DISPLAY_SIZE; height >= 1; height--) {
+                if (width * height <= best.width() * best.height()) {
+                    continue;
+                }
+                DisplayGroup found = findRectangle(level, pos, facing, width, height);
+                if (found != null) {
+                    best = found;
+                }
+            }
+        }
+        for (int row = 0; row < best.height(); row++) {
+            for (int column = 0; column < best.width(); column++) {
+                BlockPos cell = best.cell(column, row);
+                setGroup(level, cell, level.getBlockState(cell), best.width(), best.height(), column, row);
+            }
+        }
+    }
+
+    /** The first {@code width x height} rectangle holding {@code pos} that can become one display. */
+    private @Nullable DisplayGroup findRectangle(Level level, BlockPos pos, Direction facing, int width, int height) {
+        for (int row = 0; row < height; row++) {
+            for (int column = 0; column < width; column++) {
+                DisplayGroup candidate = new DisplayGroup(pos, facing, width, height, column, row);
+                if (canBecomeDisplay(level, candidate, pos)) {
+                    return candidate;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Every cell of {@code candidate} is a display facing its way, and every display
+     * it touches lies wholly inside it. {@code joining} is the block being merged,
+     * whose own current group does not count.
+     */
+    private boolean canBecomeDisplay(Level level, DisplayGroup candidate, BlockPos joining) {
+        for (BlockPos cell : candidate.cells()) {
+            BlockState cellState = level.getBlockState(cell);
+            if (!cellState.is(this) || cellState.getValue(FACING) != candidate.facing()) {
+                return false;
+            }
+            if (!cell.equals(joining) && !candidate.contains(DisplayGroup.of(cellState, cell))) {
+                return false;
+            }
         }
         return true;
     }
 
-
-    List<BlockPos> getExistingDisplayPositions(BlockPos pos, DisplayLayout layout, Vec3i left) {
-        return switch (layout) {
-            case SINGLE_1x1 -> List.of(pos);
-            case LEFT_2x1 -> List.of(pos, pos.subtract(left));
-            case RIGHT_2x1 -> List.of(pos, pos.offset(left));
-            case TOP_1x2 -> List.of(pos, pos.below());
-            case BOTTOM_1x2 -> List.of(pos, pos.above());
-            case TOP_LEFT_2x2 -> List.of(pos, pos.subtract(left), pos.below(), pos.below().subtract(left));
-            case TOP_RIGHT_2x2 -> List.of(pos, pos.offset(left), pos.below(), pos.below().offset(left));
-            case BOTTOM_LEFT_2x2 -> List.of(pos, pos.subtract(left), pos.above(), pos.above().subtract(left));
-            case BOTTOM_RIGHT_2x2 -> List.of(pos, pos.offset(left), pos.above(), pos.above().offset(left));
-        };
+    private boolean isMemberOf(BlockState state, DisplayGroup group) {
+        return state.is(this) && state.getValue(FACING) == group.facing()
+                && state.getValue(LAYOUT).width == group.width() && state.getValue(LAYOUT).height == group.height();
     }
 
-    List<BlockPos> getConnectableDisplayPositions(BlockPos pos, DisplayLayout layout, Vec3i left, Vec3i facing) {
-        if (layout.blockDimensions.x() == 2 && layout.blockDimensions.y() == 2) {
-            return List.of(pos);
-        } else if (layout == DisplayLayout.SINGLE_1x1) {
-            BlockPos leftPos = pos.offset(left);
-            BlockPos rightPos = pos.subtract(left);
-
-            return List.of(
-                    pos, leftPos, leftPos.above(), pos.above(), rightPos.above(), rightPos, rightPos.below(), pos.below(), leftPos.below()
-            );
-        } else {
-            Vec3i mainOffset = switch (layout) {
-                case TOP_1x2 -> Direction.DOWN.getNormal();
-                case BOTTOM_1x2 -> Direction.UP.getNormal();
-                case LEFT_2x1 -> left.multiply(-1);
-                case RIGHT_2x1 -> left;
-                default -> throw new IllegalStateException();
-            };
-
-            Vec3i offOffset = mainOffset.cross(facing);
-            BlockPos offA = pos.offset(offOffset);
-            BlockPos offB = pos.subtract(offOffset);
-            return List.of(pos, pos.offset(mainOffset), offA, offA.offset(mainOffset), offB, offB.offset(mainOffset));
+    private void setGroup(Level level, BlockPos pos, BlockState state, int width, int height, int column, int row) {
+        BlockState grouped = state.setValue(LAYOUT, DisplayLayout.of(width, height, column, row));
+        if (grouped != state) {
+            level.setBlock(pos, grouped, Block.UPDATE_CLIENTS);
         }
     }
-
-    private LayoutResult resolveLayoutFromPositions(BlockPos origin, Set<BlockPos> positions, Vec3i left, DisplayLayout currentLayout) {
-        BlockPos leftPos = origin.offset(left);
-        BlockPos rightPos = origin.subtract(left);
-
-        // All possible 2x2 corners relative to this block.
-        // "below" halves are checked before "above" halves so that when two
-        // competing 2×2 groups share a block (e.g. a 2×3 grid), both sides of
-        // the boundary prefer the lower group and agree on the same layout.
-        BlockPos[] corners = new BlockPos[] {
-                origin, leftPos, leftPos.below(), origin.below(), rightPos.below(), rightPos, rightPos.above(), origin.above(), leftPos.above()
-        };
-
-        for (BlockPos corner : corners) {
-            Set<BlockPos> square = Set.of(corner, corner.offset(left), corner.below(), corner.below().offset(left));
-            if (positions.containsAll(square)) {
-                DisplayLayout layout;
-                if (corner.equals(origin)) {
-                    layout = DisplayLayout.TOP_RIGHT_2x2;
-                } else if (corner.equals(origin.subtract(left))) {
-                    layout = DisplayLayout.TOP_LEFT_2x2;
-                } else if (corner.equals(origin.above())) {
-                    layout = DisplayLayout.BOTTOM_RIGHT_2x2;
-                } else {
-                    layout = DisplayLayout.BOTTOM_LEFT_2x2;
-                }
-                return new LayoutResult(layout, square);
-            }
-        }
-
-        // Fallback to 2x1 / 1x2 / single.
-        // If this block is already part of a vertical 1x2, prefer keeping the
-        // vertical merge over switching to a horizontal one when a side neighbour
-        // arrives (and vice-versa for a horizontal 2x1).
-        boolean hasLeft  = positions.contains(origin.subtract(left));
-        boolean hasRight = positions.contains(origin.offset(left));
-        boolean hasUp    = positions.contains(origin.below());
-        boolean hasDown  = positions.contains(origin.above());
-
-        boolean preferVertical = currentLayout == DisplayLayout.TOP_1x2 || currentLayout == DisplayLayout.BOTTOM_1x2;
-
-        if (preferVertical) {
-            if (hasUp)    return new LayoutResult(DisplayLayout.TOP_1x2,    Set.of(origin, origin.below()));
-            if (hasDown)  return new LayoutResult(DisplayLayout.BOTTOM_1x2, Set.of(origin, origin.above()));
-            if (hasLeft)  return new LayoutResult(DisplayLayout.LEFT_2x1,   Set.of(origin, origin.subtract(left)));
-            if (hasRight) return new LayoutResult(DisplayLayout.RIGHT_2x1,  Set.of(origin, origin.offset(left)));
-        } else {
-            if (hasLeft)  return new LayoutResult(DisplayLayout.LEFT_2x1,   Set.of(origin, origin.subtract(left)));
-            if (hasRight) return new LayoutResult(DisplayLayout.RIGHT_2x1,  Set.of(origin, origin.offset(left)));
-            if (hasUp)    return new LayoutResult(DisplayLayout.TOP_1x2,    Set.of(origin, origin.below()));
-            if (hasDown)  return new LayoutResult(DisplayLayout.BOTTOM_1x2, Set.of(origin, origin.above()));
-        }
-
-        return new LayoutResult(DisplayLayout.SINGLE_1x1, Set.of(origin));
-    }
-
-    private record LayoutResult(DisplayLayout layout, Set<BlockPos> blocks){}
-
-
 }

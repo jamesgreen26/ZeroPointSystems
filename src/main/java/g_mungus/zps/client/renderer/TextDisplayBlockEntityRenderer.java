@@ -35,6 +35,10 @@ public class TextDisplayBlockEntityRenderer implements BlockEntityRenderer<TextD
         BlockState blockState = blockEntity.getBlockState();
         Direction facing = blockState.getValue(TextDisplayBlock.FACING);
         DisplayLayout layout = blockState.getValue(TextDisplayBlock.LAYOUT);
+        int width = layout.width;
+        int height = layout.height;
+        int column = layout.column;
+        int row = layout.row;
 
         poseStack.pushPose();
 
@@ -63,30 +67,35 @@ public class TextDisplayBlockEntityRenderer implements BlockEntityRenderer<TextD
         poseStack.scale(scale, -scale, scale);
 
         String text = blockEntity.getDisplayText();
-        int maxCols = layout.textResolution.x() * layout.blockDimensions.x();
-        int maxRows = layout.textResolution.y() * layout.blockDimensions.y();
-
-        int minDisplayableCol = layout.textOffset.x() == 0 ? layout.textResolution.x() : 0;
-        int minDisplayableRow = layout.textOffset.y() == 0 ? layout.textResolution.y() : 0;
-        int maxDisplayableCol = layout.textOffset.x() == 0 ? maxCols : layout.textResolution.x();
-        int maxDisplayableRow = layout.textOffset.y() == 0 ? maxRows : layout.textResolution.y();
 
         // Row height in font pixels. Characters advance horizontally by their
         // natural glyph width, but rows keep this fixed height so that multi-block
         // displays still tile vertically.
         int cellSize = 8;
+        int blockSize = 128;
+        // Blank border around the whole display, inside the bezel.
+        int margin = 2 * cellSize;
+
+        int maxCols = (width * blockSize - 2 * margin) / cellSize;
+        int maxRows = (height * blockSize - 2 * margin) / cellSize;
+
+        // The window (in pixels from logical column/row 0) that belongs to this block.
+        int minDisplayableX = column * blockSize - margin;
+        int maxDisplayableX = minDisplayableX + blockSize;
+        int minDisplayableY = row * blockSize - margin;
+        int maxDisplayableY = minDisplayableY + blockSize;
 
         // Top-left origin of the grid, i.e. the pixel position of logical column 0.
         // It is identical across the pieces of a multi-block display (which are
         // physically offset by one block / 128 font pixels), so laying glyphs out in
         // pixels from this origin keeps them aligned across blocks.
-        int originX = (layout.textOffset.x() * cellSize) - 64 - minDisplayableCol * cellSize;
-        int originY = (layout.textOffset.y() * cellSize) - 64 - minDisplayableRow * cellSize;
+        int originX = -blockSize / 2 - minDisplayableX;
+        int originY = -blockSize / 2 - minDisplayableY;
 
         // Large text draws every glyph at this many font pixels per font unit. The
         // per-block windows and grid origin stay in 1x pixels; only the glyph layout
-        // works in scaled units. Row counts are even, so scaled rows never straddle
-        // a block boundary.
+        // works in scaled units. Block boundaries sit on multiples of 16 pixels, so
+        // scaled rows never straddle one.
         int textScale = blockEntity.getTextScale();
 
         // Word-aware line breaking. Every piece of a multi-block display sees the
@@ -96,10 +105,6 @@ public class TextDisplayBlockEntityRenderer implements BlockEntityRenderer<TextD
         int lineBudget = maxCols * cellSize / textScale;
         List<Glyph> glyphs = layoutGlyphs(text, lineBudget, maxRows / textScale);
 
-        // The window (in pixels from logical column 0) that belongs to this block.
-        int minDisplayableX = minDisplayableCol * cellSize;
-        int maxDisplayableX = maxDisplayableCol * cellSize;
-
         // Same text colour a dyed sign uses for this dye.
         int textColor = blockEntity.getTextColor().getTextColor();
 
@@ -107,10 +112,10 @@ public class TextDisplayBlockEntityRenderer implements BlockEntityRenderer<TextD
 
         for (Glyph glyph : glyphs) {
             float pixelX = glyph.x() * textScale;
-            int pixelRow = glyph.row() * textScale;
+            int pixelY = glyph.row() * cellSize * textScale;
             boolean isWithinDisplayableBounds =
                     pixelX >= minDisplayableX && pixelX < maxDisplayableX &&
-                    pixelRow >= minDisplayableRow && pixelRow < maxDisplayableRow;
+                    pixelY >= minDisplayableY && pixelY < maxDisplayableY;
 
             if (!isWithinDisplayableBounds) {
                 continue;

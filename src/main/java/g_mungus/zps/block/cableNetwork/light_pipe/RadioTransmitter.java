@@ -2,9 +2,12 @@ package g_mungus.zps.block.cableNetwork.light_pipe;
 
 import g_mungus.zps.blockentity.light_pipe.RadioTransmitterBlockEntity;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class RadioTransmitter extends AbstractRadioBlock {
@@ -21,6 +24,15 @@ public class RadioTransmitter extends AbstractRadioBlock {
             }
         }
         super.onRemove(state, level, pos, newState, moved);
+    }
+
+    /** Scheduled by the block entity when the pipe goes blank, to end the transmission a little later. */
+    @Override
+    protected void tick(@NotNull BlockState state, @NotNull ServerLevel level, @NotNull BlockPos pos,
+                        @NotNull RandomSource random) {
+        if (level.getBlockEntity(pos) instanceof RadioTransmitterBlockEntity transmitter) {
+            transmitter.tickPendingClear();
+        }
     }
 
     @Override

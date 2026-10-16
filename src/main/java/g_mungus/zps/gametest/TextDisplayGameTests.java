@@ -326,6 +326,46 @@ public class TextDisplayGameTests {
     }
 
     // -------------------------------------------------------------------------
+    // Glow ink
+    // -------------------------------------------------------------------------
+
+    private static boolean isGlowingAt(GameTestHelper helper, BlockPos pos) {
+        if (!(helper.getBlockEntity(pos) instanceof TextDisplayBlockEntity display)) {
+            throw new GameTestAssertException("No text display block entity at " + pos);
+        }
+        return display.isGlowingText();
+    }
+
+    /** A glow ink sac makes a merged display's text glow and is used up; an ink sac takes the glow off. */
+    @GameTest(template = TEMPLATE)
+    public static void glowInk_lightsWholeDisplayAndInkClearsIt(GameTestHelper helper) {
+        BlockPos a = new BlockPos(3, 1, 3);
+        BlockPos b = new BlockPos(2, 1, 3);
+        BlockPos lone = new BlockPos(5, 1, 3);
+        for (BlockPos p : new BlockPos[]{a, b, lone}) {
+            helper.setBlock(p, display(Direction.NORTH));
+        }
+        helper.assertTrue(!isGlowingAt(helper, a), "Text should not glow by default");
+
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        ItemStack glow = new ItemStack(Items.GLOW_INK_SAC, 2);
+        ItemInteractionResult result = useOn(helper, b, glow, player);
+        helper.assertTrue(result.consumesAction(), "Glow ink use should be consumed, got " + result);
+        helper.assertTrue(isGlowingAt(helper, a) && isGlowingAt(helper, b), "Both blocks of the display should glow");
+        helper.assertTrue(!isGlowingAt(helper, lone), "Unrelated display should not glow");
+        helper.assertTrue(glow.getCount() == 1, "One glow ink sac should be used, stack has " + glow.getCount());
+
+        useOn(helper, a, glow, player);
+        helper.assertTrue(glow.getCount() == 1, "Glow ink should not be used on text that already glows");
+
+        ItemStack ink = new ItemStack(Items.INK_SAC, 1);
+        useOn(helper, a, ink, player);
+        helper.assertTrue(!isGlowingAt(helper, a) && !isGlowingAt(helper, b), "Ink should take the glow off the display");
+        helper.assertTrue(ink.isEmpty(), "The ink sac should be used");
+        helper.succeed();
+    }
+
+    // -------------------------------------------------------------------------
     // Font size
     // -------------------------------------------------------------------------
 

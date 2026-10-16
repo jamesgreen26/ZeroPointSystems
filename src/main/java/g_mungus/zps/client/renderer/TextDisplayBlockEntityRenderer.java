@@ -6,6 +6,7 @@ import g_mungus.zps.block.cableNetwork.light_pipe.DisplayLayout;
 import g_mungus.zps.block.cableNetwork.light_pipe.TextDisplayBlock;
 import g_mungus.zps.blockentity.light_pipe.TextDisplayBlockEntity;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
@@ -107,6 +108,8 @@ public class TextDisplayBlockEntityRenderer implements BlockEntityRenderer<TextD
 
         // Same text colour a dyed sign uses for this dye.
         int textColor = blockEntity.getTextColor().getTextColor();
+        // Glowing text ignores the light level, as on a sign touched with a glow ink sac.
+        int textLight = blockEntity.isGlowingText() ? LightTexture.FULL_BRIGHT : packedLight;
 
         poseStack.scale(textScale, textScale, 1);
 
@@ -131,7 +134,7 @@ public class TextDisplayBlockEntityRenderer implements BlockEntityRenderer<TextD
                     bufferSource,
                     Font.DisplayMode.POLYGON_OFFSET,
                     0,
-                    packedLight
+                    textLight
             );
         }
 

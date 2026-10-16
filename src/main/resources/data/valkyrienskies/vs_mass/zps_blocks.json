@@ -124,6 +124,10 @@
     "mass": 50
   },
   {
+    "block": "zps:space_door",
+    "mass": 200
+  },
+  {
     "block": "zps:space_mesh_block",
     "mass": 200
   },

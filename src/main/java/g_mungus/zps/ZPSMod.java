@@ -45,6 +45,7 @@ import g_mungus.zps.recipe.ModRecipeBookTypes;
 import g_mungus.zps.recipe.ModRecipes;
 import g_mungus.zps.painting.ZPSPaintings;
 import g_mungus.zps.mixin.BlockEntityTypeAccessor;
+import g_mungus.zps.world.AtmosphericComposition;
 import g_mungus.zps.world.SkyBiomeSettings;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
@@ -95,6 +96,7 @@ public final class ZPSMod {
         modEventBus.addListener(DataFixerUpper::registerRenameAliases);
 
         modEventBus.addListener(SkyBiomeSettings::register);
+        modEventBus.addListener(AtmosphericComposition::register);
 
         DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> ZPSPonderPlugin::registerPlugin);
         DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> ZPSPartialModels::init);

@@ -59,6 +59,7 @@
     "PointedDripstoneBlockMixin",
     "PoiTypeMixin",
     "PoiTypesMixin",
+    "RegistryDataLoaderMixin",
     "ServerGamePacketListenerImplAccessor",
     "SnowGolemMixin",
     "StructureTemplateMixin",

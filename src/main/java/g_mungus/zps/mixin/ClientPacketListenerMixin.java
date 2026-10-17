@@ -38,10 +38,19 @@ import org.spongepowered.asm.mixin.injection.At;
  * correct. A controller ignores sneaking, so its narration is swapped as well.
  */
 @Mixin(ClientPacketListener.class)
-public class ClientPacketListenerMixin implements ClientScripts.ScriptCommandsHolder {
+public abstract class ClientPacketListenerMixin implements ClientScripts.ScriptCommandsHolder {
 
     @Shadow
     private CommandDispatcher<SharedSuggestionProvider> commands;
+
+    @Shadow
+    public abstract net.minecraft.core.RegistryAccess registryAccess();
+
+    /** 1.20.1 sends the registries in the login packet; the biomes there need their atmospheres too. */
+    @Inject(method = "handleLogin", at = @At("TAIL"))
+    private void zps$attachAtmosphericComposition(net.minecraft.network.protocol.game.ClientboundLoginPacket packet, CallbackInfo ci) {
+        g_mungus.zps.world.AtmosphericComposition.attachToBiomes(registryAccess());
+    }
 
     /** Each commands packet makes a new dispatcher, so the scripts are grafted into every one. */
     @Inject(method = "handleCommands", at = @At("TAIL"))

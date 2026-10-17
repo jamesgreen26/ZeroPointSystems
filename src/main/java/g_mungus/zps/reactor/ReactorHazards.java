@@ -2,6 +2,7 @@ package g_mungus.zps.reactor;
 
 import g_mungus.zps.compat.Compat;
 import g_mungus.zps.compat.GridSpace;
+import g_mungus.zps.gas.GasExposure;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -11,9 +12,9 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * What a lit reactor does to whatever is caught inside it. The chamber is far hotter than lava,
- * and lava is what it is treated as: every tick an entity spends in the cavity is a tick spent in
- * lava, with the same fire, the same damage, and the same immunities.
+ * What a reactor does to whatever is caught inside it: every tick an entity spends in the cavity
+ * is a tick of {@link GasExposure} to the chamber's gas, at the chamber's temperature. A lit
+ * chamber is far past the burn threshold, but so is a merely hot one, and a frozen one freezes.
  *
  * <p>Entities live in the world whatever grid they stand in, so a reactor on a ship or a Sable
  * sublevel has its cavity taken out into the world to find them, and each one found is brought
@@ -28,13 +29,18 @@ public final class ReactorHazards {
     private ReactorHazards() {
     }
 
-    /** Hurt everything inside the reactor's cavity as lava would, this tick. */
-    static void hurtEntitiesInside(ServerLevel level, Reactor reactor) {
+    /**
+     * Expose everything inside the reactor's cavity to the chamber's gas for this tick.
+     *
+     * @param temperatureK the chamber's temperature, or {@link Double#NaN} if it holds no gas
+     * @param drowning     whether none of the chamber's gas can be breathed
+     */
+    static void exposeEntitiesInside(ServerLevel level, Reactor reactor, double temperatureK, boolean drowning) {
         GridSpace grid = Compat.gridOf(level, reactor.host());
         AABB search = grid == null ? reactor.bounds() : enclose(grid, reactor.bounds());
         for (Entity entity : level.getEntities((Entity) null, search, EntitySelector.NO_SPECTATORS)) {
             if (entity.isAlive() && touches(reactor, grid, entity.getBoundingBox())) {
-                entity.lavaHurt();
+                GasExposure.expose(entity, temperatureK, drowning);
             }
         }
     }

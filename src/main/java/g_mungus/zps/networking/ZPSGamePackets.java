@@ -180,5 +180,11 @@ public class ZPSGamePackets {
                 .decoder(AssemblerPatternCellC2SPacket::decode)
                 .consumerMainThread(AssemblerPatternCellC2SPacket::handle)
                 .add();
+
+        INSTANCE.messageBuilder(DrowningS2CPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(DrowningS2CPacket::encode)
+                .decoder(DrowningS2CPacket::decode)
+                .consumerMainThread(DrowningS2CPacket::handle)
+                .add();
     }
 }

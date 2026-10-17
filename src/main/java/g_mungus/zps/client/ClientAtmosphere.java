@@ -16,18 +16,22 @@ public final class ClientAtmosphere {
     public static final float WEATHERLESS_DENSITY = 0.8f;
 
     private static ClientLevel cachedLevel;
-    private static long cachedPos;
+    /**
+     * Kept whole, never packed with {@link BlockPos#asLong}: that holds only 12 bits of height, so the
+     * camera above y 2047 would come back wrapped round to the bottom of the world, at full density.
+     */
+    private static BlockPos cachedPos;
     private static float cachedDensity = 1.0f;
 
     private ClientAtmosphere() {
     }
 
     public static float cameraDensity(ClientLevel level) {
-        long pos = BlockPos.containing(Minecraft.getInstance().gameRenderer.getMainCamera().getPosition()).asLong();
-        if (level != cachedLevel || pos != cachedPos) {
+        BlockPos pos = BlockPos.containing(Minecraft.getInstance().gameRenderer.getMainCamera().getPosition());
+        if (level != cachedLevel || !pos.equals(cachedPos)) {
             cachedLevel = level;
             cachedPos = pos;
-            cachedDensity = AtmosphericComposition.getDensity(level, BlockPos.of(pos));
+            cachedDensity = AtmosphericComposition.getDensity(level, pos);
         }
         return cachedDensity;
     }

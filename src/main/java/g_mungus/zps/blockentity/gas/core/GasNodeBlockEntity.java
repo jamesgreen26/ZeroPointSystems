@@ -66,6 +66,9 @@ public abstract class GasNodeBlockEntity extends BlockEntity implements INodeBlo
     private double syncedGasMass;
     private double syncedPressure;
     private double syncedTemperature = 273.15;
+    /** Buoyancy of the gas leaving by each face, by {@link Direction#ordinal()}; empty for none. */
+    private float[] syncedBuoyancy = NO_BUOYANCY;
+    protected static final float[] NO_BUOYANCY = new float[0];
 
     protected GasNodeBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
@@ -129,6 +132,19 @@ public abstract class GasNodeBlockEntity extends BlockEntity implements INodeBlo
         this.syncedTemperature = temperature;
     }
 
+    public void acceptSyncedBuoyancy(float[] buoyancy) {
+        this.syncedBuoyancy = buoyancy;
+    }
+
+    /**
+     * How strongly the gas leaving by {@code face} floats in what it enters, as the server last
+     * said — see {@code RoomManager#buoyancy}. NaN if the block lets nothing out there, or nothing
+     * has been said: the particle then floats as its own gas would in air.
+     */
+    public double getSyncedBuoyancy(Direction face) {
+        return face.ordinal() < syncedBuoyancy.length ? syncedBuoyancy[face.ordinal()] : Double.NaN;
+    }
+
     /**
      * Push node state to nearby clients on a slow tick. Call from a server ticker; blocks that draw
      * gas — particles, gauges — need it, and it is the only way the client learns anything about
@@ -156,7 +172,8 @@ public abstract class GasNodeBlockEntity extends BlockEntity implements INodeBlo
         lastSentPressure = pressureForSync();
 
         ZPSGamePackets.sendToTrackingChunk(serverLevel, new ChunkPos(worldPosition),
-                new GasNodeSyncS2CPacket(worldPosition, lastSentMass, lastSentPressure, getTemperature()));
+                new GasNodeSyncS2CPacket(worldPosition, lastSentMass, lastSentPressure, getTemperature(),
+                        buoyancyForSync()));
         return true;
     }
 
@@ -172,6 +189,15 @@ public abstract class GasNodeBlockEntity extends BlockEntity implements INodeBlo
     /** The pressure figure to send clients. See {@link #massForSync()}. */
     protected double pressureForSync() {
         return getPressure();
+    }
+
+    /**
+     * How strongly the gas leaving by each face floats in what it enters, by
+     * {@link Direction#ordinal()}, NaN for a face nothing leaves by. Empty for a block that lets
+     * nothing out at all, which is most of them.
+     */
+    protected float[] buoyancyForSync() {
+        return NO_BUOYANCY;
     }
 
     /** The mass figure most recently sent to clients. */

@@ -13,19 +13,34 @@ import java.util.function.Supplier;
  * Pushes a gas node's simulated state to nearby clients, for particles and HUD readouts.
  *
  * <p>Kelvin has a sync layer of its own, but it syncs whole chunks of node data on its own
- * schedule; this carries just the three numbers a block needs to draw itself, keyed to one block.
+ * schedule; this carries just the few numbers a block needs to draw itself, keyed to one block:
+ * its mass, pressure and temperature, and for a block that lets gas out, how its gas floats in what
+ * it goes into, face by face.
  */
-public record GasNodeSyncS2CPacket(BlockPos blockPos, double gasMass, double pressure, double temperature) {
+public record GasNodeSyncS2CPacket(BlockPos blockPos, double gasMass, double pressure,
+                                   double temperature, float[] buoyancy) {
 
     public static void encode(GasNodeSyncS2CPacket packet, FriendlyByteBuf buffer) {
         buffer.writeBlockPos(packet.blockPos());
         buffer.writeDouble(packet.gasMass());
         buffer.writeDouble(packet.pressure());
         buffer.writeDouble(packet.temperature());
+        buffer.writeVarInt(packet.buoyancy().length);
+        for (float buoyancy : packet.buoyancy()) {
+            buffer.writeFloat(buoyancy);
+        }
     }
 
     public static GasNodeSyncS2CPacket decode(FriendlyByteBuf buffer) {
-        return new GasNodeSyncS2CPacket(buffer.readBlockPos(), buffer.readDouble(), buffer.readDouble(), buffer.readDouble());
+        BlockPos pos = buffer.readBlockPos();
+        double mass = buffer.readDouble();
+        double pressure = buffer.readDouble();
+        double temperature = buffer.readDouble();
+        float[] buoyancy = new float[buffer.readVarInt()];
+        for (int i = 0; i < buoyancy.length; i++) {
+            buoyancy[i] = buffer.readFloat();
+        }
+        return new GasNodeSyncS2CPacket(pos, mass, pressure, temperature, buoyancy);
     }
 
     public static void handle(GasNodeSyncS2CPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
@@ -38,6 +53,7 @@ public record GasNodeSyncS2CPacket(BlockPos blockPos, double gasMass, double pre
             BlockEntity blockEntity = minecraft.level.getBlockEntity(packet.blockPos());
             if (blockEntity instanceof GasNodeBlockEntity node) {
                 node.acceptSyncedState(packet.gasMass(), packet.pressure(), packet.temperature());
+                node.acceptSyncedBuoyancy(packet.buoyancy());
             }
         });
         context.setPacketHandled(true);

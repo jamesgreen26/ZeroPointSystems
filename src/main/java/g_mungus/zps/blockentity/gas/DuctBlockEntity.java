@@ -9,12 +9,14 @@ import g_mungus.zps.gas.ModGases;
 import g_mungus.zps.room.RoomManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.valkyrienskies.kelvin.api.GasType;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -86,6 +88,29 @@ public class DuctBlockEntity extends GasNodeBlockEntity {
         return getGasMass() * LeakyPipeDuctNode.leakRatioFor(getBlockState());
     }
 
+    /** How the escaping gas floats in what is past each open face. */
+    @Override
+    protected float[] buoyancyForSync() {
+        BlockState state = getBlockState();
+        if (!(level instanceof ServerLevel serverLevel)
+                || !(state.getBlock() instanceof LeakyPipeDuctNode.DuctBlockFaces faces)) {
+            return NO_BUOYANCY;
+        }
+        Map<ResourceLocation, Double> gases = new HashMap<>();
+        getGases().forEach((gas, mass) -> gases.merge(gas.getResourceLocation(), mass, Double::sum));
+        double temperatureK = getTemperature();
+        RoomManager rooms = RoomManager.get(serverLevel);
+        float[] buoyancy = new float[Direction.values().length];
+        Arrays.fill(buoyancy, Float.NaN);
+        for (Direction direction : Direction.values()) {
+            if (faces.connectionAt(state, direction) == DuctConnectionType.LEAK) {
+                buoyancy[direction.ordinal()] = (float) rooms.buoyancy(serverLevel, worldPosition.relative(direction),
+                        gases, temperatureK);
+            }
+        }
+        return buoyancy;
+    }
+
     private void spawnLeakPlumes() {
         // On the client getGasMass() is the synced figure, which for a duct is its leak rate.
         double rate = getGasMass();
@@ -110,7 +135,7 @@ public class DuctBlockEntity extends GasNodeBlockEntity {
                 continue;
             }
             GasJet.spawn(level, getDuctNodePosition(), ModGases.FLUX, centre, direction,
-                    speed, perFace, JET_RADIUS, JET_OFFSET);
+                    speed, perFace, JET_RADIUS, JET_OFFSET, getSyncedBuoyancy(direction));
         }
     }
 }

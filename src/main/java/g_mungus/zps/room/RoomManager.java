@@ -140,6 +140,44 @@ public final class RoomManager extends SavedData {
         return new Ambient(GasPhysics.INSTANCE.calcPressureFromGamma(kg, volume, temperatureK), temperatureK);
     }
 
+    /**
+     * How strongly gas let out at {@code into} floats or sinks in what it enters: from 1, rising as
+     * hard as it can, through 0, neither, to -1, falling freely. NaN when there is no gas to judge.
+     *
+     * <p>The gas spreads to the pressure around it, so at the same pressure the two densities stand
+     * as the inverse of each side's gas constant times its temperature: a light gas or a hot one
+     * rises, a heavy or a cold one sinks. Into vacuum there is nothing to hold anything up.
+     *
+     * @param gas          the gas let out, by mass or by any weight in proportion
+     * @param temperatureK its temperature
+     */
+    public double buoyancy(ServerLevel level, BlockPos into, Map<ResourceLocation, Double> gas, double temperatureK) {
+        Map<GasType, Double> escaping = new HashMap<>();
+        gas.forEach((id, mass) -> addByType(escaping, id, mass));
+        double gasRT = GasPhysics.INSTANCE.mixtureR(escaping) * temperatureK;
+        if (!(gasRT > 0)) {
+            return Double.NaN;
+        }
+
+        Map<GasType, Double> around = new HashMap<>();
+        double aroundK;
+        Room room = roomAt(into);
+        if (room != null) {
+            room.massKg().forEach((id, mass) -> addByType(around, id, mass));
+            aroundK = room.temperatureK();
+        } else {
+            outsideAir(level, into, 1).forEach((id, mass) -> addByType(around, id, mass));
+            aroundK = AtmosphereExposure.temperatureK(level, into);
+        }
+        double aroundRT = GasPhysics.INSTANCE.mixtureR(around) * aroundK;
+        if (!(aroundRT > 0)) {
+            return -1;
+        }
+        // Density of the gas over density of what is around it.
+        double ratio = aroundRT / gasRT;
+        return (1 - ratio) / Math.max(1, ratio);
+    }
+
     /** A room's pressure, in pascals, worked out as Kelvin works out a node's. */
     public static double pressureOf(Room room) {
         if (Double.isNaN(room.temperatureK())) {

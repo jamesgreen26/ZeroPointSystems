@@ -24,10 +24,11 @@ public final class ModParticles {
             DeferredRegister.create(ForgeRegistries.PARTICLE_TYPES, ZPSMod.MOD_ID);
 
     /**
-     * Reuses Kelvin's gas particle, so ZPS gases look like every other gas.
+     * Kelvin's gas particle type, drawn by ZPS's {@code GasParticle} so vents and leaks can say how
+     * it floats in what it goes into; it looks like every other gas.
      *
-     * <p>The particle type carries the gas density, which drives the particle's buoyancy — flux is
-     * far lighter than air, so it rises hard. Not a method reference: the density parameter has a
+     * <p>The particle type carries the gas density, which drives the particle's buoyancy until a
+     * vent or leak says otherwise — flux is far lighter than air, so it rises hard. Not a method reference: the density parameter has a
      * Kotlin default, so the class exposes both a no-arg and a one-arg constructor and
      * {@code DefaultGasParticleType::new} is ambiguous.
      */

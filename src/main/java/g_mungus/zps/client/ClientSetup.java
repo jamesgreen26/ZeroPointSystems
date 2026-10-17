@@ -22,6 +22,7 @@ import g_mungus.zps.client.screens.CoalBurnerScreen;
 import g_mungus.zps.client.screens.ControllerClientHooks;
 import g_mungus.zps.client.debug.GasPressureOverlay;
 import g_mungus.zps.client.ponder.api.ReactorGlowElement;
+import g_mungus.zps.client.particle.GasParticle;
 import g_mungus.zps.client.reactor.ClientReactors;
 import g_mungus.zps.client.reactor.ReactorGlowPreviews;
 import g_mungus.zps.client.reactor.ReactorGlowRenderer;
@@ -60,7 +61,6 @@ import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
 import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
-import org.valkyrienskies.kelvin.impl.client.particle.DefaultGasParticleProvider;
 import g_mungus.zps.client.reactor.WallCoats;
 import g_mungus.zps.item.ModItems;
 import net.minecraftforge.client.event.RegisterColorHandlersEvent;
@@ -72,6 +72,7 @@ import g_mungus.zps.client.tooltip.ItemIconsTooltip;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.common.MinecraftForge;
+import java.util.function.Supplier;
 
 @Mod.EventBusSubscriber(value = Dist.CLIENT, modid = ZPSMod.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class ClientSetup {
@@ -96,9 +97,9 @@ public class ClientSetup {
     @SubscribeEvent
     public static void onRegisterParticleProviders(RegisterParticleProvidersEvent event) {
         // Kelvin's own gas particle renderer, driven by our sprite set.
-        event.registerSpriteSet(ModParticles.FLUX.get(), DefaultGasParticleProvider::new);
-        event.registerSpriteSet(ModParticles.AETHER.get(), DefaultGasParticleProvider::new);
-        event.registerSpriteSet(ModParticles.STEAM.get(), DefaultGasParticleProvider::new);
+        event.registerSpriteSet(ModParticles.FLUX.get(), GasParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.AETHER.get(), GasParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.STEAM.get(), GasParticle.Provider::new);
     }
 
     @SubscribeEvent

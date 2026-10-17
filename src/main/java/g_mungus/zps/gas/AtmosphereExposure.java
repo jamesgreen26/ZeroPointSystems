@@ -1,6 +1,8 @@
 package g_mungus.zps.gas;
 
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.compat.Compat;
+import g_mungus.zps.compat.GridSpace;
 import g_mungus.zps.gas.api.GasConditions;
 import g_mungus.zps.gas.api.GasEnvironment;
 import g_mungus.zps.gas.api.GasEnvironmentEvent;
@@ -17,6 +19,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.common.MinecraftForge;
@@ -61,19 +64,32 @@ public final class AtmosphereExposure {
 
     /**
      * The atmosphere at {@code entity}'s eyes, before anything else has changed it: the sealed room
-     * its eyes are in, if any, otherwise the biome's.
+     * its eyes are in, if any — on a sublevel it is touching before the world's, see
+     * {@link RoomManager#roomAround} — otherwise the biome's where it is in the world.
      */
     public static GasEnvironment atmosphere(LivingEntity entity) {
         BlockPos eyes = BlockPos.containing(entity.getEyePosition());
         if (entity.level() instanceof ServerLevel level) {
-            Room room = RoomManager.get(level).roomAt(eyes);
+            Room room = RoomManager.get(level).roomAround(entity);
             if (room != null) {
                 return new GasEnvironment(entity, eyes, room.temperatureK(), room.gases());
             }
         }
-        Biome biome = entity.level().getBiome(eyes).value();
+        BlockPos air = inWorld(entity.level(), eyes);
+        Biome biome = entity.level().getBiome(air).value();
         AtmosphericComposition composition = AtmosphericComposition.of(biome);
-        return new GasEnvironment(entity, eyes, temperatureK(biome, composition, eyes), composition.at(eyes.getY()));
+        return new GasEnvironment(entity, eyes, temperatureK(biome, composition, air), composition.at(air.getY()));
+    }
+
+    /**
+     * Where the atmosphere at {@code pos} is to be read. A position on a moving grid — a Sable
+     * sublevel or a ship, whose blocks live in a plot far from where they appear — is where the grid
+     * puts it in the world now; anything else is where it is. The outside air a ship flies through
+     * is the air where it flies, not the air at its plot.
+     */
+    public static BlockPos inWorld(Level level, BlockPos pos) {
+        GridSpace grid = Compat.gridOf(level, pos);
+        return grid == null ? pos : BlockPos.containing(grid.toWorld(Vec3.atCenterOf(pos)));
     }
 
     @SubscribeEvent
@@ -88,8 +104,12 @@ public final class AtmosphereExposure {
         }
     }
 
-    /** The temperature of the atmosphere at {@code pos}, in kelvin, or {@link Double#NaN} where there is nothing exposable. */
+    /**
+     * The temperature of the atmosphere at {@code pos}, in kelvin, or {@link Double#NaN} where there
+     * is nothing exposable. A position on a moving grid is read where the grid is ({@link #inWorld}).
+     */
     public static double temperatureK(Level level, BlockPos pos) {
+        pos = inWorld(level, pos);
         Biome biome = level.getBiome(pos).value();
         return temperatureK(biome, AtmosphericComposition.of(biome), pos);
     }

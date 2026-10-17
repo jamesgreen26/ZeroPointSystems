@@ -58,6 +58,10 @@ public final class GasJet {
         if (count <= 0) {
             return;
         }
+        // Judged once for the whole jet, which is far smaller than the distance it is judged by.
+        if (!Double.isNaN(buoyancy) && !GasParticle.worthSpawningAt(level, center)) {
+            return;
+        }
 
         KelvinParticlePicker picker = GasParticlePickerRegistry.INSTANCE.getParticlePicker(gas);
         if (picker == null) {

@@ -103,6 +103,30 @@ public class RoomScannerTest {
     }
 
     @Test
+    void plateInsetFromTheFaceStillSeals() {
+        // Like the Large Space Door: a full plate across the cell that touches neither face.
+        Grid grid = cube3().set(new BlockPos(0, 2, 2), Shapes.box(1 / 16.0, 0, 0, 4 / 16.0, 1, 1));
+        RoomScan scan = RoomScanner.scan(CENTRE, grid, 4096);
+        assertNotNull(scan);
+        assertEquals(28, scan.volume());
+    }
+
+    @Test
+    void wallOfInsetPlatesSeals() {
+        // A whole wall of them, each cell's sides open to its neighbour's on both sides of the plate.
+        Grid grid = cube3();
+        VoxelShape plate = Shapes.box(0, 0, 1 / 16.0, 1, 1, 4 / 16.0);
+        for (int x = 1; x <= 3; x++) {
+            for (int y = 1; y <= 3; y++) {
+                grid.set(new BlockPos(x, y, 0), plate);
+            }
+        }
+        RoomScan scan = RoomScanner.scan(CENTRE, grid, 4096);
+        assertNotNull(scan);
+        assertEquals(36, scan.volume());
+    }
+
+    @Test
     void plateAlongTheSideLeaks() {
         // An open door: the plate turned to run along the doorway, which leaves it open.
         Grid grid = cube3().set(new BlockPos(0, 2, 2), Shapes.box(0, 0, 0, 1, 1, 3 / 16.0));

@@ -334,7 +334,7 @@ public final class RoomManager extends SavedData {
         for (LongIterator it = room.interior().iterator(); it.hasNext(); ) {
             cursor.set(it.nextLong());
             VoxelShape shape = shapes.apply(cursor);
-            if (shape != null && shape != Shapes.block()) {
+            if (shape != null && RoomScanner.holdsAir(shape)) {
                 return cursor.immutable();
             }
         }
@@ -350,7 +350,7 @@ public final class RoomManager extends SavedData {
             for (LongIterator it = changed.iterator(); it.hasNext() && holes.size() < MAX_BREACH_PUFFS; ) {
                 BlockPos pos = BlockPos.of(it.nextLong());
                 Direction outward = outwardFrom(room, pos);
-                if (outward != null && RoomScanner.shapeOf(level, pos, level.getBlockState(pos)) != Shapes.block()) {
+                if (outward != null && RoomScanner.holdsAir(RoomScanner.shapeOf(level, pos, level.getBlockState(pos)))) {
                     holes.add(pos);
                     outwards.add(outward);
                 }

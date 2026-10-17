@@ -166,6 +166,8 @@ public class ClientSetup {
         event.register(ImpactPistonBlockEntityRenderer.ROD_MODEL);
         event.register(GasGaugeBlockEntityRenderer.NEEDLE_MODEL);
         event.register(GasGaugeBlockEntityRenderer.PRESSURE_NEEDLE_MODEL);
+        event.register(LargeSpaceDoorBlockEntityRenderer.LEFT_MODEL);
+        event.register(LargeSpaceDoorBlockEntityRenderer.RIGHT_MODEL);
     }
 
     /**
@@ -255,6 +257,7 @@ public class ClientSetup {
                     .apply();
             BlockEntityRenderers.register(ModBlockEntities.POWER_CELL.get(), PowerCellBlockEntityRenderer::new);
             BlockEntityRenderers.register(ModBlockEntities.GAS_GAUGE.get(), GasGaugeBlockEntityRenderer::new);
+            BlockEntityRenderers.register(ModBlockEntities.LARGE_SPACE_DOOR.get(), LargeSpaceDoorBlockEntityRenderer::new);
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DENSE_CABLE_SEPARATOR.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.DATA_CABLE.get(), RenderType.translucent());
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.SERIAL_BUS.get(), RenderType.translucent());

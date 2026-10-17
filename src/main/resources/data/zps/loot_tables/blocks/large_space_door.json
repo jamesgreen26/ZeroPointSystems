@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "conditions": [
+            {
+              "block": "zps:large_space_door",
+              "condition": "minecraft:block_state_property",
+              "properties": {
+                "part": "bottom"
+              }
+            }
+          ],
+          "name": "zps:large_space_door"
+        }
+      ],
+      "rolls": 1.0
+    }
+  ],
+  "random_sequence": "zps:blocks/large_space_door"
+}

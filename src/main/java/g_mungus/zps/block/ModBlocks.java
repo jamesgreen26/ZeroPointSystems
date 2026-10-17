@@ -422,6 +422,16 @@ public class ModBlocks {
             )
     );
 
+    public static final RegistryObject<Block> LARGE_SPACE_DOOR = BLOCKS.register("large_space_door",
+            () -> new LargeSpaceDoorBlock(BlockBehaviour.Properties.of()
+                    .strength(3.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.NETHERITE_BLOCK)
+                    .pushReaction(PushReaction.BLOCK)
+                    .noOcclusion()
+            )
+    );
+
     public static final RegistryObject<Block> SPACE_MESH_BLOCK = BLOCKS.register("space_mesh_block",
             () -> new Block(BlockBehaviour.Properties.of()
                     .strength(3.0f)

@@ -1,0 +1,22 @@
+{
+  "type": "zps:shaped_5x5",
+  "key": {
+    "I": {
+      "item": "zps:space_metal_ingot"
+    },
+    "M": {
+      "item": "zps:space_metal_mesh"
+    }
+  },
+  "pattern": [
+    "IIIII",
+    "IIIII",
+    "MMMMM",
+    "IIIII",
+    "IIIII"
+  ],
+  "result": {
+    "item": "zps:large_space_door",
+    "count": 3
+  }
+}

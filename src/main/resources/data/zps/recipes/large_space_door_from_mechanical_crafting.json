@@ -1,0 +1,31 @@
+{
+  "type": "create:mechanical_crafting",
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "create"
+    }
+  ],
+  "accept_mirrored": false,
+  "category": "misc",
+  "key": {
+    "I": {
+      "item": "zps:space_metal_ingot"
+    },
+    "M": {
+      "item": "zps:space_metal_mesh"
+    }
+  },
+  "pattern": [
+    "IIIII",
+    "IIIII",
+    "MMMMM",
+    "IIIII",
+    "IIIII"
+  ],
+  "result": {
+    "item": "zps:large_space_door",
+    "count": 3
+  },
+  "show_notification": false
+}

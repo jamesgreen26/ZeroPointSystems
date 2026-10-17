@@ -150,6 +150,7 @@ public class ModCreativeTabs {
                         CATWALK_STAIRS,
                         SPACE_METAL_LADDER,
                         SPACE_DOOR,
+                        LARGE_SPACE_DOOR,
                         SMALL_INDUSTRIAL_LIGHT,
                         INDUSTRIAL_LIGHT,
                         LARGE_INDUSTRIAL_LIGHT,

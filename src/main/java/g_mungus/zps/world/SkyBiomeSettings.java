@@ -1,8 +1,10 @@
 package g_mungus.zps.world;
 
+import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import g_mungus.zps.ZPSMod;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
 import net.minecraft.core.Registry;
@@ -17,6 +19,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * Which biomes take up which Y bands of a dimension. The entry's id is the dimension it applies to,
@@ -69,6 +72,38 @@ public record SkyBiomeSettings(Map<YRange, Holder<Biome>> biomes) {
         if (blockY < level.getMaxBuildHeight()) return null;
         SkyBiomeSettings settings = forLevel(level);
         return settings == null ? null : settings.biomeAt(blockY);
+    }
+
+    /**
+     * The nearest place to {@code from} whose sky band biome matches, for {@code /locate biome}: a band covers
+     * every column, so straight up or down, at the nearest height in the band above the build limit. Null if
+     * no band matches. Coming at a band from outside, the height is the middle of its nearest whole quart:
+     * biomes are read a quart at a time, and a block lookup wanders up to half a quart from where it is asked,
+     * so the edge of the band could read as what is beyond it.
+     */
+    public static @Nullable Pair<BlockPos, Holder<Biome>> closest(Level level, Predicate<Holder<Biome>> matches, BlockPos from) {
+        SkyBiomeSettings settings = forLevel(level);
+        if (settings == null) return null;
+        Pair<BlockPos, Holder<Biome>> best = null;
+        for (Map.Entry<YRange, Holder<Biome>> entry : settings.biomes().entrySet()) {
+            YRange band = entry.getKey();
+            int bottom = Math.max(band.min(), level.getMaxBuildHeight());
+            if (bottom > band.max() || !matches.test(entry.getValue())) continue;
+            // The band's whole quarts, a block in from each edge of them; skipped if it has none.
+            int firstQuart = QuartPos.fromBlock(bottom + 3);
+            int lastQuart = band.max() == Integer.MAX_VALUE ? Integer.MAX_VALUE / 4 : QuartPos.fromBlock(band.max() + 1) - 1;
+            if (firstQuart > lastQuart) continue;
+            int y = from.getY();
+            if (y < QuartPos.toBlock(firstQuart)) {
+                y = QuartPos.toBlock(firstQuart) + 2;
+            } else if (y > QuartPos.toBlock(lastQuart) + 3) {
+                y = QuartPos.toBlock(lastQuart) + 2;
+            }
+            if (best == null || Math.abs(y - from.getY()) < Math.abs(best.getFirst().getY() - from.getY())) {
+                best = Pair.of(from.atY(y), entry.getValue());
+            }
+        }
+        return best;
     }
 
     /** The settings for {@code level}'s dimension, cached on the level since biome lookups are hot. */

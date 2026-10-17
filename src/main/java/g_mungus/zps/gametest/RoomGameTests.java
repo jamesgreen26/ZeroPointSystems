@@ -243,6 +243,47 @@ public class RoomGameTests {
         });
     }
 
+    /** Mining into a thick wall grows the room by the hole: the same room, its gas kept. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 40, skyAccess = true)
+    public static void miningIntoAThickWall_growsTheRoom(GameTestHelper helper) {
+        buildShell(helper);
+        helper.setBlock(WEST_WALL.west(), Blocks.STONE);
+        addFlux(helper, CENTRE, 5.0);
+        Room room = roomAt(helper, CENTRE);
+
+        helper.destroyBlock(WEST_WALL);
+        helper.runAfterDelay(2, () -> {
+            helper.assertTrue(roomAt(helper, CENTRE) == room, "The room should still be the same room");
+            helper.assertTrue(room.volume() == 28, "The room should have grown by the hole, is " + room.volume());
+            helper.assertTrue(roomAt(helper, WEST_WALL) == room, "The hole should be part of the room");
+            helper.assertTrue(room.massKg().getOrDefault(FLUX, 0.0) > 4.99, "The room should keep its gas");
+            helper.succeed();
+        });
+    }
+
+    /**
+     * The room holds only its own side of a closed Large Space Door, so clearing a block on the far
+     * side changes nothing; with the roof off, taking the far side for the room's would breach it.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 40, skyAccess = true)
+    public static void clearingPastAClosedLargeSpaceDoor_leavesTheRoom(GameTestHelper helper) {
+        buildShell(helper);
+        placeLargeSpaceDoor(helper, false);
+        BlockPos outside = new BlockPos(5, 3, 2);
+        helper.setBlock(outside, Blocks.STONE);
+        addFlux(helper, CENTRE, 5.0);
+        Room room = roomAt(helper, CENTRE);
+        helper.assertTrue(room != null, "A closed Large Space Door should seal");
+        int volume = room.volume();
+
+        helper.destroyBlock(outside);
+        helper.runAfterDelay(2, () -> {
+            helper.assertTrue(roomAt(helper, CENTRE) == room, "The room should be untouched");
+            helper.assertTrue(room.volume() == volume, "The room should not have grown, is " + room.volume());
+            helper.succeed();
+        });
+    }
+
     /** End to end: a vent set in the wall, fed from outside, fills the room. */
     @GameTest(template = TEMPLATE, timeoutTicks = 200)
     public static void ventInTheWall_fillsTheRoom(GameTestHelper helper) {

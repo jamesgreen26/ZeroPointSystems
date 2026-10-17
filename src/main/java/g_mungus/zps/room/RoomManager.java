@@ -26,6 +26,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.state.BlockState;
@@ -69,6 +70,10 @@ public final class RoomManager extends SavedData {
     static final int FAILED_SCAN_COOLDOWN = 100;
     /** How long a dormant room is remembered with nothing going in, in ticks. */
     public static final int DORMANT_TICKS = 1200;
+    /** From this pressure up, a room lets out some of what is put into it. */
+    public static final double RELEASE_START_PA = 1_000_000.0;
+    /** From this pressure up, a room lets out as much gas as is put into it. */
+    public static final double MAX_PRESSURE_PA = 10_000_000.0;
     /** Most breach puffs drawn for one room coming open. */
     private static final int MAX_BREACH_PUFFS = 4;
 
@@ -123,9 +128,7 @@ public final class RoomManager extends SavedData {
         double temperatureK;
         Room room = roomAt(pos);
         if (room != null) {
-            room.massKg().forEach((gas, mass) -> addByType(kg, gas, mass));
-            volume = room.volume();
-            temperatureK = room.temperatureK();
+            return new Ambient(pressureOf(room), Double.isNaN(room.temperatureK()) ? 0 : room.temperatureK());
         } else {
             outsideAir(level, pos, 1).forEach((gas, mass) -> addByType(kg, gas, mass));
             volume = 1;
@@ -135,6 +138,16 @@ public final class RoomManager extends SavedData {
             return new Ambient(0, 0);
         }
         return new Ambient(GasPhysics.INSTANCE.calcPressureFromGamma(kg, volume, temperatureK), temperatureK);
+    }
+
+    /** A room's pressure, in pascals, worked out as Kelvin works out a node's. */
+    public static double pressureOf(Room room) {
+        if (Double.isNaN(room.temperatureK())) {
+            return 0;
+        }
+        Map<GasType, Double> kg = new HashMap<>();
+        room.massKg().forEach((gas, mass) -> addByType(kg, gas, mass));
+        return GasPhysics.INSTANCE.calcPressureFromGamma(kg, room.volume(), room.temperatureK());
     }
 
     private static void addByType(Map<GasType, Double> kg, ResourceLocation gas, double mass) {
@@ -148,7 +161,9 @@ public final class RoomManager extends SavedData {
 
     /**
      * Gas let out into the world at {@code at}. If {@code at} is in a room, or seals into one now,
-     * the room takes it; otherwise it is gone, as it always was.
+     * the room takes it; otherwise it is gone, as it always was. A room under pressure gives some of
+     * its mix back as gas goes in — see {@link #releasedShare} — so it cannot be pumped up without
+     * limit, though what is fed in still works its way through.
      */
     public void addGas(ServerLevel level, BlockPos at, Map<GasType, Double> kg, double temperatureK) {
         Map<ResourceLocation, Double> byId = new HashMap<>();
@@ -170,8 +185,21 @@ public final class RoomManager extends SavedData {
         } else if (!room.isActive()) {
             room.wake(outsideAir(level, room.anchor(), room.volume()), AtmosphereExposure.temperatureK(level, room.anchor()));
         }
+        double released = releasedShare(pressureOf(room));
         room.feed(byId, temperatureK);
+        if (released > 0) {
+            room.release(released * byId.values().stream().mapToDouble(Double::doubleValue).sum());
+        }
         setDirty();
+    }
+
+    /**
+     * The share of gas going in that a room at {@code pressurePa} lets back out: none up to
+     * {@link #RELEASE_START_PA}, rising linearly to all of it at {@link #MAX_PRESSURE_PA}, where
+     * the room's mass can rise no further.
+     */
+    public static double releasedShare(double pressurePa) {
+        return Mth.clamp((pressurePa - RELEASE_START_PA) / (MAX_PRESSURE_PA - RELEASE_START_PA), 0.0, 1.0);
     }
 
     /** Look for a room around {@code at} and register it, filled with the outside air. */

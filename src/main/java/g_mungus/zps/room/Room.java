@@ -171,6 +171,16 @@ public final class Room {
         return Double.isNaN(outsideK) || Double.isNaN(temperatureK) || Math.abs(temperatureK - outsideK) < 1.0;
     }
 
+    /** Let {@code kg} of the mix out, every gas in proportion to how much of it there is. */
+    void release(double kg) {
+        double total = totalMassKg();
+        if (total <= 0 || kg <= 0) {
+            return;
+        }
+        double keep = Math.max(0, 1 - kg / total);
+        massKg.replaceAll((gas, mass) -> mass * keep);
+    }
+
     /** Gas let in from outside the room: mixed in, and counted toward its supply. */
     void feed(Map<ResourceLocation, Double> kg, double temperatureK) {
         add(kg, temperatureK);

@@ -2,9 +2,14 @@
   "replace": false,
   "values": [
     "minecraft:iron_bars",
-    "minecraft:chain",
     "minecraft:scaffolding",
-    "minecraft:cobweb",
-    "#minecraft:leaves"
+    "#minecraft:leaves",
+    "#minecraft:fences",
+    "#minecraft:fence_gates",
+    "zps:space_truss",
+    "zps:space_scaffold",
+    "zps:space_grating_block",
+    "zps:catwalk",
+    "zps:catwalk_stairs"
   ]
 }

@@ -9,6 +9,8 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.longs.Long2IntMap;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2LongMap;
@@ -86,6 +88,8 @@ public final class RoomManager extends SavedData {
     private final Long2LongMap failedUntil = new Long2LongOpenHashMap();
     /** Rooms with a changed block since the last tick, and which positions changed. */
     private final Int2ObjectMap<LongSet> dirty = new Int2ObjectOpenHashMap<>();
+    /** Rooms among those where something gained material, which might have cut them in two. */
+    private final IntSet needsFullCheck = new IntOpenHashSet();
 
     public RoomManager() {
         byInterior.defaultReturnValue(-1);
@@ -305,18 +309,23 @@ public final class RoomManager extends SavedData {
         if (before == after || !Shapes.joinIsNotEmpty(before, after, BooleanOp.NOT_SAME)) {
             return;
         }
+        // Only taking material away can never part a room, which lets it grow without a full flood.
+        boolean opened = !Shapes.joinIsNotEmpty(after, before, BooleanOp.ONLY_FIRST);
         if (interior >= 0) {
-            markDirty(interior, key);
+            markDirty(interior, key, opened);
         }
         if (bounding != null) {
             for (int i = 0; i < bounding.size(); i++) {
-                markDirty(bounding.getInt(i), key);
+                markDirty(bounding.getInt(i), key, opened);
             }
         }
     }
 
-    private void markDirty(int id, long pos) {
+    private void markDirty(int id, long pos, boolean opened) {
         dirty.computeIfAbsent(id, ignored -> new LongOpenHashSet()).add(pos);
+        if (!opened) {
+            needsFullCheck.add(id);
+        }
     }
 
     /** Check every room that had a block change this tick, then let every loaded room leak. */
@@ -369,14 +378,18 @@ public final class RoomManager extends SavedData {
             return;
         }
         Int2ObjectMap<LongSet> changed = new Int2ObjectOpenHashMap<>(dirty);
+        IntSet full = new IntOpenHashSet(needsFullCheck);
         dirty.clear();
+        needsFullCheck.clear();
         for (Int2ObjectMap.Entry<LongSet> entry : changed.int2ObjectEntrySet()) {
             Room room = rooms.get(entry.getIntKey());
             if (room == null) {
                 continue;
             }
             if (room.isActive()) {
-                recheck(level, room, entry.getValue());
+                if (full.contains(room.id()) || !grow(level, room, entry.getValue())) {
+                    recheck(level, room, entry.getValue());
+                }
             } else {
                 // Nothing in it to lose; the next gas in will look for walls afresh.
                 dissolve(room);
@@ -384,6 +397,65 @@ public final class RoomManager extends SavedData {
         }
     }
 
+    /**
+     * Settle a room whose changed cells have only opened up, from those cells alone — see
+     * {@link RoomScanner#grow}. Mining out a cave room costs the new space, not the cave.
+     *
+     * @return false if it could not be settled that way, and the room needs flooding afresh
+     */
+    private boolean grow(ServerLevel level, Room room, LongSet changed) {
+        LongSet added = new LongOpenHashSet();
+        LongSet newBoundary = new LongOpenHashSet();
+        Long2LongMap pocketsAfter = new Long2LongOpenHashMap();
+        RoomScanner.Growth growth = RoomScanner.grow(room.interior(), room.pockets(), changed,
+                RoomScanner.shapes(level), ZPSConfig.roomMaxVolume(), added, newBoundary, pocketsAfter);
+        switch (growth) {
+            case UNSURE -> {
+                return false;
+            }
+            case ESCAPED -> breach(level, room, changed);
+            case GREW -> {
+                if (added.isEmpty() && newBoundary.isEmpty() && pocketsAfter.isEmpty()) {
+                    return true;
+                }
+                List<Room> merged = new ArrayList<>();
+                for (LongIterator it = added.iterator(); it.hasNext(); ) {
+                    long cell = it.nextLong();
+                    int other = byInterior.put(cell, room.id());
+                    if (other >= 0 && other != room.id() && rooms.get(other) != null && !merged.contains(rooms.get(other))) {
+                        // A wall between two rooms came down: they are one now.
+                        merged.add(rooms.get(other));
+                    }
+                    removeBoundary(cell, room.id());
+                }
+                for (LongIterator it = newBoundary.iterator(); it.hasNext(); ) {
+                    IntList ids = byBoundary.computeIfAbsent(it.nextLong(), ignored -> new IntArrayList(2));
+                    if (!ids.contains(room.id())) {
+                        ids.add(room.id());
+                    }
+                }
+                room.grow(added, newBoundary, pocketsAfter);
+                for (Room other : merged) {
+                    room.absorb(other);
+                    dissolve(other);
+                }
+                setDirty();
+            }
+        }
+        return true;
+    }
+
+    private void removeBoundary(long cell, int id) {
+        IntList ids = byBoundary.get(cell);
+        if (ids != null) {
+            ids.rem(id);
+            if (ids.isEmpty()) {
+                byBoundary.remove(cell);
+            }
+        }
+    }
+
+    /** Flood a changed room afresh, to see whether it is still sealed and what shape it is now. */
     private void recheck(ServerLevel level, Room room, LongSet changed) {
         // Air reaching unloaded ground past the old walls has got out; reaching part of the room
         // itself that is not loaded only means there is no telling.
@@ -484,6 +556,7 @@ public final class RoomManager extends SavedData {
         }
         unindex(room);
         dirty.remove(room.id());
+        needsFullCheck.remove(room.id());
         setDirty();
     }
 

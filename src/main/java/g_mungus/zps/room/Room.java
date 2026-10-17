@@ -2,6 +2,8 @@ package g_mungus.zps.room;
 
 import g_mungus.zps.gas.GasExposure;
 import g_mungus.zps.world.AtmosphericComposition;
+import it.unimi.dsi.fastutil.longs.Long2LongMap;
+import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.core.BlockPos;
@@ -26,6 +28,8 @@ public final class Room {
     private final int id;
     private LongSet interior;
     private LongSet boundary;
+    /** Which pockets of the cells only partly in the room are; see {@link RoomScan#pockets()}. */
+    private Long2LongMap pockets;
     private final Map<ResourceLocation, Double> massKg = new HashMap<>();
     private double temperatureK;
     /** Where the outside atmosphere the room leaks toward is read: a cell of its interior. */
@@ -48,6 +52,7 @@ public final class Room {
         this.id = id;
         this.interior = scan.interior();
         this.boundary = scan.boundary();
+        this.pockets = scan.pockets();
         this.anchor = anchor.immutable();
         this.temperatureK = temperatureK;
     }
@@ -111,11 +116,30 @@ public final class Room {
         return massKg.values().stream().mapToDouble(Double::doubleValue).sum();
     }
 
+    Long2LongMap pockets() {
+        return pockets;
+    }
+
     void reshape(RoomScan scan) {
         this.interior = scan.interior();
         this.boundary = scan.boundary();
+        this.pockets = scan.pockets();
         if (!interior.contains(anchor.asLong())) {
             anchor = BlockPos.of(interior.iterator().nextLong());
+        }
+    }
+
+    /** Take in what {@link RoomScanner#grow} found. */
+    void grow(LongSet added, LongSet newBoundary, Long2LongMap pocketsAfter) {
+        interior.addAll(added);
+        boundary.addAll(newBoundary);
+        boundary.removeAll(added);
+        for (Long2LongMap.Entry entry : pocketsAfter.long2LongEntrySet()) {
+            if (entry.getLongValue() == RoomScanner.WHOLE) {
+                pockets.remove(entry.getLongKey());
+            } else {
+                pockets.put(entry.getLongKey(), entry.getLongValue());
+            }
         }
     }
 
@@ -262,6 +286,8 @@ public final class Room {
         tag.putLongArray("Boundary", boundary.toLongArray());
         tag.putDouble("TemperatureK", temperatureK);
         tag.putLong("Anchor", anchor.asLong());
+        tag.putLongArray("PocketCells", pockets.keySet().toLongArray());
+        tag.putLongArray("PocketMasks", pockets.values().toLongArray());
         CompoundTag gases = new CompoundTag();
         massKg.forEach((gas, mass) -> gases.putDouble(gas.toString(), mass));
         tag.put("Gases", gases);
@@ -271,8 +297,14 @@ public final class Room {
     static Room fromNbt(CompoundTag tag) {
         LongSet interior = new LongOpenHashSet(tag.getLongArray("Interior"));
         long anchor = tag.contains("Anchor") ? tag.getLong("Anchor") : interior.iterator().nextLong();
+        Long2LongMap pockets = new Long2LongOpenHashMap();
+        long[] pocketCells = tag.getLongArray("PocketCells");
+        long[] pocketMasks = tag.getLongArray("PocketMasks");
+        for (int i = 0; i < Math.min(pocketCells.length, pocketMasks.length); i++) {
+            pockets.put(pocketCells[i], pocketMasks[i]);
+        }
         Room room = new Room(tag.getInt("Id"),
-                new RoomScan(interior, new LongOpenHashSet(tag.getLongArray("Boundary"))),
+                new RoomScan(interior, new LongOpenHashSet(tag.getLongArray("Boundary")), pockets),
                 BlockPos.of(anchor), tag.getDouble("TemperatureK"));
         CompoundTag gases = tag.getCompound("Gases");
         for (String key : gases.getAllKeys()) {

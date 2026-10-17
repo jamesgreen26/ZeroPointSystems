@@ -1,5 +1,9 @@
 package g_mungus.zps.room;
 
+import it.unimi.dsi.fastutil.longs.Long2LongMap;
+import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -148,5 +152,101 @@ public class RoomScannerTest {
     void holeIsNoRoom() {
         Grid grid = cube3();
         assertNull(RoomScanner.scan(new BlockPos(2, 40, 2), grid, 4096));
+    }
+
+    // --- growing ----------------------------------------------------------------------------
+
+    private record Grown(RoomScanner.Growth growth, LongSet added, LongSet boundary, Long2LongMap pockets) {
+    }
+
+    private static Grown grow(RoomScan room, Grid grid, int maxVolume, BlockPos... changed) {
+        LongSet changedCells = new LongOpenHashSet();
+        for (BlockPos pos : changed) {
+            changedCells.add(pos.asLong());
+        }
+        LongSet added = new LongOpenHashSet();
+        LongSet boundary = new LongOpenHashSet();
+        Long2LongMap pockets = new Long2LongOpenHashMap();
+        RoomScanner.Growth growth = RoomScanner.grow(room.interior(), room.pockets(), changedCells, grid, maxVolume,
+                added, boundary, pockets);
+        return new Grown(growth, added, boundary, pockets);
+    }
+
+    @Test
+    void diggingThroughTheWallEscapes() {
+        Grid grid = cube3();
+        RoomScan room = RoomScanner.scan(CENTRE, grid, 4096);
+        BlockPos wall = new BlockPos(0, 2, 2);
+        grid.set(wall, Shapes.empty());
+        assertEquals(RoomScanner.Growth.ESCAPED, grow(room, grid, 4096, wall).growth());
+    }
+
+    @Test
+    void diggingIntoAThickWallGrowsByTheHole() {
+        BlockPos wall = new BlockPos(0, 2, 2);
+        Grid grid = cube3().set(wall.west(), Shapes.block());
+        RoomScan room = RoomScanner.scan(CENTRE, grid, 4096);
+        grid.set(wall, Shapes.empty());
+
+        Grown grown = grow(room, grid, 4096, wall);
+        assertEquals(RoomScanner.Growth.GREW, grown.growth());
+        assertEquals(java.util.Set.of(wall.asLong()), new java.util.HashSet<>(grown.added()));
+        assertTrue(grown.boundary().contains(wall.west().asLong()));
+
+        // The same room a fresh flood finds.
+        LongSet grownInterior = new LongOpenHashSet(room.interior());
+        grownInterior.addAll(grown.added());
+        assertEquals(RoomScanner.scan(CENTRE, grid, 4096).interior(), grownInterior);
+    }
+
+    @Test
+    void diggingIntoASealedCavityTakesItIn() {
+        // A second sealed box, 2x2x2, the other side of the west wall.
+        Grid grid = cube3().shell(new BlockPos(-2, 2, 2), new BlockPos(-1, 3, 3));
+        grid.set(new BlockPos(0, 2, 2), Shapes.block()).set(new BlockPos(0, 3, 3), Shapes.block());
+        RoomScan room = RoomScanner.scan(CENTRE, grid, 4096);
+        assertEquals(27, room.volume());
+
+        BlockPos wall = new BlockPos(0, 2, 2);
+        grid.set(wall, Shapes.empty());
+        Grown grown = grow(room, grid, 4096, wall);
+        assertEquals(RoomScanner.Growth.GREW, grown.growth());
+        assertEquals(9, grown.added().size());
+    }
+
+    @Test
+    void growingPastTheLimitEscapes() {
+        BlockPos wall = new BlockPos(0, 2, 2);
+        Grid grid = cube3().set(wall.west(), Shapes.block());
+        RoomScan room = RoomScanner.scan(CENTRE, grid, 27);
+        grid.set(wall, Shapes.empty());
+        assertEquals(RoomScanner.Growth.ESCAPED, grow(room, grid, 27, wall).growth());
+    }
+
+    /**
+     * The room holds only the inner pocket of a cell with a plate across it, so the outside opening
+     * up past the plate is nothing to do with it.
+     */
+    @Test
+    void openingUpBeyondAnInsetPlateLeavesTheRoomAlone() {
+        BlockPos door = new BlockPos(0, 2, 2);
+        BlockPos outside = door.west();
+        Grid grid = cube3().set(door, Shapes.box(1 / 16.0, 0, 0, 4 / 16.0, 1, 1)).set(outside, Shapes.block());
+        RoomScan room = RoomScanner.scan(CENTRE, grid, 4096);
+        assertTrue(room.pockets().containsKey(door.asLong()), "The door's cell should be only partly in the room");
+
+        grid.set(outside, Shapes.empty());
+        Grown grown = grow(room, grid, 4096, outside);
+        assertEquals(RoomScanner.Growth.GREW, grown.growth());
+        assertTrue(grown.added().isEmpty());
+    }
+
+    @Test
+    void openingTheInsetPlateEscapes() {
+        BlockPos door = new BlockPos(0, 2, 2);
+        Grid grid = cube3().set(door, Shapes.box(1 / 16.0, 0, 0, 4 / 16.0, 1, 1));
+        RoomScan room = RoomScanner.scan(CENTRE, grid, 4096);
+        grid.set(door, Shapes.empty());
+        assertEquals(RoomScanner.Growth.ESCAPED, grow(room, grid, 4096, door).growth());
     }
 }

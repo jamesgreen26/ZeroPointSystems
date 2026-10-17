@@ -239,7 +239,7 @@ public class ZPSConfig {
     private static ModConfigSpec.ConfigValue<Integer> roomMaxVolume;
     private static ModConfigSpec.ConfigValue<Double> roomLeakRate;
 
-    public static final int ROOM_MAX_VOLUME_DEFAULT = 4096;
+    public static final int ROOM_MAX_VOLUME_DEFAULT = 1 << 16;
     /** A closed 3x3x3 room, 54 wall blocks around 27 of air, gets halfway back to the outside in about a minute. */
     public static final double ROOM_LEAK_RATE_DEFAULT = 3.0e-4;
 
@@ -332,7 +332,7 @@ public class ZPSConfig {
         roomMaxVolume = builder
                 .comment("Largest sealed room, in blocks of air. A space any bigger counts as open air,",
                          "and is also as far as a vent or leak will search for walls.")
-                .defineInRange("MaxVolume", ROOM_MAX_VOLUME_DEFAULT, 1, 262_144);
+                .defineInRange("MaxVolume", ROOM_MAX_VOLUME_DEFAULT, 1, 1 << 20);
         roomLeakRate = builder
                 .comment("How fast rooms leak back to the outside atmosphere. Each tick a room goes this",
                          "share of the way back per block of wall, divided by its blocks of air, so small",

@@ -3,18 +3,25 @@ package g_mungus.zps.reactor;
 import g_mungus.zps.compat.Compat;
 import g_mungus.zps.compat.GridSpace;
 import g_mungus.zps.gas.GasExposure;
+import g_mungus.zps.gas.api.GasEnvironments;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySelector;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Map;
 
 /**
  * What a reactor does to whatever is caught inside it: every tick an entity spends in the cavity
  * is a tick of {@link GasExposure} to the chamber's gas, at the chamber's temperature. A lit
  * chamber is far past the burn threshold, but so is a merely hot one, and a frozen one freezes.
+ * The chamber is sealed, so for a living entity it replaces the atmosphere outright, breathing and
+ * all, through {@link GasEnvironments}; anything else just takes the temperature.
  *
  * <p>Entities live in the world whatever grid they stand in, so a reactor on a ship or a Sable
  * sublevel has its cavity taken out into the world to find them, and each one found is brought
@@ -33,14 +40,21 @@ public final class ReactorHazards {
      * Expose everything inside the reactor's cavity to the chamber's gas for this tick.
      *
      * @param temperatureK the chamber's temperature, or {@link Double#NaN} if it holds no gas
-     * @param drowning     whether none of the chamber's gas can be breathed
+     * @param gases        the chamber's gases by mass, empty if it holds none
      */
-    static void exposeEntitiesInside(ServerLevel level, Reactor reactor, double temperatureK, boolean drowning) {
+    static void exposeEntitiesInside(ServerLevel level, Reactor reactor, double temperatureK, Map<ResourceLocation, Double> gases) {
         GridSpace grid = Compat.gridOf(level, reactor.host());
         AABB search = grid == null ? reactor.bounds() : enclose(grid, reactor.bounds());
         for (Entity entity : level.getEntities((Entity) null, search, EntitySelector.NO_SPECTATORS)) {
             if (entity.isAlive() && touches(reactor, grid, entity.getBoundingBox())) {
-                GasExposure.expose(entity, temperatureK, drowning);
+                if (entity instanceof LivingEntity living) {
+                    GasEnvironments.queue(living, environment -> {
+                        environment.setTemperatureK(temperatureK);
+                        environment.setGases(gases);
+                    });
+                } else {
+                    GasExposure.expose(entity, temperatureK, false);
+                }
             }
         }
     }

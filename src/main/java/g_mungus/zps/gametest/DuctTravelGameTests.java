@@ -5,22 +5,30 @@ import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.gas.VentBlock;
 import g_mungus.zps.block.gas.core.DuctTravelNetwork;
 import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
+import g_mungus.zps.gas.AtmosphereExposure;
 import g_mungus.zps.gas.ModGases;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.entity.DuctTravelEntity;
+import g_mungus.zps.gas.api.GasEnvironment;
+import g_mungus.zps.gas.api.GasEnvironmentEvent;
+import g_mungus.zps.world.AtmosphericComposition;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Which vents a player can reach from the one they climbed into.
@@ -353,6 +361,26 @@ public class DuctTravelGameTests {
             helper.assertFalse(player.isOnFire(), "A rider in an empty vent should not be on fire");
             helper.assertTrue(player.getTicksFrozen() == 0, "A rider in an empty vent should not be freezing");
             helper.assertTrue(player.getHealth() == player.getMaxHealth(), "The rider should be unhurt");
+            helper.succeed();
+        });
+    }
+
+    /** The rider is in the vent's gas as well as the air around it, at the vent's temperature. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void ventGasJoinsTheRidersAir(GameTestHelper helper) {
+        double mild = (ZPSConfig.entityBurnGasTemperatureK() + ZPSConfig.entityFreezeGasTemperatureK()) / 2.0;
+        Player player = enterVentFedAt(helper, mild);
+
+        helper.runAfterDelay(WARM_UP_TICKS, () -> {
+            GasEnvironment environment = AtmosphereExposure.atmosphere(player);
+            MinecraftForge.EVENT_BUS.post(new GasEnvironmentEvent(player, environment));
+            Map<ResourceLocation, Double> fractions = environment.fractions();
+            helper.assertTrue(fractions.getOrDefault(ModGases.FLUX.getResourceLocation(), 0.0) > 0.0,
+                    "The vent's flux should be in the rider's gas, was " + fractions);
+            helper.assertTrue(fractions.getOrDefault(AtmosphericComposition.AIR, 0.0) > 0.0,
+                    "The air around the vent should still be in the rider's gas, was " + fractions);
+            helper.assertTrue(Math.abs(environment.temperatureK() - mild) < 1.0,
+                    "The rider should be at the vent's temperature, was " + environment.temperatureK());
             helper.succeed();
         });
     }

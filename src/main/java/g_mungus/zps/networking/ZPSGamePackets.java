@@ -186,5 +186,17 @@ public class ZPSGamePackets {
                 .decoder(DrowningS2CPacket::decode)
                 .consumerMainThread(DrowningS2CPacket::handle)
                 .add();
+
+        INSTANCE.messageBuilder(RequestGasConditionsC2SPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(RequestGasConditionsC2SPacket::encode)
+                .decoder(RequestGasConditionsC2SPacket::decode)
+                .consumerMainThread(RequestGasConditionsC2SPacket::handle)
+                .add();
+
+        INSTANCE.messageBuilder(GasConditionsS2CPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(GasConditionsS2CPacket::encode)
+                .decoder(GasConditionsS2CPacket::decode)
+                .consumerMainThread(GasConditionsS2CPacket::handle)
+                .add();
     }
 }

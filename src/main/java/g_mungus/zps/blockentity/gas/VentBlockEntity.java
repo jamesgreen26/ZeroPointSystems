@@ -5,6 +5,7 @@ import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.gas.core.GasNodeBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.DirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -12,9 +13,11 @@ import net.minecraft.world.phys.Vec3;
 import org.valkyrienskies.kelvin.KelvinMod;
 import org.valkyrienskies.kelvin.api.GasType;
 
+import g_mungus.zps.gas.GasExposure;
 import g_mungus.zps.gas.GasJet;
 import g_mungus.zps.gas.ModGases;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -57,8 +60,9 @@ public class VentBlockEntity extends GasNodeBlockEntity {
      * temperature of; what was there a moment ago is what anyone sitting in the vent feels.
      */
     private static final int GAS_MEMORY_TICKS = 10;
-    /** Temperature of the gas last seen at the node, in kelvin, and the tick it was seen on. */
+    /** Temperature of the gas last seen at the node, in kelvin, what it was, and the tick it was seen on. */
     private double lastGasTemperatureK;
+    private Map<ResourceLocation, Double> lastGases = Map.of();
     private long lastGasSeenTick = NEVER;
     /** Far enough back that no game time is within memory of it, without overflowing a subtraction. */
     private static final long NEVER = Long.MIN_VALUE / 2;
@@ -91,9 +95,13 @@ public class VentBlockEntity extends GasNodeBlockEntity {
             return;
         }
         // Taken while there is gas to take it of, shut or not: a shut vent holding hot gas is as
-        // hot to sit in as an open one passing it.
-        lastGasTemperatureK = getTemperature();
-        lastGasSeenTick = level == null ? 0 : level.getGameTime();
+        // hot to sit in as an open one passing it. Traces do not count as gas to sit in.
+        Map<ResourceLocation, Double> passing = fractionsById(gases);
+        if (!passing.isEmpty()) {
+            lastGasTemperatureK = getTemperature();
+            lastGases = passing;
+            lastGasSeenTick = level == null ? 0 : level.getGameTime();
+        }
 
         if (VentBlock.isShut(getBlockState())) {
             return;
@@ -150,6 +158,31 @@ public class VentBlockEntity extends GasNodeBlockEntity {
             return Double.NaN;
         }
         return lastGasTemperatureK;
+    }
+
+    /**
+     * The gas passing this vent, as fractions of the mix by mass, remembered as long as
+     * {@link #gasTemperatureK()} is: empty once nothing has come through for a while. Server side only.
+     */
+    public Map<ResourceLocation, Double> gasesPassing() {
+        if (level == null || level.getGameTime() > lastGasSeenTick + GAS_MEMORY_TICKS) {
+            return Map.of();
+        }
+        return lastGases;
+    }
+
+    /** The gases beyond a trace ({@link GasExposure#MIN_GAS_KG}), as fractions of their total mass. */
+    private static Map<ResourceLocation, Double> fractionsById(Map<GasType, Double> gases) {
+        Map<ResourceLocation, Double> masses = new HashMap<>();
+        gases.forEach((gas, mass) -> {
+            if (mass >= GasExposure.MIN_GAS_KG) {
+                masses.put(gas.getResourceLocation(), mass);
+            }
+        });
+        double total = masses.values().stream().mapToDouble(Double::doubleValue).sum();
+        Map<ResourceLocation, Double> fractions = new HashMap<>();
+        masses.forEach((gas, mass) -> fractions.put(gas, mass / total));
+        return Map.copyOf(fractions);
     }
 
     private void spawnJet() {

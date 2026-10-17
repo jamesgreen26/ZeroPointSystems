@@ -2,7 +2,6 @@ package g_mungus.zps.mixin;
 
 import g_mungus.zps.world.SkyBiomeSettings;
 import net.minecraft.core.Holder;
-import net.minecraft.core.QuartPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.biome.Biome;
@@ -25,12 +24,8 @@ public abstract class ChunkAccessMixin {
 
     @Inject(method = "getNoiseBiome", at = @At("HEAD"), cancellable = true)
     private void zps$skyBiome(int x, int y, int z, CallbackInfoReturnable<Holder<Biome>> cir) {
-        int blockY = QuartPos.toBlock(y);
-        if (blockY < levelHeightAccessor.getMaxBuildHeight()) return;
         if (!(levelHeightAccessor instanceof Level level)) return;
-        SkyBiomeSettings settings = SkyBiomeSettings.forLevel(level);
-        if (settings == null) return;
-        Holder<Biome> biome = settings.biomeAt(blockY);
+        Holder<Biome> biome = SkyBiomeSettings.skyBiome(level, y);
         if (biome != null) cir.setReturnValue(biome);
     }
 }

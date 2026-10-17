@@ -3,6 +3,7 @@ package g_mungus.zps.mixin;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import g_mungus.zps.client.ClientAtmosphere;
 import g_mungus.zps.world.AtmosphericComposition;
+import g_mungus.zps.world.SkyBiomeSettings;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -10,11 +11,14 @@ import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.storage.WritableLevelData;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.function.Supplier;
 
@@ -24,6 +28,9 @@ import java.util.function.Supplier;
  * through the rain level itself: everything the client draws from it — the rain and snow, the grey it
  * puts in the sky and fog, the fading of the sun, moon and stars, thunder's darkening — clears with it.
  * The server's weather is untouched. The stars coming out are {@code LevelRendererMixin}'s.
+ * <p>
+ * Where no chunk is loaded, sky bands still read their biome rather than the client's plains fallback,
+ * so the air and sky stay right with no terrain below.
  */
 @Mixin(ClientLevel.class)
 public abstract class ClientLevelMixin extends Level {
@@ -42,5 +49,11 @@ public abstract class ClientLevelMixin extends Level {
     @Override
     public float getRainLevel(float partialTick) {
         return super.getRainLevel(partialTick) * ClientAtmosphere.weather((ClientLevel) (Object) this);
+    }
+
+    @Inject(method = "getUncachedNoiseBiome", at = @At("HEAD"), cancellable = true)
+    private void zps$skyBiome(int x, int y, int z, CallbackInfoReturnable<Holder<Biome>> cir) {
+        Holder<Biome> biome = SkyBiomeSettings.skyBiome(this, y);
+        if (biome != null) cir.setReturnValue(biome);
     }
 }

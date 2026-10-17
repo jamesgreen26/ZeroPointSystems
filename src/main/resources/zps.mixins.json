@@ -67,6 +67,7 @@
     "PoiTypeMixin",
     "PoiTypesMixin",
     "RegistryDataLoaderMixin",
+    "ServerLevelMixin",
     "ServerGamePacketListenerImplAccessor",
     "SnowGolemMixin",
     "StructureTemplateMixin",

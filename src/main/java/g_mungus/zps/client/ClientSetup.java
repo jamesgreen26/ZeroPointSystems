@@ -10,6 +10,7 @@ import g_mungus.zps.client.tooltip.ItemIconsTooltip;
 import g_mungus.zps.client.model.connected.ConnectedModelLoader;
 import g_mungus.zps.client.reactor.WallCoats;
 import g_mungus.zps.client.model.connected.ConnectedTextureMeta;
+import g_mungus.zps.client.model.connected.PiecedTileSource;
 import g_mungus.zps.client.recipebook.ModRecipeBookCategories;
 import g_mungus.zps.client.renderer.*;
 import g_mungus.zps.client.screens.AssemblerScreen;
@@ -48,6 +49,7 @@ import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.client.event.RegisterSpriteSourceTypesEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
 import g_mungus.zps.commands.content.arguments.AssemblerRecipeArgument;
@@ -110,6 +112,11 @@ public class ClientSetup {
     @SubscribeEvent
     public static void onRegisterGeometryLoaders(ModelEvent.RegisterGeometryLoaders event) {
         event.register(ConnectedModelLoader.ID, ConnectedModelLoader.INSTANCE);
+    }
+
+    @SubscribeEvent
+    public static void onRegisterSpriteSourceTypes(RegisterSpriteSourceTypesEvent event) {
+        event.register(ZPSMod.resource("pieced_tiles"), PiecedTileSource.TYPE);
     }
 
     /** The reactor glow's core shader. */

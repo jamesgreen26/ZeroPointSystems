@@ -54,6 +54,7 @@
     "ItemEntityMixin",
     "LecternBlockEntityMixin",
     "LevelMixin",
+    "LightEngineMixin",
     "LivingEntityMixin",
     "PistonBaseBlockMixin",
     "PistonMovingBlockEntityMixin",

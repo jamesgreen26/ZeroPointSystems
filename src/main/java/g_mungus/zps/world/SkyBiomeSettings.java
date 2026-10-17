@@ -4,6 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import g_mungus.zps.ZPSMod;
 import net.minecraft.core.Holder;
+import net.minecraft.core.QuartPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
@@ -30,8 +31,8 @@ import java.util.Optional;
  * }</pre>
  * Ranges are inclusive at both ends and may not overlap; a single number is a one-block band.
  * Either end may be {@code *} for unbounded, and {@code "*"} alone covers every height.
- * Bands only take effect above the build limit (see {@code ChunkAccessMixin}); there, heights
- * outside every band read the top section's biome as in vanilla.
+ * Bands only take effect above the build limit (see {@link #skyBiome}); there, heights outside every
+ * band read the top section's biome as in vanilla.
  */
 public record SkyBiomeSettings(Map<YRange, Holder<Biome>> biomes) {
     public static final ResourceKey<Registry<SkyBiomeSettings>> REGISTRY_KEY =
@@ -55,6 +56,19 @@ public record SkyBiomeSettings(Map<YRange, Holder<Biome>> biomes) {
             if (entry.getKey().contains(y)) return entry.getValue();
         }
         return null;
+    }
+
+    /**
+     * The band biome at quart height {@code quartY} in {@code level}, or null below the build limit or
+     * outside every band. Read through loaded chunks ({@code ChunkAccessMixin}) and, where none is
+     * loaded, through the level's uncached fallback ({@code ServerLevelMixin}, {@code ClientLevelMixin}),
+     * so the sky keeps its biome with no terrain beneath it.
+     */
+    public static @Nullable Holder<Biome> skyBiome(Level level, int quartY) {
+        int blockY = QuartPos.toBlock(quartY);
+        if (blockY < level.getMaxBuildHeight()) return null;
+        SkyBiomeSettings settings = forLevel(level);
+        return settings == null ? null : settings.biomeAt(blockY);
     }
 
     /** The settings for {@code level}'s dimension, cached on the level since biome lookups are hot. */

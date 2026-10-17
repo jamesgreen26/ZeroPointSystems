@@ -1,6 +1,8 @@
 package g_mungus.zps.room;
 
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.compat.Compat;
+import g_mungus.zps.compat.GridSpace;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.gas.AtmosphereExposure;
 import g_mungus.zps.networking.RoomBreachS2CPacket;
@@ -29,10 +31,12 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -106,6 +110,29 @@ public final class RoomManager extends SavedData {
     public @Nullable Room roomAt(BlockPos pos) {
         Room room = knownRoomAt(pos);
         return room != null && room.isActive() ? room : null;
+    }
+
+    /**
+     * The active room around {@code entity}'s eyes. A room on a moving grid comes first — the eyes
+     * of something on a sublevel or a ship are looked up in the grid's own blocks, for each grid
+     * the entity touches — then a room in the world. An entity kept in a grid's own space, a rider
+     * on a seat, already has its eyes there.
+     */
+    public @Nullable Room roomAround(Entity entity) {
+        if (rooms.isEmpty()) {
+            return null;
+        }
+        Vec3 eyes = entity.getEyePosition();
+        BlockPos eyeCell = BlockPos.containing(eyes);
+        if (Compat.gridOf(entity.level(), eyeCell) == null) {
+            for (GridSpace grid : Compat.gridsTouching(entity.level(), entity.getBoundingBox())) {
+                Room room = roomAt(BlockPos.containing(grid.toLocal(eyes)));
+                if (room != null) {
+                    return room;
+                }
+            }
+        }
+        return roomAt(eyeCell);
     }
 
     /** The room {@code pos} is inside, active or dormant, or null. */
@@ -277,9 +304,11 @@ public final class RoomManager extends SavedData {
     /**
      * What a room of {@code volume} cells around {@code at} held of the outside atmosphere when it
      * sealed, in kilograms: each gas's share at its own density, thinned with height. Vacuum and
-     * gases no mod registers weigh nothing.
+     * gases no mod registers weigh nothing. A room on a moving grid is judged by the air where the
+     * grid is in the world ({@link AtmosphereExposure#inWorld}), not at its plot.
      */
     static Map<ResourceLocation, Double> outsideAir(ServerLevel level, BlockPos at, int volume) {
+        at = AtmosphereExposure.inWorld(level, at);
         Biome biome = level.getBiome(at).value();
         double thinning = AtmosphericComposition.getDensity(level, at);
         Map<ResourceLocation, Double> kg = new HashMap<>();

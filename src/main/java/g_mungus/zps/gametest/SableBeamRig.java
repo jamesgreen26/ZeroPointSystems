@@ -63,6 +63,15 @@ final class SableBeamRig {
      */
     static SableBeamRig assemble(ServerLevel level, BlockPos min, BlockPos max, List<BlockPos> blocks,
                                  Quaterniond rotation) {
+        return assemble(level, min, max, blocks, rotation, new Vector3d(
+                min.getX() + (1 + max.getX() - min.getX()) / 2.0,
+                min.getY() + (1 + max.getY() - min.getY()) / 2.0,
+                min.getZ() + (1 + max.getZ() - min.getZ()) / 2.0));
+    }
+
+    /** As above, the middle of the box then put at {@code centre} in the world rather than left where it was. */
+    static SableBeamRig assemble(ServerLevel level, BlockPos min, BlockPos max, List<BlockPos> blocks,
+                                 Quaterniond rotation, Vector3d centre) {
         ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
         if (container == null) {
             throw new IllegalStateException("This level has no sublevel container");
@@ -72,12 +81,7 @@ final class SableBeamRig {
 
         ServerSubLevel subLevel = SubLevelAssemblyHelper.assembleBlocks(level, min, blocks,
                 new BoundingBox3i(min.getX(), min.getY(), min.getZ(), max.getX(), max.getY(), max.getZ()));
-        container.physicsSystem().getPipeline().teleport(subLevel,
-                new Vector3d(
-                        min.getX() + (1 + max.getX() - min.getX()) / 2.0,
-                        min.getY() + (1 + max.getY() - min.getY()) / 2.0,
-                        min.getZ() + (1 + max.getZ() - min.getZ()) / 2.0),
-                rotation);
+        container.physicsSystem().getPipeline().teleport(subLevel, centre, rotation);
         return new SableBeamRig(level, container, subLevel);
     }
 

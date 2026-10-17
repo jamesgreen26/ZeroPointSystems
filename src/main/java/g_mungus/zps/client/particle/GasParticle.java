@@ -1,5 +1,6 @@
 package g_mungus.zps.client.particle;
 
+import g_mungus.zps.compat.Compat;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.ParticleStatus;
@@ -11,6 +12,8 @@ import net.minecraft.client.particle.SpriteSet;
 import net.minecraft.client.particle.TextureSheetParticle;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.SimpleParticleType;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.valkyrienskies.kelvin.impl.client.particle.DefaultGasParticle;
 
@@ -67,18 +70,28 @@ public class GasParticle extends TextureSheetParticle {
     }
 
     /**
+     * Whether particles at {@code pos} are worth adding: the level renderer's own distance cut-off and
+     * minimal-particles setting, which {@link #spawn} goes around. The distance is to where {@code pos}
+     * is in the world: a vent on a sublevel spawns in the sublevel's plot, far from the camera, and
+     * Sable moves the particle out to the sublevel itself once it is added — it patches the level
+     * renderer's own check to match, not this one.
+     */
+    public static boolean worthSpawningAt(Level level, Vec3 pos) {
+        Minecraft minecraft = Minecraft.getInstance();
+        Camera camera = minecraft.gameRenderer.getMainCamera();
+        return camera.isInitialized()
+                && camera.getPosition().distanceToSqr(Compat.toWorldPos(level, pos)) <= MAX_DISTANCE_SQ
+                && minecraft.options.particles().get() != ParticleStatus.MINIMAL;
+    }
+
+    /**
      * Add a particle for {@code options} and, if it is one of these, give it {@code buoyancy}. Goes
-     * straight to the particle engine, since {@code Level#addParticle} hands nothing back, so it
-     * keeps the level renderer's distance cut-off and minimal-particles setting itself.
+     * straight to the particle engine, since {@code Level#addParticle} hands nothing back; check
+     * {@link #worthSpawningAt} first.
      */
     public static void spawn(ParticleOptions options, double x, double y, double z,
                              double xSpeed, double ySpeed, double zSpeed, double buoyancy) {
         Minecraft minecraft = Minecraft.getInstance();
-        Camera camera = minecraft.gameRenderer.getMainCamera();
-        if (!camera.isInitialized() || camera.getPosition().distanceToSqr(x, y, z) > MAX_DISTANCE_SQ
-                || minecraft.options.particles().get() == ParticleStatus.MINIMAL) {
-            return;
-        }
         Particle particle = minecraft.particleEngine.createParticle(options, x, y, z, xSpeed, ySpeed, zSpeed);
         if (particle instanceof GasParticle gas) {
             gas.setBuoyancy(buoyancy);

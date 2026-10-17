@@ -6,6 +6,7 @@ import g_mungus.zps.block.gas.core.GasEdgeNegotiator;
 import g_mungus.zps.blockentity.gas.core.GasNodeBlockEntity;
 import g_mungus.zps.room.RoomManager;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
@@ -153,14 +154,22 @@ public class GasGaugeBlockEntity extends GasNodeBlockEntity {
 
     // --- reading ----------------------------------------------------------------------------
 
-    /** Whether the inlet has joined a line. Server only. */
+    /**
+     * Whether the inlet has joined a line: something that connects is behind it, and the network has
+     * the edge. Both, because Kelvin can keep a node where nothing is any more — on a sublevel's plot
+     * after the sublevel has gone, say — and an edge to that is no line. Server only.
+     */
     private boolean isOnALine() {
         BlockState state = getBlockState();
         if (!state.hasProperty(GasGaugeBlock.FACING) || level == null) {
             return false;
         }
+        Direction inletSide = state.getValue(GasGaugeBlock.FACING).getOpposite();
+        if (!GasEdgeNegotiator.wouldConnect(level, worldPosition, inletSide)) {
+            return false;
+        }
         DuctNodePos self = getDuctNodePosition();
-        DuctNodePos inlet = GasEdgeNegotiator.nodePos(level, worldPosition.relative(state.getValue(GasGaugeBlock.FACING).getOpposite()));
+        DuctNodePos inlet = GasEdgeNegotiator.nodePos(level, worldPosition.relative(inletSide));
         DuctNetwork<?> kelvin = KelvinMod.INSTANCE.forceGetKelvin();
         return kelvin.getEdgeBetween(self, inlet) != null || kelvin.getEdgeBetween(inlet, self) != null;
     }

@@ -3,7 +3,9 @@ package g_mungus.zps.gametest;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.LargeSpaceDoorBlock;
 import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.block.gas.GasGaugeBlock;
 import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
+import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity;
 import g_mungus.zps.gas.AtmosphereExposure;
 import g_mungus.zps.gas.ModGases;
 import g_mungus.zps.room.Room;
@@ -323,6 +325,47 @@ public class RoomGameTests {
             Room room = roomAt(helper, CENTRE);
             helper.assertTrue(room != null, "A strong supply should keep the room going");
             helper.assertTrue(room.massKg().getOrDefault(FLUX, 0.0) > 1.0, "The flux should have built up");
+            helper.succeed();
+        });
+    }
+
+    private static GasGaugeBlockEntity placeGauge(GameTestHelper helper, BlockPos pos, Direction facing) {
+        helper.setBlock(pos, ModBlocks.GAS_GAUGE.get().defaultBlockState().setValue(GasGaugeBlock.FACING, facing));
+        if (!(helper.getBlockEntity(pos) instanceof GasGaugeBlockEntity gauge)) {
+            helper.fail("The gauge has no block entity");
+            throw new IllegalStateException();
+        }
+        return gauge;
+    }
+
+    /** A gauge on nothing reads the outside air: about an atmosphere, at the biome's temperature. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 20)
+    public static void looseGauge_readsTheAtmosphere(GameTestHelper helper) {
+        GasGaugeBlockEntity gauge = placeGauge(helper, new BlockPos(1, 2, 1), Direction.UP);
+
+        helper.runAfterDelay(2, () -> {
+            double pressure = gauge.getPressure();
+            helper.assertTrue(pressure > 80_000 && pressure < 130_000, "A loose gauge should read about an atmosphere, reads " + pressure + " Pa");
+            double temperature = gauge.getTemperature();
+            helper.assertTrue(temperature > 200 && temperature < 330, "A loose gauge should read the biome's temperature, reads " + temperature + " K");
+            helper.succeed();
+        });
+    }
+
+    /** A gauge on a room's wall reads the room: flux packed in on top of the air raises the pressure. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 20)
+    public static void looseGaugeInARoom_readsTheRoom(GameTestHelper helper) {
+        buildShell(helper);
+        // Against the west wall, dial facing in, inlet on the stone.
+        GasGaugeBlockEntity gauge = placeGauge(helper, WEST_WALL.east(), Direction.EAST);
+        addFlux(helper, CENTRE, 50.0);
+        helper.assertTrue(roomAt(helper, WEST_WALL.east()) != null, "The gauge's cell should be in the room");
+        double outside = manager(helper).ambientAt(helper.getLevel(), helper.absolutePos(new BlockPos(1, 2, 1))).pressurePa();
+
+        helper.runAfterDelay(2, () -> {
+            double pressure = gauge.getPressure();
+            helper.assertTrue(pressure > outside * 1.5, "The room is packed with flux, so it should read well over the outside's "
+                    + outside + " Pa, reads " + pressure + " Pa");
             helper.succeed();
         });
     }

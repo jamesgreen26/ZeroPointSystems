@@ -4,11 +4,14 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import g_mungus.zps.ZPSMod;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.neoforged.neoforge.registries.DataPackRegistryEvent;
 
@@ -76,6 +79,38 @@ public record AtmosphericComposition(Map<YRange, Map<ResourceLocation, Double>> 
             if (entry.getKey().contains(y)) return entry.getValue();
         }
         return PLAIN_AIR;
+    }
+
+    /**
+     * How thick the air is at {@code pos}, from 1 down to 0: full up to the build limit, thinning
+     * linearly to nothing where the biome there turns to {@link #VACUUM}, and nothing from there on.
+     * Always 1 in a biome with no vacuum.
+     */
+    public static float getDensity(Level level, BlockPos pos) {
+        return of(level.getBiome(pos).value()).density(pos.getY(), level.getMaxBuildHeight());
+    }
+
+    /** {@link #getDensity(Level, BlockPos)} at height {@code y}, for a dimension whose build limit is {@code buildTop}. */
+    public float density(int y, int buildTop) {
+        int vacuumFrom = vacuumFrom();
+        if (vacuumFrom == Integer.MAX_VALUE || y <= buildTop) {
+            return vacuumFrom <= y ? 0.0f : 1.0f;
+        }
+        if (y >= vacuumFrom) {
+            return 0.0f;
+        }
+        return Mth.clamp((float) (vacuumFrom - y) / (vacuumFrom - buildTop), 0.0f, 1.0f);
+    }
+
+    /** The lowest height of any band holding vacuum, or {@link Integer#MAX_VALUE} for none. */
+    private int vacuumFrom() {
+        int lowest = Integer.MAX_VALUE;
+        for (Map.Entry<YRange, Map<ResourceLocation, Double>> entry : bands.entrySet()) {
+            if (entry.getValue().containsKey(VACUUM)) {
+                lowest = Math.min(lowest, entry.getKey().min());
+            }
+        }
+        return lowest;
     }
 
     /** {@code biome}'s composition, or {@link #DEFAULT} for a biome that has no file. */

@@ -5,6 +5,8 @@ import com.google.gson.JsonParser;
 import com.mojang.serialization.JsonOps;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.world.AtmosphericComposition;
+import g_mungus.zps.world.YRange;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -50,6 +52,31 @@ public class AtmosphericCompositionGameTests {
         expect(helper, composition.at(2047), AtmosphericComposition.PLAIN_AIR, "y=2047");
         expect(helper, composition.at(2048), Map.of(VACUUM, 1.0), "y=2048");
         helper.succeed();
+    }
+
+    /** The overworld's air thins linearly from the build limit to where the vacuum starts at 2048. */
+    @GameTest(template = TEMPLATE)
+    public static void overworldDensity_fallsToVacuumAt2048(GameTestHelper helper) {
+        BlockPos column = helper.absolutePos(BlockPos.ZERO);
+        expectDensity(helper, column.atY(64), 1.0f);
+        expectDensity(helper, column.atY(320), 1.0f);
+        expectDensity(helper, column.atY(1184), 0.5f);
+        expectDensity(helper, column.atY(2048), 0.0f);
+        expectDensity(helper, column.atY(5000), 0.0f);
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void density_isFullWithoutVacuum(GameTestHelper helper) {
+        if (AtmosphericComposition.DEFAULT.density(5000, 320) != 1.0f) helper.fail("A biome with no vacuum should be full density everywhere");
+        AtmosphericComposition allVacuum = new AtmosphericComposition(Map.of(YRange.ALL, Map.of(VACUUM, 1.0)));
+        if (allVacuum.density(0, 320) != 0.0f) helper.fail("A biome of nothing but vacuum should have no density anywhere");
+        helper.succeed();
+    }
+
+    private static void expectDensity(GameTestHelper helper, BlockPos pos, float expected) {
+        float actual = AtmosphericComposition.getDensity(helper.getLevel(), pos);
+        if (Math.abs(actual - expected) > 1.0e-4f) helper.fail("Density at y=" + pos.getY() + " should be " + expected + ", was " + actual);
     }
 
     @GameTest(template = TEMPLATE)

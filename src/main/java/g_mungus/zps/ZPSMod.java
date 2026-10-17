@@ -61,6 +61,7 @@ import g_mungus.zps.gametest.TextDisplayGameTests;
 import g_mungus.zps.menu.ModMenus;
 import g_mungus.zps.networking.ZPSGamePackets;
 import g_mungus.zps.recipe.ModRecipes;
+import g_mungus.zps.world.SkyBiomeSettings;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
@@ -106,6 +107,7 @@ public final class ZPSMod {
         modEventBus.addListener(ZPSMod::addBrushableBlocks);
         modEventBus.addListener(ZPSMod::extendPoiTypes);
         modEventBus.addListener(ZPSMod::commonSetup);
+        modEventBus.addListener(SkyBiomeSettings::register);
 
         if (dist == Dist.CLIENT) {
             ZPSPonderPlugin.registerPlugin();

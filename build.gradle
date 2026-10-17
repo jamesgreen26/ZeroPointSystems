@@ -26,6 +26,11 @@ base {
 legacyForge {
     version = forge_version
 
+    parchment {
+        minecraftVersion = parchment_minecraft_version
+        mappingsVersion = parchment_mappings_version
+    }
+
     runs {
         client {
             client()

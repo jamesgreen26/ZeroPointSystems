@@ -433,6 +433,44 @@ public class RoomGameTests {
         helper.succeed();
     }
 
+    private static double buoyancyOfAir(GameTestHelper helper, BlockPos into, double temperatureK) {
+        return manager(helper).buoyancy(helper.getLevel(), helper.absolutePos(into),
+                Map.of(AtmosphericComposition.AIR, 1.0), temperatureK);
+    }
+
+    /** Air let out into air floats only by its temperature: hotter rises, colder sinks, the same neither. */
+    @GameTest(template = TEMPLATE)
+    public static void airIntoAir_floatsByTemperature(GameTestHelper helper) {
+        BlockPos open = new BlockPos(1, 2, 1);
+        double outsideK = AtmosphereExposure.temperatureK(helper.getLevel(), helper.absolutePos(open));
+        double same = buoyancyOfAir(helper, open, outsideK);
+        helper.assertTrue(Math.abs(same) < 1e-6, "Air at the air's own temperature should neither float nor sink, has " + same);
+        helper.assertTrue(buoyancyOfAir(helper, open, outsideK * 2) > 0.4, "Hot air should rise");
+        helper.assertTrue(buoyancyOfAir(helper, open, outsideK / 2) < -0.4, "Cold air should sink");
+        helper.succeed();
+    }
+
+    /** Flux is far lighter than air, so it rises hard out in the open. */
+    @GameTest(template = TEMPLATE)
+    public static void fluxIntoAir_rises(GameTestHelper helper) {
+        BlockPos open = new BlockPos(1, 2, 1);
+        double outsideK = AtmosphereExposure.temperatureK(helper.getLevel(), helper.absolutePos(open));
+        double buoyancy = manager(helper).buoyancy(helper.getLevel(), helper.absolutePos(open), Map.of(FLUX, 1.0), outsideK);
+        helper.assertTrue(buoyancy > 0.5, "Flux should rise hard in air, has " + buoyancy);
+        helper.succeed();
+    }
+
+    /** What counts is what is in the room: air let into a room full of flux is the heavy one, and sinks. */
+    @GameTest(template = TEMPLATE)
+    public static void airIntoAFluxRoom_sinks(GameTestHelper helper) {
+        buildShell(helper);
+        addFlux(helper, CENTRE, 500.0);
+        Room room = roomAt(helper, CENTRE);
+        double buoyancy = buoyancyOfAir(helper, CENTRE, room.temperatureK());
+        helper.assertTrue(buoyancy < -0.5, "Air should sink in a room full of flux, has " + buoyancy);
+        helper.succeed();
+    }
+
     @GameTest(template = TEMPLATE)
     public static void room_survivesASaveAndLoad(GameTestHelper helper) {
         buildShell(helper);

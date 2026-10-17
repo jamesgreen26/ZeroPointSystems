@@ -1,5 +1,6 @@
 package g_mungus.zps.gas;
 
+import g_mungus.zps.client.particle.GasParticle;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.util.RandomSource;
@@ -43,6 +44,16 @@ public final class GasJet {
     public static void spawn(Level level, DuctNodePos node, GasType gas, Vec3 center,
                              Direction outward, double speed, double particleCount,
                              double radius, double outwardOffset) {
+        spawn(level, node, gas, center, outward, speed, particleCount, radius, outwardOffset, Double.NaN);
+    }
+
+    /**
+     * As above, the particles floating or sinking by {@code buoyancy} — see
+     * {@code RoomManager#buoyancy}. NaN leaves them to float as their own gas would in air.
+     */
+    public static void spawn(Level level, DuctNodePos node, GasType gas, Vec3 center,
+                             Direction outward, double speed, double particleCount,
+                             double radius, double outwardOffset, double buoyancy) {
         int count = stochasticCount(particleCount, level.random);
         if (count <= 0) {
             return;
@@ -76,7 +87,11 @@ public final class GasJet {
             double y = center.y + ny * forward + first.y * u + second.y * v;
             double z = center.z + nz * forward + first.z * u + second.z * v;
 
-            level.addParticle(options, x, y, z, nx * speed, ny * speed, nz * speed);
+            if (Double.isNaN(buoyancy)) {
+                level.addParticle(options, x, y, z, nx * speed, ny * speed, nz * speed);
+            } else {
+                GasParticle.spawn(options, x, y, z, nx * speed, ny * speed, nz * speed, buoyancy);
+            }
         }
     }
 

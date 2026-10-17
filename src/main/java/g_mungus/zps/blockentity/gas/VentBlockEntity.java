@@ -19,6 +19,7 @@ import g_mungus.zps.gas.GasExposure;
 import g_mungus.zps.gas.GasJet;
 import g_mungus.zps.gas.ModGases;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -148,6 +149,26 @@ public class VentBlockEntity extends GasNodeBlockEntity {
         return true;
     }
 
+    /**
+     * How the gas passing floats in what is in front: the vent empties its node every tick, so it is
+     * judged on the gas last seen there rather than on the node.
+     */
+    @Override
+    protected float[] buoyancyForSync() {
+        double temperatureK = gasTemperatureK();
+        BlockState state = getBlockState();
+        if (!(level instanceof ServerLevel serverLevel) || Double.isNaN(temperatureK)
+                || !state.hasProperty(DirectionalBlock.FACING)) {
+            return NO_BUOYANCY;
+        }
+        Direction facing = state.getValue(DirectionalBlock.FACING);
+        float[] buoyancy = new float[Direction.values().length];
+        Arrays.fill(buoyancy, Float.NaN);
+        buoyancy[facing.ordinal()] = (float) RoomManager.get(serverLevel)
+                .buoyancy(serverLevel, worldPosition.relative(facing), gasesPassing(), temperatureK);
+        return buoyancy;
+    }
+
     /** Gas vented per tick over the current window. This is what gets sent to clients. */
     public double getVentedPerTick() {
         return ventedSinceSync / syncInterval();
@@ -214,6 +235,6 @@ public class VentBlockEntity extends GasNodeBlockEntity {
 
         GasJet.spawn(level, getDuctNodePosition(), ModGases.FLUX,
                 Vec3.atCenterOf(worldPosition), facing, speed,
-                rate / MASS_PER_PARTICLE, MOUTH_RADIUS, MOUTH_OFFSET);
+                rate / MASS_PER_PARTICLE, MOUTH_RADIUS, MOUTH_OFFSET, getSyncedBuoyancy(facing));
     }
 }

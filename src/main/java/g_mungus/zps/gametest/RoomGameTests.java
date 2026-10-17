@@ -370,6 +370,69 @@ public class RoomGameTests {
         });
     }
 
+    /**
+     * Pumps flux into the room to about {@code targetPa}. Pressure goes up in step with each gas's
+     * mass, so one kilogram shows how much the rest needs to be.
+     */
+    private static Room pumpTo(GameTestHelper helper, double targetPa) {
+        addFlux(helper, CENTRE, 5.0);
+        Room room = roomAt(helper, CENTRE);
+        double before = RoomManager.pressureOf(room);
+        addFlux(helper, CENTRE, 1.0);
+        double perKg = RoomManager.pressureOf(room) - before;
+        addFlux(helper, CENTRE, (targetPa - RoomManager.pressureOf(room)) / perKg);
+        return room;
+    }
+
+    /** Below 1 MPa everything put in stays in. */
+    @GameTest(template = TEMPLATE)
+    public static void lowPressureRoom_keepsWhatGoesIn(GameTestHelper helper) {
+        buildShell(helper);
+        addFlux(helper, CENTRE, 5.0);
+        Room room = roomAt(helper, CENTRE);
+        helper.assertTrue(RoomManager.pressureOf(room) < RoomManager.RELEASE_START_PA, "The room should start below 1 MPa");
+        double before = room.totalMassKg();
+        addFlux(helper, CENTRE, 5.0);
+        helper.assertTrue(Math.abs(room.totalMassKg() - (before + 5.0)) < 1e-9, "All of it should go in");
+        helper.succeed();
+    }
+
+    /** Between 1 and 10 MPa the share let back out rises linearly with the pressure. */
+    @GameTest(template = TEMPLATE)
+    public static void midPressureRoom_letsOutAShareOfWhatGoesIn(GameTestHelper helper) {
+        buildShell(helper);
+        Room room = pumpTo(helper, 5.5e6);
+        double pressure = RoomManager.pressureOf(room);
+        helper.assertTrue(pressure > 2e6 && pressure < 9e6, "The room should be between 1 and 10 MPa, is at " + pressure + " Pa");
+        double share = (pressure - 1e6) / 9e6;
+
+        double before = room.totalMassKg();
+        addFlux(helper, CENTRE, 1.0);
+        double kept = room.totalMassKg() - before;
+        helper.assertTrue(Math.abs(kept - (1.0 - share)) < 1e-6,
+                "At " + pressure + " Pa, " + (1.0 - share) + " kg of 1 should stay in, " + kept + " kg did");
+        helper.succeed();
+    }
+
+    /** Past 10 MPa as much is let out as goes in: the mass holds, though what goes in still mixes through. */
+    @GameTest(template = TEMPLATE)
+    public static void maxPressureRoom_letsOutAllThatGoesIn(GameTestHelper helper) {
+        buildShell(helper);
+        Room room = pumpTo(helper, 1.2e7);
+        helper.assertTrue(RoomManager.pressureOf(room) >= RoomManager.MAX_PRESSURE_PA,
+                "The room should be over 10 MPa, is at " + RoomManager.pressureOf(room) + " Pa");
+
+        double before = room.totalMassKg();
+        double fluxBefore = room.massKg().getOrDefault(FLUX, 0.0);
+        manager(helper).addGas(helper.getLevel(), helper.absolutePos(CENTRE), Map.of(ModGases.STEAM, 1.0), 300.0);
+        double after = room.totalMassKg();
+        helper.assertTrue(Math.abs(after - before) < 1e-9 * before, "The room's mass should hold, went from " + before + " to " + after + " kg");
+        helper.assertTrue(room.massKg().getOrDefault(ModGases.STEAM.getResourceLocation(), 0.0) > 0.9,
+                "The steam should mix through, less its share of what was let out");
+        helper.assertTrue(room.massKg().getOrDefault(FLUX, 0.0) < fluxBefore, "Some of the flux should have been let out");
+        helper.succeed();
+    }
+
     @GameTest(template = TEMPLATE)
     public static void room_survivesASaveAndLoad(GameTestHelper helper) {
         buildShell(helper);

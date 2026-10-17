@@ -45,6 +45,7 @@ import g_mungus.zps.recipe.ModRecipeBookTypes;
 import g_mungus.zps.recipe.ModRecipes;
 import g_mungus.zps.painting.ZPSPaintings;
 import g_mungus.zps.mixin.BlockEntityTypeAccessor;
+import g_mungus.zps.world.SkyBiomeSettings;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -92,6 +93,8 @@ public final class ZPSMod {
         modEventBus.addListener(ZPSMod::registerGameTests);
         // Registry aliases for in-place renames (must run during registration, before registries lock).
         modEventBus.addListener(DataFixerUpper::registerRenameAliases);
+
+        modEventBus.addListener(SkyBiomeSettings::register);
 
         DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> ZPSPonderPlugin::registerPlugin);
         DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> ZPSPartialModels::init);

@@ -234,6 +234,28 @@ public class ZPSConfig {
         return intOr(reactorMaxInteriorExtent, REACTOR_MAX_INTERIOR_EXTENT_DEFAULT);
     }
 
+    // --- rooms ----------------------------------------------------------------------------
+
+    private static ForgeConfigSpec.ConfigValue<Integer> roomMaxVolume;
+    private static ForgeConfigSpec.ConfigValue<Double> roomLeakRate;
+
+    public static final int ROOM_MAX_VOLUME_DEFAULT = 4096;
+    /** A closed 3x3x3 room, 54 wall blocks around 27 of air, gets halfway back to the outside in about a minute. */
+    public static final double ROOM_LEAK_RATE_DEFAULT = 3.0e-4;
+
+    /** Largest sealed room, in blocks of air. Anything bigger counts as open air. */
+    public static int roomMaxVolume() {
+        return intOr(roomMaxVolume, ROOM_MAX_VOLUME_DEFAULT);
+    }
+
+    /**
+     * How fast rooms leak: the share of the way back to the outside atmosphere a room goes each
+     * tick, per block of wall, divided by the blocks of air inside.
+     */
+    public static double roomLeakRate() {
+        return doubleOr(roomLeakRate, ROOM_LEAK_RATE_DEFAULT);
+    }
+
     // --- energy ---------------------------------------------------------------------------
 
     private static ForgeConfigSpec.ConfigValue<Integer> combustionGeneratorFePerTick;
@@ -304,6 +326,18 @@ public class ZPSConfig {
         reactorMaxInteriorExtent = builder
                 .comment("Largest interior size along any axis, in blocks.")
                 .defineInRange("MaxInteriorExtent", REACTOR_MAX_INTERIOR_EXTENT_DEFAULT, 1, 64);
+        builder.pop();
+
+        builder.comment("Sealed rooms.").push("Rooms");
+        roomMaxVolume = builder
+                .comment("Largest sealed room, in blocks of air. A space any bigger counts as open air,",
+                         "and is also as far as a vent or leak will search for walls.")
+                .defineInRange("MaxVolume", ROOM_MAX_VOLUME_DEFAULT, 1, 262_144);
+        roomLeakRate = builder
+                .comment("How fast rooms leak back to the outside atmosphere. Each tick a room goes this",
+                         "share of the way back per block of wall, divided by its blocks of air, so small",
+                         "rooms leak faster than big ones. 0 seals rooms perfectly.")
+                .defineInRange("LeakRate", ROOM_LEAK_RATE_DEFAULT, 0.0, 1.0);
         builder.pop();
 
         builder.comment("Energy.").push("Energy");

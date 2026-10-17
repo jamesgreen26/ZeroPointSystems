@@ -198,5 +198,11 @@ public class ZPSGamePackets {
                 .decoder(GasConditionsS2CPacket::decode)
                 .consumerMainThread(GasConditionsS2CPacket::handle)
                 .add();
+
+        INSTANCE.messageBuilder(RoomBreachS2CPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(RoomBreachS2CPacket::encode)
+                .decoder(RoomBreachS2CPacket::decode)
+                .consumerMainThread(RoomBreachS2CPacket::handle)
+                .add();
     }
 }

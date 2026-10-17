@@ -6,11 +6,17 @@ import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.gas.core.GasNodeBlockEntity;
 import g_mungus.zps.gas.GasJet;
 import g_mungus.zps.gas.ModGases;
+import g_mungus.zps.room.RoomManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import org.valkyrienskies.kelvin.api.GasType;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class DuctBlockEntity extends GasNodeBlockEntity {
 
@@ -33,7 +39,37 @@ public class DuctBlockEntity extends GasNodeBlockEntity {
             spawnLeakPlumes();
             return;
         }
+        leakIntoRooms();
         syncNodeState();
+    }
+
+    /**
+     * Hand what escapes this tick to the sealed room past each open face, if there is one. Kelvin
+     * takes the gas out itself, the same fraction {@link #massForSync()} reports, so this only says
+     * where it went.
+     */
+    private void leakIntoRooms() {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        BlockState state = getBlockState();
+        int leaking = LeakyPipeDuctNode.countLeakingFaces(state);
+        if (leaking <= 0 || !(state.getBlock() instanceof LeakyPipeDuctNode.DuctBlockFaces faces)) {
+            return;
+        }
+        double perFace = LeakyPipeDuctNode.leakRatioFor(state) / leaking;
+        Map<GasType, Double> escaping = new HashMap<>();
+        getGases().forEach((gas, mass) -> escaping.put(gas, mass * perFace));
+        if (escaping.isEmpty()) {
+            return;
+        }
+        double temperatureK = getTemperature();
+        RoomManager rooms = RoomManager.get(serverLevel);
+        for (Direction direction : Direction.values()) {
+            if (faces.connectionAt(state, direction) == DuctConnectionType.LEAK) {
+                rooms.addGas(serverLevel, worldPosition.relative(direction), escaping, temperatureK);
+            }
+        }
     }
 
     /**

@@ -5,9 +5,12 @@ import g_mungus.zps.gas.api.GasConditions;
 import g_mungus.zps.gas.api.GasEnvironment;
 import g_mungus.zps.gas.api.GasEnvironmentEvent;
 import g_mungus.zps.gas.api.GasEnvironments;
+import g_mungus.zps.room.Room;
+import g_mungus.zps.room.RoomManager;
 import g_mungus.zps.world.AtmosphericComposition;
 import g_mungus.zps.world.BiomeTemperature;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
@@ -26,7 +29,8 @@ import org.valkyrienskies.kelvin.impl.registry.GasTypeRegistry;
  * ({@code LivingEntityMixin}), it gets {@link GasExposure} to its {@link GasEnvironment}. That covers
  * players and anything riding, which the level's entity tick events skip.
  *
- * <p>The environment starts as the atmosphere at its eyes. The temperature is the biome's, in kelvin
+ * <p>The environment starts as the atmosphere at its eyes — a sealed room's gas if its eyes are in
+ * one ({@link RoomManager}), otherwise the biome's. Outside a room the temperature is the biome's, in kelvin
  * ({@link BiomeTemperature}); where the biome's {@link AtmosphericComposition} holds no registered gas
  * there is nothing to carry heat or cold, except {@code zps:vacuum}, which is no Kelvin gas but still
  * exposes an entity to the biome's temperature. Then queued modifiers ({@link GasEnvironments}) and
@@ -55,9 +59,18 @@ public final class AtmosphereExposure {
         }
     }
 
-    /** The atmosphere at {@code entity}'s eyes, before anything else has changed it. */
+    /**
+     * The atmosphere at {@code entity}'s eyes, before anything else has changed it: the sealed room
+     * its eyes are in, if any, otherwise the biome's.
+     */
     public static GasEnvironment atmosphere(LivingEntity entity) {
         BlockPos eyes = BlockPos.containing(entity.getEyePosition());
+        if (entity.level() instanceof ServerLevel level) {
+            Room room = RoomManager.get(level).roomAt(eyes);
+            if (room != null) {
+                return new GasEnvironment(entity, eyes, room.temperatureK(), room.gases());
+            }
+        }
         Biome biome = entity.level().getBiome(eyes).value();
         AtmosphericComposition composition = AtmosphericComposition.of(biome);
         return new GasEnvironment(entity, eyes, temperatureK(biome, composition, eyes), composition.at(eyes.getY()));

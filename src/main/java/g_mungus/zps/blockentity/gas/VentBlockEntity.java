@@ -3,9 +3,11 @@ package g_mungus.zps.blockentity.gas;
 import g_mungus.zps.block.gas.VentBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.gas.core.GasNodeBlockEntity;
+import g_mungus.zps.room.RoomManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.DirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -22,7 +24,8 @@ import java.util.Map;
 
 /**
  * Empties its node into the world every tick and draws the jet that comes out, unless the block is
- * shut — see {@link VentBlock#POWERED}.
+ * shut — see {@link VentBlock#POWERED}. What it empties goes into the sealed room in front, if
+ * there is one ({@link RoomManager}), and is otherwise gone.
  *
  * <p>Ported from Clockwork's {@code ExhaustBlockEntity} (Apache-2.0). The venting and the
  * pressure-to-speed curve are kept; its {@code AirCurrent} half — which made the vent behave as
@@ -107,12 +110,20 @@ public class VentBlockEntity extends GasNodeBlockEntity {
             return;
         }
 
+        double temperatureK = getTemperature();
+        Map<GasType, Double> removed = new HashMap<>();
         for (Map.Entry<GasType, Double> entry : Map.copyOf(gases).entrySet()) {
             if (KelvinMod.INSTANCE.forceGetKelvin()
                     .removeGas(getDuctNodePosition(), entry.getKey(), entry.getValue())) {
                 ventedSinceSync += entry.getValue();
                 totalVented += entry.getValue();
+                removed.put(entry.getKey(), entry.getValue());
             }
+        }
+        // Into the room in front, if there is one to fill.
+        if (level instanceof ServerLevel serverLevel && !removed.isEmpty()) {
+            Direction facing = getBlockState().getValue(DirectionalBlock.FACING);
+            RoomManager.get(serverLevel).addGas(serverLevel, worldPosition.relative(facing), removed, temperatureK);
         }
     }
 

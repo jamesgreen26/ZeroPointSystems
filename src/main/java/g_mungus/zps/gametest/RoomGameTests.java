@@ -1,0 +1,305 @@
+package g_mungus.zps.gametest;
+
+import g_mungus.zps.ZPSMod;
+import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
+import g_mungus.zps.gas.AtmosphereExposure;
+import g_mungus.zps.gas.ModGases;
+import g_mungus.zps.room.Room;
+import g_mungus.zps.room.RoomManager;
+import g_mungus.zps.world.AtmosphericComposition;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.gametest.framework.GameTest;
+import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.animal.Chicken;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.DirectionalBlock;
+import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
+import net.minecraft.world.level.block.state.properties.SlabType;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+import org.valkyrienskies.kelvin.api.GasType;
+
+import java.util.Map;
+
+/**
+ * Sealed rooms: one forms where gas goes into a space air cannot leave, replaces the atmosphere for
+ * anything inside, and is gone the moment a hole opens — a wall broken, a door opened.
+ */
+@GameTestHolder(ZPSMod.MOD_ID)
+@PrefixGameTestTemplate(false)
+public class RoomGameTests {
+
+    /**
+     * The framework walls and roofs every arena in barriers, which seal the air around the shell
+     * into one big room. Tests that open a hole take the roof off ({@code skyAccess}) so the air
+     * has somewhere to go.
+     */
+    private static final String TEMPLATE = "gametest/flat_11x9x11";
+
+    /** Stone shell; the air inside is 3x3x3, from MIN + 1 to MAX - 1. */
+    private static final BlockPos MIN = new BlockPos(3, 1, 3);
+    private static final BlockPos MAX = new BlockPos(7, 5, 7);
+    private static final BlockPos CENTRE = new BlockPos(5, 3, 5);
+    private static final BlockPos FLOOR_CELL = new BlockPos(5, 2, 5);
+    private static final BlockPos WEST_WALL = new BlockPos(3, 3, 5);
+
+    private static final ResourceLocation FLUX = ModGases.FLUX.getResourceLocation();
+
+    private static void buildShell(GameTestHelper helper) {
+        for (int x = MIN.getX(); x <= MAX.getX(); x++) {
+            for (int y = MIN.getY(); y <= MAX.getY(); y++) {
+                for (int z = MIN.getZ(); z <= MAX.getZ(); z++) {
+                    boolean wall = x == MIN.getX() || x == MAX.getX() || y == MIN.getY() || y == MAX.getY()
+                            || z == MIN.getZ() || z == MAX.getZ();
+                    helper.setBlock(new BlockPos(x, y, z), wall ? Blocks.STONE.defaultBlockState() : Blocks.AIR.defaultBlockState());
+                }
+            }
+        }
+        // The test world is reused between runs, and a room saved by an earlier run would still be here.
+        Room stale = manager(helper).knownRoomAt(helper.absolutePos(CENTRE));
+        if (stale != null) {
+            manager(helper).dissolve(stale);
+        }
+    }
+
+    private static RoomManager manager(GameTestHelper helper) {
+        return RoomManager.get(helper.getLevel());
+    }
+
+    private static void addFlux(GameTestHelper helper, BlockPos at, double kg) {
+        Map<GasType, Double> gas = Map.of(ModGases.FLUX, kg);
+        manager(helper).addGas(helper.getLevel(), helper.absolutePos(at), gas, 300.0);
+    }
+
+    private static Room roomAt(GameTestHelper helper, BlockPos relative) {
+        return manager(helper).roomAt(helper.absolutePos(relative));
+    }
+
+    /** Gas into a sealed box makes it a room: the outside air it held plus what went in. */
+    @GameTest(template = TEMPLATE)
+    public static void gasIntoSealedBox_makesARoom(GameTestHelper helper) {
+        buildShell(helper);
+        addFlux(helper, CENTRE, 5.0);
+
+        Room room = roomAt(helper, CENTRE);
+        helper.assertTrue(room != null, "Gas into a sealed box should make a room");
+        helper.assertTrue(room.volume() == 27, "The room should be the 27 cells inside, is " + room.volume());
+        helper.assertTrue(room.massKg().getOrDefault(FLUX, 0.0) == 5.0, "The room should hold the flux put in");
+        helper.assertTrue(room.massKg().getOrDefault(AtmosphericComposition.AIR, 0.0) > 0,
+                "The room should hold the air it sealed in");
+        helper.succeed();
+    }
+
+    /** Whoever is inside breathes the room, not the biome. */
+    @GameTest(template = TEMPLATE)
+    public static void room_replacesTheAtmosphere(GameTestHelper helper) {
+        buildShell(helper);
+        addFlux(helper, CENTRE, 5.0);
+        Chicken chicken = helper.spawnWithNoFreeWill(EntityType.CHICKEN, FLOOR_CELL);
+
+        Map<ResourceLocation, Double> fractions = AtmosphereExposure.atmosphere(chicken).fractions();
+        helper.assertTrue(fractions.getOrDefault(FLUX, 0.0) > 0, "The chicken should be in the room's flux, has " + fractions);
+        helper.succeed();
+    }
+
+    /** Without gas going in there is nothing to replace the outside with, so no room. */
+    @GameTest(template = TEMPLATE)
+    public static void sealedBoxWithoutGas_isNoRoom(GameTestHelper helper) {
+        buildShell(helper);
+        helper.assertTrue(roomAt(helper, CENTRE) == null, "No gas went in, so there should be no room");
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE, skyAccess = true)
+    public static void ironBarsInTheWall_letAirOut(GameTestHelper helper) {
+        buildShell(helper);
+        helper.setBlock(WEST_WALL, Blocks.IRON_BARS.defaultBlockState());
+        addFlux(helper, CENTRE, 5.0);
+
+        helper.assertTrue(roomAt(helper, CENTRE) == null, "Iron bars should let the air out");
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE, skyAccess = true)
+    public static void slabInTheWall_letsAirOut(GameTestHelper helper) {
+        buildShell(helper);
+        helper.setBlock(WEST_WALL, Blocks.STONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM));
+        addFlux(helper, CENTRE, 5.0);
+
+        helper.assertTrue(roomAt(helper, CENTRE) == null, "Half a wall should let the air out over it");
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void slabInside_stillSeals(GameTestHelper helper) {
+        buildShell(helper);
+        helper.setBlock(FLOOR_CELL, Blocks.STONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM));
+        addFlux(helper, CENTRE, 5.0);
+
+        Room room = roomAt(helper, CENTRE);
+        helper.assertTrue(room != null, "A slab inside should not stop the room sealing");
+        helper.assertTrue(room.volume() == 27, "The slab's cell is still air above it, so the room is 27 cells, is " + room.volume());
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 40, skyAccess = true)
+    public static void breakingAWall_breaksTheRoom(GameTestHelper helper) {
+        buildShell(helper);
+        addFlux(helper, CENTRE, 5.0);
+        helper.assertTrue(roomAt(helper, CENTRE) != null, "The room should have formed");
+
+        helper.destroyBlock(WEST_WALL);
+        helper.runAfterDelay(2, () -> {
+            helper.assertTrue(roomAt(helper, CENTRE) == null, "A broken wall should break the room");
+            helper.succeed();
+        });
+    }
+
+    /** A block placed inside changes nothing about the seal; the room is checked and stays. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 40)
+    public static void blockPlacedInside_keepsTheRoom(GameTestHelper helper) {
+        buildShell(helper);
+        addFlux(helper, CENTRE, 5.0);
+
+        helper.setBlock(FLOOR_CELL, Blocks.STONE);
+        helper.runAfterDelay(2, () -> {
+            Room room = roomAt(helper, CENTRE);
+            helper.assertTrue(room != null, "A block inside should not break the room");
+            helper.assertTrue(room.volume() == 26, "The room should have shrunk by the block, is " + room.volume());
+            // Less only the little that has leaked out since.
+            helper.assertTrue(room.massKg().getOrDefault(FLUX, 0.0) > 4.99, "The room should keep its gas");
+            helper.succeed();
+        });
+    }
+
+    /** Doors open without a neighbour update, so this is the path that has to catch every change. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 40, skyAccess = true)
+    public static void openingADoor_breaksTheRoom(GameTestHelper helper) {
+        buildShell(helper);
+        BlockPos lower = new BlockPos(3, 2, 5);
+        BlockPos upper = lower.above();
+        BlockState door = Blocks.IRON_DOOR.defaultBlockState().setValue(DoorBlock.FACING, Direction.EAST);
+        helper.setBlock(lower, door.setValue(DoorBlock.HALF, DoubleBlockHalf.LOWER));
+        helper.setBlock(upper, door.setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER));
+        addFlux(helper, CENTRE, 5.0);
+        helper.assertTrue(roomAt(helper, CENTRE) != null, "A closed door should seal");
+
+        ServerLevel level = helper.getLevel();
+        BlockPos absolute = helper.absolutePos(lower);
+        ((DoorBlock) Blocks.IRON_DOOR).setOpen(null, level, level.getBlockState(absolute), absolute, true);
+        helper.runAfterDelay(2, () -> {
+            helper.assertTrue(roomAt(helper, CENTRE) == null, "An open door should break the room");
+            helper.succeed();
+        });
+    }
+
+    /** End to end: a vent set in the wall, fed from outside, fills the room. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void ventInTheWall_fillsTheRoom(GameTestHelper helper) {
+        buildShell(helper);
+        helper.setBlock(WEST_WALL, ModBlocks.VENT.get().defaultBlockState().setValue(DirectionalBlock.FACING, Direction.EAST));
+        BlockPos source = WEST_WALL.west();
+        helper.setBlock(source, ModBlocks.CREATIVE_GAS_GENERATOR.get().defaultBlockState());
+        if (!(helper.getBlockEntity(source) instanceof CreativeGasGeneratorBlockEntity generator)) {
+            helper.fail("The gas source has no block entity");
+            return;
+        }
+        generator.setSettings(FLUX, 0.005, 400.0);
+
+        helper.succeedWhen(() -> {
+            Room room = roomAt(helper, CENTRE);
+            helper.assertTrue(room != null, "The vent should have sealed the room");
+            helper.assertTrue(room.massKg().getOrDefault(FLUX, 0.0) > 0, "The room should be filling with flux");
+        });
+    }
+
+    /** Flux drains out through the walls and the outside air seeps back in. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 60)
+    public static void room_leaksBackTowardTheOutside(GameTestHelper helper) {
+        buildShell(helper);
+        addFlux(helper, CENTRE, 5.0);
+        Room room = roomAt(helper, CENTRE);
+        helper.assertTrue(room != null, "The room should have formed");
+
+        helper.runAfterDelay(20, () -> {
+            double flux = room.massKg().getOrDefault(FLUX, 0.0);
+            helper.assertTrue(flux < 5.0, "Flux should be leaking out, still " + flux);
+            helper.assertTrue(flux > 4.5, "A 3x3x3 room should take about a minute to lose half, already down to " + flux);
+            helper.succeed();
+        });
+    }
+
+    /** More wall for the same air leaks faster: the 3x3x3 shell has 54 wall blocks around 27 of air. */
+    @GameTest(template = TEMPLATE)
+    public static void leakRate_followsSurfaceArea(GameTestHelper helper) {
+        buildShell(helper);
+        addFlux(helper, CENTRE, 5.0);
+        Room room = roomAt(helper, CENTRE);
+        helper.assertTrue(room.surfaceArea() == 54, "The room should have 54 wall blocks, has " + room.surfaceArea());
+        double fraction = RoomManager.leakFraction(room, 1.0e-3);
+        helper.assertTrue(Math.abs(fraction - 2.0e-3) < 1e-12, "54 wall over 27 air at 1e-3 should leak 2e-3 a tick, is " + fraction);
+        helper.succeed();
+    }
+
+    /**
+     * A trickle too small to outpace the leak never makes the room any different from the outside,
+     * so it stays dormant — and stays the same room, found once, not searched for on every puff.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 80)
+    public static void trickle_doesNotSustainARoom(GameTestHelper helper) {
+        buildShell(helper);
+        addFlux(helper, CENTRE, 1.0e-4);
+        Room first = manager(helper).knownRoomAt(helper.absolutePos(CENTRE));
+        helper.assertTrue(first != null, "The room should have been found");
+        for (int tick = 1; tick <= 40; tick++) {
+            helper.runAfterDelay(tick, () -> addFlux(helper, CENTRE, 1.0e-4));
+        }
+
+        helper.runAfterDelay(45, () -> {
+            helper.assertTrue(roomAt(helper, CENTRE) == null, "A trickle should not keep the room going");
+            Room known = manager(helper).knownRoomAt(helper.absolutePos(CENTRE));
+            helper.assertTrue(known == first, "The dormant room should have been woken, not searched for again");
+            helper.succeed();
+        });
+    }
+
+    /** A supply that outpaces the leak keeps the room going. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 80)
+    public static void strongSupply_sustainsARoom(GameTestHelper helper) {
+        buildShell(helper);
+        for (int tick = 0; tick <= 40; tick++) {
+            helper.runAfterDelay(tick, () -> addFlux(helper, CENTRE, 0.05));
+        }
+
+        helper.runAfterDelay(41, () -> {
+            Room room = roomAt(helper, CENTRE);
+            helper.assertTrue(room != null, "A strong supply should keep the room going");
+            helper.assertTrue(room.massKg().getOrDefault(FLUX, 0.0) > 1.0, "The flux should have built up");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void room_survivesASaveAndLoad(GameTestHelper helper) {
+        buildShell(helper);
+        addFlux(helper, CENTRE, 5.0);
+        ServerLevel level = helper.getLevel();
+
+        CompoundTag saved = manager(helper).save(new CompoundTag(), level.registryAccess());
+        RoomManager loaded = RoomManager.load(saved, level.registryAccess());
+        Room room = loaded.roomAt(helper.absolutePos(CENTRE));
+        helper.assertTrue(room != null, "The room should load back");
+        helper.assertTrue(room.volume() == 27, "The room should load with its cells");
+        helper.assertTrue(room.massKg().getOrDefault(FLUX, 0.0) == 5.0, "The room should load with its gas");
+        helper.succeed();
+    }
+}

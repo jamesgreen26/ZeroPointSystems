@@ -4,7 +4,7 @@ import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.gas.core.GasEdgeNegotiator;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.config.ZPSConfig;
-import g_mungus.zps.gas.ModGasTags;
+import g_mungus.zps.gas.GasExposure;
 import g_mungus.zps.gas.ModGases;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
@@ -20,6 +20,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.state.BlockState;
@@ -34,6 +35,7 @@ import org.valkyrienskies.kelvin.api.GasType;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -320,7 +322,8 @@ public final class ReactorManager extends SavedData {
             double pressure = kelvin.getPressureAt(host);
             boolean lit = temperature >= ignition;
             reactor.setLit(lit);
-            ReactorHazards.exposeEntitiesInside(level, reactor, empty ? Double.NaN : temperature, !isBreathable(level, masses));
+            Map<ResourceLocation, Double> gases = gasesById(masses);
+            ReactorHazards.exposeEntitiesInside(level, reactor, gases.isEmpty() ? Double.NaN : temperature, gases);
             syncHeat(level, reactor, temperature);
             if (level.getGameTime() % ReactorSync.STATE_SYNC_INTERVAL == 0) {
                 syncWatchers(level, reactor);
@@ -417,15 +420,15 @@ public final class ReactorManager extends SavedData {
     }
 
     /** Whether a chamber holding these masses counts as empty: no gas above the trace threshold. */
-    /** Whether any gas in {@code masses}, beyond a trace, is {@link ModGasTags#BREATHABLE}. */
-    private static boolean isBreathable(ServerLevel level, Map<GasType, Double> masses) {
-        for (Map.Entry<GasType, Double> entry : masses.entrySet()) {
-            if (entry.getValue() > ReactorTuning.EMPTY_GAS_THRESHOLD_KG
-                    && ModGasTags.isBreathable(level, entry.getKey().getResourceLocation())) {
-                return true;
+    /** The chamber's gases by id and mass, leaving out traces below {@link GasExposure#MIN_GAS_KG}. */
+    private static Map<ResourceLocation, Double> gasesById(Map<GasType, Double> masses) {
+        Map<ResourceLocation, Double> gases = new HashMap<>();
+        masses.forEach((gas, mass) -> {
+            if (mass >= GasExposure.MIN_GAS_KG) {
+                gases.put(gas.getResourceLocation(), mass);
             }
-        }
-        return false;
+        });
+        return gases;
     }
 
     public static boolean isEmpty(Map<GasType, Double> masses) {

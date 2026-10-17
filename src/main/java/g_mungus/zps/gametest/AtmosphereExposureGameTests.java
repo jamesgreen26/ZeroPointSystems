@@ -5,6 +5,7 @@ import g_mungus.zps.ZPSMod;
 import g_mungus.zps.gas.AtmosphereBreather;
 import g_mungus.zps.gas.AtmosphereExposure;
 import g_mungus.zps.gas.ModGasTags;
+import g_mungus.zps.gas.api.GasConditions;
 import g_mungus.zps.world.AtmosphericComposition;
 import g_mungus.zps.world.BiomeTemperature;
 import g_mungus.zps.world.YRange;
@@ -22,6 +23,7 @@ import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import org.valkyrienskies.kelvin.impl.registry.GasTypeRegistry;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -111,6 +113,23 @@ public class AtmosphereExposureGameTests {
             if (breather.zps$isSyncedDrowning()) helper.fail("A player back in air should have been told it is breathing");
             helper.succeed();
         });
+    }
+
+    /** The server keeps what it applied to a player, for the debug screen to ask for. */
+    @GameTest(template = TEMPLATE)
+    public static void playerConditions_areKept(GameTestHelper helper) {
+        ServerPlayer player = FakePlayerFactory.get(helper.getLevel(),
+                new GameProfile(UUID.nameUUIDFromBytes("zps:gas_conditions".getBytes()), "[ZPS gas conditions]"));
+        BlockPos column = helper.absolutePos(new BlockPos(3, 2, 3));
+        player.moveTo(column.getX() + 0.5, 2100, column.getZ() + 0.5);
+        player.baseTick();
+
+        GasConditions conditions = ((AtmosphereBreather) player).zps$getGasConditions();
+        if (conditions == null) helper.fail("The player's gas conditions should have been kept");
+        else if (conditions.breathable() || !conditions.gases().equals(List.of(AtmosphericComposition.VACUUM)) || !conditions.exposed()) {
+            helper.fail("A player in vacuum should be exposed to unbreathable zps:vacuum, was " + conditions);
+        }
+        helper.succeed();
     }
 
     /** A pig hung in the sky over the test, at absolute height {@code y}, ticking but not falling. */

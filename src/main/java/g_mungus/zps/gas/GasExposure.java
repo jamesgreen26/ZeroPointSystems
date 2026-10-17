@@ -36,6 +36,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
  */
 public final class GasExposure {
 
+    /** Less than this of a gas, in kilograms (0.01 g), is a trace an entity is not exposed to. */
+    public static final double MIN_GAS_KG = 1.0e-5;
     /** Gas hotter than this, in kelvin, hurts an entity as lava does rather than as fire. */
     public static final double LAVA_TEMPERATURE_K = 5000.0;
     /** How long an entity keeps burning after the gas that lit it has passed, in seconds. */

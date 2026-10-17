@@ -7,6 +7,7 @@ import g_mungus.zps.blockentity.gas.VentBlockEntity;
 import g_mungus.zps.compat.Compat;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.gas.GasExposure;
+import g_mungus.zps.gas.api.GasEnvironmentEvent;
 import g_mungus.zps.networking.DuctCycleRefusedS2CPacket;
 import g_mungus.zps.networking.DuctTravelStateS2CPacket;
 import net.minecraft.core.BlockPos;
@@ -17,6 +18,7 @@ import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
@@ -48,6 +50,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -550,10 +553,6 @@ public class DuctTravelEntity extends Entity {
 
         entityData.set(VENT_FACING, facingOf(state));
 
-        if (!isTravelling()) {
-            exposeToGas();
-        }
-
         if (cooldown > 0) {
             cooldown--;
         }
@@ -593,25 +592,22 @@ public class DuctTravelEntity extends Entity {
     }
 
     /**
-     * A vent with hot or cold gas going through it is no place to put your head: the rider gets
-     * {@link GasExposure} to whatever is passing, for as long as they stay and the gas stays as it
-     * is — which, since a hop is always available, is their choice.
-     *
-     * <p>Only while sitting in the vent: between vents the rider is nowhere, and nothing reaches
-     * them there. Only the temperature, too: the rider still breathes the atmosphere, which
-     * {@code AtmosphereExposure} handles for every living entity.
+     * The temperature a rider is exposed to: whatever is passing the vent, or {@link Double#NaN} for
+     * nothing — between vents the rider is nowhere, and nothing reaches them there.
      */
-    private void exposeToGas() {
-        if (!(level().getBlockEntity(ventPos) instanceof VentBlockEntity vent)) {
-            return;
+    public double riderGasTemperatureK() {
+        if (isTravelling() || !(level().getBlockEntity(ventPos) instanceof VentBlockEntity vent)) {
+            return Double.NaN;
         }
-        double temperature = vent.gasTemperatureK();
-        if (!GasExposure.isHarmful(temperature)) {
-            return;
+        return vent.gasTemperatureK();
+    }
+
+    /** The gas a rider is in from the vent, as fractions of its mix; empty when {@link #riderGasTemperatureK()} is NaN. */
+    public Map<ResourceLocation, Double> riderGases() {
+        if (isTravelling() || !(level().getBlockEntity(ventPos) instanceof VentBlockEntity vent)) {
+            return Map.of();
         }
-        for (Entity passenger : getPassengers()) {
-            GasExposure.expose(passenger, temperature, false);
-        }
+        return vent.gasesPassing();
     }
 
     /** The player riding this, if there is one. There is never more than one. */
@@ -803,6 +799,20 @@ public class DuctTravelEntity extends Entity {
     public static final class RiderRules {
 
         private RiderRules() {
+        }
+
+        /**
+         * A vent with hot or cold gas going through it is no place to put your head: the rider gets
+         * {@link GasExposure} to whatever is passing, for as long as they stay and the gas stays as
+         * it is — which, since a hop is always available, is their choice. The vent's temperature
+         * is the rider's, and its gas joins the air around the vent, the two in equal measure.
+         */
+        @SubscribeEvent
+        public static void onGasEnvironment(GasEnvironmentEvent event) {
+            if (event.getEntity().getVehicle() instanceof DuctTravelEntity duct) {
+                event.getEnvironment().setTemperatureK(duct.riderGasTemperatureK());
+                duct.riderGases().forEach(event.getEnvironment()::addGas);
+            }
         }
 
         @SubscribeEvent

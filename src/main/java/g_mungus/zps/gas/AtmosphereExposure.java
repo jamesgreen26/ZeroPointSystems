@@ -1,33 +1,37 @@
 package g_mungus.zps.gas;
 
 import g_mungus.zps.ZPSMod;
-import g_mungus.zps.entity.DuctTravelEntity;
+import g_mungus.zps.gas.api.GasConditions;
+import g_mungus.zps.gas.api.GasEnvironment;
+import g_mungus.zps.gas.api.GasEnvironmentEvent;
+import g_mungus.zps.gas.api.GasEnvironments;
 import g_mungus.zps.world.AtmosphericComposition;
 import g_mungus.zps.world.BiomeTemperature;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.living.LivingBreatheEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import org.valkyrienskies.kelvin.impl.registry.GasTypeRegistry;
 
 /**
- * Every living entity is always in the air around it: each tick, from the start of its base tick
- * ({@code LivingEntityMixin}), it gets {@link GasExposure} to the atmosphere at its eyes. That covers
+ * Every living entity is always in some gas: each server tick, from the start of its base tick
+ * ({@code LivingEntityMixin}), it gets {@link GasExposure} to its {@link GasEnvironment}. That covers
  * players and anything riding, which the level's entity tick events skip.
  *
- * <p>The temperature is the biome's, in kelvin ({@link BiomeTemperature}). Where the biome's
- * {@link AtmosphericComposition} holds no registered gas there is nothing to carry heat or cold,
- * except {@code zps:vacuum}, which is no Kelvin gas but still exposes an entity to the biome's
- * temperature. The entity drowns unless some gas there is {@link ModGasTags#BREATHABLE}.
- *
- * <p>A Vent rider breathes the atmosphere like anyone else, but takes its temperature from the
- * gas passing the vent instead ({@link DuctTravelEntity}).
+ * <p>The environment starts as the atmosphere at its eyes. The temperature is the biome's, in kelvin
+ * ({@link BiomeTemperature}); where the biome's {@link AtmosphericComposition} holds no registered gas
+ * there is nothing to carry heat or cold, except {@code zps:vacuum}, which is no Kelvin gas but still
+ * exposes an entity to the biome's temperature. Then queued modifiers ({@link GasEnvironments}) and
+ * {@link GasEnvironmentEvent} listeners change it — a reactor's chamber, a vent's gas — and what is
+ * left is applied once.
  */
 @EventBusSubscriber(modid = ZPSMod.MOD_ID)
 public final class AtmosphereExposure {
@@ -35,19 +39,28 @@ public final class AtmosphereExposure {
     private AtmosphereExposure() {
     }
 
-    /** One tick of the atmosphere for {@code entity}, at the start of its base tick. Server side. */
+    /** One tick of gas for {@code entity}, at the start of its base tick. Server side. */
     public static void tick(LivingEntity entity) {
-        Level level = entity.level();
-        if (level.isClientSide() || !entity.isAlive()) {
+        if (entity.level().isClientSide() || !entity.isAlive()) {
             return;
         }
+        GasEnvironment environment = atmosphere(entity);
+        GasEnvironments.applyQueued(environment);
+        NeoForge.EVENT_BUS.post(new GasEnvironmentEvent(entity, environment));
+        if (environment.isExposed()) {
+            GasExposure.expose(entity, environment.temperatureK(), !environment.isBreathable());
+        }
+        if (entity instanceof Player) {
+            ((AtmosphereBreather) entity).zps$setGasConditions(GasConditions.of(environment));
+        }
+    }
+
+    /** The atmosphere at {@code entity}'s eyes, before anything else has changed it. */
+    public static GasEnvironment atmosphere(LivingEntity entity) {
         BlockPos eyes = BlockPos.containing(entity.getEyePosition());
-        Biome biome = level.getBiome(eyes).value();
+        Biome biome = entity.level().getBiome(eyes).value();
         AtmosphericComposition composition = AtmosphericComposition.of(biome);
-        double temperature = entity.getVehicle() instanceof DuctTravelEntity
-                ? Double.NaN
-                : temperatureK(biome, composition, eyes);
-        GasExposure.expose(entity, temperature, !isBreathable(level, composition, eyes.getY()));
+        return new GasEnvironment(entity, eyes, temperatureK(biome, composition, eyes), composition.at(eyes.getY()));
     }
 
     @SubscribeEvent

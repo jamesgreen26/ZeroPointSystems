@@ -26,7 +26,7 @@ public class GasExposureGameTests {
     /** A pig exposed to gas at {@code temperature} kelvin every tick until the test ends. */
     private static Pig pigIn(GameTestHelper helper, double temperature) {
         Pig pig = helper.spawnWithNoFreeWill(EntityType.PIG, STAND);
-        helper.onEachTick(() -> GasExposure.expose(pig, temperature));
+        helper.onEachTick(() -> GasExposure.expose(pig, temperature, false));
         return pig;
     }
 
@@ -37,6 +37,33 @@ public class GasExposureGameTests {
         helper.runAfterDelay(30, () -> {
             helper.assertTrue(pig.isOnFire(), "The pig should be on fire");
             helper.assertTrue(pig.getHealth() < pig.getMaxHealth(), "The pig should have been hurt");
+            helper.succeed();
+        });
+    }
+
+    /** Past 5000 K the gas hurts as lava: harder, and burning for longer, than plain hot gas. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void searingGasHurtsAsLava(GameTestHelper helper) {
+        Pig pig = pigIn(helper, GasExposure.LAVA_TEMPERATURE_K + 1.0);
+
+        helper.runAfterDelay(2, () -> {
+            helper.assertTrue(pig.getHealth() <= pig.getMaxHealth() - 4.0f,
+                    "The pig should have taken lava's 4 damage, has " + pig.getHealth());
+            helper.assertTrue(pig.getRemainingFireTicks() > GasExposure.BURN_SECONDS * 20,
+                    "The pig should be burning as long as lava sets it, has " + pig.getRemainingFireTicks() + " ticks");
+            helper.succeed();
+        });
+    }
+
+    /** Right at 5000 K it is still only hot gas. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void gasAt5000KBurnsAsFire(GameTestHelper helper) {
+        Pig pig = pigIn(helper, GasExposure.LAVA_TEMPERATURE_K);
+
+        helper.runAfterDelay(2, () -> {
+            helper.assertTrue(pig.getHealth() > pig.getMaxHealth() - 4.0f,
+                    "The pig should have taken fire's damage, not lava's, has " + pig.getHealth());
+            helper.assertTrue(pig.isOnFire(), "The pig should be on fire");
             helper.succeed();
         });
     }

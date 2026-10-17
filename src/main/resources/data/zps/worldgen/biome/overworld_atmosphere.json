@@ -12,5 +12,9 @@
   "spawners": {},
   "spawn_costs": {},
   "carvers": {},
-  "features": []
+  "features": [],
+  "zps:atmospheric_composition": {
+    "*..2047": { "kelvin:air": 1.0 },
+    "2048..*": { "zps:vacuum": 1.0 }
+  }
 }

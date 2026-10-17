@@ -598,7 +598,8 @@ public class DuctTravelEntity extends Entity {
      * is — which, since a hop is always available, is their choice.
      *
      * <p>Only while sitting in the vent: between vents the rider is nowhere, and nothing reaches
-     * them there.
+     * them there. Only the temperature, too: the rider still breathes the atmosphere, which
+     * {@code AtmosphereExposure} handles for every living entity.
      */
     private void exposeToGas() {
         if (!(level().getBlockEntity(ventPos) instanceof VentBlockEntity vent)) {
@@ -609,7 +610,7 @@ public class DuctTravelEntity extends Entity {
             return;
         }
         for (Entity passenger : getPassengers()) {
-            GasExposure.expose(passenger, temperature);
+            GasExposure.expose(passenger, temperature, false);
         }
     }
 

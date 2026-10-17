@@ -599,12 +599,43 @@ public class FusionReactorGameTests {
         buildShell(helper);
         Pig pig = helper.spawnWithNoFreeWill(EntityType.PIG, CAVITY_FLOOR);
         seedChamber(helper);
-        setChamberTemperature(helper, ZPSConfig.reactorIgnitionTemperatureK() - 5_000.0);
+        // Between the gas exposure thresholds: neither burning nor freezing.
+        setChamberTemperature(helper, (ZPSConfig.entityBurnGasTemperatureK() + ZPSConfig.entityFreezeGasTemperatureK()) / 2.0);
 
         helper.runAfterDelay(20, () -> {
             helper.assertFalse(reactorAt(helper, WEST_WALL).isLit(), "The reactor should not be lit");
             helper.assertTrue(pig.getHealth() == pig.getMaxHealth(), "The pig should be unhurt");
             helper.assertFalse(pig.isOnFire(), "The pig should not be on fire");
+            helper.succeed();
+        });
+    }
+
+    /** The hazard is the gas, not ignition: a chamber short of lighting is still far past the burn threshold. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void hotUnlitReactorBurnsWhatIsInside(GameTestHelper helper) {
+        buildShell(helper);
+        Pig pig = helper.spawnWithNoFreeWill(EntityType.PIG, CAVITY_FLOOR);
+        seedChamber(helper);
+        setChamberTemperature(helper, ZPSConfig.reactorIgnitionTemperatureK() - 5_000.0);
+
+        helper.runAfterDelay(5, () -> {
+            helper.assertFalse(reactorAt(helper, WEST_WALL).isLit(), "The reactor should not be lit");
+            helper.assertTrue(pig.isOnFire(), "The pig should be on fire");
+            helper.succeed();
+        });
+    }
+
+    /** The chamber holds flux, which is not breathable: whatever is inside drowns as if underwater. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void reactorGasCannotBeBreathed(GameTestHelper helper) {
+        buildShell(helper);
+        Pig pig = helper.spawnWithNoFreeWill(EntityType.PIG, CAVITY_FLOOR);
+        seedChamber(helper);
+        setChamberTemperature(helper, (ZPSConfig.entityBurnGasTemperatureK() + ZPSConfig.entityFreezeGasTemperatureK()) / 2.0);
+
+        helper.runAfterDelay(20, () -> {
+            helper.assertTrue(pig.getAirSupply() < pig.getMaxAirSupply(),
+                    "The pig should be losing air, has " + pig.getAirSupply());
             helper.succeed();
         });
     }

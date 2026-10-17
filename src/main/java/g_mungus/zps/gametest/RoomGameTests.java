@@ -3,6 +3,8 @@ package g_mungus.zps.gametest;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.LargeSpaceDoorBlock;
 import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.block.cableNetwork.CableBlock;
+import g_mungus.zps.block.cableNetwork.properties.InsulationType;
 import g_mungus.zps.block.gas.GasGaugeBlock;
 import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
 import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity;
@@ -23,6 +25,8 @@ import net.minecraft.world.entity.animal.Chicken;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DirectionalBlock;
 import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.FenceBlock;
+import net.minecraft.world.level.block.FenceGateBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
@@ -119,6 +123,87 @@ public class RoomGameTests {
     public static void sealedBoxWithoutGas_isNoRoom(GameTestHelper helper) {
         buildShell(helper);
         helper.assertTrue(roomAt(helper, CENTRE) == null, "No gas went in, so there should be no room");
+        helper.succeed();
+    }
+
+    /** Seals the shell with {@code state} in the west wall, puts gas in, and says whether a room formed. */
+    private static boolean sealsWith(GameTestHelper helper, BlockPos at, BlockState state) {
+        buildShell(helper);
+        helper.setBlock(at, state);
+        addFlux(helper, CENTRE, 5.0);
+        return roomAt(helper, CENTRE) != null;
+    }
+
+    @GameTest(template = TEMPLATE, skyAccess = true)
+    public static void copperGrateInTheWall_letsAirOut(GameTestHelper helper) {
+        helper.assertFalse(sealsWith(helper, WEST_WALL, Blocks.WAXED_OXIDIZED_COPPER_GRATE.defaultBlockState()),
+                "A copper grate should let the air out");
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE, skyAccess = true)
+    public static void spaceGratingInTheWall_letsAirOut(GameTestHelper helper) {
+        helper.assertFalse(sealsWith(helper, WEST_WALL, ModBlocks.SPACE_GRATING_BLOCK.get().defaultBlockState()),
+                "Space grating should let the air out");
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE, skyAccess = true)
+    public static void spaceTrussInTheWall_letsAirOut(GameTestHelper helper) {
+        helper.assertFalse(sealsWith(helper, WEST_WALL, ModBlocks.SPACE_TRUSS.get().defaultBlockState()),
+                "A space truss should let the air out");
+        helper.succeed();
+    }
+
+    /** A closed gate is a plate across the gap, which would seal but for being a gate. */
+    @GameTest(template = TEMPLATE, skyAccess = true)
+    public static void closedFenceGateInTheWall_letsAirOut(GameTestHelper helper) {
+        helper.assertFalse(sealsWith(helper, WEST_WALL, Blocks.OAK_FENCE_GATE.defaultBlockState()
+                        .setValue(FenceGateBlock.FACING, Direction.EAST)),
+                "A closed fence gate should let the air out");
+        helper.succeed();
+    }
+
+    /** A fence joined along the wall is a plate across the gap too. */
+    @GameTest(template = TEMPLATE, skyAccess = true)
+    public static void fenceInTheWall_letsAirOut(GameTestHelper helper) {
+        helper.assertFalse(sealsWith(helper, WEST_WALL, Blocks.OAK_FENCE.defaultBlockState()
+                        .setValue(FenceBlock.NORTH, true).setValue(FenceBlock.SOUTH, true)),
+                "A fence should let the air out");
+        helper.succeed();
+    }
+
+    /** A catwalk is a full floor plate, which would seal a ceiling but for being mesh. */
+    @GameTest(template = TEMPLATE, skyAccess = true)
+    public static void catwalkInTheCeiling_letsAirOut(GameTestHelper helper) {
+        helper.assertFalse(sealsWith(helper, CENTRE.above(2), ModBlocks.CATWALK.get().defaultBlockState()),
+                "A catwalk should let the air out");
+        helper.succeed();
+    }
+
+    /** A cable boxed in grating is grating as far as the air goes; one in solid insulation still seals. */
+    @GameTest(template = TEMPLATE, skyAccess = true)
+    public static void gratingCableInTheWall_letsAirOut(GameTestHelper helper) {
+        helper.assertFalse(sealsWith(helper, WEST_WALL, ModBlocks.CABLE.get().defaultBlockState()
+                        .setValue(CableBlock.INSULATION_TYPE, InsulationType.GRATING)),
+                "A cable in grating should let the air out");
+        helper.succeed();
+    }
+
+    /** A cable under a catwalk has the catwalk's full top surface, and lets air through as the catwalk does. */
+    @GameTest(template = TEMPLATE, skyAccess = true)
+    public static void catwalkCableInTheCeiling_letsAirOut(GameTestHelper helper) {
+        helper.assertFalse(sealsWith(helper, CENTRE.above(2), ModBlocks.CABLE.get().defaultBlockState()
+                        .setValue(CableBlock.INSULATION_TYPE, InsulationType.CATWALK)),
+                "A cable under a catwalk should let the air out");
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE, skyAccess = true)
+    public static void insulatedCableInTheWall_seals(GameTestHelper helper) {
+        helper.assertTrue(sealsWith(helper, WEST_WALL, ModBlocks.CABLE.get().defaultBlockState()
+                        .setValue(CableBlock.INSULATION_TYPE, InsulationType.INSULATION)),
+                "A cable in solid insulation should seal like any full block");
         helper.succeed();
     }
 

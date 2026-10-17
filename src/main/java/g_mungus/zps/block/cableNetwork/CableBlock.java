@@ -1,5 +1,6 @@
 package g_mungus.zps.block.cableNetwork;
 
+import g_mungus.zps.room.AirPermeable;
 import g_mungus.zps.block.CableInsulationBlock;
 import g_mungus.zps.block.CatwalkBlock;
 import g_mungus.zps.block.SpaceGratingBlock;
@@ -41,7 +42,7 @@ import java.util.List;
 
 import static g_mungus.zps.block.cableNetwork.properties.InsulationType.*;
 
-public class CableBlock extends CableComponentBlock {
+public class CableBlock extends CableComponentBlock implements AirPermeable {
     public static final BooleanProperty NORTH = BooleanProperty.create("north");
     public static final BooleanProperty SOUTH = BooleanProperty.create("south");
     public static final BooleanProperty EAST = BooleanProperty.create("east");
@@ -152,6 +153,19 @@ public class CableBlock extends CableComponentBlock {
             return true;
         }
         return super.skipRendering(state, adjacentState, direction);
+    }
+
+    /**
+     * A cable in grating or under a catwalk lets air through, as the grating and the catwalk do themselves,
+     * though the catwalk's top is a full surface; one in solid insulation does not.
+     */
+    @Override
+    public boolean letsAirThrough(BlockState state) {
+        if (!state.hasProperty(INSULATION_TYPE)) {
+            return false;
+        }
+        InsulationType insulation = state.getValue(INSULATION_TYPE);
+        return insulation == GRATING || insulation == CATWALK;
     }
 
     @Override

@@ -310,7 +310,8 @@ public final class RoomScanner {
     }
 
     public static VoxelShape shapeOf(ServerLevel level, BlockPos pos, BlockState state) {
-        if (state.is(AIR_PERMEABLE)) {
+        if (state.is(AIR_PERMEABLE)
+                || state.getBlock() instanceof AirPermeable permeable && permeable.letsAirThrough(state)) {
             return Shapes.empty();
         }
         if (state.is(AIRTIGHT)) {

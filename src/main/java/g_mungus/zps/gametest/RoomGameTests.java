@@ -1,6 +1,7 @@
 package g_mungus.zps.gametest;
 
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.block.LargeSpaceDoorBlock;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
 import g_mungus.zps.gas.AtmosphereExposure;
@@ -198,6 +199,44 @@ public class RoomGameTests {
         ((DoorBlock) Blocks.IRON_DOOR).setOpen(null, level, level.getBlockState(absolute), absolute, true);
         helper.runAfterDelay(2, () -> {
             helper.assertTrue(roomAt(helper, CENTRE) == null, "An open door should break the room");
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Fills the shell's whole north wall (z = 3, x 4..6, y 2..4) with a Large Space Door. Its closed
+     * plate is inset a pixel from the cell's face, so it touches neither face of the cell it is in.
+     */
+    private static void placeLargeSpaceDoor(GameTestHelper helper, boolean open) {
+        BlockPos controller = new BlockPos(5, 2, 3);
+        BlockState door = ModBlocks.LARGE_SPACE_DOOR.get().defaultBlockState()
+                .setValue(LargeSpaceDoorBlock.FACING, Direction.NORTH)
+                .setValue(LargeSpaceDoorBlock.OPEN, open);
+        for (LargeSpaceDoorBlock.Part part : LargeSpaceDoorBlock.Part.values()) {
+            helper.setBlock(LargeSpaceDoorBlock.partPos(controller, door, part), door.setValue(LargeSpaceDoorBlock.PART, part));
+        }
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void closedLargeSpaceDoor_seals(GameTestHelper helper) {
+        buildShell(helper);
+        placeLargeSpaceDoor(helper, false);
+        addFlux(helper, CENTRE, 5.0);
+
+        helper.assertTrue(roomAt(helper, CENTRE) != null, "A closed Large Space Door should seal");
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE, timeoutTicks = 40)
+    public static void openingALargeSpaceDoor_breaksTheRoom(GameTestHelper helper) {
+        buildShell(helper);
+        placeLargeSpaceDoor(helper, false);
+        addFlux(helper, CENTRE, 5.0);
+        helper.assertTrue(roomAt(helper, CENTRE) != null, "A closed Large Space Door should seal");
+
+        placeLargeSpaceDoor(helper, true);
+        helper.runAfterDelay(2, () -> {
+            helper.assertTrue(roomAt(helper, CENTRE) == null, "An open Large Space Door should break the room");
             helper.succeed();
         });
     }

@@ -1,11 +1,9 @@
 package g_mungus.zps.room;
 
 import g_mungus.zps.ZPSMod;
-import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.Long2LongMap;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongIterator;
-import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.core.BlockPos;
@@ -47,7 +45,8 @@ public final class RoomScanner {
      *
      * <p>The fill walks pockets of air, not whole cells — see {@link CellRegions} — so a plate across
      * the middle of a cell seals as well as one against its face. A cell counts as interior once any
-     * pocket of it is reached.
+     * pocket of it is reached. It rises as it goes ({@link RisingQueue}), so open air reaches the
+     * top of the world and gives up long before it would reach the size limit.
      *
      * @param shapes    the collision shape at each position, or null for a hole (outside the world, unloaded)
      * @param maxVolume largest allowed interior, in cells
@@ -69,8 +68,7 @@ public final class RoomScanner {
         Long2LongOpenHashMap reached = new Long2LongOpenHashMap();
         // Every pocket of each cell that has more than one, to tell which are only partly reached.
         Long2LongOpenHashMap split = new Long2LongOpenHashMap();
-        LongArrayFIFOQueue queue = new LongArrayFIFOQueue();
-        IntArrayFIFOQueue queuedRegions = new IntArrayFIFOQueue();
+        RisingQueue queue = new RisingQueue();
 
         // Gas let out into a cell of several pockets could be in any of them.
         long startKey = start.asLong();
@@ -78,16 +76,15 @@ public final class RoomScanner {
         noteSplit(split, startKey, startRegions);
         for (int region = 0; region < startRegions.count(); region++) {
             reached.put(startKey, reached.get(startKey) | 1L << region);
-            queue.enqueue(startKey);
-            queuedRegions.enqueue(region);
+            queue.enqueue(startKey, region);
         }
 
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         BlockPos.MutableBlockPos next = new BlockPos.MutableBlockPos();
 
         while (!queue.isEmpty()) {
-            long current = queue.dequeueLong();
-            int region = queuedRegions.dequeueInt();
+            long current = queue.dequeue();
+            int region = queue.region();
             cursor.set(current);
             CellRegions here = CellRegions.of(shapes.apply(cursor));
 
@@ -117,8 +114,7 @@ public final class RoomScanner {
                         }
                         noteSplit(split, key, there);
                     }
-                    queue.enqueue(key);
-                    queuedRegions.enqueue(otherRegion);
+                    queue.enqueue(key, otherRegion);
                 }
                 if (!crossed) {
                     boundary.add(key);
@@ -182,8 +178,7 @@ public final class RoomScanner {
                               Function<BlockPos, @Nullable VoxelShape> shapes, int maxVolume,
                               LongSet added, LongSet boundary, Long2LongMap pocketsAfter) {
         Long2LongOpenHashMap reached = new Long2LongOpenHashMap();
-        LongArrayFIFOQueue queue = new LongArrayFIFOQueue();
-        IntArrayFIFOQueue queuedRegions = new IntArrayFIFOQueue();
+        RisingQueue queue = new RisingQueue();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         BlockPos.MutableBlockPos next = new BlockPos.MutableBlockPos();
 
@@ -214,7 +209,7 @@ public final class RoomScanner {
                     }
                     for (int to = 0; to < here.count(); to++) {
                         if (there.connects(from, direction.getOpposite(), here, to)
-                                && enter(cell, to, interior, pockets, changed, reached, added, queue, queuedRegions)
+                                && enter(cell, to, interior, pockets, changed, reached, added, queue)
                                 && interior.size() + added.size() > maxVolume) {
                             return Growth.ESCAPED;
                         }
@@ -224,8 +219,8 @@ public final class RoomScanner {
         }
 
         while (!queue.isEmpty()) {
-            long current = queue.dequeueLong();
-            int region = queuedRegions.dequeueInt();
+            long current = queue.dequeue();
+            int region = queue.region();
             cursor.set(current);
             CellRegions here = CellRegions.of(shapes.apply(cursor));
 
@@ -243,7 +238,7 @@ public final class RoomScanner {
                         continue;
                     }
                     crossed = true;
-                    if (enter(key, otherRegion, interior, pockets, changed, reached, added, queue, queuedRegions)
+                    if (enter(key, otherRegion, interior, pockets, changed, reached, added, queue)
                             && interior.size() + added.size() > maxVolume) {
                         return Growth.ESCAPED;
                     }
@@ -284,8 +279,7 @@ public final class RoomScanner {
      * @return whether this is a cell the room did not hold before, reached for the first time
      */
     private static boolean enter(long cell, int region, LongSet interior, Long2LongMap pockets, LongSet changed,
-                                 Long2LongMap reached, LongSet added, LongArrayFIFOQueue queue,
-                                 IntArrayFIFOQueue queuedRegions) {
+                                 Long2LongMap reached, LongSet added, RisingQueue queue) {
         long bit = 1L << region;
         boolean known = interior.contains(cell) && !changed.contains(cell);
         if (known && (!pockets.containsKey(cell) || (pockets.get(cell) & bit) != 0)) {
@@ -296,8 +290,7 @@ public final class RoomScanner {
             return false;
         }
         reached.put(cell, seen | bit);
-        queue.enqueue(cell);
-        queuedRegions.enqueue(region);
+        queue.enqueue(cell, region);
         return !interior.contains(cell) && added.add(cell);
     }
 

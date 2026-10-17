@@ -157,7 +157,9 @@ public class GasGaugeGameTests {
 
     @GameTest(template = TEMPLATE, timeoutTicks = 200)
     public static void pressureReadsOverTheDuctsRange(GameTestHelper helper) {
-        GasGaugeBlockEntity gauge = placeGauge(helper, Direction.UP);
+        // On a line: with nothing on its inlet the gauge would read the air around it instead.
+        placeSource(helper);
+        GasGaugeBlockEntity gauge = placeGauge(helper, Direction.SOUTH);
         fillGauge(helper, 300.0);
 
         helper.runAfterDelay(5, () -> {
@@ -182,7 +184,9 @@ public class GasGaugeGameTests {
 
     @GameTest(template = TEMPLATE, timeoutTicks = 200)
     public static void temperatureModeReadsTemperature(GameTestHelper helper) {
-        GasGaugeBlockEntity gauge = placeGauge(helper, Direction.UP);
+        // On a line: with nothing on its inlet the gauge would read the air around it instead.
+        placeSource(helper);
+        GasGaugeBlockEntity gauge = placeGauge(helper, Direction.SOUTH);
         fillGauge(helper, 900.0);
 
         helper.runAfterDelay(5, () -> {

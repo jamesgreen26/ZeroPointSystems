@@ -38,6 +38,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.valkyrienskies.kelvin.api.GasType;
 import org.valkyrienskies.kelvin.impl.registry.GasTypeRegistry;
+import org.valkyrienskies.kelvin.util.GasPhysics;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -105,6 +106,42 @@ public final class RoomManager extends SavedData {
 
     public int roomCount() {
         return rooms.size();
+    }
+
+    /** The pressure and temperature of the gas around something, as a gauge reads them. */
+    public record Ambient(double pressurePa, double temperatureK) {
+    }
+
+    /**
+     * The gas at {@code pos}: the room it is in, if any, otherwise the outside atmosphere. Pressure
+     * is worked out the way Kelvin works out a node's, from the gas's mass over its volume — the
+     * room's, or one cubic metre of the outside air. Nothing there to carry it reads as zero.
+     */
+    public Ambient ambientAt(ServerLevel level, BlockPos pos) {
+        Map<GasType, Double> kg = new HashMap<>();
+        double volume;
+        double temperatureK;
+        Room room = roomAt(pos);
+        if (room != null) {
+            room.massKg().forEach((gas, mass) -> addByType(kg, gas, mass));
+            volume = room.volume();
+            temperatureK = room.temperatureK();
+        } else {
+            outsideAir(level, pos, 1).forEach((gas, mass) -> addByType(kg, gas, mass));
+            volume = 1;
+            temperatureK = AtmosphereExposure.temperatureK(level, pos);
+        }
+        if (Double.isNaN(temperatureK)) {
+            return new Ambient(0, 0);
+        }
+        return new Ambient(GasPhysics.INSTANCE.calcPressureFromGamma(kg, volume, temperatureK), temperatureK);
+    }
+
+    private static void addByType(Map<GasType, Double> kg, ResourceLocation gas, double mass) {
+        GasType type = GasTypeRegistry.INSTANCE.getGasType(gas);
+        if (type != null && mass > 0) {
+            kg.merge(type, mass, Double::sum);
+        }
     }
 
     // --- gas in ------------------------------------------------------------------------------

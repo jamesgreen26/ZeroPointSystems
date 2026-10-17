@@ -2,17 +2,23 @@ package g_mungus.zps.blockentity.gas;
 
 import g_mungus.zps.block.gas.GasGaugeBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
+import g_mungus.zps.block.gas.core.GasEdgeNegotiator;
 import g_mungus.zps.blockentity.gas.core.GasNodeBlockEntity;
+import g_mungus.zps.room.RoomManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.valkyrienskies.kelvin.KelvinMod;
+import org.valkyrienskies.kelvin.api.DuctNetwork;
+import org.valkyrienskies.kelvin.api.DuctNodePos;
 
 import java.util.Locale;
 
@@ -29,7 +35,8 @@ import java.util.Locale;
  * needle's colour says which one is showing.
  *
  * <p>Nothing here moves gas. The node fills from the line it is bolted to and stays at the line's
- * pressure; the block only looks.
+ * pressure; the block only looks. With nothing on its inlet it reads the gas around it instead: the
+ * sealed room it is in, or the outside atmosphere — see {@link RoomManager#ambientAt}.
  */
 public class GasGaugeBlockEntity extends GasNodeBlockEntity {
 
@@ -110,6 +117,9 @@ public class GasGaugeBlockEntity extends GasNodeBlockEntity {
 
     private int lastComparatorOutput = -1;
 
+    /** What the gas around the gauge read this tick, or null while it is on a line. Server only. */
+    private RoomManager.@Nullable Ambient ambient;
+
     /** Where the needle was last drawn, as a fraction of the sweep. Client only. */
     private float clientNeedleFraction;
 
@@ -123,6 +133,7 @@ public class GasGaugeBlockEntity extends GasNodeBlockEntity {
         if (level == null || level.isClientSide()) {
             return;
         }
+        ambient = isOnALine() ? null : RoomManager.get((ServerLevel) level).ambientAt((ServerLevel) level, readPos());
         // What feeds the needle and the screen's readout; without it the client sees nothing.
         syncNodeState();
         updateComparator();
@@ -140,6 +151,44 @@ public class GasGaugeBlockEntity extends GasNodeBlockEntity {
     }
 
     // --- reading ----------------------------------------------------------------------------
+
+    /** Whether the inlet has joined a line. Server only. */
+    private boolean isOnALine() {
+        BlockState state = getBlockState();
+        if (!state.hasProperty(GasGaugeBlock.FACING) || level == null) {
+            return false;
+        }
+        DuctNodePos self = getDuctNodePosition();
+        DuctNodePos inlet = GasEdgeNegotiator.nodePos(level, worldPosition.relative(state.getValue(GasGaugeBlock.FACING).getOpposite()));
+        DuctNetwork<?> kelvin = KelvinMod.INSTANCE.forceGetKelvin();
+        return kelvin.getEdgeBetween(self, inlet) != null || kelvin.getEdgeBetween(inlet, self) != null;
+    }
+
+    /**
+     * Where the gas around the gauge is read: its own cell, which a gauge on a room's wall shares
+     * with the room's air, or failing a room there, the cell its dial faces.
+     */
+    private BlockPos readPos() {
+        BlockState state = getBlockState();
+        if (level instanceof ServerLevel serverLevel && RoomManager.get(serverLevel).roomAt(worldPosition) == null
+                && state.hasProperty(GasGaugeBlock.FACING)) {
+            BlockPos front = worldPosition.relative(state.getValue(GasGaugeBlock.FACING));
+            if (RoomManager.get(serverLevel).roomAt(front) != null) {
+                return front;
+            }
+        }
+        return worldPosition;
+    }
+
+    @Override
+    public double getPressure() {
+        return ambient != null && level != null && !level.isClientSide() ? ambient.pressurePa() : super.getPressure();
+    }
+
+    @Override
+    public double getTemperature() {
+        return ambient != null && level != null && !level.isClientSide() ? ambient.temperatureK() : super.getTemperature();
+    }
 
     /** The measured property in the current mode's unit. Simulated on the server, synced on the client. */
     public double getMeasuredValue() {

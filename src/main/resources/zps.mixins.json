@@ -9,6 +9,7 @@
     "ClientPacketListenerMixin",
     "EntityRenderDispatcherMixin",
     "KeyMappingMixin",
+    "LevelRendererAccessor",
     "LivingEntityRendererAccessor",
     "ParticleAccessor",
     "ParticleEngineMixin",

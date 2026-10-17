@@ -261,6 +261,9 @@ public class ModItems {
     public static final DeferredItem<Item> SPACE_DOOR = ITEMS.register("space_door",
             () -> new DoubleHighBlockItem(ModBlocks.SPACE_DOOR.get(), new Item.Properties()));
 
+    public static final DeferredItem<Item> LARGE_SPACE_DOOR = ITEMS.register("large_space_door",
+            () -> new BlockItem(ModBlocks.LARGE_SPACE_DOOR.get(), new Item.Properties()));
+
     public static final DeferredItem<Item> CATWALK = ITEMS.register("catwalk",
             () -> new CatwalkBlockItem(ModBlocks.CATWALK.get(), new Item.Properties()));
 

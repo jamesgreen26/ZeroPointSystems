@@ -165,6 +165,11 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(RollingMillBlockEntity::new,
                             ModBlocks.ROLLING_MILL.get()).build(null));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LargeSpaceDoorBlockEntity>> LARGE_SPACE_DOOR =
+            BLOCK_ENTITIES.register("large_space_door",
+                    () -> BlockEntityType.Builder.of(LargeSpaceDoorBlockEntity::new,
+                            ModBlocks.LARGE_SPACE_DOOR.get()).build(null));
+
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AssemblerBlockEntity>> ASSEMBLER =
             BLOCK_ENTITIES.register("assembler",
                     () -> BlockEntityType.Builder.of(AssemblerBlockEntity::new,

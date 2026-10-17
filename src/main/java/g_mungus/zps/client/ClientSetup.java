@@ -6,6 +6,7 @@ import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.client.model.connected.ConnectedModelLoader;
 import g_mungus.zps.client.model.connected.ConnectedTextureMeta;
+import g_mungus.zps.client.model.connected.PiecedTileSource;
 import g_mungus.zps.client.recipebook.ModRecipeBookCategories;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.recipe.ModRecipeBookTypes;
@@ -14,6 +15,7 @@ import net.createmod.catnip.config.ui.BaseConfigScreen;
 import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.client.event.RegisterRecipeBookCategoriesEvent;
 import java.util.List;
+import java.util.Objects;
 
 import g_mungus.zps.client.renderer.*;
 import g_mungus.zps.client.screens.CoalBurnerScreen;
@@ -50,6 +52,10 @@ import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ModelEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.fml.event.lifecycle.FMLLoadCompleteEvent;
 import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
 import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
@@ -63,13 +69,9 @@ import java.io.IOException;
 import net.minecraftforge.client.event.RegisterClientTooltipComponentFactoriesEvent;
 import g_mungus.zps.client.tooltip.ClientItemIconsTooltip;
 import g_mungus.zps.client.tooltip.ItemIconsTooltip;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModContainer;
-import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.event.lifecycle.FMLLoadCompleteEvent;
 
 @Mod.EventBusSubscriber(value = Dist.CLIENT, modid = ZPSMod.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class ClientSetup {
@@ -113,6 +115,11 @@ public class ClientSetup {
     @SubscribeEvent
     public static void onRegisterGeometryLoaders(ModelEvent.RegisterGeometryLoaders event) {
         event.register(ConnectedModelLoader.NAME, ConnectedModelLoader.INSTANCE);
+    }
+
+    static {
+        // Registered as the class loads, at mod construction, before any atlas is stitched.
+        Objects.requireNonNull(PiecedTileSource.TYPE);
     }
 
     /** The reactor glow's core shader. */

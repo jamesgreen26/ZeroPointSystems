@@ -20,6 +20,7 @@
     "RecipeBookComponentAccessor",
     "SelectorDeserializerNotMixin",
     "SoundEngineMixin",
+    "SpriteSourcesInvoker",
     "ponder.NavigatableSimiScreenAccessor",
     "ponder.NavigatableSimiScreenMixin",
     "ponder.PonderSceneAccessor",

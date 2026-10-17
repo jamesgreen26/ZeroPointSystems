@@ -13,6 +13,7 @@ import net.minecraft.client.resources.model.UnbakedModel;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.client.RenderTypeGroup;
 import net.minecraftforge.client.model.BakedModelWrapper;
@@ -63,7 +64,9 @@ public class ConnectedGeometry implements IUnbakedGeometry<ConnectedGeometry> {
         RandomSource rand = RandomSource.create(42L);
         ResourceLocation renderTypeHint = context.getRenderTypeHint();
         RenderTypeGroup renderTypes = renderTypeHint == null ? RenderTypeGroup.EMPTY : context.getRenderType(renderTypeHint);
-        return new ConnectingBakedModel(baked, rules, matchSurface, null, rand, renderTypes);
+        Function<ResourceLocation, TextureAtlasSprite> sprites =
+                id -> spriteGetter.apply(new Material(InventoryMenu.BLOCK_ATLAS, id));
+        return new ConnectingBakedModel(baked, rules, matchSurface, null, rand, renderTypes, sprites);
     }
 
     /** Presents the free and UV-locked bakes of one model as a single quad source. */

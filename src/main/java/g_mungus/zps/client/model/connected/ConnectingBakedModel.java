@@ -8,6 +8,7 @@ import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
@@ -32,6 +33,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
     /**
@@ -65,10 +67,14 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
     private final boolean matchSurface;
     private final Set<Neighbour> neighbours;
     private final RenderTypeGroup renderTypes;
+    /** Looks up an atlas sprite by name, for the per-tile sprites of {@link PiecedTileSource}. */
+    private final Function<ResourceLocation, TextureAtlasSprite> sprites;
 
     public ConnectingBakedModel(BakedModel original, List<ConnectionRule> rules, boolean matchSurface,
-                                BlockState owner, RandomSource rand, RenderTypeGroup renderTypes) {
+                                BlockState owner, RandomSource rand, RenderTypeGroup renderTypes,
+                                Function<ResourceLocation, TextureAtlasSprite> sprites) {
         super(original);
+        this.sprites = sprites;
         this.rules = rules;
         this.matchSurface = matchSurface;
         this.renderTypes = renderTypes;
@@ -122,7 +128,7 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
             ConnectedTextureMeta.Meta meta = ConnectedTextureMeta.get(quad.getSprite().contents().name()).orElse(null);
             int tileCount = quad.getSprite().contents().width() / quad.getSprite().contents().height();
             if (meta != null && meta.pieced() && tileCount >= PiecedLayout.TILE_COUNT) {
-                ConnectingFace face = new ConnectingFace(quad, tileCount, matchSurface);
+                ConnectingFace face = new ConnectingFace(quad, tiles(quad.getSprite()), matchSurface);
                 connectingBySide.get(sideIndex).add(face);
                 face.emit(itemBySide.get(sideIndex), null);
                 lookups.addAll(face.neighbours());
@@ -131,6 +137,14 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
                 itemBySide.get(sideIndex).add(quad);
             }
         }
+    }
+
+    private TextureAtlasSprite[] tiles(TextureAtlasSprite strip) {
+        TextureAtlasSprite[] tiles = new TextureAtlasSprite[PiecedLayout.TILE_COUNT];
+        for (int i = 0; i < tiles.length; i++) {
+            tiles[i] = sprites.apply(PiecedTileSource.tile(strip.contents().name(), i));
+        }
+        return tiles;
     }
 
     private List<BakedQuad> itemQuads(@Nullable Direction side) {
@@ -149,14 +163,20 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
         if (neighbours.isEmpty()) {
             return modelData;
         }
+        // Rendered as another block's material (a copycat): our full-cube faces get cropped to that block's shape,
+        // so surface probes would test the wrong plane. The copycat's level already hides neighbours whose faces
+        // don't line up, so its answer stands in for the probe.
+        boolean disguised = level.getBlockState(pos) != state;
         Map<Neighbour, Boolean> connections = new HashMap<>(neighbours.size());
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (Neighbour neighbour : neighbours) {
             Vec3i offset = neighbour.offset();
             cursor.setWithOffset(pos, offset.getX(), offset.getY(), offset.getZ());
             BlockState other = level.getBlockState(cursor);
-            boolean connects = ConnectionRule.anyMatch(rules, state, other, neighbour.face())
-                    && (neighbour.probe() == null
+            // a copycat neighbour looks like its material
+            BlockState appearance = other.getAppearance(level, cursor, neighbour.face(), state, pos);
+            boolean connects = ConnectionRule.anyMatch(rules, state, appearance, neighbour.face())
+                    && (neighbour.probe() == null || disguised
                         || continuesSurface(other.getShape(level, cursor), neighbour.face(), neighbour.probe()));
             connections.put(neighbour, connects);
         }
@@ -264,19 +284,13 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
         private static final float EDGE_SLACK = 0.5f;
 
         private final int[] template; // original 4-vertex data; position+uv are overwritten per sub-quad
-        private final TextureAtlasSprite sprite;
+        /** One sprite per strip tile; pieces are emitted against these, never the strip. */
+        private final TextureAtlasSprite[] tiles;
         private final int tintIndex;
         private final Direction direction;
         private final boolean shade;
         private final boolean hasAmbientOcclusion;
-        private final int tileCount;
         private final boolean matchSurface;
-        private final float u0;
-        private final float u1;
-        private final float v0;
-        private final float v1;
-        private final int spriteWidth;
-        private final int spriteHeight;
         // the face's extent on the tile, in tile pixels (0-16)
         private final float sMin;
         private final float sMax;
@@ -303,21 +317,19 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
                              @Nullable Neighbour horizontal, @Nullable Neighbour vertical,
                              @Nullable Neighbour diagonal) {}
 
-        ConnectingFace(BakedQuad quad, int tileCount, boolean matchSurface) {
+        ConnectingFace(BakedQuad quad, TextureAtlasSprite[] tiles, boolean matchSurface) {
             this.template = quad.getVertices().clone();
-            this.sprite = quad.getSprite();
+            this.tiles = tiles;
             this.tintIndex = quad.getTintIndex();
             this.direction = quad.getDirection();
             this.shade = quad.isShade();
             this.hasAmbientOcclusion = quad.hasAmbientOcclusion();
-            this.tileCount = tileCount;
             this.matchSurface = matchSurface;
-            this.u0 = sprite.getU0();
-            this.u1 = sprite.getU1();
-            this.v0 = sprite.getV0();
-            this.v1 = sprite.getV1();
-            this.spriteWidth = sprite.contents().width();
-            this.spriteHeight = sprite.contents().height();
+            TextureAtlasSprite strip = quad.getSprite();
+            float u0 = strip.getU0();
+            float u1 = strip.getU1();
+            float v0 = strip.getV0();
+            float v1 = strip.getV1();
 
             Vector3f[] positions = new Vector3f[4];
             float[] ss = new float[4];
@@ -446,6 +458,7 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
         }
 
         private BakedQuad buildPiece(Piece piece, int tile) {
+            TextureAtlasSprite tileSprite = tiles[tile];
             int[] vertices = new int[template.length];
             for (int k = 0; k < 4; k++) {
                 int base = k * IQuadTransformer.STRIDE;
@@ -458,13 +471,10 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
                 vertices[base + IQuadTransformer.POSITION + 1] = Float.floatToRawIntBits(position.y);
                 vertices[base + IQuadTransformer.POSITION + 2] = Float.floatToRawIntBits(position.z);
 
-                float pixelU = 16f * tile + s;
-                float atlasU = u0 + (pixelU / spriteWidth) * (u1 - u0);
-                float atlasV = v0 + (t / spriteHeight) * (v1 - v0);
-                vertices[base + IQuadTransformer.UV0] = Float.floatToRawIntBits(atlasU);
-                vertices[base + IQuadTransformer.UV0 + 1] = Float.floatToRawIntBits(atlasV);
+                vertices[base + IQuadTransformer.UV0] = Float.floatToRawIntBits(tileSprite.getU(s / 16f));
+                vertices[base + IQuadTransformer.UV0 + 1] = Float.floatToRawIntBits(tileSprite.getV(t / 16f));
             }
-            return new BakedQuad(vertices, tintIndex, direction, sprite, shade, hasAmbientOcclusion);
+            return new BakedQuad(vertices, tintIndex, direction, tileSprite, shade, hasAmbientOcclusion);
         }
 
         /** The point on the face at tile pixel {@code (s, t)}. */

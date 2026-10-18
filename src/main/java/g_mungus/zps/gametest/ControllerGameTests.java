@@ -21,6 +21,17 @@ import net.minecraftforge.gametest.PrefixGameTestTemplate;
 @PrefixGameTestTemplate(false)
 public class ControllerGameTests {
 
+    /**
+     * A mock player standing in this test. Made at the world origin, a rider's first tick would
+     * otherwise pick up items from a box stretched between there and its vehicle, which on 1.20.1's
+     * layout crosses other tests.
+     */
+    private static Player mockRider(GameTestHelper helper) {
+        Player player = helper.makeMockSurvivalPlayer();
+        player.moveTo(helper.absoluteVec(new net.minecraft.world.phys.Vec3(0.5, 1, 0.5)));
+        return player;
+    }
+
     private static final String TEMPLATE = "gametest/flat_7x4x7";
     private static final BlockPos CONTROLLER = new BlockPos(3, 2, 3);
 
@@ -28,7 +39,7 @@ public class ControllerGameTests {
         BlockState state = ModBlocks.OCTO_CONTROLLER.get().defaultBlockState()
                 .setValue(OctoControllerBlock.FACING, Direction.NORTH);
         helper.setBlock(CONTROLLER, state);
-        Player player = helper.makeMockSurvivalPlayer();
+        Player player = mockRider(helper);
         if (!(helper.getBlockEntity(CONTROLLER) instanceof OctoControllerBlockEntity controller)) {
             helper.fail("No controller block entity");
             return player;

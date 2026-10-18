@@ -8,6 +8,7 @@ import dan200.computercraft.api.peripheral.IComputerAccess;
 import dan200.computercraft.api.peripheral.IPeripheral;
 import dan200.computercraft.core.asm.GenericMethod;
 import dan200.computercraft.impl.GenericSources;
+import g_mungus.zps.mixin.computercraft.GenericMethodAccessor;
 import g_mungus.munguscript.language.builtin.BuiltInTypes;
 import g_mungus.munguscript.language.node.ScriptNode;
 import g_mungus.munguscript.language.node.SimpleExecutor;
@@ -32,7 +33,6 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.server.ServerLifecycleHooks;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -88,7 +88,7 @@ public final class ComputerCraftCompat {
         }
         try {
             register(event, discover(level));
-        } catch (LinkageError | ReflectiveOperationException | RuntimeException e) {
+        } catch (LinkageError | RuntimeException e) {
             ZPSMod.LOGGER.error("Could not read ComputerCraft's peripherals; scripts get no commands for them", e);
         }
         try {
@@ -104,7 +104,7 @@ public final class ComputerCraftCompat {
     }
 
     /** Every method of every block's peripheral that fits a getter or an executor, by Lua name and shape. */
-    private static Map<String, Found> discover(ServerLevel level) throws ReflectiveOperationException {
+    private static Map<String, Found> discover(ServerLevel level) {
         Signatures signatures = new Signatures();
         Map<String, Found> found = new LinkedHashMap<>();
         BlockPos probe = BlockPos.ZERO;
@@ -459,14 +459,11 @@ public final class ComputerCraftCompat {
         private record GenericEntry(Class<?> target, Method method) {
         }
 
-        Signatures() throws ReflectiveOperationException {
-            Field methodField = GenericMethod.class.getDeclaredField("method");
-            Field targetField = GenericMethod.class.getDeclaredField("target");
-            methodField.setAccessible(true);
-            targetField.setAccessible(true);
+        Signatures() {
             for (GenericMethod method : GenericSources.getAllMethods()) {
-                Method java = (Method) methodField.get(method);
-                generic.add(new GenericEntry((Class<?>) targetField.get(method), java));
+                GenericMethodAccessor accessor = (GenericMethodAccessor) (Object) method;
+                Method java = accessor.zps$getMethod();
+                generic.add(new GenericEntry(accessor.zps$getTarget(), java));
                 genericMethods.add(java);
             }
         }

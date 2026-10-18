@@ -40,6 +40,17 @@ import java.util.Map;
 @PrefixGameTestTemplate(false)
 public class DuctTravelGameTests {
 
+    /**
+     * A mock player standing in this test. Made at the world origin, a rider's first tick would
+     * otherwise pick up items from a box stretched between there and its vehicle, which on 1.20.1's
+     * layout crosses other tests.
+     */
+    private static Player mockRider(GameTestHelper helper) {
+        Player player = helper.makeMockSurvivalPlayer();
+        player.moveTo(helper.absoluteVec(new net.minecraft.world.phys.Vec3(0.5, 1, 0.5)));
+        return player;
+    }
+
     private static final String TEMPLATE = "gametest/flat_7x4x7";
 
     /**
@@ -122,7 +133,7 @@ public class DuctTravelGameTests {
 
     /** Climb into the near vent and ask for the next vent along. */
     private static DuctTravelEntity enterNearAndCycle(GameTestHelper helper) {
-        Player player = helper.makeMockSurvivalPlayer();
+        Player player = mockRider(helper);
         if (!DuctTravelEntity.enter(helper.getLevel(), helper.absolutePos(NEAR_VENT), player)) {
             helper.fail("Could not climb into the vent");
         }
@@ -156,7 +167,7 @@ public class DuctTravelGameTests {
     @GameTest(template = TEMPLATE)
     public static void breakingTheRunAfterEnteringStopsTravelAcrossTheGap(GameTestHelper helper) {
         placeRun(helper);
-        Player player = helper.makeMockSurvivalPlayer();
+        Player player = mockRider(helper);
         if (!DuctTravelEntity.enter(helper.getLevel(), helper.absolutePos(NEAR_VENT), player)) {
             helper.fail("Could not climb into the vent");
         }
@@ -183,7 +194,7 @@ public class DuctTravelGameTests {
     @GameTest(template = TEMPLATE)
     public static void mendingTheRunRestoresTravelAcrossTheGap(GameTestHelper helper) {
         placeRun(helper);
-        Player player = helper.makeMockSurvivalPlayer();
+        Player player = mockRider(helper);
         if (!DuctTravelEntity.enter(helper.getLevel(), helper.absolutePos(NEAR_VENT), player)) {
             helper.fail("Could not climb into the vent");
         }
@@ -268,7 +279,7 @@ public class DuctTravelGameTests {
     @GameTest(template = TEMPLATE)
     public static void aRiderSittingStillLearnsTheRunWasCut(GameTestHelper helper) {
         placeRun(helper);
-        Player player = helper.makeMockSurvivalPlayer();
+        Player player = mockRider(helper);
         if (!DuctTravelEntity.enter(helper.getLevel(), helper.absolutePos(NEAR_VENT), player)) {
             helper.fail("Could not climb into the vent");
         }
@@ -314,7 +325,7 @@ public class DuctTravelGameTests {
         }
         source.setSettings(ModGases.FLUX.getResourceLocation(), 0.01, temperature);
 
-        Player player = helper.makeMockSurvivalPlayer();
+        Player player = mockRider(helper);
         if (!DuctTravelEntity.enter(helper.getLevel(), helper.absolutePos(GAS_VENT), player)) {
             helper.fail("Could not climb into the vent");
         }
@@ -352,7 +363,7 @@ public class DuctTravelGameTests {
         BlockPos vent = new BlockPos(3, 2, 3);
         helper.setBlock(vent, ModBlocks.VENT.get().defaultBlockState()
                 .setValue(VentBlock.FACING, Direction.WEST));
-        Player player = helper.makeMockSurvivalPlayer();
+        Player player = mockRider(helper);
         if (!DuctTravelEntity.enter(helper.getLevel(), helper.absolutePos(vent), player)) {
             helper.fail("Could not climb into the vent");
         }
@@ -444,7 +455,7 @@ public class DuctTravelGameTests {
         helper.setBlock(vent, ModBlocks.VENT.get().defaultBlockState()
                 .setValue(VentBlock.FACING, Direction.WEST));
 
-        Player player = helper.makeMockSurvivalPlayer();
+        Player player = mockRider(helper);
         if (!DuctTravelEntity.enter(helper.getLevel(), helper.absolutePos(vent), player)) {
             helper.fail("Could not climb into the vent");
         }
@@ -458,7 +469,7 @@ public class DuctTravelGameTests {
 
     /** Climb into a vent facing {@code facing} and ask where dismounting would put the player. */
     private static Vec3 dismountFrom(GameTestHelper helper, BlockPos vent, Direction facing) {
-        return dismountFrom(helper, vent, facing, helper.makeMockSurvivalPlayer());
+        return dismountFrom(helper, vent, facing, mockRider(helper));
     }
 
     private static Vec3 dismountFrom(GameTestHelper helper, BlockPos vent, Direction facing, Player player) {
@@ -479,7 +490,7 @@ public class DuctTravelGameTests {
     @GameTest(template = TEMPLATE)
     public static void aCeilingVentLeavesThePlayersHeadJustUnderTheGrille(GameTestHelper helper) {
         BlockPos vent = new BlockPos(3, 3, 3);
-        Player player = helper.makeMockSurvivalPlayer();
+        Player player = mockRider(helper);
         Vec3 landing = dismountFrom(helper, vent, Direction.DOWN, player);
 
         BlockPos abs = helper.absolutePos(vent);
@@ -520,7 +531,7 @@ public class DuctTravelGameTests {
     @GameTest(template = TEMPLATE)
     public static void aWallVentLeavesThePlayerAgainstTheGrille(GameTestHelper helper) {
         BlockPos vent = new BlockPos(3, 1, 3);
-        Player player = helper.makeMockSurvivalPlayer();
+        Player player = mockRider(helper);
         Vec3 landing = dismountFrom(helper, vent, Direction.NORTH, player);
 
         BlockPos abs = helper.absolutePos(vent);

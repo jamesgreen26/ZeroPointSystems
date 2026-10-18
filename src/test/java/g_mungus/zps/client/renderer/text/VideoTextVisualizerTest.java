@@ -1,6 +1,8 @@
 package g_mungus.zps.client.renderer.text;
 
 import net.minecraft.world.item.DyeColor;
+import g_mungus.zps.testutil.MinecraftBootstrap;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
@@ -13,6 +15,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class VideoTextVisualizerTest {
+
+    @BeforeAll
+    static void bootstrap() {
+        MinecraftBootstrap.ensure();
+    }
 
     private static final VideoTextVisualizer RGB = new VideoTextVisualizer(VideoTextVisualizer::rgb);
     private static final VideoTextVisualizer HUE = new VideoTextVisualizer(VideoTextVisualizer::hue);

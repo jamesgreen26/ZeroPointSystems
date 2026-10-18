@@ -471,8 +471,9 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
                 vertices[base + IQuadTransformer.POSITION + 1] = Float.floatToRawIntBits(position.y);
                 vertices[base + IQuadTransformer.POSITION + 2] = Float.floatToRawIntBits(position.z);
 
-                vertices[base + IQuadTransformer.UV0] = Float.floatToRawIntBits(tileSprite.getU(s / 16f));
-                vertices[base + IQuadTransformer.UV0 + 1] = Float.floatToRawIntBits(tileSprite.getV(t / 16f));
+                // 1.20.1's getU/getV take pixels, 0-16, where 1.21's take a fraction of the sprite.
+                vertices[base + IQuadTransformer.UV0] = Float.floatToRawIntBits(tileSprite.getU(s));
+                vertices[base + IQuadTransformer.UV0 + 1] = Float.floatToRawIntBits(tileSprite.getV(t));
             }
             return new BakedQuad(vertices, tintIndex, direction, tileSprite, shade, hasAmbientOcclusion);
         }

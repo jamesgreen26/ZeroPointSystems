@@ -1,6 +1,8 @@
 package g_mungus.zps.client.renderer.text;
 
 import net.minecraft.world.item.DyeColor;
+import g_mungus.zps.testutil.MinecraftBootstrap;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -12,6 +14,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class TextVisualizersTest {
+
+    @BeforeAll
+    static void bootstrap() {
+        MinecraftBootstrap.ensure();
+    }
 
     private static final int SHOUT_COLOR = 0x123456;
 

@@ -134,6 +134,7 @@ public class RoomGameTests {
         return roomAt(helper, CENTRE) != null;
     }
 
+    @SkyAccess
     @GameTest(template = TEMPLATE)
     public static void spaceGratingInTheWall_letsAirOut(GameTestHelper helper) {
         helper.assertFalse(sealsWith(helper, WEST_WALL, ModBlocks.SPACE_GRATING_BLOCK.get().defaultBlockState()),
@@ -141,6 +142,7 @@ public class RoomGameTests {
         helper.succeed();
     }
 
+    @SkyAccess
     @GameTest(template = TEMPLATE)
     public static void spaceTrussInTheWall_letsAirOut(GameTestHelper helper) {
         helper.assertFalse(sealsWith(helper, WEST_WALL, ModBlocks.SPACE_TRUSS.get().defaultBlockState()),
@@ -149,6 +151,7 @@ public class RoomGameTests {
     }
 
     /** A closed gate is a plate across the gap, which would seal but for being a gate. */
+    @SkyAccess
     @GameTest(template = TEMPLATE)
     public static void closedFenceGateInTheWall_letsAirOut(GameTestHelper helper) {
         helper.assertFalse(sealsWith(helper, WEST_WALL, Blocks.OAK_FENCE_GATE.defaultBlockState()
@@ -158,6 +161,7 @@ public class RoomGameTests {
     }
 
     /** A fence joined along the wall is a plate across the gap too. */
+    @SkyAccess
     @GameTest(template = TEMPLATE)
     public static void fenceInTheWall_letsAirOut(GameTestHelper helper) {
         helper.assertFalse(sealsWith(helper, WEST_WALL, Blocks.OAK_FENCE.defaultBlockState()
@@ -167,6 +171,7 @@ public class RoomGameTests {
     }
 
     /** A catwalk is a full floor plate, which would seal a ceiling but for being mesh. */
+    @SkyAccess
     @GameTest(template = TEMPLATE)
     public static void catwalkInTheCeiling_letsAirOut(GameTestHelper helper) {
         helper.assertFalse(sealsWith(helper, CENTRE.above(2), ModBlocks.CATWALK.get().defaultBlockState()),
@@ -175,6 +180,7 @@ public class RoomGameTests {
     }
 
     /** A cable boxed in grating is grating as far as the air goes; one in solid insulation still seals. */
+    @SkyAccess
     @GameTest(template = TEMPLATE)
     public static void gratingCableInTheWall_letsAirOut(GameTestHelper helper) {
         helper.assertFalse(sealsWith(helper, WEST_WALL, ModBlocks.CABLE.get().defaultBlockState()
@@ -184,6 +190,7 @@ public class RoomGameTests {
     }
 
     /** A cable under a catwalk has the catwalk's full top surface, and lets air through as the catwalk does. */
+    @SkyAccess
     @GameTest(template = TEMPLATE)
     public static void catwalkCableInTheCeiling_letsAirOut(GameTestHelper helper) {
         helper.assertFalse(sealsWith(helper, CENTRE.above(2), ModBlocks.CABLE.get().defaultBlockState()
@@ -192,6 +199,7 @@ public class RoomGameTests {
         helper.succeed();
     }
 
+    @SkyAccess
     @GameTest(template = TEMPLATE)
     public static void insulatedCableInTheWall_seals(GameTestHelper helper) {
         helper.assertTrue(sealsWith(helper, WEST_WALL, ModBlocks.CABLE.get().defaultBlockState()
@@ -200,6 +208,7 @@ public class RoomGameTests {
         helper.succeed();
     }
 
+    @SkyAccess
     @GameTest(template = TEMPLATE)
     public static void ironBarsInTheWall_letAirOut(GameTestHelper helper) {
         buildShell(helper);
@@ -210,6 +219,7 @@ public class RoomGameTests {
         helper.succeed();
     }
 
+    @SkyAccess
     @GameTest(template = TEMPLATE)
     public static void slabInTheWall_letsAirOut(GameTestHelper helper) {
         buildShell(helper);
@@ -232,6 +242,7 @@ public class RoomGameTests {
         helper.succeed();
     }
 
+    @SkyAccess
     @GameTest(template = TEMPLATE, timeoutTicks = 40)
     public static void breakingAWall_breaksTheRoom(GameTestHelper helper) {
         buildShell(helper);
@@ -263,6 +274,7 @@ public class RoomGameTests {
     }
 
     /** Doors open without a neighbour update, so this is the path that has to catch every change. */
+    @SkyAccess
     @GameTest(template = TEMPLATE, timeoutTicks = 40)
     public static void openingADoor_breaksTheRoom(GameTestHelper helper) {
         buildShell(helper);
@@ -297,6 +309,7 @@ public class RoomGameTests {
         }
     }
 
+    @SkyAccess
     @GameTest(template = TEMPLATE)
     public static void closedLargeSpaceDoor_seals(GameTestHelper helper) {
         buildShell(helper);
@@ -307,6 +320,7 @@ public class RoomGameTests {
         helper.succeed();
     }
 
+    @SkyAccess
     @GameTest(template = TEMPLATE, timeoutTicks = 40)
     public static void openingALargeSpaceDoor_breaksTheRoom(GameTestHelper helper) {
         buildShell(helper);
@@ -322,6 +336,7 @@ public class RoomGameTests {
     }
 
     /** Mining into a thick wall grows the room by the hole: the same room, its gas kept. */
+    @SkyAccess
     @GameTest(template = TEMPLATE, timeoutTicks = 40)
     public static void miningIntoAThickWall_growsTheRoom(GameTestHelper helper) {
         buildShell(helper);
@@ -343,6 +358,7 @@ public class RoomGameTests {
      * The room holds only its own side of a closed Large Space Door, so clearing a block on the far
      * side changes nothing; with the roof off, taking the far side for the room's would breach it.
      */
+    @SkyAccess
     @GameTest(template = TEMPLATE, timeoutTicks = 40)
     public static void clearingPastAClosedLargeSpaceDoor_leavesTheRoom(GameTestHelper helper) {
         buildShell(helper);

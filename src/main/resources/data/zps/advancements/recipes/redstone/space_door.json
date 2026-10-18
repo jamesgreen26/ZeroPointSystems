@@ -5,9 +5,7 @@
       "conditions": {
         "items": [
           {
-            "items": [
-              "#forge:ingots/space_metal"
-            ]
+            "tag": "forge:ingots/space_metal"
           }
         ]
       },

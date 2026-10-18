@@ -60,8 +60,8 @@ public record AtmosphericComposition(Map<YRange, Map<ResourceLocation, Double>> 
                     : DataResult.success(gases));
 
     public static final Codec<AtmosphericComposition> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Codec.unboundedMap(YRange.CODEC, GASES_CODEC).flatXmap(YRange::checkNoOverlap, YRange::checkNoOverlap)
-                    .optionalFieldOf(FIELD, DEFAULT.bands()).forGetter(AtmosphericComposition::bands)
+            CodecUtil.optionalFieldOf(Codec.unboundedMap(YRange.CODEC, GASES_CODEC).flatXmap(YRange::checkNoOverlap, YRange::checkNoOverlap),
+                    FIELD, DEFAULT.bands()).forGetter(AtmosphericComposition::bands)
     ).apply(instance, AtmosphericComposition::new));
 
     public AtmosphericComposition {

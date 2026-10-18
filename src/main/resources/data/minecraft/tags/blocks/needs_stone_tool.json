@@ -53,6 +53,7 @@
     "zps:void_caution_block",
     "#zps:space_plating",
     "zps:vaporizer",
+    "zps:air_compressor",
     "zps:gas_gauge",
     "zps:reinforced_plating",
     "zps:reinforced_glass",

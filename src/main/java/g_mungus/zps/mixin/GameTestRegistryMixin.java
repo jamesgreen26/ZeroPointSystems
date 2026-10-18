@@ -1,5 +1,6 @@
 package g_mungus.zps.mixin;
 
+import g_mungus.zps.gametest.SkyAccess;
 import net.minecraft.gametest.framework.GameTestRegistry;
 import net.minecraft.gametest.framework.TestFunction;
 import org.spongepowered.asm.mixin.Mixin;
@@ -7,6 +8,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -19,6 +21,14 @@ import java.util.Locale;
  */
 @Mixin(GameTestRegistry.class)
 public class GameTestRegistryMixin {
+
+    /** Remembers which tests want no roof, since 1.20.1's test functions cannot say so; see {@link SkyAccess}. */
+    @Inject(method = "turnMethodIntoTestFunction", at = @At("RETURN"))
+    private static void zps$noteSkyAccess(Method method, CallbackInfoReturnable<TestFunction> cir) {
+        if (method.isAnnotationPresent(SkyAccess.class)) {
+            SkyAccess.TESTS.add(cir.getReturnValue().getTestName());
+        }
+    }
 
     @Inject(method = "getAllTestFunctions", at = @At("RETURN"), cancellable = true)
     private static void zps$filterTests(CallbackInfoReturnable<Collection<TestFunction>> cir) {

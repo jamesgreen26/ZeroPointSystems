@@ -11,6 +11,7 @@ import dan200.computercraft.shared.Capabilities;
 import dan200.computercraft.shared.computer.core.ServerContext;
 import dan200.computercraft.shared.peripheral.generic.GenericPeripheralProvider;
 import dan200.computercraft.shared.platform.InvalidateCallback;
+import g_mungus.zps.mixin.computercraft.PeripheralsAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -51,24 +52,12 @@ final class PeripheralCalls {
     private static final InvalidateCallback NO_INVALIDATE = () -> {
     };
 
-    private static @Nullable GenericPeripheralProvider<InvalidateCallback> genericProvider;
-
     /**
      * On 1.20.1 ComputerCraft only offers its generic peripherals for blocks in the level, through
      * {@link Peripherals#getPeripheral}; the provider behind that takes any block entity.
      */
-    @SuppressWarnings("unchecked")
     private static GenericPeripheralProvider<InvalidateCallback> genericProvider() {
-        if (genericProvider == null) {
-            try {
-                java.lang.reflect.Field field = Peripherals.class.getDeclaredField("genericProvider");
-                field.setAccessible(true);
-                genericProvider = (GenericPeripheralProvider<InvalidateCallback>) field.get(null);
-            } catch (ReflectiveOperationException e) {
-                throw new IllegalStateException("ComputerCraft's generic peripheral provider has moved", e);
-            }
-        }
-        return genericProvider;
+        return PeripheralsAccessor.zps$getGenericProvider();
     }
 
     /** Every method of a peripheral by its Lua name, as {@code consumer} is handed them. */

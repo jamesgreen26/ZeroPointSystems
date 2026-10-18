@@ -106,6 +106,7 @@ public class AirCompressorGameTests {
     }
 
     /** It joins on its outlet face alone. */
+    @SkyAccess
     @GameTest(template = TEMPLATE)
     public static void connectsOnTheBackOnly(GameTestHelper helper) {
         place(helper, 0);
@@ -121,6 +122,7 @@ public class AirCompressorGameTests {
     }
 
     /** Outdoors it draws the air there every tick, for exactly its FE cost each time. */
+    @SkyAccess
     @GameTest(template = TEMPLATE)
     public static void outdoors_drawsAirForAFixedCost(GameTestHelper helper) {
         int start = 4000;
@@ -145,6 +147,7 @@ public class AirCompressorGameTests {
         });
     }
 
+    @SkyAccess
     @GameTest(template = TEMPLATE)
     public static void noPower_drawsNothing(GameTestHelper helper) {
         AirCompressorBlockEntity compressor = place(helper, AirCompressorBlockEntity.ENERGY_PER_TICK - 1);
@@ -155,6 +158,7 @@ public class AirCompressorGameTests {
         });
     }
 
+    @SkyAccess
     @GameTest(template = TEMPLATE)
     public static void blockedIntake_drawsNothing(GameTestHelper helper) {
         AirCompressorBlockEntity compressor = place(helper, 4000);
@@ -168,6 +172,7 @@ public class AirCompressorGameTests {
     }
 
     /** Anything rooms count as letting air through counts as open to the intake too. */
+    @SkyAccess
     @GameTest(template = TEMPLATE)
     public static void grateOverTheIntake_stillDraws(GameTestHelper helper) {
         AirCompressorBlockEntity compressor = place(helper, 4000);
@@ -180,6 +185,7 @@ public class AirCompressorGameTests {
         });
     }
 
+    @SkyAccess
     @GameTest(template = TEMPLATE)
     public static void underwater_drawsNothing(GameTestHelper helper) {
         AirCompressorBlockEntity compressor = place(helper, 4000);
@@ -191,6 +197,7 @@ public class AirCompressorGameTests {
         });
     }
 
+    @SkyAccess
     @GameTest(template = TEMPLATE)
     public static void redstone_shutsIt(GameTestHelper helper) {
         AirCompressorBlockEntity compressor = place(helper, 4000);
@@ -207,6 +214,7 @@ public class AirCompressorGameTests {
      * Its outlet dead-ended, it fills to just under the cutoff and waits there, spending nothing,
      * then picks up again by itself once gas is let out.
      */
+    @SkyAccess
     @GameTest(template = TEMPLATE, timeoutTicks = 400)
     public static void pressureShutoff_pausesAndResumes(GameTestHelper helper) {
         AirCompressorBlockEntity compressor = place(helper, 8000);
@@ -241,6 +249,7 @@ public class AirCompressorGameTests {
     }
 
     /** Drawing from a sealed room takes the gas out of it, and keeps the room awake while it does. */
+    @SkyAccess
     @GameTest(template = ROOM_TEMPLATE, timeoutTicks = 200)
     public static void sealedRoom_isDrained(GameTestHelper helper) {
         for (int x = ROOM_MIN.getX(); x <= ROOM_MAX.getX(); x++) {

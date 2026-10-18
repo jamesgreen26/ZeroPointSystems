@@ -5,7 +5,9 @@
       "conditions": {
         "items": [
           {
-            "items": "zps:space_metal_ingot"
+            "items": [
+              "zps:space_metal_ingot"
+            ]
           }
         ]
       },
@@ -15,7 +17,9 @@
       "conditions": {
         "items": [
           {
-            "items": "zps:space_metal_mesh"
+            "items": [
+              "zps:space_metal_mesh"
+            ]
           }
         ]
       },
@@ -25,7 +29,9 @@
       "conditions": {
         "items": [
           {
-            "items": "minecraft:nether_star"
+            "items": [
+              "minecraft:nether_star"
+            ]
           }
         ]
       },

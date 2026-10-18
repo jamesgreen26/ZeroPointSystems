@@ -7,6 +7,8 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import g_mungus.zps.testutil.MinecraftBootstrap;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -20,6 +22,11 @@ import static org.junit.jupiter.api.Assertions.*;
  * out, partial blocks inside are walked into, and the size limit holds.
  */
 public class RoomScannerTest {
+
+    @BeforeAll
+    static void bootstrap() {
+        MinecraftBootstrap.ensure();
+    }
 
     private static final VoxelShape BOTTOM_SLAB = Shapes.box(0, 0, 0, 1, 0.5, 1);
     /** A thin plate across the cell's west face, like a closed door. */

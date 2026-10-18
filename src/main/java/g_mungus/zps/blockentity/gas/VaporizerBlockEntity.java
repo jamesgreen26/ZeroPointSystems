@@ -70,9 +70,9 @@ public class VaporizerBlockEntity extends GasNodeBlockEntity implements MenuProv
     private static final double MAX_STORED_TEMPERATURE_K = 1.0e6;
 
     /** FE to raise the machine by one Kelvin. */
-    public static final int FE_PER_KELVIN = 40;
-    /** The most FE the heater draws in a tick — two Kelvin per tick at full power. */
-    public static final int MAX_HEAT_FE_PER_TICK = 80;
+    public static final int FE_PER_KELVIN = 24;
+    /** The most FE the heater draws in a tick — three Kelvin per tick at full power. */
+    public static final int MAX_HEAT_FE_PER_TICK = 72;
 
     /** How full, against the node's pressure ceiling, the tank may get before vaporizing pauses. */
     public static final double FULL_FRACTION = 0.9;

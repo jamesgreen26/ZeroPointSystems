@@ -18,6 +18,6 @@
       "amount": 0.7
     }
   ],
-  "minTemperature": 375.0,
-  "temperatureCost": 100.0
+  "minTemperature": 500.0,
+  "temperatureCost": 150.0
 }

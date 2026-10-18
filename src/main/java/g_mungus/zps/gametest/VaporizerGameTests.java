@@ -32,7 +32,7 @@ import org.valkyrienskies.kelvin.api.NodeBehaviorType;
 
 /**
  * The Vaporizer against its test recipe — blue ice and a lithium nugget to 0.3 kg of Steam and
- * 0.7 kg of Flux, needing 375 K and costing 100 K: it heats on FE only when a recipe is waiting, vaporizes once
+ * 0.7 kg of Flux, needing 500 K and costing 150 K: it heats on FE only when a recipe is waiting, vaporizes once
  * hot enough, pays the cost afterwards, and keeps its state across a reload.
  */
 @GameTestHolder(ZPSMod.MOD_ID)
@@ -44,8 +44,8 @@ public class VaporizerGameTests {
     private static final int SEED_COUNT = 4;
 
     /** The test recipe's figures, as registered in data. */
-    private static final double RECIPE_MIN_TEMPERATURE = 375.0;
-    private static final double RECIPE_COST = 100.0;
+    private static final double RECIPE_MIN_TEMPERATURE = 500.0;
+    private static final double RECIPE_COST = 150.0;
     private static final double RECIPE_STEAM_KG = 0.3;
     private static final double RECIPE_FLUX_KG = 0.7;
 
@@ -195,7 +195,7 @@ public class VaporizerGameTests {
                 helper.fail("Expected the machine at " + expected + " K after paying the cost, got "
                         + vaporizer.getMachineTemperature());
             }
-            // Gas made at 375 K carries far more heat than the same gas at 275 K would; the node's
+            // Gas made at 500 K carries far more heat than the same gas at 350 K would; the node's
             // energy tells which temperature the machine used.
             double heat = KelvinMod.INSTANCE.forceGetKelvin().getHeatEnergy(node(helper, VAPORIZER));
             double ifPaidFirst = heatOfOneCraftAt(expected);

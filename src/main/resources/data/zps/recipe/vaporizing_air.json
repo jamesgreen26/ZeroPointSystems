@@ -1,0 +1,23 @@
+{
+  "type": "zps:vaporizing",
+  "ingredients": [
+    {
+      "item": "minecraft:ice"
+    },
+    {
+      "item": "zps:copper_nugget"
+    }
+  ],
+  "results": [
+    {
+      "gas": "kelvin:air",
+      "amount": 0.7
+    },
+    {
+      "gas": "vs_clockwork:stellane",
+      "amount": 0.3
+    }
+  ],
+  "minTemperature": 700.0,
+  "temperatureCost": 300.0
+}

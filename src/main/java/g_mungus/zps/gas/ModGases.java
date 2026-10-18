@@ -38,7 +38,22 @@ public final class ModGases {
             1.4,      // adiabatic index
             GasType.Companion.getPLACEHOLDER_ICON());
 
+    /** Aether density at STP, in kg/m^3: a compile-time constant for the same reason as {@link #FLUX_DENSITY}. */
+    public static final double AETHER_DENSITY = 0.166;
+
     public static final GasType AETHER = Compat.getOrCreateAetherGas();
+
+    /** Stellane density at STP, in kg/m^3: a compile-time constant for the same reason as {@link #FLUX_DENSITY}. */
+    public static final double STELLANE_DENSITY = 0.08988;
+
+    /**
+     * A light fuel gas, vaporized from ice with a copper nugget alongside air. Clockwork's when it
+     * is loaded, where it burns with air back into Steam.
+     */
+    public static final GasType STELLANE = Compat.getOrCreateStellaneGas();
+
+    /** Steam density at STP, in kg/m^3: a compile-time constant for the same reason as {@link #FLUX_DENSITY}. */
+    public static final double STEAM_DENSITY = 0.762;
 
     /** Water vapour, the bulk of what vaporizing ice gives off. Clockwork's when it is loaded. */
     public static final GasType STEAM = Compat.getOrCreateSteamGas();
@@ -61,8 +76,9 @@ public final class ModGases {
         GasTypeRegistry.INSTANCE.register(FLUX, new LazyGasParticlePicker(ModParticles.FLUX));
 
         if (!Compat.isClockworkLoaded()) {
-            GasTypeRegistry.INSTANCE.register(AETHER);
-            GasTypeRegistry.INSTANCE.register(STEAM);
+            GasTypeRegistry.INSTANCE.register(AETHER, new LazyGasParticlePicker(ModParticles.AETHER));
+            GasTypeRegistry.INSTANCE.register(STEAM, new LazyGasParticlePicker(ModParticles.STEAM));
+            GasTypeRegistry.INSTANCE.register(STELLANE, new LazyGasParticlePicker(ModParticles.STELLANE));
         }
     }
 }

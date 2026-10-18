@@ -191,6 +191,9 @@ public class ClientSetup {
     public static void onRegisterParticleProviders(RegisterParticleProvidersEvent event) {
         // Kelvin's own gas particle renderer, driven by our sprite set.
         event.registerSpriteSet(ModParticles.FLUX.get(), GasParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.AETHER.get(), GasParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.STEAM.get(), GasParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.STELLANE.get(), GasParticle.Provider::new);
     }
 
     @SubscribeEvent

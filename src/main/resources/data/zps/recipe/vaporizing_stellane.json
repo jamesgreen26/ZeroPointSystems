@@ -1,0 +1,23 @@
+{
+  "type": "zps:vaporizing",
+  "ingredients": [
+    {
+      "item": "minecraft:ice"
+    },
+    {
+      "item": "minecraft:iron_nugget"
+    }
+  ],
+  "results": [
+    {
+      "gas": "vs_clockwork:stellane",
+      "amount": 0.5
+    },
+    {
+      "gas": "vs_clockwork:steam",
+      "amount": 0.5
+    }
+  ],
+  "minTemperature": 900.0,
+  "temperatureCost": 300.0
+}

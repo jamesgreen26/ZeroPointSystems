@@ -11,4 +11,9 @@ public class ClockworkCompat {
     public static GasType getSteamGas() {
         return ClockworkGasses.INSTANCE.getSTEAM();
     }
+
+    /** Clockwork names the field for what Stellane stands in for. */
+    public static GasType getStellaneGas() {
+        return ClockworkGasses.INSTANCE.getHYDROGEN();
+    }
 }

@@ -2,7 +2,7 @@
   "type": "zps:vaporizing",
   "ingredients": [
     {
-      "item": "minecraft:ice"
+      "tag": "zps:ice"
     }
   ],
   "results": [

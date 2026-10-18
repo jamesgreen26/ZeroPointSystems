@@ -35,4 +35,19 @@ public final class ModParticles {
     public static final DeferredHolder<ParticleType<?>, DefaultGasParticle.DefaultGasParticleType> FLUX =
             PARTICLE_TYPES.register("flux",
                     () -> new DefaultGasParticle.DefaultGasParticleType((float) ModGases.FLUX_DENSITY));
+
+    /** Aether's, for when ZPS defines it itself; Clockwork registers its own otherwise. */
+    public static final DeferredHolder<ParticleType<?>, DefaultGasParticle.DefaultGasParticleType> AETHER =
+            PARTICLE_TYPES.register("aether",
+                    () -> new DefaultGasParticle.DefaultGasParticleType((float) ModGases.AETHER_DENSITY));
+
+    /** Steam's, for when ZPS defines it itself; Clockwork registers its own otherwise. */
+    public static final DeferredHolder<ParticleType<?>, DefaultGasParticle.DefaultGasParticleType> STEAM =
+            PARTICLE_TYPES.register("steam",
+                    () -> new DefaultGasParticle.DefaultGasParticleType((float) ModGases.STEAM_DENSITY));
+
+    /** Stellane's, for when ZPS defines it itself; Clockwork registers its own otherwise. */
+    public static final DeferredHolder<ParticleType<?>, DefaultGasParticle.DefaultGasParticleType> STELLANE =
+            PARTICLE_TYPES.register("stellane",
+                    () -> new DefaultGasParticle.DefaultGasParticleType((float) ModGases.STELLANE_DENSITY));
 }

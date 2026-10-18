@@ -8,13 +8,13 @@
     "M": {
       "item": "zps:space_metal_mesh"
     },
-    "L": {
-      "item": "zps:lithium_ingot"
+    "S": {
+      "item": "minecraft:nether_star"
     }
   },
   "pattern": [
     "IMI",
-    "MLM",
+    "MSM",
     "IMI"
   ],
   "result": {

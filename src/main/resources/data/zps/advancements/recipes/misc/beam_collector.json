@@ -21,11 +21,11 @@
       },
       "trigger": "minecraft:inventory_changed"
     },
-    "has_lithium_ingot": {
+    "has_nether_star": {
       "conditions": {
         "items": [
           {
-            "items": "zps:lithium_ingot"
+            "items": "minecraft:nether_star"
           }
         ]
       },
@@ -42,7 +42,7 @@
     [
       "has_space_metal_ingot",
       "has_space_metal_mesh",
-      "has_lithium_ingot",
+      "has_nether_star",
       "has_the_recipe"
     ]
   ],

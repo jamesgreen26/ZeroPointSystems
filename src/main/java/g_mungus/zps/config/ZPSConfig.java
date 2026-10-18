@@ -256,6 +256,21 @@ public class ZPSConfig {
         return doubleOr(roomLeakRate, ROOM_LEAK_RATE_DEFAULT);
     }
 
+    // --- air compressor -------------------------------------------------------------------
+
+    private static ModConfigSpec.ConfigValue<Double> airCompressorSweptVolume;
+
+    /** About 0.065 kg of sea-level air a tick: enough to pull a 5x5x3 room down to about 40% of outside. */
+    public static final double AIR_COMPRESSOR_SWEPT_VOLUME_DEFAULT = 0.05;
+
+    /**
+     * Cubic metres of whatever is at its intake an Air Compressor draws in each tick, so the mass it
+     * moves follows the density of the gas there.
+     */
+    public static double airCompressorSweptVolume() {
+        return doubleOr(airCompressorSweptVolume, AIR_COMPRESSOR_SWEPT_VOLUME_DEFAULT);
+    }
+
     // --- energy ---------------------------------------------------------------------------
 
     private static ModConfigSpec.ConfigValue<Integer> combustionGeneratorFePerTick;
@@ -338,6 +353,14 @@ public class ZPSConfig {
                          "share of the way back per block of wall, divided by its blocks of air, so small",
                          "rooms leak faster than big ones. 0 seals rooms perfectly.")
                 .defineInRange("LeakRate", ROOM_LEAK_RATE_DEFAULT, 0.0, 1.0);
+        builder.pop();
+
+        builder.comment("Air Compressor.").push("AirCompressor");
+        airCompressorSweptVolume = builder
+                .comment("Cubic metres of gas an Air Compressor draws in each tick. The mass this moves",
+                         "follows the density at the intake: less in thin air, none in vacuum, and less",
+                         "and less from a sealed room as it empties.")
+                .defineInRange("SweptVolume", AIR_COMPRESSOR_SWEPT_VOLUME_DEFAULT, 0.0, 1000.0);
         builder.pop();
 
         builder.comment("Energy.").push("Energy");

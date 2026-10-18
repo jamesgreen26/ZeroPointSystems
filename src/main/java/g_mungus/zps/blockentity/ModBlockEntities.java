@@ -6,6 +6,7 @@ import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
 import g_mungus.zps.blockentity.gas.DuctBlockEntity;
 import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity;
 import g_mungus.zps.blockentity.gas.VentBlockEntity;
+import g_mungus.zps.blockentity.gas.AirCompressorBlockEntity;
 import g_mungus.zps.blockentity.gas.VaporizerBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.*;
 import g_mungus.zps.blockentity.reactor.HeatExchangerBlockEntity;
@@ -189,5 +190,10 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("vaporizer",
                     () -> BlockEntityType.Builder.of(VaporizerBlockEntity::new,
                             ModBlocks.VAPORIZER.get()).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AirCompressorBlockEntity>> AIR_COMPRESSOR =
+            BLOCK_ENTITIES.register("air_compressor",
+                    () -> BlockEntityType.Builder.of(AirCompressorBlockEntity::new,
+                            ModBlocks.AIR_COMPRESSOR.get()).build(null));
 
 }

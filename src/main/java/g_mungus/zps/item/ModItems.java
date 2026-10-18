@@ -126,6 +126,9 @@ public class ModItems {
     public static final DeferredItem<Item> VAPORIZER = ITEMS.register("vaporizer",
             () -> new BlockItem(ModBlocks.VAPORIZER.get(), new Item.Properties()));
 
+    public static final DeferredItem<Item> AIR_COMPRESSOR = ITEMS.register("air_compressor",
+            () -> new BlockItem(ModBlocks.AIR_COMPRESSOR.get(), new Item.Properties()));
+
     public static final DeferredItem<Item> VENT = ITEMS.register("vent",
             () -> new BlockItem(ModBlocks.VENT.get(), new Item.Properties()));
 

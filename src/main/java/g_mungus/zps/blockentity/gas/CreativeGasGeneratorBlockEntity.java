@@ -1,5 +1,6 @@
 package g_mungus.zps.blockentity.gas;
 
+import g_mungus.zps.block.gas.DuctBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.gas.core.GasNodeBlockEntity;
 import g_mungus.zps.gas.ModGases;
@@ -21,9 +22,10 @@ import org.valkyrienskies.kelvin.impl.registry.GasTypeRegistry;
 /**
  * Pushes a fixed mass of a chosen gas into its own node every tick, at a chosen temperature.
  *
- * <p>Nothing throttles it: Kelvin's {@code addGasAtTemperature} adds whatever it is handed, and the
- * block's node has no pressure ceiling to rupture at, so the only limit is what the ducts hanging
- * off it can carry. That is the point — it is the knob you turn to find out.
+ * <p>Like the Vaporizer and the Air Compressor it shuts off by itself at {@link #PRESSURE_LIMIT}, 90%
+ * of a duct's ceiling. A tick whose full rate would overshoot emits only what fits, so it fills
+ * right up to the limit, stops there, and picks up again as soon as the line drains. Its own output
+ * can therefore never burst the ducts it feeds.
  *
  * <p>A rate of zero is the off switch; there is no separate one.
  */
@@ -32,9 +34,14 @@ public class CreativeGasGeneratorBlockEntity extends GasNodeBlockEntity {
     /** The most gas the block will emit per tick, in kilograms. */
     public static final double MAX_RATE = 10.0;
     /** The hottest gas it will emit, in Kelvin. */
-    public static final double MAX_TEMPERATURE = 3000.0;
+    public static final double MAX_TEMPERATURE = 1000.0;
     /** The coldest — absolute zero would divide by nothing in the solver. */
     public static final double MIN_TEMPERATURE = 1.0;
+
+    /** How full, against a duct's pressure ceiling, it may get its node before it pauses. */
+    public static final double FULL_FRACTION = 0.9;
+    /** The pressure it stops at, in pascals: {@link #FULL_FRACTION} of a duct's ceiling. */
+    public static final double PRESSURE_LIMIT = DuctBlock.MAX_PRESSURE * FULL_FRACTION;
 
     /**
      * A modest trickle, on the order of what one machine puts out per tick. Anything much higher
@@ -65,9 +72,10 @@ public class CreativeGasGeneratorBlockEntity extends GasNodeBlockEntity {
 
         if (rateKgPerTick > 0) {
             GasType gas = GasTypeRegistry.INSTANCE.getGasType(gasId);
-            if (gas != null) {
+            double amount = gas == null ? 0 : Math.min(rateKgPerTick, roomFor(gas, temperatureK, PRESSURE_LIMIT));
+            if (amount > 0) {
                 KelvinMod.INSTANCE.forceGetKelvin().addGasAtTemperature(
-                        getDuctNodePosition(), gas, rateKgPerTick, temperatureK);
+                        getDuctNodePosition(), gas, amount, temperatureK);
             }
         }
 

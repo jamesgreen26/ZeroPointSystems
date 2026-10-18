@@ -37,10 +37,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.valkyrienskies.kelvin.KelvinMod;
 import org.valkyrienskies.kelvin.api.DuctNetwork;
-import org.valkyrienskies.kelvin.api.DuctNode;
 import org.valkyrienskies.kelvin.api.DuctNodePos;
 import org.valkyrienskies.kelvin.api.GasType;
-import org.valkyrienskies.kelvin.util.GasPhysics;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -283,22 +281,14 @@ public class VaporizerBlockEntity extends GasNodeBlockEntity implements MenuProv
      * actually settle somewhere between.
      */
     private boolean hasRoomFor(VaporizingRecipe recipe) {
-        DuctNetwork<?> kelvin = KelvinMod.INSTANCE.forceGetKelvin();
-        DuctNodePos nodePos = getDuctNodePosition();
-        DuctNode node = kelvin.getNodeAt(nodePos);
-        if (node == null) {
-            return false;
-        }
-        Map<GasType, Double> after = new HashMap<>(kelvin.getGasMassAt(nodePos));
-        for (GasOutput output : recipe.results()) {
-            GasType gas = output.resolve();
-            if (gas != null) {
-                after.merge(gas, output.massKg(), Double::sum);
+        Map<GasType, Double> output = new HashMap<>();
+        for (GasOutput gas : recipe.results()) {
+            GasType type = gas.resolve();
+            if (type != null) {
+                output.merge(type, gas.massKg(), Double::sum);
             }
         }
-        double temperature = Math.max(kelvin.getTemperatureAt(nodePos), temperatureK);
-        double predicted = GasPhysics.INSTANCE.calcPressureFromGamma(after, node.getVolume(), temperature);
-        return predicted < node.getMaxPressure() * FULL_FRACTION;
+        return hasRoomFor(output, temperatureK, VaporizerBlock.MAX_PRESSURE * FULL_FRACTION);
     }
 
     @Nullable

@@ -261,8 +261,9 @@ present.
 - Emits a comparator signal from 0 at the lower bound to 15 at the upper, so a network can be regulated with ordinary redstone.
 
 #### Creative Gas Generator (`creative_gas_generator`)
-- Pushes a chosen gas into its own node every tick at a chosen rate (up to 10 kg/tick) and temperature (1–3,000 K); a rate of zero is the off switch. Right-click opens the settings.
-- Offers a connection on every face and has no pressure or temperature ceiling of its own, so the only limit is what the ducts hanging off it can carry — over-pressurising and bursting a line is exactly the feedback it exists to give.
+- Pushes a chosen gas into its own node every tick at a chosen rate (up to 10 kg/tick) and temperature (1–1,000 K); a rate of zero is the off switch. Right-click opens the settings.
+- Connects on its four horizontal faces only; the top and bottom never join the network.
+- Auto pressure shutoff like the Vaporizer's: it skips any tick that would take its node past 90% of a duct's pressure ceiling and resumes once the line drains, so its own output never bursts a duct. Its node has no ceiling of its own, so gas pushed back into it cannot burst it either.
 
 #### Vaporizer (`vaporizer`)
 - Turns items into gas using `zps:vaporizing` recipes: a shapeless set of up to three items, one or more gas outputs in kilograms, a minimum machine temperature and a temperature cost per craft.

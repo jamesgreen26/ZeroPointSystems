@@ -20,7 +20,8 @@ import org.valkyrienskies.kelvin.api.NodeBehaviorType;
 
 /**
  * The creative source: it fills its own node while its rate is above zero, stops when it is not,
- * offers a face on every side, and keeps its settings across a reload.
+ * offers a face on every horizontal side, shuts off short of a duct's ceiling, and keeps its
+ * settings across a reload.
  */
 @GameTestHolder(ZPSMod.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -107,28 +108,85 @@ public class CreativeGasGeneratorGameTests {
         });
     }
 
+    /** It joins a duct on each of its four sides, and never on the top or bottom, where the fan is. */
+    @GameTest(template = TEMPLATE)
+    public static void connectsOnItsHorizontalSidesOnly(GameTestHelper helper) {
+        place(helper);
+        for (Direction direction : Direction.values()) {
+            BlockPos duct = GENERATOR.relative(direction);
+            helper.setBlock(duct, ModBlocks.GAS_DUCT.get().defaultBlockState());
+            boolean joined = KelvinMod.INSTANCE.forceGetKelvin()
+                    .getEdgeBetween(node(helper, GENERATOR), node(helper, duct)) != null;
+            helper.assertTrue(joined == direction.getAxis().isHorizontal(),
+                    "Duct " + direction + " of the generator " + (joined ? "joined" : "did not join"));
+        }
+        helper.succeed();
+    }
+
     @GameTest(template = TEMPLATE, timeoutTicks = 200)
-    public static void gasReachesADuctOnAnyFace(GameTestHelper helper) {
-        // Up, rather than a horizontal face: a single-outlet machine like the vent could never
-        // offer it without being turned, so it proves the six-sided proposal, not a lucky default.
-        BlockPos duct = GENERATOR.relative(Direction.UP);
+    public static void gasReachesADuctOnItsSide(GameTestHelper helper) {
+        BlockPos duct = GENERATOR.relative(Direction.EAST);
 
         CreativeGasGeneratorBlockEntity generator = place(helper);
         helper.setBlock(duct, ModBlocks.GAS_DUCT.get().defaultBlockState());
-        // Gently: a duct still bursts at its own ceiling, and a burst duct has no node to check.
         generator.setSettings(ModGases.FLUX.getResourceLocation(), 0.005, 900.0);
-
-        if (KelvinMod.INSTANCE.forceGetKelvin()
-                .getEdgeBetween(node(helper, GENERATOR), node(helper, duct)) == null) {
-            helper.fail("No edge was negotiated between the generator and the duct above it");
-            return;
-        }
 
         helper.runAfterDelay(60, () -> {
             if (gasAt(helper, duct) <= 0) {
-                helper.fail("The generator is emitting but no gas reached the duct above it");
+                helper.fail("The generator is emitting but no gas reached the duct beside it");
             }
             helper.succeed();
+        });
+    }
+
+    /**
+     * Left running into a dead end, it fills right up to the cutoff and stops there, so its own
+     * output can never burst a duct; once gas is let out it picks up again.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void shutsOffShortOfADuctsCeiling(GameTestHelper helper) {
+        CreativeGasGeneratorBlockEntity generator = place(helper);
+        DuctNodePos nodePos = node(helper, GENERATOR);
+        var kelvin = KelvinMod.INSTANCE.forceGetKelvin();
+        generator.setSettings(ModGases.FLUX.getResourceLocation(), 0.5, 300.0);
+        double[] massWhenFull = new double[1];
+
+        helper.startSequence()
+                .thenWaitUntil(() -> {
+                    double pressure = kelvin.getPressureAt(nodePos);
+                    helper.assertTrue(pressure <= CreativeGasGeneratorBlockEntity.PRESSURE_LIMIT * 1.005,
+                            "Pressure overshot the cutoff: " + pressure + " Pa");
+                    helper.assertTrue(pressure > CreativeGasGeneratorBlockEntity.PRESSURE_LIMIT * 0.99,
+                            "Still filling at " + pressure + " Pa");
+                })
+                .thenIdle(5)
+                .thenExecute(() -> massWhenFull[0] = gasAt(helper, GENERATOR))
+                .thenIdle(10)
+                .thenExecute(() -> helper.assertTrue(Math.abs(gasAt(helper, GENERATOR) - massWhenFull[0]) < 1e-6,
+                        "A full generator should emit nothing, but went from " + massWhenFull[0]
+                                + " to " + gasAt(helper, GENERATOR) + " kg"))
+                .thenExecute(() -> kelvin.removeGas(nodePos, ModGases.FLUX, massWhenFull[0] / 2))
+                .thenWaitUntil(() -> helper.assertTrue(gasAt(helper, GENERATOR) > massWhenFull[0] / 2 + 1e-6,
+                        "It should pick up again once the pressure drops"))
+                .thenSucceed();
+    }
+
+    /**
+     * At a rate where one tick's worth alone would overshoot the cutoff, it still fills: it emits
+     * only what fits, so it ends right at the limit instead of never emitting at all.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void aRateThatWouldOvershootStillFillsToTheCutoff(GameTestHelper helper) {
+        CreativeGasGeneratorBlockEntity generator = place(helper);
+        DuctNodePos nodePos = node(helper, GENERATOR);
+        generator.setSettings(ModGases.FLUX.getResourceLocation(), CreativeGasGeneratorBlockEntity.MAX_RATE, 300.0);
+
+        helper.succeedWhen(() -> {
+            double pressure = KelvinMod.INSTANCE.forceGetKelvin().getPressureAt(nodePos);
+            helper.assertTrue(pressure <= CreativeGasGeneratorBlockEntity.PRESSURE_LIMIT * 1.005,
+                    "Pressure overshot the cutoff: " + pressure + " Pa");
+            helper.assertTrue(pressure > CreativeGasGeneratorBlockEntity.PRESSURE_LIMIT * 0.99,
+                    "Only reached " + pressure + " Pa of " + CreativeGasGeneratorBlockEntity.PRESSURE_LIMIT);
         });
     }
 
@@ -153,7 +211,7 @@ public class CreativeGasGeneratorGameTests {
     @GameTest(template = TEMPLATE)
     public static void settingsSurviveAReload(GameTestHelper helper) {
         CreativeGasGeneratorBlockEntity generator = place(helper);
-        generator.setSettings(ModGases.FLUX.getResourceLocation(), 0.375, 1234.0);
+        generator.setSettings(ModGases.FLUX.getResourceLocation(), 0.375, 789.0);
 
         CompoundTag tag = generator.saveWithoutMetadata(helper.getLevel().registryAccess());
         generator.loadWithComponents(tag, helper.getLevel().registryAccess());
@@ -164,7 +222,7 @@ public class CreativeGasGeneratorGameTests {
         if (Math.abs(generator.getRate() - 0.375) > 1e-6) {
             helper.fail("The rate was lost on reload: " + generator.getRate());
         }
-        if (Math.abs(generator.getEmissionTemperature() - 1234.0) > 1e-6) {
+        if (Math.abs(generator.getEmissionTemperature() - 789.0) > 1e-6) {
             helper.fail("The temperature was lost on reload: " + generator.getEmissionTemperature());
         }
         helper.succeed();

@@ -52,7 +52,7 @@ public class DuctBlock extends GasNodeBlock
     private static final double HALF_LENGTH = 0.25;
 
     private static final double VOLUME = 1.0;
-    private static final double MAX_PRESSURE = 16_375_049.0;
+    public static final double MAX_PRESSURE = 16_375_049.0;
     private static final double MAX_TEMPERATURE = 1478.0;
     private static final double HEAT_CAPACITY = 449.0;
 

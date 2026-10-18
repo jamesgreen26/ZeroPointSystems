@@ -28,16 +28,16 @@ import java.util.HashSet;
 
 /**
  * A creative source of gas: emits a chosen gas, at a chosen rate, at a chosen temperature, out of
- * every face.
+ * its four sides.
  *
- * <p>Unlike the vent, which takes a single fixed face, it offers a connection on all six, so a duct
- * run can be hung off it in any direction without thinking about orientation.
+ * <p>It connects on every horizontal face, so a duct run can leave it in any direction around it
+ * without thinking about orientation. The top and bottom carry the fan and never connect.
  *
  * <p>Its node is given no pressure or temperature ceiling at all. Kelvin ruptures a node whose
  * pressure passes {@code maxPressure} and destroys one whose walls pass {@code maxTemperature}, so
- * a bounded creative source left running into a sealed line would blow itself up within seconds.
- * The ducts hanging off it keep their normal limits — bursting a line you over-pressurised is
- * exactly the feedback this block exists to give.
+ * a bounded node could still be burst by a line pushing back into it. The block entity stops
+ * emitting before its own output could burst a duct instead — see
+ * {@link CreativeGasGeneratorBlockEntity#PRESSURE_LIMIT}.
  */
 public class CreativeGasGeneratorBlock extends GasNodeBlock implements EntityBlock {
 
@@ -62,9 +62,12 @@ public class CreativeGasGeneratorBlock extends GasNodeBlock implements EntityBlo
                 Double.MAX_VALUE, Double.MAX_VALUE, HEAT_CAPACITY, 1.0);
     }
 
-    /** Offers a plain connection on every face, and imposes nothing on it. */
+    /** Offers a plain connection on every horizontal face, and imposes nothing on it. */
     @Override
     public @Nullable GasEdgeProposal proposeEdge(BlockGetter level, BlockPos self, Direction toNeighbor) {
+        if (!toNeighbor.getAxis().isHorizontal()) {
+            return null;
+        }
         return GasEdgeProposal.pipe(RADIUS, HALF_LENGTH);
     }
 

@@ -17,13 +17,16 @@ import g_mungus.zps.networking.ZPSGamePackets;
 import org.jetbrains.annotations.NotNull;
 import org.valkyrienskies.kelvin.KelvinMod;
 import org.valkyrienskies.kelvin.api.DuctNetwork;
+import org.valkyrienskies.kelvin.api.DuctNode;
 import org.valkyrienskies.kelvin.api.DuctNodePos;
 import org.valkyrienskies.kelvin.api.GasType;
+import org.valkyrienskies.kelvin.util.GasPhysics;
 import org.valkyrienskies.kelvin.util.INodeBlock;
 import org.valkyrienskies.kelvin.util.INodeBlockEntity;
 import org.valkyrienskies.kelvin.util.KelvinExtensions;
 
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -124,6 +127,50 @@ public abstract class GasNodeBlockEntity extends BlockEntity implements INodeBlo
             return Map.of();
         }
         return KelvinMod.INSTANCE.forceGetKelvin().getGasMassAt(getDuctNodePosition());
+    }
+
+    /**
+     * Whether this node can take {@code added} and stay under {@code limitPa}: the auto shutoff
+     * machines that push gas into their own node pause on. Predicted from the ideal gas law on what
+     * would be there afterwards, at the hotter of the node and {@code temperatureK} — conservative,
+     * since the mix would settle somewhere between. Server only.
+     */
+    protected boolean hasRoomFor(Map<GasType, Double> added, double temperatureK, double limitPa) {
+        DuctNetwork<?> kelvin = KelvinMod.INSTANCE.forceGetKelvin();
+        DuctNodePos nodePos = getDuctNodePosition();
+        DuctNode node = kelvin.getNodeAt(nodePos);
+        if (node == null) {
+            return false;
+        }
+        Map<GasType, Double> after = new HashMap<>(kelvin.getGasMassAt(nodePos));
+        added.forEach((gas, mass) -> after.merge(gas, mass, Double::sum));
+        double temperature = Math.max(kelvin.getTemperatureAt(nodePos), temperatureK);
+        double predicted = GasPhysics.INSTANCE.calcPressureFromGamma(after, node.getVolume(), temperature);
+        return predicted < limitPa;
+    }
+
+    /**
+     * The most of {@code gas} this node can take and stay under {@code limitPa}, in kilograms, on
+     * the same conservative prediction as {@link #hasRoomFor}: zero once it is already there. At a
+     * fixed temperature an ideal gas's pressure rises in a straight line with mass, so the room
+     * left is what is missing from the limit over the pressure one kilogram of the gas would add.
+     * Server only.
+     */
+    protected double roomFor(GasType gas, double temperatureK, double limitPa) {
+        DuctNetwork<?> kelvin = KelvinMod.INSTANCE.forceGetKelvin();
+        DuctNodePos nodePos = getDuctNodePosition();
+        DuctNode node = kelvin.getNodeAt(nodePos);
+        if (node == null) {
+            return 0;
+        }
+        double temperature = Math.max(kelvin.getTemperatureAt(nodePos), temperatureK);
+        double now = GasPhysics.INSTANCE.calcPressureFromGamma(
+                new HashMap<>(kelvin.getGasMassAt(nodePos)), node.getVolume(), temperature);
+        double perKg = GasPhysics.INSTANCE.calcPressureFromGamma(Map.of(gas, 1.0), node.getVolume(), temperature);
+        if (!(perKg > 0) || now >= limitPa) {
+            return 0;
+        }
+        return (limitPa - now) / perKg;
     }
 
     public void acceptSyncedState(double gasMass, double pressure, double temperature) {

@@ -34,10 +34,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.valkyrienskies.kelvin.KelvinMod;
 import org.valkyrienskies.kelvin.api.DuctNetwork;
-import org.valkyrienskies.kelvin.api.DuctNode;
 import org.valkyrienskies.kelvin.api.DuctNodePos;
 import org.valkyrienskies.kelvin.api.GasType;
-import org.valkyrienskies.kelvin.util.GasPhysics;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -202,7 +200,7 @@ public class AirCompressorBlockEntity extends GasNodeBlockEntity implements Menu
         RoomManager.Draw draw = rooms.peekGas(level, intake, volume);
         // In vacuum it still runs, and pays for it; there is just nothing for it to move.
         if (!draw.isEmpty()) {
-            if (!hasRoomFor(draw)) {
+            if (!hasRoomFor(draw.kg(), draw.temperatureK(), AirCompressorBlock.MAX_PRESSURE * FULL_FRACTION)) {
                 return Status.OUTPUT_FULL;
             }
             draw = rooms.drawGas(level, intake, volume);
@@ -225,25 +223,6 @@ public class AirCompressorBlockEntity extends GasNodeBlockEntity implements Menu
         BlockState state = level.getBlockState(intake);
         return level.getFluidState(intake).isEmpty()
                 && RoomScanner.holdsAir(RoomScanner.shapeOf(level, intake, state));
-    }
-
-    /**
-     * Whether the node can take this draw without crossing {@link #FULL_FRACTION} of its pressure
-     * ceiling. Predicted from the ideal gas law on what would be in it afterwards, at the hotter of
-     * the node and the incoming gas — conservative, as the Vaporizer's is.
-     */
-    private boolean hasRoomFor(RoomManager.Draw draw) {
-        DuctNetwork<?> kelvin = KelvinMod.INSTANCE.forceGetKelvin();
-        DuctNodePos nodePos = getDuctNodePosition();
-        DuctNode node = kelvin.getNodeAt(nodePos);
-        if (node == null) {
-            return false;
-        }
-        Map<GasType, Double> after = new HashMap<>(kelvin.getGasMassAt(nodePos));
-        draw.kg().forEach((gas, mass) -> after.merge(gas, mass, Double::sum));
-        double temperature = Math.max(kelvin.getTemperatureAt(nodePos), draw.temperatureK());
-        double predicted = GasPhysics.INSTANCE.calcPressureFromGamma(after, node.getVolume(), temperature);
-        return predicted < node.getMaxPressure() * FULL_FRACTION;
     }
 
     // --- client sync ------------------------------------------------------------------------

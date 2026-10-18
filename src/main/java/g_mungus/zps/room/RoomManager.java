@@ -320,6 +320,70 @@ public final class RoomManager extends SavedData {
         return kg;
     }
 
+    // --- gas out -----------------------------------------------------------------------------
+
+    /** Gas drawn in from the world, in kilograms per gas, all at one temperature. */
+    public record Draw(Map<GasType, Double> kg, double temperatureK) {
+        public static final Draw NOTHING = new Draw(Map.of(), Double.NaN);
+
+        public boolean isEmpty() {
+            return kg.isEmpty();
+        }
+    }
+
+    /**
+     * What {@code volumeM3} of the gas at {@code at} holds, without taking it: see
+     * {@link #drawGas}. Lets a machine check it has somewhere to put the gas before it takes any.
+     */
+    public Draw peekGas(ServerLevel level, BlockPos at, double volumeM3) {
+        return intake(level, at, volumeM3, false);
+    }
+
+    /**
+     * Take {@code volumeM3} of the gas at {@code at} out of the world. In a room, or a space that
+     * seals into one now, that much of the room's own mix comes out of it, so the room thins as it
+     * is drawn on — never more than the room holds. Outdoors it is that much of the atmosphere
+     * there, which never runs short. Nothing at all in vacuum.
+     */
+    public Draw drawGas(ServerLevel level, BlockPos at, double volumeM3) {
+        return intake(level, at, volumeM3, true);
+    }
+
+    private Draw intake(ServerLevel level, BlockPos at, double volumeM3, boolean take) {
+        if (!(volumeM3 > 0)) {
+            return Draw.NOTHING;
+        }
+        Room room = knownRoomAt(at);
+        if (room == null) {
+            room = seal(level, at);
+        } else if (!room.isActive()) {
+            room.wake(outsideAir(level, room.anchor(), room.volume()), AtmosphereExposure.temperatureK(level, room.anchor()));
+        }
+
+        Map<ResourceLocation, Double> byId = new HashMap<>();
+        double temperatureK;
+        if (room == null) {
+            outsideAir(level, at, 1).forEach((gas, mass) -> byId.put(gas, mass * volumeM3));
+            temperatureK = AtmosphereExposure.temperatureK(level, at);
+        } else {
+            double share = Math.min(1.0, volumeM3 / Math.max(1, room.volume()));
+            room.massKg().forEach((gas, mass) -> byId.put(gas, mass * share));
+            temperatureK = room.temperatureK();
+            if (take) {
+                Map<ResourceLocation, Double> taken = room.draw(byId);
+                byId.clear();
+                byId.putAll(taken);
+                setDirty();
+            }
+        }
+        if (Double.isNaN(temperatureK)) {
+            return Draw.NOTHING;
+        }
+        Map<GasType, Double> kg = new HashMap<>();
+        byId.forEach((gas, mass) -> addByType(kg, gas, mass));
+        return kg.isEmpty() ? Draw.NOTHING : new Draw(kg, temperatureK);
+    }
+
     // --- changes -----------------------------------------------------------------------------
 
     /**

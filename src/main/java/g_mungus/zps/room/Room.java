@@ -42,7 +42,11 @@ public final class Room {
     private long dormantSince = ACTIVE;
     private static final long ACTIVE = -1;
 
-    /** Gas fed in since the last leak, and the running average of that per tick, in kilograms. */
+    /**
+     * Gas fed in or drawn out since the last leak, and the running average of that per tick, in
+     * kilograms. Either way it is held off the outside, so a room being drained stays awake as one
+     * being filled does.
+     */
     private double fedThisTick;
     private double inflowKgPerTick;
     /** How much of each tick's feed goes into the running average: about a second's memory. */
@@ -203,6 +207,31 @@ public final class Room {
         }
         double keep = Math.max(0, 1 - kg / total);
         massKg.replaceAll((gas, mass) -> mass * keep);
+    }
+
+    /**
+     * Take {@code kg} of each gas out, or as much as there is, and count it toward the room's
+     * supply. The temperature stays as it is: the whole mix shares one.
+     *
+     * @return what was actually taken, in kilograms
+     */
+    Map<ResourceLocation, Double> draw(Map<ResourceLocation, Double> kg) {
+        Map<ResourceLocation, Double> taken = new HashMap<>();
+        kg.forEach((gas, wanted) -> {
+            double held = massKg.getOrDefault(gas, 0.0);
+            double take = Math.min(held, Math.max(0, wanted));
+            if (take <= 0) {
+                return;
+            }
+            if (held - take < GasExposure.MIN_GAS_KG * 1e-3) {
+                massKg.remove(gas);
+            } else {
+                massKg.put(gas, held - take);
+            }
+            taken.put(gas, take);
+            fedThisTick += take;
+        });
+        return taken;
     }
 
     /** Gas let in from outside the room: mixed in, and counted toward its supply. */

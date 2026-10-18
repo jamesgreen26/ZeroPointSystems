@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,running=false": {"model": "zps:block/air_compressor"},
+    "facing=north,running=true": {"model": "zps:block/air_compressor_running"},
+    "facing=east,running=false": {"model": "zps:block/air_compressor", "y": 90},
+    "facing=east,running=true": {"model": "zps:block/air_compressor_running", "y": 90},
+    "facing=south,running=false": {"model": "zps:block/air_compressor", "y": 180},
+    "facing=south,running=true": {"model": "zps:block/air_compressor_running", "y": 180},
+    "facing=west,running=false": {"model": "zps:block/air_compressor", "y": 270},
+    "facing=west,running=true": {"model": "zps:block/air_compressor_running", "y": 270}
+  }
+}

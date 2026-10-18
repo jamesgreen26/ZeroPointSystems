@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "item": "zps:aluminum_ingot"
+    },
+    "S": {
+      "item": "zps:space_metal_ingot"
+    },
+    "C": {
+      "item": "zps:copper_magnetron"
+    }
+  },
+  "pattern": [
+    "ISI",
+    "SCS",
+    "ISI"
+  ],
+  "result": {
+    "item": "zps:air_compressor",
+    "count": 1
+  }
+}

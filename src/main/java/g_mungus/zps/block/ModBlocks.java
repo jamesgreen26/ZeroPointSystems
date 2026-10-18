@@ -5,11 +5,12 @@ import g_mungus.zps.block.gas.CreativeGasGeneratorBlock;
 import g_mungus.zps.block.gas.DuctBlock;
 import g_mungus.zps.block.gas.GasGaugeBlock;
 import g_mungus.zps.block.gas.VentBlock;
+import g_mungus.zps.block.gas.AirCompressorBlock;
+import g_mungus.zps.block.gas.VaporizerBlock;
 import g_mungus.zps.block.reactor.HeatExchangerBlock;
 import g_mungus.zps.block.reactor.ReactorPortBlock;
 import g_mungus.zps.block.reactor.ReinforcedGlassBlock;
 import g_mungus.zps.block.reactor.ReinforcedPlatingBlock;
-import g_mungus.zps.block.gas.VaporizerBlock;
 import g_mungus.zps.block.cableNetwork.*;
 import g_mungus.zps.block.cableNetwork.light_pipe.*;
 import g_mungus.zps.block.cableNetwork.properties.InsulationType;
@@ -247,6 +248,11 @@ public class ModBlocks {
 
     public static final RegistryObject<Block> VAPORIZER = BLOCKS.register("vaporizer",
             () -> new VaporizerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.5f)
+                    .requiresCorrectToolForDrops()));
+
+    public static final RegistryObject<Block> AIR_COMPRESSOR = BLOCKS.register("air_compressor",
+            () -> new AirCompressorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.5f)
                     .requiresCorrectToolForDrops()));
 

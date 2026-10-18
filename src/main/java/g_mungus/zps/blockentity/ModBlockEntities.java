@@ -6,6 +6,7 @@ import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
 import g_mungus.zps.blockentity.gas.DuctBlockEntity;
 import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity;
 import g_mungus.zps.blockentity.gas.VentBlockEntity;
+import g_mungus.zps.blockentity.gas.AirCompressorBlockEntity;
 import g_mungus.zps.blockentity.gas.VaporizerBlockEntity;
 import g_mungus.zps.blockentity.reactor.HeatExchangerBlockEntity;
 import g_mungus.zps.blockentity.reactor.ReactorPortBlockEntity;
@@ -190,4 +191,9 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("beam_collector",
                     () -> BlockEntityType.Builder.of(BeamCollectorBlockEntity::new,
                             ModBlocks.BEAM_COLLECTOR.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<AirCompressorBlockEntity>> AIR_COMPRESSOR =
+            BLOCK_ENTITIES.register("air_compressor",
+                    () -> BlockEntityType.Builder.of(AirCompressorBlockEntity::new,
+                            ModBlocks.AIR_COMPRESSOR.get()).build(null));
 }

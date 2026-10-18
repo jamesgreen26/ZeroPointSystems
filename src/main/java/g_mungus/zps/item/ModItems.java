@@ -128,6 +128,9 @@ public class ModItems {
     public static final RegistryObject<Item> VAPORIZER = ITEMS.register("vaporizer",
             () -> new BlockItem(ModBlocks.VAPORIZER.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> AIR_COMPRESSOR = ITEMS.register("air_compressor",
+            () -> new BlockItem(ModBlocks.AIR_COMPRESSOR.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> VENT = ITEMS.register("vent",
             () -> new BlockItem(ModBlocks.VENT.get(), new Item.Properties()));
 

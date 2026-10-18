@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "zps:block/air_compressor_side",
+    "north": "zps:block/air_compressor_output",
+    "south": "zps:block/air_compressor_side",
+    "east": "zps:block/air_compressor_side",
+    "west": "zps:block/air_compressor_side",
+    "up": "zps:block/air_compressor_top",
+    "down": "zps:block/air_compressor_bottom"
+  }
+}

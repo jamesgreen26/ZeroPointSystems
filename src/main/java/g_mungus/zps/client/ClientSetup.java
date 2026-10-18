@@ -13,6 +13,7 @@ import g_mungus.zps.client.model.connected.ConnectedTextureMeta;
 import g_mungus.zps.client.model.connected.PiecedTileSource;
 import g_mungus.zps.client.recipebook.ModRecipeBookCategories;
 import g_mungus.zps.client.renderer.*;
+import g_mungus.zps.client.screens.AirCompressorScreen;
 import g_mungus.zps.client.screens.AssemblerScreen;
 import g_mungus.zps.client.screens.CoalBurnerScreen;
 import g_mungus.zps.client.screens.ControllerClientHooks;
@@ -201,6 +202,7 @@ public class ClientSetup {
         event.register(ModMenus.ASSEMBLER.get(), AssemblerScreen::new);
         event.register(ModMenus.SIEVE.get(), SieveScreen::new);
         event.register(ModMenus.VAPORIZER.get(), VaporizerScreen::new);
+        event.register(ModMenus.AIR_COMPRESSOR.get(), AirCompressorScreen::new);
     }
 
     @SubscribeEvent

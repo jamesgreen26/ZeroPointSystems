@@ -276,6 +276,7 @@ present.
 - The volume is fixed, not the mass, so output follows the gas at the intake: the biome's atmosphere outdoors, less of it in thin air at altitude, nothing in vacuum. The gas keeps the temperature it had where it was drawn from.
 - Inside a sealed room it draws the room's own mix and removes it from the room, so a room thins as it runs, down to where the draw matches the room's leak.
 - Pauses without spending FE when the fan is covered or underwater (air-permeable blocks such as grates count as open), when a redstone signal shuts it, or when its node would pass 90% of its pressure ceiling; it resumes by itself once the cause clears.
+- GUI shows the FE bar and a glass-fronted gas window like the Vaporizer's, whose tooltip lists what it holds by mass with temperature and pressure.
 
 #### Fusion Reactor (`reinforced_plating`, `reinforced_glass`, `reactor_port`, `heat_exchanger`)
 - There is no controller block. A reactor exists the moment a cavity of air is sealed on every side by blocks in the `zps:reactor_wall` tag (Reinforced Plating, Reinforced Glass, the Reactor Port and the Heat Exchanger); only blocks with a face on the cavity count, and the interior may span at most 14 blocks in any direction. The whole cavity becomes one well-mixed Kelvin node with the shell's thermal mass folded in.

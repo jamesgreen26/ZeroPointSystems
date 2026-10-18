@@ -31,4 +31,7 @@ public class ModMenus {
 
     public static final RegistryObject<MenuType<BeamCollectorMenu>> BEAM_COLLECTOR =
             MENUS.register("beam_collector", () -> IForgeMenuType.create(BeamCollectorMenu::new));
+
+    public static final RegistryObject<MenuType<AirCompressorMenu>> AIR_COMPRESSOR =
+            MENUS.register("air_compressor", () -> IForgeMenuType.create(AirCompressorMenu::new));
 }

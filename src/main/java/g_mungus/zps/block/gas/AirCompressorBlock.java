@@ -7,6 +7,9 @@ import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.gas.AirCompressorBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -22,6 +25,7 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.valkyrienskies.kelvin.api.DuctNode;
@@ -145,6 +149,18 @@ public class AirCompressorBlock extends GasNodeBlock implements EntityBlock {
     }
 
     // --- block entity -----------------------------------------------------------------------
+
+    @Override
+    public @NotNull InteractionResult use(@NotNull BlockState state, @NotNull Level level,
+                                                        @NotNull BlockPos pos, @NotNull Player player, net.minecraft.world.InteractionHand hand,
+                                                        @NotNull BlockHitResult hit) {
+        if (!level.isClientSide()
+                && level.getBlockEntity(pos) instanceof AirCompressorBlockEntity compressor
+                && player instanceof ServerPlayer serverPlayer) {
+            net.minecraftforge.network.NetworkHooks.openScreen(serverPlayer, compressor, pos);
+        }
+        return InteractionResult.sidedSuccess(level.isClientSide());
+    }
 
     @Override
     public @Nullable BlockEntity newBlockEntity(@NotNull BlockPos pos, @NotNull BlockState state) {

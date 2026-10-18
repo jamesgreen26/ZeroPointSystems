@@ -7,13 +7,25 @@ import g_mungus.zps.block.gas.AirCompressorBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.gas.core.GasNodeBlockEntity;
 import g_mungus.zps.config.ZPSConfig;
+import g_mungus.zps.menu.AirCompressorMenu;
 import g_mungus.zps.room.RoomManager;
 import g_mungus.zps.room.RoomScanner;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.Connection;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.energy.EnergyStorage;
@@ -28,6 +40,7 @@ import org.valkyrienskies.kelvin.api.GasType;
 import org.valkyrienskies.kelvin.util.GasPhysics;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -45,7 +58,7 @@ import java.util.Map;
  * node past {@link #FULL_FRACTION} of the pressure ceiling. It starts again by itself as soon as
  * whatever stopped it clears.
  */
-public class AirCompressorBlockEntity extends GasNodeBlockEntity {
+public class AirCompressorBlockEntity extends GasNodeBlockEntity implements MenuProvider {
 
     private static final int MAX_ENERGY = 8192;
     private static final int MAX_RECEIVE = 512;
@@ -62,14 +75,47 @@ public class AirCompressorBlockEntity extends GasNodeBlockEntity {
         SHUT,
         NO_POWER,
         BLOCKED,
-        NOTHING_TO_DRAW,
         OUTPUT_FULL
     }
 
     private static final String ENERGY_KEY = "Energy";
+    private static final String GASES_KEY = "Gases";
+    private static final String GAS_KEY = "Gas";
+    private static final String MASS_KEY = "Mass";
 
     private final AirCompressorEnergyStorage energyStorage = new AirCompressorEnergyStorage();
     private Status status = Status.NO_POWER;
+
+    /** Client-side mirror of what is in the receiver, by gas id, for the screen's tooltip. */
+    private Map<ResourceLocation, Double> clientGasMasses = new LinkedHashMap<>();
+    /** What was last pushed to clients, so a block update only goes out when the contents move. */
+    private Map<ResourceLocation, Double> lastSentGasMasses = new HashMap<>();
+
+    /** Synced to the menu: energy and capacity. */
+    private final ContainerData dataAccess = new ContainerData() {
+        @Override
+        public int get(int index) {
+            return switch (index) {
+                case 0 -> energyStorage.getEnergyStored();
+                case 1 -> energyStorage.getMaxEnergyStored();
+                default -> 0;
+            };
+        }
+
+        @Override
+        public void set(int index, int value) {
+            switch (index) {
+                case 0 -> energyStorage.setEnergyStoredExact(value);
+                default -> {
+                }
+            }
+        }
+
+        @Override
+        public int getCount() {
+            return 2;
+        }
+    };
 
     public AirCompressorBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.AIR_COMPRESSOR.get(), pos, state);
@@ -105,6 +151,16 @@ public class AirCompressorBlockEntity extends GasNodeBlockEntity {
         setChanged();
     }
 
+    /** Client-side: what the receiver holds, by gas id, in kilograms. */
+    public Map<ResourceLocation, Double> getClientGasMasses() {
+        return clientGasMasses;
+    }
+
+    /** The node's pressure ceiling, so the screen can draw how full it is. */
+    public double getMaxPressure() {
+        return AirCompressorBlock.MAX_PRESSURE;
+    }
+
     /** The space the compressor draws from: above its fan. */
     public BlockPos intakePos() {
         return worldPosition.relative(AirCompressorBlock.INTAKE);
@@ -124,7 +180,9 @@ public class AirCompressorBlockEntity extends GasNodeBlockEntity {
         if (state.getValue(AirCompressorBlock.RUNNING) != running) {
             serverLevel.setBlock(worldPosition, state.setValue(AirCompressorBlock.RUNNING, running), Block.UPDATE_CLIENTS);
         }
-        syncNodeState();
+        if (syncNodeState()) {
+            syncGasContentsIfChanged();
+        }
     }
 
     private Status compress(ServerLevel level) {
@@ -142,18 +200,17 @@ public class AirCompressorBlockEntity extends GasNodeBlockEntity {
         RoomManager rooms = RoomManager.get(level);
         double volume = ZPSConfig.airCompressorSweptVolume();
         RoomManager.Draw draw = rooms.peekGas(level, intake, volume);
-        if (draw.isEmpty()) {
-            return Status.NOTHING_TO_DRAW;
-        }
-        if (!hasRoomFor(draw)) {
-            return Status.OUTPUT_FULL;
-        }
-
-        draw = rooms.drawGas(level, intake, volume);
-        DuctNetwork<?> kelvin = KelvinMod.INSTANCE.forceGetKelvin();
-        DuctNodePos node = getDuctNodePosition();
-        for (Map.Entry<GasType, Double> entry : draw.kg().entrySet()) {
-            kelvin.addGasAtTemperature(node, entry.getKey(), entry.getValue(), draw.temperatureK());
+        // In vacuum it still runs, and pays for it; there is just nothing for it to move.
+        if (!draw.isEmpty()) {
+            if (!hasRoomFor(draw)) {
+                return Status.OUTPUT_FULL;
+            }
+            draw = rooms.drawGas(level, intake, volume);
+            DuctNetwork<?> kelvin = KelvinMod.INSTANCE.forceGetKelvin();
+            DuctNodePos node = getDuctNodePosition();
+            for (Map.Entry<GasType, Double> entry : draw.kg().entrySet()) {
+                kelvin.addGasAtTemperature(node, entry.getKey(), entry.getValue(), draw.temperatureK());
+            }
         }
         energyStorage.consume(ENERGY_PER_TICK);
         setChanged();
@@ -187,6 +244,89 @@ public class AirCompressorBlockEntity extends GasNodeBlockEntity {
         double temperature = Math.max(kelvin.getTemperatureAt(nodePos), draw.temperatureK());
         double predicted = GasPhysics.INSTANCE.calcPressureFromGamma(after, node.getVolume(), temperature);
         return predicted < node.getMaxPressure() * FULL_FRACTION;
+    }
+
+    // --- client sync ------------------------------------------------------------------------
+
+    private void syncGasContentsIfChanged() {
+        Map<ResourceLocation, Double> current = new HashMap<>();
+        for (Map.Entry<GasType, Double> entry : getGases().entrySet()) {
+            if (entry.getValue() > 1e-9) {
+                current.put(entry.getKey().getResourceLocation(), entry.getValue());
+            }
+        }
+        if (sameContents(current, lastSentGasMasses)) {
+            return;
+        }
+        lastSentGasMasses = current;
+        level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
+    }
+
+    private static boolean sameContents(Map<ResourceLocation, Double> a, Map<ResourceLocation, Double> b) {
+        if (!a.keySet().equals(b.keySet())) {
+            return false;
+        }
+        for (Map.Entry<ResourceLocation, Double> entry : a.entrySet()) {
+            if (Math.abs(entry.getValue() - b.get(entry.getKey())) > 1e-4) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public @NotNull CompoundTag getUpdateTag() {
+        CompoundTag tag = super.getUpdateTag();
+        ListTag gases = new ListTag();
+        for (Map.Entry<GasType, Double> entry : getGases().entrySet()) {
+            if (entry.getValue() <= 1e-9) {
+                continue;
+            }
+            CompoundTag gasTag = new CompoundTag();
+            gasTag.putString(GAS_KEY, entry.getKey().getResourceLocation().toString());
+            gasTag.putDouble(MASS_KEY, entry.getValue());
+            gases.add(gasTag);
+        }
+        tag.put(GASES_KEY, gases);
+        return tag;
+    }
+
+    @Override
+    public void handleUpdateTag(@NotNull CompoundTag tag) {
+        Map<ResourceLocation, Double> gases = new LinkedHashMap<>();
+        for (Tag element : tag.getList(GASES_KEY, Tag.TAG_COMPOUND)) {
+            CompoundTag gasTag = (CompoundTag) element;
+            ResourceLocation id = ResourceLocation.tryParse(gasTag.getString(GAS_KEY));
+            if (id != null) {
+                gases.put(id, gasTag.getDouble(MASS_KEY));
+            }
+        }
+        clientGasMasses = gases;
+    }
+
+    @Override
+    public @Nullable ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override
+    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket packet) {
+        if (packet.getTag() != null) {
+            handleUpdateTag(packet.getTag());
+        }
+    }
+
+    // --- menu -------------------------------------------------------------------------------
+
+    @Override
+    public @NotNull Component getDisplayName() {
+        return Component.translatable("block.zps.air_compressor");
+    }
+
+    @Override
+    public @Nullable AbstractContainerMenu createMenu(int containerId, @NotNull Inventory playerInventory,
+                                                      @NotNull Player player) {
+        return new AirCompressorMenu(containerId, playerInventory, this, dataAccess);
     }
 
     // --- persistence ------------------------------------------------------------------------

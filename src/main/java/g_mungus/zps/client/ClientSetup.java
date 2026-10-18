@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Objects;
 
 import g_mungus.zps.client.renderer.*;
+import g_mungus.zps.client.screens.AirCompressorScreen;
+import g_mungus.zps.client.screens.AssemblerScreen;
 import g_mungus.zps.client.screens.CoalBurnerScreen;
 import g_mungus.zps.client.screens.ControllerClientHooks;
 import g_mungus.zps.client.debug.GasPressureOverlay;
@@ -32,7 +34,6 @@ import g_mungus.zps.client.reactor.ReactorWallOverlays;
 import g_mungus.zps.gas.ModParticles;
 import g_mungus.zps.client.screens.PowerCellScreen;
 import g_mungus.zps.client.screens.RollingMillScreen;
-import g_mungus.zps.client.screens.AssemblerScreen;
 import g_mungus.zps.client.screens.SieveScreen;
 import g_mungus.zps.client.screens.VaporizerScreen;
 import g_mungus.zps.client.screens.BeamCollectorScreen;
@@ -220,6 +221,7 @@ public class ClientSetup {
             MenuScreens.register(ModMenus.SIEVE.get(), SieveScreen::new);
             MenuScreens.register(ModMenus.VAPORIZER.get(), VaporizerScreen::new);
             MenuScreens.register(ModMenus.BEAM_COLLECTOR.get(), BeamCollectorScreen::new);
+            MenuScreens.register(ModMenus.AIR_COMPRESSOR.get(), AirCompressorScreen::new);
             // The set_recipe argument suggests recipe ids client-side (script terminal) against the synced level.
             AssemblerRecipeArgument.setClientLevelSupplier(() -> net.minecraft.client.Minecraft.getInstance().level);
             BlockEntityRenderers.register(ModBlockEntities.GRADUATED_LEVER.get(), GraduatedLeverBlockEntityRenderer::new);

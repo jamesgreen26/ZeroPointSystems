@@ -101,6 +101,7 @@ public class ClientSetup {
         event.registerSpriteSet(ModParticles.FLUX.get(), GasParticle.Provider::new);
         event.registerSpriteSet(ModParticles.AETHER.get(), GasParticle.Provider::new);
         event.registerSpriteSet(ModParticles.STEAM.get(), GasParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.STELLANE.get(), GasParticle.Provider::new);
     }
 
     @SubscribeEvent

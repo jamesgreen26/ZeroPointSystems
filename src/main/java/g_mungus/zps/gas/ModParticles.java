@@ -36,13 +36,18 @@ public final class ModParticles {
             PARTICLE_TYPES.register("flux",
                     () -> new DefaultGasParticle.DefaultGasParticleType((float) ModGases.FLUX_DENSITY));
 
-    /** For the Aether stand-in registered when Clockwork is absent; density of the stand-in gas. */
+    /** Aether's, for when ZPS defines it itself; Clockwork registers its own otherwise. */
     public static final RegistryObject<DefaultGasParticle.DefaultGasParticleType> AETHER =
             PARTICLE_TYPES.register("aether",
                     () -> new DefaultGasParticle.DefaultGasParticleType((float) ModGases.AETHER_DENSITY));
 
-    /** For the Steam stand-in registered when Clockwork is absent; density of the stand-in gas. */
+    /** Steam's, for when ZPS defines it itself; Clockwork registers its own otherwise. */
     public static final RegistryObject<DefaultGasParticle.DefaultGasParticleType> STEAM =
             PARTICLE_TYPES.register("steam",
                     () -> new DefaultGasParticle.DefaultGasParticleType((float) ModGases.STEAM_DENSITY));
+
+    /** Stellane's, for when ZPS defines it itself; Clockwork registers its own otherwise. */
+    public static final RegistryObject<DefaultGasParticle.DefaultGasParticleType> STELLANE =
+            PARTICLE_TYPES.register("stellane",
+                    () -> new DefaultGasParticle.DefaultGasParticleType((float) ModGases.STELLANE_DENSITY));
 }

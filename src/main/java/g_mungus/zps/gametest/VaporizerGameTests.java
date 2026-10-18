@@ -21,6 +21,8 @@ import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.IItemHandlerModifiable;
+import g_mungus.zps.world.AtmosphericComposition;
+import org.valkyrienskies.kelvin.impl.registry.GasTypeRegistry;
 import org.valkyrienskies.kelvin.KelvinMod;
 import org.valkyrienskies.kelvin.api.DuctEdge;
 import org.valkyrienskies.kelvin.api.DuctNode;
@@ -84,7 +86,7 @@ public class VaporizerGameTests {
     }
 
     private static void fillEnergy(VaporizerBlockEntity vaporizer) {
-        IEnergyStorage energy = vaporizer.getEnergyStorage(null);
+        IEnergyStorage energy = vaporizer.getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ENERGY).orElseThrow(IllegalStateException::new);
         // Receive is capped per call, not per tick, so keep pushing until it is full.
         for (int i = 0; i < 64 && energy.getEnergyStored() < energy.getMaxEnergyStored(); i++) {
             energy.receiveEnergy(energy.getMaxEnergyStored(), false);
@@ -153,7 +155,7 @@ public class VaporizerGameTests {
     public static void heatsThenVaporizesTheTestRecipe(GameTestHelper helper) {
         VaporizerBlockEntity vaporizer = place(helper);
         fillEnergy(vaporizer);
-        int energyBefore = vaporizer.getEnergyStorage(null).getEnergyStored();
+        int energyBefore = vaporizer.getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ENERGY).orElseThrow(IllegalStateException::new).getEnergyStored();
         loadTestRecipe(vaporizer);
 
         helper.succeedWhen(() -> {
@@ -169,7 +171,7 @@ public class VaporizerGameTests {
             if (raw.getStackInSlot(0).getCount() >= SEED_COUNT || raw.getStackInSlot(1).getCount() >= SEED_COUNT) {
                 helper.fail("Flux appeared but no ingredients were consumed");
             }
-            if (vaporizer.getEnergyStorage(null).getEnergyStored() >= energyBefore) {
+            if (vaporizer.getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ENERGY).orElseThrow(IllegalStateException::new).getEnergyStored() >= energyBefore) {
                 helper.fail("Flux appeared but no FE was spent heating");
             }
         });
@@ -202,6 +204,65 @@ public class VaporizerGameTests {
                 helper.fail("The gas was emitted cold: node holds " + heat + " J, expected about " + ifReadFirst);
             }
         });
+    }
+
+    /** Ice with a copper nugget alongside it vaporizes into air and Stellane rather than Steam. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void iceAndCopperVaporizeIntoAirAndStellane(GameTestHelper helper) {
+        VaporizerBlockEntity vaporizer = place(helper);
+        // Hot enough for one craft already, and no power to reheat for a second.
+        vaporizer.setMachineTemperature(700.0);
+        IItemHandlerModifiable raw = rawInventory(vaporizer);
+        raw.setStackInSlot(0, new ItemStack(Items.ICE));
+        raw.setStackInSlot(1, new ItemStack(ModItems.COPPER_NUGGET.get()));
+        GasType air = GasTypeRegistry.INSTANCE.getGasType(AtmosphericComposition.AIR);
+
+        helper.succeedWhen(() -> {
+            double airKg = gasAt(helper, VAPORIZER, air);
+            double stellaneKg = gasAt(helper, VAPORIZER, ModGases.STELLANE);
+            helper.assertTrue(Math.abs(airKg - 0.7) < 1e-6, "Expected 0.7 kg of air, got " + airKg);
+            helper.assertTrue(Math.abs(stellaneKg - 0.3) < 1e-6, "Expected 0.3 kg of Stellane, got " + stellaneKg);
+            helper.assertTrue(gasAt(helper, VAPORIZER, ModGases.STEAM) == 0, "Ice with copper should make no Steam");
+        });
+    }
+
+    /** Any kind of ice boils to Steam on its own: packed ice here, not just plain ice. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void packedIceVaporizesIntoSteam(GameTestHelper helper) {
+        VaporizerBlockEntity vaporizer = place(helper);
+        vaporizer.setMachineTemperature(375.0);
+        rawInventory(vaporizer).setStackInSlot(0, new ItemStack(Items.PACKED_ICE));
+
+        helper.succeedWhen(() -> {
+            double steamKg = gasAt(helper, VAPORIZER, ModGases.STEAM);
+            helper.assertTrue(Math.abs(steamKg - 1.0) < 1e-6, "Expected 1 kg of Steam, got " + steamKg);
+        });
+    }
+
+    /** Ice with an iron nugget makes Stellane and Steam: half the water reacts with the iron, the rest boils off. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void iceAndIronVaporizeIntoStellaneAndSteam(GameTestHelper helper) {
+        VaporizerBlockEntity vaporizer = place(helper);
+        // Hot enough for one craft already, and no power to reheat for a second.
+        vaporizer.setMachineTemperature(900.0);
+        IItemHandlerModifiable raw = rawInventory(vaporizer);
+        raw.setStackInSlot(0, new ItemStack(Items.ICE));
+        raw.setStackInSlot(1, new ItemStack(Items.IRON_NUGGET));
+
+        helper.succeedWhen(() -> {
+            double stellaneKg = gasAt(helper, VAPORIZER, ModGases.STELLANE);
+            double steamKg = gasAt(helper, VAPORIZER, ModGases.STEAM);
+            helper.assertTrue(Math.abs(stellaneKg - 0.5) < 1e-6, "Expected 0.5 kg of Stellane, got " + stellaneKg);
+            helper.assertTrue(Math.abs(steamKg - 0.5) < 1e-6, "Expected 0.5 kg of Steam, got " + steamKg);
+        });
+    }
+
+    /** Stellane is a registered gas even without Clockwork, so the recipes above can name it. */
+    @GameTest(template = TEMPLATE)
+    public static void stellaneIsRegistered(GameTestHelper helper) {
+        GasType stellane = GasTypeRegistry.INSTANCE.getGasType(ModGases.STELLANE.getResourceLocation());
+        helper.assertTrue(stellane == ModGases.STELLANE, "Stellane is not in Kelvin's gas registry");
+        helper.succeed();
     }
 
     /** No FE, no heat: the machine sits at ambient and reports that it is starved. */
@@ -250,7 +311,7 @@ public class VaporizerGameTests {
     public static void aStrayItemBlocksTheRecipe(GameTestHelper helper) {
         VaporizerBlockEntity vaporizer = place(helper);
         fillEnergy(vaporizer);
-        int energyBefore = vaporizer.getEnergyStorage(null).getEnergyStored();
+        int energyBefore = vaporizer.getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ENERGY).orElseThrow(IllegalStateException::new).getEnergyStored();
         IItemHandlerModifiable raw = rawInventory(vaporizer);
         raw.setStackInSlot(0, new ItemStack(Items.BLUE_ICE, SEED_COUNT));
         raw.setStackInSlot(1, new ItemStack(ModItems.LITHIUM_NUGGET.get(), SEED_COUNT));
@@ -258,7 +319,7 @@ public class VaporizerGameTests {
         raw.setStackInSlot(2, new ItemStack(Items.COBBLESTONE, 1));
 
         helper.runAfterDelay(40, () -> {
-            if (vaporizer.getEnergyStorage(null).getEnergyStored() != energyBefore) {
+            if (vaporizer.getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ENERGY).orElseThrow(IllegalStateException::new).getEnergyStored() != energyBefore) {
                 helper.fail("FE was spent with a stray item in the machine");
             }
             if (vaporizer.getStatus() != VaporizerBlockEntity.Status.IDLE) {
@@ -273,12 +334,12 @@ public class VaporizerGameTests {
     public static void doesNotHeatWithoutARecipe(GameTestHelper helper) {
         VaporizerBlockEntity vaporizer = place(helper);
         fillEnergy(vaporizer);
-        int energyBefore = vaporizer.getEnergyStorage(null).getEnergyStored();
+        int energyBefore = vaporizer.getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ENERGY).orElseThrow(IllegalStateException::new).getEnergyStored();
         // Half the recipe: lithium alone matches nothing.
         rawInventory(vaporizer).setStackInSlot(0, new ItemStack(ModItems.LITHIUM_NUGGET.get(), SEED_COUNT));
 
         helper.runAfterDelay(40, () -> {
-            if (vaporizer.getEnergyStorage(null).getEnergyStored() != energyBefore) {
+            if (vaporizer.getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ENERGY).orElseThrow(IllegalStateException::new).getEnergyStored() != energyBefore) {
                 helper.fail("FE was spent with no recipe to run");
             }
             if (Math.abs(vaporizer.getMachineTemperature() - VaporizerBlockEntity.AMBIENT_TEMPERATURE_K) > 1e-6) {
@@ -338,7 +399,7 @@ public class VaporizerGameTests {
         fillEnergy(vaporizer);
         vaporizer.setMachineTemperature(321.5);
         loadTestRecipe(vaporizer);
-        int energy = vaporizer.getEnergyStorage(null).getEnergyStored();
+        int energy = vaporizer.getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ENERGY).orElseThrow(IllegalStateException::new).getEnergyStored();
 
         CompoundTag tag = vaporizer.saveWithoutMetadata();
         rawInventory(vaporizer).setStackInSlot(0, ItemStack.EMPTY);
@@ -348,8 +409,8 @@ public class VaporizerGameTests {
         if (Math.abs(vaporizer.getMachineTemperature() - 321.5) > 1e-6) {
             helper.fail("The temperature was lost on reload: " + vaporizer.getMachineTemperature());
         }
-        if (vaporizer.getEnergyStorage(null).getEnergyStored() != energy) {
-            helper.fail("The energy was lost on reload: " + vaporizer.getEnergyStorage(null).getEnergyStored());
+        if (vaporizer.getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ENERGY).orElseThrow(IllegalStateException::new).getEnergyStored() != energy) {
+            helper.fail("The energy was lost on reload: " + vaporizer.getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ENERGY).orElseThrow(IllegalStateException::new).getEnergyStored());
         }
         if (rawInventory(vaporizer).getStackInSlot(0).getCount() != SEED_COUNT) {
             helper.fail("The inventory was lost on reload: " + rawInventory(vaporizer).getStackInSlot(0));

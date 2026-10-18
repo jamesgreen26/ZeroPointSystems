@@ -29,6 +29,7 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
+import g_mungus.zps.gas.ModGases;
 import org.valkyrienskies.kelvin.api.GasType;
 import shipwrights.genesis.space.Celestial;
 
@@ -172,13 +173,35 @@ public class Compat {
             return new GasType(
                     "Steam",
                     ResourceLocation.fromNamespaceAndPath("vs_clockwork", "steam"),
-                    0.762,
+                    ModGases.STEAM_DENSITY,
                     1.223e-5,
                     2.2,
                     0.031,
                     111.0,
                     1.4,
                     ResourceLocation.fromNamespaceAndPath("kelvin", "textures/icons/steam.png")
+            );
+        }
+    }
+
+    /**
+     * Clockwork's Stellane when it is present, or the same gas defined here so ZPS can run without
+     * it. The figures are Clockwork's own, so a pack that adds Clockwork later sees no change.
+     */
+    public static GasType getOrCreateStellaneGas() {
+        if (isClockworkLoaded()) {
+            return ClockworkCompat.getStellaneGas();
+        } else {
+            return new GasType(
+                    "Stellane",
+                    ResourceLocation.fromNamespaceAndPath("vs_clockwork", "stellane"),
+                    ModGases.STELLANE_DENSITY,
+                    8.8e-6,
+                    14.3,
+                    0.18,
+                    72.0,
+                    1.4,
+                    ResourceLocation.fromNamespaceAndPath("kelvin", "textures/icons/hydrogen.png")
             );
         }
     }
@@ -190,7 +213,7 @@ public class Compat {
             return new GasType(
                     "Aether",
                     ResourceLocation.fromNamespaceAndPath("vs_clockwork", "aether"),
-                    0.166,
+                    ModGases.AETHER_DENSITY,
                     1.96e-5,
                     5.1832,
                     0.151,

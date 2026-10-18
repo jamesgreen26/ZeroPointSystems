@@ -23,10 +23,6 @@ public final class ModGases {
      */
     public static final double FLUX_DENSITY = 0.0899;
 
-    /** Densities of the Aether and Steam stand-ins, for their particles; see {@link Compat#getOrCreateAetherGas}. */
-    public static final double AETHER_DENSITY = 0.166;
-    public static final double STEAM_DENSITY = 0.762;
-
     /**
      * Fusion fuel, vaporized from blue ice and lithium. Hydrogen-like: very light, very high heat
      * capacity. These are placeholder figures — the design doc still owns picking real ones.
@@ -42,7 +38,22 @@ public final class ModGases {
             1.4,      // adiabatic index
             GasType.Companion.getPLACEHOLDER_ICON());
 
+    /** Aether density at STP, in kg/m^3: a compile-time constant for the same reason as {@link #FLUX_DENSITY}. */
+    public static final double AETHER_DENSITY = 0.166;
+
     public static final GasType AETHER = Compat.getOrCreateAetherGas();
+
+    /** Stellane density at STP, in kg/m^3: a compile-time constant for the same reason as {@link #FLUX_DENSITY}. */
+    public static final double STELLANE_DENSITY = 0.08988;
+
+    /**
+     * A light fuel gas, vaporized from ice with a copper nugget alongside air. Clockwork's when it
+     * is loaded, where it burns with air back into Steam.
+     */
+    public static final GasType STELLANE = Compat.getOrCreateStellaneGas();
+
+    /** Steam density at STP, in kg/m^3: a compile-time constant for the same reason as {@link #FLUX_DENSITY}. */
+    public static final double STEAM_DENSITY = 0.762;
 
     /** Water vapour, the bulk of what vaporizing ice gives off. Clockwork's when it is loaded. */
     public static final GasType STEAM = Compat.getOrCreateSteamGas();
@@ -68,6 +79,7 @@ public final class ModGases {
         if (!Compat.isClockworkLoaded()) {
             GasTypeRegistry.INSTANCE.register(AETHER, new LazyGasParticlePicker(ModParticles.AETHER));
             GasTypeRegistry.INSTANCE.register(STEAM, new LazyGasParticlePicker(ModParticles.STEAM));
+            GasTypeRegistry.INSTANCE.register(STELLANE, new LazyGasParticlePicker(ModParticles.STELLANE));
         }
     }
 }

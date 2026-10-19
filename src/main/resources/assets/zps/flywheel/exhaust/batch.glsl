@@ -1,7 +1,8 @@
 // Exhaust particles, shared by the instance shader and the indirect cull shader.
 //
-// A batch is the 64 particles one thruster emits in one tick. Its record is four RGBA32UI texels
-// written by ExhaustParticles; every particle in it is worked out from that record, its index and
+// A batch is the particles one thruster emits in one tick. Its record is four RGBA32UI texels
+// written by ExhaustParticles, after a one-texel header whose x is the particles per batch and y
+// is 1 if particles tumble; every particle in it is worked out from that record, its index and
 // the time, so nothing per particle is stored anywhere. Physics would replace zps_exhaustParticle's
 // closed-form motion with a read from a state buffer stepped on the GPU; the record stays as the
 // spawn data.
@@ -13,9 +14,8 @@
 
 uniform usamplerBuffer zps_exhaustBatches;
 
-// Must match ExhaustParticles.BATCH_SIZE and MAX_LIFETIME_TICKS, whose plume bounds also assume
-// the drag, buoyancy and spread below.
-const int ZPS_EXHAUST_BATCH_SIZE = 64;
+// Must match ExhaustParticles.MAX_LIFETIME_TICKS, whose plume bounds also assume the drag,
+// buoyancy and spread below.
 const float ZPS_EXHAUST_LIFETIME = 40.0;
 const uint ZPS_EXHAUST_MAX_AGE = 64u;
 
@@ -23,10 +23,12 @@ const float ZPS_EXHAUST_DRAG = 0.1;       // per tick
 const float ZPS_EXHAUST_BUOYANCY = 0.004; // blocks/tick^2
 const float ZPS_EXHAUST_SPREAD = 0.16;    // cone radius per unit of travel
 const float ZPS_EXHAUST_NOZZLE = 0.25;    // spawn jitter across the nozzle, blocks
+const float ZPS_EXHAUST_SPIN = 0.25;      // fastest spin leaving the nozzle, radians/tick
 
 struct ZpsExhaustParticle {
     vec3 position;  // relative to flw_renderOrigin
     float size;
+    mat3 rotation;  // the cube's orientation
     vec4 color;
     float heat;     // 1 white-hot through 0 cold smoke
 };
@@ -61,9 +63,26 @@ vec4 zps_exhaustColor(float t) {
     return c;
 }
 
+/// Rotation by angle about a unit axis (Rodrigues).
+mat3 zps_rotation(vec3 axis, float angle) {
+    float c = cos(angle);
+    float s = sin(angle);
+    vec3 a = axis * (1.0 - c);
+    return mat3(
+            a.x * axis.x + c, a.x * axis.y + s * axis.z, a.x * axis.z - s * axis.y,
+            a.y * axis.x - s * axis.z, a.y * axis.y + c, a.y * axis.z + s * axis.x,
+            a.z * axis.x + s * axis.y, a.z * axis.y - s * axis.x, a.z * axis.z + c);
+}
+
+/// The first texel of the record of the batch a slot belongs to.
+int zps_exhaustRecord(int slot) {
+    int batchSize = int(texelFetch(zps_exhaustBatches, 0).x);
+    return 1 + (slot / batchSize) * 4;
+}
+
 /// Where the batch's plume sits, for culling: false if the batch has nothing alive.
 bool zps_exhaustBatchBounds(int slot, out vec3 center, out float radius) {
-    int base = (slot / ZPS_EXHAUST_BATCH_SIZE) * 4;
+    int base = zps_exhaustRecord(slot);
     uvec4 t0 = texelFetch(zps_exhaustBatches, base);
     uvec4 t1 = texelFetch(zps_exhaustBatches, base + 1);
     uvec4 t2 = texelFetch(zps_exhaustBatches, base + 2);
@@ -80,8 +99,8 @@ bool zps_exhaustBatchBounds(int slot, out vec3 center, out float radius) {
 }
 
 bool zps_exhaustParticle(int slot, out ZpsExhaustParticle p) {
-    int index = slot % ZPS_EXHAUST_BATCH_SIZE;
-    int base = (slot / ZPS_EXHAUST_BATCH_SIZE) * 4;
+    int index = slot % int(texelFetch(zps_exhaustBatches, 0).x);
+    int base = zps_exhaustRecord(slot);
     uvec4 t0 = texelFetch(zps_exhaustBatches, base);
     uvec4 t1 = texelFetch(zps_exhaustBatches, base + 1);
     uvec4 t2 = texelFetch(zps_exhaustBatches, base + 2);
@@ -133,5 +152,17 @@ bool zps_exhaustParticle(int slot, out ZpsExhaustParticle p) {
     float shifted = clamp(t + (zps_rand(rng) - 0.5) * 0.06, 0.0, 1.0);
     p.color = zps_exhaustColor(shifted);
     p.heat = 1.0 - smoothstep(0.08, 0.30, shifted);
+
+    // A random axis, starting angle and spin, the spin slowing under the same drag as the motion,
+    // so the angle turned is spin * travel. Without tumbling, cubes stay square to the world.
+    if (texelFetch(zps_exhaustBatches, 0).y == 0u) {
+        p.rotation = mat3(1.0);
+        return true;
+    }
+    float z = zps_rand(rng) * 2.0 - 1.0;
+    float around = 6.2831853 * zps_rand(rng);
+    vec3 axis = vec3(sqrt(1.0 - z * z) * vec2(cos(around), sin(around)), z);
+    float spin = ZPS_EXHAUST_SPIN * (zps_rand(rng) * 2.0 - 1.0);
+    p.rotation = zps_rotation(axis, 6.2831853 * zps_rand(rng) + spin * travel);
     return true;
 }

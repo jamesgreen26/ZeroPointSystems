@@ -2,10 +2,12 @@
 in float zps_exhaustHeat;
 
 /// The particle's colour and opacity at this fragment: block-style face shading for smoke, none
-/// for fire, which is emissive and flat.
+/// for fire, which is emissive and flat. Faces of a tumbling cube are tilted, so the block shades
+/// (top 1, bottom 0.5, north/south 0.8, east/west 0.6) are blended by how much the face points
+/// each way.
 vec4 zps_exhaustShade() {
-    vec3 n = flw_vertexNormal;
-    float face = n.y > 0.5 ? 1.0 : n.y < -0.5 ? 0.5 : abs(n.z) > 0.5 ? 0.8 : 0.6;
+    vec3 n = normalize(flw_vertexNormal);
+    float face = dot(n * n, vec3(0.6, n.y > 0.0 ? 1.0 : 0.5, 0.8));
     vec4 color = flw_vertexColor;
     color.rgb *= mix(face, 1.0, zps_exhaustHeat);
     return color;

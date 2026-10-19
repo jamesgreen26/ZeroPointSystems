@@ -16,7 +16,8 @@ void flw_instanceVertex(in FlwInstance i) {
     if (!flw_lightFetch(ivec3(floor(p.position)) + flw_renderOrigin, light)) {
         light = vec2(0.0);
     }
-    flw_vertexPos = vec4(p.position + flw_vertexPos.xyz * p.size, 1.0);
+    flw_vertexPos = vec4(p.position + p.rotation * flw_vertexPos.xyz * p.size, 1.0);
+    flw_vertexNormal = p.rotation * flw_vertexNormal;
     flw_vertexColor = p.color;
     flw_vertexLight = light;
     zps_exhaustHeat = p.heat;

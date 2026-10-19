@@ -15,10 +15,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.ClientTickEvent;
+import net.minecraftforge.event.level.ChunkEvent;
 import net.minecraftforge.event.level.LevelEvent;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
@@ -57,13 +59,14 @@ public final class ExhaustParticles {
     /** Ticks after which every particle of a batch is gone. Must match {@code ZPS_EXHAUST_MAX_AGE}. */
     private static final int MAX_LIFETIME_TICKS = 64;
     /**
-     * One texel ahead of the records: x is the batch size the shader strides slots by, y is 1 if
-     * particles tumble.
+     * Two texels ahead of the records. The first: x the batch size the shaders stride slots by, y 1
+     * if particles tumble. The second: the simulation origin, and the tick last simulated. See
+     * {@code common.glsl}.
      */
-    private static final int HEADER_BYTES = 16;
+    private static final int HEADER_BYTES = 32;
     private static final int RECORD_BYTES = 80;
     /** Keeps the ring within the 65536 texels every driver's texture buffers take. */
-    private static final int MAX_BATCHES = (65536 - 1) / 5;
+    private static final int MAX_BATCHES = (65536 - 2) / 5;
     /** Beyond this many blocks from the camera an emitter adds nothing; what is in the air stays. */
     private static final double EMIT_DISTANCE = 128;
     /** Above every unit Flywheel and vanilla bind, and within the 16 every GL 4.1 driver offers. */
@@ -86,7 +89,6 @@ public final class ExhaustParticles {
     private static volatile int slotsInUse;
     private static int lastEmitTick;
     private static int seedCounter;
-    private static boolean dirty;
     private static final List<Emission> pending = new ArrayList<>();
     private static final Matrix4d transformFrom = new Matrix4d();
     private static final Matrix4d transformTo = new Matrix4d();
@@ -94,7 +96,7 @@ public final class ExhaustParticles {
     /** Must match the drag in batch.glsl: how far out the plume comes to rest is speed / drag. */
     private static final float DRAG = 0.1f;
     /** Spread, nozzle jitter, swirl and cube size around the plume's centre line, with room to spare. */
-    private static final double PLUME_MARGIN = 4;
+    private static final double PLUME_MARGIN = 6;
     /** How far smoke can rise under buoyancy over a lifetime. */
     private static final double PLUME_RISE = 4;
     private static final Long2IntMap sectionLastUse = new Long2IntOpenHashMap();
@@ -168,6 +170,10 @@ public final class ExhaustParticles {
         Vec3 offset = new Vec3(start.x - anchor.getX(), start.y - anchor.getY(), start.z - anchor.getZ());
         Vec3 velocity = new Vec3(end.x - start.x, end.y - start.y, end.z - start.z);
         Vec3 worldDirection = new Vec3(direction.x, direction.y, direction.z);
+        if (batchesUsed == 0) {
+            // The simulation keeps positions relative to a block fixed while the ring holds anything.
+            records.putInt(16, anchor.getX()).putInt(20, anchor.getY()).putInt(24, anchor.getZ());
+        }
         int base = HEADER_BYTES + nextBatch * RECORD_BYTES;
         records.putInt(base, anchor.getX())
                 .putInt(base + 4, anchor.getY())
@@ -195,7 +201,6 @@ public final class ExhaustParticles {
             slotsInUse = batchesUsed * batchSize;
         }
         lastEmitTick = tick;
-        dirty = true;
         trackPlume(new Vec3(start.x, start.y, start.z), worldDirection, emission.speed(), velocity, tick);
         if (effect == null) {
             addEffect(VisualizationManager.getOrThrow(level));
@@ -283,10 +288,12 @@ public final class ExhaustParticles {
         if (manager != effectManager && manager != null) {
             addEffect(manager);
         }
-        expireSections(ticks());
-        if (dirty) {
-            upload();
-        }
+        int tick = ticks();
+        expireSections(tick);
+        ExhaustField.sync(level, sectionLastUse.keySet());
+        records.putInt(28, tick);
+        upload();
+        ExhaustSimulation.step(tick, glTexture, batchSize);
     }
 
     public static void onLevelUnload(LevelEvent.Unload event) {
@@ -297,6 +304,20 @@ public final class ExhaustParticles {
 
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         reset();
+    }
+
+    /** A block changed on the client: the terrain exhaust collides with follows it. */
+    public static void onBlockChanged(BlockPos pos, BlockState state) {
+        ExhaustField.onBlockChanged(pos, state);
+    }
+
+    public static void onChunkLoad(ChunkEvent.Load event) {
+        ExhaustField.onChunkLoad(event);
+    }
+
+    /** Resources reloaded: the simulation's shaders are rebuilt from them on next use. */
+    public static void onResourcesReloaded() {
+        ExhaustSimulation.onResourcesReloaded();
     }
 
     /**
@@ -313,6 +334,7 @@ public final class ExhaustParticles {
         GL13.glActiveTexture(GL13.GL_TEXTURE0 + TEXTURE_UNIT);
         GL11.glBindTexture(GL31.GL_TEXTURE_BUFFER, glTexture);
         GL13.glActiveTexture(previous);
+        ExhaustSimulation.bindForDrawing(program);
     }
 
     /** The particles' clock: Flywheel's {@code flw_ticks}, which stops while the game is paused. */
@@ -332,7 +354,11 @@ public final class ExhaustParticles {
             MemoryUtil.memFree(records);
         }
         batchSize = wanted;
-        capacity = Math.clamp(ZPSConfig.exhaustParticlePool() / batchSize, 1, MAX_BATCHES);
+        // The simulation's state is shown to the drawing as one texture buffer, as long as the
+        // driver allows.
+        int maxBatches = Math.min(MAX_BATCHES, ExhaustSimulation.maxSlots() / batchSize);
+        capacity = Math.clamp(ZPSConfig.exhaustParticlePool() / batchSize, 1, maxBatches);
+        ExhaustSimulation.allocate(capacity * batchSize);
         records = MemoryUtil.memCalloc(HEADER_BYTES + capacity * RECORD_BYTES);
         records.putInt(0, batchSize);
         if (glBuffer == 0) {
@@ -357,13 +383,13 @@ public final class ExhaustParticles {
         GL15.glBindBuffer(GL31.GL_TEXTURE_BUFFER, glBuffer);
         GL15.glBufferSubData(GL31.GL_TEXTURE_BUFFER, 0, records);
         GL15.glBindBuffer(GL31.GL_TEXTURE_BUFFER, previous);
-        dirty = false;
     }
 
     /** Forgets the level along with its exhaust. The ring and GL objects are kept for the next. */
     private static void reset() {
         clearRing();
         pending.clear();
+        ExhaustField.clear();
         level = null;
     }
 

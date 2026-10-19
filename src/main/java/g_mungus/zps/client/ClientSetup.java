@@ -139,6 +139,8 @@ public class ClientSetup {
     public static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event) {
         // Connected-texture metadata is cached at bake time; drop it on reload so it is re-read.
         event.registerReloadListener((ResourceManagerReloadListener) resourceManager -> ConnectedTextureMeta.clear());
+        // The exhaust simulation's own shaders are read from resources.
+        event.registerReloadListener((ResourceManagerReloadListener) resourceManager -> ExhaustParticles.onResourcesReloaded());
         // Wall coats are built from baked models, which a reload replaces, and the glow meshes from them.
         event.registerReloadListener((ResourceManagerReloadListener) resourceManager -> {
             WallCoats.clear();
@@ -298,11 +300,12 @@ public class ClientSetup {
             MinecraftForge.EVENT_BUS.addListener(ExhaustParticles::onClientTick);
             MinecraftForge.EVENT_BUS.addListener(ExhaustParticles::onLevelUnload);
             MinecraftForge.EVENT_BUS.addListener(ExhaustParticles::onLoggingOut);
+            MinecraftForge.EVENT_BUS.addListener(ExhaustParticles::onChunkLoad);
             MinecraftForge.EVENT_BUS.addListener(ExhaustLayer::onRenderLevelStage);
             MinecraftForge.EVENT_BUS.addListener(ReactorGlowPreviews::onRenderLevelStage);
+            MinecraftForge.EVENT_BUS.addListener(TractorBeamRenderer::onRenderLevelStage);
             MinecraftForge.EVENT_BUS.addListener(ReactorGlowPreviews::onLoggingOut);
             MinecraftForge.EVENT_BUS.addListener(ReactorGlowElement::onLoggingOut);
-            MinecraftForge.EVENT_BUS.addListener(TractorBeamRenderer::onRenderLevelStage);
             MinecraftForge.EVENT_BUS.addListener(DuctTravelClientHooks::onRenderPlayer);
             MinecraftForge.EVENT_BUS.addListener(DuctTravelClientHooks::onRenderHand);
             MinecraftForge.EVENT_BUS.addListener(DuctTravelClientHooks::onPlayerTick);

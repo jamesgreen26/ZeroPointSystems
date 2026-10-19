@@ -15,6 +15,7 @@
     "DebugScreenOverlayMixin",
     "DimensionSpecialEffectsMixin",
     "EntityRenderDispatcherMixin",
+    "ExhaustBlockChangeMixin",
     "FogRendererMixin",
     "flywheel.GlProgramMixin",
     "flywheel.MaterialRenderStateMixin",

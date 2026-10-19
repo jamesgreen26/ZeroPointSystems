@@ -35,11 +35,18 @@ const float ZPS_EXHAUST_NEAR_CLEAR = 1.0;      // blocks
 const float ZPS_EXHAUST_NEAR_CLEAR_FADE = 2.5; // blocks
 const float ZPS_EXHAUST_MIN_ALPHA = 0.01;
 
-vec4 zps_exhaustColor(float t) {
-    const vec4 WHITE = vec4(1.00, 0.97, 0.85, 0.90);
-    const vec4 YELLOW = vec4(1.00, 0.82, 0.32, 0.88);
-    const vec4 ORANGE = vec4(1.00, 0.42, 0.08, 0.80);
-    const vec4 EMBER = vec4(0.42, 0.17, 0.08, 0.65);
+/// A particle's colour by fraction of life: its batch's fire, then the same smoke for every colour.
+vec4 zps_exhaustColor(uint color, float t) {
+    vec4 WHITE = vec4(1.00, 0.97, 0.85, 0.90);
+    vec4 YELLOW = vec4(1.00, 0.82, 0.32, 0.88);
+    vec4 ORANGE = vec4(1.00, 0.42, 0.08, 0.80);
+    vec4 EMBER = vec4(0.42, 0.17, 0.08, 0.65);
+    if (color == ZPS_EXHAUST_BLUE) {
+        WHITE = vec4(0.88, 0.96, 1.00, 0.90);
+        YELLOW = vec4(0.45, 0.82, 1.00, 0.88);
+        ORANGE = vec4(0.12, 0.38, 1.00, 0.80);
+        EMBER = vec4(0.08, 0.12, 0.42, 0.65);
+    }
     const vec4 DARK = vec4(0.20, 0.19, 0.18, 0.55);
     const vec4 GREY = vec4(0.42, 0.42, 0.42, 0.40);
     vec4 c = mix(WHITE, YELLOW, smoothstep(0.00, 0.06, t));
@@ -84,7 +91,7 @@ bool zps_exhaustBatchBounds(int slot, out vec3 center, out float radius) {
     float reach = b.speed / ZPS_EXHAUST_DRAG;
     center = vec3(b.anchor - flw_renderOrigin) + b.offset
             + b.direction * reach * 0.5 + b.emitterVelocity * ZPS_EXHAUST_LIFETIME * 0.5;
-    radius = reach + length(b.emitterVelocity) * ZPS_EXHAUST_LIFETIME + 8.0;
+    radius = reach + length(b.emitterVelocity) * ZPS_EXHAUST_LIFETIME + b.width + 8.0;
     return true;
 }
 
@@ -127,7 +134,7 @@ bool zps_exhaustParticle(int slot, out ZpsExhaustParticle p) {
     uint rng = zps_exhaustStream(b.seed, index, ZPS_EXHAUST_STREAM_LOOK);
     p.size = mix(0.12, 0.65, sqrt(t)) * (0.7 + 0.6 * zps_rand(rng));
     float shifted = clamp(t + (zps_rand(rng) - 0.5) * 0.06, 0.0, 1.0);
-    p.color = zps_exhaustColor(shifted);
+    p.color = zps_exhaustColor(b.color, shifted);
     p.heat = zps_exhaustHeatAt(shifted);
     float distance = length(p.position - (flw_cameraPos - vec3(flw_renderOrigin)));
     float nearFade = (1.0 - smoothstep(ZPS_EXHAUST_NEAR_FADE_START, ZPS_EXHAUST_NEAR_FADE_END,

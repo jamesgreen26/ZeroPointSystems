@@ -35,6 +35,18 @@ public class ZPSConfig {
         return result;
     }
 
+    private static ModConfigSpec.ConfigValue<Integer> exhaustParticlePool;
+    private static final int exhaustParticlePoolDefault = 131072;
+
+    /** How many exhaust particles can be alive at once, across every thruster. Read once, when first needed. */
+    public static int exhaustParticlePool() {
+        int result = exhaustParticlePoolDefault;
+        try {
+            result = exhaustParticlePool.get();
+        } catch (Exception ignored) { }
+        return result;
+    }
+
     /**
      * Null outside a development environment: the option is not written to the config at all, so
      * it cannot be switched on in a released build.
@@ -71,6 +83,10 @@ public class ZPSConfig {
         reactorHum = builder
                 .comment("Play a hum from hot fusion reactors.")
                 .define("ReactorHum", reactorHumDefault);
+        exhaustParticlePool = builder
+                .comment("How many exhaust particles can be alive at once, across every thruster.",
+                         "When full, the oldest are replaced first. Takes effect after a restart.")
+                .defineInRange("ExhaustParticlePool", exhaustParticlePoolDefault, 1024, 1048576);
         if (!FMLLoader.isProduction()) {
             gasPressureOverlay = builder
                     .comment("Debug: tint every gas node with a colour for its pressure,",

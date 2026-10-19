@@ -1,5 +1,6 @@
 package g_mungus.zps.block;
 
+import g_mungus.zps.exhaust.ThrusterBlock;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.cableNetwork.*;
 import g_mungus.zps.block.cableNetwork.light_pipe.*;
@@ -244,6 +245,11 @@ public class ModBlocks {
                     // Don't occlude light: the rod's light is sampled at the piston's own position,
                     // which would otherwise always be pitch black.
                     .noOcclusion()));
+
+    /** Debug: blasts exhaust particles while powered. */
+    public static final DeferredBlock<Block> THRUSTER = BLOCKS.register("thruster",
+            () -> new ThrusterBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(3.5f)));
 
     /** World-only: made by striking a full composter with the Impact Piston. Has no item on purpose. */
     public static final DeferredBlock<Block> COMPOSTER_DIRT = BLOCKS.register("composter_dirt",

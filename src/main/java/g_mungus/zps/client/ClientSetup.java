@@ -1,5 +1,7 @@
 package g_mungus.zps.client;
 
+import g_mungus.zps.exhaust.ExhaustLayer;
+import g_mungus.zps.exhaust.ExhaustParticles;
 import dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.BeamCollectorBlock;
@@ -120,11 +122,12 @@ public class ClientSetup {
         event.register(ZPSMod.resource("pieced_tiles"), PiecedTileSource.TYPE);
     }
 
-    /** The reactor glow's core shader. */
+    /** Core shaders: the reactor glow, the tractor beam, and the exhaust layer's depth copy and composite. */
     @SubscribeEvent
     public static void onRegisterShaders(RegisterShadersEvent event) throws IOException {
         ReactorGlowRenderer.onRegisterShaders(event);
         TractorBeamRenderer.onRegisterShaders(event);
+        ExhaustLayer.onRegisterShaders(event);
     }
 
     @SubscribeEvent
@@ -292,6 +295,10 @@ public class ClientSetup {
             NeoForge.EVENT_BUS.addListener(ClientReactors::onLoggingOut);
             NeoForge.EVENT_BUS.addListener(ClientReactors::onClientTick);
             NeoForge.EVENT_BUS.addListener(ClientReactors::onRenderLevelStage);
+            NeoForge.EVENT_BUS.addListener(ExhaustParticles::onClientTick);
+            NeoForge.EVENT_BUS.addListener(ExhaustParticles::onLevelUnload);
+            NeoForge.EVENT_BUS.addListener(ExhaustParticles::onLoggingOut);
+            NeoForge.EVENT_BUS.addListener(ExhaustLayer::onRenderLevelStage);
             NeoForge.EVENT_BUS.addListener(ReactorGlowPreviews::onRenderLevelStage);
             NeoForge.EVENT_BUS.addListener(TractorBeamRenderer::onRenderLevelStage);
             NeoForge.EVENT_BUS.addListener(ReactorGlowPreviews::onLoggingOut);

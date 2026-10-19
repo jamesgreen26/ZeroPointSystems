@@ -4,53 +4,39 @@ import dev.ryanhcode.sable.companion.SableCompanion;
 import dev.ryanhcode.sable.companion.SubLevelAccess;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.companion.math.BoundingBox3d;
-import dev.ryanhcode.sable.companion.math.BoundingBox3dc;
 import dev.ryanhcode.sable.companion.math.BoundingBox3ic;
-import dev.ryanhcode.sable.companion.math.Pose3d;
-import dev.ryanhcode.sable.companion.math.Pose3dc;
+import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import g_mungus.zps.ZPSMod;
-import g_mungus.munguscript.language.builtin.BuiltInTypes;
-import g_mungus.munguscript.language.type.ScriptType;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.RegisterScriptTypesEvent;
 import g_mungus.zps.commands.api.ScriptTarget;
 import g_mungus.zps.commands.api.TargetApplicability;
-import g_mungus.zps.commands.api.ZPSNodes;
-import g_mungus.zps.commands.api.ZPSScriptTypes;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.core.Position;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.server.command.EnumArgument;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 public final class SableCompat {
 
     private SableCompat() {
     }
 
-    /** A sublevel, or {@link #NO_SUBLEVEL} where there is none. Reads as its name where text is wanted. */
-    static final ScriptType<SubLevelAccess> SUBLEVEL = ScriptType.opaque(ZPSScriptTypes.key("sublevel"), SubLevelAccess.class)
-            .usableAs(BuiltInTypes.STRING, subLevel -> subLevel == SableCompat.NO_SUBLEVEL || subLevel.getName() == null ? "" : subLevel.getName());
-
     static void registerScriptTypes(RegisterScriptTypesEvent event) {
-        event.register(SUBLEVEL);
+        ShipScripts.registerScriptTypes(event);
         event.registerApplicability(OnSubLevel.TYPE);
     }
 
-    /** For targets on a sublevel, such as the {@code sublevel} getter, which reads nothing elsewhere. */
+    /** For targets on a sublevel, such as the {@code ship} getter, which reads nothing elsewhere. */
     enum OnSubLevel implements TargetApplicability {
         INSTANCE;
 
@@ -68,73 +54,10 @@ public final class SableCompat {
     }
 
     static void registerScriptCommands(RegisterScriptCommandsEvent event) {
-        event.register(ZPSNodes.getter("sublevel", SUBLEVEL, context -> {
+        ShipScripts.registerScriptCommands(event, context -> {
             SubLevelAccess subLevel = SableCompanion.INSTANCE.getContaining(context.level(), context.pos());
-            return subLevel == null ? NO_SUBLEVEL : subLevel;
-        }).withApplicability(OnSubLevel.INSTANCE));
-
-        event.register(ZPSNodes.mapper("name", SUBLEVEL, BuiltInTypes.STRING,
-                (subLevel, context) -> subLevel == NO_SUBLEVEL || subLevel.getName() == null ? "" : subLevel.getName()));
-
-        event.register(ZPSNodes.mapper("id", SUBLEVEL, BuiltInTypes.STRING,
-                (subLevel, context) -> subLevel == NO_SUBLEVEL ? "" : subLevel.getUniqueId().toString()));
-
-        event.register(ZPSNodes.mapper("pos", SUBLEVEL, ZPSScriptTypes.VEC_POS, (subLevel, context) -> subLevel == NO_SUBLEVEL
-                ? context.pos().getCenter()
-                : toMinecraft(subLevel.logicalPose().position())));
-
-        event.register(ZPSNodes.mapper("world_vel", SUBLEVEL, ZPSScriptTypes.VEC_DIR, (subLevel, context) -> {
-            if (subLevel == NO_SUBLEVEL) {
-                return Vec3.ZERO;
-            }
-
-            Position position = context.pos().getCenter();
-            return SableCompanion.INSTANCE.getVelocity(context.level(), position);
-        }));
-
-        event.register(ZPSNodes.mapper("local_vel", SUBLEVEL, ZPSScriptTypes.VEC_DIR, (subLevel, context) -> {
-            if (subLevel == NO_SUBLEVEL) {
-                return Vec3.ZERO;
-            }
-
-            Position position = context.pos().getCenter();
-            Vec3 worldVelocity = SableCompanion.INSTANCE.getVelocity(context.level(), position);
-            Vector3d localVelocity = new Vector3d(worldVelocity.x, worldVelocity.y, worldVelocity.z);
-            subLevel.logicalPose().orientation().transformInverse(localVelocity);
-            return new Vec3(localVelocity.x, localVelocity.y, localVelocity.z);
-        }));
-
-        event.register(ZPSNodes.mapper("bounding_box", SUBLEVEL, ZPSScriptTypes.VEC_BOX, (subLevel, context) -> {
-            if (subLevel == NO_SUBLEVEL) {
-                return Vec3.ZERO;
-            }
-
-            // SubLevelAccess#boundingBox is the world-space AABB, which grows as the
-            // sublevel rotates. The plot bounds are the local-space block extents.
-            if (!(subLevel instanceof SubLevel fullSubLevel)) {
-                return Vec3.ZERO;
-            }
-
-            BoundingBox3ic bounds = fullSubLevel.getPlot().getBoundingBox();
-            if (bounds.maxX() < bounds.minX() || bounds.maxY() < bounds.minY() || bounds.maxZ() < bounds.minZ()) {
-                return Vec3.ZERO;
-            }
-
-            // Plot bounds are inclusive block coordinates.
-            return new Vec3(
-                    bounds.maxX() - bounds.minX() + 1,
-                    bounds.maxY() - bounds.minY() + 1,
-                    bounds.maxZ() - bounds.minZ() + 1
-            );
-        }));
-
-        event.register(ZPSNodes.rawArgumentMapper("dir", SUBLEVEL, ZPSScriptTypes.VEC_DIR, "direction",
-        EnumArgument.enumArgument(Direction.class), Direction.class,
-        (subLevel, direction, context) -> subLevelDirection(subLevel, direction)));
-
-        // TODO: VSCompat registers a "mass" mapper (ship inertia mass scaled by its
-        //  ship-to-world volume). The Sable companion API exposes no inertia/mass accessor
-        //  on SubLevelAccess, so there is no exact Sable equivalent to register here.
+            return subLevel == null ? null : new SubLevelView(subLevel);
+        }, OnSubLevel.INSTANCE);
     }
 
     /// Only call after verifying that Sable is loaded.
@@ -230,46 +153,78 @@ public final class SableCompat {
         }
     }
 
-    private static Vec3 subLevelDirection(SubLevelAccess subLevel, Direction direction) {
-        Vec3 normal = Vec3.atLowerCornerOf(direction.getNormal());
-        if (subLevel == NO_SUBLEVEL) {
-            return normal;
+    /**
+     * A sublevel as the server tick sees it. On the server Sable's are {@link ServerSubLevel}s, which also know
+     * their motion and mass; one that is not reads as standing still and weighing nothing.
+     */
+    private record SubLevelView(SubLevelAccess subLevel) implements ShipScripts.ShipView {
+        @Override
+        public String name() {
+            return subLevel.getName() == null ? "" : subLevel.getName();
         }
 
-        return subLevel.logicalPose().transformNormal(normal).normalize();
+        @Override
+        public String id() {
+            return subLevel.getUniqueId().toString();
+        }
+
+        /** The plot's extent, in blocks; {@code SubLevelAccess#boundingBox} is the world AABB, which grows as it turns. */
+        @Override
+        public Vec3 boundingBox() {
+            if (!(subLevel instanceof SubLevel fullSubLevel)) {
+                return Vec3.ZERO;
+            }
+            BoundingBox3ic bounds = fullSubLevel.getPlot().getBoundingBox();
+            if (bounds.maxX() < bounds.minX() || bounds.maxY() < bounds.minY() || bounds.maxZ() < bounds.minZ()) {
+                return Vec3.ZERO;
+            }
+            // Plot bounds are inclusive block coordinates.
+            return new Vec3(
+                    bounds.maxX() - bounds.minX() + 1,
+                    bounds.maxY() - bounds.minY() + 1,
+                    bounds.maxZ() - bounds.minZ() + 1
+            );
+        }
+
+        @Override
+        public Vec3 position() {
+            return toMinecraft(subLevel.logicalPose().position());
+        }
+
+        @Override
+        public Vec3 worldVelocity() {
+            return subLevel instanceof ServerSubLevel server ? toMinecraft(server.latestLinearVelocity) : Vec3.ZERO;
+        }
+
+        @Override
+        public Vec3 angularVelocity() {
+            return subLevel instanceof ServerSubLevel server ? toMinecraft(server.latestAngularVelocity) : Vec3.ZERO;
+        }
+
+        @Override
+        public Vec3 centreOfMass() {
+            return subLevel instanceof ServerSubLevel server
+                    ? toMinecraft(server.getMassTracker().getCenterOfMass())
+                    : position();
+        }
+
+        @Override
+        public double mass() {
+            return subLevel instanceof ServerSubLevel server ? server.getMassTracker().getMass() : 0;
+        }
+
+        @Override
+        public Vec3 toWorldDirection(Vec3 direction) {
+            return subLevel.logicalPose().transformNormal(direction);
+        }
+
+        @Override
+        public Vec3 toGridDirection(Vec3 direction) {
+            return subLevel.logicalPose().transformNormalInverse(direction);
+        }
     }
 
     private static Vec3 toMinecraft(Vector3dc vector) {
         return new Vec3(vector.x(), vector.y(), vector.z());
     }
-
-    private static final SubLevelAccess NO_SUBLEVEL = new SubLevelAccess() {
-        private final Pose3d pose = new Pose3d();
-        private final BoundingBox3d bounds = new BoundingBox3d();
-
-        @Override
-        public @NotNull Pose3dc logicalPose() {
-            return this.pose;
-        }
-
-        @Override
-        public @NotNull Pose3dc lastPose() {
-            return this.pose;
-        }
-
-        @Override
-        public @NotNull BoundingBox3dc boundingBox() {
-            return this.bounds;
-        }
-
-        @Override
-        public @NotNull UUID getUniqueId() {
-            return new UUID(0L, 0L);
-        }
-
-        @Override
-        public @Nullable String getName() {
-            return null;
-        }
-    };
 }

@@ -2,6 +2,8 @@ package g_mungus.zps.commands.api;
 
 import g_mungus.munguscript.language.node.ScriptGetter;
 import g_mungus.munguscript.language.node.ScriptNode;
+import g_mungus.munguscript.language.node.SimpleExecutor;
+import g_mungus.zps.commands.phystick.PhysTickProgram;
 import net.minecraft.commands.CommandBuildContext;
 import net.neoforged.bus.api.Event;
 
@@ -16,11 +18,15 @@ import java.util.function.Consumer;
  */
 public class RegisterScriptCommandsEvent extends Event {
     private final Consumer<ScriptNode> registrar;
+    private final Consumer<ScriptNode> physTickSafe;
     private final CommandBuildContext buildContext;
     private final Set<String> getterNames = new HashSet<>();
 
-    public RegisterScriptCommandsEvent(Consumer<ScriptNode> registrar, CommandBuildContext buildContext) {
+    /** @param physTickSafe given each node registered as safe in a phys tick program, after it is registered */
+    public RegisterScriptCommandsEvent(Consumer<ScriptNode> registrar, Consumer<ScriptNode> physTickSafe,
+                                       CommandBuildContext buildContext) {
         this.registrar = registrar;
+        this.physTickSafe = physTickSafe;
         this.buildContext = buildContext;
     }
 
@@ -29,6 +35,30 @@ public class RegisterScriptCommandsEvent extends Event {
         if (node instanceof ScriptGetter<?> getter) {
             getterNames.add(getter.displayName());
         }
+    }
+
+    /**
+     * Registers a getter or mapper that a phys tick program ({@code on_phys_tick}) may run inside a grid's physics
+     * step, which may be on a physics thread of its own. It must not touch the level or any block entity but its
+     * target's own published state. It may read the step from {@link ZPSScriptContext#physics()}, which is null
+     * wherever else it runs.
+     * <p>
+     * In a program, a chain with a word that is not safe is worked out on the server tick before the step, up to
+     * and including the last such word. MungusScript's own mappers are always safe. For an executor, use
+     * {@link #registerPhysTickExecutor}.
+     */
+    public void registerPhysTickSafe(ScriptNode node) {
+        register(node);
+        physTickSafe.accept(node);
+    }
+
+    /**
+     * Registers an executor for phys tick programs: safe to run in the physics step, as
+     * {@link #registerPhysTickSafe} says, and meant for inside {@code on_phys_tick}, where no other executor
+     * parses. Outside a program it is not suggested, and it runs without a step to act on.
+     */
+    public void registerPhysTickExecutor(SimpleExecutor<?, ?> executor) {
+        registerPhysTickSafe(executor.onlyInside(PhysTickProgram.ON_PHYS_TICK));
     }
 
     /**

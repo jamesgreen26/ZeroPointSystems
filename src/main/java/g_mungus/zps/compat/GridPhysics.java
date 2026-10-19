@@ -33,6 +33,9 @@ public interface GridPhysics {
         return linearVelocity().add(angularVelocity().cross(arm));
     }
 
+    /** Where the grid is in the world: the position of its pose. */
+    Vec3 position();
+
     /** The grid's mass, a plain block weighing 1. */
     double mass();
 

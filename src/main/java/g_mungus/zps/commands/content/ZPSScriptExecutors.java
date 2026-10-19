@@ -1,5 +1,6 @@
 package g_mungus.zps.commands.content;
 
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import g_mungus.munguscript.language.builtin.BuiltInTypes;
 import g_mungus.zps.ZPSMod;
@@ -12,11 +13,14 @@ import g_mungus.zps.commands.api.ZPSScriptTypes;
 import g_mungus.zps.commands.content.arguments.AssemblerRecipeArgument;
 import g_mungus.zps.commands.content.executors.AssemblerRecipeCommand;
 import g_mungus.zps.commands.content.executors.LoadScriptCommand;
+import g_mungus.zps.commands.content.executors.PhysTickCommand;
 import g_mungus.zps.commands.content.executors.RoboticArmItemCommand;
 import g_mungus.zps.commands.content.executors.SetFrequencyCommand;
 import g_mungus.zps.commands.content.executors.SetPageCommand;
 import g_mungus.zps.commands.content.executors.RequestValueCommand;
 import g_mungus.zps.commands.content.executors.SetRedstoneCommand;
+import g_mungus.zps.commands.phystick.PhysTickProgram;
+import g_mungus.zps.commands.phystick.PhysTickProgrammableTarget;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -94,5 +98,16 @@ public class ZPSScriptExecutors {
                 AssemblerRecipeArgument.recipe(), ResourceLocation.class, (id, context) -> id.toString(),
                 (recipeId, context) -> AssemblerRecipeCommand.setRecipe(context.level(), context.pos(), recipeId))
                 .withApplicability(BlockApplicability.of("zps:assembler")));
+
+        // Runs the command in command(...) in every physics step of the target's ship, until it is replaced or
+        // not sent again for a few ticks (PhysTickProgram).
+        event.register(ZPSNodes.commandExecutor(PhysTickProgram.ON_PHYS_TICK, PhysTickCommand::onPhysTick)
+                .withApplicability(PhysTickProgrammableTarget.INSTANCE));
+
+        // Fires a thruster at a share of its full burn for the physics step it runs in, in place of its redstone
+        // signal; only inside on_phys_tick.
+        event.registerPhysTickExecutor(ZPSNodes.executor("thrust", BuiltInTypes.DOUBLE,
+                DoubleArgumentType.doubleArg(0, 1), PhysTickCommand::thrust)
+                .withApplicability(BlockApplicability.of("zps:thruster")));
     }
 }

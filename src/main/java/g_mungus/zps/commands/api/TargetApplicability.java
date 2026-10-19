@@ -7,6 +7,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 
 import java.util.Collection;
+import java.util.Set;
 
 /**
  * Which targets a script node is for. An executor among several of the same name runs for the
@@ -23,6 +24,11 @@ public interface TargetApplicability extends Applicability {
 
     default boolean appliesToAnyTarget(Level level, Collection<ScriptTarget> targets) {
         return targets.stream().anyMatch(target -> appliesTo(level, target));
+    }
+
+    /** The blocks a node with this is listed under in "works with" lists; none unless it can tell. */
+    default Set<ResourceLocation> listedBlocks() {
+        return Set.of();
     }
 
     Type<?> type();

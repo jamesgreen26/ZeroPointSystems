@@ -1,8 +1,12 @@
 package g_mungus.zps.gametest;
 
+import g_mungus.munguscript.language.builtin.BuiltInTypes;
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.commands.api.ZPSScriptTypes;
+import g_mungus.zps.commands.api_impl.ZPSScripts;
 import g_mungus.zps.compat.Compat;
 import g_mungus.zps.compat.GridPhysics;
+import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -45,6 +49,87 @@ public class GridPhysicsGameTests {
         helper.assertTrue(SableGridPhysicsProbe.actorIsSableActor(),
                 "The mixin should make GridPhysicsActor extend Sable's BlockEntitySubLevelActor");
         helper.succeed();
+    }
+
+    /**
+     * A sublevel that has come to rest still answers to a push that grows too gently for Sable's own wake-up check
+     * (a change of more than about 0.0032 impulse a substep), as a program easing a thruster open does.
+     */
+    @GameTest(template = TEMPLATE, batch = BATCH + "_sleep", timeoutTicks = 400)
+    public static void gentlePush_wakesASleepingGrid(GameTestHelper helper) {
+        if (!Compat.isSableLoaded()) {
+            helper.succeed();
+            return;
+        }
+        ServerLevel level = helper.getLevel();
+        BlockPos block = helper.absolutePos(new BlockPos(5, 2, 5));
+        helper.setBlock(new BlockPos(5, 2, 5), Blocks.STONE);
+        helper.runAfterDelay(2, () -> {
+            SableBeamRig rig = SableBeamRig.assemble(level, block, block, List.of(block), new Quaterniond());
+            SableGridPhysicsProbe.setPhysicsPaused(level, false);
+            // Long enough to settle and fall asleep on the floor.
+            helper.runAfterDelay(SETTLE_TICKS, () -> {
+                Vec3 rested = SableGridPhysicsProbe.physicsOf(rig).position();
+                double[] force = {0};
+                double[] mass = {0};
+                SableGridPhysicsProbe.everySubstep(rig, physics -> {
+                    // Each substep's impulse a little more than the last, under what Sable wakes a sleeper for.
+                    force[0] += GENTLE_IMPULSE_STEP / SableGridPhysicsProbe.lastTimeStep();
+                    mass[0] = physics.mass();
+                    physics.applyForce(physics.centreOfMass(), new Vec3(0, force[0], 0));
+                });
+                helper.runAfterDelay(RAMP_TICKS, () -> {
+                    SableGridPhysicsProbe.stop();
+                    Vec3 moved = SableGridPhysicsProbe.physicsOf(rig).position().subtract(rested);
+                    SableGridPhysicsProbe.setPhysicsPaused(level, true);
+                    rig.remove();
+                    ZPSMod.LOGGER.info("[grid physics] gentle push to {} on mass {} moved the grid {}", force[0], mass[0], moved);
+                    helper.assertTrue(moved.y > 0.5,
+                            "A push grown to " + force[0] + " should have lifted the block, it moved " + moved);
+                    helper.succeed();
+                });
+            });
+        });
+    }
+
+    private static final int SETTLE_TICKS = 100;
+    private static final int RAMP_TICKS = 100;
+    /** Sable wakes a sleeper when a substep's impulse changes by more than about 0.0032. */
+    private static final double GENTLE_IMPULSE_STEP = 0.002;
+
+    /** The {@code ship} words read the same mass and centre of mass on the server tick as the physics step has. */
+    @GameTest(template = TEMPLATE, batch = BATCH + "_words", timeoutTicks = 100)
+    public static void shipWords_matchThePhysicsStep(GameTestHelper helper) {
+        if (!Compat.isSableLoaded()) {
+            helper.succeed();
+            return;
+        }
+        ServerLevel level = helper.getLevel();
+        List<BlockPos> blocks = new ArrayList<>();
+        for (int x = 4; x <= 5; x++) {
+            BlockPos pos = new BlockPos(x, 1, 4);
+            helper.setBlock(pos, Blocks.STONE);
+            blocks.add(helper.absolutePos(pos));
+        }
+        BlockPos min = helper.absolutePos(new BlockPos(4, 1, 4));
+        BlockPos max = helper.absolutePos(new BlockPos(5, 1, 4));
+        helper.runAfterDelay(2, () -> {
+            SableBeamRig rig = SableBeamRig.assemble(level, min, max, blocks, new Quaterniond());
+            try {
+                GridPhysics physics = SableGridPhysicsProbe.physicsOf(rig);
+                BlockPos onPlot = rig.blocksLeft().get(0);
+                CommandSourceStack source = level.getServer().createCommandSourceStack().withLevel(level);
+                double mass = ZPSScripts.get().evaluate("ship mass", BuiltInTypes.DOUBLE, source, onPlot);
+                Vec3 com = ZPSScripts.get().evaluate("ship com", ZPSScriptTypes.VEC_POS, source, onPlot);
+                helper.assertTrue(mass > 0 && Math.abs(mass - physics.mass()) < 1e-9,
+                        "ship mass should be the physics mass " + physics.mass() + ", is " + mass);
+                helper.assertTrue(com.distanceTo(physics.centreOfMass()) < 1e-9,
+                        "ship com should be the physics centre of mass " + physics.centreOfMass() + ", is " + com);
+            } finally {
+                rig.remove();
+            }
+            helper.succeed();
+        });
     }
 
     /**

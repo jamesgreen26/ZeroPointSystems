@@ -4,6 +4,7 @@ import g_mungus.munguscript.language.builtin.BuiltInTypes;
 import g_mungus.munguscript.language.type.ScriptType;
 import g_mungus.munguscript.language.type.TypeKey;
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.commands.phystick.PhysTickProgrammableTarget;
 import net.minecraft.commands.arguments.DimensionArgument;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.commands.arguments.coordinates.Coordinates;
@@ -47,6 +48,10 @@ public final class ZPSScriptTypes {
             .parse(text -> ResourceLocation.parse(text.strip()).toString())
             .build();
 
+    /**
+     * A stack of items. A getter gives a copy, never a stack an inventory holds: a phys tick program reads what a
+     * getter gave on the physics thread, while the server goes on changing the inventory.
+     */
     public static final ScriptType<ItemStack> ITEM = ScriptType.opaque(key("item"), ItemStack.class);
 
     public static final ScriptType<BlockState> BLOCK_STATE = ScriptType.opaque(key("block_state"), BlockState.class);
@@ -69,6 +74,7 @@ public final class ZPSScriptTypes {
         List<ScriptType<?>> types = new ArrayList<>(CORE);
         Map<ResourceLocation, TargetApplicability.Type<?>> applicabilities = new LinkedHashMap<>();
         applicabilities.put(BlockApplicability.TYPE.id(), BlockApplicability.TYPE);
+        applicabilities.put(PhysTickProgrammableTarget.TYPE.id(), PhysTickProgrammableTarget.TYPE);
         NeoForge.EVENT_BUS.post(new RegisterScriptTypesEvent(types::add,
                 type -> applicabilities.put(type.id(), type)));
         return new Registered(List.copyOf(types), Map.copyOf(applicabilities));

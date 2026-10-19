@@ -69,6 +69,11 @@ public record BlockApplicability(Set<String> entries) implements TargetApplicabi
         return resolved;
     }
 
+    @Override
+    public Set<ResourceLocation> listedBlocks() {
+        return resolve();
+    }
+
     public boolean appliesTo(ResourceLocation block) {
         return resolve().contains(block);
     }

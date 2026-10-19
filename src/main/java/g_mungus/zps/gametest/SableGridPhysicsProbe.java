@@ -25,6 +25,12 @@ final class SableGridPhysicsProbe {
     private static volatile ServerSubLevel target;
     private static volatile Consumer<GridPhysics> action;
     private static boolean listening;
+    private static volatile double lastTimeStep = 0.025;
+
+    /** The length of the last substep Sable ran, in seconds. */
+    static double lastTimeStep() {
+        return lastTimeStep;
+    }
 
     /** Whether the mixin has made every {@link GridPhysicsActor} one Sable collects from a plot. */
     static boolean actorIsSableActor() {
@@ -38,6 +44,7 @@ final class SableGridPhysicsProbe {
             SableEventPlatform.INSTANCE.onPhysicsTick((system, timeStep) -> {
                 ServerSubLevel subLevel = target;
                 Consumer<GridPhysics> run = action;
+                lastTimeStep = timeStep;
                 if (subLevel != null && run != null && !subLevel.isRemoved()) {
                     run.accept(new SableGridPhysics(subLevel, system.getPhysicsHandle(subLevel), timeStep));
                 }

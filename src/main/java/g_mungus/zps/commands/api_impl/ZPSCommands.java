@@ -8,6 +8,7 @@ import g_mungus.munguscript.language.node.ScriptGetter;
 import g_mungus.munguscript.language.node.ScriptNode;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.BlockApplicability;
+import g_mungus.zps.commands.api.TargetApplicability;
 import g_mungus.zps.commands.api_impl.debug.BrigadierCanvasExporter;
 import g_mungus.zps.commands.debug.PlaceBlockPanoramaCommand;
 import g_mungus.zps.commands.debug.armchain.ArmChainKitCommand;
@@ -120,10 +121,10 @@ public class ZPSCommands {
                 .collect(Collectors.toSet());
         Map<ResourceLocation, List<String>> names = new HashMap<>();
         for (ScriptNode node : scripts.engine().nodes()) {
-            if (!kind.isInstance(node) || !(node.applicability() instanceof BlockApplicability blocks)) {
+            if (!kind.isInstance(node) || !(node.applicability() instanceof TargetApplicability target)) {
                 continue;
             }
-            for (ResourceLocation block : blocks.resolve()) {
+            for (ResourceLocation block : target.listedBlocks()) {
                 if (blocksWithItems.contains(block)) {
                     names.computeIfAbsent(block, ignored -> new ArrayList<>()).add(node.displayName());
                 }

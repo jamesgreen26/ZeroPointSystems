@@ -1,5 +1,6 @@
 package g_mungus.zps.gametest;
 
+import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.suggestion.Suggestion;
 import g_mungus.munguscript.engine.Highlight;
 import g_mungus.munguscript.engine.ScriptView;
@@ -9,6 +10,7 @@ import g_mungus.munguscript.engine.host.Match;
 import g_mungus.munguscript.language.node.Applicability;
 import g_mungus.munguscript.language.node.ScriptContext;
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.commands.api.ScriptTarget;
 import g_mungus.zps.commands.api.TargetApplicability;
 import g_mungus.zps.commands.api.ZPSScriptTypes;
@@ -32,6 +34,7 @@ import org.joml.Quaterniond;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -91,6 +94,53 @@ public class ScriptTreeSyncGameTests {
                 .map(Suggestion::getText).toList();
     }
 
+    /** What {@code on_phys_tick command(...)} holds is a command of its own on a client: suggested and highlighted as one. */
+    @GameTest(template = TEMPLATE)
+    public static void onPhysTickTakesACommandOnTheClient(GameTestHelper helper) {
+        BlockPos thruster = helper.absolutePos(new BlockPos(1, 2, 1));
+        helper.setBlock(new BlockPos(1, 2, 1), ModBlocks.THRUSTER.get());
+        BlockPos stone = helper.absolutePos(new BlockPos(3, 2, 3));
+        helper.setBlock(new BlockPos(3, 2, 3), Blocks.STONE);
+        ServerLevel level = helper.getLevel();
+        ScriptView<CommandSourceStack> atThruster = decode(helper, Set.of(ScriptTarget.at(level, thruster)));
+        ScriptView<CommandSourceStack> atStone = decode(helper, Set.of(ScriptTarget.at(level, stone)));
+
+        helper.assertTrue(suggest(helper, atThruster, "on_phys").contains("on_phys_tick"),
+                "on_phys_tick should be offered for a thruster, got " + suggest(helper, atThruster, "on_phys"));
+        helper.assertTrue(!suggest(helper, atStone, "on_phys").contains("on_phys_tick"),
+                "on_phys_tick should not be offered for stone, got " + suggest(helper, atStone, "on_phys"));
+        helper.assertTrue(!suggest(helper, atThruster, "on_phys_tick command(on_phys").contains("on_phys_tick"),
+                "on_phys_tick should not be offered inside itself, got "
+                        + suggest(helper, atThruster, "on_phys_tick command(on_phys"));
+        helper.assertTrue(suggest(helper, atThruster, "on_phys_tick ").contains("command("),
+                "command( should be offered after on_phys_tick, got " + suggest(helper, atThruster, "on_phys_tick "));
+        helper.assertTrue(!suggest(helper, atThruster, "thru").contains("thrust"),
+                "thrust should only be offered inside on_phys_tick, got " + suggest(helper, atThruster, "thru"));
+        helper.assertTrue(suggest(helper, atThruster, "on_phys_tick command(thru").contains("thrust"),
+                "thrust should be offered inside command(, got "
+                        + suggest(helper, atThruster, "on_phys_tick command(thru"));
+        helper.assertTrue(suggest(helper, atThruster, "on_phys_tick command(i").contains("if"),
+                "if should be offered inside command(, got " + suggest(helper, atThruster, "on_phys_tick command(i"));
+
+        // The editor's hint inside an open command(: what the inner executor takes, not the outer error.
+        String open = "on_phys_tick command(thrust ";
+        CommandSourceStack hintSource = level.getServer().createCommandSourceStack().withLevel(level);
+        var inner = atThruster.parseAt(open, open.length(), hintSource);
+        var at = inner.getContext().findSuggestionContext(open.length());
+        Collection<String> usage = new CommandDispatcher<CommandSourceStack>().getSmartUsage(at.parent, hintSource).values();
+        helper.assertTrue(at.parent.getName().equals("thrust") && !usage.isEmpty(),
+                "Inside command(, the hint should be thrust's argument, got " + at.parent.getName() + " " + usage);
+
+        String command = "on_phys_tick command(thrust 0.5)";
+        CommandSourceStack source = level.getServer().createCommandSourceStack().withLevel(level);
+        List<String> kinds = atThruster.highlight(command, source, null).stream()
+                .map(highlight -> highlight.kind() + ":" + highlight.range().get(command)).toList();
+        helper.assertTrue(kinds.equals(List.of("EXECUTOR:on_phys_tick", "ARGUMENT:command(", "EXECUTOR:thrust",
+                        "ARGUMENT:0.5", "ARGUMENT:)")),
+                "on_phys_tick's command should highlight as a command, got " + kinds);
+        helper.succeed();
+    }
+
     @GameTest(template = TEMPLATE)
     public static void decodedTreeSuggestsExecutorsGettersAndMappers(GameTestHelper helper) {
         ScriptView<CommandSourceStack> view = decode(helper, Set.of());
@@ -116,7 +166,7 @@ public class ScriptTreeSyncGameTests {
 
     /** Its own batch: a sublevel pauses physics for the whole level while it stands. */
     @GameTest(template = TEMPLATE, batch = "scriptSable", timeoutTicks = 100)
-    public static void sublevelIsOnlyOfferedForTargetsOnASublevel(GameTestHelper helper) {
+    public static void shipIsOnlyOfferedForTargetsOnASublevel(GameTestHelper helper) {
         if (!Compat.isSableLoaded()) {
             helper.succeed();
             return;
@@ -131,12 +181,12 @@ public class ScriptTreeSyncGameTests {
             SableBeamRig rig = SableBeamRig.assemble(level, lifted, lifted, List.of(lifted), new Quaterniond());
             try {
                 BlockPos onPlot = rig.blocksLeft().get(0);
-                List<String> onGround = suggest(helper, decode(helper, Set.of(ScriptTarget.at(level, ground))), "if subl");
-                helper.assertTrue(!onGround.contains("sublevel"),
-                        "sublevel should not be offered for a block on no sublevel, got " + onGround);
-                List<String> onSubLevel = suggest(helper, decode(helper, Set.of(ScriptTarget.at(level, onPlot))), "if subl");
-                helper.assertTrue(onSubLevel.contains("sublevel"),
-                        "sublevel should be offered for a block on a sublevel, got " + onSubLevel);
+                List<String> onGround = suggest(helper, decode(helper, Set.of(ScriptTarget.at(level, ground))), "if shi");
+                helper.assertTrue(!onGround.contains("ship"),
+                        "ship should not be offered for a block on no sublevel, got " + onGround);
+                List<String> onSubLevel = suggest(helper, decode(helper, Set.of(ScriptTarget.at(level, onPlot))), "if shi");
+                helper.assertTrue(onSubLevel.contains("ship"),
+                        "ship should be offered for a block on a sublevel, got " + onSubLevel);
                 if (ModList.get().isLoaded("cc_sable")) {
                     // CC: Sable's computer API, restricted the same way.
                     List<String> apiOnGround = suggest(helper, decode(helper, Set.of(ScriptTarget.at(level, ground))), "if sublevel_");

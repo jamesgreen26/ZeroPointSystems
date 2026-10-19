@@ -1,6 +1,6 @@
 package g_mungus.zps.block;
 
-import g_mungus.zps.exhaust.ThrusterBlock;
+import g_mungus.zps.client.exhaust.debug.ThrusterBlock;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.gas.CreativeGasGeneratorBlock;
 import g_mungus.zps.block.gas.DuctBlock;

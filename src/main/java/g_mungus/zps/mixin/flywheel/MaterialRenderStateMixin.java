@@ -2,7 +2,7 @@ package g_mungus.zps.mixin.flywheel;
 
 import dev.engine_room.flywheel.api.material.Material;
 import dev.engine_room.flywheel.backend.engine.MaterialRenderState;
-import g_mungus.zps.exhaust.ExhaustLayer;
+import g_mungus.zps.client.exhaust.ExhaustLayer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;

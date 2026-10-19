@@ -1,6 +1,6 @@
 package g_mungus.zps.blockentity;
 
-import g_mungus.zps.exhaust.ThrusterBlockEntity;
+import g_mungus.zps.client.exhaust.debug.ThrusterBlockEntity;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;

@@ -1,4 +1,4 @@
-package g_mungus.zps.exhaust;
+package g_mungus.zps.client.exhaust;
 
 import dev.engine_room.flywheel.api.model.Model;
 import dev.engine_room.flywheel.api.visual.DynamicVisual;

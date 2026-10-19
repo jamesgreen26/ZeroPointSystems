@@ -1,4 +1,4 @@
-package g_mungus.zps.exhaust;
+package g_mungus.zps.client.exhaust.debug;
 
 import com.mojang.serialization.MapCodec;
 import g_mungus.zps.blockentity.ModBlockEntities;
@@ -82,7 +82,7 @@ public class ThrusterBlock extends BaseEntityBlock {
                                                                   @NotNull BlockEntityType<T> type) {
         return level.isClientSide() ? (level1, pos, state1, be) -> {
             if (be instanceof ThrusterBlockEntity thruster) {
-                thruster.clientTick();
+                thruster.tickExhaust();
             }
         } : null;
     }

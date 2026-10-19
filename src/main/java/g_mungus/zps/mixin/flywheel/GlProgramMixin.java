@@ -1,7 +1,7 @@
 package g_mungus.zps.mixin.flywheel;
 
 import dev.engine_room.flywheel.backend.gl.shader.GlProgram;
-import g_mungus.zps.exhaust.ExhaustParticles;
+import g_mungus.zps.client.exhaust.ExhaustParticles;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;

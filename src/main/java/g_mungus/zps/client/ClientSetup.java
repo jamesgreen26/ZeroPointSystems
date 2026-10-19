@@ -1,7 +1,7 @@
 package g_mungus.zps.client;
 
-import g_mungus.zps.exhaust.ExhaustLayer;
-import g_mungus.zps.exhaust.ExhaustParticles;
+import g_mungus.zps.client.exhaust.ExhaustLayer;
+import g_mungus.zps.client.exhaust.ExhaustParticles;
 import dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;

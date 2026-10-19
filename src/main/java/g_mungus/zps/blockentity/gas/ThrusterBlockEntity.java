@@ -57,14 +57,26 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements GridPhysi
 
     /*
      * Steering, by how far the thrust points off the line through the centre of mass, in degrees, 0 to 90 either
-     * way along it. Up to PUSH_ONLY it only pushes, as if through the centre of mass; from TURN_ONLY it only turns
-     * the grid about it. Between FULL_TURN and FULL_PUSH it does both in full, as a force at the nozzle would, and
-     * either side of that each fades out smoothly into its safe zone.
+     * way along it. The push is always whole.
+     * Up to STRAIGHT the thruster does not turn the grid at all and damps it in full (see DAMPING), so one nearly
+     * lined up with the centre of mass drives it straight; from FULL_TURN it turns it as a force at the nozzle
+     * would and does not damp, so it does not fight the drift a turn brings. Between, the turn fades in smoothly
+     * and the damping out by as much.
      */
-    public static final double PUSH_ONLY_DEGREES = 20;
+    public static final double STRAIGHT_DEGREES = 20;
     public static final double FULL_TURN_DEGREES = 35;
-    public static final double FULL_PUSH_DEGREES = 55;
-    public static final double TURN_ONLY_DEGREES = 70;
+
+    /**
+     * Damping: each unit of push through the centre of mass also resists sliding across the thrust and going
+     * backwards against it, by this much per block per second of that speed, so a driven grid goes where it is
+     * pointed and turns around quickly.
+     */
+    public static final double DAMPING = 1.0 / 64;
+    /**
+     * The fastest the damping may take speed off, as a share of it per second. Keeps a light grid with a big
+     * thruster from overshooting into a wobble within one physics step.
+     */
+    public static final double MAX_DAMPING_RATE = 10;
 
     /** Below this many kilograms a share is not worth taking. */
     private static final double MIN_TRANSFER = 1e-9;
@@ -182,8 +194,8 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements GridPhysi
     // --- physics ----------------------------------------------------------------------------
 
     /**
-     * Pushes and turns the grid as {@link #steer} reads the thruster: through the centre of mass when lined up with
-     * it, about it when square across it.
+     * Pushes the grid with the whole thrust through the centre of mass, damps its drift and going backwards
+     * ({@link #damping}) as much as {@link #dampingShare} allows, and turns it as much as {@link #turn} allows.
      */
     @Override
     public void onGridPhysicsTick(GridPhysics physics) {
@@ -192,39 +204,74 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements GridPhysi
             return;
         }
         Vec3 centreOfMass = physics.centreOfMass();
-        Steering steering = steer(Vec3.atCenterOf(worldPosition).subtract(centreOfMass), force);
-        if (steering.push().lengthSqr() > 0) {
-            physics.applyForce(centreOfMass, steering.push());
-        }
-        if (steering.turn().lengthSqr() > 0) {
-            physics.applyTorque(steering.turn());
+        Vec3 lever = Vec3.atCenterOf(worldPosition).subtract(centreOfMass);
+        Vec3 velocity = physics.toGridDirection(physics.linearVelocity());
+        Vec3 damping = damping(force, velocity, physics.mass()).scale(dampingShare(lever, force));
+        physics.applyForce(centreOfMass, force.add(damping));
+        Vec3 turn = turn(lever, force);
+        if (turn.lengthSqr() > 0) {
+            physics.applyTorque(turn);
         }
     }
 
-    /** What a thrust does to its grid: a force through the centre of mass, and a torque about it. */
-    public record Steering(Vec3 push, Vec3 turn) {}
-
     /**
-     * Guesses whether a thruster is there to drive the grid or to turn it, from how its thrust lines up with the
-     * centre of mass, and keeps only that. A force at the nozzle is the whole force through the centre of mass
-     * plus the torque {@code lever x force}; each is weighted by the angle, see {@link #PUSH_ONLY_DEGREES}.
+     * The torque a thrust turns its grid with: the {@code lever x force} a force at the nozzle would give, except
+     * that a thruster nearly lined up with the centre of mass is taken to be there to drive the grid straight and
+     * turns it less or not at all, see {@link #STRAIGHT_DEGREES}.
      *
      * @param lever from the centre of mass to where the thrust acts
      * @param force the thrust
      */
-    public static Steering steer(Vec3 lever, Vec3 force) {
+    public static Vec3 turn(Vec3 lever, Vec3 force) {
+        return lever.cross(force).scale(turnShare(lever, force));
+    }
+
+    /** How much of a force at the nozzle's turn a thruster applies, 0 to 1; see {@link #STRAIGHT_DEGREES}. */
+    public static double turnShare(Vec3 lever, Vec3 force) {
+        return smoothstep(STRAIGHT_DEGREES, FULL_TURN_DEGREES, offAxisDegrees(lever, force));
+    }
+
+    /**
+     * How much of {@link #damping} a thruster applies, 0 to 1: whatever {@link #turnShare} leaves, so one there to
+     * drive the grid straight damps in full and one there to turn it not at all.
+     */
+    public static double dampingShare(Vec3 lever, Vec3 force) {
+        return 1 - turnShare(lever, force);
+    }
+
+    /**
+     * How far {@code force} points off the line through the centre of mass, 0 to 90 degrees: folded so pushing
+     * towards the centre of mass reads the same as pushing away from it. A thruster on the centre of mass, with no
+     * lever, counts as lined up.
+     */
+    private static double offAxisDegrees(Vec3 lever, Vec3 force) {
         double leverLength = lever.length();
         double forceLength = force.length();
-        if (forceLength == 0) {
-            return new Steering(Vec3.ZERO, Vec3.ZERO);
+        if (forceLength == 0 || leverLength < 1e-6) {
+            return 0;
         }
-        // Folded so pushing towards the centre of mass reads the same as pushing away from it. A thruster on the
-        // centre of mass has no lever to turn with, so it counts as lined up.
-        double alignment = leverLength < 1e-6 ? 1 : Math.min(1, Math.abs(lever.dot(force)) / (leverLength * forceLength));
-        double degrees = Math.toDegrees(Math.acos(alignment));
-        double push = 1 - smoothstep(FULL_PUSH_DEGREES, TURN_ONLY_DEGREES, degrees);
-        double turn = smoothstep(PUSH_ONLY_DEGREES, FULL_TURN_DEGREES, degrees);
-        return new Steering(force.scale(push), lever.cross(force).scale(turn));
+        double alignment = Math.min(1, Math.abs(lever.dot(force)) / (leverLength * forceLength));
+        return Math.toDegrees(Math.acos(alignment));
+    }
+
+    /**
+     * The force against going anywhere but where a push points: against the velocity off the push's axis, and
+     * against any going backwards along it, which adds to the push. Going forwards is left alone. In proportion to
+     * the push ({@link #DAMPING}), but never faster than {@link #MAX_DAMPING_RATE} allows for the mass.
+     *
+     * @param push     the push through the centre of mass
+     * @param velocity the centre of mass's velocity, in the same axes as {@code push}
+     */
+    public static Vec3 damping(Vec3 push, Vec3 velocity, double mass) {
+        double pushLength = push.length();
+        if (pushLength == 0) {
+            return Vec3.ZERO;
+        }
+        Vec3 axis = push.scale(1 / pushLength);
+        double forwards = velocity.dot(axis);
+        Vec3 resisted = velocity.subtract(axis.scale(Math.max(forwards, 0)));
+        double coefficient = Math.min(pushLength * DAMPING, mass * MAX_DAMPING_RATE);
+        return resisted.scale(-coefficient);
     }
 
     /** 0 up to {@code from}, 1 from {@code to}, and an S-curve between with no kink at either end. */

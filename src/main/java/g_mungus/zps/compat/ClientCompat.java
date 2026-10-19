@@ -6,7 +6,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
+import net.minecraft.world.phys.AABB;
 import org.joml.Matrix4d;
+
+import java.util.List;
+import java.util.UUID;
 
 public class ClientCompat {
 
@@ -75,6 +79,21 @@ public class ClientCompat {
             return SableClientCompat.renderTransformAt(pos, partialTick, dest);
         }
         return null;
+    }
+
+    /// A moving grid near some region, as drawn through the current tick: its block space to world
+    /// transform at each partial tick asked for, and its world bounds as they stand.
+    public record GridPoses(UUID id, AABB worldBounds, Matrix4d[] localToWorld) {
+    }
+
+    /// Every moving grid reaching into worldBounds, with its render transforms at the given partial
+    /// ticks into the current tick (0 the last tick's pose, 1 this tick's). Sable only: empty with
+    /// Valkyrien Skies or neither. Render thread only.
+    public static List<GridPoses> gridsTouching(Level level, AABB worldBounds, float[] partialTicks) {
+        if (level instanceof ClientLevel clientLevel && Compat.isSableLoaded() && !Compat.isVSLoaded()) {
+            return SableClientCompat.gridsTouching(clientLevel, worldBounds, partialTicks);
+        }
+        return List.of();
     }
 
     /// Unwraps optional moving-grid sound delegates back to the original sound instance.

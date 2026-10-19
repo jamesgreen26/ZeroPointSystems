@@ -2,13 +2,20 @@ package g_mungus.zps.compat;
 
 import dev.ryanhcode.sable.companion.ClientSubLevelAccess;
 import dev.ryanhcode.sable.companion.SableCompanion;
+import dev.ryanhcode.sable.companion.SubLevelAccess;
+import dev.ryanhcode.sable.companion.math.BoundingBox3d;
+import dev.ryanhcode.sable.companion.math.BoundingBox3dc;
 import dev.ryanhcode.sable.sound.MovingSoundInstanceDelegate;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4d;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public final class SableClientCompat {
 
@@ -59,6 +66,30 @@ public final class SableClientCompat {
     static @Nullable Matrix4d renderTransformAt(BlockPos pos, float partialTick, Matrix4d dest) {
         ClientSubLevelAccess subLevel = SableCompanion.INSTANCE.getContainingClient(pos.getCenter());
         return subLevel == null ? null : subLevel.renderPose(partialTick).bakeIntoMatrix(dest);
+    }
+
+    /// Only call after verifying that Sable is loaded.
+    /// Every sublevel reaching into worldBounds, with its block space to world transform as drawn
+    /// at each of the partial ticks. The sublevels are gathered before any pose is read, as Sable
+    /// does not want its bounds touched mid-iteration.
+    static List<ClientCompat.GridPoses> gridsTouching(ClientLevel level, AABB worldBounds, float[] partialTicks) {
+        List<ClientSubLevelAccess> found = new ArrayList<>();
+        for (SubLevelAccess subLevel : SableCompanion.INSTANCE.getAllIntersecting(level, new BoundingBox3d(worldBounds))) {
+            if (subLevel instanceof ClientSubLevelAccess client) {
+                found.add(client);
+            }
+        }
+        List<ClientCompat.GridPoses> grids = new ArrayList<>(found.size());
+        for (ClientSubLevelAccess subLevel : found) {
+            BoundingBox3dc bounds = subLevel.boundingBox();
+            Matrix4d[] poses = new Matrix4d[partialTicks.length];
+            for (int i = 0; i < partialTicks.length; i++) {
+                poses[i] = subLevel.renderPose(partialTicks[i]).bakeIntoMatrix(new Matrix4d());
+            }
+            grids.add(new ClientCompat.GridPoses(subLevel.getUniqueId(),
+                    new AABB(bounds.minX(), bounds.minY(), bounds.minZ(), bounds.maxX(), bounds.maxY(), bounds.maxZ()), poses));
+        }
+        return grids;
     }
 
     /// Only call after verifying that Sable is loaded.

@@ -28,6 +28,7 @@ import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.util.Arrays;
 
 /**
  * What exhaust particles move through: for each chunk section a plume can reach, the terrain at
@@ -35,7 +36,8 @@ import java.nio.IntBuffer;
  * each substep for the push of crowding. The layout is described in {@code sim/field.glsl}.
  *
  * <p>The sections are the ones ExhaustParticles already tracks for light, so the field holds just
- * where plumes are, at any distance. A section's terrain is built from the blocks' collision
+ * where plumes are, at any distance, and the plot sections of any moving grid near them
+ * ({@link ExhaustGrids}): a grid's blocks are ordinary sections in its plot, kept the same way. A section's terrain is built from the blocks' collision
  * shapes when it joins, a few sections a tick, and kept up from block changes and chunk loads;
  * a section not built yet, or one that found no free slot, is air to the particles.
  *
@@ -43,12 +45,18 @@ import java.nio.IntBuffer;
  */
 final class ExhaustField {
 
-    private static final int INDEX = 32;
-    private static final int SLOT_GRID = 8;
-    private static final int MAX_SLOTS = SLOT_GRID * SLOT_GRID * SLOT_GRID;
-    private static final int TERRAIN_SIZE = SLOT_GRID * 16;
+    /** The index's cells: a 64^3 texture, used as one flat hash table. */
+    private static final int INDEX = 64;
+    private static final int CELLS = INDEX * INDEX * INDEX;
+    /** Cells a lookup tries from a section's hash before giving up; as in {@code sim/field.glsl}. */
+    private static final int MAX_PROBES = 16;
+    private static final int TOMBSTONE = -1;
+    /** Slots along each axis of the terrain texture: 16 by 8 by 8. */
+    private static final int SLOTS_X = 16;
+    private static final int SLOTS_YZ = 8;
+    private static final int MAX_SLOTS = SLOTS_X * SLOTS_YZ * SLOTS_YZ;
     static final int DENSITY_WIDTH = 2048;
-    static final int DENSITY_HEIGHT = 1024;
+    static final int DENSITY_HEIGHT = 2048;
     /** Sections built per tick, so a plume swinging into new ground costs a little each tick. */
     private static final int BUILDS_PER_TICK = 12;
     private static final long FULL = -1L;
@@ -62,6 +70,10 @@ final class ExhaustField {
     private static final Long2IntMap slots = new Long2IntOpenHashMap();
     private static final IntArrayFIFOQueue freeSlots = new IntArrayFIFOQueue();
     private static final LongLinkedOpenHashSet pending = new LongLinkedOpenHashSet();
+    /** The index as the GPU holds it, by cell: slot + 1, 0 for empty, or a tombstone. */
+    private static final int[] cellEntries = new int[CELLS];
+    /** The cell each section in the field sits in. */
+    private static final Long2IntMap cells = new Long2IntOpenHashMap();
     private static boolean warnedFull;
     /** Sub-cell masks of block states whose collision shape is the same everywhere. */
     private static final Reference2LongMap<BlockState> masks = new Reference2LongOpenHashMap<>();
@@ -91,7 +103,7 @@ final class ExhaustField {
             if (!wanted.contains(section)) {
                 int slot = slots.get(section);
                 it.remove();
-                writeEntry(section, 0, 0, 0, 0);
+                removeEntry(section);
                 freeSlots.enqueue(slot);
             }
         }
@@ -115,10 +127,14 @@ final class ExhaustField {
     /** Drops every section; the textures are kept. */
     static void clear() {
         if (allocated()) {
-            for (long section : slots.keySet()) {
-                writeEntry(section, 0, 0, 0, 0);
+            for (int cell = 0; cell < CELLS; cell++) {
+                if (cellEntries[cell] != 0) {
+                    writeCell(cell, 0, 0, 0, 0);
+                }
             }
         }
+        Arrays.fill(cellEntries, 0);
+        cells.clear();
         slots.clear();
         pending.clear();
         freeSlots.clear();
@@ -187,20 +203,56 @@ final class ExhaustField {
             }
             return;
         }
-        int x = Math.floorMod(SectionPos.x(section), INDEX);
-        int y = Math.floorMod(SectionPos.y(section), INDEX);
-        int z = Math.floorMod(SectionPos.z(section), INDEX);
-        for (long other : slots.keySet()) {
-            if (Math.floorMod(SectionPos.x(other), INDEX) == x && Math.floorMod(SectionPos.y(other), INDEX) == y
-                    && Math.floorMod(SectionPos.z(other), INDEX) == z) {
-                // Another section a whole index away shares the cell; plumes never span that far.
-                return;
+        int x = SectionPos.x(section);
+        int y = SectionPos.y(section);
+        int z = SectionPos.z(section);
+        int cell = -1;
+        int hash = hash(x, y, z);
+        for (int probe = 0; probe < MAX_PROBES; probe++) {
+            int candidate = (hash + probe) & (CELLS - 1);
+            if (cellEntries[candidate] <= 0) {
+                cell = candidate;
+                break;
             }
+        }
+        if (cell < 0) {
+            // A run of MAX_PROBES taken cells: at most 1024 sections in 262144 cells, next to never.
+            return;
         }
         int slot = freeSlots.dequeueInt();
         slots.put(section, slot);
         build(section, slot);
-        writeEntry(section, slot + 1, SectionPos.x(section), SectionPos.y(section), SectionPos.z(section));
+        cells.put(section, cell);
+        cellEntries[cell] = slot + 1;
+        writeCell(cell, slot + 1, x, y, z);
+    }
+
+    /**
+     * Which cell of the index a section's lookup starts at. Sable spaces plots a power of two
+     * apart, so the cells come from a full hash of the coordinates; wrapping them would put the
+     * same section of every plot in one cell. Matches {@code zps_fieldHash} in {@code sim/field.glsl}.
+     */
+    private static int hash(int x, int y, int z) {
+        int h = x * 0x9E3779B1 ^ y * 0x85EBCA77 ^ z * 0xC2B2AE3D;
+        h ^= h >>> 15;
+        h *= 0x2C1B3C6D;
+        h ^= h >>> 12;
+        return h & (CELLS - 1);
+    }
+
+    /**
+     * Takes a section out of the index. Its cell becomes a tombstone so lookups still probe past
+     * it, and tombstones with nothing after them in a probe run are cleared back to empty.
+     */
+    private static void removeEntry(long section) {
+        int cell = cells.remove(section);
+        cellEntries[cell] = TOMBSTONE;
+        writeCell(cell, TOMBSTONE, 0, 0, 0);
+        while (cellEntries[cell] == TOMBSTONE && cellEntries[(cell + 1) & (CELLS - 1)] == 0) {
+            cellEntries[cell] = 0;
+            writeCell(cell, 0, 0, 0, 0);
+            cell = (cell - 1) & (CELLS - 1);
+        }
     }
 
     /** Fills a slot with a section's sub-cells, read from its chunk as loaded. */
@@ -283,26 +335,26 @@ final class ExhaustField {
     }
 
     private static int slotX(int slot) {
-        return slot % SLOT_GRID;
+        return slot % SLOTS_X;
     }
 
     private static int slotY(int slot) {
-        return slot / SLOT_GRID % SLOT_GRID;
+        return slot / SLOTS_X % SLOTS_YZ;
     }
 
     private static int slotZ(int slot) {
-        return slot / (SLOT_GRID * SLOT_GRID);
+        return slot / (SLOTS_X * SLOTS_YZ);
     }
 
     // GL -----------------------------------------------------------------------------------------
 
-    private static void writeEntry(long section, int slotPlusOne, int x, int y, int z) {
+    private static void writeCell(int cell, int entryValue, int x, int y, int z) {
         IntBuffer entry = entryUpload;
         entry.clear();
-        entry.put(slotPlusOne).put(x).put(y).put(z).flip();
+        entry.put(entryValue).put(x).put(y).put(z).flip();
         upload(GL12.GL_TEXTURE_3D, indexTexture, () -> GL12.glTexSubImage3D(GL12.GL_TEXTURE_3D, 0,
-                Math.floorMod(SectionPos.x(section), INDEX), Math.floorMod(SectionPos.y(section), INDEX),
-                Math.floorMod(SectionPos.z(section), INDEX), 1, 1, 1, GL30.GL_RGBA_INTEGER, GL11.GL_INT, entry));
+                cell % INDEX, (cell / INDEX) % INDEX, cell / (INDEX * INDEX), 1, 1, 1,
+                GL30.GL_RGBA_INTEGER, GL11.GL_INT, entry));
     }
 
     /** Runs an upload with a texture bound raw, putting back what was bound. */
@@ -354,8 +406,9 @@ final class ExhaustField {
         }
         sectionUpload = MemoryUtil.memAlloc(16 * 16 * 16 * 8);
         entryUpload = MemoryUtil.memAllocInt(4);
-        indexTexture = texture3D(GL30.GL_RGBA32I, GL30.GL_RGBA_INTEGER, GL11.GL_INT, INDEX);
-        terrainTexture = texture3D(GL30.GL_RG32UI, GL30.GL_RG_INTEGER, GL11.GL_UNSIGNED_INT, TERRAIN_SIZE);
+        indexTexture = texture3D(GL30.GL_RGBA32I, GL30.GL_RGBA_INTEGER, GL11.GL_INT, INDEX, INDEX, INDEX);
+        terrainTexture = texture3D(GL30.GL_RG32UI, GL30.GL_RG_INTEGER, GL11.GL_UNSIGNED_INT,
+                SLOTS_X * 16, SLOTS_YZ * 16, SLOTS_YZ * 16);
 
         int previous = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D);
         densityTexture = GL11.glGenTextures();
@@ -381,13 +434,13 @@ final class ExhaustField {
     }
 
     /** A zeroed integer 3D texture: zero is "no section" in the index and "air" in the terrain. */
-    private static int texture3D(int internalFormat, int format, int type, int size) {
+    private static int texture3D(int internalFormat, int format, int type, int width, int height, int depth) {
         int previous = GL11.glGetInteger(GL12.GL_TEXTURE_BINDING_3D);
         int texture = GL11.glGenTextures();
         GL11.glBindTexture(GL12.GL_TEXTURE_3D, texture);
         int bytes = internalFormat == GL30.GL_RGBA32I ? 16 : 8;
-        ByteBuffer zeros = MemoryUtil.memCalloc(size * size * size * bytes);
-        withPlainUnpack(() -> GL12.glTexImage3D(GL12.GL_TEXTURE_3D, 0, internalFormat, size, size, size, 0, format,
+        ByteBuffer zeros = MemoryUtil.memCalloc(width * height * depth * bytes);
+        withPlainUnpack(() -> GL12.glTexImage3D(GL12.GL_TEXTURE_3D, 0, internalFormat, width, height, depth, 0, format,
                 type, zeros));
         MemoryUtil.memFree(zeros);
         nearest(GL12.GL_TEXTURE_3D);

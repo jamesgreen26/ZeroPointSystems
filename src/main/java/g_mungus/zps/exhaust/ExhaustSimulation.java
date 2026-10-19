@@ -53,7 +53,9 @@ final class ExhaustSimulation {
     /** The particles per tick the push of crowding is tuned for. */
     private static final float WEIGHT_REFERENCE = 16f;
 
-    // Texture units: above every one vanilla and Flywheel bind. 15 holds the batch ring.
+    // Texture units: above every one Flywheel binds. 15 holds the batch ring. 11 is within
+    // vanilla's twelve, but only its 2D binding is vanilla's; the grids go on its buffer target.
+    private static final int UNIT_GRIDS = 11;
     private static final int UNIT_INDEX = 14;
     private static final int UNIT_TERRAIN = 13;
     private static final int UNIT_DENSITY = 12;
@@ -71,6 +73,7 @@ final class ExhaustSimulation {
     private static int stepStart;
     private static int stepLength;
     private static int splatWeight;
+    private static int stepGridSubstep;
 
     private static int vertexArray;
     private static final int[] buffers = new int[3];
@@ -145,7 +148,7 @@ final class ExhaustSimulation {
             for (int substep = 0; substep < SUBSTEPS; substep++) {
                 int target = substep % 2 == 0 ? a : b;
                 splat(source, batchSize);
-                advance(source, target, tick, -1f + (float) substep / SUBSTEPS);
+                advance(source, target, tick, substep);
                 source = target;
             }
             prev = newPrev;
@@ -207,15 +210,16 @@ final class ExhaustSimulation {
     }
 
     /** Moves every particle one substep, from {@code source} into {@code target}. */
-    private static void advance(int source, int target, int tick, float start) {
+    private static void advance(int source, int target, int tick, int substep) {
         GL13.glActiveTexture(GL13.GL_TEXTURE0 + UNIT_DENSITY);
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, ExhaustField.densityTexture());
         GL11.glDisable(GL11.GL_BLEND);
         GL11.glEnable(GL30.GL_RASTERIZER_DISCARD);
         GL20.glUseProgram(stepProgram);
         GL30.glUniform1ui(stepTick, tick);
-        GL20.glUniform1f(stepStart, start);
+        GL20.glUniform1f(stepStart, -1f + (float) substep / SUBSTEPS);
         GL20.glUniform1f(stepLength, 1f / SUBSTEPS);
+        GL20.glUniform1i(stepGridSubstep, substep);
         attributes(source);
         GL30.glBindBufferBase(GL30.GL_TRANSFORM_FEEDBACK_BUFFER, 0, buffers[target]);
         GL30.glBeginTransformFeedback(GL11.GL_POINTS);
@@ -240,6 +244,8 @@ final class ExhaustSimulation {
         GL11.glBindTexture(GL12.GL_TEXTURE_3D, ExhaustField.indexTexture());
         GL13.glActiveTexture(GL13.GL_TEXTURE0 + UNIT_TERRAIN);
         GL11.glBindTexture(GL12.GL_TEXTURE_3D, ExhaustField.terrainTexture());
+        GL13.glActiveTexture(GL13.GL_TEXTURE0 + UNIT_GRIDS);
+        GL11.glBindTexture(GL31.GL_TEXTURE_BUFFER, ExhaustGrids.texture());
     }
 
     // Programs -----------------------------------------------------------------------------------
@@ -259,12 +265,14 @@ final class ExhaustSimulation {
             stepStart = GL20.glGetUniformLocation(stepProgram, "zps_stepStart");
             stepLength = GL20.glGetUniformLocation(stepProgram, "zps_stepLength");
             splatWeight = GL20.glGetUniformLocation(splatProgram, "zps_splatWeight");
+            stepGridSubstep = GL20.glGetUniformLocation(stepProgram, "zps_gridSubstep");
             for (int program : new int[]{stepProgram, splatProgram}) {
                 GL20.glUseProgram(program);
                 GL20.glUniform1i(GL20.glGetUniformLocation(program, "zps_exhaustBatches"), 15);
                 GL20.glUniform1i(GL20.glGetUniformLocation(program, "zps_fieldIndex"), UNIT_INDEX);
                 GL20.glUniform1i(GL20.glGetUniformLocation(program, "zps_fieldTerrain"), UNIT_TERRAIN);
                 GL20.glUniform1i(GL20.glGetUniformLocation(program, "zps_fieldDensity"), UNIT_DENSITY);
+                GL20.glUniform1i(GL20.glGetUniformLocation(program, "zps_grids"), UNIT_GRIDS);
             }
             if (vertexArray == 0) {
                 int previousArray = GL11.glGetInteger(GL30.GL_VERTEX_ARRAY_BINDING);
@@ -363,7 +371,9 @@ final class ExhaustSimulation {
                               boolean scissor, boolean rasterizerDiscard, boolean[] colorMask, int activeTexture,
                               int[] unitBindings) {
 
-        /** Units and targets the passes bind: 12 to 15, as 2D, 3D and buffer textures. */
+        /** Units and targets the passes bind: 11 to 15, as 2D, 3D and buffer textures. */
+        private static final int FIRST_UNIT = 11;
+        private static final int UNITS = 5;
         private static final int[] TARGETS = {GL11.GL_TEXTURE_2D, GL12.GL_TEXTURE_3D, GL31.GL_TEXTURE_BUFFER};
         private static final int[] BINDINGS = {GL11.GL_TEXTURE_BINDING_2D, GL12.GL_TEXTURE_BINDING_3D, GL31.GL_TEXTURE_BINDING_BUFFER};
 
@@ -371,9 +381,9 @@ final class ExhaustSimulation {
             int[] viewport = new int[4];
             GL11.glGetIntegerv(GL11.GL_VIEWPORT, viewport);
             int activeTexture = GL11.glGetInteger(GL13.GL_ACTIVE_TEXTURE);
-            int[] units = new int[4 * TARGETS.length];
-            for (int unit = 0; unit < 4; unit++) {
-                GL13.glActiveTexture(GL13.GL_TEXTURE0 + 12 + unit);
+            int[] units = new int[UNITS * TARGETS.length];
+            for (int unit = 0; unit < UNITS; unit++) {
+                GL13.glActiveTexture(GL13.GL_TEXTURE0 + FIRST_UNIT + unit);
                 for (int t = 0; t < TARGETS.length; t++) {
                     units[unit * TARGETS.length + t] = GL11.glGetInteger(BINDINGS[t]);
                 }
@@ -404,8 +414,8 @@ final class ExhaustSimulation {
         }
 
         void restore() {
-            for (int unit = 0; unit < 4; unit++) {
-                GL13.glActiveTexture(GL13.GL_TEXTURE0 + 12 + unit);
+            for (int unit = 0; unit < UNITS; unit++) {
+                GL13.glActiveTexture(GL13.GL_TEXTURE0 + FIRST_UNIT + unit);
                 for (int t = 0; t < TARGETS.length; t++) {
                     GL11.glBindTexture(TARGETS[t], unitBindings[unit * TARGETS.length + t]);
                 }

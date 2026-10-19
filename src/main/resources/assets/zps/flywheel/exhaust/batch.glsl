@@ -22,6 +22,19 @@ struct ZpsExhaustParticle {
     float heat;     // 1 white-hot through 0 cold smoke
 };
 
+// Particles fade out as they come to fill the view, by size over distance from the camera, and
+// are not drawn at all once faded: a cube up against the eye covers much of the screen, and every
+// pixel of a translucent particle is paid for, however faint. Whatever their size, none is drawn
+// within a block of the camera. Young fire is spared: the fade comes in with age, by fraction of
+// life, so it is partial from the first age here and full from the second.
+const float ZPS_EXHAUST_NEAR_FADE_FROM_AGE = 0.25;
+const float ZPS_EXHAUST_NEAR_FADE_FULL_AGE = 0.5;
+const float ZPS_EXHAUST_NEAR_FADE_START = 0.12;
+const float ZPS_EXHAUST_NEAR_FADE_END = 0.35;
+const float ZPS_EXHAUST_NEAR_CLEAR = 1.0;      // blocks
+const float ZPS_EXHAUST_NEAR_CLEAR_FADE = 2.5; // blocks
+const float ZPS_EXHAUST_MIN_ALPHA = 0.01;
+
 vec4 zps_exhaustColor(float t) {
     const vec4 WHITE = vec4(1.00, 0.97, 0.85, 0.90);
     const vec4 YELLOW = vec4(1.00, 0.82, 0.32, 0.88);
@@ -116,6 +129,14 @@ bool zps_exhaustParticle(int slot, out ZpsExhaustParticle p) {
     float shifted = clamp(t + (zps_rand(rng) - 0.5) * 0.06, 0.0, 1.0);
     p.color = zps_exhaustColor(shifted);
     p.heat = zps_exhaustHeatAt(shifted);
+    float distance = length(p.position - (flw_cameraPos - vec3(flw_renderOrigin)));
+    float nearFade = (1.0 - smoothstep(ZPS_EXHAUST_NEAR_FADE_START, ZPS_EXHAUST_NEAR_FADE_END,
+            p.size / max(distance, 1e-4)))
+            * smoothstep(ZPS_EXHAUST_NEAR_CLEAR, ZPS_EXHAUST_NEAR_CLEAR_FADE, distance);
+    p.color.a *= mix(1.0, nearFade, smoothstep(ZPS_EXHAUST_NEAR_FADE_FROM_AGE, ZPS_EXHAUST_NEAR_FADE_FULL_AGE, t));
+    if (p.color.a < ZPS_EXHAUST_MIN_ALPHA) {
+        return false;
+    }
 
     // Square to the grid the batch left, as it was then. Tumbling adds a random axis, starting
     // angle and spin, the spin slowing under the same drag as the motion.

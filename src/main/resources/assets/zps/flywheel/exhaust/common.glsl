@@ -14,6 +14,7 @@
 //   t3  emitter velocity, blocks/tick     exhaust speed, blocks/tick (float)
 //   t4  orientation of the emitter's grid when the batch left, a unit quaternion xyzw (float)
 //   t5  x nozzle width, blocks (float)    y colour (ExhaustColor ordinal)
+//       z share drawn cold instead (float)
 //
 // Everything is in world space: a batch takes its grid's pose once and never follows it. The
 // simulation keeps positions relative to the simulation origin, a block fixed while the ring
@@ -42,6 +43,7 @@ const uint ZPS_EXHAUST_STREAM_LIFE = 0x00000000u;
 const uint ZPS_EXHAUST_STREAM_MOTION = 0x68E31DA4u;
 const uint ZPS_EXHAUST_STREAM_FORCES = 0x1B56C4E9u;
 const uint ZPS_EXHAUST_STREAM_LOOK = 0xB5297A4Du;
+const uint ZPS_EXHAUST_STREAM_MIX = 0x3C6EF372u;
 
 struct ZpsExhaustBatch {
     ivec3 anchor;
@@ -55,6 +57,7 @@ struct ZpsExhaustBatch {
     vec4 orientation;
     float width;
     uint color;
+    float coldFraction;
 };
 
 uint zps_hash(uint x) {
@@ -111,6 +114,7 @@ ZpsExhaustBatch zps_exhaustBatch(int batch) {
     b.orientation = uintBitsToFloat(t4);
     b.width = uintBitsToFloat(t5.x);
     b.color = t5.y;
+    b.coldFraction = uintBitsToFloat(t5.z);
     return b;
 }
 

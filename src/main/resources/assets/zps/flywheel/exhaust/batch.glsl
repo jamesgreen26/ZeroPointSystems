@@ -36,7 +36,13 @@ const float ZPS_EXHAUST_NEAR_CLEAR_FADE = 2.5; // blocks
 const float ZPS_EXHAUST_MIN_ALPHA = 0.01;
 
 /// A particle's colour by fraction of life: its batch's fire, then the same smoke for every colour.
+/// Cold gas has no fire: a pale puff that thins out sooner than smoke.
 vec4 zps_exhaustColor(uint color, float t) {
+    if (color == ZPS_EXHAUST_COLD) {
+        vec4 c = mix(vec4(0.92, 0.95, 1.00, 0.50), vec4(0.80, 0.82, 0.85, 0.30), smoothstep(0.0, 0.5, t));
+        c.a *= 1.0 - smoothstep(0.35, 1.0, t);
+        return c;
+    }
     vec4 WHITE = vec4(1.00, 0.97, 0.85, 0.90);
     vec4 YELLOW = vec4(1.00, 0.82, 0.32, 0.88);
     vec4 ORANGE = vec4(1.00, 0.42, 0.08, 0.80);
@@ -135,7 +141,7 @@ bool zps_exhaustParticle(int slot, out ZpsExhaustParticle p) {
     p.size = mix(0.12, 0.65, sqrt(t)) * (0.7 + 0.6 * zps_rand(rng));
     float shifted = clamp(t + (zps_rand(rng) - 0.5) * 0.06, 0.0, 1.0);
     p.color = zps_exhaustColor(b.color, shifted);
-    p.heat = zps_exhaustHeatAt(shifted);
+    p.heat = b.color == ZPS_EXHAUST_COLD ? 0.0 : zps_exhaustHeatAt(shifted);
     float distance = length(p.position - (flw_cameraPos - vec3(flw_renderOrigin)));
     float nearFade = (1.0 - smoothstep(ZPS_EXHAUST_NEAR_FADE_START, ZPS_EXHAUST_NEAR_FADE_END,
             p.size / max(distance, 1e-4)))

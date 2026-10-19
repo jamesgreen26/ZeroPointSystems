@@ -34,6 +34,7 @@ const float ZPS_EXHAUST_SPIN = 0.25;      // fastest spin leaving the nozzle, ra
 // Exhaust colours, by ThrusterExhaustEmitter.ExhaustColor ordinal.
 const uint ZPS_EXHAUST_ORANGE = 0u;
 const uint ZPS_EXHAUST_BLUE = 1u;
+const uint ZPS_EXHAUST_COLD = 2u;
 
 // Independent random streams per particle, so each side draws only what it needs and adding a
 // draw to one never shifts another.

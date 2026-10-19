@@ -1,7 +1,8 @@
 // One substep of exhaust physics, for every particle slot at once: read from one state buffer
 // as attributes, written to another by transform feedback (ExhaustSimulation). A slot whose
 // batch has just been born into is started at the nozzle; a live one is moved under drag, lift,
-// swirl and, once cooled, the push of crowding, then collided against the terrain's sub-cells.
+// swirl and, once cooled, the push of crowding, then collided against the terrain's sub-cells,
+// the world's and then those of any moving grid near it (ExhaustGrids).
 
 #include "zps:exhaust/common.glsl"
 #include "zps:exhaust/sim/field.glsl"
@@ -32,6 +33,30 @@ const float SWIRL = 0.015;
 // Longest single move before collision is checked again: under a sub-cell, so nothing tunnels.
 const float MAX_MOVE = 0.2;
 const float SKIN = 0.001;
+
+// Moving grids (Sable sublevels) near the plumes, laid out by ExhaustGrids: texel 0 the count,
+// then per grid the anchor, the bounds' corners (relative to the simulation origin), and for each
+// substep boundary the world to grid transform's columns and then the grid to world one's. A
+// grid's block space is taken relative to its anchor, as plot positions are too far out for floats.
+uniform usamplerBuffer zps_grids;
+/// Which substep this is, so which pair of boundaries it runs between.
+uniform int zps_gridSubstep;
+const int ZPS_GRID_TEXELS = 3 + 4 * 8;
+
+int zps_gridBase(int g) {
+    return 1 + g * ZPS_GRID_TEXELS;
+}
+
+vec3 zps_gridVec(int texel) {
+    return uintBitsToFloat(texelFetch(zps_grids, texel).xyz);
+}
+
+/// A grid's transform at a substep boundary: world to grid, or grid to world.
+mat4 zps_gridMatrix(int g, int boundary, bool toWorld) {
+    int at = zps_gridBase(g) + 3 + boundary * 8 + (toWorld ? 4 : 0);
+    return mat4(uintBitsToFloat(texelFetch(zps_grids, at)), uintBitsToFloat(texelFetch(zps_grids, at + 1)),
+            uintBitsToFloat(texelFetch(zps_grids, at + 2)), uintBitsToFloat(texelFetch(zps_grids, at + 3)));
+}
 
 /// Moves a particle by its velocity for dt, one axis at a time so it slides along whatever it
 /// hits, in pieces short enough not to pass through a sub-cell.
@@ -70,6 +95,81 @@ void zps_move(inout vec3 position, inout vec3 velocity, float dt, inout uint hit
     }
 }
 
+/// Collides a particle's move this substep, from start to position, with the moving grids it
+/// passes near. In each grid's own block space the move is the particle's motion less the hull's,
+/// stepped axis by axis like the world's, so a hull sweeping into smoke catches it as surely as
+/// smoke flying into the hull. On contact the bounce and friction act on the velocity relative to
+/// the hull where it was touched, so a moving hull carries smoke along.
+void zps_collideGrids(vec3 start, inout vec3 position, inout vec3 velocity, float dt, bool newborn, inout uint hits) {
+    int count = int(texelFetch(zps_grids, 0).x);
+    for (int g = 0; g < count; g++) {
+        int base = zps_gridBase(g);
+        vec3 low = min(start, position);
+        vec3 high = max(start, position);
+        if (any(greaterThan(low, zps_gridVec(base + 2))) || any(lessThan(high, zps_gridVec(base + 1)))) {
+            continue;
+        }
+        mat4 fromEnd = zps_gridMatrix(g, zps_gridSubstep + 1, false);
+        // A particle born this substep left its nozzle as the hull was by then, near enough its end.
+        mat4 fromStart = newborn ? fromEnd : zps_gridMatrix(g, zps_gridSubstep, false);
+        vec3 localStart = (fromStart * vec4(start, 1.0)).xyz;
+        vec3 localEnd = (fromEnd * vec4(position, 1.0)).xyz;
+        ivec3 anchor = ivec3(texelFetch(zps_grids, base).xyz);
+        vec3 travel = localEnd - localStart;
+        float longest = max(abs(travel.x), max(abs(travel.y), abs(travel.z)));
+        int pieces = clamp(int(ceil(longest / MAX_MOVE)), 1, 8);
+        vec3 piece = travel / float(pieces);
+        vec3 local = localStart;
+        vec3 normals = vec3(0.0);
+        for (int i = 0; i < pieces; i++) {
+            for (int k = 0; k < 3; k++) {
+                int axis = k == 0 ? 1 : k == 1 ? 0 : 2;
+                if (piece[axis] == 0.0) {
+                    continue;
+                }
+                vec3 moved = local;
+                moved[axis] += piece[axis];
+                if (!zps_solidAt(anchor, moved)) {
+                    local = moved;
+                    continue;
+                }
+                float entered = floor(moved[axis] * 4.0) / 4.0;
+                local[axis] = piece[axis] > 0.0 ? entered - SKIN : entered + 0.25 + SKIN;
+                normals[axis] = piece[axis] > 0.0 ? -1.0 : 1.0;
+                piece[axis] = 0.0;
+            }
+        }
+        if (normals == vec3(0.0)) {
+            continue;
+        }
+        mat4 toEnd = zps_gridMatrix(g, zps_gridSubstep + 1, true);
+        position = (toEnd * vec4(local, 1.0)).xyz;
+        // How the hull was moving where it was touched: that point at the start and end.
+        vec3 hull = (position - (zps_gridMatrix(g, zps_gridSubstep, true) * vec4(local, 1.0)).xyz) / dt;
+        vec3 relative = velocity - hull;
+        for (int axis = 0; axis < 3; axis++) {
+            if (normals[axis] == 0.0) {
+                continue;
+            }
+            vec3 localNormal = vec3(0.0);
+            localNormal[axis] = normals[axis];
+            vec3 normal = normalize(mat3(toEnd) * localNormal);
+            float into = dot(relative, normal);
+            if (into >= 0.0) {
+                continue;
+            }
+            relative -= (1.0 + RESTITUTION) * into * normal;
+            vec3 along = relative - dot(relative, normal) * normal;
+            float alongSpeed = length(along);
+            if (alongSpeed > 0.0) {
+                relative -= along / alongSpeed * min(alongSpeed, FRICTION * -into * (1.0 + RESTITUTION));
+            }
+            hits++;
+        }
+        velocity = relative + hull;
+    }
+}
+
 void main() {
     zps_outPosition = zps_inPosition;
     zps_outVelocity = zps_inVelocity;
@@ -102,7 +202,8 @@ void main() {
     uint alive = zps_inMeta.y & 1u;
     uint hits = zps_inMeta.z;
     float dt = zps_stepLength;
-    if (zps_inMeta.x != b.spawnTick) {
+    bool newborn = zps_inMeta.x != b.spawnTick;
+    if (newborn) {
         // Born during this substep: from the nozzle, for only the part of it since.
         vec3 offset;
         zps_exhaustSpawn(b, index, stagger, offset, velocity);
@@ -131,7 +232,9 @@ void main() {
         }
         velocity *= exp(-ZPS_EXHAUST_DRAG * dt);
         velocity += (vec3(0.0, lift, 0.0) + swirl + push) * dt;
+        vec3 start = position;
         zps_move(position, velocity, dt, hits);
+        zps_collideGrids(start, position, velocity, dt, newborn, hits);
     }
 
     zps_outPosition = vec4(position, 0.0);

@@ -290,7 +290,8 @@ public final class ExhaustParticles {
         }
         int tick = ticks();
         expireSections(tick);
-        ExhaustField.sync(level, sectionLastUse.keySet());
+        BlockPos simOrigin = new BlockPos(records.getInt(16), records.getInt(20), records.getInt(24));
+        ExhaustField.sync(level, ExhaustGrids.update(level, simOrigin, sectionLastUse.keySet()));
         records.putInt(28, tick);
         upload();
         ExhaustSimulation.step(tick, glTexture, batchSize);

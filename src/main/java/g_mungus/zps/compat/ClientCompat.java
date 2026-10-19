@@ -5,7 +5,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
+import net.minecraft.world.phys.AABB;
 import org.joml.Matrix4d;
+
+import java.util.List;
+import java.util.UUID;
 
 public class ClientCompat {
 
@@ -51,5 +55,17 @@ public class ClientCompat {
     /// interpolation is not exposed this way. Render thread only.
     public static @Nullable Matrix4d renderTransformAt(Level level, BlockPos pos, float partialTick, Matrix4d dest) {
         return null;
+    }
+
+    /// A moving grid near some region, as drawn through the current tick: its block space to world
+    /// transform at each partial tick asked for, and its world bounds as they stand.
+    public record GridPoses(UUID id, AABB worldBounds, Matrix4d[] localToWorld) {
+    }
+
+    /// Every moving grid reaching into worldBounds, with its render transforms at the given partial
+    /// ticks into the current tick (0 the last tick's pose, 1 this tick's). Sable only, so always
+    /// empty here. Render thread only.
+    public static List<GridPoses> gridsTouching(Level level, AABB worldBounds, float[] partialTicks) {
+        return List.of();
     }
 }

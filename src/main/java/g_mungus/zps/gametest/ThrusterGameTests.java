@@ -155,10 +155,17 @@ public class ThrusterGameTests {
      * {@code offset} from the thruster's centre.
      */
     private static void stepWithCentreOfMassAt(GameTestHelper helper, Vec3 offset, Consumer<RecordingPhysics> check) {
+        stepMoving(helper, offset, Vec3.ZERO, 1, check);
+    }
+
+    /** As {@link #stepWithCentreOfMassAt}, the grid moving at {@code velocity} and weighing {@code mass}. */
+    private static void stepMoving(GameTestHelper helper, Vec3 offset, Vec3 velocity, double mass,
+                                   Consumer<RecordingPhysics> check) {
         ThrusterBlockEntity thruster = placeThruster(helper, THRUSTER, Direction.UP, 15);
         feed(helper, THRUSTER, ModGases.STELLANE, MOLES);
         helper.runAfterDelay(BURN_TICKS, () -> {
-            RecordingPhysics physics = new RecordingPhysics(Vec3.atCenterOf(helper.absolutePos(THRUSTER)).add(offset));
+            RecordingPhysics physics = new RecordingPhysics(
+                    Vec3.atCenterOf(helper.absolutePos(THRUSTER)).add(offset), velocity, mass);
             thruster.onGridPhysicsTick(physics);
             check.accept(physics);
             helper.succeed();
@@ -181,12 +188,13 @@ public class ThrusterGameTests {
         });
     }
 
-    /** Square across the centre of mass: only the turn the thrust would give, and no push. */
+    /** Square across the centre of mass: the whole push, and the whole turn the thrust would give. */
     @GameTest(template = TEMPLATE)
-    public static void thrustAcrossTheCentreOfMass_onlyTurns(GameTestHelper helper) {
+    public static void thrustAcrossTheCentreOfMass_pushesAndTurns(GameTestHelper helper) {
         Vec3 offset = new Vec3(5, -1, 0);
         stepWithCentreOfMassAt(helper, offset, physics -> {
-            helper.assertTrue(physics.forces.isEmpty(), "Nothing should push the grid, pushed by " + physics.forces.size());
+            helper.assertTrue(physics.forces.size() == 1 && physics.forces.getFirst()[1].distanceTo(DOWN_THRUST) < 1e-6,
+                    "The whole thrust should push through the centre of mass");
             helper.assertTrue(physics.torques.size() == 1, "One torque should be applied, " + physics.torques.size() + " were");
             Vec3 expected = offset.reverse().cross(DOWN_THRUST);
             helper.assertTrue(physics.torques.getFirst().distanceTo(expected) < 1e-6,
@@ -207,18 +215,64 @@ public class ThrusterGameTests {
         });
     }
 
-    /** Between the zones the push fades smoothly: halfway through its fade, half of it. */
+    /** A driven grid sliding sideways is pushed back against the slide, in proportion to the thrust. */
+    @GameTest(template = TEMPLATE)
+    public static void drivenGridSlidingSideways_isDamped(GameTestHelper helper) {
+        // Moving with the thrust and sideways: only the sideways part is resisted.
+        stepMoving(helper, new Vec3(0, -5, 0), new Vec3(3, -2, 0), 1000, physics -> {
+            double coefficient = ThrusterBlockEntity.MAX_THRUST * ThrusterBlockEntity.DAMPING;
+            Vec3 expected = DOWN_THRUST.add(-3 * coefficient, 0, 0);
+            helper.assertTrue(physics.forces.size() == 1 && physics.forces.getFirst()[1].distanceTo(expected) < 1e-6,
+                    "The push should carry " + expected + ", carries " + physics.forces.getFirst()[1]);
+        });
+    }
+
+    /** A driven grid going backwards against its thrust is pushed forwards harder, in proportion to the thrust. */
+    @GameTest(template = TEMPLATE)
+    public static void drivenGridGoingBackwards_isPushedHarder(GameTestHelper helper) {
+        // Thrust is down; moving up against it, and sideways.
+        stepMoving(helper, new Vec3(0, -5, 0), new Vec3(3, 2, 0), 1000, physics -> {
+            double coefficient = ThrusterBlockEntity.MAX_THRUST * ThrusterBlockEntity.DAMPING;
+            Vec3 expected = DOWN_THRUST.add(-3 * coefficient, -2 * coefficient, 0);
+            helper.assertTrue(physics.forces.size() == 1 && physics.forces.getFirst()[1].distanceTo(expected) < 1e-6,
+                    "The push should carry " + expected + ", carries " + physics.forces.getFirst()[1]);
+        });
+    }
+
+    /** On a light grid the damping is held to a rate that cannot overshoot in a step. */
+    @GameTest(template = TEMPLATE)
+    public static void dampingOnALightGrid_isCapped(GameTestHelper helper) {
+        // Half the mass at which full thrust's damping reaches the cap.
+        double mass = ThrusterBlockEntity.MAX_THRUST * ThrusterBlockEntity.DAMPING / ThrusterBlockEntity.MAX_DAMPING_RATE / 2;
+        stepMoving(helper, new Vec3(0, -5, 0), new Vec3(3, 0, 0), mass, physics -> {
+            Vec3 expected = DOWN_THRUST.add(-3 * mass * ThrusterBlockEntity.MAX_DAMPING_RATE, 0, 0);
+            helper.assertTrue(physics.forces.size() == 1 && physics.forces.getFirst()[1].distanceTo(expected) < 1e-6,
+                    "The push should carry " + expected + ", carries " + physics.forces.getFirst()[1]);
+        });
+    }
+
+    /** A thruster square across the centre of mass is there to turn: it pushes but does not fight the drift. */
+    @GameTest(template = TEMPLATE)
+    public static void turningThruster_doesNotDamp(GameTestHelper helper) {
+        stepMoving(helper, new Vec3(5, -1, 0), new Vec3(0, 0, 3), 1000, physics ->
+                helper.assertTrue(physics.forces.size() == 1 && physics.forces.getFirst()[1].distanceTo(DOWN_THRUST) < 1e-6,
+                        "Only the thrust should push, with no damping, pushes " + physics.forces.getFirst()[1]));
+    }
+
+    /** Between straight and full the turn fades in smoothly and the damping out: halfway through, half of each. */
     @GameTest(template = TEMPLATE)
     public static void steering_fadesBetweenTheZones(GameTestHelper helper) {
-        double halfway = Math.toRadians((ThrusterBlockEntity.FULL_PUSH_DEGREES + ThrusterBlockEntity.TURN_ONLY_DEGREES) / 2);
+        double halfway = Math.toRadians((ThrusterBlockEntity.STRAIGHT_DEGREES + ThrusterBlockEntity.FULL_TURN_DEGREES) / 2);
         Vec3 force = new Vec3(0, -1, 0);
         Vec3 lever = new Vec3(Math.sin(halfway), -Math.cos(halfway), 0);
-        ThrusterBlockEntity.Steering steering = ThrusterBlockEntity.steer(lever, force);
-        helper.assertTrue(Math.abs(steering.push().length() - 0.5) < 1e-9, "Half the push should be left, is " + steering.push());
-        helper.assertTrue(Math.abs(steering.turn().length() - lever.cross(force).length()) < 1e-9, "The turn should be whole");
+        double whole = lever.cross(force).length();
+        helper.assertTrue(Math.abs(ThrusterBlockEntity.turn(lever, force).length() - whole / 2) < 1e-9,
+                "Half the turn should be applied, is " + ThrusterBlockEntity.turn(lever, force));
+        helper.assertTrue(Math.abs(ThrusterBlockEntity.dampingShare(lever, force) - 0.5) < 1e-9,
+                "Half the damping should be applied, is " + ThrusterBlockEntity.dampingShare(lever, force));
         // Pushing towards the centre of mass reads the same as pushing away from it.
-        ThrusterBlockEntity.Steering reversed = ThrusterBlockEntity.steer(lever.reverse(), force);
-        helper.assertTrue(Math.abs(reversed.push().length() - 0.5) < 1e-9, "A thruster across the centre of mass should steer the same");
+        helper.assertTrue(Math.abs(ThrusterBlockEntity.turn(lever.reverse(), force).length() - whole / 2) < 1e-9,
+                "A thruster across the centre of mass should turn the same");
         helper.succeed();
     }
 
@@ -260,14 +314,18 @@ public class ThrusterGameTests {
         });
     }
 
-    /** Records what is applied; the rest of the view is a grid at rest that is not turned. */
+    /** Records what is applied; the grid is not turned, so its axes are the world's. */
     private static final class RecordingPhysics implements GridPhysics {
         private final Vec3 centreOfMass;
+        private final Vec3 velocity;
+        private final double mass;
         final List<Vec3[]> forces = new ArrayList<>();
         final List<Vec3> torques = new ArrayList<>();
 
-        RecordingPhysics(Vec3 centreOfMass) {
+        RecordingPhysics(Vec3 centreOfMass, Vec3 velocity, double mass) {
             this.centreOfMass = centreOfMass;
+            this.velocity = velocity;
+            this.mass = mass;
         }
 
         @Override
@@ -282,7 +340,7 @@ public class ThrusterGameTests {
 
         @Override
         public Vec3 linearVelocity() {
-            return Vec3.ZERO;
+            return velocity;
         }
 
         @Override
@@ -292,7 +350,7 @@ public class ThrusterGameTests {
 
         @Override
         public double mass() {
-            return 1;
+            return mass;
         }
 
         @Override

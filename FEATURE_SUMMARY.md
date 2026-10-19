@@ -258,7 +258,8 @@ present.
 
 #### Thruster (`thruster`)
 - Burns Stellane fed into its back face and pushes the Valkyrien Skies ship or Sable sublevel it sits on away from its nozzle; does nothing in the world. Placed facing the player like a dispenser (sneak to flip).
-- Reads its placement against the centre of mass: lined up with it, it only drives the ship forward; square across it, it only turns the ship in place; in between it does both, blending smoothly.
+- Always pushes the ship with its full thrust. Reads its placement against the centre of mass: lined up with it, it drives the ship straight without turning it; further off the line, it also turns the ship as a real off-centre thruster would, blending in smoothly.
+- While driving straight, it also damps the ship's sideways drift across its thrust and pushes harder while the ship moves backwards against it, in proportion to its thrust. This fades out as the turning fades in, so a turning thruster doesn't fight the drift a turn brings.
 - Redstone signal strength is the throttle: each level asks for a fifteenth more gas, and a starved feed gives less thrust than asked.
 - Burnt Stellane leaves as hot Exhaust gas. Other gases pass through unburnt, push a tenth as hard and show as cold gas in the orange plume. Both are released in front of the nozzle, into a sealed room if there is one.
 

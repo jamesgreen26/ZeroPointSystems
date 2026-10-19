@@ -25,7 +25,8 @@ public interface ThrusterExhaustEmitter {
      * @param speed     exhaust speed leaving the nozzle, blocks per tick
      * @param position  where the exhaust leaves, in the block's space
      * @param direction unit direction the exhaust leaves in, in the block's space
-     * @param color     the colour of the fire; every colour cools to the same smoke
+     * @param color     the colour of the fire, every colour cooling to the same smoke; COLD is
+     *                  cold gas, a pale puff with no fire or glow
      */
     record ExhaustParams(
             float amount,
@@ -37,7 +38,7 @@ public interface ThrusterExhaustEmitter {
     ) {}
 
     enum ExhaustColor{
-        ORANGE, BLUE
+        ORANGE, BLUE, COLD
     }
 
     @Nullable Level getLevel();

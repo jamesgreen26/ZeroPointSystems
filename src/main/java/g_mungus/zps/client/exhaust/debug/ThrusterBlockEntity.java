@@ -36,7 +36,7 @@ public class ThrusterBlockEntity extends BlockEntity implements ThrusterExhaustE
                 strength,
                 Vec3.atCenterOf(worldPosition).add(direction.scale(0.55)),
                 direction,
-                ExhaustColor.ORANGE
+                ExhaustColor.COLD
         );
     }
 }

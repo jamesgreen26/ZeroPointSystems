@@ -1,31 +1,18 @@
 package g_mungus.zps.compat;
 
-import g_mungus.munguscript.language.builtin.BuiltInTypes;
-import g_mungus.munguscript.language.type.ScriptType;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.RegisterScriptTypesEvent;
-import g_mungus.zps.commands.api.ZPSNodes;
-import g_mungus.zps.commands.api.ZPSScriptTypes;
-import net.minecraftforge.server.command.EnumArgument;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
-import org.joml.primitives.AABBd;
 import org.joml.primitives.AABBdc;
-import org.joml.primitives.AABBi;
 import org.joml.primitives.AABBic;
-import org.valkyrienskies.core.api.bodies.properties.BodyKinematics;
 import org.valkyrienskies.core.api.ships.ServerShip;
 import org.valkyrienskies.core.api.ships.Ship;
-import org.valkyrienskies.core.api.ships.properties.ChunkClaim;
-import org.valkyrienskies.core.api.ships.properties.IShipActiveChunksSet;
-import org.valkyrienskies.core.api.ships.properties.ShipTransform;
 import org.valkyrienskies.core.api.util.functions.DoubleTernaryConsumer;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 import org.valkyrienskies.mod.common.util.VectorConversionsMCKt;
@@ -140,128 +127,78 @@ public class VSCompat {
         }
     }
 
-    /** A ship, or {@link #NO_SHIP} where there is none. Reads as its slug where text is wanted. */
-    static final ScriptType<Ship> SHIP = ScriptType.opaque(ZPSScriptTypes.key("ship"), Ship.class)
-            .usableAs(BuiltInTypes.STRING, ship -> ship == VSCompat.NO_SHIP ? "" : ship.getSlug());
-
     static void registerScriptTypes(RegisterScriptTypesEvent event) {
-        event.register(SHIP);
+        ShipScripts.registerScriptTypes(event);
     }
 
     static void registerScriptCommands(RegisterScriptCommandsEvent event) {
-        event.register(ZPSNodes.getter("ship", SHIP, context -> {
+        ShipScripts.registerScriptCommands(event, context -> {
             Ship ship = VSGameUtilsKt.getShipManagingPos(context.level(), context.pos());
-            return ship == null ? NO_SHIP : ship;
-        }));
+            return ship == null ? null : new ShipView(ship);
+        }, null);
+    }
 
-        event.register(ZPSNodes.mapper("slug", SHIP, BuiltInTypes.STRING,
-                (ship, context) -> ship == NO_SHIP ? "" : ship.getSlug()));
+    /** A ship as the server tick sees it, in {@link GridPhysics}' units like its physics step. */
+    private record ShipView(Ship ship) implements ShipScripts.ShipView {
+        @Override
+        public String name() {
+            return ship.getSlug();
+        }
 
-        event.register(ZPSNodes.mapper("id", SHIP, BuiltInTypes.INT,
-                (ship, context) -> ship == NO_SHIP ? -1 : (int) ship.getId()));
+        @Override
+        public String id() {
+            return Long.toString(ship.getId());
+        }
 
-        event.register(ZPSNodes.mapper("pos", SHIP, ZPSScriptTypes.VEC_POS, (ship, context) -> ship == NO_SHIP
-                ? context.pos().getCenter()
-                : VectorConversionsMCKt.toMinecraft(ship.getTransform().getPositionInWorld())));
-
-        event.register(ZPSNodes.mapper("world_vel", SHIP, ZPSScriptTypes.VEC_DIR, (ship, context) -> ship == NO_SHIP
-                ? new Vec3(0, 0, 0)
-                : VectorConversionsMCKt.toMinecraft(ship.getVelocity())));
-
-        // Ship-space velocity
-        event.register(ZPSNodes.mapper("local_vel", SHIP, ZPSScriptTypes.VEC_DIR, (ship, context) -> {
-            if (ship == NO_SHIP) {
-                return new Vec3(0, 0, 0);
-            }
-            var vel = ship.getVelocity();
-            var local = new Vector3d(vel.x(), vel.y(), vel.z());
-            ship.getTransform().getWorldToShip().transformDirection(local);
-            return new Vec3(local.x, local.y, local.z);
-        }));
-
-        event.register(ZPSNodes.mapper("bounding_box", SHIP, ZPSScriptTypes.VEC_BOX, (ship, context) -> {
-            if (ship == NO_SHIP) {
-                return new Vec3(0, 0, 0);
-            }
+        /** The ship's extent in the world, scaled as it is. */
+        @Override
+        public Vec3 boundingBox() {
             AABBic aabb = ship.getShipAABB();
-            assert aabb != null;
+            if (aabb == null) {
+                return Vec3.ZERO;
+            }
             return new Vec3(
                     aabb.maxX() - aabb.minX(),
                     aabb.maxY() - aabb.minY(),
                     aabb.maxZ() - aabb.minZ()
             ).scale(ship.getTransform().getShipToWorldScaling().x());
-        }));
+        }
 
-        // A face of the ship, as a direction in the world
-        event.register(ZPSNodes.rawArgumentMapper("dir", SHIP, ZPSScriptTypes.VEC_DIR, "direction",
-                EnumArgument.enumArgument(Direction.class), Direction.class,
-                (ship, direction, context) -> shipDirection(ship, direction)));
+        @Override
+        public Vec3 position() {
+            return VectorConversionsMCKt.toMinecraft(ship.getTransform().getPositionInWorld());
+        }
 
-        // Mass, scaled by the ship's scaled volume
-        event.register(ZPSNodes.mapper("mass", SHIP, BuiltInTypes.DOUBLE, (ship, context) -> {
-            if (ship == NO_SHIP) {
-                return 0d;
-            }
-            double mass = ((ServerShip) ship).getInertiaData().getMass();
-            org.joml.Vector3dc scaling = ship.getTransform().getShipToWorldScaling();
-            double scalingVolume = scaling.x() * scaling.y() * scaling.z();
-            return mass / scalingVolume;
-        }));
+        @Override
+        public Vec3 worldVelocity() {
+            return VectorConversionsMCKt.toMinecraft(ship.getVelocity());
+        }
+
+        @Override
+        public Vec3 angularVelocity() {
+            return VectorConversionsMCKt.toMinecraft(ship.getAngularVelocity());
+        }
+
+        @Override
+        public Vec3 centreOfMass() {
+            return VectorConversionsMCKt.toMinecraft(ship.getTransform().getPositionInShip());
+        }
+
+        @Override
+        public double mass() {
+            return ship instanceof ServerShip server ? server.getInertiaData().getMass() / VSGridPhysics.KG_PER_BLOCK : 0;
+        }
+
+        @Override
+        public Vec3 toWorldDirection(Vec3 direction) {
+            return VectorConversionsMCKt.toMinecraft(ship.getTransform()
+                    .transformDirectionNoScalingFromShipToWorld(VectorConversionsMCKt.toJOML(direction), new Vector3d()));
+        }
+
+        @Override
+        public Vec3 toGridDirection(Vec3 direction) {
+            return VectorConversionsMCKt.toMinecraft(ship.getTransform()
+                    .transformDirectionNoScalingFromWorldToShip(VectorConversionsMCKt.toJOML(direction), new Vector3d()));
+        }
     }
-
-    private static Vec3 shipDirection(Ship ship, Direction dir) {
-        var n = dir.getNormal();
-        if (ship == NO_SHIP) return new Vec3(n.getX(), n.getY(), n.getZ());
-        var v = new Vector3d(n.getX(), n.getY(), n.getZ());
-        ship.getTransform().getShipToWorld().transformDirection(v);
-        return new Vec3(v.x, v.y, v.z).normalize();
-    }
-
-    @SuppressWarnings("ConstantConditions")
-    static Ship NO_SHIP = new Ship() {
-        @Override
-        public long getId() {
-            return -1;
-        }
-
-        @Override
-        public @NotNull String getSlug() {
-            return "NONE";
-        }
-
-        @Override
-        public @NotNull BodyKinematics getKinematics() {
-            return null;
-        }
-
-        @Override
-        public @NotNull ShipTransform getPrevTickTransform() {
-            return null;
-        }
-
-        @Override
-        public @NotNull ChunkClaim getChunkClaim() {
-            return null;
-        }
-
-        @Override
-        public @NotNull String getChunkClaimDimension() {
-            return "";
-        }
-
-        @Override
-        public @NotNull AABBdc getWorldAABB() {
-            return new AABBd();
-        }
-
-        @Override
-        public @NotNull AABBic getShipAABB() {
-            return new AABBi();
-        }
-
-        @Override
-        public @NotNull IShipActiveChunksSet getActiveChunksSet() {
-            return null;
-        }
-    };
 }

@@ -379,7 +379,8 @@ public class MultiLineCommandSuggestions {
         // Only the aliases defined above this line.
         CommandPreProcessor.Prepared script = prepared(view).script().at(currentLineNumber);
         PreProcessed processed = script.process(command, new PreProcessContext(view.probe(source), null));
-        this.currentParse = view.parse(processed.command(), source);
+        // Inside an open command(...), what comes next is hinted from the command in it.
+        this.currentParse = view.parseAt(processed.command(), processedCursor(processed, command, cursor), source);
         this.currentMap = processed.sourceMap();
 
         int shownFrom = this.onlyShowIfCursorPastError ? offset : 1;
@@ -395,6 +396,17 @@ public class MultiLineCommandSuggestions {
                 }
             });
         }
+    }
+
+    /**
+     * Where {@code cursor}, in {@code command} as written, is in the pre-processed command: the same place
+     * where nothing was rewritten, its end at the end, and otherwise the end, which only loses the hint.
+     */
+    private static int processedCursor(PreProcessed processed, String command, int cursor) {
+        if (processed.sourceMap() == SourceMap.IDENTITY) {
+            return Math.min(cursor, processed.command().length());
+        }
+        return processed.command().length();
     }
 
     /** Offers {@code wait} and {@code receive_value} alongside the commands, while the first word is being written. */
@@ -1070,7 +1082,8 @@ public class MultiLineCommandSuggestions {
 
         public void useSuggestion() {
             Suggestion suggestion = (Suggestion)this.suggestionList.get(this.current);
-            boolean reopenSuggestions = "value_of(".equals(suggestion.getText());
+            // value_of(, command( and literal_of( open something to write in, which has suggestions of its own.
+            boolean reopenSuggestions = suggestion.getText().endsWith("(");
             MultiLineCommandSuggestions.this.keepSuggestions = true;
 
             // Apply suggestion to current line only

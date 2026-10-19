@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.CommandNode;
+import g_mungus.munguscript.engine.LiveLine;
 import g_mungus.munguscript.engine.MungusScript;
 import g_mungus.munguscript.engine.ScriptEngine;
 import g_mungus.munguscript.engine.codec.ScriptLanguageFile;
@@ -18,11 +19,13 @@ import g_mungus.munguscript.language.type.BuildEnvironment;
 import g_mungus.munguscript.language.type.ScriptType;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.BlockApplicability;
+import g_mungus.zps.commands.api.PhysStep;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ZPSScriptTypes;
 import g_mungus.zps.commands.sync.ZPSHostCodec;
 import g_mungus.zps.config.ZPSConfig;
 import net.minecraft.commands.CommandBuildContext;
+import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraftforge.fml.loading.FMLLoader;
@@ -37,8 +40,11 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * One build of the script language on the server: the engine made from every registered node, in
@@ -57,6 +63,8 @@ public final class ZPSScripts {
     private final CommandNode<CommandSourceStack> grafted;
     private final ZPSHostCodec hostCodec;
     private final CommandBuildContext buildContext;
+    /** The nodes this build's phys tick programs may run in the physics step. Only added to while it builds. */
+    private final Set<ScriptNode> physTickSafe = Collections.newSetFromMap(new IdentityHashMap<>());
     private volatile byte @Nullable [] encodedTree;
 
     private ZPSScripts(CommandBuildContext buildContext) {
@@ -64,7 +72,8 @@ public final class ZPSScripts {
         ZPSScriptTypes.Registered registered = ZPSScriptTypes.collect();
         this.engine = MungusScript.engine(host, new BuildEnvironment(buildContext), registrar -> {
             registered.types().forEach(registrar::registerType);
-            MinecraftForge.EVENT_BUS.post(new RegisterScriptCommandsEvent(registrar::register, buildContext));
+            MinecraftForge.EVENT_BUS.post(new RegisterScriptCommandsEvent(registrar::register, physTickSafe::add,
+                    buildContext));
         });
         this.hostCodec = new ZPSHostCodec(buildContext, registered.applicabilities());
         this.grafted = LiteralArgumentBuilder.<CommandSourceStack>literal(GRAFT).build();
@@ -119,7 +128,26 @@ public final class ZPSScripts {
 
     /** {@code base} aimed at {@code target}, as a script command is run with. */
     public static CommandSourceStack aimedAt(CommandSourceStack base, BlockPos target) {
-        return base.withSource(new ZPSScriptCommandSource(base.source, target, null));
+        return aimedAt(base, target, null);
+    }
+
+    /** {@code base} aimed at {@code target}, run from inside {@code physStep} if it is not null. */
+    public static CommandSourceStack aimedAt(CommandSourceStack base, BlockPos target, @Nullable PhysStep physStep) {
+        // A source already aimed by a script, as an executor's is, is aimed again from whoever sent it.
+        CommandSource sender = base.source instanceof ZPSScriptCommandSource script ? script.delegate() : base.source;
+        return base.withSource(new ZPSScriptCommandSource(sender, target, null, physStep));
+    }
+
+    /**
+     * Compiles one command, already pre-processed, to run live inside the physics step of the grid
+     * {@code target} is on. Only words registered as phys tick safe run live
+     * ({@link RegisterScriptCommandsEvent#registerPhysTickSafe}).
+     *
+     * @throws CommandSyntaxException if it does not parse
+     */
+    public LiveLine<CommandSourceStack> compileLive(String command, CommandSourceStack base, BlockPos target)
+            throws CommandSyntaxException {
+        return engine.compileLive(command, engine.begin(aimedAt(base, target)), physTickSafe::contains);
     }
 
     /**

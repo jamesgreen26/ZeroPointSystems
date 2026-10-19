@@ -9,6 +9,7 @@ import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.ScriptTarget;
 import g_mungus.zps.commands.api.TargetApplicability;
 import g_mungus.zps.commands.api.ZPSScriptContext;
+import g_mungus.zps.commands.api.PhysStep;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import org.jetbrains.annotations.Nullable;
@@ -29,13 +30,14 @@ final class ZPSScriptHost implements ScriptHost<CommandSourceStack> {
     public CommandSourceStack withRunState(CommandSourceStack source, RunState state) {
         ZPSScriptCommandSource script = source.source instanceof ZPSScriptCommandSource existing
                 ? existing
-                : new ZPSScriptCommandSource(source.source, BlockPos.containing(source.getPosition()), null);
+                : new ZPSScriptCommandSource(source.source, BlockPos.containing(source.getPosition()), null, null);
         return source.withSource(script.withRunState(state));
     }
 
     @Override
     public Object hostContext(CommandSourceStack source) {
-        return new ZPSScriptContext(target(source), source.getLevel(), source);
+        PhysStep physStep = source.source instanceof ZPSScriptCommandSource script ? script.physStep() : null;
+        return new ZPSScriptContext(target(source), source.getLevel(), source, physStep);
     }
 
     @Override

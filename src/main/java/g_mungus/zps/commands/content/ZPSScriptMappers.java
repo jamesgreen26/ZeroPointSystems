@@ -1,6 +1,7 @@
 package g_mungus.zps.commands.content;
 
 import g_mungus.munguscript.language.builtin.BuiltInTypes;
+import g_mungus.munguscript.language.node.ScriptNode;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.ZPSNodes;
@@ -16,6 +17,8 @@ import net.minecraft.world.level.block.state.pattern.BlockInWorld;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import java.util.function.Consumer;
+
 /**
  * Mappers for ZPS's own types, and reading those types back out of text. The arithmetic,
  * comparisons and text handling on {@code int}, {@code double}, {@code string} and
@@ -27,50 +30,54 @@ public class ZPSScriptMappers {
 
     @SubscribeEvent
     public static void onRegisterEvent(RegisterScriptCommandsEvent event) {
+        // Everything here but what reads the server or a registry predicate only computes, so a phys tick
+        // program may run it in the physics step.
+        Consumer<ScriptNode> safe = event::registerPhysTickSafe;
+
         // Block positions
-        event.register(ZPSNodes.mapper("x", ZPSScriptTypes.BLOCK_POS, BuiltInTypes.INT, (pos, context) -> pos.getX()));
-        event.register(ZPSNodes.mapper("y", ZPSScriptTypes.BLOCK_POS, BuiltInTypes.INT, (pos, context) -> pos.getY()));
-        event.register(ZPSNodes.mapper("z", ZPSScriptTypes.BLOCK_POS, BuiltInTypes.INT, (pos, context) -> pos.getZ()));
-        event.register(ZPSNodes.mapper("center", ZPSScriptTypes.BLOCK_POS, ZPSScriptTypes.VEC_POS,
+        safe.accept(ZPSNodes.mapper("x", ZPSScriptTypes.BLOCK_POS, BuiltInTypes.INT, (pos, context) -> pos.getX()));
+        safe.accept(ZPSNodes.mapper("y", ZPSScriptTypes.BLOCK_POS, BuiltInTypes.INT, (pos, context) -> pos.getY()));
+        safe.accept(ZPSNodes.mapper("z", ZPSScriptTypes.BLOCK_POS, BuiltInTypes.INT, (pos, context) -> pos.getZ()));
+        safe.accept(ZPSNodes.mapper("center", ZPSScriptTypes.BLOCK_POS, ZPSScriptTypes.VEC_POS,
                 (pos, context) -> pos.getCenter()));
-        event.register(ZPSNodes.argumentMapper("offset_x", ZPSScriptTypes.BLOCK_POS, ZPSScriptTypes.BLOCK_POS, "int",
+        safe.accept(ZPSNodes.argumentMapper("offset_x", ZPSScriptTypes.BLOCK_POS, ZPSScriptTypes.BLOCK_POS, "int",
                 BuiltInTypes.INT, (pos, offset, context) -> pos.offset(offset, 0, 0)));
-        event.register(ZPSNodes.argumentMapper("offset_y", ZPSScriptTypes.BLOCK_POS, ZPSScriptTypes.BLOCK_POS, "int",
+        safe.accept(ZPSNodes.argumentMapper("offset_y", ZPSScriptTypes.BLOCK_POS, ZPSScriptTypes.BLOCK_POS, "int",
                 BuiltInTypes.INT, (pos, offset, context) -> pos.offset(0, offset, 0)));
-        event.register(ZPSNodes.argumentMapper("offset_z", ZPSScriptTypes.BLOCK_POS, ZPSScriptTypes.BLOCK_POS, "int",
+        safe.accept(ZPSNodes.argumentMapper("offset_z", ZPSScriptTypes.BLOCK_POS, ZPSScriptTypes.BLOCK_POS, "int",
                 BuiltInTypes.INT, (pos, offset, context) -> pos.offset(0, 0, offset)));
-        event.register(ZPSNodes.argumentMapper("offset", ZPSScriptTypes.BLOCK_POS, ZPSScriptTypes.BLOCK_POS,
+        safe.accept(ZPSNodes.argumentMapper("offset", ZPSScriptTypes.BLOCK_POS, ZPSScriptTypes.BLOCK_POS,
                 "coordinates", ZPSScriptTypes.BLOCK_POS, (pos, offset, context) -> pos.offset(offset)));
 
         // Positions
-        event.register(ZPSNodes.mapper("x", ZPSScriptTypes.VEC_POS, BuiltInTypes.DOUBLE, (vec, context) -> vec.x));
-        event.register(ZPSNodes.mapper("y", ZPSScriptTypes.VEC_POS, BuiltInTypes.DOUBLE, (vec, context) -> vec.y));
-        event.register(ZPSNodes.mapper("z", ZPSScriptTypes.VEC_POS, BuiltInTypes.DOUBLE, (vec, context) -> vec.z));
-        event.register(ZPSNodes.argumentMapper("distance_to", ZPSScriptTypes.VEC_POS, BuiltInTypes.DOUBLE,
+        safe.accept(ZPSNodes.mapper("x", ZPSScriptTypes.VEC_POS, BuiltInTypes.DOUBLE, (vec, context) -> vec.x));
+        safe.accept(ZPSNodes.mapper("y", ZPSScriptTypes.VEC_POS, BuiltInTypes.DOUBLE, (vec, context) -> vec.y));
+        safe.accept(ZPSNodes.mapper("z", ZPSScriptTypes.VEC_POS, BuiltInTypes.DOUBLE, (vec, context) -> vec.z));
+        safe.accept(ZPSNodes.argumentMapper("distance_to", ZPSScriptTypes.VEC_POS, BuiltInTypes.DOUBLE,
                 "coordinates", ZPSScriptTypes.VEC_POS, (vec, other, context) -> vec.distanceTo(other)));
-        event.register(ZPSNodes.argumentMapper("direction_to", ZPSScriptTypes.VEC_POS, ZPSScriptTypes.VEC_DIR,
+        safe.accept(ZPSNodes.argumentMapper("direction_to", ZPSScriptTypes.VEC_POS, ZPSScriptTypes.VEC_DIR,
                 "coordinates", ZPSScriptTypes.VEC_POS, (vec, other, context) -> other.subtract(vec).normalize()));
-        event.register(ZPSNodes.mapper("rounded_down", ZPSScriptTypes.VEC_POS, ZPSScriptTypes.BLOCK_POS,
+        safe.accept(ZPSNodes.mapper("rounded_down", ZPSScriptTypes.VEC_POS, ZPSScriptTypes.BLOCK_POS,
                 (vec, context) -> BlockPos.containing(vec)));
 
         // Sizes
-        event.register(ZPSNodes.mapper("x", ZPSScriptTypes.VEC_BOX, BuiltInTypes.DOUBLE, (vec, context) -> vec.x));
-        event.register(ZPSNodes.mapper("y", ZPSScriptTypes.VEC_BOX, BuiltInTypes.DOUBLE, (vec, context) -> vec.y));
-        event.register(ZPSNodes.mapper("z", ZPSScriptTypes.VEC_BOX, BuiltInTypes.DOUBLE, (vec, context) -> vec.z));
-        event.register(ZPSNodes.mapper("volume", ZPSScriptTypes.VEC_BOX, BuiltInTypes.DOUBLE,
+        safe.accept(ZPSNodes.mapper("x", ZPSScriptTypes.VEC_BOX, BuiltInTypes.DOUBLE, (vec, context) -> vec.x));
+        safe.accept(ZPSNodes.mapper("y", ZPSScriptTypes.VEC_BOX, BuiltInTypes.DOUBLE, (vec, context) -> vec.y));
+        safe.accept(ZPSNodes.mapper("z", ZPSScriptTypes.VEC_BOX, BuiltInTypes.DOUBLE, (vec, context) -> vec.z));
+        safe.accept(ZPSNodes.mapper("volume", ZPSScriptTypes.VEC_BOX, BuiltInTypes.DOUBLE,
                 (vec, context) -> vec.x * vec.y * vec.z));
 
         // Directions
-        event.register(ZPSNodes.mapper("x", ZPSScriptTypes.VEC_DIR, BuiltInTypes.DOUBLE, (vec, context) -> vec.x));
-        event.register(ZPSNodes.mapper("y", ZPSScriptTypes.VEC_DIR, BuiltInTypes.DOUBLE, (vec, context) -> vec.y));
-        event.register(ZPSNodes.mapper("z", ZPSScriptTypes.VEC_DIR, BuiltInTypes.DOUBLE, (vec, context) -> vec.z));
-        event.register(ZPSNodes.mapper("length", ZPSScriptTypes.VEC_DIR, BuiltInTypes.DOUBLE,
+        safe.accept(ZPSNodes.mapper("x", ZPSScriptTypes.VEC_DIR, BuiltInTypes.DOUBLE, (vec, context) -> vec.x));
+        safe.accept(ZPSNodes.mapper("y", ZPSScriptTypes.VEC_DIR, BuiltInTypes.DOUBLE, (vec, context) -> vec.y));
+        safe.accept(ZPSNodes.mapper("z", ZPSScriptTypes.VEC_DIR, BuiltInTypes.DOUBLE, (vec, context) -> vec.z));
+        safe.accept(ZPSNodes.mapper("length", ZPSScriptTypes.VEC_DIR, BuiltInTypes.DOUBLE,
                 (vec, context) -> vec.length()));
-        event.register(ZPSNodes.mapper("normalize", ZPSScriptTypes.VEC_DIR, ZPSScriptTypes.VEC_DIR,
+        safe.accept(ZPSNodes.mapper("normalize", ZPSScriptTypes.VEC_DIR, ZPSScriptTypes.VEC_DIR,
                 (vec, context) -> vec.normalize()));
-        event.register(ZPSNodes.argumentMapper("cross", ZPSScriptTypes.VEC_DIR, ZPSScriptTypes.VEC_DIR, "direction",
+        safe.accept(ZPSNodes.argumentMapper("cross", ZPSScriptTypes.VEC_DIR, ZPSScriptTypes.VEC_DIR, "direction",
                 ZPSScriptTypes.VEC_DIR, (vec, other, context) -> vec.cross(other)));
-        event.register(ZPSNodes.argumentMapper("dot", ZPSScriptTypes.VEC_DIR, BuiltInTypes.DOUBLE, "direction",
+        safe.accept(ZPSNodes.argumentMapper("dot", ZPSScriptTypes.VEC_DIR, BuiltInTypes.DOUBLE, "direction",
                 ZPSScriptTypes.VEC_DIR, (vec, other, context) -> vec.dot(other)));
 
         // Blocks and items, matched the way /execute if block and /clear match them
@@ -80,12 +87,12 @@ public class ZPSScriptMappers {
         event.register(ZPSNodes.rawArgumentMapper("==", ZPSScriptTypes.ITEM, BuiltInTypes.BOOLEAN, "item",
                 ItemPredicateArgument.itemPredicate(event.buildContext()), ItemPredicateArgument.Result.class,
                 (stack, predicate, context) -> predicate.test(stack)));
-        event.register(ZPSNodes.mapper("count", ZPSScriptTypes.ITEM, BuiltInTypes.INT,
+        safe.accept(ZPSNodes.mapper("count", ZPSScriptTypes.ITEM, BuiltInTypes.INT,
                 (stack, context) -> stack.getCount()));
         // Ids as text, to compare against strings a script reads or receives, which == cannot take
-        event.register(ZPSNodes.mapper("id", ZPSScriptTypes.BLOCK_STATE, BuiltInTypes.STRING,
+        safe.accept(ZPSNodes.mapper("id", ZPSScriptTypes.BLOCK_STATE, BuiltInTypes.STRING,
                 (state, context) -> BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString()));
-        event.register(ZPSNodes.mapper("id", ZPSScriptTypes.ITEM, BuiltInTypes.STRING,
+        safe.accept(ZPSNodes.mapper("id", ZPSScriptTypes.ITEM, BuiltInTypes.STRING,
                 (stack, context) -> BuiltInRegistries.ITEM.getKey(stack.getItem()).toString()));
 
         // Dimensions
@@ -94,22 +101,22 @@ public class ZPSScriptMappers {
                         ResourceLocation.parse(dimension))));
 
         // Reading values out of text
-        event.register(ZPSNodes.mapper("as_int", BuiltInTypes.STRING, BuiltInTypes.INT,
+        safe.accept(ZPSNodes.mapper("as_int", BuiltInTypes.STRING, BuiltInTypes.INT,
                 (text, context) -> Integer.parseInt(text)));
-        event.register(ZPSNodes.mapper("as_double", BuiltInTypes.STRING, BuiltInTypes.DOUBLE,
+        safe.accept(ZPSNodes.mapper("as_double", BuiltInTypes.STRING, BuiltInTypes.DOUBLE,
                 (text, context) -> Double.parseDouble(text)));
-        event.register(ZPSNodes.mapper("as_boolean", BuiltInTypes.STRING, BuiltInTypes.BOOLEAN,
+        safe.accept(ZPSNodes.mapper("as_boolean", BuiltInTypes.STRING, BuiltInTypes.BOOLEAN,
                 (text, context) -> parseBoolean(text)));
-        event.register(ZPSNodes.mapper("as_block_pos", BuiltInTypes.STRING, ZPSScriptTypes.BLOCK_POS,
+        safe.accept(ZPSNodes.mapper("as_block_pos", BuiltInTypes.STRING, ZPSScriptTypes.BLOCK_POS,
                 (text, context) -> {
                     String[] parts = text.split(" ");
                     return new BlockPos(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
                 }));
-        event.register(ZPSNodes.mapper("as_dimension", BuiltInTypes.STRING, ZPSScriptTypes.DIMENSION,
+        safe.accept(ZPSNodes.mapper("as_dimension", BuiltInTypes.STRING, ZPSScriptTypes.DIMENSION,
                 (text, context) -> text));
 
         // Writing a character by its code, such as one pixel of a text display's video
-        event.register(ZPSNodes.mapper("as_char", BuiltInTypes.INT, BuiltInTypes.STRING,
+        safe.accept(ZPSNodes.mapper("as_char", BuiltInTypes.INT, BuiltInTypes.STRING,
                 (code, context) -> charOf(code)));
     }
 

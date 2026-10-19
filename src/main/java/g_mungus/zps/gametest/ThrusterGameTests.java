@@ -5,10 +5,15 @@ import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.gas.ThrusterBlock;
 import g_mungus.zps.block.gas.core.GasEdgeNegotiator;
 import g_mungus.zps.blockentity.gas.ThrusterBlockEntity;
+import g_mungus.zps.commands.api_impl.ScriptCommandFailure;
+import g_mungus.zps.commands.api_impl.ZPSScripts;
+import g_mungus.zps.commands.phystick.PhysTickProgrammableTarget;
+import g_mungus.zps.compat.Compat;
 import g_mungus.zps.compat.GridPhysics;
 import g_mungus.zps.gas.ModGases;
 import g_mungus.zps.room.Room;
 import g_mungus.zps.room.RoomManager;
+import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
@@ -343,6 +348,193 @@ public class ThrusterGameTests {
         });
     }
 
+    // --- phys tick programs ------------------------------------------------------------------
+
+    private static CommandSourceStack source(GameTestHelper helper) {
+        return helper.getLevel().getServer().createCommandSourceStack().withLevel(helper.getLevel());
+    }
+
+    private static void program(GameTestHelper helper, ThrusterBlockEntity thruster, String command) {
+        thruster.physTickProgram().accept(command, source(helper), helper.getLevel(), helper.absolutePos(THRUSTER));
+    }
+
+    /** One physics step of an unturned, unmoving grid at the thruster; returns the force it pushed with. */
+    private static Vec3 step(GameTestHelper helper, ThrusterBlockEntity thruster, Vec3 velocity) {
+        RecordingPhysics physics = new RecordingPhysics(Vec3.atCenterOf(helper.absolutePos(THRUSTER)), velocity, 1);
+        thruster.onGridPhysicsTick(physics);
+        return physics.forces.isEmpty() ? Vec3.ZERO : physics.forces.get(0)[1];
+    }
+
+    /** {@code thrust} in a program stands in for the signal: half pushes half, and the next tick burns half. */
+    @GameTest(template = TEMPLATE)
+    public static void programThrottle_pushesItsShareAndBurnsForIt(GameTestHelper helper) {
+        ThrusterBlockEntity thruster = placeThruster(helper, THRUSTER, Direction.SOUTH, 0);
+        feed(helper, THRUSTER, ModGases.STELLANE, MOLES);
+        helper.runAfterDelay(BURN_TICKS, () -> {
+            program(helper, thruster, "thrust 0.5");
+            Vec3 force = step(helper, thruster, Vec3.ZERO);
+            double half = ThrusterBlockEntity.MAX_THRUST / 2;
+            helper.assertTrue(force.distanceTo(new Vec3(0, 0, -half)) < 1e-6,
+                    "Half a throttle should push " + half + " northward, pushes " + force);
+            helper.runAfterDelay(2, () -> {
+                helper.assertTrue(thruster.burn() == 0.5f, "The tick after should burn for half, burns " + thruster.burn());
+                helper.succeed();
+            });
+        });
+    }
+
+    /** However little it burns, a burning thruster shows the plume of a signal of 1. */
+    @GameTest(template = TEMPLATE)
+    public static void tinyBurn_stillShowsAPlume(GameTestHelper helper) {
+        ThrusterBlockEntity thruster = placeThruster(helper, THRUSTER, Direction.SOUTH, 0);
+        feed(helper, THRUSTER, ModGases.STELLANE, MOLES);
+        helper.runAfterDelay(BURN_TICKS, () -> {
+            program(helper, thruster, "thrust 0.01");
+            helper.assertTrue(step(helper, thruster, Vec3.ZERO).lengthSqr() > 0,
+                    "A hundredth of a throttle should still push");
+            helper.runAfterDelay(2, () -> {
+                helper.assertTrue(thruster.burn() >= Math.round(32 / 15.0) / 32f,
+                        "A tiny burn should show at least a signal of 1's plume, shows " + thruster.burn());
+                helper.succeed();
+            });
+        });
+    }
+
+    /**
+     * A program that fails in a step stops, and the next send of it starts it again but fails with the reason, so
+     * the Serial Bus that sent it shows why. A program sent in its place has nothing to report.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void program_failureIsReportedByTheNextSend(GameTestHelper helper) {
+        if (!Compat.isSableLoaded() && !Compat.isVSLoaded()) {
+            helper.succeed();
+            return;
+        }
+        ThrusterBlockEntity thruster = placeThruster(helper, THRUSTER, Direction.SOUTH, 0);
+        helper.runAfterDelay(1, () -> {
+            String command = "thrust value_of(ship local_vel y)";
+            program(helper, thruster, command);
+            // A step with no velocity to read fails the ship words.
+            step(helper, thruster, null);
+            helper.assertTrue(!thruster.physTickProgram().isRunning(), "A failing program should stop");
+            String reason = null;
+            try {
+                program(helper, thruster, command);
+            } catch (IllegalStateException e) {
+                reason = e.getMessage();
+            }
+            helper.assertTrue(reason != null && reason.startsWith("The phys tick program stopped"),
+                    "Sending it again should report the failure, got " + reason);
+            helper.assertTrue(thruster.physTickProgram().isRunning(), "and start it again all the same");
+            program(helper, thruster, command);
+
+            step(helper, thruster, null);
+            program(helper, thruster, "thrust 1");
+            helper.assertTrue(thruster.physTickProgram().isRunning(),
+                    "Another program should replace a failed one without reporting it");
+            helper.succeed();
+        });
+    }
+
+    /**
+     * A program whose block is on no grid has no steps to run in, so the next server tick stops it and hands the
+     * throttle back to the signal, as when a thruster leaves its ship, without waiting for it to go stale.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void program_stopsOffAGrid(GameTestHelper helper) {
+        ThrusterBlockEntity thruster = placeThruster(helper, THRUSTER, Direction.SOUTH, 0);
+        helper.runAfterDelay(1, () -> {
+            program(helper, thruster, "thrust 1");
+            step(helper, thruster, Vec3.ZERO);
+            helper.assertTrue(thruster.throttle() == 1, "The program should set the throttle, is " + thruster.throttle());
+            helper.runAfterDelay(2, () -> {
+                helper.assertTrue(!thruster.physTickProgram().isRunning(), "The program should have stopped");
+                helper.assertTrue(thruster.throttle() == 0, "A stopped program should leave the signal's throttle, is "
+                        + thruster.throttle());
+                helper.succeed();
+            });
+        });
+    }
+
+    /** A step whose program runs no {@code thrust} goes by the signal; one that runs {@code thrust 0} does not. */
+    @GameTest(template = TEMPLATE)
+    public static void program_withoutThrustLeavesTheSignal(GameTestHelper helper) {
+        if (!Compat.isSableLoaded() && !Compat.isVSLoaded()) {
+            helper.succeed();
+            return;
+        }
+        ThrusterBlockEntity thruster = placeThruster(helper, THRUSTER, Direction.SOUTH, 15);
+        feed(helper, THRUSTER, ModGases.STELLANE, MOLES);
+        helper.runAfterDelay(BURN_TICKS, () -> {
+            program(helper, thruster, "if ship local_vel y > 0 thrust 0");
+            helper.assertTrue(step(helper, thruster, new Vec3(0, 1, 0)).lengthSqr() == 0,
+                    "Rising, thrust 0 should cut the signal");
+            Vec3 falling = step(helper, thruster, new Vec3(0, -1, 0));
+            helper.assertTrue(Math.abs(falling.z + ThrusterBlockEntity.MAX_THRUST) < 1e-6,
+                    "Falling, with no thrust run, the full signal should push, pushes " + falling);
+            helper.succeed();
+        });
+    }
+
+    /** The ship words read the step itself, so a program can answer to the motion of every step. */
+    @GameTest(template = TEMPLATE)
+    public static void program_readsTheStepItRunsIn(GameTestHelper helper) {
+        if (!Compat.isSableLoaded() && !Compat.isVSLoaded()) {
+            helper.succeed();
+            return;
+        }
+        ThrusterBlockEntity thruster = placeThruster(helper, THRUSTER, Direction.SOUTH, 0);
+        feed(helper, THRUSTER, ModGases.STELLANE, MOLES);
+        helper.runAfterDelay(BURN_TICKS, () -> {
+            program(helper, thruster, "if ship local_vel y > 0 thrust 0 else thrust 1");
+            helper.assertTrue(step(helper, thruster, new Vec3(0, 1, 0)).lengthSqr() == 0,
+                    "Rising, the program should cut the throttle");
+            Vec3 falling = step(helper, thruster, new Vec3(0, -1, 0));
+            helper.assertTrue(Math.abs(falling.z + ThrusterBlockEntity.MAX_THRUST) < 1e-6,
+                    "Falling, the program should open the throttle, pushes " + falling);
+            helper.succeed();
+        });
+    }
+
+    /** {@code on_phys_tick} is refused where there is no physics step to run in. */
+    @GameTest(template = TEMPLATE)
+    public static void onPhysTick_isRefusedInTheWorld(GameTestHelper helper) {
+        placeThruster(helper, THRUSTER, Direction.SOUTH, 0);
+        ScriptCommandFailure failure = ZPSScripts.get().tryRun("on_phys_tick command(thrust 1)", source(helper),
+                helper.absolutePos(THRUSTER));
+        helper.assertTrue(failure != null, "on_phys_tick should fail on a thruster in the world");
+        ScriptCommandFailure outside = ZPSScripts.get().tryRun("thrust 0.5", source(helper),
+                helper.absolutePos(THRUSTER));
+        helper.assertTrue(outside != null, "thrust should fail outside on_phys_tick");
+        helper.succeed();
+    }
+
+    /** Only executors meant for a program parse in one: anything else is refused before it can run. */
+    @GameTest(template = TEMPLATE)
+    public static void onPhysTick_refusesOtherExecutors(GameTestHelper helper) {
+        placeThruster(helper, THRUSTER, Direction.SOUTH, 0);
+        List<String> commands = new ArrayList<>(List.of("on_phys_tick command(set_redstone 15)",
+                "on_phys_tick command(on_phys_tick command(thrust 1))"));
+        if (Compat.isSableLoaded() || Compat.isVSLoaded()) {
+            commands.add("on_phys_tick command(if ship mass > 0 thrust 1 else set_redstone 0)");
+        }
+        for (String command : commands) {
+            ScriptCommandFailure failure = ZPSScripts.get().tryRun(command, source(helper), helper.absolutePos(THRUSTER));
+            helper.assertTrue(failure != null && failure.reason().contains("cannot be used inside on_phys_tick"),
+                    "'" + command + "' should be refused inside on_phys_tick, got " + failure);
+        }
+        helper.succeed();
+    }
+
+    /** The thruster's page lists {@code on_phys_tick}, which is for any block that takes a program. */
+    @GameTest(template = TEMPLATE)
+    public static void thruster_isListedAsTakingPrograms(GameTestHelper helper) {
+        helper.assertTrue(PhysTickProgrammableTarget.INSTANCE.listedBlocks().contains(ZPSMod.resource("thruster")),
+                "The thruster should be listed for on_phys_tick, the list is "
+                        + PhysTickProgrammableTarget.INSTANCE.listedBlocks());
+        helper.succeed();
+    }
+
     /** Records what is applied; the grid is not turned, so its axes are the world's. */
     private static final class RecordingPhysics implements GridPhysics {
         private final Vec3 centreOfMass;
@@ -375,6 +567,11 @@ public class ThrusterGameTests {
         @Override
         public Vec3 angularVelocity() {
             return Vec3.ZERO;
+        }
+
+        @Override
+        public Vec3 position() {
+            return centreOfMass;
         }
 
         @Override

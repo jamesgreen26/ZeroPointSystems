@@ -112,6 +112,7 @@ Ponder page lists the script commands and getters that block accepts.
 - `#var name = literal` declares a variable the terminal keeps between lines: a Serial Bus answers with `request_value <value>` in the blank tick after a command, and `receive_value <name>` stores the answer, so a reading at one machine can drive commands at another.
 - Scripts can program other terminals: `load_script <text>`, aimed at a Script Terminal, replaces its script as if a player loaded it from a `.mungus` file, with `\n` line breaks and an optional `# 4t REPEAT` first line setting its delay and mode; the `script_contents` getter reads a terminal's script back in the same form, so scripts can copy terminals.
 - Accepts an Address Pad item (Shift+right-click to remove); the pad drops when the terminal is broken.
+- `ship` reads the Valkyrien Skies ship or Sable sublevel the target is on, with the same words on both mods: `name`, `id`, `pos`, `world_vel`, `local_vel`, `ang_vel`, `local_ang_vel`, `com`, `mass`, `bounding_box` and `dir <face>`. Inside a phys tick program they read the physics step itself.
 - Failing commands are ignored; the `ScriptCommandFailureBehavior` server config switches between silent failure (default) and a concise log line naming the command and reason.
 
 #### Data Lectern (`data_lectern`)
@@ -262,6 +263,7 @@ present.
 - Always pushes the ship with its full thrust. Reads its placement against the centre of mass: lined up with it, it drives the ship straight without turning it; further off the line, it also turns the ship as a real off-centre thruster would, blending in smoothly.
 - While driving straight, it also damps the ship's sideways drift across its thrust and pushes harder while the ship moves backwards against it, in proportion to its thrust. This fades out as the turning fades in, so a turning thruster doesn't fight the drift a turn brings.
 - Redstone signal strength is the throttle: each level asks for a fifteenth more gas, and a starved feed gives less thrust than asked.
+- Scriptable in step with the physics: `on_phys_tick command(...)` stores a command in the thruster and runs it in every physics step of its ship, until it is replaced or not re-sent for a second (20 game ticks); `thrust <0-1>` fires the thruster at that share of its full burn for the step, in place of the redstone signal; a step that runs no `thrust` goes by the signal. Physics-safe words (the `ship` words, maths, `thrust`) run in the step itself, and other getters are read on the game tick before it; `thrust` is the only executor allowed inside, so anything else is a syntax error. Gas is burnt on the following game tick for the throttle the steps actually used.
 - Stellane burns orange and Flux burns blue at twice the push; both leave as hot Exhaust gas. Other gases pass through unburnt, push half as hard as Stellane and show as cold gas. A mixed feed shows all three through one plume. Everything is released in front of the nozzle, into a sealed room if there is one.
 
 #### Gas Gauge (`gas_gauge`)

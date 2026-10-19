@@ -75,6 +75,16 @@ public final class ZPSNodes {
                 (input, context) -> function.applyAsInt(input, ZPSScriptContext.of(context)));
     }
 
+    /**
+     * Takes a whole script command, written as {@code command(...)}: checked, highlighted and suggested as a
+     * command, and handed to {@code function} as text rather than run.
+     */
+    public static SimpleExecutor<String, String> commandExecutor(String name,
+                                                                 ToIntBiFunction<String, ZPSScriptContext> function) {
+        return ScriptNodes.commandExecutor(name,
+                (command, context) -> function.applyAsInt(command, ZPSScriptContext.of(context)));
+    }
+
     /** A mapper's function, given the value, the argument written after the mapper, and the context. */
     @FunctionalInterface
     public interface WithArgument<I, A, O> {

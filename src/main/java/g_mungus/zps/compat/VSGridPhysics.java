@@ -17,7 +17,7 @@ import org.valkyrienskies.mod.common.util.VectorConversionsMCKt;
  */
 public final class VSGridPhysics implements GridPhysics {
     /** VS's default mass for a block, in kilograms. */
-    private static final double KG_PER_BLOCK = 1000;
+    static final double KG_PER_BLOCK = 1000;
 
     private final PhysShip ship;
 
@@ -43,6 +43,11 @@ public final class VSGridPhysics implements GridPhysics {
     @Override
     public Vec3 angularVelocity() {
         return VectorConversionsMCKt.toMinecraft(ship.getAngularVelocity());
+    }
+
+    @Override
+    public Vec3 position() {
+        return VectorConversionsMCKt.toMinecraft(ship.getTransform().getPositionInWorld());
     }
 
     @Override

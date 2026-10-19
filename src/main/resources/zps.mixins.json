@@ -78,7 +78,9 @@
     "create.ManualApplicationRecipeMixin",
     "create.ScrollValueBehaviourAccessor",
     "ponder.ConfigBaseMixin",
-    "sable.SubLevelEntityCollisionMixin"
+    "sable.SubLevelActorExtension",
+    "sable.SubLevelEntityCollisionMixin",
+    "vs.PhysicsListenerExtension"
   ],
   "injectors": {
     "defaultRequire": 1

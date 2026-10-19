@@ -4,13 +4,18 @@ import com.bawnorton.mixinsquared.api.MixinCanceller;
 import net.neoforged.fml.loading.LoadingModList;
 
 import java.util.List;
+import java.util.Map;
 
+/** Drops the mixins that make a ZPS interface extend another mod's, for each of those mods not installed. */
 public class ZPSMixinCanceller implements MixinCanceller {
-    private static final boolean CREATE_PRESENT =
-            LoadingModList.get().getModFileById("create") != null;
+    private static final Map<String, String> REQUIRED_MOD = Map.of(
+            "g_mungus.zps.mixin.create.GoggleInfoExtension", "create",
+            "g_mungus.zps.mixin.sable.SubLevelActorExtension", "sable",
+            "g_mungus.zps.mixin.vs.PhysicsListenerExtension", "valkyrienskies");
 
     @Override
     public boolean shouldCancel(List<String> targetClassNames, String mixinClassName) {
-        return !CREATE_PRESENT && mixinClassName.equals("g_mungus.zps.mixin.create.GoggleInfoExtension");
+        String mod = REQUIRED_MOD.get(mixinClassName);
+        return mod != null && LoadingModList.get().getModFileById(mod) == null;
     }
 }

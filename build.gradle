@@ -176,6 +176,8 @@ dependencies {
     }
     // Sable's POM pins an older Veil than the one it runs best with.
     localRuntime("foundry.veil:veil-neoforge-${project.minecraft_version}:${project.veil_version}")
+    // Sable's force groups are Veil registry objects.
+    compileOnly("foundry.veil:veil-neoforge-${project.minecraft_version}:${project.veil_version}") { transitive = false }
 
     implementation(files('libs/jsapi.jar', 'libs/freetts.jar'))
     additionalRuntimeClasspath(files('libs/jsapi.jar', 'libs/freetts.jar'))

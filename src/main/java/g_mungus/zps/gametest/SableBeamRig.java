@@ -46,6 +46,10 @@ final class SableBeamRig {
         this.plotMax = new BlockPos(bounds.maxX(), bounds.maxY(), bounds.maxZ());
     }
 
+    ServerSubLevel subLevel() {
+        return subLevel;
+    }
+
     /** Every block still on the sublevel, as positions in its plot. */
     List<BlockPos> blocksLeft() {
         List<BlockPos> left = new ArrayList<>();

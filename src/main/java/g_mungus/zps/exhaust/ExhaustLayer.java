@@ -24,7 +24,7 @@ import org.lwjgl.opengl.GL30;
 import java.io.IOException;
 
 /**
- * Exhaust is drawn into a layer of its own and composited over the finished level, so that it sorts
+ * Exhaust is drawn into a layer of its own and composited into the finished level, so that it sorts
  * against itself and against everything translucent the level draws after Flywheel: water, glass,
  * particles, clouds. Within the layer, weighted blended transparency (McGuire and Bavoil 2013) makes
  * the order particles are drawn in irrelevant, between thrusters as much as within one plume.
@@ -36,15 +36,19 @@ import java.io.IOException;
  *     layer, with the blending weighted transparency needs. The accumulation target sums weighted
  *     colour; the revealage target multiplies down transmittance and keeps the nearest exhaust
  *     depth. Both are tested against the main depth buffer, which they share.</li>
- *     <li>{@code AFTER_BLOCK_ENTITIES}: the depth buffer is copied once every opaque thing is in
- *     it, block entity renderers having drawn after Flywheel.</li>
- *     <li>{@code AFTER_LEVEL}: one fullscreen pass resolves the layer over the image. Exhaust behind
- *     something opaque is dropped; behind something translucent it is dimmed.</li>
+ *     <li>{@code AFTER_BLOCK_ENTITIES}: once every opaque thing is drawn, block entity renderers
+ *     having drawn after Flywheel, the depth buffer and the image are copied, and the image's
+ *     alpha is zeroed. Translucent blending adds each surface's alpha back as {@code a + d(1 - a)},
+ *     so by the end of the level the alpha is how much of the opaque scene they cover.</li>
+ *     <li>{@code AFTER_LEVEL}: the finished image is copied and one fullscreen pass resolves the
+ *     layer into it, then the alpha is set back to opaque. Exhaust behind something opaque is
+ *     dropped; in front of everything it goes over the image; behind something translucent it
+ *     takes the place of the opaque scene that surface lets through, as though drawn before it.</li>
  * </ol>
  *
  * <p>Depths are compared per pixel at the nearest exhaust, so a translucent surface cutting through a
  * plume puts all of that pixel's exhaust on one side of it. With Fabulous graphics the level keeps
- * translucent terrain out of the main depth buffer, so exhaust is never dimmed by it.
+ * translucent terrain out of the main depth buffer and image, so exhaust always goes over it.
  */
 public final class ExhaustLayer {
 
@@ -60,13 +64,19 @@ public final class ExhaustLayer {
     private static int accumTexture;
     private static int revealTexture;
     private static int opaqueTexture;
+    private static int opaqueColorTexture;
+    private static int sceneColorTexture;
     private static int accumFramebuffer;
     private static int revealFramebuffer;
     private static int opaqueFramebuffer;
+    private static int opaqueColorFramebuffer;
+    private static int sceneColorFramebuffer;
 
     /** Whether the targets are cleared and sized for this frame, so exhaust may be drawn into them. */
     private static boolean open;
     private static boolean drawn;
+    /** Whether the image's alpha was zeroed this frame, and wants setting back. */
+    private static boolean alphaZeroed;
     /** The framebuffer an exhaust draw replaced, while one is under way; 0 otherwise. */
     private static int redirectedFrom;
     private static boolean redirecting;
@@ -91,10 +101,16 @@ public final class ExhaustLayer {
             endRedirect();
             if (drawn) {
                 copyOpaqueDepth(event.getProjectionMatrix());
+                copyImage(opaqueColorFramebuffer);
+                setImageAlpha(0f);
+                alphaZeroed = true;
             }
         } else if (stage == RenderLevelStageEvent.Stage.AFTER_LEVEL) {
-            if (drawn) {
+            if (alphaZeroed) {
+                copyImage(sceneColorFramebuffer);
                 composite(event.getProjectionMatrix());
+                setImageAlpha(1f);
+                alphaZeroed = false;
             }
             open = false;
             drawn = false;
@@ -159,11 +175,16 @@ public final class ExhaustLayer {
             accumTexture = texture(GL30.GL_RGBA16F, GL11.GL_RGBA);
             revealTexture = texture(GL30.GL_RGBA16F, GL11.GL_RGBA);
             opaqueTexture = texture(GL30.GL_R32F, GL11.GL_RED);
+            opaqueColorTexture = texture(GL11.GL_RGBA8, GL11.GL_RGBA);
+            sceneColorTexture = texture(GL11.GL_RGBA8, GL11.GL_RGBA);
             int depthAttachment = main.isStencilEnabled() ? GL30.GL_DEPTH_STENCIL_ATTACHMENT : GL30.GL_DEPTH_ATTACHMENT;
             accumFramebuffer = framebuffer(accumTexture, depthAttachment);
             revealFramebuffer = framebuffer(revealTexture, depthAttachment);
             opaqueFramebuffer = framebuffer(opaqueTexture, 0);
-            if (accumFramebuffer == 0 || revealFramebuffer == 0 || opaqueFramebuffer == 0) {
+            opaqueColorFramebuffer = framebuffer(opaqueColorTexture, 0);
+            sceneColorFramebuffer = framebuffer(sceneColorTexture, 0);
+            if (accumFramebuffer == 0 || revealFramebuffer == 0 || opaqueFramebuffer == 0
+                    || opaqueColorFramebuffer == 0 || sceneColorFramebuffer == 0) {
                 delete();
                 return false;
             }
@@ -221,18 +242,19 @@ public final class ExhaustLayer {
     }
 
     private static void delete() {
-        for (int framebuffer : new int[]{accumFramebuffer, revealFramebuffer, opaqueFramebuffer}) {
+        for (int framebuffer : new int[]{accumFramebuffer, revealFramebuffer, opaqueFramebuffer,
+                opaqueColorFramebuffer, sceneColorFramebuffer}) {
             if (framebuffer != 0) {
                 GL30.glDeleteFramebuffers(framebuffer);
             }
         }
-        for (int texture : new int[]{accumTexture, revealTexture, opaqueTexture}) {
+        for (int texture : new int[]{accumTexture, revealTexture, opaqueTexture, opaqueColorTexture, sceneColorTexture}) {
             if (texture != 0) {
                 GlStateManager._deleteTexture(texture);
             }
         }
-        accumFramebuffer = revealFramebuffer = opaqueFramebuffer = 0;
-        accumTexture = revealTexture = opaqueTexture = 0;
+        accumFramebuffer = revealFramebuffer = opaqueFramebuffer = opaqueColorFramebuffer = sceneColorFramebuffer = 0;
+        accumTexture = revealTexture = opaqueTexture = opaqueColorTexture = sceneColorTexture = 0;
         width = height = sharedDepth = 0;
     }
 
@@ -251,6 +273,34 @@ public final class ExhaustLayer {
         GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, previous);
     }
 
+    /** Copies the main target's image into one of the layer's framebuffers. */
+    private static void copyImage(int framebuffer) {
+        RenderTarget main = Minecraft.getInstance().getMainRenderTarget();
+        int previousRead = GL11.glGetInteger(GL30.GL_READ_FRAMEBUFFER_BINDING);
+        int previousDraw = GL11.glGetInteger(GL30.GL_DRAW_FRAMEBUFFER_BINDING);
+        GL30.glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, main.frameBufferId);
+        GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, framebuffer);
+        GL30.glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL11.GL_COLOR_BUFFER_BIT, GL11.GL_NEAREST);
+        GL30.glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, previousRead);
+        GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, previousDraw);
+    }
+
+    /** Sets the alpha of the main target's whole image, leaving its colour be. */
+    private static void setImageAlpha(float alpha) {
+        RenderTarget main = Minecraft.getInstance().getMainRenderTarget();
+        int previous = GL11.glGetInteger(GL30.GL_DRAW_FRAMEBUFFER_BINDING);
+        GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, main.frameBufferId);
+        RenderSystem.colorMask(false, false, false, true);
+        boolean scissor = GL11.glIsEnabled(GL11.GL_SCISSOR_TEST);
+        GL11.glDisable(GL11.GL_SCISSOR_TEST);
+        GL30.glClearBufferfv(GL11.GL_COLOR, 0, new float[]{0f, 0f, 0f, alpha});
+        if (scissor) {
+            GL11.glEnable(GL11.GL_SCISSOR_TEST);
+        }
+        RenderSystem.colorMask(true, true, true, true);
+        GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, previous);
+    }
+
     private static void composite(Matrix4f projection) {
         ShaderInstance shader = compositeShader;
         if (shader == null) {
@@ -261,13 +311,12 @@ public final class ExhaustLayer {
         shader.setSampler("Reveal", revealTexture);
         shader.setSampler("OpaqueDepth", opaqueTexture);
         shader.setSampler("SceneDepth", main.getDepthTextureId());
+        shader.setSampler("Scene", sceneColorTexture);
+        shader.setSampler("Opaque", opaqueColorTexture);
         shader.safeGetUniform("InvProjMat").set(new Matrix4f(projection).invert());
-        RenderSystem.enableBlend();
-        RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
-                GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-        drawFullscreen(shader);
-        RenderSystem.defaultBlendFunc();
+        // The pass works out each pixel whole from the copies.
         RenderSystem.disableBlend();
+        drawFullscreen(shader);
     }
 
     /** One quad over the whole target, neither depth-tested nor depth-written. */

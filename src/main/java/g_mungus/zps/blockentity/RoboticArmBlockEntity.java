@@ -62,6 +62,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.wrapper.SidedInvWrapper;
+import net.minecraftforge.event.server.ServerStoppedEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -568,13 +569,25 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.START || delayedContainerCloseJobs.isEmpty()) return;
         for (DelayedContainerCloseJob delayedClose : delayedContainerCloseJobs) {
+            // A level from a server that has since stopped would wait forever on its old thread for a chunk.
+            if (delayedClose.level.getServer() != event.getServer()) {
+                delayedContainerCloseJobs.remove(delayedClose);
+                continue;
+            }
             if (delayedClose.level.getGameTime() < delayedClose.closeGameTime) continue;
-            Container container = resolveTransferContainer(delayedClose.level, delayedClose.blockPos);
-            if (container != null) {
-                closeContainerAfterVisualTransfer(container, delayedClose.player);
+            if (delayedClose.level.isLoaded(delayedClose.blockPos)) {
+                Container container = resolveTransferContainer(delayedClose.level, delayedClose.blockPos);
+                if (container != null) {
+                    closeContainerAfterVisualTransfer(container, delayedClose.player);
+                }
             }
             delayedContainerCloseJobs.remove(delayedClose);
         }
+    }
+
+    @SubscribeEvent
+    public static void onServerStopped(ServerStoppedEvent event) {
+        delayedContainerCloseJobs.clear();
     }
 
     private @Nullable Player getContainerInteractionPlayer() {

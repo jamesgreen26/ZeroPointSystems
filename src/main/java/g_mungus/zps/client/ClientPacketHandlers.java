@@ -1,12 +1,12 @@
 package g_mungus.zps.client;
 
 import g_mungus.zps.gas.GasJet;
+import g_mungus.zps.gas.ModGases;
 import g_mungus.zps.networking.RoomBreachS2CPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import org.valkyrienskies.kelvin.api.GasType;
-import org.valkyrienskies.kelvin.impl.registry.GasTypeRegistry;
+import org.valkyrienskies.kelvin.api.DuctNodePos;
 import org.valkyrienskies.kelvin.util.KelvinExtensions;
 
 /**
@@ -27,15 +27,11 @@ public final class ClientPacketHandlers {
         if (level == null) {
             return;
         }
-        GasType gas = GasTypeRegistry.INSTANCE.getGasType(packet.gas());
-        if (gas == null) {
-            return;
-        }
+        DuctNodePos node = KelvinExtensions.INSTANCE.toDuctNodePos(packet.pos(), level.dimension().location());
         double particles = packet.massKg() / MASS_PER_PARTICLE / WAVES;
         for (int wave = 0; wave < WAVES; wave++) {
-            GasJet.spawn(level, KelvinExtensions.INSTANCE.toDuctNodePos(packet.pos(), level.dimension().location()),
-                    gas, Vec3.atCenterOf(packet.pos()), packet.outward(), 0.35 / (wave + 1),
-                    Math.max(particles, 4), 0.45, -0.5);
+            GasJet.spawn(level, node, ModGases.FLUX, Vec3.atCenterOf(packet.pos()), packet.outward(),
+                    0.35 / (wave + 1), Math.max(particles, 4), 0.45, -0.5, packet.buoyancy());
         }
     }
 }

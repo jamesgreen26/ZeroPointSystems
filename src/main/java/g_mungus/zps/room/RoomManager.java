@@ -562,7 +562,7 @@ public final class RoomManager extends SavedData {
             return shape;
         };
 
-        BlockPos start = openCell(room, shapes);
+        BlockPos start = openCell(room, changed, shapes);
         if (start == null) {
             // Filled in solid, every cell of it.
             dissolve(room);
@@ -595,28 +595,38 @@ public final class RoomManager extends SavedData {
         setDirty();
     }
 
-    /** Any interior cell air can still be in, to fill from. */
-    private static @Nullable BlockPos openCell(Room room, Function<BlockPos, VoxelShape> shapes) {
+    /**
+     * An interior cell air can still be in, to fill from. A cell wholly in the room and unchanged
+     * if there is one: a fill starts in every pocket of its cell, so starting in a closed door's
+     * would take in the outside pocket too and find the room open.
+     */
+    private static @Nullable BlockPos openCell(Room room, LongSet changed, Function<BlockPos, VoxelShape> shapes) {
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        BlockPos fallback = null;
         for (LongIterator it = room.interior().iterator(); it.hasNext(); ) {
-            cursor.set(it.nextLong());
+            long cell = it.nextLong();
+            cursor.set(cell);
             VoxelShape shape = shapes.apply(cursor);
             if (shape != null && RoomScanner.holdsAir(shape)) {
-                return cursor.immutable();
+                if (!room.pockets().containsKey(cell) && !changed.contains(cell)) {
+                    return cursor.immutable();
+                }
+                if (fallback == null) {
+                    fallback = cursor.immutable();
+                }
             }
         }
-        return null;
+        return fallback;
     }
 
     /** Air got out: draw it going and forget the room. */
     private void breach(ServerLevel level, Room room, LongSet changed) {
-        ResourceLocation gas = room.dominantGas();
-        if (gas != null) {
+        if (room.totalMassKg() > 0) {
             List<BlockPos> holes = new ArrayList<>();
             List<Direction> outwards = new ArrayList<>();
             for (LongIterator it = changed.iterator(); it.hasNext() && holes.size() < MAX_BREACH_PUFFS; ) {
                 BlockPos pos = BlockPos.of(it.nextLong());
-                Direction outward = outwardFrom(room, pos);
+                Direction outward = outwardFrom(level, room, pos);
                 if (outward != null && RoomScanner.holdsAir(RoomScanner.shapeOf(level, pos, level.getBlockState(pos)))) {
                     holes.add(pos);
                     outwards.add(outward);
@@ -624,22 +634,35 @@ public final class RoomManager extends SavedData {
             }
             float perPuff = holes.isEmpty() ? 0 : (float) (room.totalMassKg() / holes.size());
             for (int i = 0; i < holes.size(); i++) {
+                float buoyancy = (float) buoyancy(level, holes.get(i).relative(outwards.get(i)), room.massKg(), room.temperatureK());
                 ZPSGamePackets.sendToTrackingChunk(level, new ChunkPos(holes.get(i)),
-                        new RoomBreachS2CPacket(holes.get(i), outwards.get(i), gas, perPuff));
+                        new RoomBreachS2CPacket(holes.get(i), outwards.get(i), perPuff, buoyancy));
             }
         }
         ZPSMod.LOGGER.debug("Room {} breached", room.id());
         dissolve(room);
     }
 
-    /** The way out of the room through {@code pos}: away from the interior cell beside it. */
-    private static @Nullable Direction outwardFrom(Room room, BlockPos pos) {
+    /**
+     * The way out of the room through {@code pos}: away from the interior cell beside it, toward
+     * open air that is not. A hole can be in the room itself — an opened door's cells were partly
+     * inside — and then the cells beside it within the hole are no way out.
+     */
+    private static @Nullable Direction outwardFrom(ServerLevel level, Room room, BlockPos pos) {
+        Direction fallback = null;
         for (Direction direction : Direction.values()) {
             if (room.interior().contains(pos.relative(direction).asLong())) {
-                return direction.getOpposite();
+                BlockPos out = pos.relative(direction.getOpposite());
+                if (!room.interior().contains(out.asLong())
+                        && RoomScanner.holdsAir(RoomScanner.shapeOf(level, out, level.getBlockState(out)))) {
+                    return direction.getOpposite();
+                }
+                if (fallback == null) {
+                    fallback = direction.getOpposite();
+                }
             }
         }
-        return null;
+        return fallback;
     }
 
     /** Forget a room and everything in it. The blocks are untouched. */

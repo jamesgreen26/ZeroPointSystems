@@ -9,7 +9,6 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
-import org.jetbrains.annotations.Nullable;
 import org.valkyrienskies.kelvin.api.GasType;
 import org.valkyrienskies.kelvin.impl.registry.GasTypeRegistry;
 
@@ -286,14 +285,6 @@ public final class Room {
             gases.put(AtmosphericComposition.VACUUM, 1.0);
         }
         return gases;
-    }
-
-    /** The gas there is most of by mass, or null for none at all. */
-    public @Nullable ResourceLocation dominantGas() {
-        return massKg.entrySet().stream()
-                .max(Map.Entry.comparingByValue())
-                .map(Map.Entry::getKey)
-                .orElse(null);
     }
 
     /** Joules per kelvin; gases no mod registers carry no heat. */

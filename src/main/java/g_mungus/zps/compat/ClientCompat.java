@@ -6,6 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4d;
 
 public class ClientCompat {
 
@@ -61,6 +62,17 @@ public class ClientCompat {
             if (Compat.isSableLoaded()) {
                 return SableClientCompat.renderTransformAt(clientLevel, pos);
             }
+        }
+        return null;
+    }
+
+    /// The render transform of the moving grid drawing the position, from the grid's block space
+    /// to world space, as it is drawn at partialTick into the current tick (0 the last tick's
+    /// pose, 1 this tick's). Null when the position is on no grid. Sable only: null on a Valkyrien
+    /// Skies ship, whose interpolation is not exposed this way. Render thread only.
+    public static @Nullable Matrix4d renderTransformAt(Level level, BlockPos pos, float partialTick, Matrix4d dest) {
+        if (level instanceof ClientLevel && Compat.isSableLoaded() && !Compat.isVSLoaded()) {
+            return SableClientCompat.renderTransformAt(pos, partialTick, dest);
         }
         return null;
     }

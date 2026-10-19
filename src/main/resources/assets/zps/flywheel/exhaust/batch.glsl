@@ -1,6 +1,6 @@
 // Exhaust particles, shared by the instance shader and the indirect cull shader.
 //
-// A batch is the particles one thruster emits in one tick. Its record is four RGBA32UI texels
+// A batch is the particles one thruster emits in one tick. Its record is five RGBA32UI texels
 // written by ExhaustParticles, after a one-texel header whose x is the particles per batch and y
 // is 1 if particles tumble; every particle in it is worked out from that record, its index and
 // the time, so nothing per particle is stored anywhere. Physics would replace zps_exhaustParticle's
@@ -11,6 +11,9 @@
 //   t1  nozzle offset from anchor (float) seed
 //   t2  exhaust direction (float, unit)   count
 //   t3  emitter velocity, blocks/tick     exhaust speed, blocks/tick (float)
+//   t4  orientation of the emitter's grid when the batch left, a unit quaternion xyzw (float)
+//
+// Everything is in world space: a batch takes its grid's pose once and never follows it.
 
 uniform usamplerBuffer zps_exhaustBatches;
 
@@ -63,6 +66,18 @@ vec4 zps_exhaustColor(float t) {
     return c;
 }
 
+/// The rotation a unit quaternion stands for.
+mat3 zps_quaternionRotation(vec4 q) {
+    vec3 q2 = q.xyz * 2.0;
+    float xx = q.x * q2.x, yy = q.y * q2.y, zz = q.z * q2.z;
+    float xy = q.x * q2.y, xz = q.x * q2.z, yz = q.y * q2.z;
+    float wx = q.w * q2.x, wy = q.w * q2.y, wz = q.w * q2.z;
+    return mat3(
+            1.0 - yy - zz, xy + wz, xz - wy,
+            xy - wz, 1.0 - xx - zz, yz + wx,
+            xz + wy, yz - wx, 1.0 - xx - yy);
+}
+
 /// Rotation by angle about a unit axis (Rodrigues).
 mat3 zps_rotation(vec3 axis, float angle) {
     float c = cos(angle);
@@ -77,7 +92,7 @@ mat3 zps_rotation(vec3 axis, float angle) {
 /// The first texel of the record of the batch a slot belongs to.
 int zps_exhaustRecord(int slot) {
     int batchSize = int(texelFetch(zps_exhaustBatches, 0).x);
-    return 1 + (slot / batchSize) * 4;
+    return 1 + (slot / batchSize) * 5;
 }
 
 /// Where the batch's plume sits, for culling: false if the batch has nothing alive.
@@ -105,6 +120,7 @@ bool zps_exhaustParticle(int slot, out ZpsExhaustParticle p) {
     uvec4 t1 = texelFetch(zps_exhaustBatches, base + 1);
     uvec4 t2 = texelFetch(zps_exhaustBatches, base + 2);
     uvec4 t3 = texelFetch(zps_exhaustBatches, base + 3);
+    uvec4 t4 = texelFetch(zps_exhaustBatches, base + 4);
 
     uint count = t2.w;
     uint elapsed = flw_ticks - t0.w;
@@ -153,16 +169,18 @@ bool zps_exhaustParticle(int slot, out ZpsExhaustParticle p) {
     p.color = zps_exhaustColor(shifted);
     p.heat = 1.0 - smoothstep(0.08, 0.30, shifted);
 
-    // A random axis, starting angle and spin, the spin slowing under the same drag as the motion,
-    // so the angle turned is spin * travel. Without tumbling, cubes stay square to the world.
+    // Square to the grid the batch left, as it was then. Tumbling adds a random axis, starting
+    // angle and spin, the spin slowing under the same drag as the motion, so the angle turned is
+    // spin * travel.
+    mat3 grid = zps_quaternionRotation(uintBitsToFloat(t4));
     if (texelFetch(zps_exhaustBatches, 0).y == 0u) {
-        p.rotation = mat3(1.0);
+        p.rotation = grid;
         return true;
     }
     float z = zps_rand(rng) * 2.0 - 1.0;
     float around = 6.2831853 * zps_rand(rng);
     vec3 axis = vec3(sqrt(1.0 - z * z) * vec2(cos(around), sin(around)), z);
     float spin = ZPS_EXHAUST_SPIN * (zps_rand(rng) * 2.0 - 1.0);
-    p.rotation = zps_rotation(axis, 6.2831853 * zps_rand(rng) + spin * travel);
+    p.rotation = grid * zps_rotation(axis, 6.2831853 * zps_rand(rng) + spin * travel);
     return true;
 }

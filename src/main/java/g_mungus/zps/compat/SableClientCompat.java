@@ -7,6 +7,8 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4d;
 
 public final class SableClientCompat {
 
@@ -48,6 +50,15 @@ public final class SableClientCompat {
             ClientSubLevelAccess subLevel = SableCompanion.INSTANCE.getContainingClient(center);
             return subLevel == null ? null : subLevel.renderPose().bakeIntoMatrix(dest);
         };
+    }
+
+    /// Only call after verifying that Sable is loaded.
+    /// The block space to world transform of the sublevel containing pos as Sable draws it at
+    /// partialTick into the current tick: 0 is the last tick's pose, 1 this tick's. Null while pos
+    /// is on no sublevel. Baked straight away, as renderPose hands back a pose it reuses.
+    static @Nullable Matrix4d renderTransformAt(BlockPos pos, float partialTick, Matrix4d dest) {
+        ClientSubLevelAccess subLevel = SableCompanion.INSTANCE.getContainingClient(pos.getCenter());
+        return subLevel == null ? null : subLevel.renderPose(partialTick).bakeIntoMatrix(dest);
     }
 
     /// Only call after verifying that Sable is loaded.

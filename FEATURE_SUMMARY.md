@@ -257,6 +257,12 @@ present.
 - Dumps everything at its node into the world every tick and draws a particle jet whose speed follows the pressure that pushed it out.
 - A redstone signal shuts the outlet; the node keeps filling and its pressure keeps climbing until the signal drops.
 
+#### Thruster (`thruster`)
+- Burns Stellane fed into its back face and pushes the Valkyrien Skies ship or Sable sublevel it sits on away from its nozzle; does nothing in the world. Placed facing the player like a dispenser (sneak to flip).
+- Reads its placement against the centre of mass: lined up with it, it only drives the ship forward; square across it, it only turns the ship in place; in between it does both, blending smoothly.
+- Redstone signal strength is the throttle: each level asks for a fifteenth more gas, and a starved feed gives less thrust than asked.
+- Burnt Stellane leaves as hot Exhaust gas. Other gases pass through unburnt, push a tenth as hard and show as cold gas in the orange plume. Both are released in front of the nozzle, into a sealed room if there is one.
+
 #### Gas Gauge (`gas_gauge`)
 - A dial plate bolted onto the back of a duct or machine; the needle reads the node behind it. Right-click sets the mode — **pressure** or **temperature** — and a lower and upper bound for the dial.
 - Emits a comparator signal from 0 at the lower bound to 15 at the upper, so a network can be regulated with ordinary redstone.

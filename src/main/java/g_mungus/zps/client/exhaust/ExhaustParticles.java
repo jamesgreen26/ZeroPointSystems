@@ -205,7 +205,8 @@ public final class ExhaustParticles {
                     .putFloat(base + 72, (float) orientation.z)
                     .putFloat(base + 76, (float) orientation.w)
                     .putFloat(base + 80, exhaust.width())
-                    .putInt(base + 84, exhaust.color().ordinal());
+                    .putInt(base + 84, exhaust.color().ordinal())
+                    .putFloat(base + 88, Math.clamp(exhaust.coldFraction(), 0f, 1f));
             nextBatch = (nextBatch + 1) % capacity;
             if (batchesUsed < capacity) {
                 batchesUsed++;

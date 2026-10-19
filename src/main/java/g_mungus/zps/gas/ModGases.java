@@ -58,6 +58,12 @@ public final class ModGases {
     /** Water vapour, the bulk of what vaporizing ice gives off. Clockwork's when it is loaded. */
     public static final GasType STEAM = Compat.getOrCreateSteamGas();
 
+    /** Exhaust density at STP, in kg/m^3: a compile-time constant for the same reason as {@link #FLUX_DENSITY}. */
+    public static final double EXHAUST_DENSITY = 1.98;
+
+    /** What burning Stellane leaves behind, in a thruster. Clockwork's when it is loaded. */
+    public static final GasType EXHAUST = Compat.getOrCreateExhaustGas();
+
     /**
      * Registers ZPS's gases with Kelvin. Safe to call during mod construction: gas types live in
      * Kelvin's {@code kelvin:gas_type} registry, fed by an Architectury deferred register. Entries
@@ -80,6 +86,7 @@ public final class ModGases {
             GasTypeRegistry.INSTANCE.register(AETHER, new LazyGasParticlePicker(ModParticles.AETHER));
             GasTypeRegistry.INSTANCE.register(STEAM, new LazyGasParticlePicker(ModParticles.STEAM));
             GasTypeRegistry.INSTANCE.register(STELLANE, new LazyGasParticlePicker(ModParticles.STELLANE));
+            GasTypeRegistry.INSTANCE.register(EXHAUST, new LazyGasParticlePicker(ModParticles.EXHAUST));
         }
     }
 }

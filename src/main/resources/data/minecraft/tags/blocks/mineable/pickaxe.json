@@ -15,6 +15,7 @@
     "zps:assembler",
     "zps:gas_duct",
     "zps:vent",
+    "zps:thruster",
     "zps:creative_gas_generator",
     "zps:sieve",
     "zps:octo_controller",

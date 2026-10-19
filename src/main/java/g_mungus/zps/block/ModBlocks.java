@@ -1,10 +1,10 @@
 package g_mungus.zps.block;
 
-import g_mungus.zps.client.exhaust.debug.ThrusterBlock;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.gas.CreativeGasGeneratorBlock;
 import g_mungus.zps.block.gas.DuctBlock;
 import g_mungus.zps.block.gas.GasGaugeBlock;
+import g_mungus.zps.block.gas.ThrusterBlock;
 import g_mungus.zps.block.gas.VentBlock;
 import g_mungus.zps.block.gas.AirCompressorBlock;
 import g_mungus.zps.block.gas.VaporizerBlock;
@@ -237,10 +237,10 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
 
-    /** Debug: blasts exhaust particles while powered. */
     public static final RegistryObject<Block> THRUSTER = BLOCKS.register("thruster",
             () -> new ThrusterBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
-                    .strength(3.5f)));
+                    .strength(3.5f)
+                    .requiresCorrectToolForDrops()));
 
     /** World-only: made by striking a full composter with the Impact Piston. Has no item on purpose. */
     public static final RegistryObject<Block> COMPOSTER_DIRT = BLOCKS.register("composter_dirt",

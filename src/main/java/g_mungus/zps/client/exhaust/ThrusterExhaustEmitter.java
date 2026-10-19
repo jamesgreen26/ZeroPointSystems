@@ -27,6 +27,8 @@ public interface ThrusterExhaustEmitter {
      * @param direction unit direction the exhaust leaves in, in the block's space
      * @param color     the colour of the fire, every colour cooling to the same smoke; COLD is
      *                  cold gas, a pale puff with no fire or glow
+     * @param coldFraction the share of the particles, 0 to 1, drawn as COLD instead of
+     *                  {@code color}, mixed through the plume: unburnt gas in a burn
      */
     record ExhaustParams(
             float amount,
@@ -34,7 +36,8 @@ public interface ThrusterExhaustEmitter {
             float speed,
             Vec3 position,
             Vec3 direction,
-            ExhaustColor color
+            ExhaustColor color,
+            float coldFraction
     ) {}
 
     enum ExhaustColor{

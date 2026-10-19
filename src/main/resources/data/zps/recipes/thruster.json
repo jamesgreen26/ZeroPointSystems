@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "F": {
+      "item": "minecraft:flint_and_steel"
+    },
+    "I": {
+      "item": "zps:aluminum_ingot"
+    },
+    "V": {
+      "item": "zps:vent"
+    }
+  },
+  "pattern": [
+    " V ",
+    "IFI",
+    "I I"
+  ],
+  "result": {
+    "item": "zps:thruster",
+    "count": 1
+  }
+}

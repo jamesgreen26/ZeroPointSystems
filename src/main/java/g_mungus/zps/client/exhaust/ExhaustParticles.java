@@ -38,10 +38,10 @@ import java.util.List;
 
 /**
  * Every exhaust particle on the client, kept on the GPU as a ring of batch records: one record per
- * thruster per tick, each standing for as many particles as the client config's
- * {@code ExhaustParticlesPerTick}, which the shader works out from it (see
- * {@code assets/zps/flywheel/exhaust/batch.glsl}, which holds the layout). The CPU's cost is one
- * 96-byte record per firing thruster per tick, however many particles that is.
+ * thruster per tick and per whole unit of its amount, each standing for up to as many particles as
+ * the client config's {@code ExhaustParticlesPerTick}, which the shader works out from it (see
+ * {@code assets/zps/flywheel/exhaust/batch.glsl}, which holds the layout). The CPU's cost is a
+ * 96-byte record per batch, however many particles that is.
  *
  * <p>Records are in world space. An emitter on a moving grid hands over its own block space, and
  * the batch takes the grid's pose once, when it is placed; the particles never follow the grid.
@@ -67,6 +67,8 @@ public final class ExhaustParticles {
     private static final int RECORD_BYTES = 96;
     /** Keeps the ring within the 65536 texels every driver's texture buffers take. */
     private static final int MAX_BATCHES = (65536 - 2) / 6;
+    /** Most batches one emitter adds a tick, so a single emission cannot sweep the ring. */
+    private static final float MAX_AMOUNT = 8;
     /** Beyond this many blocks from the camera an emitter adds nothing; what is in the air stays. */
     private static final double EMIT_DISTANCE = 128;
     /** Above every unit Flywheel and vanilla bind, and within the 16 every GL 4.1 driver offers. */
@@ -134,7 +136,9 @@ public final class ExhaustParticles {
     }
 
     /**
-     * Places a pending emission in the world and writes its record. On a moving grid it is placed
+     * Places a pending emission in the world and writes its records: one batch per whole unit of
+     * amount, the last taking what is left, so an amount over 1 is more batches from the same
+     * nozzle in the same tick. On a moving grid it is placed
      * as the grid is drawn through the coming tick: the nozzle where it is drawn at partial tick 0,
      * moving at its drawn displacement to partial tick 1, so the batch's staggered births follow the
      * nozzle exactly. Its cubes start square to the grid; after that, position and turn are the
@@ -161,9 +165,9 @@ public final class ExhaustParticles {
         }
 
         allocate();
-        // The throttle takes a share of the batch's slots; the rest stay empty.
-        int count = Math.round(Math.clamp(exhaust.amount(), 0f, 1f) * batchSize);
-        if (count == 0) {
+        // A fractional amount takes a share of a batch's slots; the rest stay empty.
+        int particles = Math.round(Math.clamp(exhaust.amount(), 0f, MAX_AMOUNT) * batchSize);
+        if (particles == 0) {
             return;
         }
         int tumble = ZPSConfig.exhaustTumble() ? 1 : 0;
@@ -178,33 +182,35 @@ public final class ExhaustParticles {
             // The simulation keeps positions relative to a block fixed while the ring holds anything.
             records.putInt(16, anchor.getX()).putInt(20, anchor.getY()).putInt(24, anchor.getZ());
         }
-        int base = HEADER_BYTES + nextBatch * RECORD_BYTES;
-        records.putInt(base, anchor.getX())
-                .putInt(base + 4, anchor.getY())
-                .putInt(base + 8, anchor.getZ())
-                .putInt(base + 12, tick)
-                .putFloat(base + 16, (float) offset.x)
-                .putFloat(base + 20, (float) offset.y)
-                .putFloat(base + 24, (float) offset.z)
-                .putInt(base + 28, HashCommon.murmurHash3(++seedCounter))
-                .putFloat(base + 32, (float) worldDirection.x)
-                .putFloat(base + 36, (float) worldDirection.y)
-                .putFloat(base + 40, (float) worldDirection.z)
-                .putInt(base + 44, count)
-                .putFloat(base + 48, (float) velocity.x)
-                .putFloat(base + 52, (float) velocity.y)
-                .putFloat(base + 56, (float) velocity.z)
-                .putFloat(base + 60, exhaust.speed())
-                .putFloat(base + 64, (float) orientation.x)
-                .putFloat(base + 68, (float) orientation.y)
-                .putFloat(base + 72, (float) orientation.z)
-                .putFloat(base + 76, (float) orientation.w)
-                .putFloat(base + 80, exhaust.width())
-                .putInt(base + 84, exhaust.color().ordinal());
-        nextBatch = (nextBatch + 1) % capacity;
-        if (batchesUsed < capacity) {
-            batchesUsed++;
-            slotsInUse = batchesUsed * batchSize;
+        for (int written = 0; written < particles; written += batchSize) {
+            int base = HEADER_BYTES + nextBatch * RECORD_BYTES;
+            records.putInt(base, anchor.getX())
+                    .putInt(base + 4, anchor.getY())
+                    .putInt(base + 8, anchor.getZ())
+                    .putInt(base + 12, tick)
+                    .putFloat(base + 16, (float) offset.x)
+                    .putFloat(base + 20, (float) offset.y)
+                    .putFloat(base + 24, (float) offset.z)
+                    .putInt(base + 28, HashCommon.murmurHash3(++seedCounter))
+                    .putFloat(base + 32, (float) worldDirection.x)
+                    .putFloat(base + 36, (float) worldDirection.y)
+                    .putFloat(base + 40, (float) worldDirection.z)
+                    .putInt(base + 44, Math.min(particles - written, batchSize))
+                    .putFloat(base + 48, (float) velocity.x)
+                    .putFloat(base + 52, (float) velocity.y)
+                    .putFloat(base + 56, (float) velocity.z)
+                    .putFloat(base + 60, exhaust.speed())
+                    .putFloat(base + 64, (float) orientation.x)
+                    .putFloat(base + 68, (float) orientation.y)
+                    .putFloat(base + 72, (float) orientation.z)
+                    .putFloat(base + 76, (float) orientation.w)
+                    .putFloat(base + 80, exhaust.width())
+                    .putInt(base + 84, exhaust.color().ordinal());
+            nextBatch = (nextBatch + 1) % capacity;
+            if (batchesUsed < capacity) {
+                batchesUsed++;
+                slotsInUse = batchesUsed * batchSize;
+            }
         }
         lastEmitTick = tick;
         trackPlume(new Vec3(start.x, start.y, start.z), worldDirection, exhaust.speed(), exhaust.width(), velocity, tick);

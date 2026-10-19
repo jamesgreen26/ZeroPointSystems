@@ -35,6 +35,30 @@ public class ZPSConfig {
         return result;
     }
 
+    private static ModConfigSpec.ConfigValue<Integer> exhaustParticlesPerTick;
+    private static final int exhaustParticlesPerTickDefault = 16;
+
+    /** How many exhaust particles a thruster emits each tick. */
+    public static int exhaustParticlesPerTick() {
+        int result = exhaustParticlesPerTickDefault;
+        try {
+            result = exhaustParticlesPerTick.get();
+        } catch (Exception ignored) { }
+        return result;
+    }
+
+    private static ModConfigSpec.ConfigValue<Boolean> exhaustTumble;
+    private static final boolean exhaustTumbleDefault = false;
+
+    /** Whether exhaust particles tumble, each spinning about a random axis. */
+    public static boolean exhaustTumble() {
+        boolean result = exhaustTumbleDefault;
+        try {
+            result = exhaustTumble.get();
+        } catch (Exception ignored) { }
+        return result;
+    }
+
     private static ModConfigSpec.ConfigValue<Integer> exhaustParticlePool;
     private static final int exhaustParticlePoolDefault = 131072;
 
@@ -83,6 +107,14 @@ public class ZPSConfig {
         reactorHum = builder
                 .comment("Play a hum from hot fusion reactors.")
                 .define("ReactorHum", reactorHumDefault);
+        exhaustParticlesPerTick = builder
+                .comment("How many exhaust particles a thruster emits each tick.",
+                         "Changing it clears the exhaust already in the air.")
+                .defineInRange("ExhaustParticlesPerTick", exhaustParticlesPerTickDefault, 1, 1024);
+        exhaustTumble = builder
+                .comment("Whether exhaust particles tumble, each spinning about a random axis.",
+                         "Without it they stay square to the world.")
+                .define("ExhaustTumble", exhaustTumbleDefault);
         exhaustParticlePool = builder
                 .comment("How many exhaust particles can be alive at once, across every thruster.",
                          "When full, the oldest are replaced first. Takes effect after a restart.")

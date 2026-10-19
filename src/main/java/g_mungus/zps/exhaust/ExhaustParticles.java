@@ -30,28 +30,38 @@ import java.nio.ByteBuffer;
 
 /**
  * Every exhaust particle on the client, kept on the GPU as a ring of batch records: one record per
- * thruster per tick, each standing for {@link #BATCH_SIZE} particles that the shader works out
- * from it (see {@code assets/zps/flywheel/exhaust/batch.glsl}, which holds the record layout). The
- * CPU's cost is one 64-byte record per firing thruster per tick, however many particles that is.
+ * thruster per tick, each standing for as many particles as the client config's
+ * {@code ExhaustParticlesPerTick}, which the shader works out from it (see
+ * {@code assets/zps/flywheel/exhaust/batch.glsl}, which holds the layout). The CPU's cost is one
+ * 64-byte record per firing thruster per tick, however many particles that is.
  *
  * <p>The ring is overwritten oldest first, so once it is full a new batch takes the place of one
- * that may still be alive. Its size comes from the client config when it is first needed.
+ * that may still be alive. Its size comes from the client config's {@code ExhaustParticlePool}.
+ * Both are read when the ring is built; a change to the particles per tick rebuilds it at the next
+ * emit, dropping the exhaust in the air.
  *
  * <p>Only the render thread touches the ring and the GL objects; {@link #slotsInUse()} is read
  * from Flywheel's frame workers.
  */
 public final class ExhaustParticles {
 
-    /** Particles per record. Must match {@code ZPS_EXHAUST_BATCH_SIZE}. */
-    public static final int BATCH_SIZE = 64;
     /** Ticks after which every particle of a batch is gone. Must match {@code ZPS_EXHAUST_MAX_AGE}. */
     private static final int MAX_LIFETIME_TICKS = 64;
+    /**
+     * One texel ahead of the records: x is the batch size the shader strides slots by, y is 1 if
+     * particles tumble.
+     */
+    private static final int HEADER_BYTES = 16;
     private static final int RECORD_BYTES = 64;
+    /** Keeps the ring within the 65536 texels every driver's texture buffers take. */
+    private static final int MAX_BATCHES = (65536 - 1) / 4;
     /** Above every unit Flywheel and vanilla bind, and within the 16 every GL 4.1 driver offers. */
     private static final int TEXTURE_UNIT = 15;
     private static final String SAMPLER = "zps_exhaustBatches";
 
     private static ByteBuffer records;
+    /** Particles per batch, the ring's stride; 0 before the ring is built. */
+    private static int batchSize;
     private static int capacity;
     private static int glBuffer;
     private static int glTexture;
@@ -102,8 +112,12 @@ public final class ExhaustParticles {
             level = emitterLevel;
         }
         allocate();
+        int tumble = ZPSConfig.exhaustTumble() ? 1 : 0;
+        if (records.getInt(4) != tumble) {
+            records.putInt(4, tumble);
+        }
         int tick = ticks();
-        int base = nextBatch * RECORD_BYTES;
+        int base = HEADER_BYTES + nextBatch * RECORD_BYTES;
         records.putInt(base, anchor.getX())
                 .putInt(base + 4, anchor.getY())
                 .putInt(base + 8, anchor.getZ())
@@ -115,7 +129,7 @@ public final class ExhaustParticles {
                 .putFloat(base + 32, (float) direction.x)
                 .putFloat(base + 36, (float) direction.y)
                 .putFloat(base + 40, (float) direction.z)
-                .putInt(base + 44, BATCH_SIZE)
+                .putInt(base + 44, batchSize)
                 .putFloat(base + 48, (float) velocity.x)
                 .putFloat(base + 52, (float) velocity.y)
                 .putFloat(base + 56, (float) velocity.z)
@@ -123,7 +137,7 @@ public final class ExhaustParticles {
         nextBatch = (nextBatch + 1) % capacity;
         if (batchesUsed < capacity) {
             batchesUsed++;
-            slotsInUse = batchesUsed * BATCH_SIZE;
+            slotsInUse = batchesUsed * batchSize;
         }
         lastEmitTick = tick;
         dirty = true;
@@ -189,16 +203,8 @@ public final class ExhaustParticles {
             return;
         }
         if (ticks() - lastEmitTick > MAX_LIFETIME_TICKS) {
-            VisualizationManager manager = VisualizationManager.get(level);
-            if (manager != null) {
-                manager.effects().queueRemove(effect);
-            }
-            effect = null;
-            nextBatch = 0;
-            batchesUsed = 0;
-            slotsInUse = 0;
-            MemoryUtil.memSet(records, 0);
-            dirty = true;
+            clearRing();
+            return;
         }
         expireSections(ticks());
         if (dirty) {
@@ -237,23 +243,36 @@ public final class ExhaustParticles {
         return ((LevelRendererAccessor) Minecraft.getInstance().levelRenderer).zps$getTicks();
     }
 
+    /** Builds the ring, or rebuilds it if the configured particles per tick have changed. */
     private static void allocate() {
-        if (records != null) {
+        int wanted = ZPSConfig.exhaustParticlesPerTick();
+        if (records != null && wanted == batchSize) {
             return;
         }
-        capacity = Math.max(1, ZPSConfig.exhaustParticlePool() / BATCH_SIZE);
-        records = MemoryUtil.memCalloc(capacity * RECORD_BYTES);
-        glBuffer = GL15.glGenBuffers();
+        if (records != null) {
+            // Live instances are laid out at the old stride.
+            clearRing();
+            MemoryUtil.memFree(records);
+        }
+        batchSize = wanted;
+        capacity = Math.clamp(ZPSConfig.exhaustParticlePool() / batchSize, 1, MAX_BATCHES);
+        records = MemoryUtil.memCalloc(HEADER_BYTES + capacity * RECORD_BYTES);
+        records.putInt(0, batchSize);
+        if (glBuffer == 0) {
+            glBuffer = GL15.glGenBuffers();
+        }
         int previous = GL11.glGetInteger(GL31.GL_TEXTURE_BUFFER);
         GL15.glBindBuffer(GL31.GL_TEXTURE_BUFFER, glBuffer);
         GL15.glBufferData(GL31.GL_TEXTURE_BUFFER, records, GL15.GL_DYNAMIC_DRAW);
         GL15.glBindBuffer(GL31.GL_TEXTURE_BUFFER, previous);
-        glTexture = GL11.glGenTextures();
-        int previousUnit = GlStateManager._getActiveTexture();
-        GL13.glActiveTexture(GL13.GL_TEXTURE0 + TEXTURE_UNIT);
-        GL11.glBindTexture(GL31.GL_TEXTURE_BUFFER, glTexture);
-        GL31.glTexBuffer(GL31.GL_TEXTURE_BUFFER, GL30.GL_RGBA32UI, glBuffer);
-        GL13.glActiveTexture(previousUnit);
+        if (glTexture == 0) {
+            glTexture = GL11.glGenTextures();
+            int previousUnit = GlStateManager._getActiveTexture();
+            GL13.glActiveTexture(GL13.GL_TEXTURE0 + TEXTURE_UNIT);
+            GL11.glBindTexture(GL31.GL_TEXTURE_BUFFER, glTexture);
+            GL31.glTexBuffer(GL31.GL_TEXTURE_BUFFER, GL30.GL_RGBA32UI, glBuffer);
+            GL13.glActiveTexture(previousUnit);
+        }
     }
 
     private static void upload() {
@@ -264,11 +283,17 @@ public final class ExhaustParticles {
         dirty = false;
     }
 
-    /**
-     * Forgets the level's effect: Flywheel drops a level's visuals with it, so it is only queued
-     * for removal if the level is still being drawn. The ring and GL objects are kept for the next.
-     */
+    /** Forgets the level along with its exhaust. The ring and GL objects are kept for the next. */
     private static void reset() {
+        clearRing();
+        level = null;
+    }
+
+    /**
+     * Drops every particle and the effect drawing them. Flywheel drops a level's visuals with it, so
+     * the effect is only queued for removal if the level is still being drawn.
+     */
+    private static void clearRing() {
         if (effect != null) {
             VisualizationManager manager = VisualizationManager.get(level);
             if (manager != null) {
@@ -276,7 +301,6 @@ public final class ExhaustParticles {
             }
         }
         effect = null;
-        level = null;
         nextBatch = 0;
         batchesUsed = 0;
         slotsInUse = 0;
@@ -284,7 +308,7 @@ public final class ExhaustParticles {
         trackedSections = LongSet.of();
         sectionsChanged = false;
         if (records != null) {
-            MemoryUtil.memSet(records, 0);
+            MemoryUtil.memSet(MemoryUtil.memAddress(records) + HEADER_BYTES, 0, (long) capacity * RECORD_BYTES);
             upload();
         }
     }

@@ -87,7 +87,8 @@
     "create.GoggleInfoExtension",
     "create.ManualApplicationRecipeMixin",
     "create.ScrollValueBehaviourAccessor",
-    "ponder.ConfigBaseMixin"
+    "ponder.ConfigBaseMixin",
+    "vs.PhysicsListenerExtension"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -1,6 +1,6 @@
 package g_mungus.zps.mixin;
 
-import g_mungus.zps.exhaust.ExhaustParticles;
+import g_mungus.zps.client.exhaust.ExhaustParticles;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockGetter;

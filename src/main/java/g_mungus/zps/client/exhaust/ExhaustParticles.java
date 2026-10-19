@@ -1,4 +1,4 @@
-package g_mungus.zps.exhaust;
+package g_mungus.zps.client.exhaust;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import g_mungus.zps.compat.ClientCompat;

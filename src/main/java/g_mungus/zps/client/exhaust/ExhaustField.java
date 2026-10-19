@@ -1,4 +1,4 @@
-package g_mungus.zps.exhaust;
+package g_mungus.zps.client.exhaust;
 
 import g_mungus.zps.ZPSMod;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;

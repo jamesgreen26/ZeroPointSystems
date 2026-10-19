@@ -1,4 +1,4 @@
-package g_mungus.zps.exhaust;
+package g_mungus.zps.client.exhaust;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.GlStateManager;

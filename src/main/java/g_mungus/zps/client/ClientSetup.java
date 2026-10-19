@@ -134,6 +134,8 @@ public class ClientSetup {
     public static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event) {
         // Connected-texture metadata is cached at bake time; drop it on reload so it is re-read.
         event.registerReloadListener((ResourceManagerReloadListener) resourceManager -> ConnectedTextureMeta.clear());
+        // The exhaust simulation's own shaders are read from resources.
+        event.registerReloadListener((ResourceManagerReloadListener) resourceManager -> ExhaustParticles.onResourcesReloaded());
         // Wall coats are built from baked models, which a reload replaces, and the glow meshes from them.
         event.registerReloadListener((ResourceManagerReloadListener) resourceManager -> {
             WallCoats.clear();
@@ -298,6 +300,7 @@ public class ClientSetup {
             NeoForge.EVENT_BUS.addListener(ExhaustParticles::onClientTick);
             NeoForge.EVENT_BUS.addListener(ExhaustParticles::onLevelUnload);
             NeoForge.EVENT_BUS.addListener(ExhaustParticles::onLoggingOut);
+            NeoForge.EVENT_BUS.addListener(ExhaustParticles::onChunkLoad);
             NeoForge.EVENT_BUS.addListener(ExhaustLayer::onRenderLevelStage);
             NeoForge.EVENT_BUS.addListener(ReactorGlowPreviews::onRenderLevelStage);
             NeoForge.EVENT_BUS.addListener(TractorBeamRenderer::onRenderLevelStage);

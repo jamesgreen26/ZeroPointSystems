@@ -191,7 +191,8 @@ public final class ExhaustLayer {
     private static int texture(int internalFormat, int format) {
         int id = GlStateManager._genTexture();
         GlStateManager._bindTexture(id);
-        GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, GL11.GL_FLOAT, (java.nio.ByteBuffer) null);
+        ExhaustField.withPlainUnpack(() -> GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, internalFormat, width, height, 0,
+                format, GL11.GL_FLOAT, (java.nio.ByteBuffer) null));
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL30.GL_CLAMP_TO_EDGE);

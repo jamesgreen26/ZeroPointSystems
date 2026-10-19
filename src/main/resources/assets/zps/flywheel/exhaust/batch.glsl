@@ -1,32 +1,18 @@
-// Exhaust particles, shared by the instance shader and the indirect cull shader.
+// Exhaust particles as drawn: shared by the instance shader and the indirect cull shader.
 //
-// A batch is the particles one thruster emits in one tick. Its record is five RGBA32UI texels
-// written by ExhaustParticles, after a one-texel header whose x is the particles per batch and y
-// is 1 if particles tumble; every particle in it is worked out from that record, its index and
-// the time, so nothing per particle is stored anywhere. Physics would replace zps_exhaustParticle's
-// closed-form motion with a read from a state buffer stepped on the GPU; the record stays as the
-// spawn data.
+// Where a particle is comes from the simulation (ExhaustSimulation): two state buffers, the state
+// at the end of the last simulated tick and the one before, blended by the partial tick as
+// vanilla blends an entity's old and new position. How it looks (colour, size, heat, tumble) is
+// worked out from its age, as before. See common.glsl for the batch ring.
 //
-//   t0  anchor block xyz (int)            spawn tick (LevelRenderer ticks)
-//   t1  nozzle offset from anchor (float) seed
-//   t2  exhaust direction (float, unit)   count
-//   t3  emitter velocity, blocks/tick     exhaust speed, blocks/tick (float)
-//   t4  orientation of the emitter's grid when the batch left, a unit quaternion xyzw (float)
-//
-// Everything is in world space: a batch takes its grid's pose once and never follows it.
+// A state slot is three RGBA32UI texels: position (float bits, relative to the simulation origin),
+// velocity (float bits, blocks/tick), and x the spawn tick of the batch the slot was last started
+// for, y 1 while alive, z its collision count.
 
-uniform usamplerBuffer zps_exhaustBatches;
+#include "zps:exhaust/common.glsl"
 
-// Must match ExhaustParticles.MAX_LIFETIME_TICKS, whose plume bounds also assume the drag,
-// buoyancy and spread below.
-const float ZPS_EXHAUST_LIFETIME = 40.0;
-const uint ZPS_EXHAUST_MAX_AGE = 64u;
-
-const float ZPS_EXHAUST_DRAG = 0.1;       // per tick
-const float ZPS_EXHAUST_BUOYANCY = 0.004; // blocks/tick^2
-const float ZPS_EXHAUST_SPREAD = 0.16;    // cone radius per unit of travel
-const float ZPS_EXHAUST_NOZZLE = 0.25;    // spawn jitter across the nozzle, blocks
-const float ZPS_EXHAUST_SPIN = 0.25;      // fastest spin leaving the nozzle, radians/tick
+uniform usamplerBuffer zps_exhaustStatePrev;
+uniform usamplerBuffer zps_exhaustStateCur;
 
 struct ZpsExhaustParticle {
     vec3 position;  // relative to flw_renderOrigin
@@ -35,20 +21,6 @@ struct ZpsExhaustParticle {
     vec4 color;
     float heat;     // 1 white-hot through 0 cold smoke
 };
-
-uint zps_hash(uint x) {
-    x ^= x >> 16;
-    x *= 0x7feb352du;
-    x ^= x >> 15;
-    x *= 0x846ca68bu;
-    x ^= x >> 16;
-    return x;
-}
-
-float zps_rand(inout uint state) {
-    state = zps_hash(state);
-    return float(state >> 8) * (1.0 / 16777216.0);
-}
 
 vec4 zps_exhaustColor(float t) {
     const vec4 WHITE = vec4(1.00, 0.97, 0.85, 0.90);
@@ -89,91 +61,66 @@ mat3 zps_rotation(vec3 axis, float angle) {
             a.z * axis.x + s * axis.y, a.z * axis.y - s * axis.x, a.z * axis.z + c);
 }
 
-/// The first texel of the record of the batch a slot belongs to.
-int zps_exhaustRecord(int slot) {
-    int batchSize = int(texelFetch(zps_exhaustBatches, 0).x);
-    return 1 + (slot / batchSize) * 5;
-}
-
-/// Where the batch's plume sits, for culling: false if the batch has nothing alive.
+/// Where the batch's plume can be, for culling: false if the batch has nothing alive. A generous
+/// estimate from the batch alone; walls only ever keep particles closer in.
 bool zps_exhaustBatchBounds(int slot, out vec3 center, out float radius) {
-    int base = zps_exhaustRecord(slot);
-    uvec4 t0 = texelFetch(zps_exhaustBatches, base);
-    uvec4 t1 = texelFetch(zps_exhaustBatches, base + 1);
-    uvec4 t2 = texelFetch(zps_exhaustBatches, base + 2);
-    uvec4 t3 = texelFetch(zps_exhaustBatches, base + 3);
-    if (t2.w == 0u || flw_ticks - t0.w > ZPS_EXHAUST_MAX_AGE) {
+    ZpsExhaustBatch b = zps_exhaustBatch(slot / zps_exhaustBatchSize());
+    if (b.count == 0u || flw_ticks - b.spawnTick > ZPS_EXHAUST_MAX_AGE) {
         return false;
     }
-    float reach = uintBitsToFloat(t3.w) / ZPS_EXHAUST_DRAG;
-    vec3 velocity = uintBitsToFloat(t3.xyz);
-    center = vec3(ivec3(t0.xyz) - flw_renderOrigin) + uintBitsToFloat(t1.xyz)
-            + uintBitsToFloat(t2.xyz) * reach * 0.5 + velocity * ZPS_EXHAUST_LIFETIME * 0.5;
-    radius = reach + length(velocity) * ZPS_EXHAUST_LIFETIME + 4.0;
+    float reach = b.speed / ZPS_EXHAUST_DRAG;
+    center = vec3(b.anchor - flw_renderOrigin) + b.offset
+            + b.direction * reach * 0.5 + b.emitterVelocity * ZPS_EXHAUST_LIFETIME * 0.5;
+    radius = reach + length(b.emitterVelocity) * ZPS_EXHAUST_LIFETIME + 8.0;
     return true;
 }
 
 bool zps_exhaustParticle(int slot, out ZpsExhaustParticle p) {
-    int index = slot % int(texelFetch(zps_exhaustBatches, 0).x);
-    int base = zps_exhaustRecord(slot);
-    uvec4 t0 = texelFetch(zps_exhaustBatches, base);
-    uvec4 t1 = texelFetch(zps_exhaustBatches, base + 1);
-    uvec4 t2 = texelFetch(zps_exhaustBatches, base + 2);
-    uvec4 t3 = texelFetch(zps_exhaustBatches, base + 3);
-    uvec4 t4 = texelFetch(zps_exhaustBatches, base + 4);
-
-    uint count = t2.w;
-    uint elapsed = flw_ticks - t0.w;
-    if (uint(index) >= count || elapsed > ZPS_EXHAUST_MAX_AGE) {
+    int batchSize = zps_exhaustBatchSize();
+    ZpsExhaustBatch b = zps_exhaustBatch(slot / batchSize);
+    uint index = uint(slot % batchSize);
+    uint elapsed = flw_ticks - b.spawnTick;
+    if (index >= b.count || elapsed > ZPS_EXHAUST_MAX_AGE) {
         return false;
     }
-
-    // Spread the batch over its tick so the plume is continuous rather than 20 puffs a second.
-    float stagger = (float(index) + 0.5) / float(count);
+    float stagger = zps_exhaustStagger(index, b.count);
     float age = float(elapsed) + flw_partialTick - stagger;
-
-    uint rng = zps_hash(t1.w ^ (uint(index) * 0x9E3779B9u));
-    float life = ZPS_EXHAUST_LIFETIME * (0.75 + 0.5 * zps_rand(rng));
+    float life = zps_exhaustLife(b.seed, index);
     if (age < 0.0 || age >= life) {
         return false;
     }
+
+    // Not started for this batch yet, or buried by a block: nothing to draw.
+    uvec4 cur = texelFetch(zps_exhaustStateCur, slot * 3 + 2);
+    if (cur.x != b.spawnTick || (cur.y & 1u) == 0u) {
+        return false;
+    }
+    vec3 curPosition = uintBitsToFloat(texelFetch(zps_exhaustStateCur, slot * 3).xyz);
+    vec3 curVelocity = uintBitsToFloat(texelFetch(zps_exhaustStateCur, slot * 3 + 1).xyz);
+    // How far from the previous simulated tick to the current one this frame is: the partial
+    // tick, or past 1 if a tick went by unsimulated, which then extrapolates.
+    float s = float(int(flw_ticks - zps_exhaustSimTick())) + flw_partialTick;
+    uvec4 prev = texelFetch(zps_exhaustStatePrev, slot * 3 + 2);
+    vec3 position;
+    if (prev.x == b.spawnTick && (prev.y & 1u) != 0u) {
+        position = mix(uintBitsToFloat(texelFetch(zps_exhaustStatePrev, slot * 3).xyz), curPosition, s);
+    } else {
+        // Born during the last simulated tick: back along its velocity to where it was.
+        position = curPosition + curVelocity * (s - 1.0);
+    }
+    p.position = vec3(zps_exhaustSimOrigin() - flw_renderOrigin) + position;
+
     float t = age / life;
-
-    vec3 dir = uintBitsToFloat(t2.xyz);
-    vec3 emitterVelocity = uintBitsToFloat(t3.xyz);
-    float speed = uintBitsToFloat(t3.w);
-
-    vec3 helper = abs(dir.y) < 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
-    vec3 u = normalize(cross(dir, helper));
-    vec3 w = cross(dir, u);
-
-    float angle = 6.2831853 * zps_rand(rng);
-    float radial = sqrt(zps_rand(rng));
-    vec3 across = u * cos(angle) + w * sin(angle);
-    vec3 velocity = (dir + across * radial * ZPS_EXHAUST_SPREAD) * speed * (0.85 + 0.3 * zps_rand(rng))
-            + emitterVelocity;
-    vec3 start = vec3(ivec3(t0.xyz) - flw_renderOrigin) + uintBitsToFloat(t1.xyz)
-            + emitterVelocity * stagger
-            + (u * (zps_rand(rng) - 0.5) + w * (zps_rand(rng) - 0.5)) * ZPS_EXHAUST_NOZZLE;
-
-    // Linear drag has a closed form: travel = v * (1 - e^(-k*age)) / k, and a constant lift under
-    // the same drag rises at (b/k) * (age - travel).
-    float travel = (1.0 - exp(-ZPS_EXHAUST_DRAG * age)) / ZPS_EXHAUST_DRAG;
-    float lift = ZPS_EXHAUST_BUOYANCY * (0.5 + zps_rand(rng)) / ZPS_EXHAUST_DRAG * (age - travel);
-    vec3 phase = vec3(zps_rand(rng), zps_rand(rng), zps_rand(rng)) * 6.2831853;
-    vec3 swirl = vec3(sin(age * 0.15 + phase.x), 0.5 * sin(age * 0.13 + phase.y), sin(age * 0.17 + phase.z)) * 0.6 * t;
-
-    p.position = start + velocity * travel + vec3(0.0, lift, 0.0) + swirl;
+    uint rng = zps_exhaustStream(b.seed, index, ZPS_EXHAUST_STREAM_LOOK);
     p.size = mix(0.12, 0.65, sqrt(t)) * (0.7 + 0.6 * zps_rand(rng));
     float shifted = clamp(t + (zps_rand(rng) - 0.5) * 0.06, 0.0, 1.0);
     p.color = zps_exhaustColor(shifted);
-    p.heat = 1.0 - smoothstep(0.08, 0.30, shifted);
+    p.heat = zps_exhaustHeatAt(shifted);
 
     // Square to the grid the batch left, as it was then. Tumbling adds a random axis, starting
-    // angle and spin, the spin slowing under the same drag as the motion, so the angle turned is
-    // spin * travel.
-    mat3 grid = zps_quaternionRotation(uintBitsToFloat(t4));
-    if (texelFetch(zps_exhaustBatches, 0).y == 0u) {
+    // angle and spin, the spin slowing under the same drag as the motion.
+    mat3 grid = zps_quaternionRotation(b.orientation);
+    if (!zps_exhaustTumble()) {
         p.rotation = grid;
         return true;
     }
@@ -181,6 +128,6 @@ bool zps_exhaustParticle(int slot, out ZpsExhaustParticle p) {
     float around = 6.2831853 * zps_rand(rng);
     vec3 axis = vec3(sqrt(1.0 - z * z) * vec2(cos(around), sin(around)), z);
     float spin = ZPS_EXHAUST_SPIN * (zps_rand(rng) * 2.0 - 1.0);
-    p.rotation = grid * zps_rotation(axis, 6.2831853 * zps_rand(rng) + spin * travel);
+    p.rotation = grid * zps_rotation(axis, 6.2831853 * zps_rand(rng) + spin * zps_exhaustTravel(age));
     return true;
 }

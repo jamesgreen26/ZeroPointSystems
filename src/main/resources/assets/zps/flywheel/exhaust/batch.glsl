@@ -140,9 +140,12 @@ bool zps_exhaustParticle(int slot, out ZpsExhaustParticle p) {
     uint rng = zps_exhaustStream(b.seed, index, ZPS_EXHAUST_STREAM_LOOK);
     p.size = mix(0.12, 0.65, sqrt(t)) * (0.7 + 0.6 * zps_rand(rng));
     float shifted = clamp(t + (zps_rand(rng) - 0.5) * 0.06, 0.0, 1.0);
-    // An impure burn: some of the particles are the unburnt gas, cold through the same plume.
+    // A mixed burn: some of the particles are the unburnt gas, cold, and some burn blue, all through
+    // the same plume.
     uint mixRng = zps_exhaustStream(b.seed, index, ZPS_EXHAUST_STREAM_MIX);
-    uint color = zps_rand(mixRng) < b.coldFraction ? ZPS_EXHAUST_COLD : b.color;
+    float pick = zps_rand(mixRng);
+    uint color = pick < b.coldFraction ? ZPS_EXHAUST_COLD
+            : pick < b.coldFraction + b.blueFraction ? ZPS_EXHAUST_BLUE : b.color;
     p.color = zps_exhaustColor(color, shifted);
     p.heat = color == ZPS_EXHAUST_COLD ? 0.0 : zps_exhaustHeatAt(shifted);
     float distance = length(p.position - (flw_cameraPos - vec3(flw_renderOrigin)));

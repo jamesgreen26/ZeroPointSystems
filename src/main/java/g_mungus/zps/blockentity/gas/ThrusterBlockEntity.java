@@ -33,10 +33,11 @@ import java.util.Map;
  * share of {@link #MAX_MOL_PER_TICK}, taken from the node's mix as it finds it, so a starved or
  * low-pressure feed gives less than was asked and pushes less.
  * <p>
- * Stellane burns: it pushes at {@link #THRUST_PER_MOL} and leaves as the same mass of hot
- * {@link ModGases#EXHAUST}. Anything else passes through unburnt at its own temperature, pushing only
- * {@link #COLD_PUSH_RATIO} as hard, and shows in the plume as cold gas. Both are let out in front of
- * the nozzle, into a room if there is one ({@link RoomManager}).
+ * Stellane burns orange: it pushes at {@link #THRUST_PER_MOL} and leaves as the same mass of hot
+ * {@link ModGases#EXHAUST}. Flux burns blue the same way but pushes {@link #FLUX_PUSH_RATIO} as hard.
+ * Anything else passes through unburnt at its own temperature, pushing only {@link #COLD_PUSH_RATIO}
+ * as hard, and shows in the plume as cold gas. A mixed feed shows all three through one plume. All of
+ * it is let out in front of the nozzle, into a room if there is one ({@link RoomManager}).
  * <p>
  * The burn is worked out on the server tick and handed to the physics step as one immutable vector,
  * since Valkyrien Skies runs that step on a thread of its own.
@@ -50,8 +51,10 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements GridPhysi
     /** Thrust at a full signal on pure Stellane, in {@link GridPhysics} units: a plain block weighs 1. */
     public static final double MAX_THRUST = 400;
     public static final double THRUST_PER_MOL = MAX_THRUST / MAX_MOL_PER_TICK;
+    /** How hard a mole of burning Flux pushes, against a mole of burning Stellane. */
+    public static final double FLUX_PUSH_RATIO = 2;
     /** How hard a mole of unburnt gas pushes, against a mole of burning Stellane. */
-    public static final double COLD_PUSH_RATIO = 0.1;
+    public static final double COLD_PUSH_RATIO = 0.5;
     /** Temperature the Exhaust leaves at, in kelvin. */
     public static final double BURN_TEMPERATURE_K = 1200;
 
@@ -80,17 +83,22 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements GridPhysi
 
     /** Below this many kilograms a share is not worth taking. */
     private static final double MIN_TRANSFER = 1e-9;
-    /** Steps the burn and its cold share are sent to clients in. */
+    /** Steps the burn and its blue and cold shares are sent to clients in. */
     private static final int SYNC_STEPS = 32;
 
     private static final String BURN_KEY = "Burn";
+    private static final String BLUE_KEY = "Blue";
     private static final String COLD_KEY = "Cold";
 
     /** Thrust for the physics step, in the grid's own axes; zero while not burning. */
     private volatile Vec3 thrust = Vec3.ZERO;
 
-    /** Gas drawn last tick against {@link #MAX_MOL_PER_TICK}, and the unburnt share of it, in {@link #SYNC_STEPS}. */
+    /**
+     * Gas drawn last tick against {@link #MAX_MOL_PER_TICK}, and the burning Flux and unburnt shares of it, in
+     * {@link #SYNC_STEPS}.
+     */
     private int burnSteps;
+    private int blueSteps;
     private int coldSteps;
 
     public ThrusterBlockEntity(BlockPos pos, BlockState state) {
@@ -123,7 +131,8 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements GridPhysi
             available += entry.getKey().massToMoles(entry.getValue());
         }
 
-        double burnt = 0;
+        double stellane = 0;
+        double flux = 0;
         double unburnt = 0;
         double exhaustKg = 0;
         Map<GasType, Double> passed = new HashMap<>();
@@ -137,7 +146,10 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements GridPhysi
                     continue;
                 }
                 if (gas.equals(ModGases.STELLANE)) {
-                    burnt += gas.massToMoles(take);
+                    stellane += gas.massToMoles(take);
+                    exhaustKg += take;
+                } else if (gas.equals(ModGases.FLUX)) {
+                    flux += gas.massToMoles(take);
                     exhaustKg += take;
                 } else {
                     unburnt += gas.massToMoles(take);
@@ -146,7 +158,7 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements GridPhysi
             }
         }
 
-        double force = (burnt + COLD_PUSH_RATIO * unburnt) * THRUST_PER_MOL;
+        double force = (stellane + FLUX_PUSH_RATIO * flux + COLD_PUSH_RATIO * unburnt) * THRUST_PER_MOL;
         thrust = force > 0 ? Vec3.atLowerCornerOf(facing.getNormal()).scale(-force) : Vec3.ZERO;
 
         if (level instanceof ServerLevel serverLevel) {
@@ -160,16 +172,18 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements GridPhysi
             }
         }
 
-        double drawn = burnt + unburnt;
+        double drawn = stellane + flux + unburnt;
         setSynced((int) Math.round(Math.min(1.0, drawn / MAX_MOL_PER_TICK) * SYNC_STEPS),
+                drawn > 0 ? (int) Math.round(flux / drawn * SYNC_STEPS) : 0,
                 drawn > 0 ? (int) Math.round(unburnt / drawn * SYNC_STEPS) : 0);
     }
 
-    private void setSynced(int burn, int cold) {
-        if (burn == burnSteps && cold == coldSteps) {
+    private void setSynced(int burn, int blue, int cold) {
+        if (burn == burnSteps && blue == blueSteps && cold == coldSteps) {
             return;
         }
         burnSteps = burn;
+        blueSteps = blue;
         coldSteps = cold;
         if (level != null) {
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
@@ -179,6 +193,11 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements GridPhysi
     /** Gas drawn last tick, 0 to 1 of a full signal's worth: the throttle the feed actually allowed. */
     public float burn() {
         return burnSteps / (float) SYNC_STEPS;
+    }
+
+    /** The burning Flux share of what was drawn last tick, by moles. */
+    public float blueFraction() {
+        return blueSteps / (float) SYNC_STEPS;
     }
 
     /** The unburnt share of what was drawn last tick, by moles. */
@@ -296,6 +315,7 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements GridPhysi
                 Vec3.atCenterOf(worldPosition).add(direction.scale(0.55)),
                 direction,
                 ExhaustColor.ORANGE,
+                blueFraction(),
                 coldFraction()
         );
     }
@@ -307,6 +327,7 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements GridPhysi
     public @NotNull CompoundTag getUpdateTag(HolderLookup.@NotNull Provider registries) {
         CompoundTag tag = super.getUpdateTag(registries);
         tag.putByte(BURN_KEY, (byte) burnSteps);
+        tag.putByte(BLUE_KEY, (byte) blueSteps);
         tag.putByte(COLD_KEY, (byte) coldSteps);
         return tag;
     }
@@ -327,6 +348,7 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements GridPhysi
     @Override
     public void handleUpdateTag(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         burnSteps = tag.getByte(BURN_KEY);
+        blueSteps = tag.getByte(BLUE_KEY);
         coldSteps = tag.getByte(COLD_KEY);
     }
 }

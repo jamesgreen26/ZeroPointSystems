@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/orientable_vertical",
+  "textures": {
+    "front": "zps:block/fuel_injector",
+    "side": "zps:block/aluminum_block"
+  }
+}

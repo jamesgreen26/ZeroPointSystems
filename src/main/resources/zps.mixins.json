@@ -16,6 +16,8 @@
     "DimensionSpecialEffectsMixin",
     "EntityRenderDispatcherMixin",
     "FogRendererMixin",
+    "flywheel.GlProgramMixin",
+    "flywheel.MaterialRenderStateMixin",
     "KeyMappingMixin",
     "LevelRendererAccessor",
     "LevelRendererMixin",

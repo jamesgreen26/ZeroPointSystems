@@ -1,5 +1,6 @@
 package g_mungus.zps.blockentity;
 
+import g_mungus.zps.exhaust.ThrusterBlockEntity;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
@@ -145,6 +146,11 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("impact_piston",
                     () -> BlockEntityType.Builder.of(ImpactPistonBlockEntity::new,
                             ModBlocks.IMPACT_PISTON.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<ThrusterBlockEntity>> THRUSTER =
+            BLOCK_ENTITIES.register("thruster",
+                    () -> BlockEntityType.Builder.of(ThrusterBlockEntity::new,
+                            ModBlocks.THRUSTER.get()).build(null));
 
     public static final RegistryObject<BlockEntityType<SieveBlockEntity>> SIEVE =
             BLOCK_ENTITIES.register("sieve",

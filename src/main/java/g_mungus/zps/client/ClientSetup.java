@@ -1,5 +1,7 @@
 package g_mungus.zps.client;
 
+import g_mungus.zps.exhaust.ExhaustLayer;
+import g_mungus.zps.exhaust.ExhaustParticles;
 import dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ModBlocks;
@@ -125,11 +127,12 @@ public class ClientSetup {
         Objects.requireNonNull(PiecedTileSource.TYPE);
     }
 
-    /** The reactor glow's core shader. */
+    /** Core shaders: the reactor glow, the tractor beam, and the exhaust layer's depth copy and composite. */
     @SubscribeEvent
     public static void onRegisterShaders(RegisterShadersEvent event) throws IOException {
         ReactorGlowRenderer.onRegisterShaders(event);
         TractorBeamRenderer.onRegisterShaders(event);
+        ExhaustLayer.onRegisterShaders(event);
     }
 
     @SubscribeEvent
@@ -292,6 +295,10 @@ public class ClientSetup {
             MinecraftForge.EVENT_BUS.addListener(ClientReactors::onLoggingOut);
             MinecraftForge.EVENT_BUS.addListener(ClientReactors::onClientTick);
             MinecraftForge.EVENT_BUS.addListener(ClientReactors::onRenderLevelStage);
+            MinecraftForge.EVENT_BUS.addListener(ExhaustParticles::onClientTick);
+            MinecraftForge.EVENT_BUS.addListener(ExhaustParticles::onLevelUnload);
+            MinecraftForge.EVENT_BUS.addListener(ExhaustParticles::onLoggingOut);
+            MinecraftForge.EVENT_BUS.addListener(ExhaustLayer::onRenderLevelStage);
             MinecraftForge.EVENT_BUS.addListener(ReactorGlowPreviews::onRenderLevelStage);
             MinecraftForge.EVENT_BUS.addListener(ReactorGlowPreviews::onLoggingOut);
             MinecraftForge.EVENT_BUS.addListener(ReactorGlowElement::onLoggingOut);

@@ -8,10 +8,16 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 import java.util.SortedSet;
 
-/** Reads which blocks are being mined, so a multiblock's renderer can crack the whole thing. For the Large Space Door. */
+/**
+ * Reads which blocks are being mined, so a multiblock's renderer can crack the whole thing (for the
+ * Large Space Door), and the render tick count that Flywheel's shaders see as {@code flw_ticks}.
+ */
 @Mixin(LevelRenderer.class)
 public interface LevelRendererAccessor {
 
     @Accessor("destructionProgress")
     Long2ObjectMap<SortedSet<BlockDestructionProgress>> zps$getDestructionProgress();
+
+    @Accessor("ticks")
+    int zps$getTicks();
 }

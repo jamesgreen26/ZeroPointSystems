@@ -1,0 +1,13 @@
+{
+    "vertex": "zps:exhaust_fullscreen",
+    "fragment": "zps:exhaust_composite",
+    "samplers": [
+        { "name": "Accum" },
+        { "name": "Reveal" },
+        { "name": "OpaqueDepth" },
+        { "name": "SceneDepth" }
+    ],
+    "uniforms": [
+        { "name": "InvProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] }
+    ]
+}

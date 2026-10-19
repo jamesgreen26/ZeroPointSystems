@@ -1,6 +1,7 @@
 package g_mungus.zps.client.particle;
 
 import g_mungus.zps.compat.Compat;
+import g_mungus.zps.mixin.ParticleAccessor;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.ParticleStatus;
@@ -20,11 +21,12 @@ import org.valkyrienskies.kelvin.impl.client.particle.DefaultGasParticle;
 /**
  * A puff of gas that floats or sinks by how dense it is against what it is let out into.
  *
- * <p>Looks and moves like Kelvin's {@code DefaultGasParticle}, except for buoyancy. Kelvin's judges a
- * gas only by its type against plain air, never lets it sink, and adds a constant lift on top. This
- * one takes a buoyancy from the block letting it out ({@link #setBuoyancy}) — worked out on the
+ * <p>Looks and moves like Kelvin's {@code DefaultGasParticle}, except for buoyancy and surfaces. Kelvin's
+ * judges a gas only by its type against plain air, never lets it sink, and adds a constant lift on top.
+ * This one takes a buoyancy from the block letting it out ({@link #setBuoyancy}) — worked out on the
  * server against the room or atmosphere actually there, temperature included — so hot or light gas
- * rises, cold or heavy gas sinks, and gas let out into vacuum falls.
+ * rises, cold or heavy gas sinks, and gas let out into vacuum falls. And where Kelvin's stops dead
+ * against a surface, this one spreads out along it ({@link #move}).
  */
 public class GasParticle extends TextureSheetParticle {
 
@@ -41,6 +43,12 @@ public class GasParticle extends TextureSheetParticle {
     private static final float FADE_OUT_START = 0.60f;
     private static final double VELOCITY_JITTER = 0.15;
     private static final double MIN_JITTER = 0.005;
+    /** Of the speed going into a surface, the share turned along it; the rest is lost to the hit. */
+    private static final double SPREAD = 0.6;
+    /** How far short of its move a particle has to come to count as having hit something, in blocks. */
+    private static final double MIN_BLOCKED = 1e-6;
+    private static final Vec3 UP = new Vec3(0, 1, 0);
+    private static final Vec3 EAST = new Vec3(1, 0, 0);
 
     private final SpriteSet sprites;
     private final float baseSize;
@@ -118,6 +126,61 @@ public class GasParticle extends TextureSheetParticle {
         quadSize = baseSize * (1f + lifeFrac * SIZE_GROWTH);
         alpha = lifeFrac < FADE_OUT_START ? 1f : Math.max(0f, (1f - lifeFrac) / (1f - FADE_OUT_START));
         setSpriteFromAge(sprites);
+    }
+
+    /**
+     * As vanilla's, except a surface turns the gas aside rather than stopping it: the speed going
+     * into it goes along it instead, each particle its own random way, so a jet hitting a wall fans
+     * out across it. The move itself is vanilla's, so Sable still collides it with sublevels; what
+     * was hit is told from how far short of the move the particle came, which works for a sublevel's
+     * turned blocks as well as the world's.
+     */
+    @Override
+    public void move(double dx, double dy, double dz) {
+        double startX = x;
+        double startY = y;
+        double startZ = z;
+        double startXd = xd;
+        double startYd = yd;
+        double startZd = zd;
+        super.move(dx, dy, dz);
+        // Vanilla stops a particle for good the first time anything blocks it vertically.
+        ((ParticleAccessor) this).zps$setStoppedByCollision(false);
+
+        // What a surface took off the move points into it.
+        double shortX = dx - (x - startX);
+        double shortY = dy - (y - startY);
+        double shortZ = dz - (z - startZ);
+        double shortLength = Math.sqrt(shortX * shortX + shortY * shortY + shortZ * shortZ);
+        if (shortLength < MIN_BLOCKED) {
+            return;
+        }
+        Vec3 normal = new Vec3(shortX / shortLength, shortY / shortLength, shortZ / shortLength);
+        double into = startXd * normal.x + startYd * normal.y + startZd * normal.z;
+        if (into <= 0) {
+            return;
+        }
+        // Vanilla stops only the sideways part; whatever is still headed into the surface stops too.
+        double still = xd * normal.x + yd * normal.y + zd * normal.z;
+        if (still > 0) {
+            xd -= normal.x * still;
+            yd -= normal.y * still;
+            zd -= normal.z * still;
+        }
+        spread(normal, into);
+    }
+
+    /** Turn {@code speed} into a surface facing along {@code normal} into a random way along it. */
+    private void spread(Vec3 normal, double speed) {
+        Vec3 first = normal.cross(Math.abs(normal.y) < 0.9 ? UP : EAST).normalize();
+        Vec3 second = normal.cross(first);
+        double angle = random.nextDouble() * 2.0 * Math.PI;
+        double along = speed * SPREAD;
+        double cos = along * Math.cos(angle);
+        double sin = along * Math.sin(angle);
+        xd += first.x * cos + second.x * sin;
+        yd += first.y * cos + second.y * sin;
+        zd += first.z * cos + second.z * sin;
     }
 
     @Override

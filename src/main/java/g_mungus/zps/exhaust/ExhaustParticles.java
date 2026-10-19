@@ -1,6 +1,7 @@
 package g_mungus.zps.exhaust;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import g_mungus.zps.compat.ClientCompat;
 import dev.engine_room.flywheel.api.visualization.VisualizationManager;
 import dev.engine_room.flywheel.backend.gl.shader.GlProgram;
 import g_mungus.zps.config.ZPSConfig;
@@ -24,16 +25,24 @@ import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL31;
+import org.joml.Matrix4d;
+import org.joml.Quaterniond;
+import org.joml.Vector3d;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Every exhaust particle on the client, kept on the GPU as a ring of batch records: one record per
  * thruster per tick, each standing for as many particles as the client config's
  * {@code ExhaustParticlesPerTick}, which the shader works out from it (see
  * {@code assets/zps/flywheel/exhaust/batch.glsl}, which holds the layout). The CPU's cost is one
- * 64-byte record per firing thruster per tick, however many particles that is.
+ * 80-byte record per firing thruster per tick, however many particles that is.
+ *
+ * <p>Records are in world space. An emitter on a moving grid hands over its own block space, and
+ * the batch takes the grid's pose once, when it is placed; the particles never follow the grid.
  *
  * <p>The ring is overwritten oldest first, so once it is full a new batch takes the place of one
  * that may still be alive. Its size comes from the client config's {@code ExhaustParticlePool}.
@@ -52,9 +61,11 @@ public final class ExhaustParticles {
      * particles tumble.
      */
     private static final int HEADER_BYTES = 16;
-    private static final int RECORD_BYTES = 64;
+    private static final int RECORD_BYTES = 80;
     /** Keeps the ring within the 65536 texels every driver's texture buffers take. */
-    private static final int MAX_BATCHES = (65536 - 1) / 4;
+    private static final int MAX_BATCHES = (65536 - 1) / 5;
+    /** Beyond this many blocks from the camera an emitter adds nothing; what is in the air stays. */
+    private static final double EMIT_DISTANCE = 128;
     /** Above every unit Flywheel and vanilla bind, and within the 16 every GL 4.1 driver offers. */
     private static final int TEXTURE_UNIT = 15;
     private static final String SAMPLER = "zps_exhaustBatches";
@@ -74,6 +85,9 @@ public final class ExhaustParticles {
     private static int lastEmitTick;
     private static int seedCounter;
     private static boolean dirty;
+    private static final List<Emission> pending = new ArrayList<>();
+    private static final Matrix4d transformFrom = new Matrix4d();
+    private static final Matrix4d transformTo = new Matrix4d();
 
     /** Must match the drag in batch.glsl: how far out the plume comes to rest is speed / drag. */
     private static final float DRAG = 0.1f;
@@ -97,26 +111,61 @@ public final class ExhaustParticles {
     }
 
     /**
-     * Emits one tick's batch.
+     * Emits one tick's batch from an emitter, given in its own block's space: a block on a moving
+     * grid gives positions in the grid's block space. The batch is placed in the world at the end
+     * of the tick, once the grid's pose for the tick is known; see {@link #onClientTick}.
      *
-     * @param anchor    the block the batch is placed relative to, kept exact as integers
-     * @param offset    the nozzle's position relative to {@code anchor}
-     * @param direction unit exhaust direction
+     * @param pos       the emitting block, which says which grid, if any, the emitter is on
+     * @param nozzle    where the exhaust leaves, in the block's space
+     * @param direction unit exhaust direction, in the block's space
      * @param speed     exhaust speed leaving the nozzle, blocks per tick
-     * @param velocity  the emitter's own velocity, blocks per tick, which the particles inherit
      */
-    public static void emit(ClientLevel emitterLevel, BlockPos anchor, Vec3 offset, Vec3 direction, float speed,
-                            Vec3 velocity) {
+    public static void emit(ClientLevel emitterLevel, BlockPos pos, Vec3 nozzle, Vec3 direction, float speed) {
         if (emitterLevel != level) {
             reset();
             level = emitterLevel;
         }
+        pending.add(new Emission(pos, nozzle, direction, speed));
+    }
+
+    private record Emission(BlockPos pos, Vec3 nozzle, Vec3 direction, float speed) {
+    }
+
+    /**
+     * Places a pending emission in the world and writes its record. On a moving grid it is placed
+     * as the grid is drawn through the coming tick: the nozzle where it is drawn at partial tick 0,
+     * moving at its drawn displacement to partial tick 1, so the batch's staggered births follow the
+     * nozzle exactly. Its cubes start square to the grid; after that, position and turn are the
+     * world's alone.
+     */
+    private static void place(Emission emission, int tick) {
+        Matrix4d from = ClientCompat.renderTransformAt(level, emission.pos(), 0f, transformFrom);
+        Matrix4d to = from == null ? null : ClientCompat.renderTransformAt(level, emission.pos(), 1f, transformTo);
+        Vector3d start = new Vector3d(emission.nozzle().x, emission.nozzle().y, emission.nozzle().z);
+        Vector3d end = new Vector3d(start);
+        Vector3d direction = new Vector3d(emission.direction().x, emission.direction().y, emission.direction().z);
+        Quaterniond orientation = new Quaterniond();
+        if (from != null && to != null) {
+            from.transformPosition(start);
+            to.transformPosition(end);
+            from.transformDirection(direction).normalize();
+            from.getNormalizedRotation(orientation);
+        }
+
+        Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
+        if (camera.distanceToSqr(start.x, start.y, start.z) > EMIT_DISTANCE * EMIT_DISTANCE) {
+            return;
+        }
+
         allocate();
         int tumble = ZPSConfig.exhaustTumble() ? 1 : 0;
         if (records.getInt(4) != tumble) {
             records.putInt(4, tumble);
         }
-        int tick = ticks();
+        BlockPos anchor = BlockPos.containing(start.x, start.y, start.z);
+        Vec3 offset = new Vec3(start.x - anchor.getX(), start.y - anchor.getY(), start.z - anchor.getZ());
+        Vec3 velocity = new Vec3(end.x - start.x, end.y - start.y, end.z - start.z);
+        Vec3 worldDirection = new Vec3(direction.x, direction.y, direction.z);
         int base = HEADER_BYTES + nextBatch * RECORD_BYTES;
         records.putInt(base, anchor.getX())
                 .putInt(base + 4, anchor.getY())
@@ -126,14 +175,18 @@ public final class ExhaustParticles {
                 .putFloat(base + 20, (float) offset.y)
                 .putFloat(base + 24, (float) offset.z)
                 .putInt(base + 28, HashCommon.murmurHash3(++seedCounter))
-                .putFloat(base + 32, (float) direction.x)
-                .putFloat(base + 36, (float) direction.y)
-                .putFloat(base + 40, (float) direction.z)
+                .putFloat(base + 32, (float) worldDirection.x)
+                .putFloat(base + 36, (float) worldDirection.y)
+                .putFloat(base + 40, (float) worldDirection.z)
                 .putInt(base + 44, batchSize)
                 .putFloat(base + 48, (float) velocity.x)
                 .putFloat(base + 52, (float) velocity.y)
                 .putFloat(base + 56, (float) velocity.z)
-                .putFloat(base + 60, speed);
+                .putFloat(base + 60, emission.speed())
+                .putFloat(base + 64, (float) orientation.x)
+                .putFloat(base + 68, (float) orientation.y)
+                .putFloat(base + 72, (float) orientation.z)
+                .putFloat(base + 76, (float) orientation.w);
         nextBatch = (nextBatch + 1) % capacity;
         if (batchesUsed < capacity) {
             batchesUsed++;
@@ -141,7 +194,7 @@ public final class ExhaustParticles {
         }
         lastEmitTick = tick;
         dirty = true;
-        trackPlume(Vec3.atLowerCornerOf(anchor).add(offset), direction, speed, velocity, tick);
+        trackPlume(new Vec3(start.x, start.y, start.z), worldDirection, emission.speed(), velocity, tick);
         if (effect == null) {
             effect = new ExhaustEffect(level);
             VisualizationManager.getOrThrow(level).effects().queueAdd(effect);
@@ -197,8 +250,18 @@ public final class ExhaustParticles {
         }
     }
 
-    /** Uploads this tick's records, and drops the effect once its last particle has faded. */
+    /**
+     * Places this tick's emissions, uploads the records, and drops the effect once its last
+     * particle has faded. At the end of the tick, so that every grid has its pose for the tick.
+     */
     public static void onClientTick(ClientTickEvent.Post event) {
+        if (!pending.isEmpty()) {
+            int tick = ticks();
+            for (Emission emission : pending) {
+                place(emission, tick);
+            }
+            pending.clear();
+        }
         if (effect == null) {
             return;
         }
@@ -286,6 +349,7 @@ public final class ExhaustParticles {
     /** Forgets the level along with its exhaust. The ring and GL objects are kept for the next. */
     private static void reset() {
         clearRing();
+        pending.clear();
         level = null;
     }
 

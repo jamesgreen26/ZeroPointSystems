@@ -79,6 +79,8 @@ public final class ExhaustParticles {
 
     private static ClientLevel level;
     private static ExhaustEffect effect;
+    /** The manager {@link #effect} was added to; Flywheel replaces it, effects and all, on a reload. */
+    private static VisualizationManager effectManager;
     private static int nextBatch;
     private static int batchesUsed;
     private static volatile int slotsInUse;
@@ -196,9 +198,14 @@ public final class ExhaustParticles {
         dirty = true;
         trackPlume(new Vec3(start.x, start.y, start.z), worldDirection, emission.speed(), velocity, tick);
         if (effect == null) {
-            effect = new ExhaustEffect(level);
-            VisualizationManager.getOrThrow(level).effects().queueAdd(effect);
+            addEffect(VisualizationManager.getOrThrow(level));
         }
+    }
+
+    private static void addEffect(VisualizationManager manager) {
+        effect = new ExhaustEffect(level);
+        effectManager = manager;
+        manager.effects().queueAdd(effect);
     }
 
     /** Whether there is exhaust in the air, or about to be, for the layer to draw. */
@@ -268,6 +275,13 @@ public final class ExhaustParticles {
         if (ticks() - lastEmitTick > MAX_LIFETIME_TICKS) {
             clearRing();
             return;
+        }
+        // A resource reload or backend change makes Flywheel start the level's visualization
+        // afresh. Block entities and entities are found again; an effect is not, so the ring's
+        // particles get a new one, which makes instances for every slot in use.
+        VisualizationManager manager = VisualizationManager.get(level);
+        if (manager != effectManager && manager != null) {
+            addEffect(manager);
         }
         expireSections(ticks());
         if (dirty) {
@@ -365,6 +379,7 @@ public final class ExhaustParticles {
             }
         }
         effect = null;
+        effectManager = null;
         nextBatch = 0;
         batchesUsed = 0;
         slotsInUse = 0;

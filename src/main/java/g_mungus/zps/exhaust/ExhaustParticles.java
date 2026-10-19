@@ -230,18 +230,28 @@ public final class ExhaustParticles {
 
     /**
      * Marks every section the batch's plume can reach. Generous on purpose: a particle in an
-     * untracked section draws black. The plume runs {@code speed / drag} along the exhaust, carried
-     * by the emitter's velocity, and spreads, swirls and rises a few blocks around that line.
+     * untracked section draws black. Drag acts on all of a particle's velocity, its own and the
+     * emitter's, so the plume runs at most {@code (speed * direction + velocity) / drag} from the
+     * nozzle, and spreads, swirls and rises a few blocks around that line. The line is marked in
+     * steps shorter than the margin rather than as one box: a long diagonal plume from a fast
+     * grid would otherwise take every section of the cube around it.
      */
     private static void trackPlume(Vec3 nozzle, Vec3 direction, float speed, Vec3 velocity, int tick) {
-        Vec3 end = nozzle.add(direction.scale(speed / DRAG)).add(velocity.scale(MAX_LIFETIME_TICKS));
-        AABB plume = new AABB(nozzle, end).inflate(PLUME_MARGIN).expandTowards(0, PLUME_RISE, 0);
-        int minX = SectionPos.blockToSectionCoord(plume.minX);
-        int minY = SectionPos.blockToSectionCoord(plume.minY);
-        int minZ = SectionPos.blockToSectionCoord(plume.minZ);
-        int maxX = SectionPos.blockToSectionCoord(plume.maxX);
-        int maxY = SectionPos.blockToSectionCoord(plume.maxY);
-        int maxZ = SectionPos.blockToSectionCoord(plume.maxZ);
+        Vec3 travel = direction.scale(speed).add(velocity).scale(1 / DRAG);
+        int steps = Math.max(1, (int) Math.ceil(travel.length() / PLUME_MARGIN));
+        for (int i = 0; i <= steps; i++) {
+            Vec3 at = nozzle.add(travel.scale((double) i / steps));
+            trackBox(new AABB(at, at).inflate(PLUME_MARGIN).expandTowards(0, PLUME_RISE, 0), tick);
+        }
+    }
+
+    private static void trackBox(AABB box, int tick) {
+        int minX = SectionPos.blockToSectionCoord(box.minX);
+        int minY = SectionPos.blockToSectionCoord(box.minY);
+        int minZ = SectionPos.blockToSectionCoord(box.minZ);
+        int maxX = SectionPos.blockToSectionCoord(box.maxX);
+        int maxY = SectionPos.blockToSectionCoord(box.maxY);
+        int maxZ = SectionPos.blockToSectionCoord(box.maxZ);
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {
                 for (int z = minZ; z <= maxZ; z++) {
@@ -371,12 +381,14 @@ public final class ExhaustParticles {
         GL15.glBindBuffer(GL31.GL_TEXTURE_BUFFER, previous);
         if (glTexture == 0) {
             glTexture = GL11.glGenTextures();
-            int previousUnit = GlStateManager._getActiveTexture();
-            GL13.glActiveTexture(GL13.GL_TEXTURE0 + TEXTURE_UNIT);
-            GL11.glBindTexture(GL31.GL_TEXTURE_BUFFER, glTexture);
-            GL31.glTexBuffer(GL31.GL_TEXTURE_BUFFER, GL30.GL_RGBA32UI, glBuffer);
-            GL13.glActiveTexture(previousUnit);
         }
+        // Attached again whenever the buffer is respecified, as ExhaustSimulation does for its
+        // state: a driver may keep the old store's size for a texture buffer that is not.
+        int previousUnit = GlStateManager._getActiveTexture();
+        GL13.glActiveTexture(GL13.GL_TEXTURE0 + TEXTURE_UNIT);
+        GL11.glBindTexture(GL31.GL_TEXTURE_BUFFER, glTexture);
+        GL31.glTexBuffer(GL31.GL_TEXTURE_BUFFER, GL30.GL_RGBA32UI, glBuffer);
+        GL13.glActiveTexture(previousUnit);
     }
 
     private static void upload() {

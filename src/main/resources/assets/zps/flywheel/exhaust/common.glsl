@@ -3,16 +3,17 @@
 // uniforms; the batch ring is the one sampler both bind, under the same name.
 //
 // The ring, written by ExhaustParticles, is RGBA32UI texels: a two-texel header, then one record
-// of five texels per batch, a batch being the particles one thruster emits in one tick.
+// of six texels per batch, a batch being the particles one thruster emits in one tick.
 //
 //   header 0  particles per batch         tumble (0 or 1)
 //   header 1  simulation origin xyz (int) tick last simulated
 //
 //   t0  anchor block xyz (int)            spawn tick (LevelRenderer ticks)
 //   t1  nozzle offset from anchor (float) seed
-//   t2  exhaust direction (float, unit)   count
+//   t2  exhaust direction (float, unit)   count (the throttle's share of the batch's slots)
 //   t3  emitter velocity, blocks/tick     exhaust speed, blocks/tick (float)
 //   t4  orientation of the emitter's grid when the batch left, a unit quaternion xyzw (float)
+//   t5  x nozzle width, blocks (float)    y colour (ExhaustColor ordinal)
 //
 // Everything is in world space: a batch takes its grid's pose once and never follows it. The
 // simulation keeps positions relative to the simulation origin, a block fixed while the ring
@@ -28,8 +29,11 @@ const uint ZPS_EXHAUST_MAX_AGE = 64u;
 const float ZPS_EXHAUST_DRAG = 0.1;       // per tick
 const float ZPS_EXHAUST_BUOYANCY = 0.004; // blocks/tick^2
 const float ZPS_EXHAUST_SPREAD = 0.16;    // cone radius per unit of travel
-const float ZPS_EXHAUST_NOZZLE = 0.25;    // spawn jitter across the nozzle, blocks
 const float ZPS_EXHAUST_SPIN = 0.25;      // fastest spin leaving the nozzle, radians/tick
+
+// Exhaust colours, by ThrusterExhaustEmitter.ExhaustColor ordinal.
+const uint ZPS_EXHAUST_ORANGE = 0u;
+const uint ZPS_EXHAUST_BLUE = 1u;
 
 // Independent random streams per particle, so each side draws only what it needs and adding a
 // draw to one never shifts another.
@@ -48,6 +52,8 @@ struct ZpsExhaustBatch {
     vec3 emitterVelocity;
     float speed;
     vec4 orientation;
+    float width;
+    uint color;
 };
 
 uint zps_hash(uint x) {
@@ -85,12 +91,13 @@ uint zps_exhaustSimTick() {
 }
 
 ZpsExhaustBatch zps_exhaustBatch(int batch) {
-    int base = 2 + batch * 5;
+    int base = 2 + batch * 6;
     uvec4 t0 = texelFetch(zps_exhaustBatches, base);
     uvec4 t1 = texelFetch(zps_exhaustBatches, base + 1);
     uvec4 t2 = texelFetch(zps_exhaustBatches, base + 2);
     uvec4 t3 = texelFetch(zps_exhaustBatches, base + 3);
     uvec4 t4 = texelFetch(zps_exhaustBatches, base + 4);
+    uvec4 t5 = texelFetch(zps_exhaustBatches, base + 5);
     ZpsExhaustBatch b;
     b.anchor = ivec3(t0.xyz);
     b.spawnTick = t0.w;
@@ -101,6 +108,8 @@ ZpsExhaustBatch zps_exhaustBatch(int batch) {
     b.emitterVelocity = uintBitsToFloat(t3.xyz);
     b.speed = uintBitsToFloat(t3.w);
     b.orientation = uintBitsToFloat(t4);
+    b.width = uintBitsToFloat(t5.x);
+    b.color = t5.y;
     return b;
 }
 
@@ -132,7 +141,7 @@ void zps_exhaustSpawn(ZpsExhaustBatch b, uint index, float stagger, out vec3 pos
     velocity = (b.direction + across * radial * ZPS_EXHAUST_SPREAD) * b.speed * (0.85 + 0.3 * zps_rand(rng))
             + b.emitterVelocity;
     position = b.offset + b.emitterVelocity * stagger
-            + (u * (zps_rand(rng) - 0.5) + w * (zps_rand(rng) - 0.5)) * ZPS_EXHAUST_NOZZLE;
+            + (u * (zps_rand(rng) - 0.5) + w * (zps_rand(rng) - 0.5)) * b.width;
 }
 
 /// How far a particle has gone along its starting velocity under drag alone, in units of that

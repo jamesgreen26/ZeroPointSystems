@@ -7,36 +7,54 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A block entity that blasts thruster exhaust. It says where the nozzle is, which way it points and
- * how fast the exhaust leaves; calling {@link #tickExhaust()} from its client tick emits one batch
- * while {@link #emitsExhaust()} holds. Everything is in the block's own space, so an emitter on a
+ * A block entity that blasts thruster exhaust. It says what leaves its nozzle this tick through
+ * {@link #getCurrentExhaust()}; calling {@link #tickExhaust()} from its client tick emits one batch
+ * of it. Everything is in the block's own space, so an emitter on a
  * moving grid gives grid positions and {@link ExhaustParticles} places the exhaust in the world.
  *
  * <p>{@link #getLevel()} and {@link #getBlockPos()} are a block entity's own.
  */
 public interface ThrusterExhaustEmitter {
 
+    /**
+     * One tick's exhaust.
+     *
+     * @param amount    throttle, 0 to 1: the share of the configured particles per tick emitted
+     * @param width     nozzle width, blocks: how wide an area the particles leave across
+     * @param speed     exhaust speed leaving the nozzle, blocks per tick
+     * @param position  where the exhaust leaves, in the block's space
+     * @param direction unit direction the exhaust leaves in, in the block's space
+     * @param color     the colour of the fire; every colour cools to the same smoke
+     */
+    record ExhaustParams(
+            float amount,
+            float width,
+            float speed,
+            Vec3 position,
+            Vec3 direction,
+            ExhaustColor color
+    ) {}
+
+    enum ExhaustColor{
+        ORANGE, BLUE
+    }
+
     @Nullable Level getLevel();
 
     BlockPos getBlockPos();
 
-    /** Whether exhaust leaves the nozzle this tick. */
-    boolean emitsExhaust();
-
-    /** Where the exhaust leaves, in the block's space. */
-    Vec3 exhaustPosition();
-
-    /** Unit direction the exhaust leaves in, in the block's space. */
-    Vec3 exhaustDirection();
-
-    /** Exhaust speed leaving the nozzle, blocks per tick. */
-    float exhaustSpeed();
+    /** What leaves the nozzle this tick: null, or an amount of 0 or less, when not firing. */
+    @Nullable ExhaustParams getCurrentExhaust();
 
     /** Emits this tick's batch if exhausting. Client side only; does nothing elsewhere. */
     default void tickExhaust() {
-        if (!(getLevel() instanceof ClientLevel level) || !emitsExhaust() || !ExhaustParticles.available(level)) {
+        if (!(getLevel() instanceof ClientLevel level) || !ExhaustParticles.available(level)) {
             return;
         }
-        ExhaustParticles.emit(level, getBlockPos(), exhaustPosition(), exhaustDirection(), exhaustSpeed());
+        ExhaustParams exhaust = getCurrentExhaust();
+        if (exhaust == null || exhaust.amount() <= 0) {
+            return;
+        }
+        ExhaustParticles.emit(level, getBlockPos(), exhaust);
     }
 }

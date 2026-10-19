@@ -6,37 +6,37 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Emits one batch of exhaust a tick while its {@link ThrusterBlock} is powered, out of its facing
- * side.
+ * side, the signal strength its throttle.
  */
 public class ThrusterBlockEntity extends BlockEntity implements ThrusterExhaustEmitter {
 
-    /** Blocks per tick leaving the nozzle; drag brings the plume to rest about ten times this out. */
-    private static final float EXHAUST_SPEED = 1.0f;
+    private static final float NOZZLE_WIDTH = 0.25f;
 
     public ThrusterBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.THRUSTER.get(), pos, state);
     }
 
     @Override
-    public boolean emitsExhaust() {
-        return getBlockState().getValue(ThrusterBlock.POWERED);
-    }
+    public @Nullable ExhaustParams getCurrentExhaust() {
+        BlockState state = getBlockState();
+        int power = state.getValue(ThrusterBlock.POWER);
+        if (power == 0) {
+            return null;
+        }
+        float strength = power / 15f;
 
-    @Override
-    public Vec3 exhaustPosition() {
-        return Vec3.atCenterOf(worldPosition).add(exhaustDirection().scale(0.55));
-    }
-
-    @Override
-    public Vec3 exhaustDirection() {
-        return Vec3.atLowerCornerOf(getBlockState().getValue(ThrusterBlock.FACING).getNormal());
-    }
-
-    @Override
-    public float exhaustSpeed() {
-        return EXHAUST_SPEED;
+        Vec3 direction = Vec3.atLowerCornerOf(state.getValue(ThrusterBlock.FACING).getNormal());
+        return new ExhaustParams(
+                strength,
+                NOZZLE_WIDTH,
+                strength,
+                Vec3.atCenterOf(worldPosition).add(direction.scale(0.55)),
+                direction,
+                ExhaustColor.ORANGE
+        );
     }
 }

@@ -41,7 +41,7 @@ import java.util.List;
  * thruster per tick, each standing for as many particles as the client config's
  * {@code ExhaustParticlesPerTick}, which the shader works out from it (see
  * {@code assets/zps/flywheel/exhaust/batch.glsl}, which holds the layout). The CPU's cost is one
- * 80-byte record per firing thruster per tick, however many particles that is.
+ * 96-byte record per firing thruster per tick, however many particles that is.
  *
  * <p>Records are in world space. An emitter on a moving grid hands over its own block space, and
  * the batch takes the grid's pose once, when it is placed; the particles never follow the grid.
@@ -64,9 +64,9 @@ public final class ExhaustParticles {
      * {@code common.glsl}.
      */
     private static final int HEADER_BYTES = 32;
-    private static final int RECORD_BYTES = 80;
+    private static final int RECORD_BYTES = 96;
     /** Keeps the ring within the 65536 texels every driver's texture buffers take. */
-    private static final int MAX_BATCHES = (65536 - 2) / 5;
+    private static final int MAX_BATCHES = (65536 - 2) / 6;
     /** Beyond this many blocks from the camera an emitter adds nothing; what is in the air stays. */
     private static final double EMIT_DISTANCE = 128;
     /** Above every unit Flywheel and vanilla bind, and within the 16 every GL 4.1 driver offers. */
@@ -119,20 +119,18 @@ public final class ExhaustParticles {
      * grid gives positions in the grid's block space. The batch is placed in the world at the end
      * of the tick, once the grid's pose for the tick is known; see {@link #onClientTick}.
      *
-     * @param pos       the emitting block, which says which grid, if any, the emitter is on
-     * @param nozzle    where the exhaust leaves, in the block's space
-     * @param direction unit exhaust direction, in the block's space
-     * @param speed     exhaust speed leaving the nozzle, blocks per tick
+     * @param pos     the emitting block, which says which grid, if any, the emitter is on
+     * @param exhaust what leaves this tick, see {@link ThrusterExhaustEmitter.ExhaustParams}
      */
-    public static void emit(ClientLevel emitterLevel, BlockPos pos, Vec3 nozzle, Vec3 direction, float speed) {
+    public static void emit(ClientLevel emitterLevel, BlockPos pos, ThrusterExhaustEmitter.ExhaustParams exhaust) {
         if (emitterLevel != level) {
             reset();
             level = emitterLevel;
         }
-        pending.add(new Emission(pos, nozzle, direction, speed));
+        pending.add(new Emission(pos, exhaust));
     }
 
-    private record Emission(BlockPos pos, Vec3 nozzle, Vec3 direction, float speed) {
+    private record Emission(BlockPos pos, ThrusterExhaustEmitter.ExhaustParams exhaust) {
     }
 
     /**
@@ -145,9 +143,10 @@ public final class ExhaustParticles {
     private static void place(Emission emission, int tick) {
         Matrix4d from = ClientCompat.renderTransformAt(level, emission.pos(), 0f, transformFrom);
         Matrix4d to = from == null ? null : ClientCompat.renderTransformAt(level, emission.pos(), 1f, transformTo);
-        Vector3d start = new Vector3d(emission.nozzle().x, emission.nozzle().y, emission.nozzle().z);
+        ThrusterExhaustEmitter.ExhaustParams exhaust = emission.exhaust();
+        Vector3d start = new Vector3d(exhaust.position().x, exhaust.position().y, exhaust.position().z);
         Vector3d end = new Vector3d(start);
-        Vector3d direction = new Vector3d(emission.direction().x, emission.direction().y, emission.direction().z);
+        Vector3d direction = new Vector3d(exhaust.direction().x, exhaust.direction().y, exhaust.direction().z);
         Quaterniond orientation = new Quaterniond();
         if (from != null && to != null) {
             from.transformPosition(start);
@@ -162,6 +161,11 @@ public final class ExhaustParticles {
         }
 
         allocate();
+        // The throttle takes a share of the batch's slots; the rest stay empty.
+        int count = Math.round(Math.clamp(exhaust.amount(), 0f, 1f) * batchSize);
+        if (count == 0) {
+            return;
+        }
         int tumble = ZPSConfig.exhaustTumble() ? 1 : 0;
         if (records.getInt(4) != tumble) {
             records.putInt(4, tumble);
@@ -186,22 +190,24 @@ public final class ExhaustParticles {
                 .putFloat(base + 32, (float) worldDirection.x)
                 .putFloat(base + 36, (float) worldDirection.y)
                 .putFloat(base + 40, (float) worldDirection.z)
-                .putInt(base + 44, batchSize)
+                .putInt(base + 44, count)
                 .putFloat(base + 48, (float) velocity.x)
                 .putFloat(base + 52, (float) velocity.y)
                 .putFloat(base + 56, (float) velocity.z)
-                .putFloat(base + 60, emission.speed())
+                .putFloat(base + 60, exhaust.speed())
                 .putFloat(base + 64, (float) orientation.x)
                 .putFloat(base + 68, (float) orientation.y)
                 .putFloat(base + 72, (float) orientation.z)
-                .putFloat(base + 76, (float) orientation.w);
+                .putFloat(base + 76, (float) orientation.w)
+                .putFloat(base + 80, exhaust.width())
+                .putInt(base + 84, exhaust.color().ordinal());
         nextBatch = (nextBatch + 1) % capacity;
         if (batchesUsed < capacity) {
             batchesUsed++;
             slotsInUse = batchesUsed * batchSize;
         }
         lastEmitTick = tick;
-        trackPlume(new Vec3(start.x, start.y, start.z), worldDirection, emission.speed(), velocity, tick);
+        trackPlume(new Vec3(start.x, start.y, start.z), worldDirection, exhaust.speed(), exhaust.width(), velocity, tick);
         if (effect == null) {
             addEffect(VisualizationManager.getOrThrow(level));
         }
@@ -232,16 +238,18 @@ public final class ExhaustParticles {
      * Marks every section the batch's plume can reach. Generous on purpose: a particle in an
      * untracked section draws black. Drag acts on all of a particle's velocity, its own and the
      * emitter's, so the plume runs at most {@code (speed * direction + velocity) / drag} from the
-     * nozzle, and spreads, swirls and rises a few blocks around that line. The line is marked in
+     * nozzle, and spreads, swirls and rises a few blocks around that line, and around the
+     * nozzle's own width. The line is marked in
      * steps shorter than the margin rather than as one box: a long diagonal plume from a fast
      * grid would otherwise take every section of the cube around it.
      */
-    private static void trackPlume(Vec3 nozzle, Vec3 direction, float speed, Vec3 velocity, int tick) {
+    private static void trackPlume(Vec3 nozzle, Vec3 direction, float speed, float width, Vec3 velocity, int tick) {
         Vec3 travel = direction.scale(speed).add(velocity).scale(1 / DRAG);
-        int steps = Math.max(1, (int) Math.ceil(travel.length() / PLUME_MARGIN));
+        double margin = PLUME_MARGIN + width / 2;
+        int steps = Math.max(1, (int) Math.ceil(travel.length() / margin));
         for (int i = 0; i <= steps; i++) {
             Vec3 at = nozzle.add(travel.scale((double) i / steps));
-            trackBox(new AABB(at, at).inflate(PLUME_MARGIN).expandTowards(0, PLUME_RISE, 0), tick);
+            trackBox(new AABB(at, at).inflate(margin).expandTowards(0, PLUME_RISE, 0), tick);
         }
     }
 

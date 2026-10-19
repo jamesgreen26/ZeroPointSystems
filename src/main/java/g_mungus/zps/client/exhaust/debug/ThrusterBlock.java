@@ -16,44 +16,44 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Debug block for exhaust particles: while powered by redstone it blasts exhaust out of its
- * {@link #FACING} side, placed facing the player like a dispenser. Purely visual, and free.
+ * {@link #FACING} side, throttled by the signal strength, placed facing the player like a dispenser. Purely visual, and free.
  */
 public class ThrusterBlock extends BaseEntityBlock {
     private static final MapCodec<ThrusterBlock> CODEC = simpleCodec(ThrusterBlock::new);
     public static final DirectionProperty FACING = BlockStateProperties.FACING;
-    public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
+    public static final IntegerProperty POWER = BlockStateProperties.POWER;
 
     public ThrusterBlock(BlockBehaviour.Properties properties) {
         super(properties);
-        this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(POWERED, false));
+        this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(POWER, 0));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.@NotNull Builder<Block, BlockState> builder) {
-        builder.add(FACING, POWERED);
+        builder.add(FACING, POWER);
     }
 
     @Override
     public @NotNull BlockState getStateForPlacement(@NotNull BlockPlaceContext context) {
         return this.defaultBlockState()
                 .setValue(FACING, context.getNearestLookingDirection().getOpposite())
-                .setValue(POWERED, context.getLevel().hasNeighborSignal(context.getClickedPos()));
+                .setValue(POWER, context.getLevel().getBestNeighborSignal(context.getClickedPos()));
     }
 
     @Override
     public void neighborChanged(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
                                 @NotNull Block neighborBlock, @NotNull BlockPos neighborPos, boolean movedByPiston) {
         if (!level.isClientSide()) {
-            boolean powered = level.hasNeighborSignal(pos);
-            if (powered != state.getValue(POWERED)) {
-                level.setBlock(pos, state.setValue(POWERED, powered), Block.UPDATE_CLIENTS);
+            int power = level.getBestNeighborSignal(pos);
+            if (power != state.getValue(POWER)) {
+                level.setBlock(pos, state.setValue(POWER, power), Block.UPDATE_CLIENTS);
             }
         }
         super.neighborChanged(state, level, pos, neighborBlock, neighborPos, movedByPiston);

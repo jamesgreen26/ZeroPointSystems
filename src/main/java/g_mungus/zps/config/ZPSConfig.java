@@ -36,7 +36,7 @@ public class ZPSConfig {
     }
 
     private static ModConfigSpec.ConfigValue<Integer> exhaustParticlesPerTick;
-    private static final int exhaustParticlesPerTickDefault = 12;
+    private static final int exhaustParticlesPerTickDefault = 16;
 
     /** How many exhaust particles a thruster emits each tick. */
     public static int exhaustParticlesPerTick() {

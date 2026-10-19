@@ -19,7 +19,8 @@ public interface ThrusterExhaustEmitter {
     /**
      * One tick's exhaust.
      *
-     * @param amount    throttle, 0 to 1: the share of the configured particles per tick emitted
+     * @param amount    the configured particles per tick emitted, as a multiple: 0 to 1 a throttle,
+     *                  above 1 more particles, as for a wide nozzle to look as dense; at most 8
      * @param width     nozzle width, blocks: how wide an area the particles leave across
      * @param speed     exhaust speed leaving the nozzle, blocks per tick
      * @param position  where the exhaust leaves, in the block's space

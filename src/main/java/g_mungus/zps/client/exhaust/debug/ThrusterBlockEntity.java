@@ -14,7 +14,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ThrusterBlockEntity extends BlockEntity implements ThrusterExhaustEmitter {
 
-    private static final float NOZZLE_WIDTH = 0.25f;
+    private static final float NOZZLE_WIDTH = 0.5f;
 
     public ThrusterBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.THRUSTER.get(), pos, state);

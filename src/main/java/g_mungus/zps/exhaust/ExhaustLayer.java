@@ -151,7 +151,7 @@ public final class ExhaustLayer {
     /** Sizes the targets to the main target, and clears them. False if they could not be made. */
     private static boolean prepare() {
         RenderTarget main = Minecraft.getInstance().getMainRenderTarget();
-        if (main.width != width || main.height != height || main.getDepthTextureId() != sharedDepth) {
+        if (main.width != width || main.height != height) {
             delete();
             width = main.width;
             height = main.height;
@@ -169,6 +169,16 @@ public final class ExhaustLayer {
             }
         }
         int previous = GL11.glGetInteger(GL30.GL_DRAW_FRAMEBUFFER_BINDING);
+        // The main depth texture is attached afresh every frame. Minecraft remakes the main target
+        // on a GUI scale change even at the same size, and GL can give the new depth texture the
+        // old one's name; a framebuffer keeps the deleted original alive, never cleared again, and
+        // exhaust would be depth-tested against the last frame drawn into it, menus and all.
+        sharedDepth = main.getDepthTextureId();
+        int depthAttachment = main.isStencilEnabled() ? GL30.GL_DEPTH_STENCIL_ATTACHMENT : GL30.GL_DEPTH_ATTACHMENT;
+        for (int framebuffer : new int[]{accumFramebuffer, revealFramebuffer}) {
+            GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, framebuffer);
+            GL30.glFramebufferTexture2D(GL30.GL_DRAW_FRAMEBUFFER, depthAttachment, GL11.GL_TEXTURE_2D, sharedDepth, 0);
+        }
         RenderSystem.colorMask(true, true, true, true);
         GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, accumFramebuffer);
         GL30.glClearBufferfv(GL11.GL_COLOR, 0, new float[]{0f, 0f, 0f, 0f});

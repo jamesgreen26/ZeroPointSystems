@@ -35,6 +35,8 @@ import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import org.valkyrienskies.kelvin.api.GasType;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -325,6 +327,39 @@ public class RoomGameTests {
         helper.runAfterDelay(2, () -> {
             helper.assertTrue(roomAt(helper, CENTRE) == null, "An open Large Space Door should break the room");
             helper.succeed();
+        });
+    }
+
+    /**
+     * Blocks placed inside one after another, each flooding the room afresh, never break a room
+     * walled by a closed Large Space Door: a fill started in a door cell would take in its outside
+     * pocket too.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 60, skyAccess = true)
+    public static void blocksPlacedBesideALargeSpaceDoor_keepTheRoom(GameTestHelper helper) {
+        buildShell(helper);
+        placeLargeSpaceDoor(helper, false);
+        addFlux(helper, CENTRE, 5.0);
+        helper.assertTrue(roomAt(helper, CENTRE) != null, "A closed Large Space Door should seal");
+
+        List<BlockPos> cells = new ArrayList<>();
+        for (int x = 4; x <= 6; x++) {
+            for (int z = 4; z <= 6; z++) {
+                cells.add(new BlockPos(x, 2, z));
+            }
+        }
+        placeInTurn(helper, cells, 0);
+    }
+
+    private static void placeInTurn(GameTestHelper helper, List<BlockPos> cells, int index) {
+        if (index == cells.size()) {
+            helper.succeed();
+            return;
+        }
+        helper.setBlock(cells.get(index), Blocks.STONE);
+        helper.runAfterDelay(2, () -> {
+            helper.assertTrue(roomAt(helper, CENTRE) != null, "A block placed at " + cells.get(index) + " broke the room");
+            placeInTurn(helper, cells, index + 1);
         });
     }
 

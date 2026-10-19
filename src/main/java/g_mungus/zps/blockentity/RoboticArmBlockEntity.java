@@ -57,6 +57,7 @@ import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.BlockDropsEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.items.IItemHandler;
 import org.jetbrains.annotations.NotNull;
@@ -556,13 +557,25 @@ public class RoboticArmBlockEntity extends BlockEntity implements Clearable {
     public static void onServerTick(ServerTickEvent.Pre event) {
         if (delayedContainerCloseJobs.isEmpty()) return;
         for (DelayedContainerCloseJob delayedClose : delayedContainerCloseJobs) {
+            // A level from a server that has since stopped would wait forever on its old thread for a chunk.
+            if (delayedClose.level.getServer() != event.getServer()) {
+                delayedContainerCloseJobs.remove(delayedClose);
+                continue;
+            }
             if (delayedClose.level.getGameTime() < delayedClose.closeGameTime) continue;
-            Container container = resolveTransferContainer(delayedClose.level, delayedClose.blockPos);
-            if (container != null) {
-                closeContainerAfterVisualTransfer(container, delayedClose.player);
+            if (delayedClose.level.isLoaded(delayedClose.blockPos)) {
+                Container container = resolveTransferContainer(delayedClose.level, delayedClose.blockPos);
+                if (container != null) {
+                    closeContainerAfterVisualTransfer(container, delayedClose.player);
+                }
             }
             delayedContainerCloseJobs.remove(delayedClose);
         }
+    }
+
+    @SubscribeEvent
+    public static void onServerStopped(ServerStoppedEvent event) {
+        delayedContainerCloseJobs.clear();
     }
 
     private @Nullable Player getContainerInteractionPlayer() {

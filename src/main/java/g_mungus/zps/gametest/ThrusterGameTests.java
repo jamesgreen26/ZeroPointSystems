@@ -26,8 +26,8 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * The thruster: the signal asks for gas in fifteenths, Stellane burns into Exhaust and pushes, other gas passes
- * through cold and pushes far less, and the push reaches the grid's physics step pointing away from the nozzle.
+ * The thruster: the signal asks for gas in fifteenths, Stellane burns into Exhaust and pushes, Flux burns and pushes
+ * twice as hard, other gas passes through cold and pushes half as hard, and the push reaches the grid's physics step pointing away from the nozzle.
  * Gas is put straight into the thruster's node, so nothing but the thruster takes it out.
  */
 @GameTestHolder(ZPSMod.MOD_ID)
@@ -114,7 +114,7 @@ public class ThrusterGameTests {
         });
     }
 
-    /** Half Steam by moles: half the full burn, a tenth as much again for the cold half, and a half-cold plume. */
+    /** Half Steam by moles: half the full burn, half as much again for the cold half, and a half-cold plume. */
     @GameTest(template = TEMPLATE)
     public static void impureFeed_pushesLessAndShowsCold(GameTestHelper helper) {
         ThrusterBlockEntity thruster = placeThruster(helper, THRUSTER, Direction.SOUTH, 15);
@@ -125,6 +125,35 @@ public class ThrusterGameTests {
             assertThrust(helper, thruster, half + half * ThrusterBlockEntity.COLD_PUSH_RATIO, "Half Stellane, half Steam");
             helper.assertTrue(thruster.burn() == 1, "The mix should still be drawn at full, is " + thruster.burn());
             helper.assertTrue(thruster.coldFraction() == 0.5f, "Half the plume should be cold, is " + thruster.coldFraction());
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void pureFlux_pushesTwiceAsHardAndBurnsBlue(GameTestHelper helper) {
+        ThrusterBlockEntity thruster = placeThruster(helper, THRUSTER, Direction.SOUTH, 15);
+        feed(helper, THRUSTER, ModGases.FLUX, MOLES);
+        helper.runAfterDelay(BURN_TICKS, () -> {
+            assertThrust(helper, thruster, ThrusterBlockEntity.MAX_THRUST * ThrusterBlockEntity.FLUX_PUSH_RATIO, "Pure Flux");
+            helper.assertTrue(thruster.blueFraction() == 1, "Pure Flux should be all blue, is " + thruster.blueFraction());
+            helper.assertTrue(thruster.coldFraction() == 0, "Pure Flux should leave nothing cold");
+            helper.succeed();
+        });
+    }
+
+    /** A quarter Flux, a quarter Steam by moles: every share pushes at its own rate and shows in one plume. */
+    @GameTest(template = TEMPLATE)
+    public static void threeWayMix_showsAllThree(GameTestHelper helper) {
+        ThrusterBlockEntity thruster = placeThruster(helper, THRUSTER, Direction.SOUTH, 15);
+        feed(helper, THRUSTER, ModGases.STELLANE, MOLES * 2);
+        feed(helper, THRUSTER, ModGases.FLUX, MOLES);
+        feed(helper, THRUSTER, ModGases.STEAM, MOLES);
+        helper.runAfterDelay(BURN_TICKS, () -> {
+            double quarter = ThrusterBlockEntity.MAX_THRUST / 4;
+            assertThrust(helper, thruster, quarter * (2 + ThrusterBlockEntity.FLUX_PUSH_RATIO
+                    + ThrusterBlockEntity.COLD_PUSH_RATIO), "Half Stellane, a quarter Flux, a quarter Steam");
+            helper.assertTrue(thruster.blueFraction() == 0.25f, "A quarter of the plume should be blue, is " + thruster.blueFraction());
+            helper.assertTrue(thruster.coldFraction() == 0.25f, "A quarter of the plume should be cold, is " + thruster.coldFraction());
             helper.succeed();
         });
     }

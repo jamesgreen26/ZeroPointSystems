@@ -27,8 +27,11 @@ public interface ThrusterExhaustEmitter {
      * @param direction unit direction the exhaust leaves in, in the block's space
      * @param color     the colour of the fire, every colour cooling to the same smoke; COLD is
      *                  cold gas, a pale puff with no fire or glow
+     * @param blueFraction the share of the particles, 0 to 1, drawn as BLUE instead of
+     *                  {@code color}, mixed through the plume: Flux burning alongside Stellane
      * @param coldFraction the share of the particles, 0 to 1, drawn as COLD instead of
-     *                  {@code color}, mixed through the plume: unburnt gas in a burn
+     *                  {@code color}, mixed through the plume: unburnt gas in a burn. The two
+     *                  shares together are at most 1
      */
     record ExhaustParams(
             float amount,
@@ -37,6 +40,7 @@ public interface ThrusterExhaustEmitter {
             Vec3 position,
             Vec3 direction,
             ExhaustColor color,
+            float blueFraction,
             float coldFraction
     ) {}
 

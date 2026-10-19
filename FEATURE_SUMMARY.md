@@ -262,7 +262,7 @@ present.
 - Always pushes the ship with its full thrust. Reads its placement against the centre of mass: lined up with it, it drives the ship straight without turning it; further off the line, it also turns the ship as a real off-centre thruster would, blending in smoothly.
 - While driving straight, it also damps the ship's sideways drift across its thrust and pushes harder while the ship moves backwards against it, in proportion to its thrust. This fades out as the turning fades in, so a turning thruster doesn't fight the drift a turn brings.
 - Redstone signal strength is the throttle: each level asks for a fifteenth more gas, and a starved feed gives less thrust than asked.
-- Burnt Stellane leaves as hot Exhaust gas. Other gases pass through unburnt, push a tenth as hard and show as cold gas in the orange plume. Both are released in front of the nozzle, into a sealed room if there is one.
+- Stellane burns orange and Flux burns blue at twice the push; both leave as hot Exhaust gas. Other gases pass through unburnt, push half as hard as Stellane and show as cold gas. A mixed feed shows all three through one plume. Everything is released in front of the nozzle, into a sealed room if there is one.
 
 #### Gas Gauge (`gas_gauge`)
 - A dial plate bolted onto the back of a duct or machine; the needle reads the node behind it. Right-click sets the mode — **pressure** or **temperature** — and a lower and upper bound for the dial.

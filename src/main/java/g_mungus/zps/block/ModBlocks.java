@@ -240,6 +240,7 @@ public class ModBlocks {
     public static final RegistryObject<Block> THRUSTER = BLOCKS.register("thruster",
             () -> new ThrusterBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.5f)
+                    .noOcclusion()
                     .requiresCorrectToolForDrops()));
 
     /** World-only: made by striking a full composter with the Impact Piston. Has no item on purpose. */

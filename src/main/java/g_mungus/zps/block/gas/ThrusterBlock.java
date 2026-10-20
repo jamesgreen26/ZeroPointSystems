@@ -21,6 +21,9 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.valkyrienskies.kelvin.api.DuctNode;
@@ -28,7 +31,9 @@ import org.valkyrienskies.kelvin.api.DuctNodePos;
 import org.valkyrienskies.kelvin.api.NodeBehaviorType;
 import org.valkyrienskies.kelvin.api.nodes.PipeDuctNode;
 
+import java.util.EnumMap;
 import java.util.HashSet;
+import java.util.Map;
 
 /**
  * Burns Stellane fed in from behind and pushes the grid it is on away from its nozzle. See
@@ -52,6 +57,32 @@ public class ThrusterBlock extends GasNodeBlock implements EntityBlock {
     public static final double VOLUME = 0.25;
     public static final double MAX_PRESSURE = 16_375_049.0;
     public static final double MAX_TEMPERATURE = 1478.0;
+
+    /**
+     * Follows the model rather than filling the cube. With a full-cube shape, flat lighting lights every
+     * face from the neighbour it points at, so faces turned toward a solid block render black.
+     */
+    private static final Map<Direction, VoxelShape> SHAPES = new EnumMap<>(Direction.class);
+
+    static {
+        for (Direction facing : Direction.values()) {
+            SHAPES.put(facing, Shapes.or(
+                    box(facing, 0, 16, 2, 14),
+                    box(facing, 2, 14, 0, 4),
+                    box(facing, 2, 14, 14, 16)));
+        }
+    }
+
+    /** A box spanning {@code [lo, hi]} across the axis and {@code [back, front]} along it, front at the nozzle. */
+    private static VoxelShape box(Direction facing, double lo, double hi, double back, double front) {
+        double near = facing.getAxisDirection() == Direction.AxisDirection.POSITIVE ? back : 16 - front;
+        double far = facing.getAxisDirection() == Direction.AxisDirection.POSITIVE ? front : 16 - back;
+        return switch (facing.getAxis()) {
+            case X -> Block.box(near, lo, lo, far, hi, hi);
+            case Y -> Block.box(lo, near, lo, hi, far, hi);
+            case Z -> Block.box(lo, lo, near, hi, hi, far);
+        };
+    }
 
     public ThrusterBlock(Properties properties) {
         super(properties);
@@ -117,6 +148,19 @@ public class ThrusterBlock extends GasNodeBlock implements EntityBlock {
     }
 
     // --- shape ------------------------------------------------------------------------------
+
+    @Override
+    protected @NotNull VoxelShape getShape(BlockState state, @NotNull BlockGetter level,
+                                           @NotNull BlockPos pos, @NotNull CollisionContext context) {
+        return SHAPES.get(state.getValue(FACING));
+    }
+
+    /** Sturdy on every face despite the recessed shape, so blocks can still be placed against it. */
+    @Override
+    protected @NotNull VoxelShape getBlockSupportShape(@NotNull BlockState state, @NotNull BlockGetter level,
+                                                       @NotNull BlockPos pos) {
+        return Shapes.block();
+    }
 
     @Override
     protected @NotNull BlockState rotate(BlockState state, Rotation rotation) {

@@ -27,6 +27,15 @@ public final class ControllerClientHooks {
 
     /** The last pressed mask sent, or -1 when nothing has been sent for this ride yet. */
     private static int lastSent = -1;
+    /** The controller {@link #lastSent} went to: a seat moved to another dimension finds a new one. */
+    private static @Nullable ControllerBlockEntity<?> lastController = null;
+    /**
+     * Ticks between resending an unchanged mask. One sent while the server's seat is between
+     * dimensions, or has not found its controller there yet, is dropped; without this a key let go
+     * then would stay held until pressed again.
+     */
+    private static final int RESEND_TICKS = 10;
+    private static int sinceSent = 0;
 
     /**
      * Whether use has been let go since boarding. The click that boards is usually still held for a
@@ -56,6 +65,7 @@ public final class ControllerClientHooks {
         ControllerBlockEntity<?> controller = ridden();
         if (controller == null) {
             lastSent = -1;
+            lastController = null;
             dismountArmed = false;
             return;
         }
@@ -73,8 +83,10 @@ public final class ControllerClientHooks {
                 }
             }
         }
-        if (pressed != lastSent) {
+        if (pressed != lastSent || controller != lastController || ++sinceSent >= RESEND_TICKS) {
             lastSent = pressed;
+            lastController = controller;
+            sinceSent = 0;
             ZPSGamePackets.sendToServer(new ControllerInputC2SPacket(pressed));
         }
     }

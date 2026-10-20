@@ -7,7 +7,7 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-/** Which of a controller's keys the rider is holding, bit 0 being the first channel. Sent on change. */
+/** Which of a controller's keys the rider is holding, bit 0 being the first channel. Sent on change, and again every half second. */
 public record ControllerInputC2SPacket(int pressed) {
 
     public static void encode(ControllerInputC2SPacket packet, FriendlyByteBuf buffer) {

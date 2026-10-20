@@ -41,6 +41,12 @@ public abstract class ControllerBlockEntity<T extends ControllerSeatEntity> exte
     private static final int[] DEFAULT_KEYS = {87, 65, 83, 68, 32, 81, 340, 69, 90, 88, 67, 86};
 
     private static final String KEYS_TAG = "Keys";
+    /**
+     * The outputs as last sent. The receivers on the network keep what they were sent, so a
+     * controller loaded or copied with a key held (as Genesis copies a ship into another dimension)
+     * must know it, or letting go would match its fresh zeros and never reach them.
+     */
+    private static final String OUTPUTS_TAG = "Outputs";
 
     private final ConcurrentMap<Integer, Integer> outputSignals = new ConcurrentHashMap<>();
     private final int[] keys;
@@ -97,6 +103,7 @@ public abstract class ControllerBlockEntity<T extends ControllerSeatEntity> exte
     private void supplySignal(int channel, int strength) {
         if (outputSignals.get(channel) == strength) return;
         outputSignals.put(channel, strength);
+        setChanged();
         updateAllSignals(level, getTerminals(channel));
     }
 
@@ -130,12 +137,21 @@ public abstract class ControllerBlockEntity<T extends ControllerSeatEntity> exte
     public void load(@NotNull CompoundTag tag) {
         super.load(tag);
         loadKeys(tag);
+        int[] outputs = tag.getIntArray(OUTPUTS_TAG);
+        for (int i = 0; i < Math.min(outputs.length, channelCount()); i++) {
+            outputSignals.put(firstChannel() + i, outputs[i]);
+        }
     }
 
     @Override
     protected void saveAdditional(@NotNull CompoundTag tag) {
         super.saveAdditional(tag);
         tag.putIntArray(KEYS_TAG, keys);
+        int[] outputs = new int[channelCount()];
+        for (int i = 0; i < outputs.length; i++) {
+            outputs[i] = outputSignals.getOrDefault(firstChannel() + i, 0);
+        }
+        tag.putIntArray(OUTPUTS_TAG, outputs);
     }
 
     /** Only the keys go to clients: the rider's client reads them, and the screen shows them. */

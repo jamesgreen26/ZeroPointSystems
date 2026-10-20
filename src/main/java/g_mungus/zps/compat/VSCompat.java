@@ -5,6 +5,8 @@ import g_mungus.zps.commands.api.RegisterScriptTypesEvent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
@@ -15,12 +17,31 @@ import org.valkyrienskies.core.api.ships.ServerShip;
 import org.valkyrienskies.core.api.ships.Ship;
 import org.valkyrienskies.core.api.util.functions.DoubleTernaryConsumer;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
+import org.valkyrienskies.mod.common.assembly.ShipAssembler;
 import org.valkyrienskies.mod.common.util.VectorConversionsMCKt;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.List;
 
 public class VSCompat {
+
+    /// Only call after verifying that VS is loaded
+    static boolean assemble(ServerLevel level, BoundingBox volume) {
+        if (!level.hasChunksAt(volume.minX(), volume.minZ(), volume.maxX(), volume.maxZ())) return false;
+
+        Set<BlockPos> blocks = new HashSet<>();
+        for (BlockPos pos : BlockPos.betweenClosed(volume.minX(), volume.minY(), volume.minZ(),
+                volume.maxX(), volume.maxY(), volume.maxZ())) {
+            BlockState state = level.getBlockState(pos);
+            if (!state.isAir() && ShipAssembler.INSTANCE.isValidShipBlock(state)) blocks.add(pos.immutable());
+        }
+        if (blocks.isEmpty()) return false;
+
+        ShipAssembler.assembleToShip(level, blocks, 1.0);
+        return true;
+    }
 
     /// Only call after verifying that VS is loaded
     static Vec3 shipToWorld(ServerLevel level, BlockPos pos) {

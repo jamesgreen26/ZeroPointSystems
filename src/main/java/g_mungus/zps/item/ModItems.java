@@ -125,6 +125,9 @@ public class ModItems {
     public static final RegistryObject<Item> BEAM_COLLECTOR = ITEMS.register("beam_collector",
             () -> new BeamCollectorBlockItem(ModBlocks.BEAM_COLLECTOR.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> LAUNCH_PLATFORM = ITEMS.register("launch_platform",
+            () -> new BlockItem(ModBlocks.LAUNCH_PLATFORM.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> THRUSTER = ITEMS.register("thruster",
             () -> new BlockItem(ModBlocks.THRUSTER.get(), new Item.Properties()));
 

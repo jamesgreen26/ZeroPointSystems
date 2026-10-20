@@ -237,6 +237,11 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
 
+    public static final RegistryObject<Block> LAUNCH_PLATFORM = BLOCKS.register("launch_platform",
+            () -> new LaunchPlatformBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.5f)
+                    .requiresCorrectToolForDrops()));
+
     public static final RegistryObject<Block> THRUSTER = BLOCKS.register("thruster",
             () -> new ThrusterBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.5f)

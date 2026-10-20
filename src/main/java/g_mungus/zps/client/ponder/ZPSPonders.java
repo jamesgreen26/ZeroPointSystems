@@ -59,6 +59,10 @@ public class ZPSPonders {
         ).addStoryBoard("data_transcriber", ZPSPonderScenes::dataTranscriberTutorial);
 
         HELPER.forComponents(
+                LAUNCH_PLATFORM
+        ).addStoryBoard("launch_platform", ZPSPonderScenes::launchPlatformTutorial);
+
+        HELPER.forComponents(
                 ROBOTIC_ARM
         ).addStoryBoard("robotic_arm", ZPSPonderScenes::roboticArmTutorial);
 

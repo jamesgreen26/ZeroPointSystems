@@ -290,6 +290,7 @@ public class ClientSetup {
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.CATWALK.get(), RenderType.cutout());
 
             MinecraftForge.EVENT_BUS.addListener(AddressPadClientHooks::onRenderLevelStage);
+            MinecraftForge.EVENT_BUS.addListener(LaunchPlatformOutline::onRenderLevelStage);
             MinecraftForge.EVENT_BUS.addListener(GasPressureOverlay::onRenderLevelStage);
             MinecraftForge.EVENT_BUS.addListener(GasPressureOverlay::onPlayerTick);
             MinecraftForge.EVENT_BUS.addListener(ClientReactors::onChunkLoad);

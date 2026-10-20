@@ -48,7 +48,7 @@ public class ZPSConfig {
     }
 
     private static ModConfigSpec.ConfigValue<Boolean> exhaustTumble;
-    private static final boolean exhaustTumbleDefault = false;
+    private static final boolean exhaustTumbleDefault = true;
 
     /** Whether exhaust particles tumble, each spinning about a random axis. */
     public static boolean exhaustTumble() {

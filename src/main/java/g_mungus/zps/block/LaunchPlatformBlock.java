@@ -16,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Lifts what is built on it into a ship when it gets a redstone signal. See {@link LaunchPlatformLayout} for which
+ * Lifts what is built on it into a ship when it gets a redstone signal from a side or from below. See {@link LaunchPlatformLayout} for which
  * blocks go. Needs Sable or Valkyrien Skies; without either the signal does nothing.
  */
 public class LaunchPlatformBlock extends Block {
@@ -34,7 +34,7 @@ public class LaunchPlatformBlock extends Block {
 
     @Override
     public @Nullable BlockState getStateForPlacement(BlockPlaceContext context) {
-        return defaultBlockState().setValue(POWERED, context.getLevel().hasNeighborSignal(context.getClickedPos()));
+        return defaultBlockState().setValue(POWERED, isPowered(context.getLevel(), context.getClickedPos()));
     }
 
     @Override
@@ -46,7 +46,7 @@ public class LaunchPlatformBlock extends Block {
     protected void neighborChanged(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
                                    @NotNull Block neighborBlock, @NotNull BlockPos neighborPos, boolean movedByPiston) {
         if (level instanceof ServerLevel serverLevel) {
-            boolean powered = level.hasNeighborSignal(pos);
+            boolean powered = isPowered(level, pos);
             if (powered != state.getValue(POWERED)) {
                 level.setBlock(pos, state.setValue(POWERED, powered), Block.UPDATE_CLIENTS);
                 if (powered) {
@@ -55,6 +55,14 @@ public class LaunchPlatformBlock extends Block {
             }
         }
         super.neighborChanged(state, level, pos, neighborBlock, neighborPos, movedByPiston);
+    }
+
+    /** From the sides or below only, so nothing built on the platform can set it off. */
+    private static boolean isPowered(Level level, BlockPos pos) {
+        for (Direction direction : Direction.values()) {
+            if (direction != Direction.UP && level.hasSignal(pos.relative(direction), direction)) return true;
+        }
+        return false;
     }
 
     private static void launch(ServerLevel level, BlockPos pos) {

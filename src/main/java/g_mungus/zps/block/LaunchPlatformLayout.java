@@ -23,7 +23,7 @@ import java.util.Arrays;
 public record LaunchPlatformLayout(BlockPos min, BlockPos max, int height) {
 
     public static final int MAX_WIDTH = 64;
-    public static final int MAX_HEIGHT = 128;
+    public static final int MAX_HEIGHT = 64;
 
     /** How far either way along x and z the search looks; far enough to see a rectangle wider than allowed. */
     private static final int REACH = MAX_WIDTH;

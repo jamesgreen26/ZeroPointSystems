@@ -5,6 +5,7 @@ import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import dev.ryanhcode.sable.sublevel.storage.SubLevelRemovalReason;
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.block.LaunchPlatformBlock;
 import g_mungus.zps.block.LaunchPlatformLayout;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.compat.Compat;
@@ -197,6 +198,21 @@ public class LaunchPlatformGameTests {
                 }
                 rig.remove();
             }
+            helper.succeed();
+        });
+    }
+
+    /** Power from above, such as from something built on the platform, does not launch it. */
+    @GameTest(template = TEMPLATE, batch = "launchPlatformSable", timeoutTicks = 40)
+    public static void power_fromAboveDoesNothing(GameTestHelper helper) {
+        platforms(helper, 3, 3, 5, 5);
+        tower(helper, 6, 4, 2);
+        helper.setBlock(new BlockPos(4, 3, 4), Blocks.STONE);
+        helper.setBlock(new BlockPos(4, 2, 4), Blocks.REDSTONE_BLOCK);
+        helper.runAfterDelay(2, () -> {
+            helper.assertBlockPresent(Blocks.REDSTONE_BLOCK, new BlockPos(4, 2, 4));
+            helper.assertBlockPresent(Blocks.STONE, new BlockPos(4, 3, 4));
+            helper.assertBlockProperty(new BlockPos(4, 1, 4), LaunchPlatformBlock.POWERED, false);
             helper.succeed();
         });
     }

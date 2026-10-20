@@ -72,11 +72,16 @@ public class ClientCompat {
 
     /// The render transform of the moving grid drawing the position, from the grid's block space
     /// to world space, as it is drawn at partialTick into the current tick (0 the last tick's
-    /// pose, 1 this tick's). Null when the position is on no grid. Sable only: null on a Valkyrien
-    /// Skies ship, whose interpolation is not exposed this way. Render thread only.
+    /// pose, 1 this tick's). Null when the position is on no grid, or no grid mod is present.
+    /// Render thread only.
     public static @Nullable Matrix4d renderTransformAt(Level level, BlockPos pos, float partialTick, Matrix4d dest) {
-        if (level instanceof ClientLevel && Compat.isSableLoaded() && !Compat.isVSLoaded()) {
-            return SableClientCompat.renderTransformAt(pos, partialTick, dest);
+        if (level instanceof ClientLevel clientLevel) {
+            if (Compat.isVSLoaded()) {
+                return VSClientCompat.renderTransformAt(clientLevel, pos, partialTick, dest);
+            }
+            if (Compat.isSableLoaded()) {
+                return SableClientCompat.renderTransformAt(pos, partialTick, dest);
+            }
         }
         return null;
     }
@@ -87,11 +92,16 @@ public class ClientCompat {
     }
 
     /// Every moving grid reaching into worldBounds, with its render transforms at the given partial
-    /// ticks into the current tick (0 the last tick's pose, 1 this tick's). Sable only: empty with
-    /// Valkyrien Skies or neither. Render thread only.
+    /// ticks into the current tick (0 the last tick's pose, 1 this tick's). Empty when no grid mod
+    /// is present. Render thread only.
     public static List<GridPoses> gridsTouching(Level level, AABB worldBounds, float[] partialTicks) {
-        if (level instanceof ClientLevel clientLevel && Compat.isSableLoaded() && !Compat.isVSLoaded()) {
-            return SableClientCompat.gridsTouching(clientLevel, worldBounds, partialTicks);
+        if (level instanceof ClientLevel clientLevel) {
+            if (Compat.isVSLoaded()) {
+                return VSClientCompat.gridsTouching(clientLevel, worldBounds, partialTicks);
+            }
+            if (Compat.isSableLoaded()) {
+                return SableClientCompat.gridsTouching(clientLevel, worldBounds, partialTicks);
+            }
         }
         return List.of();
     }

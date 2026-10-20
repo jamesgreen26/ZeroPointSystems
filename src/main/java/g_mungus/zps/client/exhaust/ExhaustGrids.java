@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * The moving grids (Sable sublevels) exhaust can hit, gathered each tick. Their blocks join
+ * The moving grids (Sable sublevels, Valkyrien Skies ships) exhaust can hit, gathered each tick. Their blocks join
  * {@link ExhaustField} like any other section, by plot section, and the stepping pass collides
  * particles with them in each grid's own block space.
  *

@@ -9,7 +9,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * A block entity that blasts thruster exhaust. It says what leaves its nozzle this tick through
  * {@link #getCurrentExhaust()}; calling {@link #tickExhaust()} from its client tick emits one batch
- * of it. Everything is in the block's own space, so an emitter on a
+ * of it, and sounds it. Everything is in the block's own space, so an emitter on a
  * moving grid gives grid positions and {@link ExhaustParticles} places the exhaust in the world.
  *
  * <p>{@link #getLevel()} and {@link #getBlockPos()} are a block entity's own.
@@ -52,12 +52,18 @@ public interface ThrusterExhaustEmitter {
 
     BlockPos getBlockPos();
 
+    boolean isRemoved();
+
     /** What leaves the nozzle this tick: null, or an amount of 0 or less, when not firing. */
     @Nullable ExhaustParams getCurrentExhaust();
 
-    /** Emits this tick's batch if exhausting. Client side only; does nothing elsewhere. */
+    /** Emits this tick's batch and keeps the roar going if exhausting. Client side only; does nothing elsewhere. */
     default void tickExhaust() {
-        if (!(getLevel() instanceof ClientLevel level) || !ExhaustParticles.available(level)) {
+        if (!(getLevel() instanceof ClientLevel level)) {
+            return;
+        }
+        ThrusterSound.tick(this);
+        if (!ExhaustParticles.available(level)) {
             return;
         }
         ExhaustParams exhaust = getCurrentExhaust();

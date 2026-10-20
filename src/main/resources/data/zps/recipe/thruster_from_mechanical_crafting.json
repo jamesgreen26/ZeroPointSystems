@@ -1,0 +1,39 @@
+{
+  "type": "create:mechanical_crafting",
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "create"
+    }
+  ],
+  "accept_mirrored": false,
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "zps:aluminum_ingot"
+    },
+    "B": {
+      "item": "minecraft:blaze_powder"
+    },
+    "D": {
+      "item": "zps:gas_duct"
+    },
+    "I": {
+      "item": "zps:space_metal_ingot"
+    },
+    "M": {
+      "item": "zps:space_metal_mesh"
+    }
+  },
+  "pattern": [
+    "ADA",
+    "MBM",
+    "MIM",
+    "I I"
+  ],
+  "result": {
+    "id": "zps:thruster",
+    "count": 1
+  },
+  "show_notification": false
+}

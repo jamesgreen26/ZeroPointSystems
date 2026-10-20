@@ -11,11 +11,11 @@
       },
       "trigger": "minecraft:inventory_changed"
     },
-    "has_vent": {
+    "has_gas_duct": {
       "conditions": {
         "items": [
           {
-            "items": "zps:vent"
+            "items": "zps:gas_duct"
           }
         ]
       },
@@ -31,7 +31,7 @@
   "requirements": [
     [
       "has_aluminum_ingot",
-      "has_vent",
+      "has_gas_duct",
       "has_the_recipe"
     ]
   ],

@@ -250,6 +250,7 @@ public class ModBlocks {
             () -> new ThrusterBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(3.5f)
                     .noOcclusion()
+                    .isRedstoneConductor((blockState, blockGetter, blockPos) -> true)
                     .requiresCorrectToolForDrops()));
 
     /** World-only: made by striking a full composter with the Impact Piston. Has no item on purpose. */

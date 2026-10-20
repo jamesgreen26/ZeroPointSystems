@@ -538,7 +538,7 @@
     "block.zps.rolling_mill.zps_tooltip": "Consumes FE to roll metal.\n\nRolls ingots into rods and nuggets into wire.",
     "block.zps.vaporizer.zps_tooltip": "Consumes FE to heat up, then vaporizes items into gas.\n\nEach recipe needs a minimum temperature and cools the machine when it runs. The gas collects in an internal buffer and leaves through the top.",
     "block.zps.air_compressor.zps_tooltip": "Consumes 32 FE/tick to draw gas from the environment through the fan on top.\n\nTurns off when receiving a redstone signal.",
-    "block.zps.thruster.zps_tooltip": "Burns [Stellane] fed from a [Gas Duct] behind it to push the ship it is on.\n\nThrottled by redstone signal strength.\nOther gases pass through unburnt and push far less.",
+    "block.zps.thruster.zps_tooltip": "Burns fuel from a [Gas Duct] at its back to push the ship it's on.\n\n• [Stellane]: full thrust\n• [Flux]: double thrust\n• Other gases: weaker thrust\n\nActivates with a redstone signal.",
     "block.zps.vent.zps_tooltip": "Releases gas from a [Gas Duct] into the air to prevent pressure buildup.\n\nCloses when receiving a redstone signal.\n\n[R-Click] an open vent to climb inside.\nEntering a vent with very hot or very cold gas can be dangerous.",
     "block.zps.assembler.zps_tooltip": "Consumes FE to craft items in a [5x5 crafting grid].\n\nConsumes 16 FE/t while crafting, and works only when receiving a Redstone signal.",
     "block.zps.impact_piston.zps_tooltip": "Consumes FE to slam a heavy rod into the block underneath.\n\nConsumes 64 FE/t while raising the rod, and works only when receiving a Redstone signal.",

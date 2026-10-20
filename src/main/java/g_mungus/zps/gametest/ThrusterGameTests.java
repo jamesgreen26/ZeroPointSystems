@@ -95,7 +95,7 @@ public class ThrusterGameTests {
         ThrusterBlockEntity thruster = placeThruster(helper, THRUSTER, Direction.SOUTH, 15);
         feed(helper, THRUSTER, ModGases.STELLANE, MOLES);
         helper.runAfterDelay(BURN_TICKS, () -> {
-            assertThrust(helper, thruster, ThrusterBlockEntity.MAX_THRUST, "Pure Stellane at 15");
+            assertThrust(helper, thruster, ThrusterBlockEntity.maxThrust(), "Pure Stellane at 15");
             helper.assertTrue(thruster.burn() == 1, "A fed thruster at 15 should burn at full, burns " + thruster.burn());
             helper.assertTrue(thruster.coldFraction() == 0, "Pure Stellane should leave nothing cold");
             helper.succeed();
@@ -108,7 +108,7 @@ public class ThrusterGameTests {
         feed(helper, THRUSTER, ModGases.STELLANE, MOLES);
         double before = massOf(helper, THRUSTER, ModGases.STELLANE);
         helper.runAfterDelay(BURN_TICKS, () -> {
-            assertThrust(helper, thruster, ThrusterBlockEntity.MAX_THRUST / 3, "Pure Stellane at 5");
+            assertThrust(helper, thruster, ThrusterBlockEntity.maxThrust() / 3, "Pure Stellane at 5");
             double burnt = ModGases.STELLANE.massToMoles(before - massOf(helper, THRUSTER, ModGases.STELLANE));
             double perTick = ThrusterBlockEntity.MAX_MOL_PER_TICK / 3;
             // Whole ticks only, and the block entity may have ticked once more or less than the delay.
@@ -126,7 +126,7 @@ public class ThrusterGameTests {
         feed(helper, THRUSTER, ModGases.STELLANE, MOLES);
         feed(helper, THRUSTER, ModGases.STEAM, MOLES);
         helper.runAfterDelay(BURN_TICKS, () -> {
-            double half = ThrusterBlockEntity.MAX_THRUST / 2;
+            double half = ThrusterBlockEntity.maxThrust() / 2;
             assertThrust(helper, thruster, half + half * ThrusterBlockEntity.COLD_PUSH_RATIO, "Half Stellane, half Steam");
             helper.assertTrue(thruster.burn() == 1, "The mix should still be drawn at full, is " + thruster.burn());
             helper.assertTrue(thruster.coldFraction() == 0.5f, "Half the plume should be cold, is " + thruster.coldFraction());
@@ -139,7 +139,7 @@ public class ThrusterGameTests {
         ThrusterBlockEntity thruster = placeThruster(helper, THRUSTER, Direction.SOUTH, 15);
         feed(helper, THRUSTER, ModGases.FLUX, MOLES);
         helper.runAfterDelay(BURN_TICKS, () -> {
-            assertThrust(helper, thruster, ThrusterBlockEntity.MAX_THRUST * ThrusterBlockEntity.FLUX_PUSH_RATIO, "Pure Flux");
+            assertThrust(helper, thruster, ThrusterBlockEntity.maxThrust() * ThrusterBlockEntity.FLUX_PUSH_RATIO, "Pure Flux");
             helper.assertTrue(thruster.blueFraction() == 1, "Pure Flux should be all blue, is " + thruster.blueFraction());
             helper.assertTrue(thruster.coldFraction() == 0, "Pure Flux should leave nothing cold");
             helper.succeed();
@@ -154,7 +154,7 @@ public class ThrusterGameTests {
         feed(helper, THRUSTER, ModGases.FLUX, MOLES);
         feed(helper, THRUSTER, ModGases.STEAM, MOLES);
         helper.runAfterDelay(BURN_TICKS, () -> {
-            double quarter = ThrusterBlockEntity.MAX_THRUST / 4;
+            double quarter = ThrusterBlockEntity.maxThrust() / 4;
             assertThrust(helper, thruster, quarter * (2 + ThrusterBlockEntity.FLUX_PUSH_RATIO
                     + ThrusterBlockEntity.COLD_PUSH_RATIO), "Half Stellane, a quarter Flux, a quarter Steam");
             helper.assertTrue(thruster.blueFraction() == 0.25f, "A quarter of the plume should be blue, is " + thruster.blueFraction());
@@ -168,7 +168,7 @@ public class ThrusterGameTests {
         ThrusterBlockEntity thruster = placeThruster(helper, THRUSTER, Direction.SOUTH, 15);
         feed(helper, THRUSTER, ModGases.STEAM, MOLES);
         helper.runAfterDelay(BURN_TICKS, () -> {
-            assertThrust(helper, thruster, ThrusterBlockEntity.MAX_THRUST * ThrusterBlockEntity.COLD_PUSH_RATIO, "Pure Steam");
+            assertThrust(helper, thruster, ThrusterBlockEntity.maxThrust() * ThrusterBlockEntity.COLD_PUSH_RATIO, "Pure Steam");
             helper.assertTrue(thruster.coldFraction() == 1, "Pure Steam should be all cold");
             helper.succeed();
         });
@@ -206,7 +206,9 @@ public class ThrusterGameTests {
         });
     }
 
-    private static final Vec3 DOWN_THRUST = new Vec3(0, -ThrusterBlockEntity.MAX_THRUST, 0);
+    private static Vec3 downThrust() {
+        return new Vec3(0, -ThrusterBlockEntity.maxThrust(), 0);
+    }
 
     /** Lined up with the centre of mass: the whole thrust through it, and no turn. */
     @GameTest(template = TEMPLATE)
@@ -216,7 +218,7 @@ public class ThrusterGameTests {
             helper.assertTrue(physics.forces.size() == 1, "One force should be applied, " + physics.forces.size() + " were");
             helper.assertTrue(physics.forces.getFirst()[0].equals(physics.centreOfMass()),
                     "The force should act at the centre of mass, acts at " + physics.forces.getFirst()[0]);
-            helper.assertTrue(physics.forces.getFirst()[1].distanceTo(DOWN_THRUST) < 1e-6,
+            helper.assertTrue(physics.forces.getFirst()[1].distanceTo(downThrust()) < 1e-6,
                     "The whole thrust should push, pushes " + physics.forces.getFirst()[1]);
             helper.assertTrue(physics.torques.isEmpty(), "Nothing should turn the grid, turned by " + physics.torques);
         });
@@ -227,10 +229,10 @@ public class ThrusterGameTests {
     public static void thrustAcrossTheCentreOfMass_pushesAndTurns(GameTestHelper helper) {
         Vec3 offset = new Vec3(5, -1, 0);
         stepWithCentreOfMassAt(helper, offset, physics -> {
-            helper.assertTrue(physics.forces.size() == 1 && physics.forces.getFirst()[1].distanceTo(DOWN_THRUST) < 1e-6,
+            helper.assertTrue(physics.forces.size() == 1 && physics.forces.getFirst()[1].distanceTo(downThrust()) < 1e-6,
                     "The whole thrust should push through the centre of mass");
             helper.assertTrue(physics.torques.size() == 1, "One torque should be applied, " + physics.torques.size() + " were");
-            Vec3 expected = offset.reverse().cross(DOWN_THRUST);
+            Vec3 expected = offset.reverse().cross(downThrust());
             helper.assertTrue(physics.torques.getFirst().distanceTo(expected) < 1e-6,
                     "The turn should be lever x thrust, " + expected + ", is " + physics.torques.getFirst());
         });
@@ -241,10 +243,10 @@ public class ThrusterGameTests {
     public static void thrustAtFortyFive_pushesAndTurnsInFull(GameTestHelper helper) {
         Vec3 offset = new Vec3(5, -5, 0);
         stepWithCentreOfMassAt(helper, offset, physics -> {
-            helper.assertTrue(physics.forces.size() == 1 && physics.forces.getFirst()[1].distanceTo(DOWN_THRUST) < 1e-6,
+            helper.assertTrue(physics.forces.size() == 1 && physics.forces.getFirst()[1].distanceTo(downThrust()) < 1e-6,
                     "The whole thrust should push");
             helper.assertTrue(physics.torques.size() == 1
-                            && physics.torques.getFirst().distanceTo(offset.reverse().cross(DOWN_THRUST)) < 1e-6,
+                            && physics.torques.getFirst().distanceTo(offset.reverse().cross(downThrust())) < 1e-6,
                     "The whole turn should be applied, is " + physics.torques);
         });
     }
@@ -254,8 +256,8 @@ public class ThrusterGameTests {
     public static void drivenGridSlidingSideways_isDamped(GameTestHelper helper) {
         // Moving with the thrust and sideways: only the sideways part is resisted.
         stepMoving(helper, new Vec3(0, -5, 0), new Vec3(3, -2, 0), 1000, physics -> {
-            double coefficient = ThrusterBlockEntity.MAX_THRUST * ThrusterBlockEntity.DAMPING;
-            Vec3 expected = DOWN_THRUST.add(-3 * coefficient, 0, 0);
+            double coefficient = ThrusterBlockEntity.maxThrust() * ThrusterBlockEntity.DAMPING;
+            Vec3 expected = downThrust().add(-3 * coefficient, 0, 0);
             helper.assertTrue(physics.forces.size() == 1 && physics.forces.getFirst()[1].distanceTo(expected) < 1e-6,
                     "The push should carry " + expected + ", carries " + physics.forces.getFirst()[1]);
         });
@@ -266,8 +268,8 @@ public class ThrusterGameTests {
     public static void drivenGridGoingBackwards_isPushedHarder(GameTestHelper helper) {
         // Thrust is down; moving up against it, and sideways.
         stepMoving(helper, new Vec3(0, -5, 0), new Vec3(3, 2, 0), 1000, physics -> {
-            double coefficient = ThrusterBlockEntity.MAX_THRUST * ThrusterBlockEntity.DAMPING;
-            Vec3 expected = DOWN_THRUST.add(-3 * coefficient, -2 * coefficient, 0);
+            double coefficient = ThrusterBlockEntity.maxThrust() * ThrusterBlockEntity.DAMPING;
+            Vec3 expected = downThrust().add(-3 * coefficient, -2 * coefficient, 0);
             helper.assertTrue(physics.forces.size() == 1 && physics.forces.getFirst()[1].distanceTo(expected) < 1e-6,
                     "The push should carry " + expected + ", carries " + physics.forces.getFirst()[1]);
         });
@@ -277,9 +279,9 @@ public class ThrusterGameTests {
     @GameTest(template = TEMPLATE)
     public static void dampingOnALightGrid_isCapped(GameTestHelper helper) {
         // Half the mass at which full thrust's damping reaches the cap.
-        double mass = ThrusterBlockEntity.MAX_THRUST * ThrusterBlockEntity.DAMPING / ThrusterBlockEntity.MAX_DAMPING_RATE / 2;
+        double mass = ThrusterBlockEntity.maxThrust() * ThrusterBlockEntity.DAMPING / ThrusterBlockEntity.MAX_DAMPING_RATE / 2;
         stepMoving(helper, new Vec3(0, -5, 0), new Vec3(3, 0, 0), mass, physics -> {
-            Vec3 expected = DOWN_THRUST.add(-3 * mass * ThrusterBlockEntity.MAX_DAMPING_RATE, 0, 0);
+            Vec3 expected = downThrust().add(-3 * mass * ThrusterBlockEntity.MAX_DAMPING_RATE, 0, 0);
             helper.assertTrue(physics.forces.size() == 1 && physics.forces.getFirst()[1].distanceTo(expected) < 1e-6,
                     "The push should carry " + expected + ", carries " + physics.forces.getFirst()[1]);
         });
@@ -289,7 +291,7 @@ public class ThrusterGameTests {
     @GameTest(template = TEMPLATE)
     public static void turningThruster_doesNotDamp(GameTestHelper helper) {
         stepMoving(helper, new Vec3(5, -1, 0), new Vec3(0, 0, 3), 1000, physics ->
-                helper.assertTrue(physics.forces.size() == 1 && physics.forces.getFirst()[1].distanceTo(DOWN_THRUST) < 1e-6,
+                helper.assertTrue(physics.forces.size() == 1 && physics.forces.getFirst()[1].distanceTo(downThrust()) < 1e-6,
                         "Only the thrust should push, with no damping, pushes " + physics.forces.getFirst()[1]));
     }
 
@@ -373,7 +375,7 @@ public class ThrusterGameTests {
         helper.runAfterDelay(BURN_TICKS, () -> {
             program(helper, thruster, "thrust 0.5");
             Vec3 force = step(helper, thruster, Vec3.ZERO);
-            double half = ThrusterBlockEntity.MAX_THRUST / 2;
+            double half = ThrusterBlockEntity.maxThrust() / 2;
             helper.assertTrue(force.distanceTo(new Vec3(0, 0, -half)) < 1e-6,
                     "Half a throttle should push " + half + " northward, pushes " + force);
             helper.runAfterDelay(2, () -> {
@@ -470,7 +472,7 @@ public class ThrusterGameTests {
             helper.assertTrue(step(helper, thruster, new Vec3(0, 1, 0)).lengthSqr() == 0,
                     "Rising, thrust 0 should cut the signal");
             Vec3 falling = step(helper, thruster, new Vec3(0, -1, 0));
-            helper.assertTrue(Math.abs(falling.z + ThrusterBlockEntity.MAX_THRUST) < 1e-6,
+            helper.assertTrue(Math.abs(falling.z + ThrusterBlockEntity.maxThrust()) < 1e-6,
                     "Falling, with no thrust run, the full signal should push, pushes " + falling);
             helper.succeed();
         });
@@ -490,7 +492,7 @@ public class ThrusterGameTests {
             helper.assertTrue(step(helper, thruster, new Vec3(0, 1, 0)).lengthSqr() == 0,
                     "Rising, the program should cut the throttle");
             Vec3 falling = step(helper, thruster, new Vec3(0, -1, 0));
-            helper.assertTrue(Math.abs(falling.z + ThrusterBlockEntity.MAX_THRUST) < 1e-6,
+            helper.assertTrue(Math.abs(falling.z + ThrusterBlockEntity.maxThrust()) < 1e-6,
                     "Falling, the program should open the throttle, pushes " + falling);
             helper.succeed();
         });

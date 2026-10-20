@@ -347,6 +347,17 @@ public class ZPSConfig {
         return intOr(standardTransferFePerTick, STANDARD_TRANSFER_FE_PER_TICK_DEFAULT);
     }
 
+    // --- thruster -------------------------------------------------------------------------
+
+    private static ForgeConfigSpec.ConfigValue<Double> thrusterMaxThrust;
+
+    public static final double THRUSTER_MAX_THRUST_DEFAULT = 800.0;
+
+    /** Thrust at a full signal on pure Stellane, in grid physics units: a plain block weighs 1. */
+    public static double thrusterMaxThrust() {
+        return doubleOr(thrusterMaxThrust, THRUSTER_MAX_THRUST_DEFAULT);
+    }
+
     public static final ForgeConfigSpec SERVER_CONFIG_SPEC = buildServerConfig();
 
     private static ForgeConfigSpec buildServerConfig() {
@@ -409,6 +420,13 @@ public class ZPSConfig {
                          "follows the density at the intake: less in thin air, none in vacuum, and less",
                          "and less from a sealed room as it empties.")
                 .defineInRange("SweptVolume", AIR_COMPRESSOR_SWEPT_VOLUME_DEFAULT, 0.0, 1000.0);
+        builder.pop();
+
+        builder.comment("Thruster.").push("Thruster");
+        thrusterMaxThrust = builder
+                .comment("Thrust at a full signal on pure Stellane, where a plain block weighs 1.",
+                         "Flux and unburnt gas push in proportion to it.")
+                .defineInRange("MaxThrust", THRUSTER_MAX_THRUST_DEFAULT, 0.0, 1.0e9);
         builder.pop();
 
         builder.comment("Energy.").push("Energy");

@@ -97,14 +97,19 @@ public abstract class ControllerSeatEntity extends Entity implements StandingVeh
     }
 
     /**
-     * However the seat goes — its rider leaving, logging out on it, or a command — the controller
-     * goes dark. Not when its chunk unloads: the block is unloading with it, and the seat comes back
-     * with the chunk to sort it out then.
+     * When the seat really goes — its rider leaving, logging out on it, or a command — the controller
+     * goes dark. Forge also calls this when the seat's chunk merely stops being tracked, with no
+     * removal reason, from inside the chunk loading update, where driving the network could load a
+     * chunk and corrupt it. So not then, nor when the chunk unloads (the seat comes back with it to
+     * sort things out), nor when it changes dimension (its copy on the far side finds the controller
+     * there, and a grid mod moving a ship, as Genesis does, may be partway through moving the chunk).
      */
     @Override
     public void onRemovedFromLevel() {
         super.onRemovedFromLevel();
-        if (!level().isClientSide && getRemovalReason() != RemovalReason.UNLOADED_TO_CHUNK) {
+        RemovalReason reason = getRemovalReason();
+        if (!level().isClientSide && reason != null
+                && (reason.shouldDestroy() || reason == RemovalReason.UNLOADED_WITH_PLAYER)) {
             release();
         }
     }

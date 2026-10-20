@@ -7,6 +7,7 @@ import g_mungus.zps.client.exhaust.ThrusterExhaustEmitter;
 import g_mungus.zps.commands.phystick.PhysTickProgram;
 import g_mungus.zps.commands.phystick.PhysTickProgrammable;
 import g_mungus.zps.compat.GridPhysics;
+import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.gas.ModGases;
 import g_mungus.zps.room.RoomManager;
 import net.minecraft.core.BlockPos;
@@ -34,7 +35,7 @@ import java.util.Map;
  * step that runs one and the redstone signal otherwise, asks for a share of {@link #MAX_MOL_PER_TICK}, taken from
  * the node's mix as it finds it, so a starved or low-pressure feed gives less than was asked and pushes less.
  * <p>
- * Stellane burns orange: it pushes at {@link #THRUST_PER_MOL} and leaves as the same mass of hot
+ * Stellane burns orange: it pushes at {@link #thrustPerMol()} and leaves as the same mass of hot
  * {@link ModGases#EXHAUST}. Flux burns blue the same way but pushes {@link #FLUX_PUSH_RATIO} as hard.
  * Anything else passes through unburnt at its own temperature, pushing only {@link #COLD_PUSH_RATIO}
  * as hard, and shows in the plume as cold gas. A mixed feed shows all three through one plume. All of
@@ -53,8 +54,13 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements PhysTickP
     /** Gas asked for at a full signal, in moles per tick: half a kilogram of Stellane lasts 50 s. */
     public static final double MAX_MOL_PER_TICK = 0.25;
     /** Thrust at a full signal on pure Stellane, in {@link GridPhysics} units: a plain block weighs 1. */
-    public static final double MAX_THRUST = 400;
-    public static final double THRUST_PER_MOL = MAX_THRUST / MAX_MOL_PER_TICK;
+    public static double maxThrust() {
+        return ZPSConfig.thrusterMaxThrust();
+    }
+
+    public static double thrustPerMol() {
+        return maxThrust() / MAX_MOL_PER_TICK;
+    }
     /** How hard a mole of burning Flux pushes, against a mole of burning Stellane. */
     public static final double FLUX_PUSH_RATIO = 2;
     /** How hard a mole of unburnt gas pushes, against a mole of burning Stellane. */
@@ -226,7 +232,7 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements PhysTickP
             }
         }
 
-        double force = (stellane + FLUX_PUSH_RATIO * flux + COLD_PUSH_RATIO * unburnt) * THRUST_PER_MOL;
+        double force = (stellane + FLUX_PUSH_RATIO * flux + COLD_PUSH_RATIO * unburnt) * thrustPerMol();
         thrust = force > 0 ? backwards.scale(force) : Vec3.ZERO;
 
         if (level instanceof ServerLevel serverLevel) {
@@ -251,11 +257,11 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements PhysTickP
     /** The thrust a mole of {@code gas} gives as it goes through. */
     private static double pushPerMole(GasType gas) {
         if (gas.equals(ModGases.STELLANE)) {
-            return THRUST_PER_MOL;
+            return thrustPerMol();
         } else if (gas.equals(ModGases.FLUX)) {
-            return FLUX_PUSH_RATIO * THRUST_PER_MOL;
+            return FLUX_PUSH_RATIO * thrustPerMol();
         }
-        return COLD_PUSH_RATIO * THRUST_PER_MOL;
+        return COLD_PUSH_RATIO * thrustPerMol();
     }
 
     private void setSynced(int burn, int blue, int cold) {

@@ -1,20 +1,26 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "misc",
+  "type": "zps:shaped_5x5",
   "key": {
-    "F": {
-      "item": "minecraft:flint_and_steel"
-    },
-    "I": {
+    "A": {
       "item": "zps:aluminum_ingot"
     },
-    "V": {
-      "item": "zps:vent"
+    "B": {
+      "item": "minecraft:blaze_powder"
+    },
+    "D": {
+      "item": "zps:gas_duct"
+    },
+    "I": {
+      "item": "zps:space_metal_ingot"
+    },
+    "M": {
+      "item": "zps:space_metal_mesh"
     }
   },
   "pattern": [
-    " V ",
-    "IFI",
+    "ADA",
+    "MBM",
+    "MIM",
     "I I"
   ],
   "result": {

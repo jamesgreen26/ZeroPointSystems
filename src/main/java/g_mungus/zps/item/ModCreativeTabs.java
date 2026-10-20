@@ -69,7 +69,6 @@ public class ModCreativeTabs {
                         ROLLING_MILL,
                         ASSEMBLER,
                         IMPACT_PISTON,
-                        THRUSTER,
                         SIEVE,
                         VAPORIZER,
                         VENT,
@@ -83,6 +82,7 @@ public class ModCreativeTabs {
                         HEAT_EXCHANGER,
 
                         BEAM_COLLECTOR,
+                        THRUSTER,
 
                         SUSPICIOUS_RED_SAND,
 

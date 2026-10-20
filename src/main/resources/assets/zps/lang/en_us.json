@@ -563,6 +563,7 @@
     "zps.ponder.tag.reactor_wall_blocks": "Reactor Wall Blocks",
     "zps.ponder.tag.reactor_wall_blocks.description": "Blocks which can form part of the sealed chamber of a Fusion Reactor.",
     "sounds.zps.reactor_hum": "Reactor hums",
+    "sounds.zps.thruster": "Thruster roars",
     "zps.display_source.reactor_status": "Reactor Status",
     "zps.display_source.reactor.not_enough_space": "Not enough space ",
     "zps.display_source.reactor.for_reactor_status": "for Reactor Status",

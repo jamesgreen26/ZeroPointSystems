@@ -47,5 +47,15 @@
         "attenuation_distance": 32
       }
     ]
+  },
+  "thruster": {
+    "subtitle": "sounds.zps.thruster",
+    "sounds": [
+      {
+        "name": "zps:thruster",
+        "preload": true,
+        "attenuation_distance": 32
+      }
+    ]
   }
 }

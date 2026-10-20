@@ -425,6 +425,7 @@ public final class ExhaustParticles {
         clearRing();
         pending.clear();
         ExhaustField.clear();
+        ThrusterSound.clear();
         level = null;
     }
 

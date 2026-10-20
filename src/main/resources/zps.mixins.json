@@ -16,6 +16,7 @@
     "DimensionSpecialEffectsMixin",
     "EntityRenderDispatcherMixin",
     "ExhaustBlockChangeMixin",
+    "ExhaustTickMixin",
     "FogRendererMixin",
     "flywheel.GlProgramMixin",
     "flywheel.MaterialRenderStateMixin",

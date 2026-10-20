@@ -20,7 +20,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
-import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.level.ChunkEvent;
 import net.minecraftforge.event.level.LevelEvent;
 import org.lwjgl.opengl.GL11;
@@ -121,8 +120,8 @@ public final class ExhaustParticles {
 
     /**
      * Emits one tick's batch from an emitter, given in its own block's space: a block on a moving
-     * grid gives positions in the grid's block space. The batch is placed in the world at the end
-     * of the tick, once the grid's pose for the tick is known; see {@link #onClientTick}.
+     * grid gives positions in the grid's block space. The batch is placed in the world once the
+     * tick is over and the grid's pose for it is known; see {@link #afterTick}.
      *
      * @param pos     the emitting block, which says which grid, if any, the emitter is on
      * @param exhaust what leaves this tick, see {@link ThrusterExhaustEmitter.ExhaustParams}
@@ -293,12 +292,10 @@ public final class ExhaustParticles {
 
     /**
      * Places this tick's emissions, uploads the records, and drops the effect once its last
-     * particle has faded. At the end of the tick, so that every grid has its pose for the tick.
+     * particle has faded. At the very end of the tick, once every grid has its pose for the tick:
+     * see {@code ExhaustTickMixin}.
      */
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) {
-            return;
-        }
+    public static void afterTick() {
         if (!pending.isEmpty()) {
             int tick = ticks();
             for (Emission emission : pending) {

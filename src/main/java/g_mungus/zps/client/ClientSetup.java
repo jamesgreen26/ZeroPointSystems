@@ -299,7 +299,6 @@ public class ClientSetup {
             MinecraftForge.EVENT_BUS.addListener(ClientReactors::onLoggingOut);
             MinecraftForge.EVENT_BUS.addListener(ClientReactors::onClientTick);
             MinecraftForge.EVENT_BUS.addListener(ClientReactors::onRenderLevelStage);
-            MinecraftForge.EVENT_BUS.addListener(ExhaustParticles::onClientTick);
             MinecraftForge.EVENT_BUS.addListener(ExhaustParticles::onLevelUnload);
             MinecraftForge.EVENT_BUS.addListener(ExhaustParticles::onLoggingOut);
             MinecraftForge.EVENT_BUS.addListener(ExhaustParticles::onChunkLoad);

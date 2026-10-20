@@ -90,6 +90,8 @@ public final class ExhaustParticles {
     private static int batchesUsed;
     private static volatile int slotsInUse;
     private static int lastEmitTick;
+    /** The tick the simulation last stepped to; client ticks go on while paused, the clock does not. */
+    private static int lastStepTick;
     private static int seedCounter;
     private static final List<Emission> pending = new ArrayList<>();
     private static final Matrix4d transformFrom = new Matrix4d();
@@ -315,6 +317,10 @@ public final class ExhaustParticles {
             addEffect(manager);
         }
         int tick = ticks();
+        if (tick == lastStepTick) {
+            return;
+        }
+        lastStepTick = tick;
         expireSections(tick);
         BlockPos simOrigin = new BlockPos(records.getInt(16), records.getInt(20), records.getInt(24));
         ExhaustField.sync(level, ExhaustGrids.update(level, simOrigin, sectionLastUse.keySet()));

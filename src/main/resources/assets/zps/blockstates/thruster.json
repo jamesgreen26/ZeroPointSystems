@@ -1,10 +1,10 @@
 {
   "variants": {
-    "facing=north": { "model": "zps:block/thruster" },
-    "facing=east": { "model": "zps:block/thruster", "y": 90 },
-    "facing=south": { "model": "zps:block/thruster", "y": 180 },
-    "facing=west": { "model": "zps:block/thruster", "y": 270 },
-    "facing=up": { "model": "zps:block/thruster_vertical" },
-    "facing=down": { "model": "zps:block/thruster_vertical", "x": 180 }
+    "facing=north": { "model": "zps:block/thruster", "y": 180 },
+    "facing=east": { "model": "zps:block/thruster", "y": 270 },
+    "facing=south": { "model": "zps:block/thruster" },
+    "facing=west": { "model": "zps:block/thruster", "y": 90 },
+    "facing=down": {"model": "zps:block/thruster", "x": 270, "y":  180},
+    "facing=up": {"model": "zps:block/thruster", "x": 90}
   }
 }

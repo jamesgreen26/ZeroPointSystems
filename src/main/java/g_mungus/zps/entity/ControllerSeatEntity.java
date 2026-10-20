@@ -120,11 +120,13 @@ public abstract class ControllerSeatEntity extends Entity implements StandingVeh
     @Override
     protected void defineSynchedData() {}
 
+    /**
+     * The rider steers nothing: keys go to the controller over the network. A controlling rider's
+     * client would also send the seat's position, which on a Valkyrien Skies ship drags it out of
+     * the shipyard and away from its controller.
+     */
     @Override
-    public LivingEntity getControllingPassenger() {
-        if (blockEntity != null && !this.getPassengers().isEmpty()) {
-            return (LivingEntity) this.getPassengers().get(0);
-        }
+    public @Nullable LivingEntity getControllingPassenger() {
         return null;
     }
 

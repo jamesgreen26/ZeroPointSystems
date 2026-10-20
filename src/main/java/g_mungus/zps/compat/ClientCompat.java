@@ -66,9 +66,12 @@ public class ClientCompat {
     }
 
     /// Every moving grid reaching into worldBounds, with its render transforms at the given partial
-    /// ticks into the current tick (0 the last tick's pose, 1 this tick's). Sable only, so always
-    /// empty here. Render thread only.
+    /// ticks into the current tick (0 the last tick's pose, 1 this tick's). Empty when VS is not
+    /// present. Render thread only.
     public static List<GridPoses> gridsTouching(Level level, AABB worldBounds, float[] partialTicks) {
+        if (level instanceof ClientLevel clientLevel && Compat.isVSLoaded()) {
+            return VSClientCompat.gridsTouching(clientLevel, worldBounds, partialTicks);
+        }
         return List.of();
     }
 }

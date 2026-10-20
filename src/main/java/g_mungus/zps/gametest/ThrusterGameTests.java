@@ -1,6 +1,7 @@
 package g_mungus.zps.gametest;
 
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.gas.ThrusterBlock;
 import g_mungus.zps.block.gas.core.GasEdgeNegotiator;
@@ -257,7 +258,8 @@ public class ThrusterGameTests {
         // Moving with the thrust and sideways: only the sideways part is resisted.
         stepMoving(helper, new Vec3(0, -5, 0), new Vec3(3, -2, 0), 1000, physics -> {
             double coefficient = ThrusterBlockEntity.maxThrust() * ThrusterBlockEntity.DAMPING;
-            Vec3 expected = downThrust().add(-3 * coefficient, 0, 0);
+            Vec3 expected = downThrust().add(-3 * coefficient, 0, 0)
+                    .add(ThrusterBlockEntity.speedLimit(downThrust(), new Vec3(3, -2, 0)));
             helper.assertTrue(physics.forces.size() == 1 && physics.forces.get(0)[1].distanceTo(expected) < 1e-6,
                     "The push should carry " + expected + ", carries " + physics.forces.get(0)[1]);
         });
@@ -269,7 +271,8 @@ public class ThrusterGameTests {
         // Thrust is down; moving up against it, and sideways.
         stepMoving(helper, new Vec3(0, -5, 0), new Vec3(3, 2, 0), 1000, physics -> {
             double coefficient = ThrusterBlockEntity.maxThrust() * ThrusterBlockEntity.DAMPING;
-            Vec3 expected = downThrust().add(-3 * coefficient, -2 * coefficient, 0);
+            Vec3 expected = downThrust().add(-3 * coefficient, -2 * coefficient, 0)
+                    .add(ThrusterBlockEntity.speedLimit(downThrust(), new Vec3(3, 2, 0)));
             helper.assertTrue(physics.forces.size() == 1 && physics.forces.get(0)[1].distanceTo(expected) < 1e-6,
                     "The push should carry " + expected + ", carries " + physics.forces.get(0)[1]);
         });
@@ -281,7 +284,8 @@ public class ThrusterGameTests {
         // Half the mass at which full thrust's damping reaches the cap.
         double mass = ThrusterBlockEntity.maxThrust() * ThrusterBlockEntity.DAMPING / ThrusterBlockEntity.MAX_DAMPING_RATE / 2;
         stepMoving(helper, new Vec3(0, -5, 0), new Vec3(3, 0, 0), mass, physics -> {
-            Vec3 expected = downThrust().add(-3 * mass * ThrusterBlockEntity.MAX_DAMPING_RATE, 0, 0);
+            Vec3 expected = downThrust().add(-3 * mass * ThrusterBlockEntity.MAX_DAMPING_RATE, 0, 0)
+                    .add(ThrusterBlockEntity.speedLimit(downThrust(), new Vec3(3, 0, 0)));
             helper.assertTrue(physics.forces.size() == 1 && physics.forces.get(0)[1].distanceTo(expected) < 1e-6,
                     "The push should carry " + expected + ", carries " + physics.forces.get(0)[1]);
         });
@@ -290,9 +294,43 @@ public class ThrusterGameTests {
     /** A thruster square across the centre of mass is there to turn: it pushes but does not fight the drift. */
     @GameTest(template = TEMPLATE)
     public static void turningThruster_doesNotDamp(GameTestHelper helper) {
-        stepMoving(helper, new Vec3(5, -1, 0), new Vec3(0, 0, 3), 1000, physics ->
-                helper.assertTrue(physics.forces.size() == 1 && physics.forces.get(0)[1].distanceTo(downThrust()) < 1e-6,
-                        "Only the thrust should push, with no damping, pushes " + physics.forces.get(0)[1]));
+        Vec3 velocity = new Vec3(0, 0, 3);
+        Vec3 expected = downThrust().add(ThrusterBlockEntity.speedLimit(downThrust(), velocity));
+        stepMoving(helper, new Vec3(5, -1, 0), velocity, 1000, physics ->
+                helper.assertTrue(physics.forces.size() == 1 && physics.forces.get(0)[1].distanceTo(expected) < 1e-6,
+                        "Only the thrust and the speed limit should push, with no damping, pushes " + physics.forces.get(0)[1]));
+    }
+
+    /** Driven the way it is going at the max speed, a grid is held back as hard as it is pushed, and levels off. */
+    @GameTest(template = TEMPLATE)
+    public static void atTheMaxSpeed_thrustIsCancelled(GameTestHelper helper) {
+        stepMoving(helper, new Vec3(0, -5, 0), new Vec3(0, -ZPSConfig.thrusterMaxSpeed(), 0), 1000, physics ->
+                helper.assertTrue(physics.forces.size() == 1 && physics.forces.get(0)[1].length() < 1e-6,
+                        "Nothing should be left of the push at the max speed, " + physics.forces.get(0)[1] + " is"));
+    }
+
+    /** The speed limit is against the velocity, in proportion to speed over the max, up to the push along it. */
+    @GameTest(template = TEMPLATE)
+    public static void speedLimit_growsWithSpeedUpToThePushAlongIt(GameTestHelper helper) {
+        double max = ZPSConfig.thrusterMaxSpeed();
+        Vec3 push = new Vec3(0, -10, 0);
+        Vec3 half = ThrusterBlockEntity.speedLimit(push, new Vec3(0, -0.5 * max, 0));
+        helper.assertTrue(half.distanceTo(new Vec3(0, 5, 0)) < 1e-9,
+                "At half the max speed, half the push should hold the grid back, is " + half);
+        Vec3 over = ThrusterBlockEntity.speedLimit(push, new Vec3(0, -2 * max, 0));
+        helper.assertTrue(over.distanceTo(new Vec3(0, 10, 0)) < 1e-9,
+                "Past the max speed, the whole push should hold the grid back, is " + over);
+        // At 45 degrees down: only the push along the motion counts, 10 / sqrt 2.
+        Vec3 diagonal = ThrusterBlockEntity.speedLimit(push, new Vec3(max, -max, 0));
+        helper.assertTrue(diagonal.distanceTo(new Vec3(-5, 5, 0)) < 1e-9,
+                "Only the push along the motion should be held back, is " + diagonal);
+        helper.assertTrue(ThrusterBlockEntity.speedLimit(push, new Vec3(2 * max, 0, 0)).lengthSqr() == 0,
+                "Pushing across the motion should not be held back");
+        helper.assertTrue(ThrusterBlockEntity.speedLimit(push, new Vec3(0, 2 * max, 0)).lengthSqr() == 0,
+                "Pushing against the motion should not be held back");
+        helper.assertTrue(ThrusterBlockEntity.speedLimit(push, Vec3.ZERO).lengthSqr() == 0,
+                "A grid at rest should not be held back");
+        helper.succeed();
     }
 
     /** Between straight and full the turn fades in smoothly and the damping out: halfway through, half of each. */

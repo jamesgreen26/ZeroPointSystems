@@ -125,11 +125,11 @@ public class DodecaControllerBlock extends CableComponentBlock implements Entity
         Direction facing = state.getValue(FACING);
 
         if (input.pos().equals(self.offset(facing.getClockWise().getNormal()))) {
-            return input.channel() + 15;
+            return Channels.toQuad(input.channel()) + 15;
         } else if (input.pos().equals(self.offset(facing.getCounterClockWise().getNormal()))) {
-            return input.channel() + 19;
+            return Channels.toQuad(input.channel()) + 19;
         } else if (input.pos().equals(self.offset(facing.getOpposite().getNormal()))) {
-            return input.channel() + 23;
+            return Channels.toQuad(input.channel()) + 23;
         }
 
         return Channels.MAIN;

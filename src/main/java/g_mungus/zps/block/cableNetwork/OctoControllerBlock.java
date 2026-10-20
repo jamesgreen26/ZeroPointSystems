@@ -112,9 +112,9 @@ public class OctoControllerBlock extends CableComponentBlock implements EntityBl
     @Override
     public int getNewChannel(BlockPos self, NetworkNode input, Level level) {
         if (input.pos().equals(self.below())) {
-            return input.channel() + 4;
+            return Channels.toQuad(input.channel()) + 4;
         } else {
-            return input.channel() + 8;
+            return Channels.toQuad(input.channel()) + 8;
         }
     }
 

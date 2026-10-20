@@ -39,7 +39,8 @@ void main() {
     // Anything else in front of the exhaust now is translucent: drawn after Flywheel and not opaque.
     vec2 ndc = (vec2(pixel) + 0.5) / vec2(textureSize(SceneDepth, 0)) * 2.0 - 1.0;
     vec4 view = InvProjMat * vec4(ndc, texelFetch(SceneDepth, pixel, 0).r * 2.0 - 1.0, 1.0);
-    if (nearest <= -view.z / view.w + DEPTH_EPSILON) {
+    // Sky past an infinite far plane reads back at or beyond infinity: nothing is in front there.
+    if (view.w <= 0.0 || nearest <= -view.z / view.w + DEPTH_EPSILON) {
         // In front of everything: over the finished image.
         fragColor = vec4(mix(scene.rgb, exhaust, coverage), 1.0);
         return;

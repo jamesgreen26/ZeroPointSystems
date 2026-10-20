@@ -1,5 +1,6 @@
 package g_mungus.zps.blockentity.gas;
 
+import net.minecraft.util.Mth;
 import g_mungus.zps.block.gas.ThrusterBlock;
 import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.blockentity.gas.core.GasNodeBlockEntity;
@@ -12,7 +13,6 @@ import g_mungus.zps.gas.ModGases;
 import g_mungus.zps.room.RoomManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
@@ -173,7 +173,7 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements PhysTickP
 
     /** {@code thrust} in a phys tick program: the throttle for this step, in place of the signal. */
     public void setProgramThrottle(double throttle) {
-        programThrottle = Math.clamp(throttle, 0, 1);
+        programThrottle = Mth.clamp(throttle, 0, 1);
     }
 
     @Override
@@ -392,7 +392,7 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements PhysTickP
 
     /** 0 up to {@code from}, 1 from {@code to}, and an S-curve between with no kink at either end. */
     private static double smoothstep(double from, double to, double x) {
-        double t = Math.clamp((x - from) / (to - from), 0, 1);
+        double t = Mth.clamp((x - from) / (to - from), 0, 1);
         return t * t * (3 - 2 * t);
     }
 
@@ -442,8 +442,8 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements PhysTickP
 
     /** Only the burn goes to clients; node state travels on {@code GasNodeSyncS2CPacket}. */
     @Override
-    public @NotNull CompoundTag getUpdateTag(HolderLookup.@NotNull Provider registries) {
-        CompoundTag tag = super.getUpdateTag(registries);
+    public @NotNull CompoundTag getUpdateTag() {
+        CompoundTag tag = super.getUpdateTag();
         tag.putByte(BURN_KEY, (byte) burnSteps);
         tag.putByte(BLUE_KEY, (byte) blueSteps);
         tag.putByte(COLD_KEY, (byte) coldSteps);
@@ -456,15 +456,14 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements PhysTickP
     }
 
     @Override
-    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket packet,
-                             HolderLookup.@NotNull Provider registries) {
+    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket packet) {
         if (packet.getTag() != null) {
-            handleUpdateTag(packet.getTag(), registries);
+            handleUpdateTag(packet.getTag());
         }
     }
 
     @Override
-    public void handleUpdateTag(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
+    public void handleUpdateTag(@NotNull CompoundTag tag) {
         burnSteps = tag.getByte(BURN_KEY);
         blueSteps = tag.getByte(BLUE_KEY);
         coldSteps = tag.getByte(COLD_KEY);

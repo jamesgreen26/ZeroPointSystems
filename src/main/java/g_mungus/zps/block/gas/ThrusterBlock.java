@@ -150,25 +150,25 @@ public class ThrusterBlock extends GasNodeBlock implements EntityBlock {
     // --- shape ------------------------------------------------------------------------------
 
     @Override
-    protected @NotNull VoxelShape getShape(BlockState state, @NotNull BlockGetter level,
+    public @NotNull VoxelShape getShape(BlockState state, @NotNull BlockGetter level,
                                            @NotNull BlockPos pos, @NotNull CollisionContext context) {
         return SHAPES.get(state.getValue(FACING));
     }
 
     /** Sturdy on every face despite the recessed shape, so blocks can still be placed against it. */
     @Override
-    protected @NotNull VoxelShape getBlockSupportShape(@NotNull BlockState state, @NotNull BlockGetter level,
+    public @NotNull VoxelShape getBlockSupportShape(@NotNull BlockState state, @NotNull BlockGetter level,
                                                        @NotNull BlockPos pos) {
         return Shapes.block();
     }
 
     @Override
-    protected @NotNull BlockState rotate(BlockState state, Rotation rotation) {
+    public @NotNull BlockState rotate(BlockState state, Rotation rotation) {
         return state.setValue(FACING, rotation.rotate(state.getValue(FACING)));
     }
 
     @Override
-    protected @NotNull BlockState mirror(BlockState state, Mirror mirror) {
+    public @NotNull BlockState mirror(BlockState state, Mirror mirror) {
         return state.rotate(mirror.getRotation(state.getValue(FACING)));
     }
 

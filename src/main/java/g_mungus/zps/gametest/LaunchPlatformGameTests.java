@@ -1,28 +1,20 @@
 package g_mungus.zps.gametest;
 
-import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
-import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
-import dev.ryanhcode.sable.sublevel.SubLevel;
-import dev.ryanhcode.sable.sublevel.storage.SubLevelRemovalReason;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.LaunchPlatformBlock;
 import g_mungus.zps.block.LaunchPlatformLayout;
 import g_mungus.zps.block.ModBlocks;
-import g_mungus.zps.compat.Compat;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
-import org.joml.Quaterniond;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Objects;
 
 @GameTestHolder(ZPSMod.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -48,9 +40,14 @@ public class LaunchPlatformGameTests {
     private static void assertLayout(GameTestHelper helper, LaunchPlatformLayout layout,
                                      BlockPos min, BlockPos max, int height) {
         helper.assertTrue(layout != null, "Expected a layout, found none");
-        helper.assertValueEqual(layout.min(), helper.absolutePos(min), "rectangle min");
-        helper.assertValueEqual(layout.max(), helper.absolutePos(max), "rectangle max");
-        helper.assertValueEqual(layout.height(), height, "height");
+        assertEqual(helper, layout.min(), helper.absolutePos(min), "rectangle min");
+        assertEqual(helper, layout.max(), helper.absolutePos(max), "rectangle max");
+        assertEqual(helper, layout.height(), height, "height");
+    }
+
+    /** 1.20.1's GameTestHelper has no assertValueEqual. */
+    private static void assertEqual(GameTestHelper helper, Object actual, Object expected, String name) {
+        helper.assertTrue(Objects.equals(actual, expected), "Expected " + name + " to be " + expected + ", is " + actual);
     }
 
     /** The largest rectangle wins, and it is as tall as the tallest tower beside it. */
@@ -108,102 +105,8 @@ public class LaunchPlatformGameTests {
         helper.succeed();
     }
 
-    /** Powering a platform lifts everything above it up to the tower's top, and leaves the platform and tower. */
-    @GameTest(template = TEMPLATE, batch = "launchPlatformSable", timeoutTicks = 40)
-    public static void power_assemblesVolume(GameTestHelper helper) {
-        if (!Compat.isSableLoaded()) {
-            helper.succeed();
-            return;
-        }
-        ServerLevel level = helper.getLevel();
-        platforms(helper, 3, 3, 5, 5);
-        tower(helper, 6, 4, 2);
-        BlockPos lifted = new BlockPos(4, 2, 4);
-        BlockPos liftedTop = new BlockPos(4, 3, 4);
-        BlockPos aboveTower = new BlockPos(4, 4, 4);
-        helper.setBlock(lifted, Blocks.STONE);
-        helper.setBlock(liftedTop, Blocks.STONE);
-        helper.setBlock(aboveTower, Blocks.GOLD_BLOCK);
-
-        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
-        List<SubLevel> before = new ArrayList<>(container.getAllSubLevels());
-
-        helper.setBlock(new BlockPos(3, 1, 2), Blocks.REDSTONE_BLOCK);
-
-        helper.runAfterDelay(2, () -> {
-            List<SubLevel> created = new ArrayList<>(container.getAllSubLevels());
-            created.removeAll(before);
-            try {
-                helper.assertBlockPresent(Blocks.AIR, lifted);
-                helper.assertBlockPresent(Blocks.AIR, liftedTop);
-                helper.assertBlockPresent(Blocks.GOLD_BLOCK, aboveTower);
-                helper.assertBlockPresent(ModBlocks.LAUNCH_PLATFORM.get(), new BlockPos(4, 1, 4));
-                helper.assertBlockPresent(ModBlocks.SPACE_TRUSS.get(), new BlockPos(6, 3, 4));
-                helper.assertValueEqual(created.size(), 1, "sublevels created");
-            } finally {
-                for (SubLevel subLevel : created) {
-                    container.removeSubLevel(subLevel, SubLevelRemovalReason.REMOVED);
-                }
-            }
-            helper.succeed();
-        });
-    }
-
-    /** A platform carried on a sublevel launches a sublevel of its own off it. */
-    @GameTest(template = TEMPLATE, batch = "launchPlatformSable_onSubLevel", timeoutTicks = 40)
-    public static void power_onSubLevelAssemblesVolume(GameTestHelper helper) {
-        if (!Compat.isSableLoaded()) {
-            helper.succeed();
-            return;
-        }
-        ServerLevel level = helper.getLevel();
-        platforms(helper, 3, 3, 5, 5);
-        tower(helper, 6, 4, 2);
-        helper.setBlock(new BlockPos(4, 2, 4), Blocks.IRON_BLOCK);
-        helper.setBlock(new BlockPos(4, 3, 4), Blocks.IRON_BLOCK);
-        List<BlockPos> blocks = new ArrayList<>();
-        for (BlockPos pos : BlockPos.betweenClosed(helper.absolutePos(new BlockPos(3, 1, 3)), helper.absolutePos(new BlockPos(6, 3, 5)))) {
-            // The template's floor shares the platform layer.
-            BlockState state = level.getBlockState(pos);
-            if (state.is(ModBlocks.LAUNCH_PLATFORM.get()) || state.is(ModBlocks.SPACE_TRUSS.get()) || state.is(Blocks.IRON_BLOCK)) {
-                blocks.add(pos.immutable());
-            }
-        }
-        SableBeamRig rig = SableBeamRig.assemble(level, helper.absolutePos(new BlockPos(3, 1, 3)),
-                helper.absolutePos(new BlockPos(6, 3, 5)), blocks, new Quaterniond());
-
-        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
-        List<SubLevel> before = new ArrayList<>(container.getAllSubLevels());
-        BlockPos platform = null;
-        List<BlockPos> cargo = new ArrayList<>();
-        for (BlockPos pos : rig.blocksLeft()) {
-            if (level.getBlockState(pos).is(ModBlocks.LAUNCH_PLATFORM.get()) && platform == null) platform = pos;
-            if (level.getBlockState(pos).is(Blocks.IRON_BLOCK)) cargo.add(pos);
-        }
-        helper.assertTrue(platform != null && cargo.size() == 2, "The rig should carry the platform and both iron blocks");
-        // Beneath the platform is outside the rig, and empty.
-        level.setBlockAndUpdate(platform.below(), Blocks.REDSTONE_BLOCK.defaultBlockState());
-
-        helper.runAfterDelay(2, () -> {
-            List<SubLevel> created = new ArrayList<>(container.getAllSubLevels());
-            created.removeAll(before);
-            try {
-                for (BlockPos pos : cargo) {
-                    helper.assertTrue(level.getBlockState(pos).isAir(), "Cargo at " + pos + " should have launched");
-                }
-                helper.assertValueEqual(created.size(), 1, "sublevels created");
-            } finally {
-                for (SubLevel subLevel : created) {
-                    container.removeSubLevel(subLevel, SubLevelRemovalReason.REMOVED);
-                }
-                rig.remove();
-            }
-            helper.succeed();
-        });
-    }
-
     /** Power from above, such as from something built on the platform, does not launch it. */
-    @GameTest(template = TEMPLATE, batch = "launchPlatformSable", timeoutTicks = 40)
+    @GameTest(template = TEMPLATE, timeoutTicks = 40)
     public static void power_fromAboveDoesNothing(GameTestHelper helper) {
         platforms(helper, 3, 3, 5, 5);
         tower(helper, 6, 4, 2);
@@ -218,7 +121,7 @@ public class LaunchPlatformGameTests {
     }
 
     /** Without a tower nothing is lifted. */
-    @GameTest(template = TEMPLATE, batch = "launchPlatformSable", timeoutTicks = 40)
+    @GameTest(template = TEMPLATE, timeoutTicks = 40)
     public static void power_withoutTowerDoesNothing(GameTestHelper helper) {
         platforms(helper, 3, 3, 5, 5);
         helper.setBlock(new BlockPos(4, 2, 4), Blocks.STONE);

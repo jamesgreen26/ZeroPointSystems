@@ -1,6 +1,9 @@
 {
     "vertex": "zps:exhaust_fullscreen",
     "fragment": "zps:exhaust_composite",
+    "attributes": [
+        "Position"
+    ],
     "samplers": [
         { "name": "Accum" },
         { "name": "Reveal" },

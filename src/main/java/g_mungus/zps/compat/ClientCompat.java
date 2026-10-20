@@ -51,9 +51,12 @@ public class ClientCompat {
 
     /// The render transform of the moving grid drawing the position, from the grid's block space
     /// to world space, as it is drawn at partialTick into the current tick (0 the last tick's
-    /// pose, 1 this tick's). Sable only, so always null here: a Valkyrien Skies ship's
-    /// interpolation is not exposed this way. Render thread only.
+    /// pose, 1 this tick's). Null when the position is on no grid, or VS is not present.
+    /// Render thread only.
     public static @Nullable Matrix4d renderTransformAt(Level level, BlockPos pos, float partialTick, Matrix4d dest) {
+        if (level instanceof ClientLevel clientLevel && Compat.isVSLoaded()) {
+            return VSClientCompat.renderTransformAt(clientLevel, pos, partialTick, dest);
+        }
         return null;
     }
 

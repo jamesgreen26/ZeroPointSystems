@@ -216,10 +216,10 @@ public class ThrusterGameTests {
         // Just off the line, inside the push-only zone.
         stepWithCentreOfMassAt(helper, new Vec3(1, -5, 0), physics -> {
             helper.assertTrue(physics.forces.size() == 1, "One force should be applied, " + physics.forces.size() + " were");
-            helper.assertTrue(physics.forces.getFirst()[0].equals(physics.centreOfMass()),
-                    "The force should act at the centre of mass, acts at " + physics.forces.getFirst()[0]);
-            helper.assertTrue(physics.forces.getFirst()[1].distanceTo(downThrust()) < 1e-6,
-                    "The whole thrust should push, pushes " + physics.forces.getFirst()[1]);
+            helper.assertTrue(physics.forces.get(0)[0].equals(physics.centreOfMass()),
+                    "The force should act at the centre of mass, acts at " + physics.forces.get(0)[0]);
+            helper.assertTrue(physics.forces.get(0)[1].distanceTo(downThrust()) < 1e-6,
+                    "The whole thrust should push, pushes " + physics.forces.get(0)[1]);
             helper.assertTrue(physics.torques.isEmpty(), "Nothing should turn the grid, turned by " + physics.torques);
         });
     }
@@ -229,12 +229,12 @@ public class ThrusterGameTests {
     public static void thrustAcrossTheCentreOfMass_pushesAndTurns(GameTestHelper helper) {
         Vec3 offset = new Vec3(5, -1, 0);
         stepWithCentreOfMassAt(helper, offset, physics -> {
-            helper.assertTrue(physics.forces.size() == 1 && physics.forces.getFirst()[1].distanceTo(downThrust()) < 1e-6,
+            helper.assertTrue(physics.forces.size() == 1 && physics.forces.get(0)[1].distanceTo(downThrust()) < 1e-6,
                     "The whole thrust should push through the centre of mass");
             helper.assertTrue(physics.torques.size() == 1, "One torque should be applied, " + physics.torques.size() + " were");
             Vec3 expected = offset.reverse().cross(downThrust());
-            helper.assertTrue(physics.torques.getFirst().distanceTo(expected) < 1e-6,
-                    "The turn should be lever x thrust, " + expected + ", is " + physics.torques.getFirst());
+            helper.assertTrue(physics.torques.get(0).distanceTo(expected) < 1e-6,
+                    "The turn should be lever x thrust, " + expected + ", is " + physics.torques.get(0));
         });
     }
 
@@ -243,10 +243,10 @@ public class ThrusterGameTests {
     public static void thrustAtFortyFive_pushesAndTurnsInFull(GameTestHelper helper) {
         Vec3 offset = new Vec3(5, -5, 0);
         stepWithCentreOfMassAt(helper, offset, physics -> {
-            helper.assertTrue(physics.forces.size() == 1 && physics.forces.getFirst()[1].distanceTo(downThrust()) < 1e-6,
+            helper.assertTrue(physics.forces.size() == 1 && physics.forces.get(0)[1].distanceTo(downThrust()) < 1e-6,
                     "The whole thrust should push");
             helper.assertTrue(physics.torques.size() == 1
-                            && physics.torques.getFirst().distanceTo(offset.reverse().cross(downThrust())) < 1e-6,
+                            && physics.torques.get(0).distanceTo(offset.reverse().cross(downThrust())) < 1e-6,
                     "The whole turn should be applied, is " + physics.torques);
         });
     }
@@ -258,8 +258,8 @@ public class ThrusterGameTests {
         stepMoving(helper, new Vec3(0, -5, 0), new Vec3(3, -2, 0), 1000, physics -> {
             double coefficient = ThrusterBlockEntity.maxThrust() * ThrusterBlockEntity.DAMPING;
             Vec3 expected = downThrust().add(-3 * coefficient, 0, 0);
-            helper.assertTrue(physics.forces.size() == 1 && physics.forces.getFirst()[1].distanceTo(expected) < 1e-6,
-                    "The push should carry " + expected + ", carries " + physics.forces.getFirst()[1]);
+            helper.assertTrue(physics.forces.size() == 1 && physics.forces.get(0)[1].distanceTo(expected) < 1e-6,
+                    "The push should carry " + expected + ", carries " + physics.forces.get(0)[1]);
         });
     }
 
@@ -270,8 +270,8 @@ public class ThrusterGameTests {
         stepMoving(helper, new Vec3(0, -5, 0), new Vec3(3, 2, 0), 1000, physics -> {
             double coefficient = ThrusterBlockEntity.maxThrust() * ThrusterBlockEntity.DAMPING;
             Vec3 expected = downThrust().add(-3 * coefficient, -2 * coefficient, 0);
-            helper.assertTrue(physics.forces.size() == 1 && physics.forces.getFirst()[1].distanceTo(expected) < 1e-6,
-                    "The push should carry " + expected + ", carries " + physics.forces.getFirst()[1]);
+            helper.assertTrue(physics.forces.size() == 1 && physics.forces.get(0)[1].distanceTo(expected) < 1e-6,
+                    "The push should carry " + expected + ", carries " + physics.forces.get(0)[1]);
         });
     }
 
@@ -282,8 +282,8 @@ public class ThrusterGameTests {
         double mass = ThrusterBlockEntity.maxThrust() * ThrusterBlockEntity.DAMPING / ThrusterBlockEntity.MAX_DAMPING_RATE / 2;
         stepMoving(helper, new Vec3(0, -5, 0), new Vec3(3, 0, 0), mass, physics -> {
             Vec3 expected = downThrust().add(-3 * mass * ThrusterBlockEntity.MAX_DAMPING_RATE, 0, 0);
-            helper.assertTrue(physics.forces.size() == 1 && physics.forces.getFirst()[1].distanceTo(expected) < 1e-6,
-                    "The push should carry " + expected + ", carries " + physics.forces.getFirst()[1]);
+            helper.assertTrue(physics.forces.size() == 1 && physics.forces.get(0)[1].distanceTo(expected) < 1e-6,
+                    "The push should carry " + expected + ", carries " + physics.forces.get(0)[1]);
         });
     }
 
@@ -291,8 +291,8 @@ public class ThrusterGameTests {
     @GameTest(template = TEMPLATE)
     public static void turningThruster_doesNotDamp(GameTestHelper helper) {
         stepMoving(helper, new Vec3(5, -1, 0), new Vec3(0, 0, 3), 1000, physics ->
-                helper.assertTrue(physics.forces.size() == 1 && physics.forces.getFirst()[1].distanceTo(downThrust()) < 1e-6,
-                        "Only the thrust should push, with no damping, pushes " + physics.forces.getFirst()[1]));
+                helper.assertTrue(physics.forces.size() == 1 && physics.forces.get(0)[1].distanceTo(downThrust()) < 1e-6,
+                        "Only the thrust should push, with no damping, pushes " + physics.forces.get(0)[1]));
     }
 
     /** Between straight and full the turn fades in smoothly and the damping out: halfway through, half of each. */
@@ -408,7 +408,7 @@ public class ThrusterGameTests {
      */
     @GameTest(template = TEMPLATE)
     public static void program_failureIsReportedByTheNextSend(GameTestHelper helper) {
-        if (!Compat.isSableLoaded() && !Compat.isVSLoaded()) {
+        if (!Compat.isVSLoaded()) {
             helper.succeed();
             return;
         }
@@ -461,7 +461,7 @@ public class ThrusterGameTests {
     /** A step whose program runs no {@code thrust} goes by the signal; one that runs {@code thrust 0} does not. */
     @GameTest(template = TEMPLATE)
     public static void program_withoutThrustLeavesTheSignal(GameTestHelper helper) {
-        if (!Compat.isSableLoaded() && !Compat.isVSLoaded()) {
+        if (!Compat.isVSLoaded()) {
             helper.succeed();
             return;
         }
@@ -481,7 +481,7 @@ public class ThrusterGameTests {
     /** The ship words read the step itself, so a program can answer to the motion of every step. */
     @GameTest(template = TEMPLATE)
     public static void program_readsTheStepItRunsIn(GameTestHelper helper) {
-        if (!Compat.isSableLoaded() && !Compat.isVSLoaded()) {
+        if (!Compat.isVSLoaded()) {
             helper.succeed();
             return;
         }
@@ -517,7 +517,7 @@ public class ThrusterGameTests {
         placeThruster(helper, THRUSTER, Direction.SOUTH, 0);
         List<String> commands = new ArrayList<>(List.of("on_phys_tick command(set_redstone 15)",
                 "on_phys_tick command(on_phys_tick command(thrust 1))"));
-        if (Compat.isSableLoaded() || Compat.isVSLoaded()) {
+        if (Compat.isVSLoaded()) {
             commands.add("on_phys_tick command(if ship mass > 0 thrust 1 else set_redstone 0)");
         }
         for (String command : commands) {

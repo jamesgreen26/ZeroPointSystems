@@ -13,7 +13,7 @@ import g_mungus.zps.commands.api.ZPSScriptTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.server.command.EnumArgument;
+import net.minecraftforge.server.command.EnumArgument;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;

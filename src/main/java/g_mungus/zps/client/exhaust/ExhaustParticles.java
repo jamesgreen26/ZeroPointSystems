@@ -1,5 +1,6 @@
 package g_mungus.zps.client.exhaust;
 
+import net.minecraft.util.Mth;
 import com.mojang.blaze3d.platform.GlStateManager;
 import g_mungus.zps.compat.ClientCompat;
 import dev.engine_room.flywheel.api.visualization.VisualizationManager;
@@ -19,7 +20,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
-import net.minecraftforge.client.event.ClientTickEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.level.ChunkEvent;
 import net.minecraftforge.event.level.LevelEvent;
 import org.lwjgl.opengl.GL11;
@@ -168,7 +169,7 @@ public final class ExhaustParticles {
 
         allocate();
         // A fractional amount takes a share of a batch's slots; the rest stay empty.
-        int particles = Math.round(Math.clamp(exhaust.amount(), 0f, MAX_AMOUNT) * batchSize);
+        int particles = Math.round(Mth.clamp(exhaust.amount(), 0f, MAX_AMOUNT) * batchSize);
         if (particles == 0) {
             return;
         }
@@ -208,8 +209,8 @@ public final class ExhaustParticles {
                     .putFloat(base + 76, (float) orientation.w)
                     .putFloat(base + 80, exhaust.width())
                     .putInt(base + 84, exhaust.color().ordinal())
-                    .putFloat(base + 88, Math.clamp(exhaust.coldFraction(), 0f, 1f))
-                    .putFloat(base + 92, Math.clamp(exhaust.blueFraction(), 0f, 1f));
+                    .putFloat(base + 88, Mth.clamp(exhaust.coldFraction(), 0f, 1f))
+                    .putFloat(base + 92, Mth.clamp(exhaust.blueFraction(), 0f, 1f));
             nextBatch = (nextBatch + 1) % capacity;
             if (batchesUsed < capacity) {
                 batchesUsed++;
@@ -294,7 +295,10 @@ public final class ExhaustParticles {
      * Places this tick's emissions, uploads the records, and drops the effect once its last
      * particle has faded. At the end of the tick, so that every grid has its pose for the tick.
      */
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) {
+            return;
+        }
         if (!pending.isEmpty()) {
             int tick = ticks();
             for (Emission emission : pending) {
@@ -390,7 +394,7 @@ public final class ExhaustParticles {
         // The simulation's state is shown to the drawing as one texture buffer, as long as the
         // driver allows.
         int maxBatches = Math.min(MAX_BATCHES, ExhaustSimulation.maxSlots() / batchSize);
-        capacity = Math.clamp(ZPSConfig.exhaustParticlePool() / batchSize, 1, maxBatches);
+        capacity = Mth.clamp(ZPSConfig.exhaustParticlePool() / batchSize, 1, maxBatches);
         ExhaustSimulation.allocate(capacity * batchSize);
         records = MemoryUtil.memCalloc(HEADER_BYTES + capacity * RECORD_BYTES);
         records.putInt(0, batchSize);

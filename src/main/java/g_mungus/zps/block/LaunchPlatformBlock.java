@@ -43,7 +43,7 @@ public class LaunchPlatformBlock extends Block {
     }
 
     @Override
-    protected void neighborChanged(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
+    public void neighborChanged(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos,
                                    @NotNull Block neighborBlock, @NotNull BlockPos neighborPos, boolean movedByPiston) {
         if (level instanceof ServerLevel serverLevel) {
             boolean powered = isPowered(level, pos);

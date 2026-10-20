@@ -1,6 +1,9 @@
 {
     "vertex": "zps:exhaust_fullscreen",
     "fragment": "zps:exhaust_opaque_depth",
+    "attributes": [
+        "Position"
+    ],
     "samplers": [
         { "name": "SceneDepth" }
     ],

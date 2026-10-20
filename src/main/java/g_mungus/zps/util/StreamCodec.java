@@ -26,6 +26,11 @@ public interface StreamCodec<B, V> {
         };
     }
 
+    /** Writes nothing and always reads back {@code value}. */
+    static <B, V> StreamCodec<B, V> unit(V value) {
+        return of((buffer, ignored) -> { }, buffer -> value);
+    }
+
     default <O> StreamCodec<B, O> map(Function<? super V, ? extends O> to, Function<? super O, ? extends V> from) {
         StreamCodec<B, V> self = this;
         return of((buffer, value) -> self.encode(buffer, from.apply(value)), buffer -> to.apply(self.decode(buffer)));

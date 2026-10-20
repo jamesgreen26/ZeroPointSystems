@@ -3,8 +3,12 @@ package g_mungus.zps.compat;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4d;
+import org.joml.Quaterniond;
 import org.joml.Vector3d;
 import org.valkyrienskies.core.api.ships.ClientShip;
+import org.valkyrienskies.core.api.ships.properties.ShipTransform;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 public class VSClientCompat {
@@ -46,5 +50,21 @@ public class VSClientCompat {
             ClientShip ship = VSGameUtilsKt.getLoadedShipManagingPos(level, x, y, z);
             return ship == null ? null : dest.set(ship.getRenderTransform().getShipToWorld());
         };
+    }
+
+    /// Only call after verifying that VS is loaded.
+    /// The ship-to-world transform of the ship managing pos, partialTick of the way from its last
+    /// tick's transform (0) to this tick's (1). Null while pos is on no ship.
+    static @Nullable Matrix4d renderTransformAt(ClientLevel level, BlockPos pos, float partialTick, Matrix4d dest) {
+        ClientShip ship = VSGameUtilsKt.getLoadedShipManagingPos(level,
+                pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+        if (ship == null) return null;
+        ShipTransform from = ship.getPrevTickTransform();
+        ShipTransform to = ship.getTransform();
+        Vector3d inWorld = from.getPositionInWorld().lerp(to.getPositionInWorld(), partialTick, new Vector3d());
+        Vector3d inShip = from.getPositionInShip().lerp(to.getPositionInShip(), partialTick, new Vector3d());
+        Vector3d scaling = from.getShipToWorldScaling().lerp(to.getShipToWorldScaling(), partialTick, new Vector3d());
+        Quaterniond rotation = from.getShipToWorldRotation().slerp(to.getShipToWorldRotation(), partialTick, new Quaterniond());
+        return dest.translation(inWorld).rotate(rotation).scale(scaling).translate(inShip.negate());
     }
 }

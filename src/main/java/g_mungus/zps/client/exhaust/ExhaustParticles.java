@@ -160,7 +160,9 @@ public final class ExhaustParticles {
             from.transformPosition(start);
             to.transformPosition(end);
             from.transformDirection(direction).normalize();
-            from.getNormalizedRotation(orientation);
+            // Unnormalized: JOML's getNormalizedRotation takes the matrix to have no scale, and on a
+            // scaled grid gives a quaternion that is not unit, squashing the cubes by orientation.
+            from.getUnnormalizedRotation(orientation);
             scale = from.getScale(new Vector3d()).x;
         }
 

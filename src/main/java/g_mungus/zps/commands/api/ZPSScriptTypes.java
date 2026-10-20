@@ -36,9 +36,9 @@ public final class ZPSScriptTypes {
             .parse(ZPSScriptTypes::parseBlockPos)
             .build();
 
-    public static final ScriptType<Vec3> VEC_POS = vector("vec_pos");
-    public static final ScriptType<Vec3> VEC_DIR = vector("vec_dir");
-    public static final ScriptType<Vec3> VEC_BOX = vector("vec_box");
+    public static final ScriptType<Vec3> VEC_POS = vector("vec_pos", true);
+    public static final ScriptType<Vec3> VEC_DIR = vector("vec_dir", false);
+    public static final ScriptType<Vec3> VEC_BOX = vector("vec_box", false);
 
     /** A dimension's id, such as {@code minecraft:overworld}. */
     public static final ScriptType<String> DIMENSION = ScriptType
@@ -92,11 +92,15 @@ public final class ZPSScriptTypes {
         return formatDouble(vec3.x) + " " + formatDouble(vec3.y) + " " + formatDouble(vec3.z);
     }
 
-    private static ScriptType<Vec3> vector(String path) {
+    /**
+     * @param centred whether a whole x or z written out means the middle of that block, as for a position; a
+     *                direction or a size is taken as written
+     */
+    private static ScriptType<Vec3> vector(String path, boolean centred) {
         return ScriptType
                 .writable(key(path), Vec3.class, Coordinates.class,
                         (coordinates, context) -> coordinates.getPosition(ZPSScriptContext.of(context).commandSource()))
-                .argument(Vec3Argument.vec3())
+                .argument(Vec3Argument.vec3(centred))
                 .print(ZPSScriptTypes::formatVec3)
                 .parse(ZPSScriptTypes::parseVec3)
                 .build();

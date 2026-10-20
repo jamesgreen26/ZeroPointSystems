@@ -290,6 +290,7 @@ public class ClientSetup {
             ItemBlockRenderTypes.setRenderLayer(ModBlocks.CATWALK.get(), RenderType.cutout());
 
             NeoForge.EVENT_BUS.addListener(AddressPadClientHooks::onRenderLevelStage);
+            NeoForge.EVENT_BUS.addListener(LaunchPlatformOutline::onRenderLevelStage);
             NeoForge.EVENT_BUS.addListener(GasPressureOverlay::onRenderLevelStage);
             NeoForge.EVENT_BUS.addListener(GasPressureOverlay::onPlayerTick);
             NeoForge.EVENT_BUS.addListener(ClientReactors::onChunkLoad);

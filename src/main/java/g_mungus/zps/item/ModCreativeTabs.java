@@ -88,6 +88,7 @@ public class ModCreativeTabs {
 
                         BEAM_COLLECTOR,
                         THRUSTER,
+                        LAUNCH_PLATFORM,
 
                         SUSPICIOUS_RED_SAND,
 

@@ -15,6 +15,8 @@
     "block.zps.rolling_mill": "Rolling Mill",
     "block.zps.assembler": "Assembler",
     "block.zps.impact_piston": "Impact Piston",
+    "block.zps.launch_platform": "Launch Platform",
+    "block.zps.launch_platform.too_big": "Too big to launch: %sx%sx%s (max %sx%sx%s)",
     "block.zps.thruster": "Thruster",
     "block.zps.composter_dirt": "Dirt-Filled Composter",
     "block.zps.sieve": "Sieve",
@@ -442,6 +444,12 @@
     "zps.ponder.data_transcriber.text_1": "The Data Transcriber can write Data to a Book and Quill held in a Lectern or Data Lectern underneath.",
     "zps.ponder.data_transcriber.text_2": "When powered, it will copy the input Data to the current page of the book below.",
     "zps.ponder.data_transcriber.text_3": "If the input Data changes while the Data Transcriber is powered, it will turn to the next page and then write the new Data.",
+
+    "zps.ponder.launch_platform.header": "Launching Ships",
+    "zps.ponder.launch_platform.text_1": "Launch Platforms turn what is built on them into a ship.",
+    "zps.ponder.launch_platform.text_2": "A tower of upright Space Truss beside the platforms sets how tall the ship can be.",
+    "zps.ponder.launch_platform.text_3": "Sneak and look at a platform to see what will be launched.",
+    "zps.ponder.launch_platform.text_4": "Power a platform with redstone to launch.",
 
     "zps.ponder.robotic_arm.header": "Robotic Arm",
     "zps.ponder.robotic_arm.text_1": "The Robotic Arm can interact with and move items between nearby blocks.",

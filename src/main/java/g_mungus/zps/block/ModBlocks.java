@@ -246,6 +246,11 @@ public class ModBlocks {
                     // which would otherwise always be pitch black.
                     .noOcclusion()));
 
+    public static final DeferredBlock<Block> LAUNCH_PLATFORM = BLOCKS.register("launch_platform",
+            () -> new LaunchPlatformBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(3.5f)
+                    .requiresCorrectToolForDrops()));
+
     public static final DeferredBlock<Block> THRUSTER = BLOCKS.register("thruster",
             () -> new ThrusterBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(3.5f)

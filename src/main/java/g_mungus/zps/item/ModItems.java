@@ -123,6 +123,9 @@ public class ModItems {
     public static final DeferredItem<Item> IMPACT_PISTON = ITEMS.register("impact_piston",
             () -> new BlockItem(ModBlocks.IMPACT_PISTON.get(), new Item.Properties()));
 
+    public static final DeferredItem<Item> LAUNCH_PLATFORM = ITEMS.register("launch_platform",
+            () -> new BlockItem(ModBlocks.LAUNCH_PLATFORM.get(), new Item.Properties()));
+
     public static final DeferredItem<Item> THRUSTER = ITEMS.register("thruster",
             () -> new BlockItem(ModBlocks.THRUSTER.get(), new Item.Properties()));
 

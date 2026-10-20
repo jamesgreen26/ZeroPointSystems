@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "G": {
+      "item": "minecraft:gray_concrete"
+    },
+    "V": {
+      "item": "zps:void_caution_block"
+    },
+    "R": {
+      "item": "zps:riveted_space_plating"
+    }
+  },
+  "pattern": [
+    "GGG",
+    "VVV",
+    "RRR"
+  ],
+  "result": {
+    "id": "zps:launch_platform",
+    "count": 16
+  },
+  "show_notification": true
+}

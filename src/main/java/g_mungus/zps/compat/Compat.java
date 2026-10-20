@@ -20,6 +20,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
@@ -134,6 +135,18 @@ public class Compat {
             return SableCompat.gridOf(level, pos);
         }
         return null;
+    }
+
+    /// Lifts every block in volume into a new moving grid. False when nothing was lifted: the volume is
+    /// empty or not loaded, or no grid mod that can assemble is present.
+    public static boolean assembleShip(ServerLevel level, BoundingBox volume) {
+        if (isVSLoaded()) {
+            return VSCompat.assemble(level, volume);
+        }
+        if (isSableLoaded()) {
+            return SableCompat.assemble(level, volume);
+        }
+        return false;
     }
 
     /// Every moving grid that reaches into worldBounds. Empty when no grid mod is present.

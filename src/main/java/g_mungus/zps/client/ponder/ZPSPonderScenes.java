@@ -31,6 +31,7 @@ import g_mungus.zps.item.ModItems;
 import net.createmod.catnip.math.Pointing;
 import net.createmod.ponder.api.PonderPalette;
 import net.createmod.ponder.api.element.ElementLink;
+import net.createmod.ponder.api.element.WorldSectionElement;
 import net.createmod.ponder.api.element.EntityElement;
 import net.createmod.ponder.api.scene.SceneBuilder;
 import net.createmod.ponder.api.scene.SceneBuildingUtil;
@@ -62,6 +63,7 @@ import net.minecraft.world.level.block.state.properties.AttachFace;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.Vec2;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 
@@ -581,6 +583,58 @@ public class ZPSPonderScenes {
                 nbt.put("HeldStack", stack.save(Minecraft.getInstance().level.registryAccess(), new CompoundTag()));
             }
         });
+    }
+
+    public static void launchPlatformTutorial(SceneBuilder builder, SceneBuildingUtil util) {
+        BlockPos lever = new BlockPos(4, 1, 1);
+        BlockPos edge = new BlockPos(4, 1, 2);
+        BlockPos towerTop = new BlockPos(7, 5, 4);
+        Selection platforms = util.select().fromTo(2, 1, 2, 6, 1, 6);
+        Selection tower = util.select().fromTo(7, 1, 4, 7, 5, 4);
+        Selection ship = util.select().fromTo(3, 2, 3, 5, 4, 5);
+        AABB volume = new AABB(2, 2, 2, 7, 6, 7);
+
+        builder.configureBasePlate(0, 0, 9);
+        builder.title("launch_platform", "Launching Ships");
+        builder.showBasePlate();
+        builder.idle(5);
+
+        builder.world().showSection(platforms, Direction.DOWN);
+        builder.idle(10);
+        ElementLink<WorldSectionElement> shipLink = builder.world().showIndependentSection(ship, Direction.DOWN);
+        builder.idle(10);
+        builder.overlay().showText(70)
+                .text("Launch Platforms turn what is built on them into a ship.")
+                .pointAt(util.vector().topOf(edge)).placeNearTarget();
+        builder.idle(80);
+
+        builder.world().showSection(tower, Direction.DOWN);
+        builder.idle(10);
+        builder.overlay().showText(70)
+                .text("A tower of upright Space Truss beside the platforms sets how tall the ship can be.");
+//                .pointAt(util.vector().topOf(towerTop)).placeNearTarget();
+        builder.idle(80);
+
+        builder.addKeyframe();
+        builder.idle(10);
+        builder.overlay().chaseBoundingBoxOutline(PonderPalette.WHITE, volume, volume, 70);
+        builder.overlay().showText(60)
+                .text("Sneak and look at a platform to see what will be launched.")
+                .pointAt(util.vector().topOf(edge)).placeNearTarget();
+        builder.idle(80);
+
+        builder.world().showSection(util.select().position(lever), Direction.DOWN);
+        builder.idle(10);
+        builder.overlay().showText(60)
+                .text("Power a platform with redstone to launch.")
+                .pointAt(util.vector().centerOf(lever)).placeNearTarget();
+        builder.idle(40);
+        builder.overlay().showControls(util.vector().topOf(lever), Pointing.DOWN, 15).rightClick();
+        builder.idle(5);
+        builder.world().toggleRedstonePower(util.select().position(lever));
+        builder.idle(10);
+        builder.world().moveSection(shipLink, new Vec3(0, 4, 0), 40);
+        builder.idle(60);
     }
 
     public static void roboticArmTutorial(SceneBuilder builder, SceneBuildingUtil util) {

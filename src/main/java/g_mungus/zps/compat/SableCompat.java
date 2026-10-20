@@ -4,7 +4,9 @@ import dev.ryanhcode.sable.companion.SableCompanion;
 import dev.ryanhcode.sable.companion.SubLevelAccess;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.companion.math.BoundingBox3d;
+import dev.ryanhcode.sable.companion.math.BoundingBox3i;
 import dev.ryanhcode.sable.companion.math.BoundingBox3ic;
+import dev.ryanhcode.sable.api.SubLevelAssemblyHelper;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import g_mungus.zps.ZPSMod;
@@ -17,6 +19,7 @@ import net.minecraft.core.Position;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
@@ -124,6 +127,27 @@ public final class SableCompat {
             grids.add(new SubLevelSpace(level, subLevel));
         }
         return grids;
+    }
+
+    /// Only call after verifying that Sable is loaded.
+    static boolean assemble(ServerLevel level, BoundingBox volume) {
+        // A plot holds chunks only where blocks have been put, and the rest of it is empty rather than unloaded.
+        SubLevelContainer container = SubLevelContainer.getContainer(level);
+        boolean inPlot = container != null && container.inBounds(new BlockPos(volume.minX(), volume.minY(), volume.minZ()));
+        if (!inPlot && !level.hasChunksAt(volume.minX(), volume.minZ(), volume.maxX(), volume.maxZ())) return false;
+
+        List<BlockPos> blocks = new ArrayList<>();
+        for (BlockPos pos : BlockPos.betweenClosed(volume.minX(), volume.minY(), volume.minZ(),
+                volume.maxX(), volume.maxY(), volume.maxZ())) {
+            if (!level.getBlockState(pos).isAir()) blocks.add(pos.immutable());
+        }
+        if (blocks.isEmpty()) return false;
+
+        // One block of room all round, as Sable's own area assembly leaves.
+        BoundingBox3i bounds = new BoundingBox3i(volume.minX() - 1, volume.minY() - 1, volume.minZ() - 1,
+                volume.maxX() + 1, volume.maxY() + 1, volume.maxZ() + 1);
+        SubLevelAssemblyHelper.assembleBlocks(level, blocks.getFirst(), blocks, bounds);
+        return true;
     }
 
     private record SubLevelSpace(Level level, SubLevelAccess subLevel) implements GridSpace {

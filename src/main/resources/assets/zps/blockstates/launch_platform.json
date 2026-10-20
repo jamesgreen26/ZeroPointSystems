@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "powered=false": {
+      "model": "zps:block/launch_platform"
+    },
+    "powered=true": {
+      "model": "zps:block/launch_platform"
+    }
+  }
+}

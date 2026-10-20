@@ -3,7 +3,7 @@
 // uniforms; the batch ring is the one sampler both bind, under the same name.
 //
 // The ring, written by ExhaustParticles, is RGBA32UI texels: a two-texel header, then one record
-// of six texels per batch, a batch being the particles one thruster emits in one tick.
+// of seven texels per batch, a batch being the particles one thruster emits in one tick.
 //
 //   header 0  particles per batch         tumble (0 or 1)
 //   header 1  simulation origin xyz (int) tick last simulated
@@ -15,6 +15,8 @@
 //   t4  orientation of the emitter's grid when the batch left, a unit quaternion xyzw (float)
 //   t5  x nozzle width, blocks (float)    y colour (ExhaustColor ordinal)
 //       z share drawn cold instead (float) w share drawn blue instead (float)
+//   t6  x scale of the emitter's grid (float): the size of the particles and the forces on them,
+//       as a scaled grid's plume is scaled with it; width and speed above are scaled already
 //
 // Everything is in world space: a batch takes its grid's pose once and never follows it. The
 // simulation keeps positions relative to the simulation origin, a block fixed while the ring
@@ -59,6 +61,7 @@ struct ZpsExhaustBatch {
     uint color;
     float coldFraction;
     float blueFraction;
+    float scale;
 };
 
 uint zps_hash(uint x) {
@@ -96,13 +99,14 @@ uint zps_exhaustSimTick() {
 }
 
 ZpsExhaustBatch zps_exhaustBatch(int batch) {
-    int base = 2 + batch * 6;
+    int base = 2 + batch * 7;
     uvec4 t0 = texelFetch(zps_exhaustBatches, base);
     uvec4 t1 = texelFetch(zps_exhaustBatches, base + 1);
     uvec4 t2 = texelFetch(zps_exhaustBatches, base + 2);
     uvec4 t3 = texelFetch(zps_exhaustBatches, base + 3);
     uvec4 t4 = texelFetch(zps_exhaustBatches, base + 4);
     uvec4 t5 = texelFetch(zps_exhaustBatches, base + 5);
+    uvec4 t6 = texelFetch(zps_exhaustBatches, base + 6);
     ZpsExhaustBatch b;
     b.anchor = ivec3(t0.xyz);
     b.spawnTick = t0.w;
@@ -117,6 +121,7 @@ ZpsExhaustBatch zps_exhaustBatch(int batch) {
     b.color = t5.y;
     b.coldFraction = uintBitsToFloat(t5.z);
     b.blueFraction = uintBitsToFloat(t5.w);
+    b.scale = uintBitsToFloat(t6.x);
     return b;
 }
 

@@ -12,6 +12,10 @@ import net.minecraft.world.phys.Vec3;
  * <p>
  * Masses, forces and torques are in units of a plain block weighing 1; Valkyrien Skies' kilograms are scaled
  * to match, at its default 1000 per block. Speeds are in blocks per second, not per tick as in {@link GridSpace}.
+ * <p>
+ * Masses, forces, torques and speeds are the world's, whatever the grid's {@link #scale}: a grid at half scale
+ * weighs an eighth of what its blocks would at full size, and a force pushes it as hard as it would any other
+ * body of that mass.
  */
 public interface GridPhysics {
 
@@ -36,8 +40,16 @@ public interface GridPhysics {
     /** Where the grid is in the world: the position of its pose. */
     Vec3 position();
 
-    /** The grid's mass, a plain block weighing 1. */
+    /** The grid's mass, a plain block at full scale weighing 1. */
     double mass();
+
+    /**
+     * How long one of the grid's blocks is in the world: 1 but for a scaled grid, as Genesis shrinks every ship in
+     * its space dimensions to 1/16.
+     */
+    default double scale() {
+        return 1;
+    }
 
     /** The centre of mass, in the grid's block space. */
     Vec3 centreOfMass();

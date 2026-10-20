@@ -438,7 +438,8 @@ public class ZPSConfig {
                 .defineInRange("MaxThrust", THRUSTER_MAX_THRUST_DEFAULT, 0.0, 1.0e9);
         thrusterMaxSpeed = builder
                 .comment("The speed thrusters cannot push a ship past, in metres per second. A thrusting ship",
-                         "is held back against its motion, in proportion to its thrust and its speed over this.")
+                         "is held back against its motion, in proportion to its thrust and its speed over this.",
+                         "A scaled ship's is scaled with it, as in Genesis's space dimensions.")
                 .defineInRange("MaxSpeed", THRUSTER_MAX_SPEED_DEFAULT, 1.0, 1.0e6);
         builder.pop();
 

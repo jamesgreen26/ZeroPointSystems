@@ -307,6 +307,10 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements PhysTickP
      * Runs the phys tick program, then pushes the grid with the throttle's share of the full thrust through the
      * centre of mass, damps its drift and going backwards ({@link #damping}) as much as {@link #dampingShare}
      * allows, and turns it as much as {@link #turn} allows. The throttle is noted for the next tick to burn for.
+     * <p>
+     * All of it is worked out as the grid would be at full size, then scaled to the world: a grid at 1/16 scale has
+     * 1/16³ the mass, and goes the same in its own blocks only for 1/16⁴ the force and 1/16⁵ the torque. Seen from
+     * aboard, it flies as at full size; to the world it is 16 times slower, its max speed included.
      */
     @Override
     public void onGridPhysicsTick(GridPhysics physics) {
@@ -319,14 +323,16 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements PhysTickP
         if (force.lengthSqr() == 0) {
             return;
         }
+        double scale = physics.scale();
+        double massScale = scale * scale * scale;
         Vec3 centreOfMass = physics.centreOfMass();
         Vec3 lever = Vec3.atCenterOf(worldPosition).subtract(centreOfMass);
-        Vec3 velocity = physics.toGridDirection(physics.linearVelocity());
-        Vec3 damping = damping(force, velocity, physics.mass()).scale(dampingShare(lever, force));
-        physics.applyForce(centreOfMass, force.add(damping).add(speedLimit(force, velocity)));
+        Vec3 velocity = physics.toGridDirection(physics.linearVelocity()).scale(1 / scale);
+        Vec3 damping = damping(force, velocity, physics.mass() / massScale).scale(dampingShare(lever, force));
+        physics.applyForce(centreOfMass, force.add(damping).add(speedLimit(force, velocity)).scale(massScale * scale));
         Vec3 turn = turn(lever, force);
         if (turn.lengthSqr() > 0) {
-            physics.applyTorque(turn);
+            physics.applyTorque(turn.scale(massScale * scale * scale));
         }
     }
 
@@ -396,7 +402,8 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements PhysTickP
      * is not held back. Pushing the way it is going, a grid levels off at the max speed, where this cancels the push.
      *
      * @param push     the push through the centre of mass
-     * @param velocity the centre of mass's velocity, in blocks per second, in the same axes as {@code push}
+     * @param velocity the centre of mass's velocity, in the grid's own blocks per second, in the same axes as
+     *                 {@code push}
      */
     public static Vec3 speedLimit(Vec3 push, Vec3 velocity) {
         double speed = velocity.length();

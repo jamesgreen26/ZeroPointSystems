@@ -97,7 +97,7 @@ bool zps_exhaustBatchBounds(int slot, out vec3 center, out float radius) {
     float reach = b.speed / ZPS_EXHAUST_DRAG;
     center = vec3(b.anchor - flw_renderOrigin) + b.offset
             + b.direction * reach * 0.5 + b.emitterVelocity * ZPS_EXHAUST_LIFETIME * 0.5;
-    radius = reach + length(b.emitterVelocity) * ZPS_EXHAUST_LIFETIME + b.width + 8.0;
+    radius = reach + length(b.emitterVelocity) * ZPS_EXHAUST_LIFETIME + b.width + 8.0 * b.scale;
     return true;
 }
 
@@ -138,7 +138,7 @@ bool zps_exhaustParticle(int slot, out ZpsExhaustParticle p) {
 
     float t = age / life;
     uint rng = zps_exhaustStream(b.seed, index, ZPS_EXHAUST_STREAM_LOOK);
-    p.size = mix(0.12, 0.65, sqrt(t)) * (0.7 + 0.6 * zps_rand(rng));
+    p.size = mix(0.12, 0.65, sqrt(t)) * (0.7 + 0.6 * zps_rand(rng)) * b.scale;
     float shifted = clamp(t + (zps_rand(rng) - 0.5) * 0.06, 0.0, 1.0);
     // A mixed burn: some of the particles are the unburnt gas, cold, and some burn blue, all through
     // the same plume.
@@ -151,7 +151,7 @@ bool zps_exhaustParticle(int slot, out ZpsExhaustParticle p) {
     float distance = length(p.position - (flw_cameraPos - vec3(flw_renderOrigin)));
     float nearFade = (1.0 - smoothstep(ZPS_EXHAUST_NEAR_FADE_START, ZPS_EXHAUST_NEAR_FADE_END,
             p.size / max(distance, 1e-4)))
-            * smoothstep(ZPS_EXHAUST_NEAR_CLEAR, ZPS_EXHAUST_NEAR_CLEAR_FADE, distance);
+            * smoothstep(ZPS_EXHAUST_NEAR_CLEAR * b.scale, ZPS_EXHAUST_NEAR_CLEAR_FADE * b.scale, distance);
     p.color.a *= mix(1.0, nearFade, smoothstep(ZPS_EXHAUST_NEAR_FADE_FROM_AGE, ZPS_EXHAUST_NEAR_FADE_FULL_AGE, t));
     if (p.color.a < ZPS_EXHAUST_MIN_ALPHA) {
         return false;

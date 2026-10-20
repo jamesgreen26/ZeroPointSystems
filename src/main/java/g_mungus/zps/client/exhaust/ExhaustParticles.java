@@ -41,7 +41,7 @@ import java.util.List;
  * thruster per tick and per whole unit of its amount, each standing for up to as many particles as
  * the client config's {@code ExhaustParticlesPerTick}, which the shader works out from it (see
  * {@code assets/zps/flywheel/exhaust/batch.glsl}, which holds the layout). The CPU's cost is a
- * 96-byte record per batch, however many particles that is.
+ * 112-byte record per batch, however many particles that is.
  *
  * <p>Records are in world space. An emitter on a moving grid hands over its own block space, and
  * the batch takes the grid's pose once, when it is placed; the particles never follow the grid.
@@ -64,9 +64,9 @@ public final class ExhaustParticles {
      * {@code common.glsl}.
      */
     private static final int HEADER_BYTES = 32;
-    private static final int RECORD_BYTES = 96;
+    private static final int RECORD_BYTES = 112;
     /** Keeps the ring within the 65536 texels every driver's texture buffers take. */
-    private static final int MAX_BATCHES = (65536 - 2) / 6;
+    private static final int MAX_BATCHES = (65536 - 2) / 7;
     /** Most batches one emitter adds a tick, so a single emission cannot sweep the ring. */
     private static final float MAX_AMOUNT = 8;
     /** Beyond this many blocks from the camera an emitter adds nothing; what is in the air stays. */
@@ -144,7 +144,8 @@ public final class ExhaustParticles {
      * as the grid is drawn through the coming tick: the nozzle where it is drawn at partial tick 0,
      * moving at its drawn displacement to partial tick 1, so the batch's staggered births follow the
      * nozzle exactly. Its cubes start square to the grid; after that, position and turn are the
-     * world's alone.
+     * world's alone. A scaled grid, as Genesis shrinks ships in its space, gives a plume scaled with
+     * it: the nozzle, the speed out of it, and in the shaders the particles and what moves them.
      */
     private static void place(Emission emission, int tick) {
         Matrix4d from = ClientCompat.renderTransformAt(level, emission.pos(), 0f, transformFrom);
@@ -154,11 +155,13 @@ public final class ExhaustParticles {
         Vector3d end = new Vector3d(start);
         Vector3d direction = new Vector3d(exhaust.direction().x, exhaust.direction().y, exhaust.direction().z);
         Quaterniond orientation = new Quaterniond();
+        double scale = 1;
         if (from != null && to != null) {
             from.transformPosition(start);
             to.transformPosition(end);
             from.transformDirection(direction).normalize();
             from.getNormalizedRotation(orientation);
+            scale = from.getScale(new Vector3d()).x;
         }
 
         Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
@@ -201,15 +204,16 @@ public final class ExhaustParticles {
                     .putFloat(base + 48, (float) velocity.x)
                     .putFloat(base + 52, (float) velocity.y)
                     .putFloat(base + 56, (float) velocity.z)
-                    .putFloat(base + 60, exhaust.speed())
+                    .putFloat(base + 60, (float) (exhaust.speed() * scale))
                     .putFloat(base + 64, (float) orientation.x)
                     .putFloat(base + 68, (float) orientation.y)
                     .putFloat(base + 72, (float) orientation.z)
                     .putFloat(base + 76, (float) orientation.w)
-                    .putFloat(base + 80, exhaust.width())
+                    .putFloat(base + 80, (float) (exhaust.width() * scale))
                     .putInt(base + 84, exhaust.color().ordinal())
                     .putFloat(base + 88, Mth.clamp(exhaust.coldFraction(), 0f, 1f))
-                    .putFloat(base + 92, Mth.clamp(exhaust.blueFraction(), 0f, 1f));
+                    .putFloat(base + 92, Mth.clamp(exhaust.blueFraction(), 0f, 1f))
+                    .putFloat(base + 96, (float) scale);
             nextBatch = (nextBatch + 1) % capacity;
             if (batchesUsed < capacity) {
                 batchesUsed++;
@@ -217,7 +221,8 @@ public final class ExhaustParticles {
             }
         }
         lastEmitTick = tick;
-        trackPlume(new Vec3(start.x, start.y, start.z), worldDirection, exhaust.speed(), exhaust.width(), velocity, tick);
+        trackPlume(new Vec3(start.x, start.y, start.z), worldDirection, (float) (exhaust.speed() * scale),
+                (float) (exhaust.width() * scale), velocity, tick);
         if (effect == null) {
             addEffect(VisualizationManager.getOrThrow(level));
         }

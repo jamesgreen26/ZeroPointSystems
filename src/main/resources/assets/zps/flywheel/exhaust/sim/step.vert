@@ -220,16 +220,18 @@ void main() {
     if (alive != 0u) {
         float t = age / life;
         uint forces = zps_exhaustStream(b.seed, index, ZPS_EXHAUST_STREAM_FORCES);
-        float lift = ZPS_EXHAUST_BUOYANCY * (0.5 + zps_rand(forces));
+        // Everything moving the smoke along is in blocks, so scaled with its grid.
+        float lift = ZPS_EXHAUST_BUOYANCY * (0.5 + zps_rand(forces)) * b.scale;
         vec3 phase = vec3(zps_rand(forces), zps_rand(forces), zps_rand(forces)) * 6.2831853;
         vec3 swirl = vec3(sin(age * 0.15 + phase.x), 0.5 * sin(age * 0.13 + phase.y), sin(age * 0.17 + phase.z))
-                * SWIRL * t;
+                * SWIRL * t * b.scale;
         // Crowding pushes only cooled smoke: the hot jet keeps its shape out of the nozzle.
         vec3 push = -zps_densityGradient(position) * PRESSURE * (1.0 - zps_exhaustHeatAt(t));
         float pushLength = length(push);
         if (pushLength > MAX_PUSH) {
             push *= MAX_PUSH / pushLength;
         }
+        push *= b.scale;
         velocity *= exp(-ZPS_EXHAUST_DRAG * dt);
         velocity += (vec3(0.0, lift, 0.0) + swirl + push) * dt;
         vec3 start = position;

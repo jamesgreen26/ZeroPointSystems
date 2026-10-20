@@ -196,11 +196,17 @@ public class ThrusterGameTests {
     /** As {@link #stepWithCentreOfMassAt}, the grid moving at {@code velocity} and weighing {@code mass}. */
     private static void stepMoving(GameTestHelper helper, Vec3 offset, Vec3 velocity, double mass,
                                    Consumer<RecordingPhysics> check) {
+        stepScaled(helper, offset, velocity, mass, 1, check);
+    }
+
+    /** As {@link #stepMoving}, the grid at {@code scale}. */
+    private static void stepScaled(GameTestHelper helper, Vec3 offset, Vec3 velocity, double mass, double scale,
+                                   Consumer<RecordingPhysics> check) {
         ThrusterBlockEntity thruster = placeThruster(helper, THRUSTER, Direction.UP, 15);
         feed(helper, THRUSTER, ModGases.STELLANE, MOLES);
         helper.runAfterDelay(BURN_TICKS, () -> {
             RecordingPhysics physics = new RecordingPhysics(
-                    Vec3.atCenterOf(helper.absolutePos(THRUSTER)).add(offset), velocity, mass);
+                    Vec3.atCenterOf(helper.absolutePos(THRUSTER)).add(offset), velocity, mass, scale);
             thruster.onGridPhysicsTick(physics);
             check.accept(physics);
             helper.succeed();
@@ -307,6 +313,44 @@ public class ThrusterGameTests {
         stepMoving(helper, new Vec3(0, -5, 0), new Vec3(0, -ZPSConfig.thrusterMaxSpeed(), 0), 1000, physics ->
                 helper.assertTrue(physics.forces.size() == 1 && physics.forces.get(0)[1].length() < 1e-6,
                         "Nothing should be left of the push at the max speed, " + physics.forces.get(0)[1] + " is"));
+    }
+
+    /**
+     * A grid at 1/16 scale, as in Genesis's space, moving and weighing what it would at full size scaled to match:
+     * pushed and turned as at full size, scaled to its mass and size, so it goes the same in its own blocks.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void scaledGrid_isPushedAsAtFullSizeScaledDown(GameTestHelper helper) {
+        double scale = 1 / 16.0;
+        ThrusterBlockEntity thruster = placeThruster(helper, THRUSTER, Direction.UP, 15);
+        feed(helper, THRUSTER, ModGases.STELLANE, MOLES);
+        helper.runAfterDelay(BURN_TICKS, () -> {
+            // Off the line enough to turn and still damp a little, where the steering zones fade between.
+            Vec3 centreOfMass = Vec3.atCenterOf(helper.absolutePos(THRUSTER)).add(2, -5, 0);
+            Vec3 velocity = new Vec3(3, -2, 0);
+            RecordingPhysics full = new RecordingPhysics(centreOfMass, velocity, 1000);
+            thruster.onGridPhysicsTick(full);
+            RecordingPhysics scaled = new RecordingPhysics(centreOfMass, velocity.scale(scale),
+                    1000 * scale * scale * scale, scale);
+            thruster.onGridPhysicsTick(scaled);
+
+            Vec3 force = full.forces.get(0)[1].scale(Math.pow(scale, 4));
+            Vec3 torque = full.torques.get(0).scale(Math.pow(scale, 5));
+            helper.assertTrue(scaled.forces.get(0)[1].distanceTo(force) < 1e-9,
+                    "The push should be " + force + ", is " + scaled.forces.get(0)[1]);
+            helper.assertTrue(scaled.torques.get(0).distanceTo(torque) < 1e-12,
+                    "The turn should be " + torque + ", is " + scaled.torques.get(0));
+            helper.succeed();
+        });
+    }
+
+    /** A grid at 1/16 scale levels off at 1/16 the max speed. */
+    @GameTest(template = TEMPLATE)
+    public static void scaledGrid_levelsOffAtItsShareOfTheMaxSpeed(GameTestHelper helper) {
+        double scale = 1 / 16.0;
+        stepScaled(helper, new Vec3(0, -5, 0), new Vec3(0, -ZPSConfig.thrusterMaxSpeed() * scale, 0), 1, scale, physics ->
+                helper.assertTrue(physics.forces.size() == 1 && physics.forces.get(0)[1].length() < 1e-12,
+                        "Nothing should be left of the push at its max speed, " + physics.forces.get(0)[1] + " is"));
     }
 
     /** The speed limit is against the velocity, in proportion to speed over the max, up to the push along it. */
@@ -580,13 +624,24 @@ public class ThrusterGameTests {
         private final Vec3 centreOfMass;
         private final Vec3 velocity;
         private final double mass;
+        private final double scale;
         final List<Vec3[]> forces = new ArrayList<>();
         final List<Vec3> torques = new ArrayList<>();
 
         RecordingPhysics(Vec3 centreOfMass, Vec3 velocity, double mass) {
+            this(centreOfMass, velocity, mass, 1);
+        }
+
+        RecordingPhysics(Vec3 centreOfMass, Vec3 velocity, double mass, double scale) {
             this.centreOfMass = centreOfMass;
             this.velocity = velocity;
             this.mass = mass;
+            this.scale = scale;
+        }
+
+        @Override
+        public double scale() {
+            return scale;
         }
 
         @Override

@@ -14,6 +14,10 @@ import org.valkyrienskies.mod.common.util.VectorConversionsMCKt;
  * <p>
  * VS weighs a plain block at {@link #KG_PER_BLOCK}, Sable at 1, so masses are divided by that and forces and
  * torques multiplied by it to keep both mods in Sable's units.
+ * <p>
+ * VS treats a scaled ship's model forces and torques as though for its blocks at full size: it scales forces by
+ * the scale cubed, as the mass goes, and torques by its fifth power, as the inertia goes. Both are undone here,
+ * to keep to the world's units, which its mass is in already.
  */
 public final class VSGridPhysics implements GridPhysics {
     /** VS's default mass for a block, in kilograms. */
@@ -27,12 +31,15 @@ public final class VSGridPhysics implements GridPhysics {
 
     @Override
     public void applyForce(Vec3 point, Vec3 force) {
-        ship.applyModelForce(VectorConversionsMCKt.toJOML(force.scale(KG_PER_BLOCK)), VectorConversionsMCKt.toJOML(point));
+        double scale = scale();
+        ship.applyModelForce(VectorConversionsMCKt.toJOML(force.scale(KG_PER_BLOCK / (scale * scale * scale))),
+                VectorConversionsMCKt.toJOML(point));
     }
 
     @Override
     public void applyTorque(Vec3 torque) {
-        ship.applyModelTorque(VectorConversionsMCKt.toJOML(torque.scale(KG_PER_BLOCK)));
+        double scale = scale();
+        ship.applyModelTorque(VectorConversionsMCKt.toJOML(torque.scale(KG_PER_BLOCK / Math.pow(scale, 5))));
     }
 
     @Override
@@ -53,6 +60,11 @@ public final class VSGridPhysics implements GridPhysics {
     @Override
     public double mass() {
         return ship.getMass() / KG_PER_BLOCK;
+    }
+
+    @Override
+    public double scale() {
+        return ship.getTransform().getShipToWorldScaling().x();
     }
 
     @Override

@@ -15,8 +15,7 @@ vec4 zps_exhaustShade() {
 
 /// Distance from the eye along the view direction, in blocks.
 float zps_exhaustViewDepth() {
-    // Flywheel's linearize_depth, which material shaders may be compiled ahead of.
-    float near = _flw_cullData.znear;
-    float far = _flw_cullData.zfar;
-    return 2.0 * near * far / (far + near - (2.0 * gl_FragCoord.z - 1.0) * (far - near));
+    // Undone through the projection itself rather than its near and far: a far plane at infinity,
+    // as Genesis sets one, makes the usual 2nf / (f + n - z(f - n)) infinity over infinity.
+    return flw_projection[3][2] / ((2.0 * gl_FragCoord.z - 1.0) + flw_projection[2][2]);
 }

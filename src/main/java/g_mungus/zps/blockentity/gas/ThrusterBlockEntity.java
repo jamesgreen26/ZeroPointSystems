@@ -323,7 +323,7 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements PhysTickP
         Vec3 lever = Vec3.atCenterOf(worldPosition).subtract(centreOfMass);
         Vec3 velocity = physics.toGridDirection(physics.linearVelocity());
         Vec3 damping = damping(force, velocity, physics.mass()).scale(dampingShare(lever, force));
-        physics.applyForce(centreOfMass, force.add(damping));
+        physics.applyForce(centreOfMass, force.add(damping).add(speedLimit(force, velocity)));
         Vec3 turn = turn(lever, force);
         if (turn.lengthSqr() > 0) {
             physics.applyTorque(turn);
@@ -388,6 +388,26 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements PhysTickP
         Vec3 resisted = velocity.subtract(axis.scale(Math.max(forwards, 0)));
         double coefficient = Math.min(pushLength * DAMPING, mass * MAX_DAMPING_RATE);
         return resisted.scale(-coefficient);
+    }
+
+    /**
+     * The force holding a grid to {@link ZPSConfig#thrusterMaxSpeed}: against the velocity, as strong as the part of
+     * the push along it times the grid's speed over the max speed, up to 1. Pushing across the motion or against it
+     * is not held back. Pushing the way it is going, a grid levels off at the max speed, where this cancels the push.
+     *
+     * @param push     the push through the centre of mass
+     * @param velocity the centre of mass's velocity, in blocks per second, in the same axes as {@code push}
+     */
+    public static Vec3 speedLimit(Vec3 push, Vec3 velocity) {
+        double speed = velocity.length();
+        double maxSpeed = ZPSConfig.thrusterMaxSpeed();
+        if (speed < 1e-9 || maxSpeed <= 0) {
+            return Vec3.ZERO;
+        }
+        Vec3 heading = velocity.scale(1 / speed);
+        double forwards = Math.max(push.dot(heading), 0);
+        double share = Math.min(speed / maxSpeed, 1);
+        return heading.scale(-forwards * share);
     }
 
     /** 0 up to {@code from}, 1 from {@code to}, and an S-curve between with no kink at either end. */

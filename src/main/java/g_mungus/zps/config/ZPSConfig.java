@@ -358,6 +358,15 @@ public class ZPSConfig {
         return doubleOr(thrusterMaxThrust, THRUSTER_MAX_THRUST_DEFAULT);
     }
 
+    private static ModConfigSpec.ConfigValue<Double> thrusterMaxSpeed;
+
+    public static final double THRUSTER_MAX_SPEED_DEFAULT = 100.0;
+
+    /** The speed thrusters cannot drive a grid past, in blocks (metres) per second. */
+    public static double thrusterMaxSpeed() {
+        return doubleOr(thrusterMaxSpeed, THRUSTER_MAX_SPEED_DEFAULT);
+    }
+
     public static final ModConfigSpec SERVER_CONFIG_SPEC = buildServerConfig();
 
     private static ModConfigSpec buildServerConfig() {
@@ -427,6 +436,10 @@ public class ZPSConfig {
                 .comment("Thrust at a full signal on pure Stellane, where a plain block weighs 1.",
                          "Flux and unburnt gas push in proportion to it.")
                 .defineInRange("MaxThrust", THRUSTER_MAX_THRUST_DEFAULT, 0.0, 1.0e9);
+        thrusterMaxSpeed = builder
+                .comment("The speed thrusters cannot push a ship past, in metres per second. A thrusting ship",
+                         "is held back against its motion, in proportion to its thrust and its speed over this.")
+                .defineInRange("MaxSpeed", THRUSTER_MAX_SPEED_DEFAULT, 1.0, 1.0e6);
         builder.pop();
 
         builder.comment("Energy.").push("Energy");

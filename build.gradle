@@ -140,14 +140,14 @@ dependencies {
 
     // The script language behind the Script Terminal and Serial Bus, built from ~/git/munguscript.
     // Brigadier comes from the game.
-    jarJar(implementation("g_mungus:munguscript:0.2.0")) {
+    jarJar(implementation("g_mungus:munguscript:0.2.1")) {
         version {
-            strictly "[0.2.0,)"
-            prefer "0.2.0"
+            strictly "[0.2.1,)"
+            prefer "0.2.1"
         }
     }
     // Not a mod, so local runs need it on the classpath too, as for FreeTTS below.
-    additionalRuntimeClasspath("g_mungus:munguscript:0.2.0")
+    additionalRuntimeClasspath("g_mungus:munguscript:0.2.1")
 
     // TTS — local jars; contents are merged directly into the mod jar via the jar task below
     // H.264 decoding for MP4s in /zps_client convert_gif. Not a mod, so local runs need it on the classpath too.

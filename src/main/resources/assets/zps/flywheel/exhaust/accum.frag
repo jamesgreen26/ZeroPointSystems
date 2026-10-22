@@ -13,5 +13,5 @@ void flw_materialFragment() {
     float z = zps_exhaustViewDepth();
     float weight = clamp(10.0 / (1e-5 + pow(z / 5.0, 2.0) + pow(z / 200.0, 6.0)), 1e-2, 3e3);
     flw_fragColor = vec4(color.rgb, color.a * weight);
-    flw_fragLight = mix(flw_fragLight, vec2(1.0), zps_exhaustHeat);
+    flw_fragLight = mix(flw_fragLight, vec2(1.0), zps_exhaustHeat());
 }

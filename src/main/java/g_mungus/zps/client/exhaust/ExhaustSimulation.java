@@ -59,8 +59,6 @@ final class ExhaustSimulation {
     private static final int UNIT_INDEX = 14;
     private static final int UNIT_TERRAIN = 13;
     private static final int UNIT_DENSITY = 12;
-    static final int UNIT_STATE_PREV = 14;
-    static final int UNIT_STATE_CUR = 13;
     private static final String SAMPLER_PREV = "zps_exhaustStatePrev";
     private static final String SAMPLER_CUR = "zps_exhaustStateCur";
 
@@ -95,7 +93,7 @@ final class ExhaustSimulation {
         int previousBuffer = GL11.glGetInteger(GL31.GL_TEXTURE_BUFFER);
         ByteBuffer zeros = MemoryUtil.memCalloc(slots * SLOT_BYTES);
         int active = GL11.glGetInteger(GL13.GL_ACTIVE_TEXTURE);
-        GL13.glActiveTexture(GL13.GL_TEXTURE0 + UNIT_STATE_CUR);
+        GL13.glActiveTexture(GL13.GL_TEXTURE0 + UNIT_INDEX);
         int previousTexture = GL11.glGetInteger(GL31.GL_TEXTURE_BINDING_BUFFER);
         for (int i = 0; i < 3; i++) {
             if (buffers[i] == 0) {
@@ -162,16 +160,16 @@ final class ExhaustSimulation {
      * Points a Flywheel program's state samplers at the previous and current states, alongside
      * the batch ring; called each time Flywheel binds a program that has them.
      */
-    static void bindForDrawing(GlProgram program) {
+    static void bindForDrawing(GlProgram program, int prevUnit, int curUnit) {
         if (buffers[0] == 0 || program.getUniformLocation(SAMPLER_CUR) < 0) {
             return;
         }
-        program.setSamplerBinding(SAMPLER_PREV, UNIT_STATE_PREV);
-        program.setSamplerBinding(SAMPLER_CUR, UNIT_STATE_CUR);
+        program.setSamplerBinding(SAMPLER_PREV, prevUnit);
+        program.setSamplerBinding(SAMPLER_CUR, curUnit);
         int active = GL11.glGetInteger(GL13.GL_ACTIVE_TEXTURE);
-        GL13.glActiveTexture(GL13.GL_TEXTURE0 + UNIT_STATE_PREV);
+        GL13.glActiveTexture(GL13.GL_TEXTURE0 + prevUnit);
         GL11.glBindTexture(GL31.GL_TEXTURE_BUFFER, textures[prev]);
-        GL13.glActiveTexture(GL13.GL_TEXTURE0 + UNIT_STATE_CUR);
+        GL13.glActiveTexture(GL13.GL_TEXTURE0 + curUnit);
         GL11.glBindTexture(GL31.GL_TEXTURE_BUFFER, textures[cur]);
         GL13.glActiveTexture(active);
     }

@@ -1,13 +1,17 @@
 #include "zps:exhaust/batch.glsl"
 
-out float zps_exhaustHeat;
-
 void flw_instanceVertex(in FlwInstance i) {
     ZpsExhaustParticle p;
-    if (!zps_exhaustParticle(i.slot, p)) {
+#ifdef _CLRWL_IS_SHADOW_PASS
+    // A shader pack's shadow pass under Colorwheel: translucent smoke would cast solid cubes.
+    bool drawn = false;
+#else
+    bool drawn = zps_exhaustParticle(i.slot, p);
+#endif
+    if (!drawn) {
         // Collapse the cube to a point: zero-area triangles are dropped before rasterising.
         flw_vertexPos = vec4(0.0, 0.0, 0.0, 1.0);
-        zps_exhaustHeat = 0.0;
+        flw_vertexTexCoord = vec2(0.0);
         return;
     }
     // One light per particle, from the block its centre is in, like a vanilla particle. The effect
@@ -20,5 +24,6 @@ void flw_instanceVertex(in FlwInstance i) {
     flw_vertexNormal = p.rotation * flw_vertexNormal;
     flw_vertexColor = p.color;
     flw_vertexLight = light;
-    zps_exhaustHeat = p.heat;
+    // Read back by shade.glsl.
+    flw_vertexTexCoord = vec2(p.heat, 0.0);
 }

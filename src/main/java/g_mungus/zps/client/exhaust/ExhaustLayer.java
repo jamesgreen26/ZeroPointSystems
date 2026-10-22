@@ -94,7 +94,8 @@ public final class ExhaustLayer {
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
         RenderLevelStageEvent.Stage stage = event.getStage();
         if (stage == RenderLevelStageEvent.Stage.AFTER_SKY) {
-            open = ExhaustParticles.active() && prepare();
+            // Under a shader pack the pack composites exhaust itself (see ExhaustRendering).
+            open = ExhaustParticles.active() && !ExhaustRendering.throughShaderPack() && prepare();
             drawn = false;
         } else if (stage == RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES) {
             // Flywheel resets its state after drawing, which ends any redirect; this is a backstop.

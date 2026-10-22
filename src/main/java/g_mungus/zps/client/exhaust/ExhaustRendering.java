@@ -1,5 +1,7 @@
 package g_mungus.zps.client.exhaust;
 
+import dev.engine_room.flywheel.api.backend.Backend;
+import dev.engine_room.flywheel.api.backend.BackendManager;
 import dev.engine_room.flywheel.api.instance.InstanceType;
 import dev.engine_room.flywheel.api.layout.IntegerRepr;
 import dev.engine_room.flywheel.api.layout.LayoutBuilder;
@@ -18,6 +20,7 @@ import dev.engine_room.flywheel.lib.model.QuadMesh;
 import dev.engine_room.flywheel.lib.model.SingleMeshModel;
 import g_mungus.zps.ZPSMod;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.resources.ResourceLocation;
 import org.joml.Vector4f;
 import org.joml.Vector4fc;
 import org.lwjgl.system.MemoryUtil;
@@ -31,8 +34,12 @@ import org.lwjgl.system.MemoryUtil;
  * identity and sends their draws to its own targets with its own blending; the transparency and
  * write mask here only have to keep Flywheel from writing depth.
  *
- * <p>The materials' fragment shaders read a varying the instance shader writes, so the two only
- * work as a pair; nothing else should draw with these materials.
+ * <p>Under a shader pack, through Colorwheel, the pack draws Flywheel geometry into its own targets
+ * and the layer cannot take the draws. Each particle is then drawn once, with {@link #PACK_MATERIAL}:
+ * ordinary unsorted translucency that the pack lights and composites as it does any other.
+ *
+ * <p>The materials' fragment shaders read the heat the instance shader puts in the texture
+ * coordinate, so the two only work as a pair; nothing else should draw with these materials.
  */
 public final class ExhaustRendering {
 
@@ -45,11 +52,16 @@ public final class ExhaustRendering {
             .cullShader(ZPSMod.resource("exhaust/cull.glsl"))
             .build();
 
+    /** Plain white, so sampling it at the heat the texture coordinate carries changes nothing. */
+    private static final ResourceLocation WHITE = ZPSMod.resource("textures/effect/exhaust_white.png");
+
     /** Weighted colour: lit, fogged, and summed. */
     public static final Material ACCUM_MATERIAL = SimpleMaterial.builder()
             .shaders(new SimpleMaterialShaders(
                     ZPSMod.resource("exhaust/material.vert"),
                     ZPSMod.resource("exhaust/accum.frag")))
+            .texture(WHITE)
+            .mipmap(false)
             .transparency(Transparency.TRANSLUCENT)
             .writeMask(WriteMask.COLOR)
             // Each particle is lit once, in the instance shader, from the sections the effect tracks.
@@ -68,11 +80,29 @@ public final class ExhaustRendering {
             .fog(FogShaders.NONE)
             .build();
 
+    /** Under a shader pack: colour over what is behind, lit and fogged by the pack. */
+    public static final Material PACK_MATERIAL = SimpleMaterial.builderOf(ACCUM_MATERIAL)
+            .shaders(new SimpleMaterialShaders(
+                    ZPSMod.resource("exhaust/material.vert"),
+                    ZPSMod.resource("exhaust/pack.frag")))
+            .build();
+
     private static final CubeMesh MESH = new CubeMesh();
     public static final Model ACCUM_CUBE = new SingleMeshModel(MESH, ACCUM_MATERIAL);
     public static final Model REVEAL_CUBE = new SingleMeshModel(MESH, REVEAL_MATERIAL);
+    public static final Model PACK_CUBE = new SingleMeshModel(MESH, PACK_MATERIAL);
+
+    /** Colorwheel's backends, which Flywheel only picks while an Iris shader pack is in use. */
+    private static final String COLORWHEEL = "colorwheel";
 
     private ExhaustRendering() {
+    }
+
+    /** Whether Flywheel draws through a shader pack, so exhaust must be drawn with {@link #PACK_MATERIAL}. */
+    public static boolean throughShaderPack() {
+        Backend backend = BackendManager.currentBackend();
+        ResourceLocation id = Backend.REGISTRY.getId(backend);
+        return id != null && COLORWHEEL.equals(id.getNamespace());
     }
 
     /** A unit cube centred on the origin, so the shader can scale it about the particle's centre. */

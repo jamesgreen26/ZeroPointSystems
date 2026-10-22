@@ -1,5 +1,11 @@
-// Only ever paired with the exhaust instance type, which writes this.
-in float zps_exhaustHeat;
+// Only ever paired with the exhaust instance type, which puts each particle's heat in the texture
+// coordinate. A varying of its own would not survive a shader pack's geometry stage under Colorwheel,
+// which forwards only Flywheel's own attributes; the texture is plain white, so nothing is lost.
+
+/// 1 white-hot through 0 cold smoke.
+float zps_exhaustHeat() {
+    return flw_vertexTexCoord.x;
+}
 
 /// The particle's colour and opacity at this fragment: block-style face shading for smoke, none
 /// for fire, which is emissive and flat. Faces of a tumbling cube are tilted, so the block shades
@@ -9,7 +15,7 @@ vec4 zps_exhaustShade() {
     vec3 n = normalize(flw_vertexNormal);
     float face = dot(n * n, vec3(0.6, n.y > 0.0 ? 1.0 : 0.5, 0.8));
     vec4 color = flw_vertexColor;
-    color.rgb *= mix(face, 1.0, zps_exhaustHeat);
+    color.rgb *= mix(face, 1.0, zps_exhaustHeat());
     return color;
 }
 

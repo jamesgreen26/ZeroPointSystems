@@ -39,15 +39,17 @@ final class ExhaustEffect implements Effect {
 
     /**
      * Two instances per slot of the batch ring that has ever been used, one for each pass of the
-     * exhaust layer (see {@link ExhaustRendering}). Instances are only ever added, a
-     * batch at a time, and are never touched once made; slots without a live particle collapse to
-     * nothing in the shader.
+     * exhaust layer, or one under a shader pack (see {@link ExhaustRendering}). Instances are only
+     * ever added, a batch at a time, and are never touched once made; slots without a live particle
+     * collapse to nothing in the shader. A backend change makes a new visual, so which way it
+     * draws is settled once.
      */
     private static final class Visual extends AbstractVisual
             implements EffectVisual<ExhaustEffect>, SimpleDynamicVisual, ShaderLightVisual {
 
-        private final List<ExhaustInstance> accumInstances = new ArrayList<>();
+        private final List<ExhaustInstance> colorInstances = new ArrayList<>();
         private final List<ExhaustInstance> revealInstances = new ArrayList<>();
+        private final boolean throughShaderPack = ExhaustRendering.throughShaderPack();
         private SectionCollector sections;
         private LongSet trackedSections;
 
@@ -70,7 +72,11 @@ final class ExhaustEffect implements Effect {
                 sections.sections(tracked);
             }
             int wanted = ExhaustParticles.slotsInUse();
-            grow(accumInstances, wanted, ExhaustRendering.ACCUM_CUBE);
+            if (throughShaderPack) {
+                grow(colorInstances, wanted, ExhaustRendering.PACK_CUBE);
+                return;
+            }
+            grow(colorInstances, wanted, ExhaustRendering.ACCUM_CUBE);
             grow(revealInstances, wanted, ExhaustRendering.REVEAL_CUBE);
         }
 
@@ -89,13 +95,13 @@ final class ExhaustEffect implements Effect {
 
         @Override
         protected void _delete() {
-            for (ExhaustInstance instance : accumInstances) {
+            for (ExhaustInstance instance : colorInstances) {
                 instance.delete();
             }
             for (ExhaustInstance instance : revealInstances) {
                 instance.delete();
             }
-            accumInstances.clear();
+            colorInstances.clear();
             revealInstances.clear();
         }
     }

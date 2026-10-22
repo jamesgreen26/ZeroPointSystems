@@ -22,9 +22,11 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL31;
 import org.joml.Matrix4d;
@@ -73,6 +75,11 @@ public final class ExhaustParticles {
     private static final double EMIT_DISTANCE = 128;
     /** Above every unit Flywheel and vanilla bind, and within the 16 every GL 4.1 driver offers. */
     private static final int TEXTURE_UNIT = 15;
+    /**
+     * The units drawing binds the ring and the previous and current states to; null until first
+     * asked. See {@link #drawingUnits()}.
+     */
+    private static int @Nullable [] drawingUnits;
     private static final String SAMPLER = "zps_exhaustBatches";
 
     private static ByteBuffer records;
@@ -354,6 +361,24 @@ public final class ExhaustParticles {
     }
 
     /**
+     * The units exhaust drawing binds the ring and the previous and current states to. Only vertex
+     * and cull shaders read them, so they may sit past the fragment stage's units, up to the
+     * combined limit: Iris gives a shader pack's samplers every fragment unit Colorwheel leaves
+     * free, and on a 16-unit driver needs them all. Only where the combined limit leaves no room
+     * do they share the top fragment units, as they did before.
+     */
+    private static int[] drawingUnits() {
+        if (drawingUnits == null) {
+            int fragment = GL11.glGetInteger(GL20.GL_MAX_TEXTURE_IMAGE_UNITS);
+            int combined = GL11.glGetInteger(GL20.GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS);
+            drawingUnits = fragment + 3 <= combined
+                    ? new int[]{fragment, fragment + 1, fragment + 2}
+                    : new int[]{TEXTURE_UNIT, TEXTURE_UNIT - 1, TEXTURE_UNIT - 2};
+        }
+        return drawingUnits;
+    }
+
+    /**
      * Points a Flywheel program's batch sampler at the ring, called each time Flywheel binds one.
      * Programs that do not draw exhaust have no such uniform and are left alone.
      */
@@ -361,13 +386,14 @@ public final class ExhaustParticles {
         if (glTexture == 0 || program.getUniformLocation(SAMPLER) < 0) {
             return;
         }
-        program.setSamplerBinding(SAMPLER, TEXTURE_UNIT);
+        int[] units = drawingUnits();
+        program.setSamplerBinding(SAMPLER, units[0]);
         int previous = GlStateManager._getActiveTexture();
         // Raw GL: GlStateManager only tracks units below 12 and would index past its table.
-        GL13.glActiveTexture(GL13.GL_TEXTURE0 + TEXTURE_UNIT);
+        GL13.glActiveTexture(GL13.GL_TEXTURE0 + units[0]);
         GL11.glBindTexture(GL31.GL_TEXTURE_BUFFER, glTexture);
         GL13.glActiveTexture(previous);
-        ExhaustSimulation.bindForDrawing(program);
+        ExhaustSimulation.bindForDrawing(program, units[1], units[2]);
     }
 
     /** The particles' clock: Flywheel's {@code flw_ticks}, which stops while the game is paused. */

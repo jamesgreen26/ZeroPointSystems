@@ -8,6 +8,9 @@ configurations {
     // Mods that are on the classpath for local runs and gametests only: never compiled against, never shipped.
     localRuntime
     runtimeClasspath.extendsFrom localRuntime
+    // Libraries whose classes are merged into the mod jar itself, without their dependencies.
+    shade
+    implementation.extendsFrom shade
 }
 
 group = project.maven_group
@@ -64,6 +67,14 @@ jar {
         exclude 'META-INF/*.SF'
         exclude 'META-INF/*.DSA'
         exclude 'META-INF/*.RSA'
+    }
+    // MungusScript is merged in rather than jar-in-jarred: as a nested library it would load in the
+    // PLUGIN layer, and Sinytra Connector moves Brigadier out of the layers that one can see.
+    // Dropping its module-info keeps the jar an automatic module, which reads Brigadier from the
+    // game layer and turns META-INF/services into the provides its ServiceLoader needs.
+    from({ configurations.shade.collect { zipTree(it) } }) {
+        exclude 'module-info.class'
+        exclude 'META-INF/MANIFEST.MF'
     }
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
@@ -139,12 +150,9 @@ dependencies {
     }
 
     // The script language behind the Script Terminal and Serial Bus, built from ~/git/munguscript.
-    // Brigadier comes from the game.
-    jarJar(implementation("g_mungus:munguscript:0.2.2")) {
-        version {
-            strictly "[0.2.2,)"
-            prefer "0.2.2"
-        }
+    // Merged into the mod jar (see the jar block); Brigadier comes from the game.
+    shade("g_mungus:munguscript:0.2.2") {
+        transitive = false
     }
     // Not a mod, so local runs need it on the classpath too, as for FreeTTS below.
     additionalRuntimeClasspath("g_mungus:munguscript:0.2.2")

@@ -14,6 +14,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -37,7 +39,21 @@ public final class PhysTickProgram {
     private record Compiled(ZPSScripts scripts, LiveLine<CommandSourceStack> line, CommandSourceStack base) {
     }
 
+    /**
+     * How many programs a block keeps compiled after they stop being sent. A program that carries its target in its
+     * text, as a ship following a beacon does, flips between the same few as the target moves back and forth.
+     */
+    private static final int RECENT_LIMIT = 4;
+
     private final Runnable onStopped;
+    /** Programs sent before, by their text, as compiled for {@link #recentScripts}. Only touched on the server thread. */
+    private final Map<String, LiveLine<CommandSourceStack>> recent = new LinkedHashMap<>(8, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, LiveLine<CommandSourceStack>> eldest) {
+            return size() > RECENT_LIMIT;
+        }
+    };
+    private @Nullable ZPSScripts recentScripts;
     private final AtomicReference<@Nullable Compiled> compiled = new AtomicReference<>();
     private final AtomicReference<@Nullable Failure> failure = new AtomicReference<>();
     /** Only touched on the server thread. */
@@ -70,7 +86,7 @@ public final class PhysTickProgram {
         Compiled running = compiled.get();
         if (running == null || running.scripts() != scripts || !running.line().command().equals(command)) {
             try {
-                LiveLine<CommandSourceStack> line = scripts.compileLive(command, base, pos);
+                LiveLine<CommandSourceStack> line = recentLine(scripts, command, base, pos);
                 line.refresh(ZPSScripts.aimedAt(base, pos));
                 compiled.set(new Compiled(scripts, line, base));
             } catch (Exception e) {
@@ -90,6 +106,21 @@ public final class PhysTickProgram {
         if (failed != null && failed.command().equals(command)) {
             throw new IllegalStateException("The phys tick program stopped: " + reason(failed));
         }
+    }
+
+    /** {@code command} as compiled before for this block, if it was, or compiled now. */
+    private LiveLine<CommandSourceStack> recentLine(ZPSScripts scripts, String command, CommandSourceStack base,
+                                                    BlockPos pos) throws CommandSyntaxException {
+        if (recentScripts != scripts) {
+            recent.clear();
+            recentScripts = scripts;
+        }
+        LiveLine<CommandSourceStack> line = recent.get(command);
+        if (line == null) {
+            line = scripts.compileLive(command, base, pos);
+            recent.put(command, line);
+        }
+        return line;
     }
 
     /**

@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.CommandNode;
+import g_mungus.munguscript.engine.CompiledCommand;
 import g_mungus.munguscript.engine.LiveLine;
 import g_mungus.munguscript.engine.MungusScript;
 import g_mungus.munguscript.engine.ScriptEngine;
@@ -28,6 +29,9 @@ import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.common.NeoForge;
@@ -42,6 +46,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -53,7 +58,6 @@ import java.util.Set;
  */
 public final class ZPSScripts {
     private static final String GRAFT = "script";
-    private static final String RUN = "run";
 
     private static volatile @Nullable ZPSScripts current;
 
@@ -79,8 +83,6 @@ public final class ZPSScripts {
         this.grafted = LiteralArgumentBuilder.<CommandSourceStack>literal(GRAFT).build();
         dispatcher.getRoot().addChild(grafted);
         engine.graft(grafted);
-        dispatcher.register(LiteralArgumentBuilder.<CommandSourceStack>literal(RUN)
-                .forward(engine.scriptRoot(), context -> List.of(engine.begin(context.getSource())), false));
     }
 
     /** Builds the scripts the server runs from now on. */
@@ -151,13 +153,47 @@ public final class ZPSScripts {
     }
 
     /**
-     * Runs one command, already pre-processed, against {@code target}.
+     * Runs one command, already pre-processed, against {@code target}. A command run against the same block as it
+     * stood is run again from its parse ({@link #compiled}): a Serial Bus is sent the same few lines over and over.
      *
      * @throws CommandSyntaxException if it does not parse, or whatever a node throws while it runs
      */
     public int run(String command, CommandSourceStack base, BlockPos target) throws CommandSyntaxException {
-        return dispatcher.execute(RUN + " " + command, aimedAt(base, target));
+        CommandSourceStack source = aimedAt(base, target);
+        CompiledKey key = new CompiledKey(command, source.getLevel().dimension(), target.immutable(),
+                source.getLevel().getBlockState(target), source.hasPermission(2));
+        CompiledCommand<CommandSourceStack> compiled;
+        synchronized (this.compiled) {
+            compiled = this.compiled.get(key);
+        }
+        if (compiled == null) {
+            compiled = engine.compile(command, engine.begin(source));
+            synchronized (this.compiled) {
+                this.compiled.put(key, compiled);
+            }
+        }
+        return compiled.run(source);
     }
+
+    /**
+     * What a parse depends on besides the text: which block it is aimed at, as what the block was, since words are
+     * offered by the block, and whether the sender could run what only operators may.
+     */
+    private record CompiledKey(String command, ResourceKey<Level> dimension, BlockPos target, BlockState state,
+                               boolean operator) {
+    }
+
+    /** The most commands {@link #compiled} keeps, the least recently run going first. */
+    private static final int COMPILED_LIMIT = 512;
+
+    /** Commands as {@link #run} last parsed them, by what they were parsed for. */
+    private final Map<CompiledKey, CompiledCommand<CommandSourceStack>> compiled =
+            new LinkedHashMap<>(64, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<CompiledKey, CompiledCommand<CommandSourceStack>> eldest) {
+                    return size() > COMPILED_LIMIT;
+                }
+            };
 
     /**
      * Runs one command and says why it failed, or returns null if it ran. A failure is logged when

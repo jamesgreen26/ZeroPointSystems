@@ -72,7 +72,7 @@ public final class ExhaustParticles {
     /** Most batches one emitter adds a tick, so a single emission cannot sweep the ring. */
     private static final float MAX_AMOUNT = 8;
     /** Beyond this many blocks from the camera an emitter adds nothing; what is in the air stays. */
-    private static final double EMIT_DISTANCE = 128;
+    private static final double EMIT_DISTANCE = 256;
     /** Above every unit Flywheel and vanilla bind, and within the 16 every GL 4.1 driver offers. */
     private static final int TEXTURE_UNIT = 15;
     /**

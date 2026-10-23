@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": {
+      "item": "tfc:metal/bars/wrought_iron"
+    },
+    "I": {
+      "item": "zps:aluminum_ingot"
+    }
+  },
+  "pattern": [
+    "IBI"
+  ],
+  "result": {
+    "item": "zps:vent",
+    "count": 1
+  }
+}

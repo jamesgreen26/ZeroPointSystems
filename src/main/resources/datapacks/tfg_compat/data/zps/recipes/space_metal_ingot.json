@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "space_metal",
+  "ingredients": [
+    {
+      "tag": "forge:ingots/aluminum"
+    },
+    {
+      "tag": "forge:nuggets/steel"
+    }
+  ],
+  "result": {
+    "item": "zps:space_metal_ingot"
+  }
+}

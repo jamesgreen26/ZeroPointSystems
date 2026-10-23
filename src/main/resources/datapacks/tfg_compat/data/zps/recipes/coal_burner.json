@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "#": {
+      "item": "minecraft:smooth_stone"
+    },
+    "I": {
+      "tag": "forge:ingots/space_metal"
+    },
+    "X": {
+      "item": "tfc:blast_furnace"
+    }
+  },
+  "pattern": [
+    "III",
+    "IXI",
+    "###"
+  ],
+  "result": {
+    "item": "zps:coal_burner",
+    "count": 1
+  },
+  "show_notification": true
+}

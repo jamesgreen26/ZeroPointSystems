@@ -12,6 +12,7 @@ import g_mungus.zps.commands.api.TargetApplicability;
 import g_mungus.zps.compat.computercraft.ComputerCraftCompat;
 import g_mungus.zps.compat.create.CreateCompat;
 import g_mungus.zps.compat.genesis.GenesisCompat;
+import g_mungus.zps.compat.tfg.TfgCompat;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -68,6 +69,8 @@ public class Compat {
     public static boolean isComputerCraftLoaded() { return ModList.get().isLoaded("computercraft"); }
 
     public static boolean isClockworkLoaded() { return ModList.get().isLoaded("vs_clockwork"); }
+
+    public static boolean isTfgLoaded() { return ModList.get().isLoaded("tfg"); }
 
     public static BlockPos toWorldPos(ServerLevel level, BlockPos pos) {
         if (isVSLoaded()) {
@@ -172,6 +175,9 @@ public class Compat {
     public static void onModInit(IEventBus modEventBus) {
         if (isCreateLoaded()) {
             CreateCompat.init(modEventBus);
+        }
+        if (isTfgLoaded()) {
+            TfgCompat.init(modEventBus);
         }
     }
 

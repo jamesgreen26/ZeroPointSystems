@@ -1,0 +1,30 @@
+{
+  "type": "zps:shaped_5x5",
+  "key": {
+    "A": {
+      "item": "zps:aluminum_ingot"
+    },
+    "B": {
+      "item": "gtceu:coke_gem"
+    },
+    "D": {
+      "item": "zps:gas_duct"
+    },
+    "I": {
+      "item": "zps:space_metal_ingot"
+    },
+    "M": {
+      "item": "zps:space_metal_mesh"
+    }
+  },
+  "pattern": [
+    "ADA",
+    "MBM",
+    "MIM",
+    "I I"
+  ],
+  "result": {
+    "item": "zps:thruster",
+    "count": 1
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "M": {
+      "tag": "forge:ingots/space_metal"
+    },
+    "T": {
+      "item": "minecraft:tinted_glass"
+    },
+    "C": {
+      "item": "zps:data_cable"
+    },
+    "#": {
+      "item": "gtceu:mv_machine_casing"
+    },
+    "H": {
+      "tag": "gtceu:circuits/hv"
+    }
+  },
+  "pattern": [
+    "MTT",
+    "C#H",
+    "MMM"
+  ],
+  "result": {
+    "item": "zps:script_terminal",
+    "count": 1
+  },
+  "show_notification": true
+}

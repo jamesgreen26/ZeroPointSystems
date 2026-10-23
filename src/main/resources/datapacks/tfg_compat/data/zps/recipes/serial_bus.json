@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "functional",
+  "key": {
+    "B": {
+      "item": "zps:data_cable"
+    },
+    "M": {
+      "tag": "forge:ingots/space_metal"
+    },
+    "Q": {
+      "item": "minecraft:quartz"
+    }
+  },
+  "pattern": [
+    " B ",
+    "MMM",
+    "QQQ"
+  ],
+  "result": {
+    "item": "zps:serial_bus",
+    "count": 2
+  },
+  "show_notification": true
+}

@@ -72,6 +72,8 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
     private final BakedModel itemModel;
     private final List<ConnectionRule> rules;
     private final boolean matchSurface;
+    /** Place tiles by where each face sits in the block rather than by its UVs; see {@link #connect}. */
+    private final boolean worldUv;
     private final Set<Neighbour> neighbours;
     private final RandomSource rand;
     private final RenderTypeGroup renderTypes;
@@ -81,7 +83,14 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
     public ConnectingBakedModel(BakedModel original, List<ConnectionRule> rules, boolean matchSurface,
                                 BlockState owner, RandomSource rand, RenderTypeGroup renderTypes,
                                 Function<ResourceLocation, TextureAtlasSprite> sprites) {
+        this(original, rules, matchSurface, owner, rand, renderTypes, sprites, false);
+    }
+
+    private ConnectingBakedModel(BakedModel original, List<ConnectionRule> rules, boolean matchSurface,
+                                 BlockState owner, RandomSource rand, RenderTypeGroup renderTypes,
+                                 Function<ResourceLocation, TextureAtlasSprite> sprites, boolean worldUv) {
         super(original);
+        this.worldUv = worldUv;
         this.sprites = sprites;
         this.rules = rules;
         this.matchSurface = matchSurface;
@@ -134,14 +143,17 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
 
     /**
      * Wraps another model so its connecting textures connect by this model's rules. Its render types are its own.
-     * Null if it has no connecting faces, or is already connecting.
+     * Its UVs are ignored: another mod's templates need not map a face to the part of the texture a full block
+     * would show there (Clutter No More's steps give the inner face the top half, bottom step or top), so tiles
+     * are placed by where each face sits in the block, as on a full block. Null if it has no connecting faces,
+     * or is already connecting.
      */
     public @Nullable ConnectingBakedModel connect(BakedModel other) {
         if (other instanceof ConnectingBakedModel) {
             return null;
         }
         ConnectingBakedModel wrapped = new ConnectingBakedModel(other, rules, matchSurface, null, rand,
-                RenderTypeGroup.EMPTY, sprites);
+                RenderTypeGroup.EMPTY, sprites, true);
         return wrapped.connectingBySide.stream().allMatch(List::isEmpty) ? null : wrapped;
     }
 
@@ -159,7 +171,7 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
             ConnectedTextureMeta.Meta meta = ConnectedTextureMeta.get(quad.getSprite().contents().name()).orElse(null);
             int tileCount = quad.getSprite().contents().width() / quad.getSprite().contents().height();
             if (meta != null && meta.pieced() && tileCount >= PiecedLayout.TILE_COUNT) {
-                ConnectingFace face = new ConnectingFace(quad, tiles(quad.getSprite()), matchSurface);
+                ConnectingFace face = new ConnectingFace(quad, tiles(quad.getSprite()), matchSurface, worldUv);
                 connectingBySide.get(sideIndex).add(face);
                 face.emit(itemBySide.get(sideIndex), null);
                 lookups.addAll(face.neighbours());
@@ -349,7 +361,7 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
                              @Nullable Neighbour horizontal, @Nullable Neighbour vertical,
                              @Nullable Neighbour diagonal) {}
 
-        ConnectingFace(BakedQuad quad, TextureAtlasSprite[] tiles, boolean matchSurface) {
+        ConnectingFace(BakedQuad quad, TextureAtlasSprite[] tiles, boolean matchSurface, boolean worldUv) {
             this.template = quad.getVertices().clone();
             this.tiles = tiles;
             this.tintIndex = quad.getTintIndex();
@@ -373,9 +385,14 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
                         Float.intBitsToFloat(template[base + IQuadTransformer.POSITION]),
                         Float.intBitsToFloat(template[base + IQuadTransformer.POSITION + 1]),
                         Float.intBitsToFloat(template[base + IQuadTransformer.POSITION + 2]));
-                // The model's 0-16 UVs span the whole strip, so they map straight onto one tile.
-                ss[k] = 16f * (Float.intBitsToFloat(template[base + IQuadTransformer.UV0]) - u0) / (u1 - u0);
-                ts[k] = 16f * (Float.intBitsToFloat(template[base + IQuadTransformer.UV0 + 1]) - v0) / (v1 - v0);
+                if (worldUv) {
+                    ss[k] = 16f * worldS(direction, positions[k]);
+                    ts[k] = 16f * worldT(direction, positions[k]);
+                } else {
+                    // The model's 0-16 UVs span the whole strip, so they map straight onto one tile.
+                    ss[k] = 16f * (Float.intBitsToFloat(template[base + IQuadTransformer.UV0]) - u0) / (u1 - u0);
+                    ts[k] = 16f * (Float.intBitsToFloat(template[base + IQuadTransformer.UV0 + 1]) - v0) / (v1 - v0);
+                }
                 sLow = Math.min(sLow, ss[k]);
                 sHigh = Math.max(sHigh, ss[k]);
                 tLow = Math.min(tLow, ts[k]);
@@ -516,6 +533,25 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
             Vector3f top = new Vector3f(topLeft).lerp(topRight, a);
             Vector3f bottom = new Vector3f(bottomLeft).lerp(bottomRight, a);
             return top.lerp(bottom, b);
+        }
+
+        /** Vanilla's default horizontal texture coordinate (0-1) for a point on a face pointing that way. */
+        private static float worldS(Direction face, Vector3f p) {
+            return switch (face) {
+                case DOWN, UP, SOUTH -> p.x;
+                case NORTH -> 1 - p.x;
+                case WEST -> p.z;
+                case EAST -> 1 - p.z;
+            };
+        }
+
+        /** Vanilla's default vertical texture coordinate (0-1) for a point on a face pointing that way. */
+        private static float worldT(Direction face, Vector3f p) {
+            return switch (face) {
+                case DOWN -> 1 - p.z;
+                case UP -> p.z;
+                default -> 1 - p.y;
+            };
         }
 
         private static Vec3i dominantAxis(Vector3f delta) {

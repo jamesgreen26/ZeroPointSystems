@@ -25,8 +25,9 @@ import java.util.Map;
 
 /**
  * Empties its node into the world every tick and draws the jet that comes out, unless the block is
- * shut — see {@link VentBlock#POWERED}. What it empties goes into the sealed room in front, if
- * there is one ({@link RoomManager}), and is otherwise gone.
+ * shut — see {@link VentBlock#POWERED}. What it empties goes into the sealed room its own cell opens
+ * on — the plate is slim, leaving the cell open in front of it — if there is one
+ * ({@link RoomManager}), and is otherwise gone.
  *
  * <p>Ported from Clockwork's {@code ExhaustBlockEntity} (Apache-2.0). The venting and the
  * pressure-to-speed curve are kept; its {@code AirCurrent} half — which made the vent behave as
@@ -121,10 +122,10 @@ public class VentBlockEntity extends GasNodeBlockEntity {
                 removed.put(entry.getKey(), entry.getValue());
             }
         }
-        // Into the room in front, if there is one to fill.
+        // Into the room the mouth opens on, if there is one to fill: the plate is slim, so that is
+        // the vent's own cell.
         if (level instanceof ServerLevel serverLevel && !removed.isEmpty()) {
-            Direction facing = getBlockState().getValue(DirectionalBlock.FACING);
-            RoomManager.get(serverLevel).addGas(serverLevel, worldPosition.relative(facing), removed, temperatureK);
+            RoomManager.get(serverLevel).addGas(serverLevel, worldPosition, removed, temperatureK);
         }
     }
 
@@ -165,7 +166,7 @@ public class VentBlockEntity extends GasNodeBlockEntity {
         float[] buoyancy = new float[Direction.values().length];
         Arrays.fill(buoyancy, Float.NaN);
         buoyancy[facing.ordinal()] = (float) RoomManager.get(serverLevel)
-                .buoyancy(serverLevel, worldPosition.relative(facing), gasesPassing(), temperatureK);
+                .buoyancy(serverLevel, worldPosition, gasesPassing(), temperatureK);
         return buoyancy;
     }
 

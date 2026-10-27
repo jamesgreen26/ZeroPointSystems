@@ -10,6 +10,7 @@ import g_mungus.zps.blockentity.ModBlockEntities;
 import g_mungus.zps.client.tooltip.ClientItemIconsTooltip;
 import g_mungus.zps.client.tooltip.ItemIconsTooltip;
 import g_mungus.zps.client.model.connected.ConnectedModelLoader;
+import g_mungus.zps.compat.ClutterNoMoreClientCompat;
 import g_mungus.zps.client.reactor.WallCoats;
 import g_mungus.zps.client.model.connected.ConnectedTextureMeta;
 import g_mungus.zps.client.model.connected.PiecedTileSource;
@@ -189,6 +190,9 @@ public class ClientSetup {
         BakedModel chainsawModel = event.getModels().get(CHAINSAW_MODEL);
         if (chainsawModel != null) {
             event.getModels().put(CHAINSAW_MODEL, new CustomRendererItemModel(chainsawModel));
+        }
+        if (ModList.get().isLoaded("clutternomore")) {
+            ClutterNoMoreClientCompat.wrapShapeModels(event.getModels());
         }
     }
 

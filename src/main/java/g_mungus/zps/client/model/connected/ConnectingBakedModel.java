@@ -13,6 +13,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockAndTintGetter;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -59,6 +60,12 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
 
     private static final int SIDE_COUNT = 7; // 6 directions + 1 for the null (unculled) bucket
 
+    /**
+     * Blocks that connection rules see as another block: another mod's reshaped copy of one of ours (a Clutter
+     * No More vertical slab or step) stands in for the slab or stairs it was made from. Rebuilt on each bake.
+     */
+    private static volatile Map<Block, Block> aliases = Map.of();
+
     private final List<List<BakedQuad>> staticBySide;
     private final List<List<ConnectingFace>> connectingBySide;
     private final List<List<BakedQuad>> itemBySide;
@@ -66,6 +73,7 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
     private final List<ConnectionRule> rules;
     private final boolean matchSurface;
     private final Set<Neighbour> neighbours;
+    private final RandomSource rand;
     private final RenderTypeGroup renderTypes;
     /** Looks up an atlas sprite by name, for the per-tile sprites of {@link PiecedTileSource}. */
     private final Function<ResourceLocation, TextureAtlasSprite> sprites;
@@ -77,6 +85,7 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
         this.sprites = sprites;
         this.rules = rules;
         this.matchSurface = matchSurface;
+        this.rand = rand;
         this.renderTypes = renderTypes;
         this.staticBySide = new ArrayList<>(SIDE_COUNT);
         this.connectingBySide = new ArrayList<>(SIDE_COUNT);
@@ -123,6 +132,28 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
         };
     }
 
+    /**
+     * Wraps another model so its connecting textures connect by this model's rules. Its render types are its own.
+     * Null if it has no connecting faces, or is already connecting.
+     */
+    public @Nullable ConnectingBakedModel connect(BakedModel other) {
+        if (other instanceof ConnectingBakedModel) {
+            return null;
+        }
+        ConnectingBakedModel wrapped = new ConnectingBakedModel(other, rules, matchSurface, null, rand,
+                RenderTypeGroup.EMPTY, sprites);
+        return wrapped.connectingBySide.stream().allMatch(List::isEmpty) ? null : wrapped;
+    }
+
+    public static void setAliases(Map<Block, Block> aliases) {
+        ConnectingBakedModel.aliases = Map.copyOf(aliases);
+    }
+
+    private static BlockState alias(BlockState state) {
+        Block source = aliases.get(state.getBlock());
+        return source == null ? state : source.defaultBlockState();
+    }
+
     private void sortQuads(List<BakedQuad> quads, int sideIndex, Set<Neighbour> lookups) {
         for (BakedQuad quad : quads) {
             ConnectedTextureMeta.Meta meta = ConnectedTextureMeta.get(quad.getSprite().contents().name()).orElse(null);
@@ -167,6 +198,7 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
         // so surface probes would test the wrong plane. The copycat's level already hides neighbours whose faces
         // don't line up, so its answer stands in for the probe.
         boolean disguised = level.getBlockState(pos) != state;
+        BlockState self = alias(state);
         Map<Neighbour, Boolean> connections = new HashMap<>(neighbours.size());
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (Neighbour neighbour : neighbours) {
@@ -175,7 +207,7 @@ public class ConnectingBakedModel extends BakedModelWrapper<BakedModel> {
             BlockState other = level.getBlockState(cursor);
             // a copycat neighbour looks like its material
             BlockState appearance = other.getAppearance(level, cursor, neighbour.face(), state, pos);
-            boolean connects = ConnectionRule.anyMatch(rules, state, appearance, neighbour.face())
+            boolean connects = ConnectionRule.anyMatch(rules, self, alias(appearance), neighbour.face())
                     && (neighbour.probe() == null || disguised
                         || continuesSurface(other.getShape(level, cursor), neighbour.face(), neighbour.probe()));
             connections.put(neighbour, connects);

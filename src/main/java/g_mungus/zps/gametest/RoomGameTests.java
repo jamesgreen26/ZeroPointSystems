@@ -3,6 +3,7 @@ package g_mungus.zps.gametest;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.LargeSpaceDoorBlock;
 import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.block.gas.core.GasEdgeNegotiator;
 import g_mungus.zps.block.cableNetwork.CableBlock;
 import g_mungus.zps.block.cableNetwork.properties.InsulationType;
 import g_mungus.zps.block.gas.GasGaugeBlock;
@@ -33,6 +34,7 @@ import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+import org.valkyrienskies.kelvin.KelvinMod;
 import org.valkyrienskies.kelvin.api.GasType;
 
 import java.util.ArrayList;
@@ -421,6 +423,53 @@ public class RoomGameTests {
             Room room = roomAt(helper, CENTRE);
             helper.assertTrue(room != null, "The vent should have sealed the room");
             helper.assertTrue(room.massKg().getOrDefault(FLUX, 0.0) > 0, "The room should be filling with flux");
+        });
+    }
+
+    /**
+     * A vent's plate is slim, so its gas comes out into its own cell. One set in the ceiling with
+     * its mouth to the stone beside it still fills the room its cell opens on below.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 200)
+    public static void ventFacingAWall_fillsTheRoomItsCellOpensOn(GameTestHelper helper) {
+        buildShell(helper);
+        BlockPos vent = CENTRE.above(2);
+        helper.setBlock(vent.above(), Blocks.STONE.defaultBlockState());
+        helper.setBlock(vent, ModBlocks.VENT.get().defaultBlockState().setValue(DirectionalBlock.FACING, Direction.NORTH));
+        BlockPos source = vent.south();
+        helper.setBlock(source, ModBlocks.CREATIVE_GAS_GENERATOR.get().defaultBlockState());
+        if (!(helper.getBlockEntity(source) instanceof CreativeGasGeneratorBlockEntity generator)) {
+            helper.fail("The gas source has no block entity");
+            return;
+        }
+        generator.setSettings(FLUX, 0.005, 400.0);
+
+        helper.succeedWhen(() -> {
+            Room room = roomAt(helper, CENTRE);
+            helper.assertTrue(room != null, "The vent should have sealed the room below it");
+            helper.assertTrue(room.massKg().getOrDefault(FLUX, 0.0) > 0, "The room should be filling with flux");
+        });
+    }
+
+    /**
+     * A vent set in the wall with open air behind it: its plate seals the hole, so the gas stays in
+     * the room it faces and the room does not reach the cell behind.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100, skyAccess = true)
+    public static void ventInTheWall_sealsAgainstWhatIsBehindIt(GameTestHelper helper) {
+        buildShell(helper);
+        helper.setBlock(WEST_WALL, ModBlocks.VENT.get().defaultBlockState().setValue(DirectionalBlock.FACING, Direction.EAST));
+        BlockPos behind = WEST_WALL.west();
+        helper.setBlock(behind, Blocks.AIR.defaultBlockState());
+        KelvinMod.INSTANCE.forceGetKelvin().addGasAtTemperature(
+                GasEdgeNegotiator.nodePos(helper.getLevel(), helper.absolutePos(WEST_WALL)), ModGases.FLUX, 1.0, 300.0);
+
+        helper.succeedWhen(() -> {
+            Room room = roomAt(helper, CENTRE);
+            helper.assertTrue(room != null, "The vent's plate should have sealed the hole it sits in");
+            helper.assertTrue(room.massKg().getOrDefault(FLUX, 0.0) > 0, "The vented flux should be in the room");
+            helper.assertTrue(!room.interior().contains(helper.absolutePos(behind).asLong()),
+                    "The room should stop at the vent's plate, not take in the cell behind it");
         });
     }
 

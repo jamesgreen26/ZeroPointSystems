@@ -351,9 +351,9 @@ public class ZPSConfig {
 
     private static ForgeConfigSpec.ConfigValue<Double> thrusterMaxThrust;
 
-    public static final double THRUSTER_MAX_THRUST_DEFAULT = 800.0;
+    public static final double THRUSTER_MAX_THRUST_DEFAULT = 400.0;
 
-    /** Thrust at a full signal on pure Stellane, in grid physics units: a plain block weighs 1. */
+    /** Thrust at a full signal on pure Stellane, in newtons: a plain block has a mass of 1, so weighs about 9.8. */
     public static double thrusterMaxThrust() {
         return doubleOr(thrusterMaxThrust, THRUSTER_MAX_THRUST_DEFAULT);
     }
@@ -433,7 +433,7 @@ public class ZPSConfig {
 
         builder.comment("Thruster.").push("Thruster");
         thrusterMaxThrust = builder
-                .comment("Thrust at a full signal on pure Stellane, where a plain block weighs 1.",
+                .comment("Thrust at a full signal on pure Stellane, in newtons. A plain block has a mass of 1, so weighs about 9.8.",
                          "Flux and unburnt gas push in proportion to it.")
                 .defineInRange("MaxThrust", THRUSTER_MAX_THRUST_DEFAULT, 0.0, 1.0e9);
         thrusterMaxSpeed = builder

@@ -59,7 +59,8 @@ public class ZPSJeiPlugin implements IModPlugin {
                 new RollingMillCategory(guiHelper),
                 new Shaped5x5Category(guiHelper),
                 new ImpactCategory(guiHelper),
-                new VaporizerCategory(guiHelper));
+                new VaporizerCategory(guiHelper),
+                new ThrusterCategory(guiHelper));
     }
 
     @Override
@@ -77,6 +78,7 @@ public class ZPSJeiPlugin implements IModPlugin {
         registration.addRecipes(ImpactCategory.TYPE, impact);
         List<VaporizingRecipe> vaporizing = recipeManager.getAllRecipesFor(ModRecipes.VAPORIZING_TYPE.get());
         registration.addRecipes(VaporizerCategory.TYPE, vaporizing);
+        registration.addRecipes(ThrusterCategory.TYPE, ThrusterCategory.fuels(level));
     }
 
     @Override
@@ -84,6 +86,7 @@ public class ZPSJeiPlugin implements IModPlugin {
         registration.addRecipeCatalyst(new ItemStack(ModItems.ROLLING_MILL.get()), RollingMillCategory.TYPE);
         registration.addRecipeCatalyst(new ItemStack(ModItems.IMPACT_PISTON.get()), ImpactCategory.TYPE);
         registration.addRecipeCatalyst(new ItemStack(ModItems.VAPORIZER.get()), VaporizerCategory.TYPE);
+        registration.addRecipeCatalyst(new ItemStack(ModItems.THRUSTER.get()), ThrusterCategory.TYPE);
 
         // The assembler is a workstation for its own 5x5 recipes and vanilla crafting, plus Create's
         // mechanical and automated shaped crafting categories when Create is present.

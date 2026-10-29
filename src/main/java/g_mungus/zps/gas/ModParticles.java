@@ -50,9 +50,4 @@ public final class ModParticles {
     public static final RegistryObject<DefaultGasParticle.DefaultGasParticleType> STELLANE =
             PARTICLE_TYPES.register("stellane",
                     () -> new DefaultGasParticle.DefaultGasParticleType((float) ModGases.STELLANE_DENSITY));
-
-    /** Exhaust's, for when ZPS defines it itself; Clockwork registers its own otherwise. */
-    public static final RegistryObject<DefaultGasParticle.DefaultGasParticleType> EXHAUST =
-            PARTICLE_TYPES.register("exhaust",
-                    () -> new DefaultGasParticle.DefaultGasParticleType((float) ModGases.EXHAUST_DENSITY));
 }

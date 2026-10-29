@@ -233,27 +233,4 @@ public class Compat {
             );
         }
     }
-
-    /**
-     * Clockwork's Exhaust when it is present, or the same gas defined here so ZPS can run without it.
-     * The figures are Clockwork's own; it leaves the Sutherland constant and adiabatic index at Kelvin's
-     * defaults.
-     */
-    public static GasType getOrCreateExhaustGas() {
-        if (isClockworkLoaded()) {
-            return ClockworkCompat.getExhaustGas();
-        } else {
-            return new GasType(
-                    "Exhaust",
-                    ResourceLocation.fromNamespaceAndPath("vs_clockwork", "exhaust"),
-                    ModGases.EXHAUST_DENSITY,
-                    1.1e-5,
-                    2.846,
-                    0.031,
-                    111.0,
-                    1.4,
-                    ResourceLocation.fromNamespaceAndPath("kelvin", "textures/icons/exhaust.png")
-            );
-        }
-    }
 }

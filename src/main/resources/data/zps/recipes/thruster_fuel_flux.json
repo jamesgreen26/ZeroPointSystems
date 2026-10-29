@@ -1,0 +1,9 @@
+{
+  "type": "zps:thruster_fuel",
+  "fuel": "zps:flux",
+  "consumption": 0.01,
+  "thrust": 2.0,
+  "result": "vs_clockwork:steam",
+  "temperature": 1200.0,
+  "flame": "blue"
+}

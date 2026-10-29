@@ -59,4 +59,16 @@ public class ModRecipes {
 
     public static final RegistryObject<VaporizingRecipeSerializer> VAPORIZING_SERIALIZER =
             RECIPE_SERIALIZERS.register("vaporizing", VaporizingRecipeSerializer::new);
+
+    /** How a thruster burns a gas; a gas with none passes through unburnt. */
+    public static final RegistryObject<RecipeType<ThrusterFuelRecipe>> THRUSTER_FUEL_TYPE =
+            RECIPE_TYPES.register("thruster_fuel", () -> new RecipeType<ThrusterFuelRecipe>() {
+                @Override
+                public String toString() {
+                    return "zps:thruster_fuel";
+                }
+            });
+
+    public static final RegistryObject<ThrusterFuelRecipeSerializer> THRUSTER_FUEL_SERIALIZER =
+            RECIPE_SERIALIZERS.register("thruster_fuel", ThrusterFuelRecipeSerializer::new);
 }

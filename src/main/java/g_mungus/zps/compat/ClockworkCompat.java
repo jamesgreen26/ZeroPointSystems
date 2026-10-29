@@ -16,8 +16,4 @@ public class ClockworkCompat {
     public static GasType getStellaneGas() {
         return ClockworkGasses.INSTANCE.getHYDROGEN();
     }
-
-    public static GasType getExhaustGas() {
-        return ClockworkGasses.INSTANCE.getEXHAUST();
-    }
 }

@@ -9,7 +9,6 @@ import g_mungus.zps.commands.phystick.PhysTickProgram;
 import g_mungus.zps.commands.phystick.PhysTickProgrammable;
 import g_mungus.zps.compat.GridPhysics;
 import g_mungus.zps.config.ZPSConfig;
-import g_mungus.zps.gas.ModGases;
 import g_mungus.zps.room.RoomManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -32,14 +31,16 @@ import java.util.Map;
 
 /**
  * Burns what reaches its node and pushes its grid with it. The throttle, a phys tick program's {@code thrust} in a
- * step that runs one and the redstone signal otherwise, asks for a share of {@link #MAX_MOL_PER_TICK}, taken from
- * the node's mix as it finds it, so a starved or low-pressure feed gives less than was asked and pushes less.
+ * step that runs one and the redstone signal otherwise, asks for that share of a full draw, taken from the node's
+ * mix as it finds it, so a starved or low-pressure feed gives less than was asked and pushes less. Each gas in the
+ * mix fills the request by its own share of its full draw, so a gas consumed fast takes more of itself to fill it.
  * <p>
- * Stellane burns orange: it pushes at {@link #thrustPerMol()} and leaves as the same mass of hot
- * {@link ModGases#EXHAUST}. Flux burns blue the same way but pushes {@link #FLUX_PUSH_RATIO} as hard.
- * Anything else passes through unburnt at its own temperature, pushing only {@link #COLD_PUSH_RATIO}
- * as hard, and shows in the plume as cold gas. A mixed feed shows all three through one plume. All of
- * it is let out in front of the nozzle, into a room if there is one ({@link RoomManager}).
+ * What each gas does is a {@link ThrusterPropellant}: from its {@link g_mungus.zps.recipe.ThrusterFuelRecipe}, which
+ * sets its consumption and thrust and which the shipped data gives Stellane (orange, burning into hot Steam) and Flux
+ * (blue, twice as hard), or else {@link ThrusterPropellant#unburnt}: passing through at its own temperature and
+ * showing in the plume as cold gas, drawn at {@link #UNBURNT_MOL_PER_TICK} and pushing by its mass, a full draw of air
+ * {@link #UNBURNT_THRUST} as hard as one of Stellane, so it lasts far less for its push. A mixed feed shows all three
+ * through one plume. All of it is let out in front of the nozzle, into a room if there is one ({@link RoomManager}).
  * <p>
  * The physics step throttles and the server tick settles. Each tick the server works out the thrust a full burn
  * of the node's gas would give and hands it to the physics step as one immutable vector, since Valkyrien Skies
@@ -51,22 +52,18 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements PhysTickP
 
     // --- tuning -----------------------------------------------------------------------------
 
-    /** Gas asked for at a full signal, in moles per tick: half a kilogram of Stellane lasts 50 s. */
-    public static final double MAX_MOL_PER_TICK = 0.25;
-    /** Thrust at a full signal on pure Stellane, in {@link GridPhysics} units: a plain block weighs 1. */
+    /** Thrust at a full signal on pure Stellane, in newtons ({@link GridPhysics} units: a plain block has a mass of 1). */
     public static double maxThrust() {
         return ZPSConfig.thrusterMaxThrust();
     }
 
-    public static double thrustPerMol() {
-        return maxThrust() / MAX_MOL_PER_TICK;
-    }
-    /** How hard a mole of burning Flux pushes, against a mole of burning Stellane. */
-    public static final double FLUX_PUSH_RATIO = 2;
-    /** How hard a mole of unburnt gas pushes, against a mole of burning Stellane. */
-    public static final double COLD_PUSH_RATIO = 0.5;
-    /** Temperature the Exhaust leaves at, in kelvin. */
-    public static final double BURN_TEMPERATURE_K = 1200;
+    /**
+     * How hard a full draw of air pushes, against a full draw of burning Stellane. Every gas with no fuel recipe leaves
+     * the nozzle as fast as air does, so each pushes by the mass it draws: the same push a kilogram.
+     */
+    public static final double UNBURNT_THRUST = 0.5;
+    /** Moles a full signal draws each tick of a gas with no fuel recipe: about four times a fuel's. */
+    public static final double UNBURNT_MOL_PER_TICK = 1;
 
     /*
      * Steering, by how far the thrust points off the line through the centre of mass, in degrees, 0 to 90 either
@@ -121,7 +118,7 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements PhysTickP
     private int ticksSinceSampled = Integer.MAX_VALUE;
 
     /**
-     * Gas drawn last tick against {@link #MAX_MOL_PER_TICK}, and the burning Flux and unburnt shares of it, in
+     * Gas drawn last tick against a full draw, and the blue-burning and unburnt shares of it by moles, in
      * {@link #SYNC_STEPS}.
      */
     private int burnSteps;
@@ -188,80 +185,71 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements PhysTickP
 
     private void burnFuel(double throttle) {
         BlockState state = getBlockState();
-        double requested = throttle * MAX_MOL_PER_TICK;
         Direction facing = state.getValue(ThrusterBlock.FACING);
         Vec3 backwards = Vec3.atLowerCornerOf(facing.getNormal()).scale(-1);
 
         DuctNetwork<?> kelvin = KelvinMod.INSTANCE.forceGetKelvin();
         DuctNodePos node = getDuctNodePosition();
         Map<GasType, Double> gases = Map.copyOf(getGases());
+        Map<GasType, ThrusterPropellant> propellants = new HashMap<>();
+        // In full draws: a gas consumed faster fills less of one a kilogram.
         double available = 0;
         double push = 0;
         for (Map.Entry<GasType, Double> entry : gases.entrySet()) {
-            double moles = entry.getKey().massToMoles(entry.getValue());
-            available += moles;
-            push += pushPerMole(entry.getKey()) * moles;
+            ThrusterPropellant propellant = ThrusterPropellant.of(level, entry.getKey());
+            propellants.put(entry.getKey(), propellant);
+            available += entry.getValue() / propellant.fullDrawKgPerTick();
+            push += propellant.pushPerKg() * entry.getValue();
         }
         // What a full burn would draw, each gas in proportion to its share as below.
-        fullThrust = push > 0 ? backwards.scale(push * Math.min(1.0, MAX_MOL_PER_TICK / available)) : Vec3.ZERO;
+        fullThrust = push > 0 ? backwards.scale(push * Math.min(1.0, 1 / available)) : Vec3.ZERO;
 
-        double stellane = 0;
-        double flux = 0;
-        double unburnt = 0;
-        double exhaustKg = 0;
-        Map<GasType, Double> passed = new HashMap<>();
-        if (requested > 0 && available > 0) {
+        double drawn = 0;
+        double filled = 0;
+        double blue = 0;
+        double cold = 0;
+        double force = 0;
+        // What leaves the nozzle, by the temperature it leaves at.
+        Map<Double, Map<GasType, Double>> released = new HashMap<>();
+        if (throttle > 0 && available > 0) {
             // Each gas in proportion to its share, so a trace is not starved by an abundant one.
-            double fraction = Math.min(1.0, requested / available);
+            double fraction = Math.min(1.0, throttle / available);
             for (Map.Entry<GasType, Double> entry : gases.entrySet()) {
                 GasType gas = entry.getKey();
                 double take = entry.getValue() * fraction;
                 if (take <= MIN_TRANSFER || !kelvin.removeGas(node, gas, take)) {
                     continue;
                 }
-                if (gas.equals(ModGases.STELLANE)) {
-                    stellane += gas.massToMoles(take);
-                    exhaustKg += take;
-                } else if (gas.equals(ModGases.FLUX)) {
-                    flux += gas.massToMoles(take);
-                    exhaustKg += take;
-                } else {
-                    unburnt += gas.massToMoles(take);
-                    passed.merge(gas, take, Double::sum);
+                ThrusterPropellant propellant = propellants.get(gas);
+                double moles = gas.massToMoles(take);
+                drawn += moles;
+                filled += take / propellant.fullDrawKgPerTick();
+                force += propellant.pushPerKg() * take;
+                switch (propellant.flame()) {
+                    case BLUE -> blue += moles;
+                    case COLD -> cold += moles;
+                    case ORANGE -> {
+                    }
                 }
+                GasType result = propellant.result() != null ? propellant.result() : gas;
+                double temperature = Double.isNaN(propellant.temperatureK()) ? getTemperature() : propellant.temperatureK();
+                released.computeIfAbsent(temperature, t -> new HashMap<>()).merge(result, take, Double::sum);
             }
         }
 
-        double force = (stellane + FLUX_PUSH_RATIO * flux + COLD_PUSH_RATIO * unburnt) * thrustPerMol();
         thrust = force > 0 ? backwards.scale(force) : Vec3.ZERO;
 
         if (level instanceof ServerLevel serverLevel) {
             BlockPos front = worldPosition.relative(facing);
             RoomManager rooms = RoomManager.get(serverLevel);
-            if (exhaustKg > 0) {
-                rooms.addGas(serverLevel, front, Map.of(ModGases.EXHAUST, exhaustKg), BURN_TEMPERATURE_K);
-            }
-            if (!passed.isEmpty()) {
-                rooms.addGas(serverLevel, front, passed, getTemperature());
-            }
+            released.forEach((temperature, out) -> rooms.addGas(serverLevel, front, out, temperature));
         }
 
-        double drawn = stellane + flux + unburnt;
         // Any burn at all shows at least the plume of a signal of 1, so a thruster never pushes without one.
-        int burn = (int) Math.round(Math.min(1.0, drawn / MAX_MOL_PER_TICK) * SYNC_STEPS);
+        int burn = (int) Math.round(Math.min(1.0, filled) * SYNC_STEPS);
         setSynced(drawn > 0 ? Math.max(burn, MIN_BURN_STEPS) : 0,
-                drawn > 0 ? (int) Math.round(flux / drawn * SYNC_STEPS) : 0,
-                drawn > 0 ? (int) Math.round(unburnt / drawn * SYNC_STEPS) : 0);
-    }
-
-    /** The thrust a mole of {@code gas} gives as it goes through. */
-    private static double pushPerMole(GasType gas) {
-        if (gas.equals(ModGases.STELLANE)) {
-            return thrustPerMol();
-        } else if (gas.equals(ModGases.FLUX)) {
-            return FLUX_PUSH_RATIO * thrustPerMol();
-        }
-        return COLD_PUSH_RATIO * thrustPerMol();
+                drawn > 0 ? (int) Math.round(blue / drawn * SYNC_STEPS) : 0,
+                drawn > 0 ? (int) Math.round(cold / drawn * SYNC_STEPS) : 0);
     }
 
     private void setSynced(int burn, int blue, int cold) {
@@ -276,7 +264,7 @@ public class ThrusterBlockEntity extends GasNodeBlockEntity implements PhysTickP
         }
     }
 
-    /** Gas drawn last tick, 0 to 1 of a full signal's worth: the throttle the feed actually allowed. */
+    /** Gas drawn last tick, 0 to 1 of a full signal's worth by request: the throttle the feed actually allowed. */
     public float burn() {
         return burnSteps / (float) SYNC_STEPS;
     }

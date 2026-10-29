@@ -15,6 +15,7 @@ import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.RegistryOps;
+import net.minecraft.world.Clearable;
 import net.minecraft.world.Containers;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
@@ -45,7 +46,7 @@ import java.util.List;
  * Supports {@code zps:shaped_5x5} recipes, vanilla shaped/shapeless recipes, and (when Create is loaded)
  * Create mechanical crafting.
  */
-public class AssemblerBlockEntity extends BlockEntity implements MenuProvider {
+public class AssemblerBlockEntity extends BlockEntity implements MenuProvider, Clearable {
     public static final int GRID_WIDTH = 5;
     public static final int GRID_HEIGHT = 5;
     public static final int PATTERN_SLOTS = GRID_WIDTH * GRID_HEIGHT; // 25
@@ -352,6 +353,17 @@ public class AssemblerBlockEntity extends BlockEntity implements MenuProvider {
         dropHandler(input);
         dropHandler(output);
         // The ghost pattern holds no real items, so nothing to drop from it.
+    }
+
+    @Override
+    public void clearContent() {
+        for (int slot = 0; slot < input.getSlots(); slot++) {
+            input.setStackInSlot(slot, ItemStack.EMPTY);
+        }
+        for (int slot = 0; slot < output.getSlots(); slot++) {
+            output.setStackInSlot(slot, ItemStack.EMPTY);
+        }
+        // The ghost pattern is configuration, not contents, so it stays.
     }
 
     private void dropHandler(ItemStackHandler handler) {

@@ -24,8 +24,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * JEI category for {@link RollingRecipe}: the input, the mill with its rollers turning, and the rolled result, laid
- * out as every {@link MachinePage} is. Only loaded when JEI is installed.
+ * JEI category for {@link RollingRecipe}: the input, the mill with its rollers turning, and the rolled result, with
+ * how many seconds it takes on the arrow, laid out as every {@link MachinePage} is. Only loaded when JEI is installed.
  */
 public class RollingMillCategory implements IRecipeCategory<RollingRecipe> {
     public static final RecipeType<RollingRecipe> TYPE =
@@ -39,6 +39,7 @@ public class RollingMillCategory implements IRecipeCategory<RollingRecipe> {
             .setValue(RollingMillBlock.FACING, FACING)
             .setValue(RollingMillBlock.WORKING, true);
     private static final float DEGREES_PER_SECOND = 90;
+    private static final int TICKS_PER_SECOND = 20;
 
     private final IDrawable icon;
     private final IDrawable slot;
@@ -98,5 +99,13 @@ public class RollingMillCategory implements IRecipeCategory<RollingRecipe> {
             RollingMillBlockEntityRenderer.renderRollers(Minecraft.getInstance().getItemRenderer(), pose, buffers,
                     LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, FACING, angle);
         });
+        MachinePage.drawArrowLabel(graphics, Component.translatable("jei.zps.rolling.time", seconds(recipe.processTime())));
+    }
+
+    /** Ticks as seconds, to a tenth only where it isn't whole: 10, 7.5. */
+    private static String seconds(int ticks) {
+        return ticks % TICKS_PER_SECOND == 0
+                ? Integer.toString(ticks / TICKS_PER_SECOND)
+                : String.format("%.1f", ticks / (float) TICKS_PER_SECOND);
     }
 }

@@ -126,7 +126,7 @@ public class VaporizerCategory implements IRecipeCategory<VaporizingRecipe> {
                      double mouseX, double mouseY) {
         MachinePage page = page(recipe);
         page.drawStage(graphics);
-        MachinePage.drawBlock(graphics, VAPORIZER);
+        page.drawBlock(graphics, VAPORIZER);
         // Kelvin's own key for the floor, so the wording matches its gas reaction pages; the cost is ours.
         page.drawBar(graphics, 0, Component.translatable("kelvin.requirements.min_temperature", recipe.minTemperature()));
         page.drawBar(graphics, 1, Component.translatable("jei.zps.vaporizing.temperature_cost", recipe.temperatureCost()));

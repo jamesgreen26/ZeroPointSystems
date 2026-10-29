@@ -94,12 +94,12 @@ public class RollingMillCategory implements IRecipeCategory<RollingRecipe> {
                      double mouseX, double mouseY) {
         PAGE.drawStage(graphics);
         float angle = (System.currentTimeMillis() % 360_000L) / 1000f * DEGREES_PER_SECOND;
-        MachinePage.drawMachine(graphics, MachinePage.BLOCK_SCALE, MachinePage.BLOCK_Y, (pose, buffers) -> {
+        PAGE.drawMachine(graphics, (pose, buffers) -> {
             MachinePage.renderBlock(pose, buffers, MILL);
             RollingMillBlockEntityRenderer.renderRollers(Minecraft.getInstance().getItemRenderer(), pose, buffers,
                     LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, FACING, angle);
         });
-        MachinePage.drawArrowLabel(graphics, Component.translatable("jei.zps.rolling.time", seconds(recipe.processTime())));
+        PAGE.drawArrowLabel(graphics, Component.translatable("jei.zps.rolling.time", seconds(recipe.processTime())));
     }
 
     /** Ticks as seconds, to a tenth only where it isn't whole: 10, 7.5. */

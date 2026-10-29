@@ -127,7 +127,7 @@ public class ThrusterCategory implements IRecipeCategory<ThrusterCategory.Fuel> 
     @Override
     public void draw(Fuel fuel, IRecipeSlotsView slotsView, GuiGraphics graphics, double mouseX, double mouseY) {
         PAGE.drawStage(graphics);
-        MachinePage.drawBlock(graphics, THRUSTER);
+        PAGE.drawBlock(graphics, THRUSTER);
         PAGE.drawBar(graphics, 0, Component.translatable("jei.zps.thruster.burn_rate", formatMass(kgPerSecond(fuel))));
         PAGE.drawBar(graphics, 1, Component.translatable("jei.zps.thruster.thrust", Math.round(fuel.propellant().fullThrust())));
     }

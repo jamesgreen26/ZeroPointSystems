@@ -47,8 +47,13 @@ public class ImpactPistonBlockEntityRenderer implements BlockEntityRenderer<Impa
             return;
         }
 
+        renderRod(itemRenderer, poseStack, bufferSource, packedLight, packedOverlay, blockEntity.getRodOffset(partialTick));
+    }
+
+    /** The rod at {@code offset} of its stroke, 0 at rest and 1 at the top, in the block's own space. */
+    public static void renderRod(ItemRenderer itemRenderer, PoseStack poseStack, MultiBufferSource bufferSource,
+                                 int packedLight, int packedOverlay, float offset) {
         BakedModel rodModel = Minecraft.getInstance().getModelManager().getModel(ROD_MODEL);
-        float offset = blockEntity.getRodOffset(partialTick);
 
         poseStack.pushPose();
         poseStack.translate(0.0f, offset * ImpactPistonBlockEntity.ROD_TRAVEL, 0.0f);

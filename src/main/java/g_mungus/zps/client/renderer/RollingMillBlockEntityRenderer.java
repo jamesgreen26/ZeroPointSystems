@@ -43,17 +43,32 @@ public class RollingMillBlockEntityRenderer implements BlockEntityRenderer<Rolli
             return;
         }
 
-        BakedModel rollerModel = Minecraft.getInstance().getModelManager().getModel(ROLLER_MODEL);
         float angle = blockEntity.advanceRenderSpin(partialTick);
-        // Rotate the whole layout 90 deg when the mill faces along X so the wheel axes track the block's facing.
-        float facingYaw = blockEntity.getBlockState().getValue(RollingMillBlock.FACING).getAxis() == Direction.Axis.X ? 90.0f : 0.0f;
-
-        renderDisc(rollerModel, poseStack, bufferSource, packedLight, packedOverlay, 0.5f, 0.25f, 0.5f, facingYaw, angle);
-        renderDisc(rollerModel, poseStack, bufferSource, packedLight, packedOverlay, 0.5f, 0.75f, 0.5f, facingYaw, -angle);
+        renderRollers(itemRenderer, poseStack, bufferSource, packedLight, packedOverlay,
+                blockEntity.getBlockState().getValue(RollingMillBlock.FACING), angle);
     }
 
-    private void renderDisc(BakedModel model, PoseStack poseStack, MultiBufferSource bufferSource,
-                            int packedLight, int packedOverlay, float cx, float cy, float cz, float facingYaw, float angle) {
+    /** Both rollers of a mill facing {@code facing}, turned {@code angle} degrees, in the block's own space. */
+    public static void renderRollers(ItemRenderer itemRenderer, PoseStack poseStack, MultiBufferSource bufferSource,
+                                     int packedLight, int packedOverlay, Direction facing, float angle) {
+        BakedModel rollerModel = Minecraft.getInstance().getModelManager().getModel(ROLLER_MODEL);
+        float facingYaw = rollerYaw(facing);
+
+        renderDisc(itemRenderer, rollerModel, poseStack, bufferSource, packedLight, packedOverlay, 0.5f, 0.25f, 0.5f, facingYaw, angle);
+        renderDisc(itemRenderer, rollerModel, poseStack, bufferSource, packedLight, packedOverlay, 0.5f, 0.75f, 0.5f, facingYaw, -angle);
+    }
+
+    /**
+     * How far to turn the rollers' layout about the block's centre for a mill facing {@code facing}, in degrees: the
+     * blockstate's own turn for the model, which is clockwise seen from above where this is anticlockwise. Turning by
+     * the whole facing rather than its axis keeps the spin the same way round against the mill's front.
+     */
+    public static float rollerYaw(Direction facing) {
+        return 180.0f - facing.toYRot();
+    }
+
+    private static void renderDisc(ItemRenderer itemRenderer, BakedModel model, PoseStack poseStack, MultiBufferSource bufferSource,
+                                   int packedLight, int packedOverlay, float cx, float cy, float cz, float facingYaw, float angle) {
         poseStack.pushPose();
         poseStack.translate(0.5f, 0.5f, 0.5f);      // to block centre
         poseStack.mulPose(Axis.YP.rotationDegrees(facingYaw)); // orient the side positions to facing

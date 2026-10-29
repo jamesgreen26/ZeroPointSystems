@@ -76,6 +76,7 @@
     "gui.zps.jei.shaped_5x5": "5x5 Crafting",
     "gui.zps.jei.impact": "Impact Piston",
     "gui.zps.jei.impact.may_contain": "May contain:",
+    "gui.zps.jei.impact.chance": "%s chance",
     "gui.zps.jei.impact.requires_state": "Requires %s: %s",
     "gui.zps.jei.transfer_unsupported": "The Assembler can't lay out this recipe.",
     "block.zps.octo_controller": "Octo-Controller",

@@ -35,7 +35,9 @@ public class Shaped5x5Category implements IRecipeCategory<RecipeHolder<Shaped5x5
     private static final int GRID_SIZE = SLOT * AssemblerBlockEntity.GRID_WIDTH; // 90
     private static final int ARROW_LEFT = GRID_SIZE + 6;
     private static final int OUTPUT_LEFT = ARROW_LEFT + 30;
-    private static final int WIDTH = OUTPUT_LEFT + SLOT;
+    /** Room past the output slot, whose larger background reaches beyond the slot itself. */
+    private static final int RIGHT_MARGIN = 8;
+    private static final int WIDTH = OUTPUT_LEFT + SLOT + RIGHT_MARGIN;
     private static final int HEIGHT = GRID_SIZE;
 
     private final IDrawable icon;

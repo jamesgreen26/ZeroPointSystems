@@ -5,6 +5,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.Clearable;
 import net.minecraft.world.Containers;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
@@ -24,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Holds the sieve's contents. Five slots, laid out like a hopper's; no processing yet.
  */
-public class SieveBlockEntity extends BlockEntity implements MenuProvider {
+public class SieveBlockEntity extends BlockEntity implements MenuProvider, Clearable {
     public static final int SLOT_COUNT = 5;
 
     private final ItemStackHandler inventory = new SieveInventory();
@@ -48,6 +49,13 @@ public class SieveBlockEntity extends BlockEntity implements MenuProvider {
             if (!stack.isEmpty()) {
                 Containers.dropItemStack(level, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), stack);
             }
+        }
+    }
+
+    @Override
+    public void clearContent() {
+        for (int slot = 0; slot < inventory.getSlots(); slot++) {
+            inventory.setStackInSlot(slot, ItemStack.EMPTY);
         }
     }
 

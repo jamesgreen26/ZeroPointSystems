@@ -9,6 +9,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
+import net.minecraft.world.Clearable;
 import net.minecraft.world.Containers;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.SimpleMenuProvider;
@@ -36,7 +37,7 @@ import java.util.Arrays;
  * pooled energy and the single charge slot, and every other part forwards to it. Only capacity scales with the
  * number of cells; transfer and item-charging rates are fixed per structure.
  */
-public class PowerCellBlockEntity extends MultiblockBlockEntity implements EnergyStorageBE, ItemChargingPowerCell {
+public class PowerCellBlockEntity extends MultiblockBlockEntity implements EnergyStorageBE, ItemChargingPowerCell, Clearable {
     /** Capacity contributed by each cell in a structure. */
     public static final int MAX_ENERGY = 2_097_152;
     /** Transfer rate in and out; fixed per structure, however many cells it has. */
@@ -417,6 +418,11 @@ public class PowerCellBlockEntity extends MultiblockBlockEntity implements Energ
             Containers.dropItemStack(level, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), stack);
             chargeInventory.setStackInSlot(0, ItemStack.EMPTY);
         }
+    }
+
+    @Override
+    public void clearContent() {
+        chargeInventory.setStackInSlot(0, ItemStack.EMPTY);
     }
 
     // --- visuals ----------------------------------------------------------------------------------

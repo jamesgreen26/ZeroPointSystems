@@ -25,6 +25,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
+import net.minecraft.world.Clearable;
 import net.minecraft.world.Containers;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.Entity;
@@ -60,7 +61,7 @@ import java.util.List;
  * strength of that signal is what sets its range (see {@link #rangeFor}). The tick cost depends only on the
  * panel's size and that range: what the beam happens to be pulling never changes it.
  */
-public class BeamCollectorBlockEntity extends MultiblockBlockEntity {
+public class BeamCollectorBlockEntity extends MultiblockBlockEntity implements Clearable {
     public static final int MAX_WIDTH = 3;
     /** Ticks between looks down the columns. A pulled block forces a fresh look straight away. */
     private static final int SCAN_INTERVAL = 5;
@@ -354,6 +355,12 @@ public class BeamCollectorBlockEntity extends MultiblockBlockEntity {
             inventory.setStackInSlot(slot, ItemStack.EMPTY);
         }
         spill(stacks, worldPosition);
+    }
+
+    @Override
+    public void clearContent() {
+        inventory.clear();
+        setChanged();
     }
 
     // --- settings ---------------------------------------------------------------------------------

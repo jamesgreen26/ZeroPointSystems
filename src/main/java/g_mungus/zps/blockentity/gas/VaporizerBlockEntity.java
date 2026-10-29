@@ -18,6 +18,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import net.minecraft.world.Clearable;
 import net.minecraft.world.Containers;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
@@ -58,7 +59,7 @@ import java.util.Map;
  * hung off it. Vaporizing pauses when the tank is close to its pressure ceiling rather than letting
  * the machine burst itself.
  */
-public class VaporizerBlockEntity extends GasNodeBlockEntity implements MenuProvider {
+public class VaporizerBlockEntity extends GasNodeBlockEntity implements MenuProvider, Clearable {
     public static final int SLOT_COUNT = 3;
 
     private static final int MAX_ENERGY = 8192;
@@ -356,6 +357,13 @@ public class VaporizerBlockEntity extends GasNodeBlockEntity implements MenuProv
             if (!stack.isEmpty()) {
                 Containers.dropItemStack(level, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), stack);
             }
+        }
+    }
+
+    @Override
+    public void clearContent() {
+        for (int slot = 0; slot < inventory.getSlots(); slot++) {
+            inventory.setStackInSlot(slot, ItemStack.EMPTY);
         }
     }
 

@@ -8,6 +8,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.Clearable;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.Containers;
 import net.minecraft.world.entity.player.Inventory;
@@ -30,7 +31,7 @@ import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGeneratorBE, MenuProvider {
+public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGeneratorBE, MenuProvider, Clearable {
     private static final int MAX_ENERGY = 8192;
     private static final int MAX_OUTPUT = 256;
 
@@ -196,6 +197,11 @@ public class CoalBurnerBlockEntity extends BlockEntity implements EnergyGenerato
         if (!stack.isEmpty()) {
             Containers.dropItemStack(level, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), stack);
         }
+    }
+
+    @Override
+    public void clearContent() {
+        fuelInventory.setStackInSlot(0, ItemStack.EMPTY);
     }
 
     @Override

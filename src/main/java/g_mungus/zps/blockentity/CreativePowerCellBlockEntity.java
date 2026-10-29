@@ -6,6 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.Clearable;
 import net.minecraft.world.Containers;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
@@ -25,7 +26,7 @@ import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class CreativePowerCellBlockEntity extends BlockEntity implements EnergyStorageBE, MenuProvider, ItemChargingPowerCell {
+public class CreativePowerCellBlockEntity extends BlockEntity implements EnergyStorageBE, MenuProvider, ItemChargingPowerCell, Clearable {
     private static final IEnergyStorage CREATIVE_ENERGY = new IEnergyStorage() {
         @Override
         public int receiveEnergy(int maxReceive, boolean simulate) {
@@ -130,6 +131,11 @@ public class CreativePowerCellBlockEntity extends BlockEntity implements EnergyS
         if (!stack.isEmpty()) {
             Containers.dropItemStack(level, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), stack);
         }
+    }
+
+    @Override
+    public void clearContent() {
+        chargeInventory.setStackInSlot(0, ItemStack.EMPTY);
     }
 
     private void chargeItem() {

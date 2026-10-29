@@ -10,6 +10,8 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.state.BlockState;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 /**
  * The layout every ZPS machine page in JEI shares, after Create's processing pages: inputs on the left, outputs on the
@@ -57,6 +59,10 @@ record MachinePage(int inputs, int inputColumns, int outputs, int outputColumns,
     private static final int SHADOW_HEIGHT = 10;
     private static final int SHADOW_Y = 29;
     private static final int SHADOW_ALPHA = 0x50;
+
+    /** The camera on the machine: tilted down to show its top, and turned so its east face points at the outputs. */
+    private static final float TILT_DEGREES = 25;
+    private static final float TURN_DEGREES = -35;
 
     /** The scale a block is drawn at, and where the centre of the machine's block sits. */
     private static final float BLOCK_SCALE = 22;
@@ -169,8 +175,8 @@ record MachinePage(int inputs, int inputColumns, int outputs, int outputColumns,
         pose.pushPose();
         pose.translate(MACHINE_X, BLOCK_Y, 100);
         pose.scale(BLOCK_SCALE, -BLOCK_SCALE, BLOCK_SCALE);
-        pose.mulPose(Axis.XP.rotationDegrees(25));
-        pose.mulPose(Axis.YP.rotationDegrees(-35));
+        pose.mulPose(Axis.XP.rotationDegrees(TILT_DEGREES));
+        pose.mulPose(Axis.YP.rotationDegrees(TURN_DEGREES));
         pose.translate(-0.5f, -0.5f, -0.5f);
 
         Lighting.setupFor3DItems();
@@ -178,6 +184,20 @@ record MachinePage(int inputs, int inputColumns, int outputs, int outputColumns,
         graphics.flush();
         Lighting.setupForFlatItems();
         pose.popPose();
+    }
+
+    /**
+     * Where a point in the machine block's own space lands on the page, as {@link #drawMachine} draws it: x and y on
+     * the page, z its depth, nearer the larger.
+     */
+    static Vector3f toPage(float x, float y, float z) {
+        return new Matrix4f()
+                .translate(MACHINE_X, BLOCK_Y, 100)
+                .scale(BLOCK_SCALE, -BLOCK_SCALE, BLOCK_SCALE)
+                .rotateX((float) Math.toRadians(TILT_DEGREES))
+                .rotateY((float) Math.toRadians(TURN_DEGREES))
+                .translate(-0.5f, -0.5f, -0.5f)
+                .transformPosition(new Vector3f(x, y, z));
     }
 
     static void renderBlock(PoseStack pose, MultiBufferSource buffers, BlockState state) {

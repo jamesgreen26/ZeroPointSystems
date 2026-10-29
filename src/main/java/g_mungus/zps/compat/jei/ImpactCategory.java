@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.ImpactPistonBlock;
 import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.blockentity.ImpactPistonBlockEntity;
 import g_mungus.zps.client.renderer.ImpactPistonBlockEntityRenderer;
 import g_mungus.zps.client.tooltip.ItemIconsTooltip;
 import g_mungus.zps.item.ModItems;
@@ -48,7 +49,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * JEI category for {@link ImpactRecipe}: the struck block, the piston, and every weighted outcome with its chance in
+ * JEI category for {@link ImpactRecipe}: the struck block, the piston running its stroke, and every weighted outcome with its chance in
  * the corner of its slot, laid out as every {@link MachinePage} is. Only loaded when JEI is installed.
  */
 public class ImpactCategory implements IRecipeCategory<RecipeHolder<ImpactRecipe>> {
@@ -58,7 +59,7 @@ public class ImpactCategory implements IRecipeCategory<RecipeHolder<ImpactRecipe
     /** Outcomes two to a row, rows added beneath as a recipe needs them. */
     private static final int OUTPUT_COLUMNS = 2;
 
-    /** Lit, as it is while it works, with the rod at rest. */
+    /** Lit, as it is while it works; the rod runs through its stroke on top, reaching past the top of the page. */
     private static final BlockState PISTON = ModBlocks.IMPACT_PISTON.get().defaultBlockState()
             .setValue(ImpactPistonBlock.POWERED, true);
 
@@ -77,6 +78,26 @@ public class ImpactCategory implements IRecipeCategory<RecipeHolder<ImpactRecipe
     private static MachinePage page(ImpactRecipe recipe) {
         int outputs = Math.max(1, recipe.results().size());
         return new MachinePage(1, 1, outputs, Math.min(outputs, OUTPUT_COLUMNS), 0);
+    }
+
+    /** One stroke in ticks, as the piston runs: winching up, the drop, and the pause after a strike. */
+    private static final int STROKE_TICKS = ImpactPistonBlockEntity.RAISE_TICKS + ImpactPistonBlockEntity.FALL_TICKS
+            + ImpactPistonBlockEntity.COOLDOWN_TICKS;
+    private static final float MILLIS_PER_TICK = 50;
+
+    /** Where the rod is in a stroke running on the clock, 0 at rest and 1 at the top, as the block entity works it out. */
+    private static float rodOffset() {
+        float tick = (System.currentTimeMillis() % (STROKE_TICKS * (long) MILLIS_PER_TICK)) / MILLIS_PER_TICK;
+        if (tick < ImpactPistonBlockEntity.RAISE_TICKS) {
+            return ImpactPistonBlockEntity.rodOffset(ImpactPistonBlockEntity.Phase.RAISING, 0,
+                    ImpactPistonBlockEntity.RAISE_TICKS, tick);
+        }
+        tick -= ImpactPistonBlockEntity.RAISE_TICKS;
+        if (tick < ImpactPistonBlockEntity.FALL_TICKS) {
+            return ImpactPistonBlockEntity.rodOffset(ImpactPistonBlockEntity.Phase.FALLING, 1,
+                    ImpactPistonBlockEntity.FALL_TICKS, tick);
+        }
+        return 0;
     }
 
     @Override
@@ -258,11 +279,13 @@ public class ImpactCategory implements IRecipeCategory<RecipeHolder<ImpactRecipe
 
     @Override
     public void draw(RecipeHolder<ImpactRecipe> holder, IRecipeSlotsView slotsView, GuiGraphics graphics, double mouseX, double mouseY) {
-        page(holder.value()).drawStage(graphics);
-        MachinePage.drawMachine(graphics, MachinePage.BLOCK_SCALE, MachinePage.BLOCK_Y, (pose, buffers) -> {
+        MachinePage page = page(holder.value());
+        page.drawStage(graphics);
+        float rod = rodOffset();
+        page.drawMachine(graphics, (pose, buffers) -> {
             MachinePage.renderBlock(pose, buffers, PISTON);
             ImpactPistonBlockEntityRenderer.renderRod(Minecraft.getInstance().getItemRenderer(), pose, buffers,
-                    LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, 0);
+                    LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, rod);
         });
     }
 

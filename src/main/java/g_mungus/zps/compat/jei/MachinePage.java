@@ -58,9 +58,9 @@ record MachinePage(int inputs, int inputColumns, int outputs, int outputColumns,
     private static final int SHADOW_Y = 29;
     private static final int SHADOW_ALPHA = 0x50;
 
-    /** The scale a single block is drawn at, and where its centre sits. */
-    static final float BLOCK_SCALE = 22;
-    static final int BLOCK_Y = 18;
+    /** The scale a block is drawn at, and where the centre of the machine's block sits. */
+    private static final float BLOCK_SCALE = 22;
+    private static final int BLOCK_Y = 18;
 
     private static final int BAR_GAP = 4;
     private static final int BAR_PITCH = 20;
@@ -126,7 +126,7 @@ record MachinePage(int inputs, int inputColumns, int outputs, int outputColumns,
         drawShadow(graphics);
     }
 
-    private static void drawArrow(GuiGraphics graphics, int left, int right, int offset, int color) {
+    private void drawArrow(GuiGraphics graphics, int left, int right, int offset, int color) {
         int tip = right + offset;
         int y = ARROW_Y + offset;
         graphics.fill(left + offset, y, tip - ARROW_HEAD, y + 2, color);
@@ -138,7 +138,7 @@ record MachinePage(int inputs, int inputColumns, int outputs, int outputColumns,
     }
 
     /** A soft dark ellipse under the machine, darkest in the middle. */
-    private static void drawShadow(GuiGraphics graphics) {
+    private void drawShadow(GuiGraphics graphics) {
         double rx = SHADOW_WIDTH / 2.0;
         double ry = SHADOW_HEIGHT / 2.0;
         int left = MACHINE_X - SHADOW_WIDTH / 2;
@@ -156,21 +156,19 @@ record MachinePage(int inputs, int inputColumns, int outputs, int outputColumns,
     }
 
     /** One block, drawn as {@link #drawMachine} draws a scene. */
-    static void drawBlock(GuiGraphics graphics, BlockState state) {
-        drawMachine(graphics, BLOCK_SCALE, BLOCK_Y, (pose, buffers) -> renderBlock(pose, buffers, state));
+    void drawBlock(GuiGraphics graphics, BlockState state) {
+        drawMachine(graphics, (pose, buffers) -> renderBlock(pose, buffers, state));
     }
 
     /**
-     * A machine in 3D over the shadow, tilted to show its top and turned so its east face points at the outputs.
-     *
-     * @param scale   pixels to a block
-     * @param centreY where the centre of the scene's first block sits on the page
+     * A machine in 3D over the shadow, tilted to show its top and turned so its east face points at the outputs. The
+     * scene's block at the origin stands on the shadow; anything above it may reach past the top of the page.
      */
-    static void drawMachine(GuiGraphics graphics, float scale, float centreY, BlockScene scene) {
+    void drawMachine(GuiGraphics graphics, BlockScene scene) {
         PoseStack pose = graphics.pose();
         pose.pushPose();
-        pose.translate(MACHINE_X, centreY, 100);
-        pose.scale(scale, -scale, scale);
+        pose.translate(MACHINE_X, BLOCK_Y, 100);
+        pose.scale(BLOCK_SCALE, -BLOCK_SCALE, BLOCK_SCALE);
         pose.mulPose(Axis.XP.rotationDegrees(25));
         pose.mulPose(Axis.YP.rotationDegrees(-35));
         pose.translate(-0.5f, -0.5f, -0.5f);
@@ -188,7 +186,7 @@ record MachinePage(int inputs, int inputColumns, int outputs, int outputColumns,
     }
 
     /** {@code text}, small, under the arrow beneath the machine. */
-    static void drawArrowLabel(GuiGraphics graphics, Component text) {
+    void drawArrowLabel(GuiGraphics graphics, Component text) {
         var font = Minecraft.getInstance().font;
         PoseStack pose = graphics.pose();
         pose.pushPose();

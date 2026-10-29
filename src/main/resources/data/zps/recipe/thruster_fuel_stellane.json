@@ -1,0 +1,9 @@
+{
+  "type": "zps:thruster_fuel",
+  "fuel": "vs_clockwork:stellane",
+  "consumption": 0.01,
+  "thrust": 1.0,
+  "result": "vs_clockwork:steam",
+  "temperature": 1200.0,
+  "flame": "orange"
+}

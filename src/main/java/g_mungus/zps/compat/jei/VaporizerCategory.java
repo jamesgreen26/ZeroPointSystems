@@ -182,7 +182,7 @@ public class VaporizerCategory implements IRecipeCategory<RecipeHolder<Vaporizin
      * Kelvin's requirement bar, which is Create's "darker bar" drawn by hand: a two pixel border
      * stippled on a checkerboard, so the outline reads soft instead of as a hard frame.
      */
-    private static void drawRequirementBar(GuiGraphics graphics, int left, int top) {
+    static void drawRequirementBar(GuiGraphics graphics, int left, int top) {
         for (int y = 0; y < BAR_HEIGHT; y++) {
             boolean onHorizontalEdge = y < BAR_BORDER || y >= BAR_HEIGHT - BAR_BORDER;
             for (int x = 0; x < BAR_WIDTH; x++) {

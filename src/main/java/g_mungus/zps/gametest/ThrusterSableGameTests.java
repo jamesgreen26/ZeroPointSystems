@@ -9,7 +9,7 @@ import g_mungus.zps.commands.api_impl.ScriptCommandFailure;
 import g_mungus.zps.commands.api_impl.ZPSScripts;
 import g_mungus.zps.compat.Compat;
 import g_mungus.zps.compat.GridPhysics;
-import g_mungus.zps.gas.ModGases;
+import g_mungus.zps.world.AtmosphericComposition;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
@@ -22,6 +22,8 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import org.joml.Quaterniond;
 import org.joml.Vector3d;
 import org.valkyrienskies.kelvin.KelvinMod;
+import org.valkyrienskies.kelvin.api.GasType;
+import org.valkyrienskies.kelvin.impl.registry.GasTypeRegistry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,6 +42,8 @@ public class ThrusterSableGameTests {
      * A program that throttles by how fast the sublevel falls settles into a slow, steady sink. Slow enough for
      * Rapier to put the sublevel to sleep, which would read its speed as zero, cut the throttle and leave it hanging
      * in the air with no plume; the thruster's push keeps it awake instead, still sinking and still burning.
+     * Fed air, which pushes weakly enough that holding the sublevel up takes a good share of the throttle; a fuel as
+     * strong as Flux holds it at a few percent, too little sink for the program to read past the step's gravity.
      */
     @GameTest(template = TEMPLATE, batch = "thrusterSable_hover", skyAccess = true, timeoutTicks = 400)
     public static void fallingSpeedProgram_keepsSinkingAndBurning(GameTestHelper helper) {
@@ -85,8 +89,9 @@ public class ThrusterSableGameTests {
                 return;
             }
             ThrusterBlockEntity t = thruster[0];
+            GasType air = GasTypeRegistry.INSTANCE.getGasType(AtmosphericComposition.AIR);
             KelvinMod.INSTANCE.forceGetKelvin().addGasAtTemperature(
-                    GasEdgeNegotiator.nodePos(level, t.getBlockPos()), ModGases.FLUX, ModGases.FLUX.molesToMass(1), 300.0);
+                    GasEdgeNegotiator.nodePos(level, t.getBlockPos()), air, air.molesToMass(1), 300.0);
             t.physTickProgram().accept(command, level.getServer().createCommandSourceStack().withLevel(level),
                     level, t.getBlockPos());
             GridPhysics physics = SableGridPhysicsProbe.physicsOf(rig[0]);

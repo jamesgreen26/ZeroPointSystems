@@ -6,6 +6,7 @@ import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.gas.ThrusterBlock;
 import g_mungus.zps.block.gas.core.GasEdgeNegotiator;
 import g_mungus.zps.blockentity.gas.ThrusterBlockEntity;
+import g_mungus.zps.blockentity.gas.ThrusterPropellant;
 import g_mungus.zps.commands.api_impl.ScriptCommandFailure;
 import g_mungus.zps.commands.api_impl.ZPSScripts;
 import g_mungus.zps.commands.phystick.PhysTickProgrammableTarget;
@@ -14,6 +15,7 @@ import g_mungus.zps.compat.GridPhysics;
 import g_mungus.zps.gas.ModGases;
 import g_mungus.zps.room.Room;
 import g_mungus.zps.room.RoomManager;
+import g_mungus.zps.world.AtmosphericComposition;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -26,14 +28,16 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import org.valkyrienskies.kelvin.KelvinMod;
 import org.valkyrienskies.kelvin.api.DuctNodePos;
 import org.valkyrienskies.kelvin.api.GasType;
+import org.valkyrienskies.kelvin.impl.registry.GasTypeRegistry;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * The thruster: the signal asks for gas in fifteenths, Stellane burns into Exhaust and pushes, Flux burns and pushes
- * twice as hard, other gas passes through cold and pushes half as hard, and the push reaches the grid's physics step pointing away from the nozzle.
+ * The thruster: the signal asks for gas in fifteenths, Stellane burns into Steam and pushes, Flux burns and pushes
+ * twice as hard, other gas passes through cold four times as fast and pushes half as hard, and the push reaches the grid's physics step pointing away from the nozzle.
  * Gas is put straight into the thruster's node, so nothing but the thruster takes it out.
  */
 @GameTestHolder(ZPSMod.MOD_ID)
@@ -110,25 +114,33 @@ public class ThrusterGameTests {
         double before = massOf(helper, THRUSTER, ModGases.STELLANE);
         helper.runAfterDelay(BURN_TICKS, () -> {
             assertThrust(helper, thruster, ThrusterBlockEntity.maxThrust() / 3, "Pure Stellane at 5");
-            double burnt = ModGases.STELLANE.massToMoles(before - massOf(helper, THRUSTER, ModGases.STELLANE));
-            double perTick = ThrusterBlockEntity.MAX_MOL_PER_TICK / 3;
+            double burnt = before - massOf(helper, THRUSTER, ModGases.STELLANE);
+            // The shipped Stellane recipe burns 0.01 kg a second at a full signal.
+            double perTick = 0.01 / 20 / 3;
             // Whole ticks only, and the block entity may have ticked once more or less than the delay.
             double ticks = burnt / perTick;
             helper.assertTrue(Math.abs(ticks - Math.round(ticks)) < 1e-6 && Math.abs(ticks - BURN_TICKS) <= 1,
-                    "At 5 the thruster should burn " + perTick + " mol a tick, burnt " + burnt + " in " + BURN_TICKS);
+                    "At 5 the thruster should burn " + perTick + " kg a tick, burnt " + burnt + " in " + BURN_TICKS);
             helper.succeed();
         });
     }
 
-    /** Half Steam by moles: half the full burn, half as much again for the cold half, and a half-cold plume. */
+    /**
+     * Half Steam by moles: each gas fills the request by its share of its own full draw, Steam's being far bigger, and
+     * each share pushes at its own full-draw rate; the plume is half cold.
+     */
     @GameTest(template = TEMPLATE)
     public static void impureFeed_pushesLessAndShowsCold(GameTestHelper helper) {
         ThrusterBlockEntity thruster = placeThruster(helper, THRUSTER, Direction.SOUTH, 15);
         feed(helper, THRUSTER, ModGases.STELLANE, MOLES);
         feed(helper, THRUSTER, ModGases.STEAM, MOLES);
         helper.runAfterDelay(BURN_TICKS, () -> {
-            double half = ThrusterBlockEntity.maxThrust() / 2;
-            assertThrust(helper, thruster, half + half * ThrusterBlockEntity.COLD_PUSH_RATIO, "Half Stellane, half Steam");
+            ThrusterPropellant stellane = ThrusterPropellant.of(helper.getLevel(), ModGases.STELLANE);
+            ThrusterPropellant steam = ThrusterPropellant.of(helper.getLevel(), ModGases.STEAM);
+            double stellaneDraws = ModGases.STELLANE.molesToMass(MOLES) / stellane.fullDrawKgPerTick();
+            double steamDraws = ModGases.STEAM.molesToMass(MOLES) / steam.fullDrawKgPerTick();
+            assertThrust(helper, thruster, (stellaneDraws * stellane.fullThrust() + steamDraws * steam.fullThrust())
+                    / (stellaneDraws + steamDraws), "Half Stellane, half Steam");
             helper.assertTrue(thruster.burn() == 1, "The mix should still be drawn at full, is " + thruster.burn());
             helper.assertTrue(thruster.coldFraction() == 0.5f, "Half the plume should be cold, is " + thruster.coldFraction());
             helper.succeed();
@@ -140,7 +152,8 @@ public class ThrusterGameTests {
         ThrusterBlockEntity thruster = placeThruster(helper, THRUSTER, Direction.SOUTH, 15);
         feed(helper, THRUSTER, ModGases.FLUX, MOLES);
         helper.runAfterDelay(BURN_TICKS, () -> {
-            assertThrust(helper, thruster, ThrusterBlockEntity.maxThrust() * ThrusterBlockEntity.FLUX_PUSH_RATIO, "Pure Flux");
+            // The shipped Flux recipe pushes twice as hard as Stellane.
+            assertThrust(helper, thruster, ThrusterBlockEntity.maxThrust() * 2, "Pure Flux");
             helper.assertTrue(thruster.blueFraction() == 1, "Pure Flux should be all blue, is " + thruster.blueFraction());
             helper.assertTrue(thruster.coldFraction() == 0, "Pure Flux should leave nothing cold");
             helper.succeed();
@@ -155,11 +168,30 @@ public class ThrusterGameTests {
         feed(helper, THRUSTER, ModGases.FLUX, MOLES);
         feed(helper, THRUSTER, ModGases.STEAM, MOLES);
         helper.runAfterDelay(BURN_TICKS, () -> {
-            double quarter = ThrusterBlockEntity.maxThrust() / 4;
-            assertThrust(helper, thruster, quarter * (2 + ThrusterBlockEntity.FLUX_PUSH_RATIO
-                    + ThrusterBlockEntity.COLD_PUSH_RATIO), "Half Stellane, a quarter Flux, a quarter Steam");
+            // Shares of the request: two of Stellane, one of Flux, and the Steam's mole fills a fraction of one.
+            // Each gas's share of the request is its mass over its own full draw.
+            double expected = 0;
+            double draws = 0;
+            for (var feed : List.of(Map.entry(ModGases.STELLANE, 2.0), Map.entry(ModGases.FLUX, 1.0),
+                    Map.entry(ModGases.STEAM, 1.0))) {
+                ThrusterPropellant propellant = ThrusterPropellant.of(helper.getLevel(), feed.getKey());
+                double share = feed.getKey().molesToMass(feed.getValue()) / propellant.fullDrawKgPerTick();
+                expected += share * propellant.fullThrust();
+                draws += share;
+            }
+            assertThrust(helper, thruster, expected / draws, "Half Stellane, a quarter Flux, a quarter Steam");
             helper.assertTrue(thruster.blueFraction() == 0.25f, "A quarter of the plume should be blue, is " + thruster.blueFraction());
             helper.assertTrue(thruster.coldFraction() == 0.25f, "A quarter of the plume should be cold, is " + thruster.coldFraction());
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void pureAir_pushesAtTheUnburntThrust(GameTestHelper helper) {
+        ThrusterBlockEntity thruster = placeThruster(helper, THRUSTER, Direction.SOUTH, 15);
+        feed(helper, THRUSTER, GasTypeRegistry.INSTANCE.getGasType(AtmosphericComposition.AIR), MOLES);
+        helper.runAfterDelay(BURN_TICKS, () -> {
+            assertThrust(helper, thruster, ThrusterBlockEntity.maxThrust() * ThrusterBlockEntity.UNBURNT_THRUST, "Pure air");
             helper.succeed();
         });
     }
@@ -168,9 +200,20 @@ public class ThrusterGameTests {
     public static void noStellane_stillPushesALittle(GameTestHelper helper) {
         ThrusterBlockEntity thruster = placeThruster(helper, THRUSTER, Direction.SOUTH, 15);
         feed(helper, THRUSTER, ModGases.STEAM, MOLES);
+        double before = massOf(helper, THRUSTER, ModGases.STEAM);
         helper.runAfterDelay(BURN_TICKS, () -> {
-            assertThrust(helper, thruster, ThrusterBlockEntity.maxThrust() * ThrusterBlockEntity.COLD_PUSH_RATIO, "Pure Steam");
+            // As fast out of the nozzle as air, so pushing by its mass against air's.
+            GasType air = GasTypeRegistry.INSTANCE.getGasType(AtmosphericComposition.AIR);
+            assertThrust(helper, thruster, ThrusterBlockEntity.maxThrust() * ThrusterBlockEntity.UNBURNT_THRUST
+                    * ModGases.STEAM.getDensity() / air.getDensity(), "Pure Steam");
             helper.assertTrue(thruster.coldFraction() == 1, "Pure Steam should be all cold");
+            helper.assertTrue(thruster.burn() == 1, "Pure Steam at 15 should show a full burn, shows " + thruster.burn());
+            double drawn = ModGases.STEAM.massToMoles(before - massOf(helper, THRUSTER, ModGases.STEAM));
+            double perTick = ThrusterBlockEntity.UNBURNT_MOL_PER_TICK;
+            // Whole ticks only, and the block entity may have ticked once more or less than the delay.
+            double ticks = drawn / perTick;
+            helper.assertTrue(Math.abs(ticks - Math.round(ticks)) < 1e-6 && Math.abs(ticks - BURN_TICKS) <= 1,
+                    "Steam at 15 should be drawn at " + perTick + " mol a tick, drew " + drawn + " in " + BURN_TICKS);
             helper.succeed();
         });
     }
@@ -350,9 +393,9 @@ public class ThrusterGameTests {
         helper.succeed();
     }
 
-    /** A thruster in the wall of a sealed box, nozzle in: what it burns goes into the box as Exhaust. */
+    /** A thruster in the wall of a sealed box, nozzle in: what it burns goes into the box as Steam. */
     @GameTest(template = ROOM_TEMPLATE)
-    public static void burntStellane_leavesAsExhaust(GameTestHelper helper) {
+    public static void burntStellane_leavesAsSteam(GameTestHelper helper) {
         BlockPos min = new BlockPos(3, 1, 3);
         BlockPos max = new BlockPos(7, 5, 7);
         for (int x = min.getX(); x <= max.getX(); x++) {
@@ -375,13 +418,13 @@ public class ThrusterGameTests {
         ThrusterBlockEntity thruster = placeThruster(helper, wall, Direction.EAST, 15);
         feed(helper, wall, ModGases.STELLANE, MOLES);
         helper.runAfterDelay(BURN_TICKS, () -> {
-            // One thruster's Exhaust is a trickle the room's leak soon settles, which puts it to sleep; look straight
+            // One thruster's Steam is a trickle the room's leak soon settles, which puts it to sleep; look straight
             // after a burn, before the room has ticked.
             thruster.tick();
             Room room = rooms.roomAt(helper.absolutePos(inside));
             helper.assertTrue(room != null, "The burn should have gone into the box as a room");
-            double exhaust = room.massKg().getOrDefault(ModGases.EXHAUST.getResourceLocation(), 0.0);
-            helper.assertTrue(exhaust > 0, "The room should hold Exhaust, holds " + room.massKg());
+            double steam = room.massKg().getOrDefault(ModGases.STEAM.getResourceLocation(), 0.0);
+            helper.assertTrue(steam > 0, "The room should hold Steam, holds " + room.massKg());
             helper.assertTrue(!room.massKg().containsKey(ModGases.STELLANE.getResourceLocation()),
                     "No Stellane should come out unburnt, the room holds " + room.massKg());
             helper.succeed();

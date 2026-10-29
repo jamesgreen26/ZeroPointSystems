@@ -9,6 +9,7 @@ import g_mungus.zps.block.cableNetwork.TransformerBlock;
 import g_mungus.zps.block.cableNetwork.core.Channels;
 import g_mungus.zps.blockentity.GraduatedLeverBlockEntity;
 import g_mungus.zps.blockentity.NetworkTerminal;
+import g_mungus.zps.blockentity.RedstoneConverterBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
@@ -16,12 +17,15 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LeverBlock;
+import net.minecraft.world.level.block.RedStoneWireBlock;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.RedstoneLampBlock;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.AttachFace;
+import net.minecraft.world.level.block.state.properties.RedstoneSide;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.InteractionHand;
@@ -607,5 +611,74 @@ public class CableNetworkGameTests {
         // POWER=1 on QUAD_3 must light the lamp via the inverted separator chain
         helper.assertBlockProperty(lampRel, RedstoneLampBlock.LIT, true);
         helper.succeed();
+    }
+
+    // -------------------------------------------------------------------------
+    // Converter input: dust and other converters lose one a hop
+    // -------------------------------------------------------------------------
+
+    private static BlockState converterFacing(Direction facing) {
+        return ModBlocks.REDSTONE_CONVERTER.get().defaultBlockState().setValue(TransformerBlock.FACING, facing);
+    }
+
+    private static int suppliedSignal(GameTestHelper helper, BlockPos converterPos) {
+        if (!(helper.getBlockEntity(converterPos) instanceof RedstoneConverterBlockEntity converter)) {
+            helper.fail("No converter at " + converterPos);
+            throw new IllegalStateException();
+        }
+        return converter.getCurrentSuppliedSignal(Channels.MAIN);
+    }
+
+    /** Dust at full strength, fed by a redstone block, reads one less into the converter it runs into. */
+    @GameTest(template = TEMPLATE)
+    public static void dustIntoConverter_readsOneLess(GameTestHelper helper) {
+        BlockPos converterPos = new BlockPos(3, 1, 3);
+        BlockPos dustPos = new BlockPos(3, 1, 2);
+        BlockPos sourcePos = new BlockPos(3, 1, 1);
+        helper.setBlock(converterPos, converterFacing(Direction.NORTH));
+        // The template's floor won't hold dust.
+        helper.setBlock(dustPos.below(), Blocks.STONE);
+        // Run north to south, as placing it would; placed bare it is a dot, which powers nothing beside it.
+        helper.setBlock(dustPos, Blocks.REDSTONE_WIRE.defaultBlockState()
+                .setValue(RedStoneWireBlock.NORTH, RedstoneSide.SIDE)
+                .setValue(RedStoneWireBlock.SOUTH, RedstoneSide.SIDE));
+        helper.setBlock(sourcePos, Blocks.REDSTONE_BLOCK);
+        helper.succeedWhen(() -> {
+            int supplied = suppliedSignal(helper, converterPos);
+            helper.assertTrue(supplied == 14, "Dust at 15 should give the converter 14, gives " + supplied);
+        });
+    }
+
+    /** A converter putting out 15 gives one aimed back at it 14. */
+    @GameTest(template = TEMPLATE)
+    public static void converterIntoConverter_readsOneLess(GameTestHelper helper) {
+        BlockPos fromPos = new BlockPos(2, 1, 3);
+        BlockPos toPos = new BlockPos(3, 1, 3);
+        helper.setBlock(fromPos, converterFacing(Direction.EAST));
+        helper.setBlock(toPos, converterFacing(Direction.WEST));
+        if (!(helper.getBlockEntity(fromPos) instanceof RedstoneConverterBlockEntity from)) {
+            helper.fail("No converter at " + fromPos);
+            return;
+        }
+        from.receiveSignal(15, Channels.MAIN);
+        helper.succeedWhen(() -> {
+            int supplied = suppliedSignal(helper, toPos);
+            helper.assertTrue(supplied == 14, "A converter at 15 should give the next 14, gives " + supplied);
+        });
+    }
+
+    /** Any other source gives its full strength: a lever on the converter's face reads 15. */
+    @GameTest(template = TEMPLATE)
+    public static void leverIntoConverter_readsFull(GameTestHelper helper) {
+        BlockPos converterPos = new BlockPos(3, 1, 3);
+        helper.setBlock(converterPos, converterFacing(Direction.NORTH));
+        helper.setBlock(new BlockPos(3, 1, 2), Blocks.LEVER.defaultBlockState()
+                .setValue(LeverBlock.FACE, AttachFace.WALL)
+                .setValue(LeverBlock.FACING, Direction.NORTH)
+                .setValue(LeverBlock.POWERED, true));
+        helper.succeedWhen(() -> {
+            int supplied = suppliedSignal(helper, converterPos);
+            helper.assertTrue(supplied == 15, "A lever should give the converter 15, gives " + supplied);
+        });
     }
 }

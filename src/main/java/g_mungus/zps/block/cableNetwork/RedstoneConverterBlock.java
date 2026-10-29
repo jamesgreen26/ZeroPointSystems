@@ -9,6 +9,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
@@ -50,6 +51,11 @@ public class RedstoneConverterBlock extends TransformerBlock {
         Direction facing = state.getValue(TransformerBlock.FACING);
         BlockPos sourcePos = pos.offset(facing.getNormal());
         int power = level.getDirectSignal(sourcePos, facing);
+        // Dust and other converters lose one a hop, as dust does along itself, so loops through them die away.
+        BlockState source = level.getBlockState(sourcePos);
+        if (source.is(Blocks.REDSTONE_WIRE) || source.is(ModBlocks.REDSTONE_CONVERTER.get())) {
+            power = Math.max(0, power - 1);
+        }
 
         // A Serial Bus aimed at the converter feeds it from whichever side it is on.
         for (Direction side : Direction.values()) {

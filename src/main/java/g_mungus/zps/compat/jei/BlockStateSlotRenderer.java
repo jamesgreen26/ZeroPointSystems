@@ -14,6 +14,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
+import org.joml.Matrix4f;
 
 import java.util.List;
 import java.util.Map;
@@ -44,9 +45,11 @@ public class BlockStateSlotRenderer implements IIngredientRenderer<ItemStack> {
 
         PoseStack pose = graphics.pose();
         pose.pushPose();
-        // The same frame vanilla sets up for an item icon: centred in the 16px slot, y flipped.
+        // The same frame vanilla sets up for an item icon: centred in the 16px slot, y flipped apart from the scale,
+        // since 1.20.1's scale garbles the normals, and so the shading, when one axis is negative.
         pose.translate(8.0f, 8.0f, 150.0f);
-        pose.scale(16.0f, -16.0f, 16.0f);
+        pose.mulPoseMatrix(new Matrix4f().scaling(1.0f, -1.0f, 1.0f));
+        pose.scale(16.0f, 16.0f, 16.0f);
         // The "gui" display transform every block item inherits from minecraft:block/block.
         pose.mulPose(Axis.XP.rotationDegrees(30.0f));
         pose.mulPose(Axis.YP.rotationDegrees(225.0f));

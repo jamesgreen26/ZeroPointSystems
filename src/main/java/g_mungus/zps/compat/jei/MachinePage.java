@@ -174,7 +174,10 @@ record MachinePage(int inputs, int inputColumns, int outputs, int outputColumns,
         PoseStack pose = graphics.pose();
         pose.pushPose();
         pose.translate(MACHINE_X, BLOCK_Y, 100);
-        pose.scale(BLOCK_SCALE, -BLOCK_SCALE, BLOCK_SCALE);
+        // Flipped apart from the scale, as vanilla's item icons are: 1.20.1's scale garbles the normals, and so the
+        // shading, when one axis is negative.
+        pose.mulPoseMatrix(new Matrix4f().scaling(1, -1, 1));
+        pose.scale(BLOCK_SCALE, BLOCK_SCALE, BLOCK_SCALE);
         pose.mulPose(Axis.XP.rotationDegrees(TILT_DEGREES));
         pose.mulPose(Axis.YP.rotationDegrees(TURN_DEGREES));
         pose.translate(-0.5f, -0.5f, -0.5f);

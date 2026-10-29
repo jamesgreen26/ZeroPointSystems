@@ -454,6 +454,7 @@
 
     "gui.recipebook.toggleRecipes.rollable": "Rollable",
     "gui.zps.jei.impact.may_contain": "May contain:",
+    "gui.zps.jei.impact.chance": "%s chance",
     "gui.zps.jei.impact.requires_state": "Requires %s: %s",
     "block.zps.composter_dirt": "Dirt-Filled Composter",
     "gui.zps.serial_bus.mode": "Mode",

@@ -1,6 +1,9 @@
 package g_mungus.zps.compat.jei;
 
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.block.RollingMillBlock;
+import g_mungus.zps.client.renderer.RollingMillBlockEntityRenderer;
 import g_mungus.zps.item.ModItems;
 import g_mungus.zps.recipe.RollingRecipe;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
@@ -11,28 +14,38 @@ import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * JEI category for {@link RollingRecipe}. Shows the input ingredient, an arrow, and the rolled
- * result. Only loaded when JEI is installed.
+ * JEI category for {@link RollingRecipe}: the input, the mill with its rollers turning, and the rolled result, laid
+ * out as every {@link MachinePage} is. Only loaded when JEI is installed.
  */
 public class RollingMillCategory implements IRecipeCategory<RollingRecipe> {
     public static final RecipeType<RollingRecipe> TYPE =
             new RecipeType<>(ZPSMod.resource("rolling"), RollingRecipe.class);
 
-    private static final int WIDTH = 100;
-    private static final int HEIGHT = 26;
-    private static final int SLOT_Y = 4;
+    private static final MachinePage PAGE = new MachinePage(1, 1, 1, 1, 0);
+
+    /** Facing the viewer, the rollers' world spin carrying the work between them from the input to the output. */
+    private static final Direction FACING = Direction.SOUTH;
+    private static final BlockState MILL = ModBlocks.ROLLING_MILL.get().defaultBlockState()
+            .setValue(RollingMillBlock.FACING, FACING)
+            .setValue(RollingMillBlock.WORKING, true);
+    private static final float DEGREES_PER_SECOND = 90;
 
     private final IDrawable icon;
-    private final IDrawable arrow;
+    private final IDrawable slot;
 
     public RollingMillCategory(IGuiHelper guiHelper) {
         this.icon = guiHelper.createDrawableItemLike(ModItems.ROLLING_MILL.get());
-        this.arrow = guiHelper.getRecipeArrow();
+        this.slot = guiHelper.getSlotDrawable();
     }
 
     @Override
@@ -52,12 +65,12 @@ public class RollingMillCategory implements IRecipeCategory<RollingRecipe> {
 
     @Override
     public int getWidth() {
-        return WIDTH;
+        return MachinePage.WIDTH;
     }
 
     @Override
     public int getHeight() {
-        return HEIGHT;
+        return PAGE.height();
     }
 
     @Override
@@ -67,17 +80,23 @@ public class RollingMillCategory implements IRecipeCategory<RollingRecipe> {
 
     @Override
     public void setRecipe(IRecipeLayoutBuilder builder, RollingRecipe recipe, IFocusGroup focuses) {
-        builder.addSlot(RecipeIngredientRole.INPUT, 3, SLOT_Y)
-                .setStandardSlotBackground()
+        builder.addSlot(RecipeIngredientRole.INPUT, PAGE.inputX(0), PAGE.inputY(0))
+                .setBackground(slot, -1, -1)
                 .addIngredients(recipe.ingredient());
-        builder.addSlot(RecipeIngredientRole.OUTPUT, WIDTH - 21, SLOT_Y)
-                .setOutputSlotBackground()
+        builder.addSlot(RecipeIngredientRole.OUTPUT, PAGE.outputX(0), PAGE.outputY(0))
+                .setBackground(slot, -1, -1)
                 .addItemStack(recipe.result());
     }
 
     @Override
-    public void draw(RollingRecipe recipe, IRecipeSlotsView slotsView, GuiGraphics graphics, double mouseX, double mouseY) {
-        // Vertically centre the arrow against the 18px slot row.
-        arrow.draw(graphics, (WIDTH - arrow.getWidth()) / 2, SLOT_Y + (18 - arrow.getHeight()) / 2);
+    public void draw(RollingRecipe recipe, IRecipeSlotsView slotsView, GuiGraphics graphics,
+                     double mouseX, double mouseY) {
+        PAGE.drawStage(graphics);
+        float angle = (System.currentTimeMillis() % 360_000L) / 1000f * DEGREES_PER_SECOND;
+        MachinePage.drawMachine(graphics, MachinePage.BLOCK_SCALE, MachinePage.BLOCK_Y, (pose, buffers) -> {
+            MachinePage.renderBlock(pose, buffers, MILL);
+            RollingMillBlockEntityRenderer.renderRollers(Minecraft.getInstance().getItemRenderer(), pose, buffers,
+                    LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, FACING, angle);
+        });
     }
 }

@@ -10,7 +10,6 @@ import dev.engine_room.flywheel.lib.visual.AbstractBlockEntityVisual;
 import dev.engine_room.flywheel.lib.visual.SimpleDynamicVisual;
 import g_mungus.zps.block.RollingMillBlock;
 import g_mungus.zps.blockentity.RollingMillBlockEntity;
-import net.minecraft.core.Direction;
 
 import java.util.function.Consumer;
 
@@ -46,8 +45,7 @@ public class RollingMillVisual extends AbstractBlockEntityVisual<RollingMillBloc
     }
 
     private void animate(float angle) {
-        // Rotate the whole layout 90 deg when the mill faces along X so the wheel axes track the block's facing.
-        float facingYaw = blockEntity.getBlockState().getValue(RollingMillBlock.FACING).getAxis() == Direction.Axis.X ? 90.0f : 0.0f;
+        float facingYaw = RollingMillBlockEntityRenderer.rollerYaw(blockEntity.getBlockState().getValue(RollingMillBlock.FACING));
 
         // Two wheels stacked in the upper/lower slots, counter-rotating about the block-local Z axis.
         applyDisc(lowerWheel, 0.5f, 0.25f, 0.5f, facingYaw, angle);

@@ -1,6 +1,10 @@
 package g_mungus.zps.compat.jei;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.block.ImpactPistonBlock;
+import g_mungus.zps.block.ModBlocks;
+import g_mungus.zps.client.renderer.ImpactPistonBlockEntityRenderer;
 import g_mungus.zps.client.tooltip.ItemIconsTooltip;
 import g_mungus.zps.item.ModItems;
 import g_mungus.zps.recipe.ImpactRecipe;
@@ -15,9 +19,11 @@ import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import net.minecraft.ChatFormatting;
+import net.minecraft.advancements.critereon.StatePropertiesPredicate;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.advancements.critereon.StatePropertiesPredicate;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
@@ -28,6 +34,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,29 +46,35 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * JEI category for {@link ImpactRecipe}. Shows the struck block, an arrow, and every weighted
- * outcome with its chance. Only loaded when JEI is installed.
+ * JEI category for {@link ImpactRecipe}: the struck block, the piston, and every weighted outcome with its chance in
+ * the corner of its slot, laid out as every {@link MachinePage} is. Only loaded when JEI is installed.
  */
 public class ImpactCategory implements IRecipeCategory<ImpactRecipe> {
     public static final RecipeType<ImpactRecipe> TYPE =
             new RecipeType<>(ZPSMod.resource("impact"), ImpactRecipe.class);
 
-    private static final int SLOT_SIZE = 22;
-    private static final int SLOT_Y = 4;
-    private static final int CHANCE_HEIGHT = 10;
-    private static final int HEIGHT = SLOT_Y + SLOT_SIZE + CHANCE_HEIGHT;
-    private static final int INPUT_X = 3;
-    private static final int ARROW_GAP = 32;
-    private static final int OUTPUTS_X = INPUT_X + SLOT_SIZE + ARROW_GAP + 4;
-    /** Outputs are laid out in a row, so the width grows with the number of possible results. */
-    private static final int MAX_OUTPUTS_SHOWN = 4;
+    /** Outcomes two to a row, rows added beneath as a recipe needs them. */
+    private static final int OUTPUT_COLUMNS = 2;
+
+    /** Lit, as it is while it works, with the rod at rest. */
+    private static final BlockState PISTON = ModBlocks.IMPACT_PISTON.get().defaultBlockState()
+            .setValue(ImpactPistonBlock.POWERED, true);
 
     private final IDrawable icon;
-    private final IDrawable arrow;
+    private final IDrawable slot;
+
+    /** The last recipe laid out, for {@link #getHeight}, which JEI asks without saying which recipe. */
+    @Nullable
+    private ImpactRecipe currentRecipe;
 
     public ImpactCategory(IGuiHelper guiHelper) {
         this.icon = guiHelper.createDrawableItemLike(ModItems.IMPACT_PISTON.get());
-        this.arrow = guiHelper.getRecipeArrow();
+        this.slot = guiHelper.getSlotDrawable();
+    }
+
+    private static MachinePage page(ImpactRecipe recipe) {
+        int outputs = Math.max(1, recipe.results().size());
+        return new MachinePage(1, 1, outputs, Math.min(outputs, OUTPUT_COLUMNS), 0);
     }
 
     @Override
@@ -81,12 +94,12 @@ public class ImpactCategory implements IRecipeCategory<ImpactRecipe> {
 
     @Override
     public int getWidth() {
-        return OUTPUTS_X + (SLOT_SIZE * MAX_OUTPUTS_SHOWN) + 3;
+        return MachinePage.WIDTH;
     }
 
     @Override
     public int getHeight() {
-        return HEIGHT;
+        return currentRecipe == null ? new MachinePage(1, 1, 1, 1, 0).height() : page(currentRecipe).height();
     }
 
     @Override
@@ -96,6 +109,9 @@ public class ImpactCategory implements IRecipeCategory<ImpactRecipe> {
 
     @Override
     public void setRecipe(IRecipeLayoutBuilder builder, ImpactRecipe recipe, IFocusGroup focuses) {
+        currentRecipe = recipe;
+        MachinePage page = page(recipe);
+
         // The input is a block set, so the slot cycles through every block the piston accepts.
         List<ItemStack> inputs = new ArrayList<>();
         for (Holder<Block> block : recipe.ingredient()) {
@@ -104,8 +120,8 @@ public class ImpactCategory implements IRecipeCategory<ImpactRecipe> {
                 inputs.add(stack);
             }
         }
-        var inputSlot = builder.addSlot(RecipeIngredientRole.INPUT, INPUT_X, SLOT_Y)
-                .setStandardSlotBackground()
+        var inputSlot = builder.addSlot(RecipeIngredientRole.INPUT, page.inputX(0), page.inputY(0))
+                .setBackground(slot, -1, -1)
                 .addItemStacks(inputs);
         // An item icon shows the block as it sits in an inventory. Where the recipe asks for a
         // particular state, draw that instead: a full composter, not an empty one.
@@ -120,13 +136,21 @@ public class ImpactCategory implements IRecipeCategory<ImpactRecipe> {
         }
 
         List<ImpactResult> results = recipe.results();
+        int totalWeight = results.stream().mapToInt(ImpactResult::weight).sum();
         for (int i = 0; i < results.size(); i++) {
             ImpactResult result = results.get(i);
             Block resultBlock = result.block().value();
             ItemStack resultStack = displayStack(resultBlock);
-            var slot = builder.addSlot(RecipeIngredientRole.OUTPUT, OUTPUTS_X + (i * SLOT_SIZE), SLOT_Y)
-                    .setStandardSlotBackground()
+            var slot = builder.addSlot(RecipeIngredientRole.OUTPUT, page.outputX(i), page.outputY(i))
+                    .setBackground(this.slot, -1, -1)
                     .addItemStack(resultStack);
+            // One of several outcomes: its share of the total weight, in the corner like a gas slot's amount.
+            if (results.size() > 1) {
+                String chance = formatChance(result.weight(), totalWeight);
+                slot.setOverlay(new ChanceLabel(chance), 0, 0);
+                slot.addRichTooltipCallback((view, tooltip) -> tooltip.add(
+                        Component.translatable("gui.zps.jei.impact.chance", chance).withStyle(ChatFormatting.GOLD)));
+            }
             if (resultBlock.asItem() == Items.AIR && !resultStack.isEmpty()) {
                 // The borrowed item would show the wrong block, so draw the real one over it.
                 slot.setCustomRenderer(VanillaTypes.ITEM_STACK,
@@ -231,24 +255,46 @@ public class ImpactCategory implements IRecipeCategory<ImpactRecipe> {
 
     @Override
     public void draw(ImpactRecipe recipe, IRecipeSlotsView slotsView, GuiGraphics graphics, double mouseX, double mouseY) {
-        // Vertically centre the arrow against the 18px slot row.
-        arrow.draw(graphics, INPUT_X + SLOT_SIZE + ((ARROW_GAP - arrow.getWidth()) / 2), SLOT_Y + (SLOT_SIZE - arrow.getHeight()) / 2);
+        page(recipe).drawStage(graphics);
+        MachinePage.drawMachine(graphics, MachinePage.BLOCK_SCALE, MachinePage.BLOCK_Y, (pose, buffers) -> {
+            MachinePage.renderBlock(pose, buffers, PISTON);
+            ImpactPistonBlockEntityRenderer.renderRod(Minecraft.getInstance().getItemRenderer(), pose, buffers,
+                    LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, 0);
+        });
+    }
 
-        List<ImpactResult> results = recipe.results();
-        if (results.size() <= 1) {
-            return;
+    /** A chance, written small in the bottom corner of a slot over the item, outlined like Kelvin's gas amounts. */
+    private record ChanceLabel(String text) implements IDrawable {
+        private static final int OUTLINE_COLOR = 0x0D0501;
+        private static final int TEXT_COLOR = 0xFFFFFF;
+
+        @Override
+        public int getWidth() {
+            return 16;
         }
-        // Multiple outcomes: label each with its share of the total weight.
-        int total = 0;
-        for (ImpactResult result : results) {
-            total += result.weight();
+
+        @Override
+        public int getHeight() {
+            return 16;
         }
-        var font = Minecraft.getInstance().font;
-        int chanceY = SLOT_Y + SLOT_SIZE + 1;
-        for (int i = 0; i < results.size(); i++) {
-            String text = formatChance(results.get(i).weight(), total);
-            int centre = OUTPUTS_X + (i * SLOT_SIZE) + (SLOT_SIZE / 2);
-            graphics.drawString(font, text, centre - (font.width(text) / 2), chanceY, 0xFF808080, false);
+
+        @Override
+        public void draw(GuiGraphics graphics, int xOffset, int yOffset) {
+            var font = Minecraft.getInstance().font;
+            PoseStack pose = graphics.pose();
+            pose.pushPose();
+            // Above the item, which draws at up to 150 plus its own depth.
+            pose.translate(xOffset, yOffset, 200);
+            pose.scale(0.5f, 0.5f, 1);
+            int x = 32 - font.width(text);
+            int y = 23;
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dy = -1; dy <= 1; dy++) {
+                    graphics.drawString(font, text, x + dx, y + dy, OUTLINE_COLOR, false);
+                }
+            }
+            graphics.drawString(font, text, x, y, TEXT_COLOR, false);
+            pose.popPose();
         }
     }
 

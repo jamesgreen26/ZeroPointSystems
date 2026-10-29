@@ -33,6 +33,7 @@
     "gui.zps.vaporizer.gas_temperature": "Temperature: %s",
     "gui.zps.vaporizer.gas_pressure": "Pressure: %s",
     "jei.zps.vaporizing.temperature_cost": "Temperature Cost: %s K",
+    "jei.zps.rolling.time": "%ss",
     "jei.zps.thruster.burn_rate": "Burn Rate: %s/s",
     "jei.zps.thruster.thrust": "Thrust: %s N",
     "jei.zps.thruster.per_second": "Per second at a full signal",

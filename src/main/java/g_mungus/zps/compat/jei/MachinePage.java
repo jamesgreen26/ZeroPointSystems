@@ -44,6 +44,12 @@ record MachinePage(int inputs, int inputColumns, int outputs, int outputColumns,
     private static final int ARROW_GAP = 6;
     private static final int ARROW_HEAD = 4;
     private static final int ARROW_COLOR = 0xFFA0A0A0;
+    /**
+     * A label on the arrow is drawn at three-quarter size just under the shaft and its shadow, in the slot row's
+     * height, so it takes no room of its own.
+     */
+    private static final float ARROW_LABEL_SCALE = 0.75f;
+    private static final int ARROW_LABEL_Y = ARROW_Y + 4;
     private static final int ARROW_SHADOW_COLOR = 0xFF4A4A4A;
 
     private static final int MACHINE_X = WIDTH / 2;
@@ -179,6 +185,17 @@ record MachinePage(int inputs, int inputColumns, int outputs, int outputColumns,
     static void renderBlock(PoseStack pose, MultiBufferSource buffers, BlockState state) {
         Minecraft.getInstance().getBlockRenderer().renderSingleBlock(
                 state, pose, buffers, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
+    }
+
+    /** {@code text}, small, under the arrow beneath the machine. */
+    static void drawArrowLabel(GuiGraphics graphics, Component text) {
+        var font = Minecraft.getInstance().font;
+        PoseStack pose = graphics.pose();
+        pose.pushPose();
+        pose.translate(MACHINE_X - font.width(text) * ARROW_LABEL_SCALE / 2, ARROW_LABEL_Y, 200);
+        pose.scale(ARROW_LABEL_SCALE, ARROW_LABEL_SCALE, 1);
+        graphics.drawString(font, text, 0, 0, BAR_TEXT_COLOR);
+        pose.popPose();
     }
 
     /** Figure bar {@code index}, counting from the top, with {@code text} on it. */

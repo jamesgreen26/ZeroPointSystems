@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "hanging=false": {
+      "model": "zps:block/extinguished_lantern"
+    },
+    "hanging=true": {
+      "model": "zps:block/extinguished_lantern_hanging"
+    }
+  }
+}

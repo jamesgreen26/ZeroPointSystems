@@ -5,6 +5,7 @@ import g_mungus.zps.compat.Compat;
 import g_mungus.zps.compat.GridSpace;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.gas.AtmosphereExposure;
+import g_mungus.zps.gas.ModGasTags;
 import g_mungus.zps.networking.RoomBreachS2CPacket;
 import g_mungus.zps.world.AtmosphericComposition;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -34,6 +35,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.phys.Vec3;
@@ -67,6 +69,10 @@ import java.util.function.Function;
  * outside either, it goes dormant — no gas of its own, replacing nothing — so a trickle into a big
  * room is lost in it while a real supply builds up. A dormant room keeps its walls, so gas going in again wakes it without another
  * search, and is forgotten if a wall changes or nothing comes in for a while.
+ *
+ * <p>Flames ({@link Burner}) are seen to every {@link #BURN_INTERVAL} ticks: each needs the gas
+ * around it breathable as an entity finds it, and goes out where it is not. They leave the gas as
+ * it is, and make no room.
  */
 public final class RoomManager extends SavedData {
 
@@ -81,6 +87,8 @@ public final class RoomManager extends SavedData {
     public static final double RELEASE_START_PA = 1_000_000.0;
     /** From this pressure up, a room lets out as much gas as is put into it. */
     public static final double MAX_PRESSURE_PA = 10_000_000.0;
+    /** How often flames are seen to, in ticks. */
+    static final int BURN_INTERVAL = 20;
     /** Most breach puffs drawn for one room coming open. */
     private static final int MAX_BREACH_PUFFS = 4;
 
@@ -89,12 +97,16 @@ public final class RoomManager extends SavedData {
     private final Long2ObjectMap<IntList> byBoundary = new Long2ObjectOpenHashMap<>();
     private int nextId = 1;
 
-    /** Start positions whose last scan found no room, and the game time they may be scanned again. */
+    /**
+     * Positions a scan found no room around, and the game time they may be scanned again: where the
+     * scan started, and every cell it reached, which leads out the same way.
+     */
     private final Long2LongMap failedUntil = new Long2LongOpenHashMap();
     /** Rooms with a changed block since the last tick, and which positions changed. */
     private final Int2ObjectMap<LongSet> dirty = new Int2ObjectOpenHashMap<>();
     /** Rooms among those where something gained material, which might have cut them in two. */
     private final IntSet needsFullCheck = new IntOpenHashSet();
+    private final Flames flames = new Flames();
 
     public RoomManager() {
         byInterior.defaultReturnValue(-1);
@@ -246,14 +258,9 @@ public final class RoomManager extends SavedData {
             return;
         }
 
-        Room room = knownRoomAt(at);
+        Room room = roomFor(level, at);
         if (room == null) {
-            room = seal(level, at);
-            if (room == null) {
-                return;
-            }
-        } else if (!room.isActive()) {
-            room.wake(outsideAir(level, room.anchor(), room.volume()), AtmosphereExposure.temperatureK(level, room.anchor()));
+            return;
         }
         double released = releasedShare(pressureOf(room));
         room.feed(byId, temperatureK);
@@ -272,6 +279,22 @@ public final class RoomManager extends SavedData {
         return Mth.clamp((pressurePa - RELEASE_START_PA) / (MAX_PRESSURE_PA - RELEASE_START_PA), 0.0, 1.0);
     }
 
+    /**
+     * The room gas going in or out at {@code at} belongs to: the one it is in, woken if dormant, or
+     * one sealed around it now, filled with the outside air. Null if air can get out.
+     */
+    private @Nullable Room roomFor(ServerLevel level, BlockPos at) {
+        Room room = knownRoomAt(at);
+        if (room == null) {
+            return seal(level, at);
+        }
+        if (!room.isActive()) {
+            room.wake(outsideAir(level, room.anchor(), room.volume()), AtmosphereExposure.temperatureK(level, room.anchor()));
+            setDirty();
+        }
+        return room;
+    }
+
     /** Look for a room around {@code at} and register it, filled with the outside air. */
     private @Nullable Room seal(ServerLevel level, BlockPos at) {
         long key = at.asLong();
@@ -283,12 +306,16 @@ public final class RoomManager extends SavedData {
             failedUntil.remove(key);
         }
 
-        RoomScan scan = RoomScanner.scan(at, RoomScanner.shapes(level), ZPSConfig.roomMaxVolume());
+        LongSet escaped = new LongOpenHashSet();
+        RoomScan scan = RoomScanner.scan(at, RoomScanner.shapes(level), ZPSConfig.roomMaxVolume(), escaped);
         if (scan == null) {
             if (failedUntil.size() > 4096) {
                 failedUntil.long2LongEntrySet().removeIf(entry -> entry.getLongValue() <= now);
             }
-            failedUntil.put(key, now + FAILED_SCAN_COOLDOWN);
+            // Everything else in the same open space would only find the same way out.
+            long until = now + FAILED_SCAN_COOLDOWN;
+            failedUntil.put(key, until);
+            escaped.forEach(cell -> failedUntil.put(cell, until));
             return null;
         }
 
@@ -354,12 +381,7 @@ public final class RoomManager extends SavedData {
         if (!(volumeM3 > 0)) {
             return Draw.NOTHING;
         }
-        Room room = knownRoomAt(at);
-        if (room == null) {
-            room = seal(level, at);
-        } else if (!room.isActive()) {
-            room.wake(outsideAir(level, room.anchor(), room.volume()), AtmosphereExposure.temperatureK(level, room.anchor()));
-        }
+        Room room = roomFor(level, at);
 
         Map<ResourceLocation, Double> byId = new HashMap<>();
         double temperatureK;
@@ -395,6 +417,9 @@ public final class RoomManager extends SavedData {
         long key = pos.asLong();
         int interior = byInterior.get(key);
         IntList bounding = byBoundary.get(key);
+        if (Burner.of(oldState) != null || Burner.of(newState) != null) {
+            flames.onBlockChanged(pos, newState);
+        }
         if (interior < 0 && bounding == null) {
             return;
         }
@@ -422,10 +447,57 @@ public final class RoomManager extends SavedData {
         }
     }
 
-    /** Check every room that had a block change this tick, then let every loaded room leak. */
+    /** Check every room that had a block change this tick, then let every loaded room leak, and see to the flames. */
     public void tick(ServerLevel level) {
         recheckChanged(level);
         leak(level);
+        if (level.getGameTime() % BURN_INTERVAL == 0) {
+            burnFlames(level);
+        }
+    }
+
+    /** A chunk loaded: its flames are tracked. */
+    public void onChunkLoaded(LevelChunk chunk) {
+        flames.onChunkLoaded(chunk);
+    }
+
+    public void onChunkUnloaded(ChunkPos chunk) {
+        flames.onChunkUnloaded(chunk);
+    }
+
+    /**
+     * See to every loaded flame, as {@link #tick} does every {@link #BURN_INTERVAL} ticks: put out
+     * any without what it needs. Public so a test can run it on cue.
+     */
+    public void burnFlames(ServerLevel level) {
+        flames.refresh(level);
+        for (long cell : flames.cells()) {
+            BlockPos pos = BlockPos.of(cell);
+            if (!level.hasChunkAt(pos)) {
+                continue;
+            }
+            if (Burner.of(level.getBlockState(pos)) != null && !breathableAt(level, pos)) {
+                Flames.extinguish(level, pos);
+            }
+        }
+    }
+
+    /**
+     * Whether the gas at {@code pos} is breathable, as an entity would find it there: the active room
+     * it is in, otherwise the outside air where it is in the world.
+     */
+    private boolean breathableAt(ServerLevel level, BlockPos pos) {
+        Room room = roomAt(pos);
+        if (room != null) {
+            return ModGasTags.isBreathable(level, room.gases());
+        }
+        return outsideIsBreathable(level, pos);
+    }
+
+    /** Whether the outside air at {@code pos}, where it is in the world, is breathable as an entity finds it. */
+    private static boolean outsideIsBreathable(ServerLevel level, BlockPos pos) {
+        BlockPos air = AtmosphereExposure.inWorld(level, pos);
+        return AtmosphereExposure.isBreathable(level, AtmosphericComposition.of(level.getBiome(air).value()), air.getY());
     }
 
     private void leak(ServerLevel level) {

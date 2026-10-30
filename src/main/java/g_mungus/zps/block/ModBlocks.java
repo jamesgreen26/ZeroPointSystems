@@ -16,6 +16,9 @@ import g_mungus.zps.block.reactor.HeatExchangerBlock;
 import g_mungus.zps.block.reactor.ReactorPortBlock;
 import g_mungus.zps.block.reactor.ReinforcedPlatingBlock;
 import g_mungus.zps.block.reactor.ReinforcedGlassBlock;
+import g_mungus.zps.block.torch.ExtinguishedLanternBlock;
+import g_mungus.zps.block.torch.ExtinguishedTorchBlock;
+import g_mungus.zps.block.torch.ExtinguishedWallTorchBlock;
 import g_mungus.zps.item.ModItems;
 import g_mungus.zps.mixin.BlockBehaviourAccessor;
 import net.minecraft.core.BlockPos;
@@ -293,6 +296,29 @@ public class ModBlocks {
                     .noOcclusion()
                     // Thin enough that water would otherwise wash it away.
                     .forceSolidOn()));
+
+    public static final DeferredBlock<Block> EXTINGUISHED_TORCH = BLOCKS.register("extinguished_torch",
+            () -> new ExtinguishedTorchBlock(() -> Blocks.TORCH, extinguishedTorchProperties()));
+    public static final DeferredBlock<Block> EXTINGUISHED_WALL_TORCH = BLOCKS.register("extinguished_wall_torch",
+            () -> new ExtinguishedWallTorchBlock(() -> Blocks.WALL_TORCH, extinguishedTorchProperties()));
+    public static final DeferredBlock<Block> EXTINGUISHED_SOUL_TORCH = BLOCKS.register("extinguished_soul_torch",
+            () -> new ExtinguishedTorchBlock(() -> Blocks.SOUL_TORCH, extinguishedTorchProperties()));
+    public static final DeferredBlock<Block> EXTINGUISHED_SOUL_WALL_TORCH = BLOCKS.register("extinguished_soul_wall_torch",
+            () -> new ExtinguishedWallTorchBlock(() -> Blocks.SOUL_WALL_TORCH, extinguishedTorchProperties()));
+
+    public static final DeferredBlock<Block> EXTINGUISHED_LANTERN = BLOCKS.register("extinguished_lantern",
+            () -> new ExtinguishedLanternBlock(() -> Blocks.LANTERN, BlockBehaviour.Properties.ofFullCopy(Blocks.LANTERN).lightLevel(state -> 0)));
+    public static final DeferredBlock<Block> EXTINGUISHED_SOUL_LANTERN = BLOCKS.register("extinguished_soul_lantern",
+            () -> new ExtinguishedLanternBlock(() -> Blocks.SOUL_LANTERN, BlockBehaviour.Properties.ofFullCopy(Blocks.SOUL_LANTERN).lightLevel(state -> 0)));
+
+    /** A vanilla torch's, without the light. */
+    private static BlockBehaviour.Properties extinguishedTorchProperties() {
+        return BlockBehaviour.Properties.of()
+                .noCollission()
+                .instabreak()
+                .sound(SoundType.WOOD)
+                .pushReaction(PushReaction.DESTROY);
+    }
 
     public static final DeferredBlock<Block> CREATIVE_GAS_GENERATOR = BLOCKS.register("creative_gas_generator",
             () -> new CreativeGasGeneratorBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)

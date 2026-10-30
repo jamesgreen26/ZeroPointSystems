@@ -1,0 +1,8 @@
+{
+  "minecraft:torch": "zps:extinguished_torch",
+  "minecraft:wall_torch": "zps:extinguished_wall_torch",
+  "minecraft:soul_torch": "zps:extinguished_soul_torch",
+  "minecraft:soul_wall_torch": "zps:extinguished_soul_wall_torch",
+  "minecraft:lantern": "zps:extinguished_lantern",
+  "minecraft:soul_lantern": "zps:extinguished_soul_lantern"
+}

@@ -189,4 +189,54 @@ public class RoomSableGameTests {
         pig.setNoGravity(true);
         return pig;
     }
+
+    /**
+     * A torch on a sublevel keeps burning in the air it starts in, and goes out once the sublevel is flown up
+     * into vacuum, though its plot stays down in the air.
+     */
+    @GameTest(template = TEMPLATE, batch = BATCH + "_torch", timeoutTicks = TIMEOUT)
+    public static void torchOnASublevelFlownIntoVacuum_goesOut(GameTestHelper helper) {
+        if (!Compat.isSableLoaded()) {
+            helper.succeed();
+            return;
+        }
+        ServerLevel level = helper.getLevel();
+        BlockPos base = new BlockPos(5, 1, 5);
+        helper.setBlock(base, Blocks.STONE);
+        helper.setBlock(base.above(), Blocks.TORCH);
+        BlockPos min = helper.absolutePos(base);
+        BlockPos max = helper.absolutePos(base.above());
+
+        helper.runAfterDelay(2, () -> {
+            SableBeamRig rig = SableBeamRig.assemble(level, min, max, List.of(min, max), new Quaterniond());
+            // A burn or two in the air it was assembled in.
+            helper.runAfterDelay(45, () -> {
+                BlockPos torch = torchOn(level, rig);
+                if (torch == null || !level.getBlockState(torch).is(Blocks.TORCH)) {
+                    rig.remove();
+                    helper.fail("The torch should still burn in the air; " + rig.describePose());
+                    return;
+                }
+                rig.moveTo(new Vector3d(min.getX() + 0.5, 2100, min.getZ() + 0.5));
+                helper.runAfterDelay(45, () -> {
+                    try {
+                        helper.assertTrue(level.getBlockState(torch).is(ModBlocks.EXTINGUISHED_TORCH.get()),
+                                "The torch should have gone out in vacuum, is " + level.getBlockState(torch) + "; " + rig.describePose());
+                    } finally {
+                        rig.remove();
+                    }
+                    helper.succeed();
+                });
+            });
+        });
+    }
+
+    private static BlockPos torchOn(ServerLevel level, SableBeamRig rig) {
+        for (BlockPos pos : rig.blocksLeft()) {
+            if (!level.getBlockState(pos).is(Blocks.STONE)) {
+                return pos;
+            }
+        }
+        return null;
+    }
 }

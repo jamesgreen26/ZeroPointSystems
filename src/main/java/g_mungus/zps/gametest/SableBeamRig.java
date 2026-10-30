@@ -89,6 +89,11 @@ final class SableBeamRig {
         return new SableBeamRig(level, container, subLevel);
     }
 
+    /** Puts the middle of the sublevel at {@code centre} in the world, turned as it already is. */
+    void moveTo(Vector3d centre) {
+        container.physicsSystem().getPipeline().teleport(subLevel, centre, new Quaterniond(subLevel.logicalPose().orientation()));
+    }
+
     /** The panel's controller, wherever in the sublevel's plot the panel ended up; null until it has formed. */
     @Nullable
     BeamCollectorBlockEntity findController(int width) {

@@ -244,9 +244,17 @@ node pushed past its pressure ceiling explodes; past its temperature ceiling it 
 Edges are rebuilt from the blocks after a reload, so networks survive relogs.
 
 ZPS registers two gases of its own — **Flux** (fusion fuel, hydrogen-like: very light, very high
-heat capacity) and, when Clockwork is absent, stand-ins for Clockwork's **Aether** and **Steam**
-under Clockwork's ids so recipes and reactions work either way. Kelvin's `kelvin:air` is always
-present.
+heat capacity) and, when Clockwork is absent, stand-ins for Clockwork's **Aether**, **Steam**
+and **Stellane** under Clockwork's ids so recipes and reactions work either way.
+Kelvin's `kelvin:air` is always present.
+
+Fire, lit campfires, torches, lanterns and lit candles (soul ones too) go out where the gas around them is
+under a tenth breathable, in a room or outside, including on a ship or sublevel that flies into
+such air. Flames leave the gas itself alone. An extinguished torch or lantern is relit with flint
+and steel or a fire charge, and drops the torch or lantern it was.
+Datapacks add flames of their own under `data/<ns>/zps/extinguishing/`, each file a map of block
+state to the block state it goes out into (`"somemod:brazier[lit=true]": "somemod:brazier[lit=false]"`);
+the vanilla torches and lanterns are listed there too, in `zps:vanilla`.
 
 #### Gas Duct (`gas_duct`)
 - The plain pipe: 1 m³ node, 12.5 cm bore, connects on every face and imposes nothing, so whatever a neighbour proposes (a valve, a pump) defines the edge.

@@ -86,19 +86,14 @@ public final class GasEnvironment {
     }
 
     /**
-     * Whether the entity can breathe here: as {@link #setBreathable} said, or else whether any gas
-     * present is {@link ModGasTags#BREATHABLE}.
+     * Whether the entity can breathe here: as {@link #setBreathable} said, or else whether enough
+     * of the gas is {@link ModGasTags#BREATHABLE} ({@link ModGasTags#MIN_BREATHABLE_SHARE}).
      */
     public boolean isBreathable() {
         if (breathable != null) {
             return breathable;
         }
-        for (Map.Entry<ResourceLocation, Double> gas : gases.entrySet()) {
-            if (gas.getValue() > 0 && ModGasTags.isBreathable(entity.level(), gas.getKey())) {
-                return true;
-            }
-        }
-        return false;
+        return ModGasTags.isBreathable(entity.level(), gases);
     }
 
     /** Force breathability either way, whatever the gases; null goes back to judging by the gases. */

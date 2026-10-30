@@ -9,6 +9,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -38,6 +39,9 @@ import java.util.Optional;
  * Bands use {@link YRange}'s syntax and may not overlap; heights outside every band are plain air.
  * Each band's fractions are normalised to sum to 1. Gases are held by id, like recipe outputs, so
  * one no mod registers is only an unresolved id rather than a failed biome.
+ *
+ * <p>A biome modifier ({@link AtmosphericCompositionModifier}) can override the composition a
+ * biome's file gives, for biomes picked by id or tag, without replacing the file.
  */
 public record AtmosphericComposition(Map<YRange, Map<ResourceLocation, Double>> bands) {
     public static final ResourceKey<Registry<AtmosphericComposition>> REGISTRY_KEY =
@@ -59,10 +63,14 @@ public record AtmosphericComposition(Map<YRange, Map<ResourceLocation, Double>> 
                     ? DataResult.error(() -> "A band needs at least one gas")
                     : DataResult.success(gases));
 
+    /** The bands alone, as written under {@link #FIELD} or in a biome modifier. */
+    public static final Codec<AtmosphericComposition> BANDS_CODEC = Codec.unboundedMap(YRange.CODEC, GASES_CODEC)
+            .flatXmap(YRange::checkNoOverlap, YRange::checkNoOverlap)
+            .xmap(AtmosphericComposition::new, AtmosphericComposition::bands);
+
     public static final Codec<AtmosphericComposition> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            CodecUtil.optionalFieldOf(Codec.unboundedMap(YRange.CODEC, GASES_CODEC).flatXmap(YRange::checkNoOverlap, YRange::checkNoOverlap),
-                    FIELD, DEFAULT.bands()).forGetter(AtmosphericComposition::bands)
-    ).apply(instance, AtmosphericComposition::new));
+            CodecUtil.optionalFieldOf(BANDS_CODEC, FIELD, DEFAULT).forGetter(composition -> composition)
+    ).apply(instance, composition -> composition));
 
     public AtmosphericComposition {
         Map<YRange, Map<ResourceLocation, Double>> normalised = new HashMap<>();
@@ -131,6 +139,37 @@ public record AtmosphericComposition(Map<YRange, Map<ResourceLocation, Double>> 
             AtmosphericComposition composition = compositions.get().getOptional(entry.getKey().location()).orElse(DEFAULT);
             ((AtmosphericBiome) (Object) entry.getValue()).zps$setAtmosphericComposition(composition);
         }
+    }
+
+    /**
+     * Every biome in {@code registries} whose composition is not its registry entry's: those a biome
+     * modifier changed, which the registry sync does not carry to clients.
+     */
+    public static Map<ResourceLocation, AtmosphericComposition> overrides(RegistryAccess registries) {
+        Optional<Registry<Biome>> biomes = registries.registry(Registries.BIOME);
+        Optional<Registry<AtmosphericComposition>> compositions = registries.registry(REGISTRY_KEY);
+        if (biomes.isEmpty() || compositions.isEmpty()) return Map.of();
+        Map<ResourceLocation, AtmosphericComposition> overrides = new HashMap<>();
+        for (Map.Entry<ResourceKey<Biome>, Biome> entry : biomes.get().entrySet()) {
+            ResourceLocation id = entry.getKey().location();
+            AtmosphericComposition composition = of(entry.getValue());
+            if (!composition.equals(compositions.get().getOptional(id).orElse(DEFAULT))) {
+                overrides.put(id, composition);
+            }
+        }
+        return overrides;
+    }
+
+    public void write(FriendlyByteBuf buffer) {
+        buffer.writeMap(bands, (out, range) -> {
+            out.writeInt(range.min());
+            out.writeInt(range.max());
+        }, (out, gases) -> out.writeMap(gases, FriendlyByteBuf::writeResourceLocation, FriendlyByteBuf::writeDouble));
+    }
+
+    public static AtmosphericComposition read(FriendlyByteBuf buffer) {
+        return new AtmosphericComposition(buffer.readMap(in -> new YRange(in.readInt(), in.readInt()),
+                in -> in.readMap(FriendlyByteBuf::readResourceLocation, FriendlyByteBuf::readDouble)));
     }
 
     private static Map<ResourceLocation, Double> normalise(Map<ResourceLocation, Double> gases) {

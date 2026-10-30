@@ -57,6 +57,7 @@ import g_mungus.zps.recipe.ModRecipes;
 import g_mungus.zps.painting.ZPSPaintings;
 import g_mungus.zps.mixin.BlockEntityTypeAccessor;
 import g_mungus.zps.world.AtmosphericComposition;
+import g_mungus.zps.world.AtmosphericCompositionModifier;
 import g_mungus.zps.world.SkyBiomeSettings;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
@@ -96,6 +97,7 @@ public final class ZPSMod {
         ModEntities.ENTITIES.register(modEventBus);
         ModSounds.SOUNDS.register(modEventBus);
         ModParticles.PARTICLE_TYPES.register(modEventBus);
+        AtmosphericCompositionModifier.SERIALIZERS.register(modEventBus);
         ModGases.register();
         ZPSPaintings.PAINTING_VARIANTS.register(modEventBus);
 

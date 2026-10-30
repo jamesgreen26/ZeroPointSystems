@@ -4,19 +4,30 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.mojang.serialization.JsonOps;
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.networking.AtmosphericCompositionS2CPacket;
+import g_mungus.zps.world.AtmosphericBiome;
 import g_mungus.zps.world.AtmosphericComposition;
+import g_mungus.zps.world.AtmosphericCompositionModifier;
 import g_mungus.zps.world.YRange;
+import io.netty.buffer.Unpooled;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
+import net.minecraftforge.common.world.BiomeModifier;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
 import java.util.Map;
+import java.util.Set;
 
 /** Covers {@link AtmosphericComposition}: loaded from every biome file, and its codec's handling of one. */
 @GameTestHolder(ZPSMod.MOD_ID)
@@ -112,5 +123,68 @@ public class AtmosphericCompositionGameTests {
 
     private static void expect(GameTestHelper helper, Map<ResourceLocation, Double> actual, Map<ResourceLocation, Double> expected, String where) {
         if (!actual.equals(expected)) helper.fail("Composition at " + where + " should be " + expected + ", was " + actual);
+    }
+
+    /** A modifier picks biomes by tag, and gives them its composition once every other modifier has run. */
+    @GameTest(template = TEMPLATE)
+    public static void biomeModifier_overridesTaggedBiomes(GameTestHelper helper) {
+        var registries = helper.getLevel().registryAccess();
+        Registry<Biome> biomes = registries.registryOrThrow(Registries.BIOME);
+        Holder<Biome> ocean = biomes.getHolderOrThrow(Biomes.OCEAN);
+        Holder<Biome> plains = biomes.getHolderOrThrow(Biomes.PLAINS);
+        AtmosphericComposition before = AtmosphericComposition.of(ocean.value());
+        try {
+            AtmosphericCompositionModifier modifier = AtmosphericCompositionModifier.CODEC.parse(
+                    RegistryOps.create(JsonOps.INSTANCE, registries), JsonParser.parseString("""
+                            {
+                              "biomes": "#minecraft:is_ocean",
+                              "composition": { "*": { "zps:vacuum": 1.0 } }
+                            }
+                            """)).getOrThrow(false, error -> helper.fail("The modifier should decode: " + error));
+            for (BiomeModifier.Phase phase : BiomeModifier.Phase.values()) {
+                if (phase == BiomeModifier.Phase.AFTER_EVERYTHING) continue;
+                modifier.modify(ocean, phase, null);
+            }
+            expect(helper, AtmosphericComposition.of(ocean.value()).at(64), before.at(64), "the ocean before the last phase");
+
+            modifier.modify(ocean, BiomeModifier.Phase.AFTER_EVERYTHING, null);
+            modifier.modify(plains, BiomeModifier.Phase.AFTER_EVERYTHING, null);
+            expect(helper, AtmosphericComposition.of(ocean.value()).at(64), Map.of(VACUUM, 1.0), "the ocean");
+            expect(helper, AtmosphericComposition.of(plains.value()).at(64), AtmosphericComposition.PLAIN_AIR, "plains, not an ocean");
+
+            var overrides = AtmosphericComposition.overrides(registries);
+            if (!overrides.keySet().equals(Set.of(Biomes.OCEAN.location()))) {
+                helper.fail("Only the ocean should be an override, got " + overrides.keySet());
+            }
+        } finally {
+            ((AtmosphericBiome) (Object) ocean.value()).zps$setAtmosphericComposition(before);
+        }
+        helper.succeed();
+    }
+
+    /** The login packet carries compositions intact, and hands them to the biomes it names. */
+    @GameTest(template = TEMPLATE)
+    public static void compositionPacket_roundTripsAndApplies(GameTestHelper helper) {
+        var registries = helper.getLevel().registryAccess();
+        AtmosphericComposition sent = new AtmosphericComposition(Map.of(
+                new YRange(Integer.MIN_VALUE, 2047), Map.of(AtmosphericComposition.AIR, 0.25, AETHER, 0.75),
+                new YRange(2048, Integer.MAX_VALUE), Map.of(VACUUM, 1.0)));
+        ResourceLocation missing = ZPSMod.resource("no_such_biome");
+        FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
+        AtmosphericCompositionS2CPacket.encode(new AtmosphericCompositionS2CPacket(Map.of(Biomes.DESERT.location(), sent, missing, sent)), buffer);
+        AtmosphericCompositionS2CPacket received = AtmosphericCompositionS2CPacket.decode(buffer);
+        if (!sent.equals(received.compositions().get(Biomes.DESERT.location()))) {
+            helper.fail("The composition should arrive as sent, got " + received.compositions());
+        }
+
+        Biome desert = registries.registryOrThrow(Registries.BIOME).getOrThrow(Biomes.DESERT);
+        AtmosphericComposition before = AtmosphericComposition.of(desert);
+        try {
+            AtmosphericCompositionS2CPacket.apply(registries.registryOrThrow(Registries.BIOME), received.compositions());
+            expect(helper, AtmosphericComposition.of(desert).at(3000), Map.of(VACUUM, 1.0), "the desert at y=3000");
+        } finally {
+            ((AtmosphericBiome) (Object) desert).zps$setAtmosphericComposition(before);
+        }
+        helper.succeed();
     }
 }

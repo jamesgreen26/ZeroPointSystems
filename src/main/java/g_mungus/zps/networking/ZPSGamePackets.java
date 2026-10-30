@@ -204,5 +204,11 @@ public class ZPSGamePackets {
                 .decoder(RoomBreachS2CPacket::decode)
                 .consumerMainThread(RoomBreachS2CPacket::handle)
                 .add();
+
+        INSTANCE.messageBuilder(AtmosphericCompositionS2CPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(AtmosphericCompositionS2CPacket::encode)
+                .decoder(AtmosphericCompositionS2CPacket::decode)
+                .consumerMainThread(AtmosphericCompositionS2CPacket::handle)
+                .add();
     }
 }

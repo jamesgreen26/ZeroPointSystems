@@ -46,9 +46,18 @@ public abstract class ClientPacketListenerMixin implements ClientScripts.ScriptC
     @Shadow
     public abstract net.minecraft.core.RegistryAccess registryAccess();
 
-    /** 1.20.1 sends the registries in the login packet; the biomes there need their atmospheres too. */
+    /**
+     * 1.20.1 sends the registries in the login packet; the biomes there need their atmospheres too.
+     * In singleplayer the packet is handed over unserialised, so the biomes are the integrated
+     * server's own, already attached and perhaps since changed by a biome modifier; they are left be.
+     */
     @Inject(method = "handleLogin", at = @At("TAIL"))
     private void zps$attachAtmosphericComposition(net.minecraft.network.protocol.game.ClientboundLoginPacket packet, CallbackInfo ci) {
+        var server = Minecraft.getInstance().getSingleplayerServer();
+        var biomes = net.minecraft.core.registries.Registries.BIOME;
+        if (server != null && server.registryAccess().registry(biomes).equals(registryAccess().registry(biomes))) {
+            return;
+        }
         g_mungus.zps.world.AtmosphericComposition.attachToBiomes(registryAccess());
     }
 

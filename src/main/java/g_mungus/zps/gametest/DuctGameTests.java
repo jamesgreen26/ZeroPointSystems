@@ -12,6 +12,7 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
@@ -306,6 +307,22 @@ public class DuctGameTests {
             double after = gasAt(helper, FIRST);
             if (after >= before) {
                 helper.fail("An open duct kept its gas: " + before + " kg -> " + after + " kg");
+            }
+            helper.succeed();
+        });
+    }
+
+    /** Flowing water runs around a duct instead of washing it away. */
+    @GameTest(template = TEMPLATE)
+    public static void flowingWaterLeavesTheDuct(GameTestHelper helper) {
+        helper.setBlock(FIRST, ModBlocks.GAS_DUCT.get().defaultBlockState());
+        helper.setBlock(FIRST.north(), Blocks.WATER.defaultBlockState());
+        helper.runAfterDelay(20, () -> {
+            if (!helper.getBlockState(FIRST).is(ModBlocks.GAS_DUCT.get())) {
+                helper.fail("Flowing water should leave the duct, found " + helper.getBlockState(FIRST));
+            }
+            if (!helper.getBlockState(FIRST.east()).is(Blocks.WATER)) {
+                helper.fail("The water should have flowed beside the duct, found " + helper.getBlockState(FIRST.east()));
             }
             helper.succeed();
         });

@@ -53,7 +53,9 @@
     "FallingBlockEntityInvoker",
     "FallingBlockEntityMixin",
     "FallingBlockEntitySyncMixin",
+    "FarmBlockMixin",
     "GameTestRegistryMixin",
+    "IceBlockMixin",
     "ItemEntityMixin",
     "LecternBlockEntityMixin",
     "LevelMixin",
@@ -78,6 +80,7 @@
     "create.ManualApplicationRecipeMixin",
     "create.ScrollValueBehaviourAccessor",
     "ponder.ConfigBaseMixin",
+    "ponder.ServerboundConfigPacketMixin",
     "sable.SubLevelActorExtension",
     "sable.SubLevelEntityCollisionMixin",
     "vs.PhysicsListenerExtension"

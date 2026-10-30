@@ -150,7 +150,7 @@ public class ZPSConfig {
     private static ModConfigSpec.ConfigValue<Double> ductTravelSpeed;
     private static final double ductTravelSpeedDefault = 0.4;
     private static ModConfigSpec.ConfigValue<Double> entityBurnGasTemperature;
-    private static final double entityBurnGasTemperatureDefault = 850.0;
+    private static final double entityBurnGasTemperatureDefault = 750.0;
     private static ModConfigSpec.ConfigValue<Double> entityFreezeGasTemperature;
     private static final double entityFreezeGasTemperatureDefault = 250.0;
 

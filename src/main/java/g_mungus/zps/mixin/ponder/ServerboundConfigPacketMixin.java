@@ -3,7 +3,7 @@ package g_mungus.zps.mixin.ponder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import net.createmod.catnip.net.packets.ServerboundConfigPacket;
+import net.createmod.catnip.net.ServerboundConfigPacket;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;

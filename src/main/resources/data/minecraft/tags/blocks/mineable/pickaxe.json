@@ -69,6 +69,8 @@
     "zps:reinforced_glass",
     "zps:reactor_port",
     "zps:heat_exchanger",
-    "zps:beam_collector"
+    "zps:beam_collector",
+    "zps:extinguished_lantern",
+    "zps:extinguished_soul_lantern"
   ]
 }

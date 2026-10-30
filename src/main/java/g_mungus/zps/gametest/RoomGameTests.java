@@ -1,5 +1,6 @@
 package g_mungus.zps.gametest;
 
+import com.google.gson.JsonObject;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.LargeSpaceDoorBlock;
 import g_mungus.zps.block.ModBlocks;
@@ -11,7 +12,9 @@ import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
 import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.gas.AtmosphereExposure;
+import g_mungus.zps.gas.ModGasTags;
 import g_mungus.zps.gas.ModGases;
+import g_mungus.zps.room.Extinguishing;
 import g_mungus.zps.room.Room;
 import g_mungus.zps.room.RoomManager;
 import g_mungus.zps.world.AtmosphericComposition;
@@ -24,13 +27,23 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.animal.Chicken;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.CampfireBlock;
+import net.minecraft.world.level.block.CandleBlock;
 import net.minecraft.world.level.block.DirectionalBlock;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.FarmBlock;
+import net.minecraft.world.level.block.LanternBlock;
 import net.minecraft.world.level.block.FenceBlock;
 import net.minecraft.world.level.block.FenceGateBlock;
+import net.minecraft.world.level.block.RedstoneLampBlock;
 import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.WallTorchBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.block.state.properties.SlabType;
@@ -40,6 +53,7 @@ import org.valkyrienskies.kelvin.KelvinMod;
 import org.valkyrienskies.kelvin.api.GasType;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -763,6 +777,216 @@ public class RoomGameTests {
     public static void coolGasAgainstIce_leavesIt(GameTestHelper helper) {
         BlockState after = iceAfterGasAbove(helper, 300.0);
         helper.assertTrue(after.is(Blocks.ICE), "Ice under cool gas should stay ice, is " + after);
+        helper.succeed();
+    }
+
+    /** A torch on the west wall, a campfire on the floor and fire on a netherrack block in the north-east corner. */
+    private static void placeFlames(GameTestHelper helper) {
+        helper.setBlock(new BlockPos(4, 3, 5), Blocks.WALL_TORCH.defaultBlockState().setValue(WallTorchBlock.FACING, Direction.EAST));
+        helper.setBlock(FLOOR_CELL, Blocks.CAMPFIRE.defaultBlockState());
+        helper.setBlock(new BlockPos(6, 2, 4), Blocks.NETHERRACK.defaultBlockState());
+        helper.setBlock(new BlockPos(6, 3, 4), Blocks.FIRE.defaultBlockState());
+    }
+
+    /** Flames only need the room's gas breathable; they leave it as it is. */
+    @GameTest(template = TEMPLATE)
+    public static void flamesInARoom_leaveItsGasAlone(GameTestHelper helper) {
+        buildShell(helper);
+        placeFlames(helper);
+        BlockPos candle = new BlockPos(4, 2, 6);
+        helper.setBlock(candle, Blocks.CANDLE.defaultBlockState().setValue(CandleBlock.LIT, true));
+        addFlux(helper, CENTRE, 5.0);
+        Room room = roomAt(helper, CENTRE);
+        Map<ResourceLocation, Double> before = Map.copyOf(room.massKg());
+
+        manager(helper).burnFlames(helper.getLevel());
+        helper.assertTrue(room.massKg().equals(before), "The room should be untouched, went from " + before + " to " + room.massKg());
+        helper.assertTrue(helper.getBlockState(new BlockPos(4, 3, 5)).is(Blocks.WALL_TORCH), "The torch should still burn");
+        helper.assertTrue(helper.getBlockState(candle).getValue(CandleBlock.LIT), "The candle should still burn");
+        helper.assertTrue(helper.getBlockState(FLOOR_CELL).getValue(CampfireBlock.LIT), "The campfire should still burn");
+        helper.assertTrue(helper.getBlockState(new BlockPos(6, 3, 4)).is(Blocks.FIRE), "The fire should still burn");
+        manager(helper).dissolve(room);
+        helper.succeed();
+    }
+
+    /** Flames lit in a sealed box make no room of it: they take nothing from the air. */
+    @GameTest(template = TEMPLATE)
+    public static void flamesInASealedBox_makeNoRoom(GameTestHelper helper) {
+        buildShell(helper);
+        placeFlames(helper);
+        helper.runAfterDelay(25, () -> {
+            helper.assertTrue(roomAt(helper, CENTRE) == null, "Flames should not make a room");
+            helper.succeed();
+        });
+    }
+
+    /**
+     * With the air gone, every flame goes out: the torch is left extinguished, the candle and the campfire
+     * are put out, the fire is gone.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void flamesInARoomWithoutAir_goOut(GameTestHelper helper) {
+        buildShell(helper);
+        placeFlames(helper);
+        BlockPos candle = new BlockPos(4, 2, 6);
+        helper.setBlock(candle, Blocks.CANDLE.defaultBlockState().setValue(CandleBlock.LIT, true));
+        addFlux(helper, CENTRE, 5.0);
+        Room room = roomAt(helper, CENTRE);
+        // Draw the whole room out, then put a little flux back so the room stays.
+        manager(helper).drawGas(helper.getLevel(), helper.absolutePos(CENTRE), room.volume());
+        addFlux(helper, CENTRE, 1.0);
+
+        manager(helper).burnFlames(helper.getLevel());
+        BlockState torch = helper.getBlockState(new BlockPos(4, 3, 5));
+        helper.assertTrue(torch.is(ModBlocks.EXTINGUISHED_WALL_TORCH.get()) && torch.getValue(WallTorchBlock.FACING) == Direction.EAST,
+                "The torch should have gone out where it hung, is " + torch);
+        helper.assertTrue(!helper.getBlockState(candle).getValue(CandleBlock.LIT), "The candle should have gone out");
+        helper.assertTrue(!helper.getBlockState(FLOOR_CELL).getValue(CampfireBlock.LIT), "The campfire should have gone out");
+        helper.assertTrue(helper.getBlockState(new BlockPos(6, 3, 4)).isAir(), "The fire should have gone out");
+        manager(helper).dissolve(room);
+        helper.succeed();
+    }
+
+    /** Out in the open air every flame keeps burning. */
+    @SkyAccess
+    @GameTest(template = TEMPLATE)
+    public static void flamesOutsideARoom_keepBurning(GameTestHelper helper) {
+        placeFlames(helper);
+        manager(helper).burnFlames(helper.getLevel());
+        helper.assertTrue(helper.getBlockState(FLOOR_CELL).getValue(CampfireBlock.LIT), "The campfire should still burn");
+        helper.assertTrue(helper.getBlockState(new BlockPos(4, 3, 5)).is(Blocks.WALL_TORCH), "The torch should still burn");
+        helper.succeed();
+    }
+
+    /** Flint and steel lights an extinguished torch back into the torch it was, facing the same way. */
+    @GameTest(template = TEMPLATE)
+    public static void flintAndSteel_relightsAnExtinguishedTorch(GameTestHelper helper) {
+        BlockPos at = new BlockPos(4, 3, 5);
+        helper.setBlock(at.west(), Blocks.STONE);
+        helper.setBlock(at, ModBlocks.EXTINGUISHED_SOUL_WALL_TORCH.get().defaultBlockState().setValue(WallTorchBlock.FACING, Direction.EAST));
+        Player player = helper.makeMockSurvivalPlayer();
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.FLINT_AND_STEEL));
+        helper.useBlock(at, player);
+
+        BlockState lit = helper.getBlockState(at);
+        helper.assertTrue(lit.is(Blocks.SOUL_WALL_TORCH) && lit.getValue(WallTorchBlock.FACING) == Direction.EAST,
+                "The torch should be lit again as it hung, is " + lit);
+        helper.assertTrue(player.getMainHandItem().getDamageValue() == 1, "Lighting it should wear the flint and steel");
+        helper.succeed();
+    }
+
+    /** A mix is breathable from a tenth breathable gas up. */
+    @GameTest(template = TEMPLATE)
+    public static void breathableShare_isATenth(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        helper.assertTrue(!ModGasTags.isBreathable(level, Map.of(AtmosphericComposition.AIR, 0.09, FLUX, 0.91)),
+                "9% air should not be breathable");
+        helper.assertTrue(ModGasTags.isBreathable(level, Map.of(AtmosphericComposition.AIR, 0.11, FLUX, 0.89)),
+                "11% air should be breathable");
+        helper.succeed();
+    }
+
+    /** A room so full of flux that its air is under a tenth of the mix drowns whoever is in it. */
+    @GameTest(template = TEMPLATE)
+    public static void roomUnderATenthAir_drowns(GameTestHelper helper) {
+        buildShell(helper);
+        addFlux(helper, CENTRE, 1000.0);
+        Room room = roomAt(helper, CENTRE);
+        double air = room.massKg().getOrDefault(AtmosphericComposition.AIR, 0.0);
+        helper.assertTrue(air < 0.1 * room.totalMassKg(), "The room's air should be under a tenth, is " + air + " of " + room.totalMassKg());
+        Chicken chicken = helper.spawnWithNoFreeWill(EntityType.CHICKEN, FLOOR_CELL);
+        helper.runAfterDelay(40, () -> {
+            helper.assertTrue(chicken.getAirSupply() < chicken.getMaxAirSupply(),
+                    "A chicken with under a tenth air should be drowning, has " + chicken.getAirSupply());
+            chicken.discard();
+            manager(helper).dissolve(room);
+            helper.succeed();
+        });
+    }
+
+    /** Fire and campfires go out under a tenth breathable gas, as an entity would drown, though there is air left. */
+    @GameTest(template = TEMPLATE)
+    public static void campfireAndFireUnderATenthAir_goOut(GameTestHelper helper) {
+        buildShell(helper);
+        helper.setBlock(FLOOR_CELL, Blocks.CAMPFIRE.defaultBlockState());
+        helper.setBlock(new BlockPos(6, 2, 4), Blocks.NETHERRACK.defaultBlockState());
+        helper.setBlock(new BlockPos(6, 3, 4), Blocks.FIRE.defaultBlockState());
+        addFlux(helper, CENTRE, 1000.0);
+        Room room = roomAt(helper, CENTRE);
+        helper.assertTrue(!ModGasTags.isBreathable(helper.getLevel(), room.gases()), "The room should be under a tenth air");
+
+        manager(helper).burnFlames(helper.getLevel());
+        helper.assertTrue(!helper.getBlockState(FLOOR_CELL).getValue(CampfireBlock.LIT), "The campfire should have gone out");
+        helper.assertTrue(helper.getBlockState(new BlockPos(6, 3, 4)).isAir(), "The fire should have gone out");
+        manager(helper).dissolve(room);
+        helper.succeed();
+    }
+
+    /** Lanterns go out like torches without breathable gas, still hanging as they hung. */
+    @GameTest(template = TEMPLATE)
+    public static void lanternsInARoomWithoutAir_goOutAsTheyHung(GameTestHelper helper) {
+        buildShell(helper);
+        BlockPos hanging = new BlockPos(4, 4, 4);
+        BlockPos standing = new BlockPos(6, 2, 6);
+        helper.setBlock(hanging, Blocks.SOUL_LANTERN.defaultBlockState().setValue(LanternBlock.HANGING, true));
+        helper.setBlock(standing, Blocks.LANTERN.defaultBlockState());
+        addFlux(helper, CENTRE, 5.0);
+        Room room = roomAt(helper, CENTRE);
+        Map<ResourceLocation, Double> before = Map.copyOf(room.massKg());
+        manager(helper).burnFlames(helper.getLevel());
+        helper.assertTrue(room.massKg().equals(before), "Lanterns should leave the room's gas alone");
+        helper.assertTrue(helper.getBlockState(standing).is(Blocks.LANTERN), "The lantern should still burn in air");
+
+        manager(helper).drawGas(helper.getLevel(), helper.absolutePos(CENTRE), room.volume());
+        addFlux(helper, CENTRE, 1.0);
+        manager(helper).burnFlames(helper.getLevel());
+        BlockState soul = helper.getBlockState(hanging);
+        helper.assertTrue(soul.is(ModBlocks.EXTINGUISHED_SOUL_LANTERN.get()) && soul.getValue(LanternBlock.HANGING),
+                "The soul lantern should have gone out still hanging, is " + soul);
+        helper.assertTrue(helper.getBlockState(standing).is(ModBlocks.EXTINGUISHED_LANTERN.get()), "The lantern should have gone out");
+        manager(helper).dissolve(room);
+        helper.succeed();
+    }
+
+    /**
+     * A datapack's extinguishing file: a key matches the states with the properties it lists, the
+     * value's properties are set and the rest copied across, and entries for absent mods or that
+     * would go out into a flame of their own are skipped.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void extinguishingFile_mapsStatesAsWritten(GameTestHelper helper) {
+        JsonObject json = new JsonObject();
+        json.addProperty("minecraft:redstone_lamp[lit=true]", "minecraft:redstone_lamp[lit=false]");
+        json.addProperty("minecraft:wall_torch", "zps:extinguished_wall_torch");
+        json.addProperty("minecraft:soul_lantern", "minecraft:soul_lantern[hanging=true]");
+        json.addProperty("absentmod:brazier", "absentmod:brazier[lit=false]");
+        Map<Block, List<Extinguishing.Rule>> rules = new HashMap<>();
+        Extinguishing.parse(ZPSMod.resource("test"), json, rules);
+
+        BlockState lamp = Blocks.REDSTONE_LAMP.defaultBlockState();
+        helper.assertTrue(Extinguishing.extinguished(rules, lamp.setValue(RedstoneLampBlock.LIT, true)) == lamp.setValue(RedstoneLampBlock.LIT, false),
+                "A lit lamp should go out into an unlit one");
+        helper.assertTrue(Extinguishing.extinguished(rules, lamp) == null, "An unlit lamp is no flame");
+        BlockState torch = Blocks.WALL_TORCH.defaultBlockState().setValue(WallTorchBlock.FACING, Direction.WEST);
+        BlockState out = Extinguishing.extinguished(rules, torch);
+        helper.assertTrue(out != null && out.is(ModBlocks.EXTINGUISHED_WALL_TORCH.get()) && out.getValue(WallTorchBlock.FACING) == Direction.WEST,
+                "The wall torch should go out facing as it did, is " + out);
+        helper.assertTrue(!rules.containsKey(Blocks.SOUL_LANTERN), "A soul lantern going out into a soul lantern should be skipped");
+        helper.assertTrue(rules.size() == 2, "Only the lamp and the torch should be kept, have " + rules.keySet());
+        helper.succeed();
+    }
+
+    /** A fire charge lights an extinguished lantern back into the lantern it was, and is used up. */
+    @GameTest(template = TEMPLATE)
+    public static void fireCharge_relightsAnExtinguishedLantern(GameTestHelper helper) {
+        BlockPos at = new BlockPos(5, 2, 5);
+        helper.setBlock(at, ModBlocks.EXTINGUISHED_LANTERN.get().defaultBlockState());
+        Player player = helper.makeMockSurvivalPlayer();
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.FIRE_CHARGE, 2));
+        helper.useBlock(at, player);
+
+        helper.assertTrue(helper.getBlockState(at).is(Blocks.LANTERN), "The lantern should be lit again, is " + helper.getBlockState(at));
+        helper.assertTrue(player.getMainHandItem().getCount() == 1, "Lighting it should use up a fire charge");
         helper.succeed();
     }
 }

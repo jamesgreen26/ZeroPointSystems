@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "hanging=false": {
+      "model": "zps:block/extinguished_soul_lantern"
+    },
+    "hanging=true": {
+      "model": "zps:block/extinguished_soul_lantern_hanging"
+    }
+  }
+}

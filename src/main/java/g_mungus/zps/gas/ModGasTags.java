@@ -36,6 +36,27 @@ public final class ModGasTags {
 
     private static volatile Map<ResourceLocation, Set<ResourceLocation>> tags = Map.of();
 
+    /** The least share of a mix that must be {@link #BREATHABLE} for an entity to breathe it. */
+    public static final double MIN_BREATHABLE_SHARE = 0.10;
+
+    /**
+     * Whether an entity can breathe a mix of {@code gases}, by weight: at least
+     * {@link #MIN_BREATHABLE_SHARE} of it must be {@link #BREATHABLE}.
+     */
+    public static boolean isBreathable(Level level, Map<ResourceLocation, Double> gases) {
+        double total = 0;
+        double breathable = 0;
+        for (Map.Entry<ResourceLocation, Double> gas : gases.entrySet()) {
+            if (gas.getValue() > 0) {
+                total += gas.getValue();
+                if (isBreathable(level, gas.getKey())) {
+                    breathable += gas.getValue();
+                }
+            }
+        }
+        return total > 0 && breathable >= MIN_BREATHABLE_SHARE * total;
+    }
+
     /** Whether the gas {@code gas} names is {@link #BREATHABLE}; an id no mod registers is not. */
     public static boolean isBreathable(Level level, ResourceLocation gas) {
         return is(gas, BREATHABLE);

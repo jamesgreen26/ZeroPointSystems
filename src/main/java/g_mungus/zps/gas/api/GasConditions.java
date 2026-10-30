@@ -3,7 +3,7 @@ package g_mungus.zps.gas.api;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -11,33 +11,30 @@ import java.util.Map;
  * entity. Kept for players so their debug screen can show it.
  *
  * @param temperatureK the temperature applied, or {@link Double#NaN} for none
- * @param gases        the gases present, sorted by id
+ * @param gases        the gases present, each with its share of the whole, from 0 to 1
  * @param exposed      false if a source shielded the entity from all of it
  */
-public record GasConditions(double temperatureK, boolean breathable, List<ResourceLocation> gases, boolean exposed) {
+public record GasConditions(double temperatureK, boolean breathable, Map<ResourceLocation, Double> gases, boolean exposed) {
 
     public static void write(FriendlyByteBuf buffer, GasConditions conditions) {
         buffer.writeDouble(conditions.temperatureK);
         buffer.writeBoolean(conditions.breathable);
-        buffer.writeCollection(conditions.gases, FriendlyByteBuf::writeResourceLocation);
+        buffer.writeMap(conditions.gases, FriendlyByteBuf::writeResourceLocation, FriendlyByteBuf::writeDouble);
         buffer.writeBoolean(conditions.exposed);
     }
 
     public static GasConditions read(FriendlyByteBuf buffer) {
         return new GasConditions(buffer.readDouble(), buffer.readBoolean(),
-                buffer.readList(FriendlyByteBuf::readResourceLocation), buffer.readBoolean());
+                buffer.readMap(FriendlyByteBuf::readResourceLocation, FriendlyByteBuf::readDouble), buffer.readBoolean());
     }
 
     public GasConditions {
-        gases = List.copyOf(gases);
+        gases = Map.copyOf(gases);
     }
 
     public static GasConditions of(GasEnvironment environment) {
-        List<ResourceLocation> gases = environment.fractions().entrySet().stream()
-                .filter(gas -> gas.getValue() > 0)
-                .map(Map.Entry::getKey)
-                .sorted()
-                .toList();
+        Map<ResourceLocation, Double> gases = new HashMap<>(environment.fractions());
+        gases.values().removeIf(share -> !(share > 0));
         return new GasConditions(environment.temperatureK(), environment.isBreathable(), gases, environment.isExposed());
     }
 }

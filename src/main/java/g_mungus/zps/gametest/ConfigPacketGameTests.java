@@ -1,7 +1,7 @@
 package g_mungus.zps.gametest;
 
 import g_mungus.zps.ZPSMod;
-import net.createmod.catnip.net.packets.ServerboundConfigPacket;
+import net.createmod.catnip.net.ServerboundConfigPacket;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraftforge.gametest.GameTestHolder;

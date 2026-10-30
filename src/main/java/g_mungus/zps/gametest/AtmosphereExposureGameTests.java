@@ -25,6 +25,7 @@ import org.valkyrienskies.kelvin.impl.registry.GasTypeRegistry;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /** Covers {@link AtmosphereExposure}: the overworld atmosphere's air and vacuum, an unregistered gas, and a mob left in mild air. */
@@ -125,7 +126,7 @@ public class AtmosphereExposureGameTests {
 
         GasConditions conditions = ((AtmosphereBreather) player).zps$getGasConditions();
         if (conditions == null) helper.fail("The player's gas conditions should have been kept");
-        else if (conditions.breathable() || !conditions.gases().equals(List.of(AtmosphericComposition.VACUUM)) || !conditions.exposed()) {
+        else if (conditions.breathable() || !conditions.gases().keySet().equals(Set.of(AtmosphericComposition.VACUUM)) || !conditions.exposed()) {
             helper.fail("A player in vacuum should be exposed to unbreathable zps:vacuum, was " + conditions);
         }
         helper.succeed();

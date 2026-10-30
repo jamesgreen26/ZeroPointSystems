@@ -122,14 +122,12 @@ public final class AtmosphereExposure {
         return BiomeTemperature.kelvinAt(biome, pos);
     }
 
-    /** Whether any gas in {@code composition} at height {@code y} is {@link ModGasTags#BREATHABLE}. */
+    /**
+     * Whether an entity can breathe {@code composition} at height {@code y}: enough of it is
+     * {@link ModGasTags#BREATHABLE} ({@link ModGasTags#MIN_BREATHABLE_SHARE}).
+     */
     public static boolean isBreathable(Level level, AtmosphericComposition composition, int y) {
-        for (ResourceLocation gas : composition.at(y).keySet()) {
-            if (ModGasTags.isBreathable(level, gas)) {
-                return true;
-            }
-        }
-        return false;
+        return ModGasTags.isBreathable(level, composition.at(y));
     }
 
     private static boolean isExposable(AtmosphericComposition composition, int y) {

@@ -53,6 +53,17 @@ public final class RoomScanner {
      * @return the room, or null if air escapes, the region is too large, or {@code start} is solid
      */
     public static @Nullable RoomScan scan(BlockPos start, Function<BlockPos, @Nullable VoxelShape> shapes, int maxVolume) {
+        return scan(start, shapes, maxVolume, null);
+    }
+
+    /**
+     * As {@link #scan(BlockPos, Function, int)}, and if air escapes, every cell the fill reached is
+     * added to {@code escaped}: air anywhere in them escapes the same way, so gas let out there need
+     * not look again. Cells split into several pockets are left out, as their other pockets may
+     * be somewhere else entirely.
+     */
+    public static @Nullable RoomScan scan(BlockPos start, Function<BlockPos, @Nullable VoxelShape> shapes, int maxVolume,
+                                          @Nullable LongSet escaped) {
         VoxelShape startShape = shapes.apply(start);
         if (startShape == null) {
             return null;
@@ -93,6 +104,7 @@ public final class RoomScanner {
                 long key = next.asLong();
                 VoxelShape thereShape = shapes.apply(next);
                 if (thereShape == null) {
+                    noteEscaped(escaped, interior, split);
                     return null;
                 }
                 CellRegions there = CellRegions.of(thereShape);
@@ -110,6 +122,7 @@ public final class RoomScanner {
                     reached.put(key, seen | bit);
                     if (interior.add(key)) {
                         if (interior.size() > maxVolume) {
+                            noteEscaped(escaped, interior, split);
                             return null;
                         }
                         noteSplit(split, key, there);
@@ -137,6 +150,18 @@ public final class RoomScanner {
     private static void noteSplit(Long2LongMap split, long cell, CellRegions regions) {
         if (regions.count() > 1) {
             split.put(cell, allPockets(regions));
+        }
+    }
+
+    private static void noteEscaped(@Nullable LongSet escaped, LongSet interior, Long2LongMap split) {
+        if (escaped == null) {
+            return;
+        }
+        for (LongIterator it = interior.iterator(); it.hasNext(); ) {
+            long cell = it.nextLong();
+            if (!split.containsKey(cell)) {
+                escaped.add(cell);
+            }
         }
     }
 

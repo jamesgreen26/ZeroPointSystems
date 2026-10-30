@@ -2,6 +2,9 @@ package g_mungus.zps.world;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
+import io.netty.buffer.ByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -11,6 +14,10 @@ import java.util.Map;
 /** An inclusive Y band, written in data as {@code "min..max"} or a single number; {@code *} leaves an end unbounded. */
 public record YRange(int min, int max) {
     public static final Codec<YRange> CODEC = Codec.STRING.comapFlatMap(YRange::parse, YRange::toString);
+    public static final StreamCodec<ByteBuf, YRange> STREAM_CODEC = StreamCodec.composite(
+            ByteBufCodecs.INT, YRange::min,
+            ByteBufCodecs.INT, YRange::max,
+            YRange::new);
     /** Every height, written {@code "*"}. */
     public static final YRange ALL = new YRange(Integer.MIN_VALUE, Integer.MAX_VALUE);
 

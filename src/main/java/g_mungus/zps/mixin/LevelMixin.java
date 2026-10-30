@@ -15,16 +15,17 @@ import org.spongepowered.asm.mixin.Unique;
 @Mixin(Level.class)
 public abstract class LevelMixin implements SkyBiomeLevel {
     @Unique
-    private @Nullable SkyBiomeSettings zps$skyBiomeSettings;
+    private @Nullable SkyBiomeSettings.Resolved zps$skyBiomeSettings;
     /** Written after the settings, so a thread that sees it set also sees them. */
     @Unique
     private volatile boolean zps$skyBiomeSettingsLoaded;
 
     @Override
-    public @Nullable SkyBiomeSettings zps$skyBiomeSettings() {
+    public @Nullable SkyBiomeSettings.Resolved zps$skyBiomeSettings() {
         if (!zps$skyBiomeSettingsLoaded) {
             Level level = (Level) (Object) this;
-            zps$skyBiomeSettings = SkyBiomeSettings.forDimension(level.registryAccess(), level.dimension()).orElse(null);
+            zps$skyBiomeSettings = SkyBiomeSettings.forDimension(level.registryAccess(), level.dimension())
+                    .map(settings -> settings.resolve(level.registryAccess())).orElse(null);
             zps$skyBiomeSettingsLoaded = true;
         }
         return zps$skyBiomeSettings;

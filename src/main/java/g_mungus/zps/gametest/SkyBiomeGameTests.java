@@ -9,9 +9,14 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.RegistrySynchronization;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -127,5 +132,20 @@ public class SkyBiomeGameTests {
     private static void assertTemperature(GameTestHelper helper, Biome biome, int y, float expected) {
         float actual = ((BiomeInvoker) (Object) biome).zps$getTemperature(new BlockPos(0, y, 0));
         if (Math.abs(actual - expected) > 1.0e-4f) helper.fail("Temperature at y=" + y + " should be " + expected + ", was " + actual);
+    }
+
+    /**
+     * A joining player's login packet carries every synced registry, the sky biome settings among them,
+     * encoded as vanilla does it: with only the built-in registries to hand, not the datapack ones.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void syncedRegistries_encodeForTheLoginPacket(GameTestHelper helper) {
+        var server = helper.getLevel().getServer();
+        RegistryAccess.Frozen synced = new RegistryAccess.ImmutableRegistryAccess(
+                RegistrySynchronization.networkedRegistries(server.registries())).freeze();
+        var ops = RegistryOps.create(NbtOps.INSTANCE, RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY));
+        RegistrySynchronization.NETWORK_CODEC.encodeStart(ops, synced)
+                .error().ifPresent(error -> helper.fail("The synced registries should encode: " + error.message()));
+        helper.succeed();
     }
 }

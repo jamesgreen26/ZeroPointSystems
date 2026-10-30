@@ -2,6 +2,7 @@ package g_mungus.zps.world;
 
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.util.CodecUtil;
@@ -18,6 +19,7 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraftforge.registries.DataPackRegistryEvent;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -37,29 +39,56 @@ import java.util.function.Predicate;
  * Either end may be {@code *} for unbounded, and {@code "*"} alone covers every height.
  * Bands only take effect above the build limit (see {@link #skyBiome}); there, heights outside every
  * band read the top section's biome as in vanilla.
+ *
+ * <p>The entry holds biome ids rather than biomes. 1.20.1 sends the synced registries in the login
+ * packet with only the built-in registries to resolve against, so an entry naming a biome as a
+ * holder cannot be encoded, and a dedicated server drops every joining player. Each level resolves the
+ * ids against its own biomes once ({@link #forLevel}).
  */
-public record SkyBiomeSettings(Map<YRange, Holder<Biome>> biomes) {
+public record SkyBiomeSettings(Map<YRange, ResourceKey<Biome>> biomes) {
     public static final ResourceKey<Registry<SkyBiomeSettings>> REGISTRY_KEY =
             ResourceKey.createRegistryKey(ZPSMod.resource("sky_biome_settings"));
 
-    public static final Codec<SkyBiomeSettings> CODEC = CodecUtil.validate(RecordCodecBuilder.<SkyBiomeSettings>create(instance -> instance.group(
-            Codec.unboundedMap(YRange.CODEC, RegistryFixedCodec.create(Registries.BIOME)).fieldOf("biomes").forGetter(SkyBiomeSettings::biomes)
-    ).apply(instance, SkyBiomeSettings::new)), settings -> YRange.checkNoOverlap(settings.biomes()).map(ok -> settings));
+    /** Read from datapacks: each biome must exist. Never written back out. */
+    public static final Codec<SkyBiomeSettings> CODEC = codec(RegistryFixedCodec.create(Registries.BIOME).flatComapMap(
+            holder -> holder.unwrapKey().orElseThrow(),
+            key -> DataResult.error(() -> "Sky biome settings are only read from datapacks, not written")));
+    /** Sent to clients: ids alone, which need no biome registry to encode. */
+    public static final Codec<SkyBiomeSettings> NETWORK_CODEC = codec(ResourceKey.codec(Registries.BIOME));
+
+    private static Codec<SkyBiomeSettings> codec(Codec<ResourceKey<Biome>> biome) {
+        return CodecUtil.validate(RecordCodecBuilder.<SkyBiomeSettings>create(instance -> instance.group(
+                Codec.unboundedMap(YRange.CODEC, biome).fieldOf("biomes").forGetter(SkyBiomeSettings::biomes)
+        ).apply(instance, SkyBiomeSettings::new)), settings -> YRange.checkNoOverlap(settings.biomes()).map(ok -> settings));
+    }
+
+    /** The settings with each id resolved to its biome in one level's registries. */
+    public record Resolved(Map<YRange, Holder<Biome>> biomes) {
+        /** The biome whose band contains block height {@code y}, or null if none does. */
+        public @Nullable Holder<Biome> biomeAt(int y) {
+            for (Map.Entry<YRange, Holder<Biome>> entry : biomes.entrySet()) {
+                if (entry.getKey().contains(y)) return entry.getValue();
+            }
+            return null;
+        }
+    }
 
     public SkyBiomeSettings {
         biomes = Map.copyOf(biomes);
     }
 
     public static void register(DataPackRegistryEvent.NewRegistry event) {
-        event.dataPackRegistry(REGISTRY_KEY, CODEC, CODEC);
+        event.dataPackRegistry(REGISTRY_KEY, CODEC, NETWORK_CODEC);
     }
 
-    /** The biome whose band contains block height {@code y}, or null if none does. */
-    public @Nullable Holder<Biome> biomeAt(int y) {
-        for (Map.Entry<YRange, Holder<Biome>> entry : biomes.entrySet()) {
-            if (entry.getKey().contains(y)) return entry.getValue();
-        }
-        return null;
+    /** These settings against {@code registries}' biomes; a band whose biome is missing there is dropped. */
+    public Resolved resolve(RegistryAccess registries) {
+        Registry<Biome> registry = registries.registryOrThrow(Registries.BIOME);
+        Map<YRange, Holder<Biome>> resolved = new HashMap<>();
+        biomes.forEach((band, key) -> registry.getHolder(key).ifPresentOrElse(
+                biome -> resolved.put(band, biome),
+                () -> ZPSMod.LOGGER.warn("Sky biome band {} names {}, which is not a biome here", band, key.location())));
+        return new Resolved(Map.copyOf(resolved));
     }
 
     /**
@@ -71,7 +100,7 @@ public record SkyBiomeSettings(Map<YRange, Holder<Biome>> biomes) {
     public static @Nullable Holder<Biome> skyBiome(Level level, int quartY) {
         int blockY = QuartPos.toBlock(quartY);
         if (blockY < level.getMaxBuildHeight()) return null;
-        SkyBiomeSettings settings = forLevel(level);
+        Resolved settings = forLevel(level);
         return settings == null ? null : settings.biomeAt(blockY);
     }
 
@@ -83,7 +112,7 @@ public record SkyBiomeSettings(Map<YRange, Holder<Biome>> biomes) {
      * so the edge of the band could read as what is beyond it.
      */
     public static @Nullable Pair<BlockPos, Holder<Biome>> closest(Level level, Predicate<Holder<Biome>> matches, BlockPos from) {
-        SkyBiomeSettings settings = forLevel(level);
+        Resolved settings = forLevel(level);
         if (settings == null) return null;
         Pair<BlockPos, Holder<Biome>> best = null;
         for (Map.Entry<YRange, Holder<Biome>> entry : settings.biomes().entrySet()) {
@@ -107,8 +136,8 @@ public record SkyBiomeSettings(Map<YRange, Holder<Biome>> biomes) {
         return best;
     }
 
-    /** The settings for {@code level}'s dimension, cached on the level since biome lookups are hot. */
-    public static @Nullable SkyBiomeSettings forLevel(Level level) {
+    /** The settings for {@code level}'s dimension, resolved and cached on the level since biome lookups are hot. */
+    public static @Nullable Resolved forLevel(Level level) {
         return ((SkyBiomeLevel) level).zps$skyBiomeSettings();
     }
 

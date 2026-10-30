@@ -58,8 +58,10 @@
     "FallingBlockEntityInvoker",
     "FallingBlockEntityMixin",
     "FallingBlockEntitySyncMixin",
+    "FarmBlockMixin",
     "GameTestInfoMixin",
     "GameTestRegistryMixin",
+    "IceBlockMixin",
     "ItemEntityMixin",
     "LecternBlockEntityMixin",
     "LevelMixin",
@@ -89,6 +91,7 @@
     "create.ManualApplicationRecipeMixin",
     "create.ScrollValueBehaviourAccessor",
     "ponder.ConfigBaseMixin",
+    "ponder.ServerboundConfigPacketMixin",
     "vs.PhysicsListenerExtension"
   ],
   "injectors": {

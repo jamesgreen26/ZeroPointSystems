@@ -9,6 +9,7 @@ import g_mungus.zps.block.cableNetwork.properties.InsulationType;
 import g_mungus.zps.block.gas.GasGaugeBlock;
 import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
 import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity;
+import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.gas.AtmosphereExposure;
 import g_mungus.zps.gas.ModGases;
 import g_mungus.zps.room.Room;
@@ -26,6 +27,7 @@ import net.minecraft.world.entity.animal.Chicken;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DirectionalBlock;
 import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.FarmBlock;
 import net.minecraft.world.level.block.FenceBlock;
 import net.minecraft.world.level.block.FenceGateBlock;
 import net.minecraft.world.level.block.SlabBlock;
@@ -704,6 +706,63 @@ public class RoomGameTests {
         helper.assertTrue(room != null, "The room should load back");
         helper.assertTrue(room.volume() == 27, "The room should load with its cells");
         helper.assertTrue(room.massKg().getOrDefault(FLUX, 0.0) == 5.0, "The room should load with its gas");
+        helper.succeed();
+    }
+
+    /** Farmland in the floor, dry, with {@code gas} put into the room above it; how wet one random tick leaves it. */
+    private static int moistureAfterGasAbove(GameTestHelper helper, GasType gas) {
+        buildShell(helper);
+        BlockPos farmland = FLOOR_CELL.below();
+        helper.setBlock(farmland, Blocks.FARMLAND.defaultBlockState().setValue(FarmBlock.MOISTURE, 0));
+        manager(helper).addGas(helper.getLevel(), helper.absolutePos(CENTRE), Map.of(gas, 5.0), 300.0);
+
+        BlockPos at = helper.absolutePos(farmland);
+        helper.getLevel().getBlockState(at).randomTick(helper.getLevel(), at, helper.getLevel().random);
+        BlockState after = helper.getLevel().getBlockState(at);
+        return after.is(Blocks.FARMLAND) ? after.getValue(FarmBlock.MOISTURE) : -1;
+    }
+
+    /** Steam against farmland waters it as well as water beside it would. */
+    @GameTest(template = TEMPLATE)
+    public static void steamAgainstFarmland_hydratesIt(GameTestHelper helper) {
+        int moisture = moistureAfterGasAbove(helper, ModGases.STEAM);
+        helper.assertTrue(moisture == FarmBlock.MAX_MOISTURE, "Farmland under steam should be fully wet, is " + moisture);
+        helper.succeed();
+    }
+
+    /** Any other gas does nothing for it. */
+    @GameTest(template = TEMPLATE)
+    public static void fluxAgainstFarmland_leavesItDry(GameTestHelper helper) {
+        int moisture = moistureAfterGasAbove(helper, ModGases.FLUX);
+        helper.assertTrue(moisture <= 0, "Farmland under flux should stay dry, is " + moisture);
+        helper.succeed();
+    }
+
+    /** Ice in the floor with flux at {@code temperatureK} filling the room above it; what one random tick leaves. */
+    private static BlockState iceAfterGasAbove(GameTestHelper helper, double temperatureK) {
+        buildShell(helper);
+        BlockPos ice = FLOOR_CELL.below();
+        helper.setBlock(ice, Blocks.ICE.defaultBlockState());
+        manager(helper).addGas(helper.getLevel(), helper.absolutePos(CENTRE), Map.of(ModGases.FLUX, 500.0), temperatureK);
+
+        BlockPos at = helper.absolutePos(ice);
+        helper.getLevel().getBlockState(at).randomTick(helper.getLevel(), at, helper.getLevel().random);
+        return helper.getLevel().getBlockState(at);
+    }
+
+    /** Gas hot enough to burn a player melts ice it touches. */
+    @GameTest(template = TEMPLATE)
+    public static void hotGasAgainstIce_meltsIt(GameTestHelper helper) {
+        BlockState after = iceAfterGasAbove(helper, ZPSConfig.entityBurnGasTemperatureK() * 2);
+        helper.assertTrue(after.is(Blocks.WATER), "Ice under hot gas should melt, is " + after);
+        helper.succeed();
+    }
+
+    /** Gas at room temperature leaves it be. */
+    @GameTest(template = TEMPLATE)
+    public static void coolGasAgainstIce_leavesIt(GameTestHelper helper) {
+        BlockState after = iceAfterGasAbove(helper, 300.0);
+        helper.assertTrue(after.is(Blocks.ICE), "Ice under cool gas should stay ice, is " + after);
         helper.succeed();
     }
 }

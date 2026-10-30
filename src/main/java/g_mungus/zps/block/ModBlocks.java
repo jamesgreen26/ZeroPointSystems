@@ -287,7 +287,9 @@ public class ModBlocks {
                     .sound(SoundType.NETHERITE_BLOCK)
                     .strength(2.0f)
                     .requiresCorrectToolForDrops()
-                    .noOcclusion()));
+                    .noOcclusion()
+                    // Thin enough that water would otherwise wash it away.
+                    .forceSolidOn()));
 
     public static final RegistryObject<Block> CREATIVE_GAS_GENERATOR = BLOCKS.register("creative_gas_generator",
             () -> new CreativeGasGeneratorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)

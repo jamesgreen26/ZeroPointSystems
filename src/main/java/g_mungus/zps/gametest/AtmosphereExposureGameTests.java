@@ -48,7 +48,7 @@ public class AtmosphereExposureGameTests {
         AtmosphericComposition unknown = new AtmosphericComposition(
                 Map.of(YRange.ALL, Map.of(ZPSMod.resource("no_such_gas"), 1.0)));
         BlockPos pos = helper.absolutePos(new BlockPos(3, 2, 3));
-        if (!Double.isNaN(AtmosphereExposure.temperatureK(helper.getLevel().getBiome(pos).value(), unknown, pos))) {
+        if (!Double.isNaN(AtmosphereExposure.temperatureK(helper.getLevel(), helper.getLevel().getBiome(pos).value(), unknown, pos))) {
             helper.fail("A composition of only unregistered gas should expose nothing");
         }
         helper.succeed();

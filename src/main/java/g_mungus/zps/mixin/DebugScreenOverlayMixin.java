@@ -99,7 +99,7 @@ public abstract class DebugScreenOverlayMixin {
         Biome biome = level.getBiome(eyes).value();
         AtmosphericComposition composition = AtmosphericComposition.of(biome);
         Map<ResourceLocation, Double> gases = composition.at(eyes.getY());
-        return new GasConditions(AtmosphereExposure.temperatureK(biome, composition, eyes),
+        return new GasConditions(AtmosphereExposure.temperatureK(level, biome, composition, eyes),
                 AtmosphereExposure.isBreathable(level, composition, eyes.getY()), gases, true);
     }
 }

@@ -89,7 +89,7 @@ public final class BlockGasContact {
         BlockPos air = AtmosphereExposure.inWorld(level, cell);
         Biome biome = level.getBiome(air).value();
         AtmosphericComposition composition = AtmosphericComposition.of(biome);
-        return new Contact(composition.at(air.getY()), AtmosphereExposure.temperatureK(biome, composition, air));
+        return new Contact(composition.at(air.getY()), AtmosphereExposure.temperatureK(level, biome, composition, air));
     }
 
     private static Map<ResourceLocation, Double> outsideGases(ServerLevel level, BlockPos cell) {

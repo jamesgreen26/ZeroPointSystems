@@ -11,6 +11,7 @@ import g_mungus.zps.room.Room;
 import g_mungus.zps.room.RoomManager;
 import g_mungus.zps.world.AtmosphericComposition;
 import g_mungus.zps.world.BiomeTemperature;
+import g_mungus.zps.world.SpaceTemperature;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -78,7 +79,7 @@ public final class AtmosphereExposure {
         BlockPos air = inWorld(entity.level(), eyes);
         Biome biome = entity.level().getBiome(air).value();
         AtmosphericComposition composition = AtmosphericComposition.of(biome);
-        return new GasEnvironment(entity, eyes, temperatureK(biome, composition, air), composition.at(air.getY()));
+        return new GasEnvironment(entity, eyes, temperatureK(entity.level(), biome, composition, air), composition.at(air.getY()));
     }
 
     /**
@@ -107,19 +108,24 @@ public final class AtmosphereExposure {
     /**
      * The temperature of the atmosphere at {@code pos}, in kelvin, or {@link Double#NaN} where there
      * is nothing exposable. A position on a moving grid is read where the grid is ({@link #inWorld}).
+     * In a {@code zps:space} biome, this includes heat from {@link g_mungus.zps.gas.api.HeatSources}.
      */
     public static double temperatureK(Level level, BlockPos pos) {
         pos = inWorld(level, pos);
         Biome biome = level.getBiome(pos).value();
-        return temperatureK(biome, AtmosphericComposition.of(biome), pos);
+        return temperatureK(level, biome, AtmosphericComposition.of(biome), pos);
     }
 
-    /** As {@link #temperatureK(Level, BlockPos)}, for {@code biome} with {@code composition} as its air. */
-    public static double temperatureK(Biome biome, AtmosphericComposition composition, BlockPos pos) {
+    /**
+     * As {@link #temperatureK(Level, BlockPos)}, for {@code biome} with {@code composition} as its air,
+     * at {@code pos} already in the world.
+     */
+    public static double temperatureK(Level level, Biome biome, AtmosphericComposition composition, BlockPos pos) {
         if (!isExposable(composition, pos.getY())) {
             return Double.NaN;
         }
-        return BiomeTemperature.kelvinAt(biome, pos);
+        double kelvin = BiomeTemperature.kelvinAt(biome, pos);
+        return SpaceTemperature.appliesTo(biome) ? SpaceTemperature.kelvin(level, pos, kelvin) : kelvin;
     }
 
     /**

@@ -6,6 +6,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
@@ -77,6 +79,43 @@ public class CableInsulationBlock extends Block {
                 .setValue(WEST, west)
                 .setValue(UP, up)
                 .setValue(DOWN, down);
+    }
+
+    /**
+     * Connections travel with the block: each horizontal face's value moves to wherever the
+     * transform sends it. Up and down are never touched by either.
+     */
+    @SuppressWarnings("deprecation")
+    @Override
+    public @NotNull BlockState rotate(@NotNull BlockState state, @NotNull Rotation rotation) {
+        BlockState result = state;
+        for (Direction direction : Direction.Plane.HORIZONTAL) {
+            result = result.setValue(propertyFor(rotation.rotate(direction)),
+                    state.getValue(propertyFor(direction)));
+        }
+        return result;
+    }
+
+    @SuppressWarnings("deprecation")
+    @Override
+    public @NotNull BlockState mirror(@NotNull BlockState state, @NotNull Mirror mirror) {
+        BlockState result = state;
+        for (Direction direction : Direction.Plane.HORIZONTAL) {
+            result = result.setValue(propertyFor(mirror.mirror(direction)),
+                    state.getValue(propertyFor(direction)));
+        }
+        return result;
+    }
+
+    public static BooleanProperty propertyFor(Direction direction) {
+        return switch (direction) {
+            case NORTH -> NORTH;
+            case SOUTH -> SOUTH;
+            case EAST -> EAST;
+            case WEST -> WEST;
+            case UP -> UP;
+            case DOWN -> DOWN;
+        };
     }
 
     private boolean canConnect(BlockPos connectTo, Level level) {

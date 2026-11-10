@@ -261,6 +261,9 @@ the vanilla torches and lanterns are listed there too, in `zps:vanilla`.
 - The plain pipe: 1 m³ node, 12.5 cm bore, connects on every face and imposes nothing, so whatever a neighbour proposes (a valve, a pump) defines the edge.
 - Bursts at about 16.4 MPa or 1,478 K. When a neighbour is blown away the face is left as a **leak** that bleeds gas into the world until something is placed against it again.
 
+#### Gas Filter (`gas_filter`)
+- An inline duct section with a mesh housing: same node, bore and limits as a duct, connects on every face and carries gas either way. Its right-click screen picks a blacklist of any registered gases, the same list as the Reactor Port's; blocked gases cannot cross any of its faces in either direction. The filter rides on the connection itself, so it combines with whatever the neighbour proposes (a check valve, a pump).
+
 #### Vent (`vent`)
 - A full-face plate bolted flat against whatever feeds it; the network joins on the back face only, so a vent always caps the end of a run. Placed facing the player like a dispenser (sneak to flip).
 - Dumps everything at its node into the world every tick and draws a particle jet whose speed follows the pressure that pushed it out.

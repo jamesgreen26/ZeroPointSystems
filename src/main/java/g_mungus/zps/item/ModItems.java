@@ -148,6 +148,8 @@ public class ModItems {
 
     public static final RegistryObject<Item> GAS_DUCT = ITEMS.register("gas_duct",
             () -> new BlockItem(ModBlocks.GAS_DUCT.get(), new Item.Properties()));
+    public static final RegistryObject<Item> GAS_FILTER = ITEMS.register("gas_filter",
+            () -> new BlockItem(ModBlocks.GAS_FILTER.get(), new Item.Properties()));
 
     public static final RegistryObject<Item> CREATIVE_GAS_GENERATOR = ITEMS.register("creative_gas_generator",
             () -> new BlockItem(ModBlocks.CREATIVE_GAS_GENERATOR.get(), new Item.Properties().rarity(Rarity.EPIC)));

@@ -151,6 +151,12 @@ public class ZPSGamePackets {
                 .consumerMainThread(ReactorPortSettingsC2SPacket::handle)
                 .add();
 
+        INSTANCE.messageBuilder(GasFilterSettingsC2SPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(GasFilterSettingsC2SPacket::encode)
+                .decoder(GasFilterSettingsC2SPacket::decode)
+                .consumerMainThread(GasFilterSettingsC2SPacket::handle)
+                .add();
+
         INSTANCE.messageBuilder(DuctCycleC2SPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(DuctCycleC2SPacket::encode)
                 .decoder(DuctCycleC2SPacket::decode)

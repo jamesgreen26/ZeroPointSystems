@@ -12,6 +12,7 @@ import g_mungus.zps.blockentity.gas.CryoCondenserBlockEntity;
 import g_mungus.zps.blockentity.gas.VaporizerBlockEntity;
 import g_mungus.zps.blockentity.reactor.HeatExchangerBlockEntity;
 import g_mungus.zps.blockentity.reactor.ReactorPortBlockEntity;
+import g_mungus.zps.blockentity.gas.GasFilterBlockEntity;
 import g_mungus.zps.blockentity.light_pipe.*;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.registries.DeferredRegister;
@@ -173,6 +174,11 @@ public class ModBlockEntities {
         BLOCK_ENTITIES.register("duct",
             () -> BlockEntityType.Builder.of(DuctBlockEntity::new,
                 ModBlocks.GAS_DUCT.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<GasFilterBlockEntity>> GAS_FILTER =
+        BLOCK_ENTITIES.register("gas_filter",
+            () -> BlockEntityType.Builder.of(GasFilterBlockEntity::new,
+                ModBlocks.GAS_FILTER.get()).build(null));
 
     public static final RegistryObject<BlockEntityType<CreativeGasGeneratorBlockEntity>> CREATIVE_GAS_GENERATOR =
         BLOCK_ENTITIES.register("creative_gas_generator",

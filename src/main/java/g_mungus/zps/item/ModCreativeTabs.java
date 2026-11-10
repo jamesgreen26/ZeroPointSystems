@@ -75,6 +75,7 @@ public class ModCreativeTabs {
                         VENT,
                         GAS_GAUGE,
                         GAS_DUCT,
+                        GAS_FILTER,
                         AIR_COMPRESSOR,
                         CREATIVE_GAS_GENERATOR,
                         REINFORCED_PLATING,

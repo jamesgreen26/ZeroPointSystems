@@ -1,0 +1,62 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "zps:block/gas_filter/housing"
+      }
+    },
+    {
+      "when": {
+        "north": "connection"
+      },
+      "apply": {
+        "model": "zps:block/gas_duct/arm"
+      }
+    },
+    {
+      "when": {
+        "east": "connection"
+      },
+      "apply": {
+        "model": "zps:block/gas_duct/arm",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "south": "connection"
+      },
+      "apply": {
+        "model": "zps:block/gas_duct/arm",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "west": "connection"
+      },
+      "apply": {
+        "model": "zps:block/gas_duct/arm",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "up": "connection"
+      },
+      "apply": {
+        "model": "zps:block/gas_duct/arm",
+        "x": 270
+      }
+    },
+    {
+      "when": {
+        "down": "connection"
+      },
+      "apply": {
+        "model": "zps:block/gas_duct/arm",
+        "x": 90
+      }
+    }
+  ]
+}

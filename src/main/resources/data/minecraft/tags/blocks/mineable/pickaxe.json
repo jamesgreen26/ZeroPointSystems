@@ -15,6 +15,7 @@
     "zps:assembler",
     "zps:launch_platform",
     "zps:gas_duct",
+    "zps:gas_filter",
     "zps:vent",
     "zps:thruster",
     "zps:creative_gas_generator",

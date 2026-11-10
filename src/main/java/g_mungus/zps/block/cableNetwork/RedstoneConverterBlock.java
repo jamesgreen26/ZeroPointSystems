@@ -26,6 +26,16 @@ public class RedstoneConverterBlock extends TransformerBlock {
         return ModBlockEntities.REDSTONE_CONVERTER.get().create(pos, state);
     }
 
+    /**
+     * Vanilla dust asks every neighbour for its signal, but wire rewrites such as Alternate Current only ask
+     * blocks that say they are sources, so an emitter that leaves this false powers no dust under them.
+     */
+    @Override
+    @SuppressWarnings("deprecation")
+    public boolean isSignalSource(@NotNull BlockState state) {
+        return true;
+    }
+
     @Override
     public boolean canConnectRedstone(BlockState state, BlockGetter level, BlockPos pos, @Nullable Direction direction) {
         return state.is(ModBlocks.REDSTONE_CONVERTER.get()) && state.getValue(TransformerBlock.FACING).getOpposite() == direction;

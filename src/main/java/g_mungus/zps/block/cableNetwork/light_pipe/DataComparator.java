@@ -171,6 +171,13 @@ public class DataComparator extends CableComponentBlock implements EntityBlock {
         }
     }
 
+    /** Declared so that wire rewrites such as Alternate Current, which only ask sources, read the output. */
+    @Override
+    @SuppressWarnings("deprecation")
+    public boolean isSignalSource(BlockState state) {
+        return true;
+    }
+
     @Deprecated
     public int getSignal(BlockState arg, BlockGetter arg2, BlockPos arg3, Direction arg4) {
         return arg.getValue(POWERED) ? 15 : 0;

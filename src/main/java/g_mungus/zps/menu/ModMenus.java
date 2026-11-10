@@ -29,6 +29,9 @@ public class ModMenus {
     public static final RegistryObject<MenuType<VaporizerMenu>> VAPORIZER =
             MENUS.register("vaporizer", () -> IForgeMenuType.create(VaporizerMenu::new));
 
+    public static final RegistryObject<MenuType<CryoCondenserMenu>> CRYO_CONDENSER =
+            MENUS.register("cryo_condenser", () -> IForgeMenuType.create(CryoCondenserMenu::new));
+
     public static final RegistryObject<MenuType<BeamCollectorMenu>> BEAM_COLLECTOR =
             MENUS.register("beam_collector", () -> IForgeMenuType.create(BeamCollectorMenu::new));
 

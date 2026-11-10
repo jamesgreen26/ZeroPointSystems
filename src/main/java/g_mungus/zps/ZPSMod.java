@@ -20,6 +20,7 @@ import g_mungus.zps.entity.ModEntities;
 import g_mungus.zps.gametest.AssemblerGameTests;
 import g_mungus.zps.gametest.ComposterDirtGameTests;
 import g_mungus.zps.gametest.VaporizerGameTests;
+import g_mungus.zps.gametest.CryoCondenserGameTests;
 import g_mungus.zps.gametest.AirCompressorGameTests;
 import g_mungus.zps.gametest.BrushableBlockGameTests;
 import g_mungus.zps.gametest.ImpactPistonGameTests;
@@ -167,6 +168,7 @@ public final class ZPSMod {
         event.register(GasGaugeGameTests.class);
         event.register(GasExposureGameTests.class);
         event.register(VaporizerGameTests.class);
+        event.register(CryoCondenserGameTests.class);
         event.register(AirCompressorGameTests.class);
         event.register(FusionReactorGameTests.class);
         event.register(ReactorWallApertureGameTests.class);

@@ -1,0 +1,12 @@
+{
+  "type": "zps:condensing",
+  "ingredient": {
+    "gas": "vs_clockwork:steam",
+    "amount": 1.0
+  },
+  "result": {
+    "item": "minecraft:ice"
+  },
+  "maxTemperature": 250.0,
+  "temperatureCost": 100.0
+}

@@ -60,6 +60,18 @@ public class ModRecipes {
     public static final RegistryObject<VaporizingRecipeSerializer> VAPORIZING_SERIALIZER =
             RECIPE_SERIALIZERS.register("vaporizing", VaporizingRecipeSerializer::new);
 
+    /** Gas to items in the Cryo Condenser, gated and paid for in machine temperature. */
+    public static final RegistryObject<RecipeType<CondensingRecipe>> CONDENSING_TYPE =
+            RECIPE_TYPES.register("condensing", () -> new RecipeType<CondensingRecipe>() {
+                @Override
+                public String toString() {
+                    return "zps:condensing";
+                }
+            });
+
+    public static final RegistryObject<CondensingRecipeSerializer> CONDENSING_SERIALIZER =
+            RECIPE_SERIALIZERS.register("condensing", CondensingRecipeSerializer::new);
+
     /** How a thruster burns a gas; a gas with none passes through unburnt. */
     public static final RegistryObject<RecipeType<ThrusterFuelRecipe>> THRUSTER_FUEL_TYPE =
             RECIPE_TYPES.register("thruster_fuel", () -> new RecipeType<ThrusterFuelRecipe>() {

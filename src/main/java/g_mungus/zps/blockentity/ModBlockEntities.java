@@ -8,6 +8,7 @@ import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity;
 import g_mungus.zps.blockentity.gas.ThrusterBlockEntity;
 import g_mungus.zps.blockentity.gas.VentBlockEntity;
 import g_mungus.zps.blockentity.gas.AirCompressorBlockEntity;
+import g_mungus.zps.blockentity.gas.CryoCondenserBlockEntity;
 import g_mungus.zps.blockentity.gas.VaporizerBlockEntity;
 import g_mungus.zps.blockentity.reactor.HeatExchangerBlockEntity;
 import g_mungus.zps.blockentity.reactor.ReactorPortBlockEntity;
@@ -182,6 +183,11 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("vaporizer",
                     () -> BlockEntityType.Builder.of(VaporizerBlockEntity::new,
                             ModBlocks.VAPORIZER.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<CryoCondenserBlockEntity>> CRYO_CONDENSER =
+            BLOCK_ENTITIES.register("cryo_condenser",
+                    () -> BlockEntityType.Builder.of(CryoCondenserBlockEntity::new,
+                            ModBlocks.CRYO_CONDENSER.get()).build(null));
 
     public static final RegistryObject<BlockEntityType<ReactorPortBlockEntity>> REACTOR_PORT =
         BLOCK_ENTITIES.register("reactor_port",

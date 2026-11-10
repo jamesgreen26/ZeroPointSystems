@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "item": "zps:aluminum_ingot"
+    },
+    "D": {
+      "item": "zps:gas_duct"
+    },
+    "G": {
+      "item": "minecraft:glass_pane"
+    },
+    "M": {
+      "item": "zps:space_metal_mesh"
+    },
+    "B": {
+      "item": "minecraft:packed_ice"
+    }
+  },
+  "pattern": [
+    "IDI",
+    "MGM",
+    "MBM"
+  ],
+  "result": {
+    "item": "zps:cryo_condenser",
+    "count": 1
+  }
+}

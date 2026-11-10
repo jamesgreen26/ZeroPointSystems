@@ -38,6 +38,7 @@ import g_mungus.zps.gas.ModParticles;
 import g_mungus.zps.client.screens.PowerCellScreen;
 import g_mungus.zps.client.screens.RollingMillScreen;
 import g_mungus.zps.client.screens.SieveScreen;
+import g_mungus.zps.client.screens.CryoCondenserScreen;
 import g_mungus.zps.client.screens.VaporizerScreen;
 import g_mungus.zps.client.screens.BeamCollectorScreen;
 import g_mungus.zps.client.tractor.TractorBeamRenderer;
@@ -230,6 +231,7 @@ public class ClientSetup {
             MenuScreens.register(ModMenus.ASSEMBLER.get(), AssemblerScreen::new);
             MenuScreens.register(ModMenus.SIEVE.get(), SieveScreen::new);
             MenuScreens.register(ModMenus.VAPORIZER.get(), VaporizerScreen::new);
+            MenuScreens.register(ModMenus.CRYO_CONDENSER.get(), CryoCondenserScreen::new);
             MenuScreens.register(ModMenus.BEAM_COLLECTOR.get(), BeamCollectorScreen::new);
             MenuScreens.register(ModMenus.AIR_COMPRESSOR.get(), AirCompressorScreen::new);
             // The set_recipe argument suggests recipe ids client-side (script terminal) against the synced level.

@@ -143,6 +143,17 @@ public final class GasExposure {
     }
 
     /**
+     * Whether {@code entity} is drowning in gas on whichever side asks: the server's own mark, or on
+     * the client, what the server last said.
+     */
+    public static boolean isDrowningOnEitherSide(LivingEntity entity) {
+        if (entity.level().isClientSide()) {
+            return entity instanceof AtmosphereBreather breather && breather.zps$isSyncedDrowning();
+        }
+        return isDrowning(entity);
+    }
+
+    /**
      * Drowning in gas goes through NeoForge's own breathing, which runs in the entity's base tick just
      * after {@code LivingEntityMixin} has exposed it: the air in its eyes is not breathable, unless
      * something would let it breathe underwater. On the client, a player drowns when the server has

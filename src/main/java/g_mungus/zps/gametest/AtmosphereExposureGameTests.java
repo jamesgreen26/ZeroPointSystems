@@ -6,6 +6,7 @@ import g_mungus.zps.gas.AtmosphereBreather;
 import g_mungus.zps.gas.AtmosphereExposure;
 import g_mungus.zps.gas.ModGasTags;
 import g_mungus.zps.gas.api.GasConditions;
+import g_mungus.zps.mixin.PlayerInvoker;
 import g_mungus.zps.world.AtmosphericComposition;
 import g_mungus.zps.world.BiomeTemperature;
 import g_mungus.zps.world.YRange;
@@ -17,7 +18,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.animal.Pig;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.common.util.FakePlayerFactory;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
@@ -114,6 +118,34 @@ public class AtmosphereExposureGameTests {
             if (breather.zps$isSyncedDrowning()) helper.fail("A player back in air should have been told it is breathing");
             helper.succeed();
         });
+    }
+
+    /**
+     * A turtle helmet gives water breathing only while its wearer is breathing, as out of water: in
+     * vacuum it buys a few seconds, not forever. The fake player is never ticked, so its base tick
+     * and helmet tick are driven by hand.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void turtleHelmetInVacuum_doesNotRefresh(GameTestHelper helper) {
+        ServerPlayer player = FakePlayerFactory.get(helper.getLevel(),
+                new GameProfile(UUID.nameUUIDFromBytes("zps:turtle_helmet".getBytes()), "[ZPS turtle helmet]"));
+        BlockPos column = helper.absolutePos(new BlockPos(3, 2, 3));
+        player.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.TURTLE_HELMET));
+        player.removeAllEffects();
+
+        player.moveTo(column.getX() + 0.5, 1000, column.getZ() + 0.5);
+        player.baseTick();
+        ((PlayerInvoker) player).zps$turtleHelmetTick();
+        if (!player.hasEffect(MobEffects.WATER_BREATHING)) helper.fail("A turtle helmet in air should give water breathing");
+
+        player.removeAllEffects();
+        player.moveTo(column.getX() + 0.5, 2100, column.getZ() + 0.5);
+        player.baseTick();
+        ((PlayerInvoker) player).zps$turtleHelmetTick();
+        if (player.hasEffect(MobEffects.WATER_BREATHING)) helper.fail("A turtle helmet in vacuum should not top up water breathing");
+
+        player.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
+        helper.succeed();
     }
 
     /** The server keeps what it applied to a player, for the debug screen to ask for. */

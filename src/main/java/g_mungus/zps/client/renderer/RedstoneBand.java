@@ -11,9 +11,11 @@ import dev.engine_room.flywheel.lib.model.SingleMeshModel;
 import dev.engine_room.flywheel.lib.vertex.PosTexNormalVertexView;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.block.cableNetwork.CableBlock;
+import g_mungus.zps.block.cableNetwork.TransformerBlock;
 import g_mungus.zps.block.cableNetwork.properties.InsulationType;
 import g_mungus.zps.blockentity.RedstoneBandSource;
 import g_mungus.zps.client.reactor.ReactorWallOverlays;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -77,8 +79,9 @@ public final class RedstoneBand {
             W_LO, -LIFT, W_HI, 0, W_V0, W_LO, -LIFT, W_LO, 0, W_V1, W_HI, -LIFT, W_LO, W_U, W_V1,
             W_HI, -LIFT, W_HI, W_U, W_V0, 0, -1, 0};
 
-    /** The band, then the converter's window. */
-    public static final float[][] QUADS_WITH_WINDOW = {QUADS[0], QUADS[1], QUADS[2], QUADS[3], WINDOW};
+    private static final float[][] WINDOW_QUADS = {WINDOW};
+    private static final float[][] QUADS_WITH_WINDOW = {QUADS[0], QUADS[1], QUADS[2], QUADS[3], WINDOW};
+    private static final float[][] NO_QUADS = {};
 
     /**
      * Tint at zero output. The texture is the Redstone Converter's band scaled up to its brightest
@@ -87,7 +90,8 @@ public final class RedstoneBand {
     public static final int OFF_COLOR = 0x580101;
 
     public static final Model MODEL = model(QUADS, "zps:redstone_band");
-    public static final Model MODEL_WITH_WINDOW = model(QUADS_WITH_WINDOW, "zps:redstone_band_with_window");
+    /** The window is its own model, since it stays on show where the band does not. */
+    public static final Model WINDOW_MODEL = model(WINDOW_QUADS, "zps:redstone_band_window");
 
     private RedstoneBand() {
     }
@@ -102,17 +106,28 @@ public final class RedstoneBand {
         return Mth.lerpInt(t, (OFF_COLOR >> shift) & 0xFF, (ReactorWallOverlays.ON_COLOR >> shift) & 0xFF);
     }
 
-    public static float[][] quadsFor(RedstoneBandSource source) {
-        return source.hasFrontWindow() ? QUADS_WITH_WINDOW : QUADS;
+    /** The quads on show for a block in this state: the band unless insulated, and the window if it has one. */
+    public static float[][] quadsFor(RedstoneBandSource source, BlockState state) {
+        if (isBandVisible(state)) {
+            return source.hasFrontWindow() ? QUADS_WITH_WINDOW : QUADS;
+        }
+        return source.hasFrontWindow() ? WINDOW_QUADS : NO_QUADS;
     }
 
-    public static Model modelFor(RedstoneBandSource source) {
-        return source.hasFrontWindow() ? MODEL_WITH_WINDOW : MODEL;
-    }
-
-    /** Insulation replaces the plate with its own frame; any other cladding leaves it on show. */
-    public static boolean isVisible(BlockState state) {
+    /**
+     * Insulation replaces the plate with its own frame, which has no band; any other cladding leaves it
+     * on show. The frame's front face keeps the window, in the same place, so that is never hidden.
+     */
+    public static boolean isBandVisible(BlockState state) {
         return state.getValue(CableBlock.INSULATION_TYPE) != InsulationType.INSULATION;
+    }
+
+    /**
+     * Where the window takes its light from. An insulated block is a solid cube, dark inside, so its
+     * window is lit by the block it looks out on, as any face of a solid block is.
+     */
+    public static BlockPos windowLightPos(BlockState state, BlockPos pos) {
+        return isBandVisible(state) ? pos : pos.relative(state.getValue(TransformerBlock.FACING));
     }
 
     /**

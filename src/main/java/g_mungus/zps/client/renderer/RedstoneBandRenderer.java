@@ -6,6 +6,7 @@ import dev.engine_room.flywheel.api.visualization.VisualizationManager;
 import g_mungus.zps.block.cableNetwork.TransformerBlock;
 import g_mungus.zps.blockentity.RedstoneBandSource;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
@@ -29,8 +30,11 @@ public class RedstoneBandRenderer<T extends BlockEntity & RedstoneBandSource> im
     public void render(T blockEntity, float partialTick, @NotNull PoseStack poseStack,
                        @NotNull MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
         BlockState state = blockEntity.getBlockState();
-        if (VisualizationManager.supportsVisualization(blockEntity.getLevel())
-                || !RedstoneBand.isVisible(state)) {
+        if (VisualizationManager.supportsVisualization(blockEntity.getLevel())) {
+            return;
+        }
+        float[][] quads = RedstoneBand.quadsFor(blockEntity, state);
+        if (quads.length == 0) {
             return;
         }
 
@@ -44,15 +48,20 @@ public class RedstoneBandRenderer<T extends BlockEntity & RedstoneBandSource> im
         poseStack.mulPose(RedstoneBand.rotationFor(state.getValue(TransformerBlock.FACING)));
         poseStack.translate(-0.5f, -0.5f, -0.5f);
 
+        // Only an insulated block's quads are the window alone, and that is lit from in front.
+        int light = RedstoneBand.isBandVisible(state) || blockEntity.getLevel() == null ? packedLight
+                : LevelRenderer.getLightColor(blockEntity.getLevel(),
+                        RedstoneBand.windowLightPos(state, blockEntity.getBlockPos()));
+
         PoseStack.Pose pose = poseStack.last();
         VertexConsumer consumer = bufferSource.getBuffer(RENDER_TYPE);
-        for (float[] quad : RedstoneBand.quadsFor(blockEntity)) {
+        for (float[] quad : quads) {
             for (int at = 0; at < 20; at += 5) {
                 consumer.addVertex(pose, quad[at], quad[at + 1], quad[at + 2])
                         .setColor(r, g, b, 255)
                         .setUv(quad[at + 3], quad[at + 4])
                         .setOverlay(OverlayTexture.NO_OVERLAY)
-                        .setLight(packedLight)
+                        .setLight(light)
                         .setNormal(pose, quad[20], quad[21], quad[22]);
             }
         }

@@ -1,6 +1,7 @@
 package g_mungus.zps.block.gas.core;
 
 import g_mungus.zps.block.gas.core.facets.ApertureFacet;
+import g_mungus.zps.block.gas.core.facets.GasFilterFacet;
 import g_mungus.zps.block.gas.core.facets.OneWayFacet;
 import g_mungus.zps.block.gas.core.facets.PumpFacet;
 import net.minecraft.core.Direction;
@@ -94,13 +95,21 @@ public final class GasEdgeProposal {
     public CompositeDuctEdge buildEdge(DuctNodePos nodeA, DuctNodePos nodeB, Direction aToB) {
         // Only carry an interface the edge genuinely needs: Kelvin applies pump and one-way
         // behaviour on the strength of the interface alone, whatever the values behind it.
+        ConnectionType type = connectionType();
+        boolean filtered = needsFilter();
         CompositeDuctEdge edge;
         if (needsPump()) {
-            edge = new PumpCompositeDuctEdge(connectionType(), nodeA, nodeB, maxRadius, halfLength);
+            edge = filtered
+                    ? new FilteredPumpCompositeDuctEdge(type, nodeA, nodeB, maxRadius, halfLength)
+                    : new PumpCompositeDuctEdge(type, nodeA, nodeB, maxRadius, halfLength);
         } else if (needsOneWay()) {
-            edge = new OneWayCompositeDuctEdge(connectionType(), nodeA, nodeB, maxRadius, halfLength);
+            edge = filtered
+                    ? new FilteredOneWayCompositeDuctEdge(type, nodeA, nodeB, maxRadius, halfLength)
+                    : new OneWayCompositeDuctEdge(type, nodeA, nodeB, maxRadius, halfLength);
         } else {
-            edge = new CompositeDuctEdge(connectionType(), nodeA, nodeB, maxRadius, halfLength);
+            edge = filtered
+                    ? new FilteredCompositeDuctEdge(type, nodeA, nodeB, maxRadius, halfLength)
+                    : new CompositeDuctEdge(type, nodeA, nodeB, maxRadius, halfLength);
         }
 
         List<GasEdgeFacet<?>> ordered = new ArrayList<>(facets);
@@ -141,17 +150,32 @@ public final class GasEdgeProposal {
         return facets.stream().anyMatch(f -> f instanceof OneWayFacet oneWay && !oneWay.blocked());
     }
 
+    /**
+     * Whether a filter that holds anything back is present. A filter naming only gases nobody
+     * registers is inert, so the edge does not need Kelvin's {@code FilteredEdge} for it.
+     */
+    private boolean needsFilter() {
+        return facets.stream().anyMatch(f -> f instanceof GasFilterFacet filter && filter.active());
+    }
+
     private ConnectionType connectionType() {
         boolean pump = facets.stream().anyMatch(PumpFacet.class::isInstance);
         boolean aperture = facets.stream().anyMatch(ApertureFacet.class::isInstance);
         boolean blocked = facets.stream().anyMatch(f -> f instanceof OneWayFacet ow && ow.blocked());
+        boolean filtered = needsFilter();
 
         // Kelvin's ConnectionType has no pump entry, so anything with a pump is OTHER.
         if (pump) {
             return ConnectionType.OTHER;
         }
         if (needsOneWay()) {
+            if (filtered) {
+                return aperture ? ConnectionType.APERTURE_FILTERED_ONEWAY : ConnectionType.FILTERED_ONEWAY;
+            }
             return aperture ? ConnectionType.APERTURE_ONEWAY : ConnectionType.ONEWAY;
+        }
+        if (filtered) {
+            return aperture || blocked ? ConnectionType.APERTURE_FILTERED : ConnectionType.FILTERED;
         }
         if (aperture || blocked) {
             return ConnectionType.APERTURE;

@@ -12,6 +12,7 @@ import g_mungus.zps.block.gas.ThrusterBlock;
 import g_mungus.zps.block.gas.VentBlock;
 import g_mungus.zps.block.gas.AirCompressorBlock;
 import g_mungus.zps.block.gas.CryoCondenserBlock;
+import g_mungus.zps.block.gas.GasFilterBlock;
 import g_mungus.zps.block.gas.VaporizerBlock;
 import g_mungus.zps.block.reactor.HeatExchangerBlock;
 import g_mungus.zps.block.reactor.ReactorPortBlock;
@@ -301,6 +302,14 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()
                     // Thin enough that water would otherwise wash it away.
+                    .forceSolidOn()));
+
+    public static final DeferredBlock<Block> GAS_FILTER = BLOCKS.register("gas_filter",
+            () -> new GasFilterBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .sound(SoundType.NETHERITE_BLOCK)
+                    .strength(2.0f)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
                     .forceSolidOn()));
 
     public static final DeferredBlock<Block> EXTINGUISHED_TORCH = BLOCKS.register("extinguished_torch",

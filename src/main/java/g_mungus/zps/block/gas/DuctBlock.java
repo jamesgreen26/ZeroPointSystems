@@ -47,14 +47,14 @@ public class DuctBlock extends GasNodeBlock
         implements EntityBlock, LeakyPipeDuctNode.DuctBlockFaces {
 
     /** Bore of a duct, in metres; Kelvin's own default pipe radius. */
-    private static final double RADIUS = 0.125;
+    public static final double RADIUS = 0.125;
     /** This block's share of an edge's length: half a block. */
-    private static final double HALF_LENGTH = 0.25;
+    public static final double HALF_LENGTH = 0.25;
 
-    private static final double VOLUME = 1.0;
+    public static final double VOLUME = 1.0;
     public static final double MAX_PRESSURE = 16_375_049.0;
-    private static final double MAX_TEMPERATURE = 1478.0;
-    private static final double HEAT_CAPACITY = 449.0;
+    public static final double MAX_TEMPERATURE = 1478.0;
+    public static final double HEAT_CAPACITY = 449.0;
 
     /**
      * The duct's profile: an 8x8 pipe, the same shape as a cable only thicker. The core is the
@@ -93,8 +93,14 @@ public class DuctBlock extends GasNodeBlock
         registerDefaultState(state);
     }
 
-    private static EnumProperty<DuctConnectionType> propertyFor(Direction direction) {
+    /** The connection-state property for one face, shared with other duct-shaped blocks. */
+    public static EnumProperty<DuctConnectionType> propertyFor(Direction direction) {
         return PROPERTIES.get(direction);
+    }
+
+    /** The 8x8 stub a connected face grows out to the block edge. */
+    public static VoxelShape armShape(Direction direction) {
+        return ARMS.get(direction);
     }
 
     @Override

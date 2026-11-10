@@ -16,6 +16,7 @@
     "zps:cryo_condenser",
     "zps:air_compressor",
     "zps:gas_duct",
+    "zps:gas_filter",
     "zps:vent",
     "zps:thruster",
     "zps:creative_gas_generator",

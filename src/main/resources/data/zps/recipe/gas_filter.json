@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "D": {
+      "item": "zps:gas_duct"
+    },
+    "M": {
+      "item": "zps:space_metal_mesh"
+    }
+  },
+  "pattern": [
+    "DMD"
+  ],
+  "result": {
+    "id": "zps:gas_filter",
+    "count": 1
+  }
+}

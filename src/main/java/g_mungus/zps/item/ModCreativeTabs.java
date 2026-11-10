@@ -76,6 +76,7 @@ public class ModCreativeTabs {
                         IMPACT_PISTON,
                         SIEVE,
                         VAPORIZER,
+                        CRYO_CONDENSER,
                         VENT,
                         GAS_GAUGE,
                         GAS_DUCT,

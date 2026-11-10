@@ -13,6 +13,7 @@ import g_mungus.zps.blockentity.BeamCollectorBlockEntity;
 import g_mungus.zps.blockentity.RoboticArmBlockEntity;
 import g_mungus.zps.blockentity.RollingMillBlockEntity;
 import g_mungus.zps.blockentity.gas.AirCompressorBlockEntity;
+import g_mungus.zps.blockentity.gas.CryoCondenserBlockEntity;
 import g_mungus.zps.blockentity.gas.VaporizerBlockEntity;
 import g_mungus.zps.blockentity.SieveBlockEntity;
 import g_mungus.zps.blockentity.reactor.HeatExchangerBlockEntity;
@@ -29,6 +30,7 @@ import g_mungus.zps.entity.ModEntities;
 import g_mungus.zps.gametest.AssemblerGameTests;
 import g_mungus.zps.gametest.ComposterDirtGameTests;
 import g_mungus.zps.gametest.VaporizerGameTests;
+import g_mungus.zps.gametest.CryoCondenserGameTests;
 import g_mungus.zps.gametest.AirCompressorGameTests;
 import g_mungus.zps.gametest.BrushableBlockGameTests;
 import g_mungus.zps.gametest.ImpactPistonGameTests;
@@ -148,6 +150,7 @@ public final class ZPSMod {
         event.register(DuctTravelSableGameTests.class);
         event.register(GasExposureGameTests.class);
         event.register(VaporizerGameTests.class);
+        event.register(CryoCondenserGameTests.class);
         event.register(AirCompressorGameTests.class);
         event.register(FusionReactorGameTests.class);
         event.register(ReactorWallApertureGameTests.class);
@@ -204,6 +207,8 @@ public final class ZPSMod {
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.SIEVE.get(), SieveBlockEntity::getItemHandler);
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.VAPORIZER.get(), VaporizerBlockEntity::getEnergyStorage);
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.VAPORIZER.get(), VaporizerBlockEntity::getItemHandler);
+        event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.CRYO_CONDENSER.get(), CryoCondenserBlockEntity::getEnergyStorage);
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.CRYO_CONDENSER.get(), CryoCondenserBlockEntity::getItemHandler);
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.AIR_COMPRESSOR.get(), AirCompressorBlockEntity::getEnergyStorage);
         // The Impact Piston has no inventory: energy only.
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.IMPACT_PISTON.get(), ImpactPistonBlockEntity::getEnergyStorage);

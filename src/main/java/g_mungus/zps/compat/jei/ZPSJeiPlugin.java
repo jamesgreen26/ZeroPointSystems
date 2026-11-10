@@ -8,6 +8,7 @@ import g_mungus.zps.recipe.ImpactRecipe;
 import g_mungus.zps.recipe.ModRecipes;
 import g_mungus.zps.recipe.RollingRecipe;
 import g_mungus.zps.recipe.Shaped5x5Recipe;
+import g_mungus.zps.recipe.CondensingRecipe;
 import g_mungus.zps.recipe.VaporizingRecipe;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
@@ -50,6 +51,7 @@ public class ZPSJeiPlugin implements IModPlugin {
                 new Shaped5x5Category(guiHelper),
                 new ImpactCategory(guiHelper),
                 new VaporizerCategory(guiHelper),
+                new CryoCondenserCategory(guiHelper),
                 new ThrusterCategory(guiHelper));
     }
 
@@ -68,6 +70,8 @@ public class ZPSJeiPlugin implements IModPlugin {
         registration.addRecipes(ImpactCategory.TYPE, impact);
         List<RecipeHolder<VaporizingRecipe>> vaporizing = recipeManager.getAllRecipesFor(ModRecipes.VAPORIZING_TYPE.get());
         registration.addRecipes(VaporizerCategory.TYPE, vaporizing);
+        List<RecipeHolder<CondensingRecipe>> condensing = recipeManager.getAllRecipesFor(ModRecipes.CONDENSING_TYPE.get());
+        registration.addRecipes(CryoCondenserCategory.TYPE, condensing);
         registration.addRecipes(ThrusterCategory.TYPE, ThrusterCategory.fuels(level));
     }
 
@@ -85,6 +89,7 @@ public class ZPSJeiPlugin implements IModPlugin {
         registration.addRecipeCatalyst(ModItems.ROLLING_MILL.get(), RollingMillCategory.TYPE);
         registration.addRecipeCatalyst(ModItems.IMPACT_PISTON.get(), ImpactCategory.TYPE);
         registration.addRecipeCatalyst(ModItems.VAPORIZER.get(), VaporizerCategory.TYPE);
+        registration.addRecipeCatalyst(ModItems.CRYO_CONDENSER.get(), CryoCondenserCategory.TYPE);
         registration.addRecipeCatalyst(ModItems.THRUSTER.get(), ThrusterCategory.TYPE);
         // The assembler is a workstation for its own 5x5 recipes and vanilla crafting, plus Create's
         // mechanical and automated shaped crafting categories when Create is present.

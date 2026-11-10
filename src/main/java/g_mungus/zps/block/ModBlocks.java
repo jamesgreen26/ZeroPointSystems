@@ -11,6 +11,7 @@ import g_mungus.zps.block.gas.GasGaugeBlock;
 import g_mungus.zps.block.gas.ThrusterBlock;
 import g_mungus.zps.block.gas.VentBlock;
 import g_mungus.zps.block.gas.AirCompressorBlock;
+import g_mungus.zps.block.gas.CryoCondenserBlock;
 import g_mungus.zps.block.gas.VaporizerBlock;
 import g_mungus.zps.block.reactor.HeatExchangerBlock;
 import g_mungus.zps.block.reactor.ReactorPortBlock;
@@ -267,6 +268,11 @@ public class ModBlocks {
 
     public static final DeferredBlock<Block> VAPORIZER = BLOCKS.register("vaporizer",
             () -> new VaporizerBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(3.5f)
+                    .requiresCorrectToolForDrops()));
+
+    public static final DeferredBlock<Block> CRYO_CONDENSER = BLOCKS.register("cryo_condenser",
+            () -> new CryoCondenserBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(3.5f)
                     .requiresCorrectToolForDrops()));
 

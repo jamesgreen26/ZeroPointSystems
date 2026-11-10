@@ -35,6 +35,7 @@ import g_mungus.zps.client.screens.BeamCollectorScreen;
 import g_mungus.zps.client.tractor.TractorBeamRenderer;
 import g_mungus.zps.client.screens.RollingMillScreen;
 import g_mungus.zps.client.screens.SieveScreen;
+import g_mungus.zps.client.screens.CryoCondenserScreen;
 import g_mungus.zps.client.screens.VaporizerScreen;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.entity.ModEntities;
@@ -214,6 +215,7 @@ public class ClientSetup {
         event.register(ModMenus.ASSEMBLER.get(), AssemblerScreen::new);
         event.register(ModMenus.SIEVE.get(), SieveScreen::new);
         event.register(ModMenus.VAPORIZER.get(), VaporizerScreen::new);
+        event.register(ModMenus.CRYO_CONDENSER.get(), CryoCondenserScreen::new);
         event.register(ModMenus.AIR_COMPRESSOR.get(), AirCompressorScreen::new);
     }
 

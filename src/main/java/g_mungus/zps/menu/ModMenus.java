@@ -32,6 +32,9 @@ public class ModMenus {
     public static final DeferredHolder<MenuType<?>, MenuType<VaporizerMenu>> VAPORIZER =
             MENUS.register("vaporizer", () -> IMenuTypeExtension.create(VaporizerMenu::new));
 
+    public static final DeferredHolder<MenuType<?>, MenuType<CryoCondenserMenu>> CRYO_CONDENSER =
+            MENUS.register("cryo_condenser", () -> IMenuTypeExtension.create(CryoCondenserMenu::new));
+
     public static final DeferredHolder<MenuType<?>, MenuType<AirCompressorMenu>> AIR_COMPRESSOR =
             MENUS.register("air_compressor", () -> IMenuTypeExtension.create(AirCompressorMenu::new));
 }

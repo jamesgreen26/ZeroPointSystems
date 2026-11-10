@@ -13,12 +13,15 @@
     },
     "M": {
       "item": "zps:space_metal_mesh"
+    },
+    "B": {
+      "item": "minecraft:magma_block"
     }
   },
   "pattern": [
     "IDI",
     "MGM",
-    "MMM"
+    "MBM"
   ],
   "result": {
     "id": "zps:vaporizer",

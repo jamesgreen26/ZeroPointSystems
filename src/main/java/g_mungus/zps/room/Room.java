@@ -21,7 +21,8 @@ import java.util.Set;
 
 /**
  * One sealed room and the gas in it. The gas is a plain store: masses by gas id and one
- * temperature. Nothing pushes back on what feeds it, but it slowly leaks back to the outside
+ * temperature, for the room as a whole — what any one place in it holds is worked out from them
+ * and the outside air there ({@link RoomManager#airAt}). Nothing pushes back on what feeds it, but it slowly leaks back to the outside
  * atmosphere through its walls — see {@link #leak}. The outside is the whole room's, not one
  * place's: see {@link Outside}.
  */
@@ -288,8 +289,9 @@ public final class Room {
     }
 
     /**
-     * The gas a living thing inside breathes, as weights by mass. Traces do not count; a room
-     * holding nothing beyond them is vacuum.
+     * The room's gas as a whole, as weights by mass. Traces do not count; a room holding nothing
+     * beyond them is vacuum. What a living thing inside breathes is the gas where it stands:
+     * {@link RoomManager.Air#gases()}.
      */
     public Map<ResourceLocation, Double> gases() {
         Map<ResourceLocation, Double> gases = new HashMap<>();

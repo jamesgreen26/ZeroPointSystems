@@ -38,7 +38,10 @@ public final class BlockGasContact {
     private BlockGasContact() {
     }
 
-    /** Every body of gas touching the block at {@code pos}; a room touching it on several faces counts once. */
+    /**
+     * Every body of gas touching the block at {@code pos}; a room touching it on several faces
+     * counts once, as its gas is at the first of them.
+     */
     public static List<Contact> contacts(ServerLevel level, BlockPos pos) {
         List<Contact> contacts = new ArrayList<>();
         List<Room> rooms = new ArrayList<>(2);
@@ -49,7 +52,8 @@ public final class BlockGasContact {
             if (room != null) {
                 if (!rooms.contains(room)) {
                     rooms.add(room);
-                    contacts.add(new Contact(room.gases(), room.temperatureK()));
+                    RoomManager.Air air = RoomManager.get(level).airAt(level, cell);
+                    contacts.add(new Contact(air.gases(), air.temperatureK()));
                 }
                 continue;
             }
@@ -67,9 +71,9 @@ public final class BlockGasContact {
         BlockPos.MutableBlockPos cell = new BlockPos.MutableBlockPos();
         for (int i = -1; i < Direction.values().length; i++) {
             cell.setWithOffset(pos, i < 0 ? BlockPos.ZERO : Direction.values()[i].getNormal());
-            Room room = manager.roomAt(cell);
-            if (room != null) {
-                if (room.gases().containsKey(gas)) {
+            RoomManager.Air air = manager.airAt(level, cell);
+            if (air != null) {
+                if (air.gases().containsKey(gas)) {
                     return true;
                 }
                 continue;

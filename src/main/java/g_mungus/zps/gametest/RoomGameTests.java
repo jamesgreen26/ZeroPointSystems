@@ -55,6 +55,7 @@ import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import org.valkyrienskies.kelvin.KelvinMod;
 import org.valkyrienskies.kelvin.api.GasType;
+import org.valkyrienskies.kelvin.impl.registry.GasTypeRegistry;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -127,6 +128,42 @@ public class RoomGameTests {
         helper.assertTrue(room.massKg().getOrDefault(FLUX, 0.0) == 5.0, "The room should hold the flux put in");
         helper.assertTrue(room.massKg().getOrDefault(AtmosphericComposition.AIR, 0.0) > 0,
                 "The room should hold the air it sealed in");
+        helper.succeed();
+    }
+
+    /**
+     * A room that has only just sealed reads as the outside did: the same gases in the same
+     * shares, weighed by volume as a biome's composition weighs them, not by mass.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void newlySealedRoom_readsAsTheOutsideDid(GameTestHelper helper) {
+        buildShell(helper);
+        BlockPos centre = helper.absolutePos(CENTRE);
+        Map<ResourceLocation, Double> outside = AtmosphereExposure.outside(helper.getLevel(), centre).shares();
+        // Too little to count, but enough to seal the room.
+        addFlux(helper, CENTRE, 1.0e-9);
+
+        Map<ResourceLocation, Double> inside = manager(helper).airAt(helper.getLevel(), centre).gases();
+        helper.assertTrue(inside.keySet().equals(outside.keySet()), "The room should hold the outside's gases, has " + inside);
+        outside.forEach((gas, share) -> helper.assertTrue(Math.abs(inside.get(gas) - share) < 1e-6,
+                "The room's " + gas + " should be the outside's " + share + ", is " + inside.get(gas)));
+        helper.succeed();
+    }
+
+    /** Gases in a room are weighed against each other by volume: each one's mass over its own density. */
+    @GameTest(template = TEMPLATE)
+    public static void roomGases_areWeighedByVolume(GameTestHelper helper) {
+        buildShell(helper);
+        addFlux(helper, CENTRE, 5.0);
+        Room room = roomAt(helper, CENTRE);
+        GasType air = GasTypeRegistry.INSTANCE.getGasType(AtmosphericComposition.AIR);
+        double expected = (5.0 / ModGases.FLUX.getDensity())
+                / (room.massKg().get(AtmosphericComposition.AIR) / air.getDensity());
+
+        Map<ResourceLocation, Double> gases = manager(helper).airAt(helper.getLevel(), helper.absolutePos(CENTRE)).gases();
+        double actual = gases.get(FLUX) / gases.get(AtmosphericComposition.AIR);
+        helper.assertTrue(Math.abs(actual - expected) < 1e-6 * expected,
+                "Flux to air should be " + expected + " by volume, is " + actual);
         helper.succeed();
     }
 

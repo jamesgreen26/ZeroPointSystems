@@ -179,15 +179,18 @@ public final class RoomManager extends SavedData {
     public record Air(Map<ResourceLocation, Double> kgPerM3, double temperatureK, int roomVolume) {
 
         /**
-         * The gas a living thing there breathes, as weights by mass. Traces do not count — a gas
-         * the room would hold less than {@link GasExposure#MIN_GAS_KG} of were it all as it is
-         * here — and a place with nothing beyond them is vacuum.
+         * The gas a living thing there breathes, as weights by volume: each gas's mass over its
+         * own density, which is how a biome's composition gives its shares
+         * ({@link LocalAtmosphere#shares()}), so a room holding the outside air reads as the
+         * outside does. Traces do not count — a gas the room would hold less than
+         * {@link GasExposure#MIN_GAS_KG} of were it all as it is here — and a place with nothing
+         * beyond them is vacuum.
          */
         public Map<ResourceLocation, Double> gases() {
             Map<ResourceLocation, Double> gases = new HashMap<>();
             kgPerM3.forEach((gas, mass) -> {
                 if (mass * roomVolume >= GasExposure.MIN_GAS_KG) {
-                    gases.put(gas, mass);
+                    gases.put(gas, Room.byVolume(gas, mass));
                 }
             });
             if (gases.isEmpty()) {

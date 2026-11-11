@@ -289,21 +289,31 @@ public final class Room {
     }
 
     /**
-     * The room's gas as a whole, as weights by mass. Traces do not count; a room holding nothing
-     * beyond them is vacuum. What a living thing inside breathes is the gas where it stands:
-     * {@link RoomManager.Air#gases()}.
+     * The room's gas as a whole, as weights by volume ({@link #byVolume}). Traces do not count; a
+     * room holding nothing beyond them is vacuum. What a living thing inside breathes is the gas
+     * where it stands: {@link RoomManager.Air#gases()}.
      */
     public Map<ResourceLocation, Double> gases() {
         Map<ResourceLocation, Double> gases = new HashMap<>();
         massKg.forEach((gas, mass) -> {
             if (mass >= GasExposure.MIN_GAS_KG) {
-                gases.put(gas, mass);
+                gases.put(gas, byVolume(gas, mass));
             }
         });
         if (gases.isEmpty()) {
             gases.put(AtmosphericComposition.VACUUM, 1.0);
         }
         return gases;
+    }
+
+    /**
+     * The room {@code kg} of {@code gas} takes up at its own density, in cubic metres: its weight
+     * among the gases around it, as a biome's composition weighs them. A gas no mod registers has
+     * no density to go by, and weighs in as its mass.
+     */
+    static double byVolume(ResourceLocation gas, double kg) {
+        GasType type = GasTypeRegistry.INSTANCE.getGasType(gas);
+        return type != null && type.getDensity() > 0 ? kg / type.getDensity() : kg;
     }
 
     /** Joules per kelvin; gases no mod registers carry no heat. */

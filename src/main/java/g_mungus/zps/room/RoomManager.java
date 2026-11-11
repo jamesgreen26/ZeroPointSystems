@@ -5,6 +5,7 @@ import g_mungus.zps.compat.Compat;
 import g_mungus.zps.compat.GridSpace;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.gas.AtmosphereExposure;
+import g_mungus.zps.gas.GasExposure;
 import g_mungus.zps.gas.ModGasTags;
 import g_mungus.zps.networking.RoomBreachS2CPacket;
 import g_mungus.zps.world.AtmosphericComposition;
@@ -67,7 +68,12 @@ import java.util.function.Function;
  *
  * <p>No wall is perfect: every tick a room leaks back toward the outside atmosphere, faster the more
  * wall it has for its size. The outside is what the room's own cells would hold unsealed, each read
- * where it is ({@link Outside}), so a room lying across biomes leaks toward the mix of them. Once it has caught up, and what is fed in would not hold it off the
+ * where it is ({@link Outside}), so a room lying across biomes leaks toward the mix of them.
+ *
+ * <p>A room's gas is kept for the room as a whole, but is not one mix throughout: each place has
+ * its own outside air, with the room's difference from the outside applied ({@link #airAt}). So
+ * sealing a room changes nothing anywhere in it until gas goes in or out, and one that has leaked
+ * all the way back is the outside again at every spot. Once it has caught up, and what is fed in would not hold it off the
  * outside either, it goes dormant — no gas of its own, replacing nothing — so a trickle into a big
  * room is lost in it while a real supply builds up. A dormant room keeps its walls, so gas going in again wakes it without another
  * search, and is forgotten if a wall changes or nothing comes in for a while.
@@ -135,6 +141,18 @@ public final class RoomManager extends SavedData {
      * on a seat, already has its eyes there.
      */
     public @Nullable Room roomAround(Entity entity) {
+        BlockPos cell = roomCellAround(entity);
+        return cell == null ? null : roomAt(cell);
+    }
+
+    /** The gas around {@code entity}'s eyes in the active room they are in ({@link #roomAround}), or null in none. */
+    public @Nullable Air airAround(ServerLevel level, Entity entity) {
+        BlockPos cell = roomCellAround(entity);
+        return cell == null ? null : airAt(level, cell);
+    }
+
+    /** The cell of an active room that {@code entity}'s eyes are in, on a grid's own blocks or the world's, or null. */
+    private @Nullable BlockPos roomCellAround(Entity entity) {
         if (rooms.isEmpty()) {
             return null;
         }
@@ -142,13 +160,57 @@ public final class RoomManager extends SavedData {
         BlockPos eyeCell = BlockPos.containing(eyes);
         if (Compat.gridOf(entity.level(), eyeCell) == null) {
             for (GridSpace grid : Compat.gridsTouching(entity.level(), entity.getBoundingBox())) {
-                Room room = roomAt(BlockPos.containing(grid.toLocal(eyes)));
-                if (room != null) {
-                    return room;
+                BlockPos cell = BlockPos.containing(grid.toLocal(eyes));
+                if (roomAt(cell) != null) {
+                    return cell;
                 }
             }
         }
-        return roomAt(eyeCell);
+        return roomAt(eyeCell) == null ? null : eyeCell;
+    }
+
+    /**
+     * The gas at one place in a room.
+     *
+     * @param kgPerM3      what a cubic metre there holds, in kilograms by gas
+     * @param temperatureK its temperature, or {@link Double#NaN} for none
+     * @param roomVolume   the room's cells, to tell a trace by
+     */
+    public record Air(Map<ResourceLocation, Double> kgPerM3, double temperatureK, int roomVolume) {
+
+        /**
+         * The gas a living thing there breathes, as weights by mass. Traces do not count — a gas
+         * the room would hold less than {@link GasExposure#MIN_GAS_KG} of were it all as it is
+         * here — and a place with nothing beyond them is vacuum.
+         */
+        public Map<ResourceLocation, Double> gases() {
+            Map<ResourceLocation, Double> gases = new HashMap<>();
+            kgPerM3.forEach((gas, mass) -> {
+                if (mass * roomVolume >= GasExposure.MIN_GAS_KG) {
+                    gases.put(gas, mass);
+                }
+            });
+            if (gases.isEmpty()) {
+                gases.put(AtmosphericComposition.VACUUM, 1.0);
+            }
+            return gases;
+        }
+    }
+
+    /**
+     * The gas at {@code pos} in the active room it is in, or null in none: the outside air there,
+     * less the share of each gas the room has lost and plus what it has gained, spread evenly —
+     * see {@link Outside#airAt}. In a room whose outside is the same all through, that is the
+     * room's one mix.
+     */
+    public @Nullable Air airAt(ServerLevel level, BlockPos pos) {
+        Room room = roomAt(pos);
+        if (room == null) {
+            return null;
+        }
+        Outside outside = outsideOf(level, room);
+        return new Air(outside.airAt(room.massKg(), room.volume(), outsideAir(level, pos, 1)),
+                outside.temperatureAt(room.temperatureK(), AtmosphereExposure.temperatureK(level, pos)), room.volume());
     }
 
     /** The room {@code pos} is inside, active or dormant, or null. */
@@ -166,26 +228,25 @@ public final class RoomManager extends SavedData {
     }
 
     /**
-     * The gas at {@code pos}: the room it is in, if any, otherwise the outside atmosphere. Pressure
-     * is worked out the way Kelvin works out a node's, from the gas's mass over its volume — the
-     * room's, or one cubic metre of the outside air. Nothing there to carry it reads as zero.
+     * The gas at {@code pos}: the room's there, if it is in one, otherwise the outside atmosphere.
+     * Pressure is worked out the way Kelvin works out a node's, from the mass of gas in a cubic
+     * metre there. Nothing there to carry it reads as zero.
      */
     public Ambient ambientAt(ServerLevel level, BlockPos pos) {
         Map<GasType, Double> kg = new HashMap<>();
-        double volume;
         double temperatureK;
-        Room room = roomAt(pos);
-        if (room != null) {
-            return new Ambient(pressureOf(room), Double.isNaN(room.temperatureK()) ? 0 : room.temperatureK());
+        Air air = airAt(level, pos);
+        if (air != null) {
+            air.kgPerM3().forEach((gas, mass) -> addByType(kg, gas, mass));
+            temperatureK = air.temperatureK();
         } else {
             outsideAir(level, pos, 1).forEach((gas, mass) -> addByType(kg, gas, mass));
-            volume = 1;
             temperatureK = AtmosphereExposure.temperatureK(level, pos);
         }
         if (Double.isNaN(temperatureK)) {
             return new Ambient(0, 0);
         }
-        return new Ambient(GasPhysics.INSTANCE.calcPressureFromGamma(kg, volume, temperatureK), temperatureK);
+        return new Ambient(GasPhysics.INSTANCE.calcPressureFromGamma(kg, 1, temperatureK), temperatureK);
     }
 
     /**
@@ -209,10 +270,10 @@ public final class RoomManager extends SavedData {
 
         Map<GasType, Double> around = new HashMap<>();
         double aroundK;
-        Room room = roomAt(into);
-        if (room != null) {
-            room.massKg().forEach((id, mass) -> addByType(around, id, mass));
-            aroundK = room.temperatureK();
+        Air air = airAt(level, into);
+        if (air != null) {
+            air.kgPerM3().forEach((id, mass) -> addByType(around, id, mass));
+            aroundK = air.temperatureK();
         } else {
             outsideAir(level, into, 1).forEach((id, mass) -> addByType(around, id, mass));
             aroundK = AtmosphereExposure.temperatureK(level, into);
@@ -226,7 +287,10 @@ public final class RoomManager extends SavedData {
         return (1 - ratio) / Math.max(1, ratio);
     }
 
-    /** A room's pressure, in pascals, worked out as Kelvin works out a node's. */
+    /**
+     * A room's pressure overall, in pascals, worked out as Kelvin works out a node's: all its gas
+     * over all its volume. What a gauge reads at one place in it is {@link #ambientAt}.
+     */
     public static double pressureOf(Room room) {
         if (Double.isNaN(room.temperatureK())) {
             return 0;
@@ -449,8 +513,8 @@ public final class RoomManager extends SavedData {
 
     /**
      * Take {@code volumeM3} of the gas at {@code at} out of the world. In a room, or a space that
-     * seals into one now, that much of the room's own mix comes out of it, so the room thins as it
-     * is drawn on — never more than the room holds. Outdoors it is that much of the atmosphere
+     * seals into one now, that much of the room's gas as it is there ({@link #airAt}) comes out of
+     * it, so the room thins as it is drawn on — never more than the room holds. Outdoors it is that much of the atmosphere
      * there, which never runs short. Nothing at all in vacuum.
      */
     public Draw drawGas(ServerLevel level, BlockPos at, double volumeM3) {
@@ -469,9 +533,10 @@ public final class RoomManager extends SavedData {
             outsideAir(level, at, 1).forEach((gas, mass) -> byId.put(gas, mass * volumeM3));
             temperatureK = AtmosphereExposure.temperatureK(level, at);
         } else {
-            double share = Math.min(1.0, volumeM3 / Math.max(1, room.volume()));
-            room.massKg().forEach((gas, mass) -> byId.put(gas, mass * share));
-            temperatureK = room.temperatureK();
+            Air air = airAt(level, at);
+            double drawn = Math.min(volumeM3, room.volume());
+            air.kgPerM3().forEach((gas, mass) -> byId.put(gas, mass * drawn));
+            temperatureK = air.temperatureK();
             if (take) {
                 Map<ResourceLocation, Double> taken = room.draw(byId);
                 byId.clear();
@@ -567,9 +632,9 @@ public final class RoomManager extends SavedData {
      * it is in, otherwise the outside air where it is in the world.
      */
     private boolean breathableAt(ServerLevel level, BlockPos pos) {
-        Room room = roomAt(pos);
-        if (room != null) {
-            return ModGasTags.isBreathable(level, room.gases());
+        Air air = airAt(level, pos);
+        if (air != null) {
+            return ModGasTags.isBreathable(level, air.gases());
         }
         return outsideIsBreathable(level, pos);
     }

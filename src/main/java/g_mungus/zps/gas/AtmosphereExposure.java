@@ -7,7 +7,6 @@ import g_mungus.zps.gas.api.GasConditions;
 import g_mungus.zps.gas.api.GasEnvironment;
 import g_mungus.zps.gas.api.GasEnvironmentEvent;
 import g_mungus.zps.gas.api.GasEnvironments;
-import g_mungus.zps.room.Room;
 import g_mungus.zps.room.RoomManager;
 import g_mungus.zps.world.AtmosphericComposition;
 import g_mungus.zps.world.BiomeTemperature;
@@ -71,9 +70,9 @@ public final class AtmosphereExposure {
     public static GasEnvironment atmosphere(LivingEntity entity) {
         BlockPos eyes = BlockPos.containing(entity.getEyePosition());
         if (entity.level() instanceof ServerLevel level) {
-            Room room = RoomManager.get(level).roomAround(entity);
-            if (room != null) {
-                return new GasEnvironment(entity, eyes, room.temperatureK(), room.gases());
+            RoomManager.Air air = RoomManager.get(level).airAround(level, entity);
+            if (air != null) {
+                return new GasEnvironment(entity, eyes, air.temperatureK(), air.gases());
             }
         }
         BlockPos air = inWorld(entity.level(), eyes);

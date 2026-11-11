@@ -50,6 +50,7 @@ import org.valkyrienskies.kelvin.impl.registry.GasTypeRegistry;
 import org.valkyrienskies.kelvin.util.GasPhysics;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -318,12 +319,67 @@ public final class RoomManager extends SavedData {
             return null;
         }
 
+        List<Room> held = overlapping(scan.interior(), scan.pockets());
+        if (!held.isEmpty()) {
+            return adopt(level, held, scan);
+        }
+
         Room room = new Room(nextId++, scan, at, AtmosphereExposure.temperatureK(level, at));
         room.add(outsideAir(level, at, scan.volume()), room.temperatureK());
         rooms.put(room.id(), room);
         index(room);
         setDirty();
         ZPSMod.LOGGER.debug("Room {} sealed at {}: {} m^3", room.id(), at, room.volume());
+        return room;
+    }
+
+    /**
+     * The rooms already holding any of {@code interior}. No two rooms may hold the same air, so
+     * space found to seal is theirs rather than a new room's. A cell either side holds only some
+     * pockets of is no sign of it: a closed door's cell belongs to the room on each side.
+     *
+     * @param pockets the cells of {@code interior} only partly held; see {@link RoomScan#pockets()}
+     */
+    private List<Room> overlapping(LongSet interior, Long2LongMap pockets) {
+        List<Room> held = new ArrayList<>();
+        for (LongIterator it = interior.iterator(); it.hasNext(); ) {
+            long cell = it.nextLong();
+            if (pockets.containsKey(cell)) {
+                continue;
+            }
+            Room room = rooms.get(byInterior.get(cell));
+            if (room != null && !room.pockets().containsKey(cell) && !held.contains(room)) {
+                held.add(room);
+            }
+        }
+        return held;
+    }
+
+    /**
+     * Gas went into a cell no room held, and the space around it turned out to be {@code held}'s
+     * already: a wall block of theirs has just gone, and they have not been checked since. The
+     * scan is their shape now, so they take it rather than a second room being laid over the same
+     * air with another fill of the outside's. More than one of them means the wall between them
+     * came down, and they are one now.
+     */
+    private Room adopt(ServerLevel level, List<Room> held, RoomScan scan) {
+        Room room = held.stream().filter(Room::isActive).findFirst().orElse(held.get(0));
+        unindex(room);
+        room.reshape(scan);
+        for (Room other : held) {
+            if (other != room) {
+                room.absorb(other);
+                dissolve(other);
+            }
+        }
+        index(room);
+        // The scan has seen every change so far.
+        dirty.remove(room.id());
+        needsFullCheck.remove(room.id());
+        if (!room.isActive()) {
+            room.wake(outsideAir(level, room.anchor(), room.volume()), AtmosphereExposure.temperatureK(level, room.anchor()));
+        }
+        setDirty();
         return room;
     }
 
@@ -796,8 +852,18 @@ public final class RoomManager extends SavedData {
     public static RoomManager load(CompoundTag tag) {
         RoomManager manager = new RoomManager();
         manager.nextId = Math.max(1, tag.getInt("NextId"));
+        List<Room> saved = new ArrayList<>();
         for (Tag entry : tag.getList("Rooms", Tag.TAG_COMPOUND)) {
-            Room room = Room.fromNbt((CompoundTag) entry);
+            saved.add(Room.fromNbt((CompoundTag) entry));
+        }
+        // Older saves can hold several rooms over the same air, each with a fill of its own. The
+        // newest was the one in use; the rest are dropped, as their gas was counted twice.
+        saved.sort(Comparator.comparingInt(Room::id).reversed());
+        for (Room room : saved) {
+            if (!manager.overlapping(room.interior(), room.pockets()).isEmpty()) {
+                ZPSMod.LOGGER.warn("Dropping saved room {}: a newer room holds the same space", room.id());
+                continue;
+            }
             manager.rooms.put(room.id(), room);
             manager.index(room);
         }

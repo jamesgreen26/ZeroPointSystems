@@ -179,6 +179,11 @@ public final class Room {
      * Move {@code fraction} of the way back to the outside: each gas toward what the room would
      * hold of the outside air, {@code outsideKg}, and the temperature toward {@code outsideK}.
      * Gases the outside has none of drain away; ones it has seep back in.
+     *
+     * <p>Heat goes through the walls at a rate that is theirs, whatever is inside, so how fast the
+     * temperature follows depends on how much gas there is to cool: {@code fraction} for a room of
+     * plain air, less for one packed with more than that, which holds its heat, and more for a
+     * thin one, down to a room with next to nothing in it, which is as cold as the outside.
      */
     void leak(Map<ResourceLocation, Double> outsideKg, double outsideK, double fraction) {
         inflowKgPerTick += (fedThisTick - inflowKgPerTick) * INFLOW_SMOOTHING;
@@ -196,8 +201,24 @@ public final class Room {
             }
         }
         if (!Double.isNaN(outsideK)) {
-            temperatureK = Double.isNaN(temperatureK) ? outsideK : temperatureK + (outsideK - temperatureK) * fraction;
+            temperatureK = Double.isNaN(temperatureK) ? outsideK
+                    : temperatureK + (outsideK - temperatureK) * heatFraction(fraction);
         }
+    }
+
+    /**
+     * The share of the way to the outside's temperature the room goes in a tick in which its gas
+     * goes {@code fraction} of the way: {@code fraction} over how many times a room of plain air's
+     * heat this one holds.
+     */
+    private double heatFraction(double fraction) {
+        GasType air = GasTypeRegistry.INSTANCE.getGasType(AtmosphericComposition.AIR);
+        double held = heatCapacity(massKg);
+        if (air == null) {
+            return fraction;
+        }
+        double plain = volume() * air.getDensity() * air.getSpecificHeatCapacity();
+        return held > 0 ? Math.min(1.0, fraction * plain / held) : 1.0;
     }
 
     /**

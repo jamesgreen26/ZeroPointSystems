@@ -777,6 +777,49 @@ public class RoomGameTests {
         });
     }
 
+    /**
+     * A room packed with many times the air a room holds keeps its heat: the walls let out no more
+     * than they would from plain air, and there is far more gas to cool.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 60)
+    public static void packedRoom_holdsItsHeat(GameTestHelper helper) {
+        buildShell(helper);
+        GasType air = GasTypeRegistry.INSTANCE.getGasType(AtmosphericComposition.AIR);
+        manager(helper).addGas(helper.getLevel(), helper.absolutePos(CENTRE), Map.of(air, 300.0), 400.0);
+        Room room = roomAt(helper, CENTRE);
+        double outsideK = AtmosphereExposure.temperatureK(helper.getLevel(), helper.absolutePos(CENTRE));
+        double before = room.temperatureK() - outsideK;
+        helper.assertTrue(before > 50, "The room should start well above the outside, is " + before + " K above");
+        double plainAir = Math.pow(1 - RoomManager.leakFraction(room, ZPSConfig.roomLeakRate()), 20);
+
+        helper.runAfterDelay(20, () -> {
+            double kept = (room.temperatureK() - outsideK) / before;
+            helper.assertTrue(kept > plainAir + (1 - plainAir) / 2,
+                    "A packed room should cool far slower than plain air's " + plainAir + ", kept " + kept);
+            helper.assertTrue(kept < 1, "The room should still be cooling, kept " + kept);
+            helper.succeed();
+        });
+    }
+
+    /** A room with next to nothing in it is as cold as the outside, however hot the little that is there came in. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 40)
+    public static void nearlyEmptyRoom_isAsColdAsTheOutside(GameTestHelper helper) {
+        buildShell(helper);
+        addFlux(helper, CENTRE, 5.0);
+        Room room = roomAt(helper, CENTRE);
+        manager(helper).drawGas(helper.getLevel(), helper.absolutePos(CENTRE), room.volume());
+        GasType air = GasTypeRegistry.INSTANCE.getGasType(AtmosphericComposition.AIR);
+        manager(helper).addGas(helper.getLevel(), helper.absolutePos(CENTRE), Map.of(air, 0.001), 1000.0);
+        helper.assertTrue(room.temperatureK() > 900, "The room should have taken the hot air's temperature, is at " + room.temperatureK());
+        double outsideK = AtmosphereExposure.temperatureK(helper.getLevel(), helper.absolutePos(CENTRE));
+
+        helper.runAfterDelay(10, () -> {
+            helper.assertTrue(Math.abs(room.temperatureK() - outsideK) < 10,
+                    "A nearly empty room should be at the outside's " + outsideK + " K, is at " + room.temperatureK());
+            helper.succeed();
+        });
+    }
+
     private static GasGaugeBlockEntity placeGauge(GameTestHelper helper, BlockPos pos, Direction facing) {
         helper.setBlock(pos, ModBlocks.GAS_GAUGE.get().defaultBlockState().setValue(GasGaugeBlock.FACING, facing));
         if (!(helper.getBlockEntity(pos) instanceof GasGaugeBlockEntity gauge)) {

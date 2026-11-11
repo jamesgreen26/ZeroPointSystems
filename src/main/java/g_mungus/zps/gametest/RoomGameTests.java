@@ -8,6 +8,7 @@ import g_mungus.zps.block.gas.core.GasEdgeNegotiator;
 import g_mungus.zps.block.cableNetwork.CableBlock;
 import g_mungus.zps.block.cableNetwork.properties.InsulationType;
 import g_mungus.zps.block.gas.GasGaugeBlock;
+import g_mungus.zps.blockentity.gas.AirCompressorBlockEntity;
 import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
 import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity;
 import g_mungus.zps.config.ZPSConfig;
@@ -23,6 +24,8 @@ import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
@@ -401,6 +404,100 @@ public class RoomGameTests {
     }
 
     /**
+     * Gas let into a wall cell the tick it is mined out, before the room has been checked, goes
+     * into that room: no second room is laid over the same air with another fill of the outside's.
+     */
+    @SkyAccess
+    @GameTest(template = TEMPLATE, timeoutTicks = 40)
+    public static void gasIntoAFreshHole_goesIntoTheSameRoom(GameTestHelper helper) {
+        buildShell(helper);
+        helper.setBlock(WEST_WALL.west(), Blocks.STONE);
+        addFlux(helper, CENTRE, 5.0);
+        Room room = roomAt(helper, CENTRE);
+        double air = room.massKg().getOrDefault(AtmosphericComposition.AIR, 0.0);
+
+        helper.destroyBlock(WEST_WALL);
+        addFlux(helper, WEST_WALL, 5.0);
+        helper.assertTrue(roomAt(helper, WEST_WALL) == room, "Gas into the hole should go into the room it opens on");
+        helper.runAfterDelay(2, () -> {
+            helper.assertTrue(roomAt(helper, CENTRE) == room, "The room should still be the same room");
+            helper.assertTrue(roomAt(helper, WEST_WALL) == room, "The hole should be part of the room");
+            helper.assertTrue(room.volume() == 28, "The room should have grown by the hole, is " + room.volume());
+            helper.assertTrue(room.massKg().getOrDefault(FLUX, 0.0) > 9.9, "The room should hold both lots of flux");
+            double airNow = room.massKg().getOrDefault(AtmosphericComposition.AIR, 0.0);
+            helper.assertTrue(airNow < air * 1.1, "The room should not have been filled with air again: had " + air + ", has " + airNow);
+            helper.succeed();
+        });
+    }
+
+    /**
+     * End to end: an Air Compressor in the floor with a block over its intake. Mining the block
+     * lets it draw from the cell at once, which was a wall of the room a moment ago. The room
+     * takes the cell, and what is drawn comes out of it.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void uncoveringACompressorInARoom_keepsTheOneRoom(GameTestHelper helper) {
+        buildShell(helper);
+        helper.setBlock(FLOOR_CELL.below(), ModBlocks.AIR_COMPRESSOR.get().defaultBlockState());
+        if (!(helper.getBlockEntity(FLOOR_CELL.below()) instanceof AirCompressorBlockEntity compressor)) {
+            helper.fail("The Air Compressor has no block entity");
+            return;
+        }
+        helper.setBlock(FLOOR_CELL, Blocks.STONE);
+        addFlux(helper, CENTRE, 5.0);
+        Room room = roomAt(helper, CENTRE);
+        int volume = room.volume();
+        double air = room.massKg().getOrDefault(AtmosphericComposition.AIR, 0.0);
+
+        compressor.setEnergyStored(4000);
+        helper.destroyBlock(FLOOR_CELL);
+        helper.succeedWhen(() -> {
+            helper.assertTrue(room.massKg().getOrDefault(AtmosphericComposition.AIR, 0.0) < air * 0.999,
+                    "The compressor should be drawing the room's air");
+            helper.assertTrue(roomAt(helper, CENTRE) == room, "The room should still be the same room");
+            helper.assertTrue(roomAt(helper, FLOOR_CELL) == room, "The cell over the compressor should be part of the room");
+            helper.assertTrue(room.volume() == volume + 1, "The room should have grown by that cell, is " + room.volume());
+        });
+    }
+
+    /**
+     * A closed Large Space Door's cells are partly in the room on each side of it. Gas into a
+     * sealed space on the far side makes a second room there, and leaves the first alone.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 40)
+    public static void gasPastAClosedLargeSpaceDoor_makesASecondRoom(GameTestHelper helper) {
+        buildShell(helper);
+        placeLargeSpaceDoor(helper, false);
+        // A stone box over the far side of the door, one cell deep.
+        for (int x = 3; x <= 7; x++) {
+            for (int y = 1; y <= 5; y++) {
+                boolean inside = x > 3 && x < 7 && y > 1 && y < 5;
+                helper.setBlock(new BlockPos(x, y, 2), inside ? Blocks.AIR : Blocks.STONE);
+                helper.setBlock(new BlockPos(x, y, 1), Blocks.STONE);
+            }
+        }
+        BlockPos beyond = new BlockPos(5, 3, 2);
+        Room stale = manager(helper).knownRoomAt(helper.absolutePos(beyond));
+        if (stale != null) {
+            manager(helper).dissolve(stale);
+        }
+        addFlux(helper, CENTRE, 5.0);
+        Room near = roomAt(helper, CENTRE);
+        helper.assertTrue(near != null, "A closed Large Space Door should seal");
+        int volume = near.volume();
+
+        addFlux(helper, beyond, 3.0);
+        Room far = roomAt(helper, beyond);
+        helper.assertTrue(far != null, "The box past the door should seal");
+        helper.assertTrue(far != near, "The far side of the door should be a room of its own");
+        helper.assertTrue(roomAt(helper, CENTRE) == near, "The first room should be untouched");
+        helper.assertTrue(near.volume() == volume, "The first room should keep its cells, has " + near.volume());
+        helper.assertTrue(near.massKg().getOrDefault(FLUX, 0.0) == 5.0, "The first room should hold only its own flux");
+        helper.assertTrue(far.massKg().getOrDefault(FLUX, 0.0) == 3.0, "The second room should hold only its own flux");
+        helper.succeed();
+    }
+
+    /**
      * The room holds only its own side of a closed Large Space Door, so clearing a block on the far
      * side changes nothing; with the roof off, taking the far side for the room's would breach it.
      */
@@ -710,6 +807,42 @@ public class RoomGameTests {
         helper.assertTrue(room != null, "The room should load back");
         helper.assertTrue(room.volume() == 27, "The room should load with its cells");
         helper.assertTrue(room.massKg().getOrDefault(FLUX, 0.0) == 5.0, "The room should load with its gas");
+        helper.succeed();
+    }
+
+    /**
+     * A save from before rooms were kept apart can hold several over the same air. Only the newest
+     * loads, with its own gas and none of the others'.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void roomsSavedOverTheSameSpace_loadAsTheNewest(GameTestHelper helper) {
+        buildShell(helper);
+        addFlux(helper, CENTRE, 5.0);
+        CompoundTag saved = manager(helper).save(new CompoundTag());
+        CompoundTag original = null;
+        for (Tag entry : saved.getList("Rooms", Tag.TAG_COMPOUND)) {
+            if (((CompoundTag) entry).getInt("Id") == roomAt(helper, CENTRE).id()) {
+                original = (CompoundTag) entry;
+            }
+        }
+        helper.assertTrue(original != null, "The room should have been saved");
+        int newest = saved.getInt("NextId");
+        CompoundTag older = original.copy();
+        older.getCompound("Gases").putDouble(FLUX.toString(), 50.0);
+        CompoundTag newer = original.copy();
+        newer.putInt("Id", newest);
+        newer.getCompound("Gases").putDouble(FLUX.toString(), 7.0);
+        ListTag rooms = new ListTag();
+        rooms.add(newer);
+        rooms.add(older);
+        saved.put("Rooms", rooms);
+        saved.putInt("NextId", newest + 1);
+
+        RoomManager loaded = RoomManager.load(saved);
+        Room room = loaded.roomAt(helper.absolutePos(CENTRE));
+        helper.assertTrue(loaded.roomCount() == 1, "Only one of the two rooms should load, have " + loaded.roomCount());
+        helper.assertTrue(room != null && room.id() == newest, "The newest room should be the one kept");
+        helper.assertTrue(room.massKg().getOrDefault(FLUX, 0.0) == 7.0, "The room should hold only its own gas");
         helper.succeed();
     }
 

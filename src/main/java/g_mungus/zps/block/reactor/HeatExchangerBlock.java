@@ -23,7 +23,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Converts between chamber heat and FE, both ways, through its outer face. Not a gas block: it
- * touches the chamber's energy directly.
+ * touches the chamber's energy directly. Off a reactor it turns the heat of the gas behind it into
+ * FE, when that gas is hot enough.
  */
 public class HeatExchangerBlock extends Block implements EntityBlock, ReactorWallBlock {
 

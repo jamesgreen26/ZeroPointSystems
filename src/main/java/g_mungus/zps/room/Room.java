@@ -348,6 +348,23 @@ public final class Room {
         return type != null && type.getDensity() > 0 ? kg / type.getDensity() : kg;
     }
 
+    /** Joules per kelvin the room's gas holds as a whole. */
+    public double heatCapacity() {
+        return heatCapacity(massKg);
+    }
+
+    /**
+     * Take {@code joules} of heat out of the gas, which cools all through; never below absolute
+     * zero. A negative amount puts heat back.
+     */
+    void takeHeat(double joules) {
+        double capacity = heatCapacity();
+        if (Double.isNaN(temperatureK) || capacity <= 0 || joules == 0 || Double.isNaN(joules)) {
+            return;
+        }
+        temperatureK = Math.max(0, temperatureK - joules / capacity);
+    }
+
     /** Joules per kelvin; gases no mod registers carry no heat. */
     private static double heatCapacity(Map<ResourceLocation, Double> kg) {
         double capacity = 0;

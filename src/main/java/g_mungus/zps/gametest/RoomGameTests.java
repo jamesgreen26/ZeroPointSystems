@@ -8,6 +8,7 @@ import g_mungus.zps.block.gas.core.GasEdgeNegotiator;
 import g_mungus.zps.block.cableNetwork.CableBlock;
 import g_mungus.zps.block.cableNetwork.properties.InsulationType;
 import g_mungus.zps.block.gas.GasGaugeBlock;
+import g_mungus.zps.block.reactor.HeatExchangerBlock;
 import g_mungus.zps.blockentity.gas.AirCompressorBlockEntity;
 import g_mungus.zps.blockentity.gas.CreativeGasGeneratorBlockEntity;
 import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity;
@@ -50,7 +51,10 @@ import net.minecraft.world.level.block.FenceGateBlock;
 import net.minecraft.world.level.block.RedstoneLampBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.WallTorchBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.energy.IEnergyStorage;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraftforge.gametest.GameTestHolder;
@@ -1388,6 +1392,70 @@ public class RoomGameTests {
 
         helper.assertTrue(helper.getBlockState(at).is(Blocks.LANTERN), "The lantern should be lit again, is " + helper.getBlockState(at));
         helper.assertTrue(player.getMainHandItem().getCount() == 1, "Lighting it should use up a fire charge");
+        helper.succeed();
+    }
+    /** Places a heat exchanger in the west wall, inner face to the room, and puts flux in at {@code kelvin}. */
+    private static IEnergyStorage exchangerOnRoom(GameTestHelper helper, double kelvin) {
+        buildShell(helper);
+        helper.setBlock(WEST_WALL, ModBlocks.HEAT_EXCHANGER.get().defaultBlockState()
+                .setValue(HeatExchangerBlock.FACING, Direction.WEST));
+        manager(helper).addGas(helper.getLevel(), helper.absolutePos(CENTRE), Map.of(ModGases.FLUX, 5.0), kelvin);
+        BlockEntity exchanger = helper.getBlockEntity(WEST_WALL);
+        return exchanger.getCapability(ForgeCapabilities.ENERGY, Direction.WEST).orElseThrow(IllegalStateException::new);
+    }
+
+    /** Off a reactor, a heat exchanger turns the heat of a room hotter than its threshold into FE, and the room cools. */
+    @GameTest(template = TEMPLATE)
+    public static void heatExchanger_drawsFeFromHotRoom(GameTestHelper helper) {
+        IEnergyStorage energy = exchangerOnRoom(helper, ZPSConfig.exchangerTemperatureK() * 4);
+        Room room = roomAt(helper, CENTRE);
+        double before = room.temperatureK();
+
+        int fe = energy.extractEnergy(Integer.MAX_VALUE, false);
+
+        helper.assertTrue(fe == ZPSConfig.standardTransferFePerTick(),
+                "A hot room should give a full tick's FE, gave " + fe);
+        helper.assertTrue(room.temperatureK() < before, "Drawing FE should cool the room, " + before + " K -> " + room.temperatureK() + " K");
+        double expectedDrop = fe * ZPSConfig.exchangerJoulesPerFe() / room.heatCapacity();
+        helper.assertTrue(Math.abs(before - room.temperatureK() - expectedDrop) < 1e-6 * before,
+                "The room should lose exactly the heat drawn, dropped " + (before - room.temperatureK()) + " K, expected " + expectedDrop);
+        helper.succeed();
+    }
+
+    /**
+     * A room only gives what it holds above the threshold, a tick's worth at a time, and then
+     * nothing. It leaks heat through its walls as well, so it may give less, never more.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 400)
+    public static void heatExchanger_stopsAtThreshold(GameTestHelper helper) {
+        double threshold = ZPSConfig.exchangerTemperatureK();
+        IEnergyStorage energy = exchangerOnRoom(helper, threshold * 3);
+        Room room = roomAt(helper, CENTRE);
+        BlockPos inside = helper.absolutePos(WEST_WALL.east());
+        double start = manager(helper).airAt(helper.getLevel(), inside).temperatureK();
+        helper.assertTrue(start > threshold, "The room should start above the threshold, is " + start + " K");
+        double surplusFe = (start - threshold) * room.heatCapacity() / ZPSConfig.exchangerJoulesPerFe();
+        long[] drawn = {0};
+        helper.onEachTick(() -> {
+            int fe = energy.extractEnergy(Integer.MAX_VALUE, false);
+            helper.assertTrue(fe <= ZPSConfig.standardTransferFePerTick(), "One tick should give at most the cap, gave " + fe);
+            drawn[0] += fe;
+        });
+        helper.succeedWhen(() -> {
+            helper.assertTrue(energy.extractEnergy(Integer.MAX_VALUE, true) == 0, "There should be nothing left to draw");
+            double end = manager(helper).airAt(helper.getLevel(), inside).temperatureK();
+            helper.assertTrue(end <= threshold + 1, "The room should end at or below the threshold, is " + end + " K");
+            helper.assertTrue(drawn[0] > 0 && drawn[0] <= surplusFe + 1,
+                    "The room should give no more than its surplus of " + surplusFe + " FE, gave " + drawn[0]);
+        });
+    }
+
+    /** A room below the threshold gives nothing. */
+    @GameTest(template = TEMPLATE)
+    public static void heatExchanger_coldRoomGivesNothing(GameTestHelper helper) {
+        IEnergyStorage energy = exchangerOnRoom(helper, 300.0);
+        helper.assertTrue(energy.extractEnergy(Integer.MAX_VALUE, false) == 0, "A cool room should give no FE");
+        helper.assertTrue(energy.receiveEnergy(1000, false) == 0, "Off a reactor, FE pushed in should go nowhere");
         helper.succeed();
     }
 }

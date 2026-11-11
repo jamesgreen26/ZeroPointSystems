@@ -99,6 +99,10 @@ public final class RoomManager extends SavedData {
     static final int OUTSIDE_INTERVAL = 100;
     /** How often flames are seen to, in ticks. */
     static final int BURN_INTERVAL = 20;
+    /** Gas coming together across an opening with at least this much between the pressures either side is drawn crossing. */
+    public static final double MERGE_PUFF_PA = 10_000.0;
+    /** The side at the lower pressure has to be more than this many cells for the gas going into it to be drawn. */
+    public static final int MERGE_PUFF_MIN_CELLS = 8;
     /** Most breach puffs drawn for one room coming open. */
     private static final int MAX_BREACH_PUFFS = 4;
 
@@ -208,12 +212,24 @@ public final class RoomManager extends SavedData {
      */
     public @Nullable Air airAt(ServerLevel level, BlockPos pos) {
         Room room = roomAt(pos);
-        if (room == null) {
-            return null;
-        }
+        return room == null ? null : airIn(level, room, pos);
+    }
+
+    /** The gas at {@code pos} as {@code room} has it, whichever room the index says is there just now. */
+    private Air airIn(ServerLevel level, Room room, BlockPos pos) {
         Outside outside = outsideOf(level, room);
         return new Air(outside.airAt(room.massKg(), room.volume(), outsideAir(level, pos, 1)),
                 outside.temperatureAt(room.temperatureK(), AtmosphereExposure.temperatureK(level, pos)), room.volume());
+    }
+
+    /** The pressure of {@code air}, in pascals, worked out as Kelvin works out a node's; nothing to carry it is zero. */
+    private static double pressureOf(Air air) {
+        if (Double.isNaN(air.temperatureK())) {
+            return 0;
+        }
+        Map<GasType, Double> kg = new HashMap<>();
+        air.kgPerM3().forEach((gas, mass) -> addByType(kg, gas, mass));
+        return GasPhysics.INSTANCE.calcPressureFromGamma(kg, 1, air.temperatureK());
     }
 
     /** The room {@code pos} is inside, active or dormant, or null. */
@@ -264,24 +280,31 @@ public final class RoomManager extends SavedData {
      * @param temperatureK its temperature
      */
     public double buoyancy(ServerLevel level, BlockPos into, Map<ResourceLocation, Double> gas, double temperatureK) {
+        Map<ResourceLocation, Double> around;
+        double aroundK;
+        Air air = airAt(level, into);
+        if (air != null) {
+            around = air.kgPerM3();
+            aroundK = air.temperatureK();
+        } else {
+            around = outsideAir(level, into, 1);
+            aroundK = AtmosphereExposure.temperatureK(level, into);
+        }
+        return buoyancy(gas, temperatureK, around, aroundK);
+    }
+
+    /** As {@link #buoyancy(ServerLevel, BlockPos, Map, double)}, in gas that is {@code around} at {@code aroundK}. */
+    private static double buoyancy(Map<ResourceLocation, Double> gas, double temperatureK,
+                                   Map<ResourceLocation, Double> around, double aroundK) {
         Map<GasType, Double> escaping = new HashMap<>();
         gas.forEach((id, mass) -> addByType(escaping, id, mass));
         double gasRT = GasPhysics.INSTANCE.mixtureR(escaping) * temperatureK;
         if (!(gasRT > 0)) {
             return Double.NaN;
         }
-
-        Map<GasType, Double> around = new HashMap<>();
-        double aroundK;
-        Air air = airAt(level, into);
-        if (air != null) {
-            air.kgPerM3().forEach((id, mass) -> addByType(around, id, mass));
-            aroundK = air.temperatureK();
-        } else {
-            outsideAir(level, into, 1).forEach((id, mass) -> addByType(around, id, mass));
-            aroundK = AtmosphereExposure.temperatureK(level, into);
-        }
-        double aroundRT = GasPhysics.INSTANCE.mixtureR(around) * aroundK;
+        Map<GasType, Double> surrounding = new HashMap<>();
+        around.forEach((id, mass) -> addByType(surrounding, id, mass));
+        double aroundRT = GasPhysics.INSTANCE.mixtureR(surrounding) * aroundK;
         if (!(aroundRT > 0)) {
             return -1;
         }
@@ -728,12 +751,18 @@ public final class RoomManager extends SavedData {
                     return true;
                 }
                 List<Room> merged = new ArrayList<>();
+                // The cells taken in that no room held: sealed space with the outside air in it.
+                LongSet space = new LongOpenHashSet();
                 for (LongIterator it = added.iterator(); it.hasNext(); ) {
                     long cell = it.nextLong();
                     int other = byInterior.put(cell, room.id());
-                    if (other >= 0 && other != room.id() && rooms.get(other) != null && !merged.contains(rooms.get(other))) {
-                        // A wall between two rooms came down: they are one now.
-                        merged.add(rooms.get(other));
+                    if (other >= 0 && other != room.id() && rooms.get(other) != null) {
+                        if (!merged.contains(rooms.get(other))) {
+                            // A wall between two rooms came down: they are one now.
+                            merged.add(rooms.get(other));
+                        }
+                    } else if (other < 0) {
+                        space.add(cell);
                     }
                     removeBoundary(cell, room.id());
                 }
@@ -742,6 +771,12 @@ public final class RoomManager extends SavedData {
                     if (!ids.contains(room.id())) {
                         ids.add(room.id());
                     }
+                }
+                for (Room other : merged) {
+                    send(level, mergePuffs(level, room, other, changed));
+                }
+                if (!space.isEmpty()) {
+                    send(level, growthPuffs(level, room, space, changed));
                 }
                 room.grow(added, newBoundary, pocketsAfter);
                 for (Room other : merged) {
@@ -832,6 +867,15 @@ public final class RoomManager extends SavedData {
             ZPSMod.LOGGER.debug("Room {} parted into {}", room.id(), parts.size());
         }
 
+        for (Part part : parts) {
+            if (part.scan() != null) {
+                for (Room other : overlapping(part.scan().interior(), part.scan().pockets())) {
+                    if (other != room) {
+                        send(level, mergePuffs(level, room, other, changed));
+                    }
+                }
+            }
+        }
         unindex(room);
         for (int i = 0; i < parts.size(); i++) {
             RoomScan scan = parts.get(i).scan();
@@ -928,6 +972,124 @@ public final class RoomManager extends SavedData {
             open.add(fallback);
         }
         return open;
+    }
+
+    /** One side of an opening: the cells of it, and the gas at any one of them. */
+    private record Side(LongSet cells, Function<BlockPos, Air> air) {
+    }
+
+    private void send(ServerLevel level, List<RoomBreachS2CPacket> puffs) {
+        for (RoomBreachS2CPacket puff : puffs) {
+            ZPSGamePackets.sendToTrackingChunk(level, new ChunkPos(puff.pos()), puff);
+        }
+    }
+
+    private Side sideOf(ServerLevel level, Room room) {
+        return new Side(room.interior(), pos -> airIn(level, room, pos));
+    }
+
+    /**
+     * The puffs of gas to draw as two rooms, still apart, become one through the cells of
+     * {@code changed} that have opened between them — see {@link #puffs}.
+     */
+    public List<RoomBreachS2CPacket> mergePuffs(ServerLevel level, Room one, Room other, LongSet changed) {
+        return puffs(level, sideOf(level, one), sideOf(level, other), changed);
+    }
+
+    /**
+     * The puffs of gas to draw as {@code room} takes in {@code space}, sealed cells no room held,
+     * through the cells of {@code changed} that have opened onto them — see {@link #puffs}. The
+     * space holds the outside air, as a room newly sealed there would.
+     */
+    public List<RoomBreachS2CPacket> growthPuffs(ServerLevel level, Room room, LongSet space, LongSet changed) {
+        if (space.size() <= MERGE_PUFF_MIN_CELLS && room.volume() <= MERGE_PUFF_MIN_CELLS) {
+            return List.of();
+        }
+        Side outside = new Side(space, pos -> new Air(outsideAir(level, pos, 1), AtmosphereExposure.temperatureK(level, pos), space.size()));
+        return puffs(level, sideOf(level, room), outside, changed);
+    }
+
+    /**
+     * The puffs of gas to draw as the gas either side of an opening comes together, one at each
+     * cell of {@code changed} that has opened between the two sides. Each is judged where it is,
+     * by the gas beside the opening on either side — a big room is not the same all through, and
+     * what matters is what is at the door: nothing is drawn unless the pressures there are at least
+     * {@link #MERGE_PUFF_PA} apart and the side at the lower is more than
+     * {@link #MERGE_PUFF_MIN_CELLS} cells. A puff goes from the higher pressure into the lower,
+     * and between them they carry the gas that has to cross for the two to come level.
+     */
+    private static List<RoomBreachS2CPacket> puffs(ServerLevel level, Side one, Side other, LongSet changed) {
+        List<RoomBreachS2CPacket> puffs = new ArrayList<>();
+        for (LongIterator it = changed.iterator(); it.hasNext() && puffs.size() < MAX_BREACH_PUFFS; ) {
+            BlockPos pos = BlockPos.of(it.nextLong());
+            BlockPos besideOne = beside(one.cells(), pos);
+            BlockPos besideOther = beside(other.cells(), pos);
+            if (besideOne == null || besideOther == null
+                    || !RoomScanner.holdsAir(RoomScanner.shapeOf(level, pos, level.getBlockState(pos)))) {
+                continue;
+            }
+            Air oneAir = one.air().apply(besideOne);
+            Air otherAir = other.air().apply(besideOther);
+            double onePa = pressureOf(oneAir);
+            double otherPa = pressureOf(otherAir);
+            if (Math.abs(onePa - otherPa) < MERGE_PUFF_PA) {
+                continue;
+            }
+            boolean fromOne = onePa > otherPa;
+            Side from = fromOne ? one : other;
+            Side into = fromOne ? other : one;
+            Air fromAir = fromOne ? oneAir : otherAir;
+            Air intoAir = fromOne ? otherAir : oneAir;
+            Direction way = wayThrough(from.cells(), into.cells(), pos);
+            if (way == null || into.cells().size() <= MERGE_PUFF_MIN_CELLS) {
+                continue;
+            }
+            double cells = one.cells().size() + other.cells().size();
+            double levelPa = (onePa * one.cells().size() + otherPa * other.cells().size()) / cells;
+            double fromKgPerM3 = fromAir.kgPerM3().values().stream().mapToDouble(Double::doubleValue).sum();
+            double crossingKg = fromKgPerM3 * from.cells().size() * (1 - levelPa / Math.max(onePa, otherPa));
+            float buoyancy = (float) buoyancy(fromAir.kgPerM3(), fromAir.temperatureK(), intoAir.kgPerM3(), intoAir.temperatureK());
+            puffs.add(new RoomBreachS2CPacket(pos, way, (float) crossingKg, buoyancy));
+        }
+        if (puffs.size() > 1) {
+            // The gas crossing is shared between the openings.
+            int count = puffs.size();
+            puffs.replaceAll(puff -> new RoomBreachS2CPacket(puff.pos(), puff.outward(), puff.massKg() / count, puff.buoyancy()));
+        }
+        return puffs;
+    }
+
+    /** {@code pos} if it is one of {@code cells}, else a cell of them beside it, else null. */
+    private static @Nullable BlockPos beside(LongSet cells, BlockPos pos) {
+        if (cells.contains(pos.asLong())) {
+            return pos;
+        }
+        for (Direction direction : Direction.values()) {
+            BlockPos neighbour = pos.relative(direction);
+            if (cells.contains(neighbour.asLong())) {
+                return neighbour;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * The way gas goes through the opening at {@code pos} from the cells {@code from} into the
+     * cells {@code into}: from a side the one is on to the side the other is on. The opening's own
+     * cell may be on either side, as a door's is, or neither, as a wall block's was. Null if it
+     * does not lie between them.
+     */
+    private static @Nullable Direction wayThrough(LongSet from, LongSet into, BlockPos pos) {
+        boolean fromHere = from.contains(pos.asLong());
+        boolean intoHere = into.contains(pos.asLong());
+        for (Direction direction : Direction.values()) {
+            boolean fromBehind = from.contains(pos.relative(direction.getOpposite()).asLong());
+            boolean intoAhead = into.contains(pos.relative(direction).asLong());
+            if (fromBehind && (intoAhead || intoHere) || fromHere && intoAhead) {
+                return direction;
+            }
+        }
+        return null;
     }
 
     /** Air got out: draw it going and forget the room. */

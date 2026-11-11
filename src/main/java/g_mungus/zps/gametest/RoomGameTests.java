@@ -15,10 +15,13 @@ import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.gas.AtmosphereExposure;
 import g_mungus.zps.gas.ModGasTags;
 import g_mungus.zps.gas.ModGases;
+import g_mungus.zps.networking.RoomBreachS2CPacket;
 import g_mungus.zps.room.Extinguishing;
 import g_mungus.zps.room.Room;
 import g_mungus.zps.room.RoomManager;
 import g_mungus.zps.world.AtmosphericComposition;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
@@ -408,6 +411,114 @@ public class RoomGameTests {
             helper.assertTrue(roomAt(helper, EAST_HALF) == null, "The open half should be no room");
             helper.succeed();
         });
+    }
+
+    /**
+     * Two rooms either side of a wall, one packed with flux: opening a way between them draws the
+     * flux going through it into the emptier room, and they are one room after.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 40)
+    public static void openingBetweenUnequalRooms_drawsTheGasCrossing(GameTestHelper helper) {
+        buildPartedShell(helper);
+        helper.setBlock(CENTRE, Blocks.STONE);
+        addFlux(helper, WEST_HALF, 50.0);
+        addFlux(helper, EAST_HALF, 1.0e-9);
+        Room west = roomAt(helper, WEST_HALF);
+        Room east = roomAt(helper, EAST_HALF);
+        helper.assertTrue(west != null && east != null && west != east, "The halves should be two rooms");
+        helper.assertTrue(RoomManager.pressureOf(west) - RoomManager.pressureOf(east) > RoomManager.MERGE_PUFF_PA,
+                "The west room should be at much the higher pressure");
+
+        helper.destroyBlock(CENTRE);
+        LongSet opened = new LongOpenHashSet(new long[] {helper.absolutePos(CENTRE).asLong()});
+        List<RoomBreachS2CPacket> puffs = manager(helper).mergePuffs(helper.getLevel(), east, west, opened);
+        helper.assertTrue(puffs.size() == 1, "There should be one puff, at the one opening, are " + puffs.size());
+        RoomBreachS2CPacket puff = puffs.get(0);
+        helper.assertTrue(puff.pos().equals(helper.absolutePos(CENTRE)), "The puff should be at the opening, is at " + puff.pos());
+        helper.assertTrue(puff.outward() == Direction.EAST, "The puff should go from the packed room into the other, goes " + puff.outward());
+        // Half the flux and a little of the air has to cross for two rooms of the same size to come level.
+        helper.assertTrue(puff.massKg() > 20 && puff.massKg() < 35, "About half the west room's gas should cross, " + puff.massKg() + " kg does");
+
+        helper.runAfterDelay(2, () -> {
+            helper.assertTrue(roomAt(helper, WEST_HALF) == roomAt(helper, EAST_HALF) && roomAt(helper, WEST_HALF) != null,
+                    "The halves should be one room");
+            helper.succeed();
+        });
+    }
+
+    /** A room of eight cells or fewer is too small for the gas going into it to be drawn. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 40)
+    public static void openingIntoASmallRoom_drawsNothing(GameTestHelper helper) {
+        buildPartedShell(helper);
+        helper.setBlock(CENTRE, Blocks.STONE);
+        helper.setBlock(new BlockPos(6, 2, 4), Blocks.STONE);
+        addFlux(helper, WEST_HALF, 50.0);
+        addFlux(helper, EAST_HALF, 1.0e-9);
+        Room west = roomAt(helper, WEST_HALF);
+        Room east = roomAt(helper, EAST_HALF);
+        helper.assertTrue(west != null && east != null && east.volume() == 8, "The east room should be eight cells");
+
+        helper.destroyBlock(CENTRE);
+        LongSet opened = new LongOpenHashSet(new long[] {helper.absolutePos(CENTRE).asLong()});
+        helper.assertTrue(manager(helper).mergePuffs(helper.getLevel(), west, east, opened).isEmpty(),
+                "Gas going into a room of eight cells should not be drawn");
+        helper.succeed();
+    }
+
+    /**
+     * A packed room opening onto sealed space no room holds draws its gas going in, as into a room,
+     * if the space is more than eight cells; the space holds the outside air.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 40)
+    public static void openingIntoSealedSpace_drawsTheGasGoingIn(GameTestHelper helper) {
+        buildPartedShell(helper);
+        helper.setBlock(CENTRE, Blocks.STONE);
+        addFlux(helper, WEST_HALF, 50.0);
+        Room west = roomAt(helper, WEST_HALF);
+        helper.assertTrue(west != null && roomAt(helper, EAST_HALF) == null, "Only the west half should be a room");
+
+        helper.destroyBlock(CENTRE);
+        LongSet opened = new LongOpenHashSet(new long[] {helper.absolutePos(CENTRE).asLong()});
+        LongSet space = new LongOpenHashSet(opened);
+        LongSet small = new LongOpenHashSet(opened);
+        for (int y = 2; y <= 4; y++) {
+            for (int z = 4; z <= 6; z++) {
+                long cell = helper.absolutePos(new BlockPos(6, y, z)).asLong();
+                space.add(cell);
+                if (small.size() < 8) {
+                    small.add(cell);
+                }
+            }
+        }
+        List<RoomBreachS2CPacket> puffs = manager(helper).growthPuffs(helper.getLevel(), west, space, opened);
+        helper.assertTrue(puffs.size() == 1, "There should be one puff, at the one opening, are " + puffs.size());
+        helper.assertTrue(puffs.get(0).outward() == Direction.EAST, "The puff should go from the room into the space, goes " + puffs.get(0).outward());
+        helper.assertTrue(puffs.get(0).massKg() > 20, "About half the room's gas should cross, " + puffs.get(0).massKg() + " kg does");
+        helper.assertTrue(manager(helper).growthPuffs(helper.getLevel(), west, small, opened).isEmpty(),
+                "Gas going into eight cells of space should not be drawn");
+
+        helper.runAfterDelay(2, () -> {
+            helper.assertTrue(roomAt(helper, EAST_HALF) == west && west.volume() == 19, "The room should have taken the space in");
+            helper.succeed();
+        });
+    }
+
+    /** Two rooms at much the same pressure join with nothing to draw. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 40)
+    public static void openingBetweenEqualRooms_drawsNothing(GameTestHelper helper) {
+        buildPartedShell(helper);
+        helper.setBlock(CENTRE, Blocks.STONE);
+        addFlux(helper, WEST_HALF, 1.0e-9);
+        addFlux(helper, EAST_HALF, 1.0e-9);
+        Room west = roomAt(helper, WEST_HALF);
+        Room east = roomAt(helper, EAST_HALF);
+        helper.assertTrue(west != null && east != null && west != east, "The halves should be two rooms");
+
+        helper.destroyBlock(CENTRE);
+        LongSet opened = new LongOpenHashSet(new long[] {helper.absolutePos(CENTRE).asLong()});
+        helper.assertTrue(manager(helper).mergePuffs(helper.getLevel(), west, east, opened).isEmpty(),
+                "Rooms at the same pressure should draw nothing");
+        helper.succeed();
     }
 
     /** Doors open without a neighbour update, so this is the path that has to catch every change. */

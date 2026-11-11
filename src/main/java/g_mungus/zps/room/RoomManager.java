@@ -66,7 +66,8 @@ import java.util.function.Function;
  * is gone and so is its gas.
  *
  * <p>No wall is perfect: every tick a room leaks back toward the outside atmosphere, faster the more
- * wall it has for its size. Once it has caught up, and what is fed in would not hold it off the
+ * wall it has for its size. The outside is what the room's own cells would hold unsealed, each read
+ * where it is ({@link Outside}), so a room lying across biomes leaks toward the mix of them. Once it has caught up, and what is fed in would not hold it off the
  * outside either, it goes dormant — no gas of its own, replacing nothing — so a trickle into a big
  * room is lost in it while a real supply builds up. A dormant room keeps its walls, so gas going in again wakes it without another
  * search, and is forgotten if a wall changes or nothing comes in for a while.
@@ -87,6 +88,8 @@ public final class RoomManager extends SavedData {
     public static final double RELEASE_START_PA = 1_000_000.0;
     /** From this pressure up, a room lets out as much gas as is put into it. */
     public static final double MAX_PRESSURE_PA = 10_000_000.0;
+    /** How long a room's reading of the outside atmosphere stands before it is taken again, in ticks. */
+    static final int OUTSIDE_INTERVAL = 100;
     /** How often flames are seen to, in ticks. */
     static final int BURN_INTERVAL = 20;
     /** Most breach puffs drawn for one room coming open. */
@@ -289,10 +292,31 @@ public final class RoomManager extends SavedData {
             return seal(level, at);
         }
         if (!room.isActive()) {
-            room.wake(outsideAir(level, room.anchor(), room.volume()), AtmosphereExposure.temperatureK(level, room.anchor()));
+            wake(level, room);
             setDirty();
         }
         return room;
+    }
+
+    /** Fill a room that holds nothing with the outside air, as a newly sealed room is. */
+    private void wake(ServerLevel level, Room room) {
+        Outside outside = outsideOf(level, room);
+        room.wake(outside.massKg(), outside.temperatureK());
+    }
+
+    /**
+     * The outside atmosphere of {@code room}, read afresh if its shape has changed or the last
+     * reading is {@link #OUTSIDE_INTERVAL} old: the outside moves on — a ship flies somewhere else,
+     * a star comes round — but slowly, and a big room has a lot of cells to ask.
+     */
+    private Outside outsideOf(ServerLevel level, Room room) {
+        long now = level.getGameTime();
+        Outside outside = room.outsideReadAfter(now - OUTSIDE_INTERVAL);
+        if (outside == null) {
+            outside = Outside.of(room.interior(), at -> outsideAir(level, at, 1), at -> AtmosphereExposure.temperatureK(level, at));
+            room.outsideRead(outside, now);
+        }
+        return outside;
     }
 
     /** Look for a room around {@code at} and register it, filled with the outside air. */
@@ -324,8 +348,8 @@ public final class RoomManager extends SavedData {
             return adopt(level, held, scan);
         }
 
-        Room room = new Room(nextId++, scan, at, AtmosphereExposure.temperatureK(level, at));
-        room.add(outsideAir(level, at, scan.volume()), room.temperatureK());
+        Room room = new Room(nextId++, scan, at, Double.NaN);
+        wake(level, room);
         rooms.put(room.id(), room);
         index(room);
         setDirty();
@@ -377,17 +401,17 @@ public final class RoomManager extends SavedData {
         dirty.remove(room.id());
         needsFullCheck.remove(room.id());
         if (!room.isActive()) {
-            room.wake(outsideAir(level, room.anchor(), room.volume()), AtmosphereExposure.temperatureK(level, room.anchor()));
+            wake(level, room);
         }
         setDirty();
         return room;
     }
 
     /**
-     * What a room of {@code volume} cells around {@code at} held of the outside atmosphere when it
-     * sealed, in kilograms: each gas's share at its own density, thinned with height. Vacuum and
-     * gases no mod registers weigh nothing. A room on a moving grid is judged by the air where the
-     * grid is in the world ({@link AtmosphereExposure#inWorld}), not at its plot.
+     * What {@code volume} cells at {@code at} hold of the outside atmosphere, in kilograms: each
+     * gas's share at its own density, thinned with height. Vacuum and gases no mod registers weigh
+     * nothing. A cell on a moving grid is judged by the air where the grid is in the world
+     * ({@link AtmosphereExposure#inWorld}), not at its plot.
      */
     static Map<ResourceLocation, Double> outsideAir(ServerLevel level, BlockPos at, int volume) {
         at = AtmosphereExposure.inWorld(level, at);
@@ -574,11 +598,10 @@ public final class RoomManager extends SavedData {
                 // Unloaded rooms keep what they held until someone is back.
                 continue;
             }
-            Map<ResourceLocation, Double> outside = outsideAir(level, anchor, room.volume());
-            double outsideK = AtmosphereExposure.temperatureK(level, anchor);
+            Outside outside = outsideOf(level, room);
             double fraction = leakFraction(room, rate);
-            room.leak(outside, outsideK, fraction);
-            if (room.hasSettled(outside, outsideK, fraction)) {
+            room.leak(outside.massKg(), outside.temperatureK(), fraction);
+            if (room.hasSettled(outside.massKg(), outside.temperatureK(), fraction)) {
                 room.sleep(now);
             }
         }

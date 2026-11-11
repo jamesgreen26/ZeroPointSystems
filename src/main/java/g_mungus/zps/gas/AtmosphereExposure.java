@@ -10,6 +10,7 @@ import g_mungus.zps.gas.api.GasEnvironments;
 import g_mungus.zps.room.RoomManager;
 import g_mungus.zps.world.AtmosphericComposition;
 import g_mungus.zps.world.BiomeTemperature;
+import g_mungus.zps.world.LocalAtmosphere;
 import g_mungus.zps.world.SpaceTemperature;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -33,7 +34,8 @@ import org.valkyrienskies.kelvin.impl.registry.GasTypeRegistry;
  * players and anything riding, which the level's entity tick events skip.
  *
  * <p>The environment starts as the atmosphere at its eyes — a sealed room's gas if its eyes are in
- * one ({@link RoomManager}), otherwise the biome's. Outside a room the temperature is the biome's, in kelvin
+ * one ({@link RoomManager}), otherwise the biomes' around it, run into each other where they meet
+ * ({@link LocalAtmosphere}). Outside a room the temperature is the biomes', in kelvin
  * ({@link BiomeTemperature}); where the biome's {@link AtmosphericComposition} holds no registered gas
  * there is nothing to carry heat or cold, except {@code zps:vacuum}, which is no Kelvin gas but still
  * exposes an entity to the biome's temperature. Then queued modifiers ({@link GasEnvironments}) and
@@ -75,10 +77,17 @@ public final class AtmosphereExposure {
                 return new GasEnvironment(entity, eyes, air.temperatureK(), air.gases());
             }
         }
-        BlockPos air = inWorld(entity.level(), eyes);
-        Biome biome = entity.level().getBiome(air).value();
-        AtmosphericComposition composition = AtmosphericComposition.of(biome);
-        return new GasEnvironment(entity, eyes, temperatureK(entity.level(), biome, composition, air), composition.at(air.getY()));
+        LocalAtmosphere outside = outside(entity.level(), eyes);
+        return new GasEnvironment(entity, eyes, outside.temperatureK(), outside.shares());
+    }
+
+    /**
+     * The outside atmosphere at {@code pos}, whatever room it may be in: the biomes' around it, run
+     * into each other where they meet ({@link LocalAtmosphere}). A position on a moving grid is read
+     * where the grid is ({@link #inWorld}).
+     */
+    public static LocalAtmosphere outside(Level level, BlockPos pos) {
+        return LocalAtmosphere.at(level, inWorld(level, pos));
     }
 
     /**
@@ -110,14 +119,12 @@ public final class AtmosphereExposure {
      * In a {@code zps:space} biome, this includes heat from {@link g_mungus.zps.gas.api.HeatSources}.
      */
     public static double temperatureK(Level level, BlockPos pos) {
-        pos = inWorld(level, pos);
-        Biome biome = level.getBiome(pos).value();
-        return temperatureK(level, biome, AtmosphericComposition.of(biome), pos);
+        return outside(level, pos).temperatureK();
     }
 
     /**
-     * As {@link #temperatureK(Level, BlockPos)}, for {@code biome} with {@code composition} as its air,
-     * at {@code pos} already in the world.
+     * The temperature {@code biome} alone gives {@code pos}, already in the world, with
+     * {@code composition} as its air: no other biome near it is taken into account.
      */
     public static double temperatureK(Level level, Biome biome, AtmosphericComposition composition, BlockPos pos) {
         if (!isExposable(composition, pos.getY())) {

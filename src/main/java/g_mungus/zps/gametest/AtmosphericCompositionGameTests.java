@@ -6,6 +6,7 @@ import com.mojang.serialization.JsonOps;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.networking.AtmosphericCompositionS2CPacket;
 import g_mungus.zps.world.AtmosphericBiome;
+import g_mungus.zps.world.LocalAtmosphere;
 import g_mungus.zps.world.AtmosphericComposition;
 import g_mungus.zps.world.AtmosphericCompositionModifier;
 import g_mungus.zps.world.YRange;
@@ -93,6 +94,31 @@ public class AtmosphericCompositionGameTests {
         expectDensity(helper, column.atY(1184), 0.5f);
         expectDensity(helper, column.atY(2048), 0.0f);
         expectDensity(helper, column.atY(5000), 0.0f);
+        helper.succeed();
+    }
+
+    /**
+     * The atmosphere as it is read in the world runs from the air below 2048 into the vacuum above
+     * over the four blocks between the two biome cells' middles, at 2046 and 2050, and is plain air
+     * exactly anywhere further from the edge.
+     */
+    @GameTest(template = TEMPLATE)
+    public static void overworldAtmosphere_runsIntoVacuumAcross2048(GameTestHelper helper) {
+        BlockPos column = helper.absolutePos(BlockPos.ZERO);
+        expect(helper, LocalAtmosphere.at(helper.getLevel(), column.atY(64)).shares(), AtmosphericComposition.PLAIN_AIR, "y=64");
+        expect(helper, LocalAtmosphere.at(helper.getLevel(), column.atY(2040)).shares(), AtmosphericComposition.PLAIN_AIR, "y=2040");
+        expect(helper, LocalAtmosphere.at(helper.getLevel(), column.atY(2046)).shares(), AtmosphericComposition.PLAIN_AIR, "y=2046");
+        expect(helper, LocalAtmosphere.at(helper.getLevel(), column.atY(2047)).shares(),
+                Map.of(AtmosphericComposition.AIR, 0.75, VACUUM, 0.25), "y=2047");
+        expect(helper, LocalAtmosphere.at(helper.getLevel(), column.atY(2048)).shares(),
+                Map.of(AtmosphericComposition.AIR, 0.5, VACUUM, 0.5), "y=2048");
+        expect(helper, LocalAtmosphere.at(helper.getLevel(), column.atY(2050)).shares(), Map.of(VACUUM, 1.0), "y=2050");
+        if (LocalAtmosphere.at(helper.getLevel(), column.atY(64)).kgPerM3().getOrDefault(AtmosphericComposition.AIR, 0.0) <= 0) {
+            helper.fail("Air on the ground should weigh something");
+        }
+        if (!LocalAtmosphere.at(helper.getLevel(), column.atY(2050)).kgPerM3().isEmpty()) {
+            helper.fail("Vacuum should weigh nothing");
+        }
         helper.succeed();
     }
 

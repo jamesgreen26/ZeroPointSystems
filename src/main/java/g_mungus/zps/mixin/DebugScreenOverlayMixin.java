@@ -1,5 +1,7 @@
 package g_mungus.zps.mixin;
 
+import g_mungus.zps.gas.ModGasTags;
+import g_mungus.zps.world.LocalAtmosphere;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import g_mungus.zps.client.debug.ClientGasConditions;
@@ -12,7 +14,6 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.biome.Biome;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -96,10 +97,7 @@ public abstract class DebugScreenOverlayMixin {
             return null;
         }
         BlockPos eyes = BlockPos.containing(camera.getEyePosition());
-        Biome biome = level.getBiome(eyes).value();
-        AtmosphericComposition composition = AtmosphericComposition.of(biome);
-        Map<ResourceLocation, Double> gases = composition.at(eyes.getY());
-        return new GasConditions(AtmosphereExposure.temperatureK(level, biome, composition, eyes),
-                AtmosphereExposure.isBreathable(level, composition, eyes.getY()), gases, true);
+        LocalAtmosphere air = LocalAtmosphere.at(level, eyes);
+        return new GasConditions(air.temperatureK(), ModGasTags.isBreathable(level, air.shares()), air.shares(), true);
     }
 }

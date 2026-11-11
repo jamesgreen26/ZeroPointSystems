@@ -1,9 +1,7 @@
 package g_mungus.zps.room;
 
-import it.unimi.dsi.fastutil.longs.Long2IntMap;
-import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
-import it.unimi.dsi.fastutil.longs.Long2LongMap;
-import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.core.BlockPos;
@@ -32,7 +30,8 @@ record Outside(Map<ResourceLocation, Double> massKg, double temperatureK) {
 
     /**
      * Biomes are laid out in blocks of this many cells a side, so the air is read once for each
-     * such block a room reaches into and counted for every cell of the room in it.
+     * such block a room reaches into, in the middle of the room's cells there, and counted for
+     * every one of them.
      */
     private static final int SAMPLE_SHIFT = 2;
 
@@ -44,23 +43,28 @@ record Outside(Map<ResourceLocation, Double> massKg, double temperatureK) {
      */
     static Outside of(LongSet interior, Function<BlockPos, Map<ResourceLocation, Double>> airPerCell,
                       ToDoubleFunction<BlockPos> temperatureK) {
-        Long2IntOpenHashMap cells = new Long2IntOpenHashMap();
-        Long2LongMap sampledAt = new Long2LongOpenHashMap();
+        // For each block of cells: how many of the room's are in it, and the sum of where they are.
+        Long2ObjectMap<long[]> blocks = new Long2ObjectOpenHashMap<>();
         for (LongIterator it = interior.iterator(); it.hasNext(); ) {
             long cell = it.nextLong();
-            long block = BlockPos.asLong(BlockPos.getX(cell) >> SAMPLE_SHIFT, BlockPos.getY(cell) >> SAMPLE_SHIFT,
-                    BlockPos.getZ(cell) >> SAMPLE_SHIFT);
-            if (cells.addTo(block, 1) == 0) {
-                sampledAt.put(block, cell);
-            }
+            int x = BlockPos.getX(cell);
+            int y = BlockPos.getY(cell);
+            int z = BlockPos.getZ(cell);
+            long[] block = blocks.computeIfAbsent(BlockPos.asLong(x >> SAMPLE_SHIFT, y >> SAMPLE_SHIFT, z >> SAMPLE_SHIFT),
+                    ignored -> new long[4]);
+            block[0]++;
+            block[1] += x;
+            block[2] += y;
+            block[3] += z;
         }
 
         Map<ResourceLocation, Double> massKg = new HashMap<>();
         double kelvinSum = 0;
         int kelvinCells = 0;
-        for (Long2IntMap.Entry entry : cells.long2IntEntrySet()) {
-            BlockPos at = BlockPos.of(sampledAt.get(entry.getLongKey()));
-            int count = entry.getIntValue();
+        for (long[] block : blocks.values()) {
+            int count = (int) block[0];
+            BlockPos at = new BlockPos((int) Math.floorDiv(block[1], count), (int) Math.floorDiv(block[2], count),
+                    (int) Math.floorDiv(block[3], count));
             airPerCell.apply(at).forEach((gas, mass) -> massKg.merge(gas, mass * count, Double::sum));
             double kelvin = temperatureK.applyAsDouble(at);
             if (!Double.isNaN(kelvin)) {

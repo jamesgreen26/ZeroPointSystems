@@ -9,6 +9,7 @@ import g_mungus.zps.gas.GasExposure;
 import g_mungus.zps.gas.ModGasTags;
 import g_mungus.zps.networking.RoomBreachS2CPacket;
 import g_mungus.zps.world.AtmosphericComposition;
+import g_mungus.zps.world.LocalAtmosphere;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
@@ -35,7 +36,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -474,21 +474,14 @@ public final class RoomManager extends SavedData {
 
     /**
      * What {@code volume} cells at {@code at} hold of the outside atmosphere, in kilograms: each
-     * gas's share at its own density, thinned with height. Vacuum and gases no mod registers weigh
-     * nothing. A cell on a moving grid is judged by the air where the grid is in the world
+     * gas's share at its own density, thinned with height, and run into the next biome's where two
+     * meet ({@link LocalAtmosphere}). Vacuum and gases no mod registers weigh nothing. A cell on a
+     * moving grid is judged by the air where the grid is in the world
      * ({@link AtmosphereExposure#inWorld}), not at its plot.
      */
     static Map<ResourceLocation, Double> outsideAir(ServerLevel level, BlockPos at, int volume) {
-        at = AtmosphereExposure.inWorld(level, at);
-        Biome biome = level.getBiome(at).value();
-        double thinning = AtmosphericComposition.getDensity(level, at);
         Map<ResourceLocation, Double> kg = new HashMap<>();
-        AtmosphericComposition.of(biome).at(at.getY()).forEach((gas, fraction) -> {
-            GasType type = GasTypeRegistry.INSTANCE.getGasType(gas);
-            if (type != null) {
-                kg.put(gas, fraction * type.getDensity() * thinning * volume);
-            }
-        });
+        AtmosphereExposure.outside(level, at).kgPerM3().forEach((gas, mass) -> kg.put(gas, mass * volume));
         return kg;
     }
 
@@ -641,8 +634,7 @@ public final class RoomManager extends SavedData {
 
     /** Whether the outside air at {@code pos}, where it is in the world, is breathable as an entity finds it. */
     private static boolean outsideIsBreathable(ServerLevel level, BlockPos pos) {
-        BlockPos air = AtmosphereExposure.inWorld(level, pos);
-        return AtmosphereExposure.isBreathable(level, AtmosphericComposition.of(level.getBiome(air).value()), air.getY());
+        return ModGasTags.isBreathable(level, AtmosphereExposure.outside(level, pos).shares());
     }
 
     private void leak(ServerLevel level) {

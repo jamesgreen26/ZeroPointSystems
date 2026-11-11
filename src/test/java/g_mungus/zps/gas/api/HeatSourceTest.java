@@ -27,4 +27,17 @@ class HeatSourceTest {
         assertThrows(IllegalArgumentException.class, () -> new HeatSource(Vec3.ZERO, 950, 0));
         assertThrows(IllegalArgumentException.class, () -> new HeatSource(Vec3.ZERO, 950, Double.NaN));
     }
+
+    @Test
+    void aSteeperFalloff_coolsFasterWithDistance() {
+        HeatSource hot = new HeatSource(Vec3.ZERO, 250_000, 720, 2);
+        assertEquals(250_000, hot.temperatureAt(720), 1e-6);
+        assertEquals(250_000 / 16.0, hot.temperatureAt(4 * 720), 1e-6);
+    }
+
+    @Test
+    void needsAPositiveFalloff() {
+        assertThrows(IllegalArgumentException.class, () -> new HeatSource(Vec3.ZERO, 950, 720, 0));
+        assertThrows(IllegalArgumentException.class, () -> new HeatSource(Vec3.ZERO, 950, 720, Double.NaN));
+    }
 }

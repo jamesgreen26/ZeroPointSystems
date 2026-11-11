@@ -1,5 +1,7 @@
 package g_mungus.zps.room;
 
+import g_mungus.zps.world.SpaceTemperature;
+import net.minecraft.world.level.biome.Biome;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.compat.Compat;
 import g_mungus.zps.compat.GridSpace;
@@ -581,7 +583,8 @@ public final class RoomManager extends SavedData {
      * joules. In a room that is the whole room's gas cooling from what it is there, so the room
      * runs out; outdoors the atmosphere never does, and anything above {@code floorK} is
      * {@link Double#POSITIVE_INFINITY}. Nothing where there is no gas to hold heat, vacuum
-     * included.
+     * included, except in a {@code zps:space} biome: what warms it there is the radiation of
+     * {@link g_mungus.zps.gas.api.HeatSources}, which needs no gas to arrive.
      */
     public double spareHeat(ServerLevel level, BlockPos at, double floorK) {
         Room room = roomAt(at);
@@ -599,7 +602,8 @@ public final class RoomManager extends SavedData {
                 return Double.POSITIVE_INFINITY;
             }
         }
-        return 0;
+        Biome biome = level.getBiome(AtmosphereExposure.inWorld(level, at)).value();
+        return SpaceTemperature.appliesTo(biome) ? Double.POSITIVE_INFINITY : 0;
     }
 
     /**

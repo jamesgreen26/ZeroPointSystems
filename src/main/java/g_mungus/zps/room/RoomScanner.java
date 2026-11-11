@@ -170,6 +170,59 @@ public final class RoomScanner {
         return regions.count() >= Long.SIZE ? -1L : (1L << regions.count()) - 1;
     }
 
+    /**
+     * Every cell of {@code within} that air in {@code start} gets to without leaving {@code within}:
+     * the part of a room that {@code start} is in, once something has parted it. Air crosses from
+     * pocket to pocket as in {@link #scan}, starting in every pocket of {@code start}.
+     */
+    public static LongSet reach(BlockPos start, LongSet within, Function<BlockPos, @Nullable VoxelShape> shapes) {
+        LongSet reached = new LongOpenHashSet();
+        VoxelShape startShape = shapes.apply(start);
+        if (startShape == null) {
+            return reached;
+        }
+        Long2LongOpenHashMap pockets = new Long2LongOpenHashMap();
+        RisingQueue queue = new RisingQueue();
+        long startKey = start.asLong();
+        reached.add(startKey);
+        CellRegions startRegions = CellRegions.of(startShape);
+        for (int region = 0; region < startRegions.count(); region++) {
+            pockets.put(startKey, pockets.get(startKey) | 1L << region);
+            queue.enqueue(startKey, region);
+        }
+
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        BlockPos.MutableBlockPos next = new BlockPos.MutableBlockPos();
+        while (!queue.isEmpty()) {
+            long current = queue.dequeue();
+            int region = queue.region();
+            cursor.set(current);
+            CellRegions here = CellRegions.of(shapes.apply(cursor));
+            for (Direction direction : Direction.values()) {
+                next.setWithOffset(cursor, direction);
+                long key = next.asLong();
+                if (!within.contains(key)) {
+                    continue;
+                }
+                VoxelShape thereShape = shapes.apply(next);
+                if (thereShape == null) {
+                    continue;
+                }
+                CellRegions there = CellRegions.of(thereShape);
+                for (int otherRegion = 0; otherRegion < there.count(); otherRegion++) {
+                    long bit = 1L << otherRegion;
+                    long seen = pockets.get(key);
+                    if ((seen & bit) == 0 && here.connects(region, direction, there, otherRegion)) {
+                        pockets.put(key, seen | bit);
+                        reached.add(key);
+                        queue.enqueue(key, otherRegion);
+                    }
+                }
+            }
+        }
+        return reached;
+    }
+
     /** What {@link #grow} found. */
     public enum Growth {
         /** Air from the room reached only sealed space: the room takes it in. */

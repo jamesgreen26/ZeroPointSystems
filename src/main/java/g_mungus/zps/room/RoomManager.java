@@ -64,7 +64,8 @@ import java.util.function.Function;
  * room only exists once gas has gone into it. From then on it replaces the outside atmosphere for
  * anything whose eyes are inside. A room is only checked again when a block on its boundary or in
  * its interior changes shape, once per tick however many changed; if air can then get out, the room
- * is gone and so is its gas.
+ * is gone and so is its gas. A room parted in two — a door shut across it — becomes a room either
+ * side, each with the gas that was on its side, and only the side air can get out of is lost.
  *
  * <p>No wall is perfect: every tick a room leaks back toward the outside atmosphere, faster the more
  * wall it has for its size. The outside is what the room's own cells would hold unsealed, each read
@@ -380,10 +381,14 @@ public final class RoomManager extends SavedData {
         long now = level.getGameTime();
         Outside outside = room.outsideReadAfter(now - OUTSIDE_INTERVAL);
         if (outside == null) {
-            outside = Outside.of(room.interior(), at -> outsideAir(level, at, 1), at -> AtmosphereExposure.temperatureK(level, at));
+            outside = readOutside(level, room.interior());
             room.outsideRead(outside, now);
         }
         return outside;
+    }
+
+    private static Outside readOutside(ServerLevel level, LongSet cells) {
+        return Outside.of(cells, at -> outsideAir(level, at, 1), at -> AtmosphereExposure.temperatureK(level, at));
     }
 
     /** Look for a room around {@code at} and register it, filled with the outside air. */
@@ -759,7 +764,19 @@ public final class RoomManager extends SavedData {
         }
     }
 
-    /** Flood a changed room afresh, to see whether it is still sealed and what shape it is now. */
+    /** One part of a room that a change has parted: the room it now is, or null if air gets out of it, and its cells. */
+    private record Part(@Nullable RoomScan scan, LongSet cells) {
+    }
+
+    /**
+     * Flood a changed room afresh, to see whether it is still sealed and what shape it is now.
+     *
+     * <p>A change that adds material can part a room: a door shut across it, a wall built through
+     * it. Every part is then flooded on its own. Each one still sealed is a room — the largest
+     * stays this one, the rest are new — holding the gas that was on its side
+     * ({@link #gasOfParts}); a part air can get out of loses its gas and is no room. Which part a
+     * fill happens to start in makes no difference to any of it.
+     */
     private void recheck(ServerLevel level, Room room, LongSet changed) {
         // Air reaching unloaded ground past the old walls has got out; reaching part of the room
         // itself that is not loaded only means there is no telling.
@@ -773,61 +790,144 @@ public final class RoomManager extends SavedData {
             return shape;
         };
 
-        BlockPos start = openCell(room, changed, shapes);
-        if (start == null) {
+        LongSet waiting = openCells(room, changed, shapes);
+        if (waiting.isEmpty()) {
             // Filled in solid, every cell of it.
             dissolve(room);
             return;
         }
-        RoomScan scan = RoomScanner.scan(start, shapes, ZPSConfig.roomMaxVolume());
-        if (scan == null) {
-            if (hitUnloadedInterior[0]) {
+        List<Part> parts = new ArrayList<>();
+        Part largest = null;
+        while (!waiting.isEmpty()) {
+            long first = waiting.iterator().nextLong();
+            BlockPos start = BlockPos.of(first);
+            RoomScan scan = RoomScanner.scan(start, shapes, ZPSConfig.roomMaxVolume());
+            if (scan == null && hitUnloadedInterior[0]) {
                 // Part of it is not loaded, so whether it leaks cannot be told. Leave it be.
                 return;
             }
+            Part part = new Part(scan, scan != null ? scan.interior() : RoomScanner.reach(start, room.interior(), shapes));
+            parts.add(part);
+            waiting.removeAll(part.cells());
+            waiting.remove(first);
+            if (scan != null && (largest == null || scan.volume() > largest.scan().volume())) {
+                largest = part;
+            }
+        }
+        if (largest == null) {
             breach(level, room, changed);
             return;
         }
 
-        unindex(room);
-        room.reshape(scan);
-        // A wall between two rooms came down: they are one now.
-        for (LongIterator it = scan.interior().iterator(); it.hasNext(); ) {
-            int other = byInterior.get(it.nextLong());
-            if (other >= 0 && other != room.id()) {
-                Room merged = rooms.get(other);
-                if (merged != null) {
-                    room.absorb(merged);
-                    dissolve(merged);
+        // With one part and that one sealed the room has only changed shape, and keeps all it held.
+        List<Map<ResourceLocation, Double>> gas = parts.size() > 1 ? gasOfParts(level, room, parts) : null;
+        double[] kelvin = new double[parts.size()];
+        if (gas != null) {
+            Outside before = outsideOf(level, room);
+            for (int i = 0; i < parts.size(); i++) {
+                if (parts.get(i).scan() != null) {
+                    kelvin[i] = before.temperatureAt(room.temperatureK(), readOutside(level, parts.get(i).cells()).temperatureK());
                 }
             }
+            ZPSMod.LOGGER.debug("Room {} parted into {}", room.id(), parts.size());
         }
-        index(room);
+
+        unindex(room);
+        for (int i = 0; i < parts.size(); i++) {
+            RoomScan scan = parts.get(i).scan();
+            if (scan == null) {
+                continue;
+            }
+            Room part;
+            if (parts.get(i) == largest) {
+                part = room;
+                part.reshape(scan);
+            } else {
+                part = new Room(nextId++, scan, BlockPos.of(scan.interior().iterator().nextLong()), kelvin[i]);
+                rooms.put(part.id(), part);
+            }
+            if (gas != null) {
+                part.setGas(gas.get(i), kelvin[i]);
+            }
+            // A wall between two rooms came down: they are one now.
+            for (Room other : overlapping(scan.interior(), scan.pockets())) {
+                if (other != part) {
+                    part.absorb(other);
+                    dissolve(other);
+                }
+            }
+            index(part);
+        }
         setDirty();
     }
 
     /**
-     * An interior cell air can still be in, to fill from. A cell wholly in the room and unchanged
-     * if there is one: a fill starts in every pocket of its cell, so starting in a closed door's
-     * would take in the outside pocket too and find the room open.
+     * What each part of a parted room holds of its gas, in the order of {@code parts}: the gas
+     * that was in its cells while the room was whole ({@link Outside#airAt}). A gas the room was
+     * short of was short by the same share everywhere, so each part has that share of its own
+     * cells' outside air; a gas it had more of had the surplus lying evenly, so each part has its
+     * own outside air and the surplus by its volume. All of it is shared out, parts air gets out
+     * of included, though what those are given is lost.
      */
-    private static @Nullable BlockPos openCell(Room room, LongSet changed, Function<BlockPos, VoxelShape> shapes) {
+    private List<Map<ResourceLocation, Double>> gasOfParts(ServerLevel level, Room room, List<Part> parts) {
+        Outside before = outsideOf(level, room);
+        List<Map<ResourceLocation, Double>> gas = new ArrayList<>();
+        List<Outside> outsides = new ArrayList<>();
+        double cells = 0;
+        for (Part part : parts) {
+            gas.add(new HashMap<>());
+            outsides.add(readOutside(level, part.cells()));
+            cells += part.cells().size();
+        }
+        for (Map.Entry<ResourceLocation, Double> held : room.massKg().entrySet()) {
+            ResourceLocation id = held.getKey();
+            double mass = held.getValue();
+            double outside = before.massKg().getOrDefault(id, 0.0);
+            double[] weights = new double[parts.size()];
+            double total = 0;
+            for (int i = 0; i < parts.size(); i++) {
+                double own = outsides.get(i).massKg().getOrDefault(id, 0.0);
+                double volume = parts.get(i).cells().size();
+                weights[i] = mass < outside ? own * mass / outside : own + (mass - outside) * volume / room.volume();
+                total += weights[i];
+            }
+            for (int i = 0; i < parts.size(); i++) {
+                // Nothing to go by: share it out by volume.
+                double share = total > 0 ? weights[i] / total : parts.get(i).cells().size() / cells;
+                gas.get(i).put(id, mass * share);
+            }
+        }
+        return gas;
+    }
+
+    /**
+     * The interior cells air can still be in, to fill from: the cells wholly in the room and
+     * unchanged, as a fill starts in every pocket of its cell, so starting in a closed door's would
+     * take in the outside pocket too and find the room open. With none of those, any one cell that
+     * holds air; with none of those either, nothing.
+     */
+    private static LongSet openCells(Room room, LongSet changed, Function<BlockPos, VoxelShape> shapes) {
+        LongSet open = new LongOpenHashSet();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        BlockPos fallback = null;
+        long fallback = 0;
+        boolean hasFallback = false;
         for (LongIterator it = room.interior().iterator(); it.hasNext(); ) {
             long cell = it.nextLong();
             cursor.set(cell);
             VoxelShape shape = shapes.apply(cursor);
             if (shape != null && RoomScanner.holdsAir(shape)) {
                 if (!room.pockets().containsKey(cell) && !changed.contains(cell)) {
-                    return cursor.immutable();
-                }
-                if (fallback == null) {
-                    fallback = cursor.immutable();
+                    open.add(cell);
+                } else if (!hasFallback) {
+                    fallback = cell;
+                    hasFallback = true;
                 }
             }
         }
-        return fallback;
+        if (open.isEmpty() && hasFallback) {
+            open.add(fallback);
+        }
+        return open;
     }
 
     /** Air got out: draw it going and forget the room. */

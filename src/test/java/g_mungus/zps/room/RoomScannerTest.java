@@ -256,4 +256,58 @@ public class RoomScannerTest {
         grid.set(door, Shapes.empty());
         assertEquals(RoomScanner.Growth.ESCAPED, grow(room, grid, 4096, door).growth());
     }
+
+    // --- the part of a room a cell is in ------------------------------------------------------
+
+    /** A wall of solid blocks across the middle of the cube, at x = 2. */
+    private static Grid partedCube() {
+        Grid grid = cube3();
+        for (int y = 1; y <= 3; y++) {
+            for (int z = 1; z <= 3; z++) {
+                grid.set(new BlockPos(2, y, z), Shapes.block());
+            }
+        }
+        return grid;
+    }
+
+    @Test
+    void reachWithinAWholeRoom_isAllOfIt() {
+        LongSet room = RoomScanner.scan(CENTRE, cube3(), 4096).interior();
+        assertEquals(room, RoomScanner.reach(new BlockPos(1, 1, 1), room, cube3()));
+    }
+
+    @Test
+    void reachWithinAPartedRoom_stopsAtWhatPartsIt() {
+        LongSet room = RoomScanner.scan(CENTRE, cube3(), 4096).interior();
+        LongSet west = RoomScanner.reach(new BlockPos(1, 2, 2), room, partedCube());
+        LongSet east = RoomScanner.reach(new BlockPos(3, 2, 2), room, partedCube());
+
+        assertEquals(9, west.size());
+        assertEquals(9, east.size());
+        assertTrue(west.contains(new BlockPos(1, 3, 3).asLong()));
+        assertFalse(west.contains(new BlockPos(3, 2, 2).asLong()));
+        assertFalse(east.contains(new BlockPos(1, 2, 2).asLong()));
+    }
+
+    /** With the east wall gone, the east part still ends at the room's old cells: it does not follow the air out. */
+    @Test
+    void reach_staysWithinTheRoom() {
+        LongSet room = RoomScanner.scan(CENTRE, cube3(), 4096).interior();
+        Grid open = partedCube().set(new BlockPos(4, 2, 2), Shapes.empty());
+        assertEquals(9, RoomScanner.reach(new BlockPos(3, 2, 2), room, open).size());
+    }
+
+    /** A plate against one face of a cell lets air into the cell from the other side only. */
+    @Test
+    void reach_followsPocketsNotCells() {
+        LongSet room = RoomScanner.scan(CENTRE, cube3(), 4096).interior();
+        Grid grid = cube3();
+        for (int y = 1; y <= 3; y++) {
+            for (int z = 1; z <= 3; z++) {
+                grid.set(new BlockPos(2, y, z), WEST_PLATE);
+            }
+        }
+        assertEquals(9, RoomScanner.reach(new BlockPos(1, 2, 2), room, grid).size());
+        assertEquals(18, RoomScanner.reach(new BlockPos(3, 2, 2), room, grid).size());
+    }
 }

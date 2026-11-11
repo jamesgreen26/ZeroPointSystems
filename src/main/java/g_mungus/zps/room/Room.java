@@ -127,6 +127,17 @@ public final class Room {
         return temperatureK;
     }
 
+    /** Hold {@code kg} at {@code temperatureK} and nothing else: this room's share of one that has been parted. */
+    void setGas(Map<ResourceLocation, Double> kg, double temperatureK) {
+        massKg.clear();
+        kg.forEach((gas, mass) -> {
+            if (mass >= GasExposure.MIN_GAS_KG * 1e-3) {
+                massKg.put(gas, mass);
+            }
+        });
+        this.temperatureK = temperatureK;
+    }
+
     public Map<ResourceLocation, Double> massKg() {
         return Collections.unmodifiableMap(massKg);
     }

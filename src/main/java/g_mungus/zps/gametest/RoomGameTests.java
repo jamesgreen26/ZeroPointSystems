@@ -333,6 +333,83 @@ public class RoomGameTests {
         });
     }
 
+    private static final BlockPos WEST_HALF = new BlockPos(4, 3, 5);
+    private static final BlockPos EAST_HALF = new BlockPos(6, 3, 5);
+
+    /** The shell with a stone wall across its middle and a hole in that at {@link #CENTRE}: nine cells of air either side. */
+    private static void buildPartedShell(GameTestHelper helper) {
+        buildShell(helper);
+        for (int y = 2; y <= 4; y++) {
+            for (int z = 4; z <= 6; z++) {
+                BlockPos at = new BlockPos(5, y, z);
+                if (!at.equals(CENTRE)) {
+                    helper.setBlock(at, Blocks.STONE);
+                }
+            }
+        }
+        for (BlockPos half : List.of(WEST_HALF, EAST_HALF)) {
+            Room stale = manager(helper).knownRoomAt(helper.absolutePos(half));
+            if (stale != null) {
+                manager(helper).dissolve(stale);
+            }
+        }
+    }
+
+    /**
+     * Closing the way between two halves of a room makes a room of each, with the gas that was on
+     * its side: half each here, whichever half the check happens to start in.
+     */
+    @GameTest(template = TEMPLATE, timeoutTicks = 40)
+    public static void closingARoomInTwo_makesTwoRoomsWithHalfTheGasEach(GameTestHelper helper) {
+        buildPartedShell(helper);
+        addFlux(helper, WEST_HALF, 5.0);
+        Room whole = roomAt(helper, WEST_HALF);
+        helper.assertTrue(whole != null && whole.volume() == 19 && roomAt(helper, EAST_HALF) == whole,
+                "Both halves and the hole between should be one room");
+        double air = whole.massKg().getOrDefault(AtmosphericComposition.AIR, 0.0);
+
+        helper.setBlock(CENTRE, Blocks.STONE);
+        helper.runAfterDelay(2, () -> {
+            Room west = roomAt(helper, WEST_HALF);
+            Room east = roomAt(helper, EAST_HALF);
+            helper.assertTrue(west != null && east != null, "Each half should still be a room, are " + west + " and " + east);
+            helper.assertTrue(west != east, "The halves should be two rooms");
+            helper.assertTrue(west.volume() == 9 && east.volume() == 9, "Each room should be its half, are " + west.volume() + " and " + east.volume());
+            for (Room half : List.of(west, east)) {
+                double flux = half.massKg().getOrDefault(FLUX, 0.0);
+                helper.assertTrue(flux > 2.45 && flux < 2.51, "Each half should hold half the flux, holds " + flux);
+                double halfAir = half.massKg().getOrDefault(AtmosphericComposition.AIR, 0.0);
+                helper.assertTrue(Math.abs(halfAir - air / 2) < 0.02 * air, "Each half should hold half the air, " + air / 2 + ", holds " + halfAir);
+            }
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Closing the way to a half that has come open keeps the sealed half a room with its own half
+     * of the gas; only the open half's is lost.
+     */
+    @SkyAccess
+    @GameTest(template = TEMPLATE, timeoutTicks = 40)
+    public static void closingOffAnOpenHalf_keepsTheSealedHalf(GameTestHelper helper) {
+        buildPartedShell(helper);
+        addFlux(helper, WEST_HALF, 5.0);
+        helper.assertTrue(roomAt(helper, EAST_HALF) != null, "Both halves should be one room");
+
+        // The east wall goes and the hole is filled in the same tick.
+        helper.destroyBlock(new BlockPos(7, 3, 5));
+        helper.setBlock(CENTRE, Blocks.STONE);
+        helper.runAfterDelay(2, () -> {
+            Room west = roomAt(helper, WEST_HALF);
+            helper.assertTrue(west != null, "The sealed half should still be a room");
+            helper.assertTrue(west.volume() == 9, "The room should be the sealed half, is " + west.volume());
+            double flux = west.massKg().getOrDefault(FLUX, 0.0);
+            helper.assertTrue(flux > 2.45 && flux < 2.51, "The sealed half should keep its half of the flux, holds " + flux);
+            helper.assertTrue(roomAt(helper, EAST_HALF) == null, "The open half should be no room");
+            helper.succeed();
+        });
+    }
+
     /** Doors open without a neighbour update, so this is the path that has to catch every change. */
     @SkyAccess
     @GameTest(template = TEMPLATE, timeoutTicks = 40)

@@ -7,6 +7,7 @@ import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.reactor.Reactor;
 import g_mungus.zps.reactor.ReactorChamberNode;
 import g_mungus.zps.reactor.ReactorManager;
+import g_mungus.zps.room.RoomManager;
 import g_mungus.zps.util.TickAverage;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -32,6 +33,11 @@ import org.valkyrienskies.kelvin.api.DuctNodePos;
  * fuel quenches it. Nothing is accepted above it either, so a big power source cannot cook the
  * chamber past melting on its own. Nothing is accepted into an empty chamber: there is no gas to
  * heat, and the reactor is busy losing what heat it has.
+ *
+ * <p>Off a reactor, the exchanger draws on the gas behind its inner face instead — a sealed room,
+ * or the outside atmosphere — whenever that is hotter than the same temperature, and only one way:
+ * FE pushed in goes nowhere. A room cools as it is drawn on, down to that temperature; the outside
+ * never runs short.
  */
 public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGeneratorBE {
 
@@ -84,6 +90,17 @@ public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGener
         DuctNetwork<?> kelvin = KelvinMod.INSTANCE.forceGetKelvin();
         DuctNodePos host = reactor.hostNodePos(serverLevel);
         return kelvin.getNodeAt(host) instanceof ReactorChamberNode ? new Chamber(reactor, kelvin, host) : null;
+    }
+
+    /**
+     * The cell behind the inner face, whose gas the exchanger draws on when it serves no reactor,
+     * or null on a reactor or off the server.
+     */
+    private @Nullable BlockPos surroundings() {
+        if (!(level instanceof ServerLevel serverLevel) || reactor(serverLevel) != null) {
+            return null;
+        }
+        return worldPosition.relative(facing().getOpposite());
     }
 
     private record Chamber(Reactor reactor, DuctNetwork<?> kelvin, DuctNodePos host) {
@@ -144,10 +161,14 @@ public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGener
         int received = targetEnergy.receiveEnergy(extracted, false);
         if (received < extracted) {
             // Put back what the neighbour would not take after all.
+            double joules = (extracted - received) * ZPSConfig.exchangerJoulesPerFe();
             Chamber chamber = chamber();
+            BlockPos surroundings = chamber == null ? surroundings() : null;
             if (chamber != null) {
-                chamber.addHeat((extracted - received) * ZPSConfig.exchangerJoulesPerFe());
+                chamber.addHeat(joules);
                 chamber.reactor().recordFeOut(received - extracted);
+            } else if (surroundings != null) {
+                RoomManager.get((ServerLevel) level).takeHeat((ServerLevel) level, surroundings, -joules);
             }
             outThisTick -= extracted - received;
         }
@@ -189,9 +210,19 @@ public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGener
 
         /** FE the chamber could give up right now, within this tick's cap. */
         private int spare(Chamber chamber) {
-            double surplus = (chamber.temperature() - ZPSConfig.exchangerTemperatureK()) * chamber.heatCapacity();
+            return spare((chamber.temperature() - ZPSConfig.exchangerTemperatureK()) * chamber.heatCapacity());
+        }
+
+        /** FE the gas at {@code pos} could give up right now, within this tick's cap. */
+        private int spare(BlockPos pos) {
+            ServerLevel serverLevel = (ServerLevel) level;
+            return spare(RoomManager.get(serverLevel).spareHeat(serverLevel, pos, ZPSConfig.exchangerTemperatureK()));
+        }
+
+        /** FE that {@code surplusJoules} of heat is worth, within this tick's cap. */
+        private int spare(double surplusJoules) {
             int cap = ZPSConfig.standardTransferFePerTick() - outThisTick;
-            return (int) Math.max(0, Math.min(cap, surplus / ZPSConfig.exchangerJoulesPerFe()));
+            return (int) Math.max(0, Math.min(cap, surplusJoules / ZPSConfig.exchangerJoulesPerFe()));
         }
 
         /** FE the chamber could take right now, within this tick's cap. */
@@ -219,9 +250,12 @@ public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGener
 
         @Override
         public int extractEnergy(int toExtract, boolean simulate) {
-            Chamber chamber = chamber();
-            if (chamber == null || toExtract <= 0) {
+            if (toExtract <= 0) {
                 return 0;
+            }
+            Chamber chamber = chamber();
+            if (chamber == null) {
+                return extractFromSurroundings(toExtract, simulate);
             }
             int fe = Math.min(toExtract, spare(chamber));
             if (fe > 0 && !simulate) {
@@ -232,11 +266,29 @@ public class HeatExchangerBlockEntity extends BlockEntity implements EnergyGener
             return fe;
         }
 
+        private int extractFromSurroundings(int toExtract, boolean simulate) {
+            BlockPos surroundings = surroundings();
+            if (surroundings == null) {
+                return 0;
+            }
+            int fe = Math.min(toExtract, spare(surroundings));
+            if (fe > 0 && !simulate) {
+                ServerLevel serverLevel = (ServerLevel) level;
+                RoomManager.get(serverLevel).takeHeat(serverLevel, surroundings, fe * ZPSConfig.exchangerJoulesPerFe());
+                outThisTick += fe;
+            }
+            return fe;
+        }
+
         /** What could be pulled right now; there is nothing actually held. */
         @Override
         public int getEnergyStored() {
             Chamber chamber = chamber();
-            return chamber == null ? 0 : spare(chamber);
+            if (chamber != null) {
+                return spare(chamber);
+            }
+            BlockPos surroundings = surroundings();
+            return surroundings == null ? 0 : spare(surroundings);
         }
 
         @Override

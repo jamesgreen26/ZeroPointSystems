@@ -576,6 +576,45 @@ public final class RoomManager extends SavedData {
         return kg.isEmpty() ? Draw.NOTHING : new Draw(kg, temperatureK);
     }
 
+    /**
+     * How much heat the gas at {@code at} could give up before it is down to {@code floorK}, in
+     * joules. In a room that is the whole room's gas cooling from what it is there, so the room
+     * runs out; outdoors the atmosphere never does, and anything above {@code floorK} is
+     * {@link Double#POSITIVE_INFINITY}. Nothing where there is no gas to hold heat, vacuum
+     * included.
+     */
+    public double spareHeat(ServerLevel level, BlockPos at, double floorK) {
+        Room room = roomAt(at);
+        if (room != null) {
+            double temperatureK = airAt(level, at).temperatureK();
+            return temperatureK > floorK ? (temperatureK - floorK) * room.heatCapacity() : 0;
+        }
+        double temperatureK = AtmosphereExposure.temperatureK(level, at);
+        if (!(temperatureK > floorK)) {
+            return 0;
+        }
+        for (ResourceLocation gas : outsideAir(level, at, 1).keySet()) {
+            GasType type = GasTypeRegistry.INSTANCE.getGasType(gas);
+            if (type != null && type.getSpecificHeatCapacity() > 0) {
+                return Double.POSITIVE_INFINITY;
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * Take {@code joules} of heat out of the gas at {@code at}: a room cools all through, the
+     * outside atmosphere does not notice. Check {@link #spareHeat} first. A negative amount puts
+     * heat back.
+     */
+    public void takeHeat(ServerLevel level, BlockPos at, double joules) {
+        Room room = roomAt(at);
+        if (room != null && joules != 0) {
+            room.takeHeat(joules);
+            setDirty();
+        }
+    }
+
     // --- changes -----------------------------------------------------------------------------
 
     /**

@@ -9,6 +9,7 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import org.jetbrains.annotations.Nullable;
 import org.valkyrienskies.kelvin.api.GasType;
 import org.valkyrienskies.kelvin.impl.registry.GasTypeRegistry;
 
@@ -21,7 +22,8 @@ import java.util.Set;
 /**
  * One sealed room and the gas in it. The gas is a plain store: masses by gas id and one
  * temperature. Nothing pushes back on what feeds it, but it slowly leaks back to the outside
- * atmosphere through its walls — see {@link #leak}.
+ * atmosphere through its walls — see {@link #leak}. The outside is the whole room's, not one
+ * place's: see {@link Outside}.
  */
 public final class Room {
     private final int id;
@@ -31,8 +33,11 @@ public final class Room {
     private Long2LongMap pockets;
     private final Map<ResourceLocation, Double> massKg = new HashMap<>();
     private double temperatureK;
-    /** Where the outside atmosphere the room leaks toward is read: a cell of its interior. */
+    /** A cell of its interior, to tell whether the room is loaded. */
     private BlockPos anchor;
+    /** The outside atmosphere as last read, and the game time it was; null once the room's shape has changed. */
+    private @Nullable Outside outside;
+    private long outsideReadAt;
     /**
      * Game time the room went dormant, or {@link #ACTIVE}. A dormant room has caught up with the
      * outside: it holds no gas of its own and replaces nothing, and is only kept so the next gas in
@@ -85,6 +90,16 @@ public final class Room {
         return anchor;
     }
 
+    /** The outside atmosphere as last read for the room as it is now, if that was after {@code since}; else null. */
+    @Nullable Outside outsideReadAfter(long since) {
+        return outside != null && outsideReadAt > since ? outside : null;
+    }
+
+    void outsideRead(Outside outside, long gameTime) {
+        this.outside = outside;
+        this.outsideReadAt = gameTime;
+    }
+
     /** Whether the room holds gas of its own and replaces the outside atmosphere. */
     public boolean isActive() {
         return dormantSince == ACTIVE;
@@ -127,6 +142,7 @@ public final class Room {
         this.interior = scan.interior();
         this.boundary = scan.boundary();
         this.pockets = scan.pockets();
+        this.outside = null;
         if (!interior.contains(anchor.asLong())) {
             anchor = BlockPos.of(interior.iterator().nextLong());
         }
@@ -135,6 +151,7 @@ public final class Room {
     /** Take in what {@link RoomScanner#grow} found. */
     void grow(LongSet added, LongSet newBoundary, Long2LongMap pocketsAfter) {
         interior.addAll(added);
+        outside = null;
         boundary.addAll(newBoundary);
         boundary.removeAll(added);
         for (Long2LongMap.Entry entry : pocketsAfter.long2LongEntrySet()) {

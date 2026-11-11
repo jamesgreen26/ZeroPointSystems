@@ -1,14 +1,13 @@
 package g_mungus.zps.gas;
 
+import g_mungus.zps.world.LocalAtmosphere;
 import g_mungus.zps.room.Room;
 import g_mungus.zps.room.RoomManager;
 import g_mungus.zps.room.RoomScanner;
-import g_mungus.zps.world.AtmosphericComposition;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.biome.Biome;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -90,15 +89,12 @@ public final class BlockGasContact {
         if (!holdsAir(level, cell)) {
             return null;
         }
-        BlockPos air = AtmosphereExposure.inWorld(level, cell);
-        Biome biome = level.getBiome(air).value();
-        AtmosphericComposition composition = AtmosphericComposition.of(biome);
-        return new Contact(composition.at(air.getY()), AtmosphereExposure.temperatureK(level, biome, composition, air));
+        LocalAtmosphere air = AtmosphereExposure.outside(level, cell);
+        return new Contact(air.shares(), air.temperatureK());
     }
 
     private static Map<ResourceLocation, Double> outsideGases(ServerLevel level, BlockPos cell) {
-        BlockPos air = AtmosphereExposure.inWorld(level, cell);
-        return AtmosphericComposition.of(level.getBiome(air).value()).at(air.getY());
+        return AtmosphereExposure.outside(level, cell).shares();
     }
 
     private static boolean holdsAir(ServerLevel level, BlockPos cell) {

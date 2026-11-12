@@ -38,6 +38,7 @@ import g_mungus.zps.gas.ModGases;
 import g_mungus.zps.gas.ModParticles;
 import g_mungus.zps.gametest.CreativeGasGeneratorGameTests;
 import g_mungus.zps.gametest.FusionReactorGameTests;
+import g_mungus.zps.gametest.GridTransferGameTests;
 import g_mungus.zps.gametest.PowerCellMultiblockGameTests;
 import g_mungus.zps.gametest.DripstoneGameTests;
 import g_mungus.zps.gametest.PowderSnowCauldronGameTests;
@@ -171,6 +172,7 @@ public final class ZPSMod {
         event.register(CryoCondenserGameTests.class);
         event.register(AirCompressorGameTests.class);
         event.register(FusionReactorGameTests.class);
+        event.register(GridTransferGameTests.class);
         event.register(ReactorWallApertureGameTests.class);
         event.register(TractorBeamGameTests.class);
         event.register(DuctTravelGameTests.class);

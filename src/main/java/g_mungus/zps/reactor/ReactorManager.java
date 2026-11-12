@@ -14,6 +14,8 @@ import it.unimi.dsi.fastutil.longs.Long2IntMap;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongIterable;
+import it.unimi.dsi.fastutil.longs.LongIterator;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -42,6 +44,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.LongPredicate;
 
 /**
  * Every reactor in a level. There is no controller block: a reactor exists because a cavity is
@@ -217,12 +220,7 @@ public final class ReactorManager extends SavedData {
     private void register(ServerLevel level, CavityScan scan) {
         Reactor reactor = new Reactor(nextId++, scan);
         reactors.put(reactor.id(), reactor);
-        for (long wall : reactor.walls()) {
-            byWall.computeIfAbsent(wall, ignored -> new IntArrayList(2)).add(reactor.id());
-        }
-        for (long cell : reactor.interior()) {
-            byInterior.put(cell, reactor.id());
-        }
+        index(reactor);
         ensureNode(level, reactor);
         setDirty();
         syncWatchers(level, reactor);
@@ -232,8 +230,15 @@ public final class ReactorManager extends SavedData {
 
     /** Forget a reactor and take its chamber out of the simulation. The blocks are untouched. */
     public void dissolve(ServerLevel level, Reactor reactor) {
+        if (forget(level, reactor)) {
+            ZPSMod.LOGGER.debug("Reactor {} at {} dissolved", reactor.id(), reactor.host());
+        }
+    }
+
+    /** Take a reactor out of this level, as {@link #dissolve} does, saying nothing. False if it was not here. */
+    private boolean forget(ServerLevel level, Reactor reactor) {
         if (reactors.remove(reactor.id()) == null) {
-            return;
+            return false;
         }
         ReactorSync.sendRemoved(level, reactor);
         for (long wall : reactor.walls()) {
@@ -250,7 +255,13 @@ public final class ReactorManager extends SavedData {
                 byInterior.remove(cell);
             }
         }
+        removeChamber(level, reactor);
+        setDirty();
+        return true;
+    }
 
+    /** Take the chamber node at {@code reactor}'s host out of Kelvin, with the ports' edges into it. */
+    private static void removeChamber(ServerLevel level, Reactor reactor) {
         DuctNetwork<?> kelvin = kelvin();
         DuctNodePos host = reactor.hostNodePos(level);
         // Kelvin's removeNode leaves edges behind; the input ports' internal edges go first. Every
@@ -259,8 +270,92 @@ public final class ReactorManager extends SavedData {
             kelvin.removeEdge(GasEdgeNegotiator.nodePos(level, port), host);
         }
         kelvin.removeNode(host);
+    }
+
+    private void index(Reactor reactor) {
+        for (long wall : reactor.walls()) {
+            byWall.computeIfAbsent(wall, ignored -> new IntArrayList(2)).add(reactor.id());
+        }
+        for (long cell : reactor.interior()) {
+            byInterior.put(cell, reactor.id());
+        }
+    }
+
+    // --- moving between levels ---------------------------------------------------------------
+
+    /**
+     * Take out every reactor lying wholly where {@code region} says, contents and all, for
+     * {@link #attach} to put into another level once the blocks are there. Nothing fails: a lit
+     * reactor leaves as quietly as a cold one. A reactor only partly in the region stays.
+     *
+     * @param region whether a block position, packed as by {@link BlockPos#asLong()}, is in the region
+     * @return each reactor taken, saved with its chamber, in no particular order
+     */
+    public List<CompoundTag> detach(ServerLevel level, LongPredicate region) {
+        DuctNetwork<?> kelvin = kelvin();
+        List<CompoundTag> taken = new ArrayList<>();
+        for (Reactor reactor : new ArrayList<>(reactors.values())) {
+            if (!region.test(reactor.host().asLong())
+                    || !allIn(reactor.interior(), region) || !allIn(reactor.walls(), region)) {
+                continue;
+            }
+            DuctNodePos host = reactor.hostNodePos(level);
+            if (kelvin.getNodeAt(host) instanceof ReactorChamberNode) {
+                reactor.setSavedChamber(ReactorChamberNodeIO.save(kelvin, host));
+            }
+            // Otherwise the chamber is not simulated, and whatever was last saved for it still holds.
+            taken.add(reactor.toNbt());
+            forget(level, reactor);
+            ZPSMod.LOGGER.debug("Reactor {} at {} detached", reactor.id(), reactor.host());
+        }
+        return taken;
+    }
+
+    private static boolean allIn(LongIterable cells, LongPredicate region) {
+        for (LongIterator it = cells.iterator(); it.hasNext(); ) {
+            if (!region.test(it.nextLong())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Put reactors {@link #detach}ed elsewhere into this level, each position moved by
+     * {@code offset}, under ids of this level's own. Their blocks must be here already. A reactor
+     * this level knows over the same cavity is stale — left by an earlier move, or found by a
+     * rescan before this one arrived — and makes way. The chamber comes back as it left.
+     */
+    public void attach(ServerLevel level, List<CompoundTag> taken, BlockPos offset) {
+        for (CompoundTag tag : taken) {
+            Reactor reactor = Reactor.fromNbt(tag, nextId++, offset);
+
+            Set<Reactor> stale = new HashSet<>();
+            for (long cell : reactor.interior()) {
+                Reactor held = reactors.get(byInterior.get(cell));
+                if (held != null) {
+                    stale.add(held);
+                }
+            }
+            for (Reactor held : stale) {
+                dissolve(level, held);
+            }
+            // A chamber node at the host with no reactor of its own would keep the saved contents
+            // from being put back: ensureNode only restores into a node it has just made.
+            if (kelvin().getNodeAt(reactor.hostNodePos(level)) != null) {
+                removeChamber(level, reactor);
+            }
+
+            reactors.put(reactor.id(), reactor);
+            index(reactor);
+            // An unloaded host gets its chamber from the tick once it loads, as after a reload.
+            if (level.isLoaded(reactor.host())) {
+                ensureNode(level, reactor);
+                syncWatchers(level, reactor);
+            }
+            ZPSMod.LOGGER.debug("Reactor {} attached at {}", reactor.id(), reactor.host());
+        }
         setDirty();
-        ZPSMod.LOGGER.debug("Reactor {} at {} dissolved", reactor.id(), reactor.host());
     }
 
     // --- chamber node ------------------------------------------------------------------------
@@ -482,12 +577,7 @@ public final class ReactorManager extends SavedData {
         for (Tag entry : tag.getList("Reactors", Tag.TAG_COMPOUND)) {
             Reactor reactor = Reactor.fromNbt((CompoundTag) entry);
             manager.reactors.put(reactor.id(), reactor);
-            for (long wall : reactor.walls()) {
-                manager.byWall.computeIfAbsent(wall, ignored -> new IntArrayList(2)).add(reactor.id());
-            }
-            for (long cell : reactor.interior()) {
-                manager.byInterior.put(cell, reactor.id());
-            }
+            manager.index(reactor);
         }
         return manager;
     }

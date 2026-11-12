@@ -58,6 +58,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.LongPredicate;
 
 /**
  * Every sealed room in a level.
@@ -1190,6 +1191,60 @@ public final class RoomManager extends SavedData {
         dirty.remove(room.id());
         needsFullCheck.remove(room.id());
         setDirty();
+    }
+
+    // --- moving between levels ---------------------------------------------------------------
+
+    /**
+     * Take out every room lying wholly where {@code region} says, gas and all, for {@link #attach}
+     * to put into another level once the blocks are there. Dormant ones are only forgotten, as on
+     * saving, and so is where sealing last failed in the region. A room only partly in the region
+     * stays.
+     *
+     * @param region whether a block position, packed as by {@link BlockPos#asLong()}, is in the region
+     * @return each active room taken, saved, in no particular order
+     */
+    public List<CompoundTag> detach(LongPredicate region) {
+        failedUntil.keySet().removeIf(region);
+        List<CompoundTag> taken = new ArrayList<>();
+        for (Room room : new ArrayList<>(rooms.values())) {
+            if (!region.test(room.anchor().asLong())
+                    || !allIn(room.interior(), region) || !allIn(room.boundary(), region)) {
+                continue;
+            }
+            if (room.isActive()) {
+                taken.add(room.toNbt());
+            }
+            dissolve(room);
+        }
+        return taken;
+    }
+
+    /**
+     * Put rooms {@link #detach}ed elsewhere into this level, each position moved by {@code offset},
+     * under ids of this level's own. Their blocks must be here already. A room this level knows
+     * over the same air is stale — left by an earlier move, or sealed before this one arrived —
+     * and makes way. The outside they leak toward is read afresh, here.
+     */
+    public void attach(List<CompoundTag> taken, BlockPos offset) {
+        for (CompoundTag tag : taken) {
+            Room room = Room.fromNbt(tag, nextId++, offset);
+            for (Room stale : overlapping(room.interior(), room.pockets())) {
+                dissolve(stale);
+            }
+            rooms.put(room.id(), room);
+            index(room);
+        }
+        setDirty();
+    }
+
+    private static boolean allIn(LongSet cells, LongPredicate region) {
+        for (LongIterator it = cells.iterator(); it.hasNext(); ) {
+            if (!region.test(it.nextLong())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private void index(Room room) {

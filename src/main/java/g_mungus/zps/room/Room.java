@@ -393,16 +393,25 @@ public final class Room {
     }
 
     static Room fromNbt(CompoundTag tag) {
-        LongSet interior = new LongOpenHashSet(tag.getLongArray("Interior"));
-        long anchor = tag.contains("Anchor") ? tag.getLong("Anchor") : interior.iterator().nextLong();
+        return fromNbt(tag, tag.getInt("Id"), BlockPos.ZERO);
+    }
+
+    /**
+     * A saved room read back under another id with every position moved by {@code offset}: one
+     * that has gone to another level along with its blocks, where ids are that level's own.
+     */
+    static Room fromNbt(CompoundTag tag, int id, BlockPos offset) {
+        LongSet interior = new LongOpenHashSet(shifted(tag.getLongArray("Interior"), offset));
+        long anchor = tag.contains("Anchor") ? shifted(tag.getLong("Anchor"), offset) : interior.iterator().nextLong();
         Long2LongMap pockets = new Long2LongOpenHashMap();
-        long[] pocketCells = tag.getLongArray("PocketCells");
+        // A pocket's mask is in its own cell's frame, so only the cell moves.
+        long[] pocketCells = shifted(tag.getLongArray("PocketCells"), offset);
         long[] pocketMasks = tag.getLongArray("PocketMasks");
         for (int i = 0; i < Math.min(pocketCells.length, pocketMasks.length); i++) {
             pockets.put(pocketCells[i], pocketMasks[i]);
         }
-        Room room = new Room(tag.getInt("Id"),
-                new RoomScan(interior, new LongOpenHashSet(tag.getLongArray("Boundary")), pockets),
+        Room room = new Room(id,
+                new RoomScan(interior, new LongOpenHashSet(shifted(tag.getLongArray("Boundary"), offset)), pockets),
                 BlockPos.of(anchor), tag.getDouble("TemperatureK"));
         CompoundTag gases = tag.getCompound("Gases");
         for (String key : gases.getAllKeys()) {
@@ -412,5 +421,16 @@ public final class Room {
             }
         }
         return room;
+    }
+
+    private static long[] shifted(long[] cells, BlockPos offset) {
+        for (int i = 0; i < cells.length; i++) {
+            cells[i] = shifted(cells[i], offset);
+        }
+        return cells;
+    }
+
+    private static long shifted(long cell, BlockPos offset) {
+        return BlockPos.offset(cell, offset.getX(), offset.getY(), offset.getZ());
     }
 }

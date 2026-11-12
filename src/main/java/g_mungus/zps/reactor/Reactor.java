@@ -327,14 +327,29 @@ public final class Reactor {
     }
 
     static Reactor fromNbt(CompoundTag tag) {
+        return fromNbt(tag, tag.getInt("Id"), BlockPos.ZERO);
+    }
+
+    /**
+     * A saved reactor read back under another id with every position moved by {@code offset}: one
+     * that has gone to another level along with its blocks, where ids are that level's own.
+     */
+    static Reactor fromNbt(CompoundTag tag, int id, BlockPos offset) {
         Reactor reactor = new Reactor(
-                tag.getInt("Id"),
-                new LongOpenHashSet(tag.getLongArray("Interior")),
-                new LongArrayList(tag.getLongArray("Walls")),
-                BlockPos.of(tag.getLong("Host")),
+                id,
+                new LongOpenHashSet(shifted(tag.getLongArray("Interior"), offset)),
+                new LongArrayList(shifted(tag.getLongArray("Walls"), offset)),
+                BlockPos.of(tag.getLong("Host")).offset(offset),
                 tag.contains("Chamber") ? tag.getCompound("Chamber") : null,
                 tag.getBoolean("IgnitedOnce"));
         reactor.emptyTicks = tag.getInt("EmptyTicks");
         return reactor;
+    }
+
+    private static long[] shifted(long[] cells, BlockPos offset) {
+        for (int i = 0; i < cells.length; i++) {
+            cells[i] = BlockPos.offset(cells[i], offset.getX(), offset.getY(), offset.getZ());
+        }
+        return cells;
     }
 }

@@ -3,6 +3,7 @@ package g_mungus.zps.mixin;
 import com.mojang.brigadier.arguments.ArgumentType;
 import g_mungus.zps.commands.content.arguments.AssemblerRecipeArgument;
 import g_mungus.zps.commands.content.arguments.BlockPosListArgument;
+import g_mungus.zps.compat.genesis.CelestialArgument;
 import net.minecraft.commands.synchronization.ArgumentTypeInfo;
 import net.minecraft.commands.synchronization.ArgumentTypeInfos;
 import net.minecraft.commands.synchronization.SingletonArgumentInfo;
@@ -36,6 +37,13 @@ public class ArgumentTypeInfosMixin {
                 "zps:recipe",
                 AssemblerRecipeArgument.class,
                 AssemblerRecipeArgument.INFO
+        );
+
+        register(
+                arg,
+                "zps:celestial",
+                CelestialArgument.class,
+                CelestialArgument.INFO
         );
     }
 }

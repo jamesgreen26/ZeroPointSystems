@@ -30,6 +30,9 @@ public final class ModManuals {
         if (Compat.isCreateLoaded()) {
             sections.add(new ManualSection("create", "create.md", Component.translatable("zps.manual.create"), integrations));
         }
+        if (Compat.isGenesisLoaded()) {
+            sections.add(new ManualSection("genesis", "genesis.md", Component.translatable("zps.manual.genesis"), integrations));
+        }
         if (Compat.isSableLoaded()) {
             sections.add(new ManualSection("sable", "sable.md", Component.translatable("zps.manual.sable"), integrations));
         }

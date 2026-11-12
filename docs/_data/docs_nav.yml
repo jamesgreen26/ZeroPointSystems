@@ -30,6 +30,10 @@
   title: Create
   group: Integrations
   url: /create.html
+- key: genesis
+  title: Genesis
+  group: Integrations
+  url: /genesis.html
 - key: sable
   title: Sable
   group: Integrations

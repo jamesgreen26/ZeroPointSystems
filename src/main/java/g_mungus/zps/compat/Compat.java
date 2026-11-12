@@ -11,6 +11,9 @@ import g_mungus.zps.commands.api.RegisterScriptTypesEvent;
 import g_mungus.zps.commands.api.TargetApplicability;
 import g_mungus.zps.compat.computercraft.ComputerCraftCompat;
 import g_mungus.zps.compat.create.CreateCompat;
+import g_mungus.zps.compat.genesis.GenesisCompat;
+import net.minecraft.core.Registry;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.ComponentContents;
@@ -29,11 +32,14 @@ import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
 import g_mungus.zps.gas.ModGases;
 import org.valkyrienskies.kelvin.api.GasType;
+import shipwrights.genesis.space.Celestial;
 
 @EventBusSubscriber(modid = ZPSMod.MOD_ID)
 public class Compat {
 
     public static final String ZPL_MOD_ID = "zpl";
+
+    public static final ResourceKey<Registry<Celestial>> CELESTIALS_KEY = ResourceKey.createRegistryKey(ResourceLocation.fromNamespaceAndPath("genesis", "celestial"));
 
     public static boolean isCreateDeployer(Player player) {
         ComponentContents contents = player.getDisplayName().getContents();
@@ -59,6 +65,8 @@ public class Compat {
     public static boolean isSableLoaded() { return ModList.get().isLoaded("sable"); }
 
     public static boolean isComputerCraftLoaded() { return ModList.get().isLoaded("computercraft"); }
+
+    public static boolean isGenesisLoaded() { return ModList.get().isLoaded("genesis"); }
 
     public static boolean isClockworkLoaded() { return ModList.get().isLoaded("vs_clockwork"); }
 
@@ -167,6 +175,9 @@ public class Compat {
         } else if (isSableLoaded()) {
             SableCompat.registerScriptTypes(event);
         }
+        if (isGenesisLoaded()) {
+            GenesisCompat.registerScriptTypes(event);
+        }
     }
 
     /** After ZPS's own, so compat that names getters at runtime can see which names are taken. */
@@ -179,6 +190,9 @@ public class Compat {
         }
         if (isCreateLoaded()) {
             CreateCompat.registerScriptCommands(event);
+        }
+        if (isGenesisLoaded()) {
+            GenesisCompat.registerScriptCommands(event);
         }
         if (isComputerCraftLoaded()) {
             // Computer APIs say nothing about where they apply; what is known about them is given here.

@@ -1,11 +1,9 @@
 package g_mungus.zps.room;
 
-import g_mungus.zps.testutil.MinecraftBootstrap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -17,11 +15,6 @@ import static org.junit.jupiter.api.Assertions.*;
  * air for every cell, and a room across two kinds of air leaks toward the mix of them.
  */
 public class OutsideTest {
-
-    @BeforeAll
-    static void bootstrap() {
-        MinecraftBootstrap.ensure();
-    }
 
     private static final ResourceLocation AIR = ResourceLocation.fromNamespaceAndPath("kelvin", "air");
     private static final ResourceLocation STEAM = ResourceLocation.fromNamespaceAndPath("vs_clockwork", "steam");

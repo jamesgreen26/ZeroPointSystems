@@ -54,8 +54,8 @@ import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.WallTorchBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.energy.IEnergyStorage;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.neoforged.neoforge.gametest.GameTestHolder;
@@ -393,8 +393,7 @@ public class RoomGameTests {
      * Closing the way to a half that has come open keeps the sealed half a room with its own half
      * of the gas; only the open half's is lost.
      */
-    @SkyAccess
-    @GameTest(template = TEMPLATE, timeoutTicks = 40)
+    @GameTest(template = TEMPLATE, timeoutTicks = 40, skyAccess = true)
     public static void closingOffAnOpenHalf_keepsTheSealedHalf(GameTestHelper helper) {
         buildPartedShell(helper);
         addFlux(helper, WEST_HALF, 5.0);
@@ -636,8 +635,7 @@ public class RoomGameTests {
      * Gas let into a wall cell the tick it is mined out, before the room has been checked, goes
      * into that room: no second room is laid over the same air with another fill of the outside's.
      */
-    @SkyAccess
-    @GameTest(template = TEMPLATE, timeoutTicks = 40)
+    @GameTest(template = TEMPLATE, timeoutTicks = 40, skyAccess = true)
     public static void gasIntoAFreshHole_goesIntoTheSameRoom(GameTestHelper helper) {
         buildShell(helper);
         helper.setBlock(WEST_WALL.west(), Blocks.STONE);
@@ -1090,7 +1088,7 @@ public class RoomGameTests {
     public static void roomsSavedOverTheSameSpace_loadAsTheNewest(GameTestHelper helper) {
         buildShell(helper);
         addFlux(helper, CENTRE, 5.0);
-        CompoundTag saved = manager(helper).save(new CompoundTag());
+        CompoundTag saved = manager(helper).save(new CompoundTag(), helper.getLevel().registryAccess());
         CompoundTag original = null;
         for (Tag entry : saved.getList("Rooms", Tag.TAG_COMPOUND)) {
             if (((CompoundTag) entry).getInt("Id") == roomAt(helper, CENTRE).id()) {
@@ -1110,7 +1108,7 @@ public class RoomGameTests {
         saved.put("Rooms", rooms);
         saved.putInt("NextId", newest + 1);
 
-        RoomManager loaded = RoomManager.load(saved);
+        RoomManager loaded = RoomManager.load(saved, helper.getLevel().registryAccess());
         Room room = loaded.roomAt(helper.absolutePos(CENTRE));
         helper.assertTrue(loaded.roomCount() == 1, "Only one of the two rooms should load, have " + loaded.roomCount());
         helper.assertTrue(room != null && room.id() == newest, "The newest room should be the one kept");
@@ -1389,8 +1387,12 @@ public class RoomGameTests {
         helper.setBlock(WEST_WALL, ModBlocks.HEAT_EXCHANGER.get().defaultBlockState()
                 .setValue(HeatExchangerBlock.FACING, Direction.WEST));
         manager(helper).addGas(helper.getLevel(), helper.absolutePos(CENTRE), Map.of(ModGases.FLUX, 5.0), kelvin);
-        BlockEntity exchanger = helper.getBlockEntity(WEST_WALL);
-        return exchanger.getCapability(ForgeCapabilities.ENERGY, Direction.WEST).orElseThrow(IllegalStateException::new);
+        IEnergyStorage energy = helper.getLevel().getCapability(Capabilities.EnergyStorage.BLOCK,
+                helper.absolutePos(WEST_WALL), Direction.WEST);
+        if (energy == null) {
+            throw new IllegalStateException("The heat exchanger should expose energy");
+        }
+        return energy;
     }
 
     /** Off a reactor, a heat exchanger turns the heat of a room hotter than its threshold into FE, and the room cools. */

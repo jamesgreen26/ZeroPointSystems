@@ -1,9 +1,7 @@
 package g_mungus.zps.world;
 
-import g_mungus.zps.testutil.MinecraftBootstrap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -16,11 +14,6 @@ import static org.junit.jupiter.api.Assertions.*;
  * from one to the next over the four blocks between two cells' middles.
  */
 public class LocalAtmosphereTest {
-
-    @BeforeAll
-    static void bootstrap() {
-        MinecraftBootstrap.ensure();
-    }
 
     private static final ResourceLocation AIR = ResourceLocation.fromNamespaceAndPath("kelvin", "air");
     private static final ResourceLocation STEAM = ResourceLocation.fromNamespaceAndPath("vs_clockwork", "steam");

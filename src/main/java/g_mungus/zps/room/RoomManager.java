@@ -1024,7 +1024,7 @@ public final class RoomManager extends SavedData {
 
     private void send(ServerLevel level, List<RoomBreachS2CPacket> puffs) {
         for (RoomBreachS2CPacket puff : puffs) {
-            ZPSGamePackets.sendToTrackingChunk(level, new ChunkPos(puff.pos()), puff);
+            PacketDistributor.sendToPlayersTrackingChunk(level, new ChunkPos(puff.pos()), puff);
         }
     }
 

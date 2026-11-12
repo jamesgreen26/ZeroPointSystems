@@ -13,15 +13,19 @@ import g_mungus.zps.commands.api.ZPSScriptTypes;
 import g_mungus.zps.compat.Compat;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import org.valkyrienskies.mod.common.VSGameUtilsKt;
-import org.valkyrienskies.mod.common.util.VectorConversionsMCKt;
+import org.joml.Vector3d;
+import org.joml.Vector3dc;
 import shipwrights.genesis.GenesisMod;
 import shipwrights.genesis.space.Celestial;
-import shipwrights.genesis.space.SpaceLevel;
+import shipwrights.genesis.space.Time;
 
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 public class GenesisCompat {
@@ -40,62 +44,71 @@ public class GenesisCompat {
     public static void registerScriptCommands(RegisterScriptCommandsEvent event) {
 
         event.register(ZPSNodes.getter("celestial", CELESTIALS,
-                context -> GenesisMod.getCelestialRegistry(context.level())));
+                context -> celestials(context.level())));
 
         event.register(ZPSNodes.mapper("current", CELESTIALS, CELESTIAL,
-                (reg, ctx) -> GenesisMod.getCelestialForLevel(ctx.level())));
+                (reg, ctx) -> GenesisMod.celestial(ctx.level()).orElse(null)));
 
         event.register(ZPSNodes.mapper("nearest", CELESTIALS, CELESTIAL, (reg, ctx) -> {
             ServerLevel level = ctx.level();
-            Celestial current = GenesisMod.getCelestialForLevel(level);
-            if (current != null) return current;
-            if (GenesisMod.isSpaceDimension(level) || GenesisMod.isSubSpaceDimension(level)) {
-                var result = SpaceLevel.nearestCelestialWhere(
-                        GenesisMod.getCelestialRegistry(level),
-                        VectorConversionsMCKt.toJOML(VSGameUtilsKt.toWorldCoordinates(level, ctx.pos().getCenter())),
-                        GenesisMod.getTicks(level),
-                        0f,
-                        (t) -> true
-                );
+            Optional<Celestial> current = GenesisMod.celestial(level);
+            if (current.isPresent()) return current.get();
+            // Celestial positions are coordinates in space, so there's nothing to measure from anywhere else
+            if (!GenesisMod.isSpaceDimension(level)) return null;
 
-                if (result != null) {
-                    return result.getFirst();
+            Vec3 world = Compat.toWorldPos(level, ctx.pos().getCenter());
+            Vector3dc pos = new Vector3d(world.x, world.y, world.z);
+            Time time = Time.get(level);
+            Celestial nearest = null;
+            double nearestDistance = Double.POSITIVE_INFINITY;
+            for (Celestial celestial : reg) {
+                double distance = celestial.transformProvider().getPosition(reg, time).distanceSquared(pos);
+                if (distance < nearestDistance) {
+                    nearestDistance = distance;
+                    nearest = celestial;
                 }
             }
-            return null;
+            return nearest;
         }));
 
         event.register(ZPSNodes.rawArgumentMapper("of", CELESTIALS, CELESTIAL, "celestial",
                 CelestialArgument.celestial(), ResourceLocation.class,
                 (reg, id, context) -> reg.get(id)));
 
+        // Multiplier on vanilla gravity on the celestial's surface, the overworld's being 1
         event.register(ZPSNodes.mapper("gravity", CELESTIAL, BuiltInTypes.DOUBLE,
-                (cel, ctx) -> cel != null ? cel.gravity() : 0.0));
+                (cel, ctx) -> cel != null ? cel.mass() : 0.0));
 
         event.register(ZPSNodes.mapper("size", CELESTIAL, BuiltInTypes.DOUBLE,
                 (cel, ctx) -> cel != null ? cel.size() : 0.0));
 
-        event.register(ZPSNodes.mapper("is_visitable", CELESTIAL, BuiltInTypes.BOOLEAN,
-                (cel, ctx) -> cel != null && cel.type().isVisitable()));
+        // Visitable when it has a dimension of its own to arrive in, as Genesis's travel decides
+        event.register(ZPSNodes.mapper("is_visitable", CELESTIAL, BuiltInTypes.BOOLEAN, (cel, ctx) -> {
+            if (cel == null) return false;
+            ResourceLocation key = celestials(ctx.level()).getKey(cel);
+            return key != null && !key.equals(GenesisMod.SPACE)
+                    && ctx.level().getServer().getLevel(ResourceKey.create(Registries.DIMENSION, key)) != null;
+        }));
 
         event.register(ZPSNodes.mapper("pos", CELESTIAL, ZPSScriptTypes.VEC_POS, (cel, ctx) -> {
             if (cel == null) return Vec3.ZERO;
-            Registry<Celestial> reg = GenesisMod.getCelestialRegistry(ctx.level());
-            var pos = cel.getPosition(GenesisMod.getTicks(ctx.level()), reg);
+            Vector3dc pos = cel.transformProvider().getPosition(celestials(ctx.level()), Time.get(ctx.level()));
             return new Vec3(pos.x(), pos.y(), pos.z());
         }));
 
         event.register(ZPSNodes.mapper("as_string", CELESTIAL, BuiltInTypes.STRING, (cel, ctx) -> {
             if (cel == null) return "";
-            ResourceLocation key = GenesisMod.getCelestialRegistry(ctx.level()).getKey(cel);
+            ResourceLocation key = celestials(ctx.level()).getKey(cel);
             return key != null ? key.toString() : "";
         }));
 
         event.register(ZPSNodes.rawArgumentMapper("==", CELESTIAL, BuiltInTypes.BOOLEAN, "celestial",
-                CelestialArgument.celestial(), ResourceLocation.class, (cel, id, context) -> {
-                    Registry<Celestial> reg = GenesisMod.getCelestialRegistry(context.level());
-                    return cel != null && cel.equals(reg.get(id));
-                }));
+                CelestialArgument.celestial(), ResourceLocation.class,
+                (cel, id, context) -> cel != null && cel.equals(celestials(context.level()).get(id))));
+    }
+
+    private static Registry<Celestial> celestials(Level level) {
+        return level.registryAccess().registryOrThrow(Celestial.REGISTRY_KEY);
     }
 
     public static <S> CompletableFuture<Suggestions> getCelestialSuggestions(CommandContext<S> context, SuggestionsBuilder builder) {

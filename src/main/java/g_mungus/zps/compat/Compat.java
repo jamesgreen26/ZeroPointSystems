@@ -40,7 +40,7 @@ public class Compat {
 
     public static final String ZPL_MOD_ID = "zpl";
 
-    public static final ResourceKey<Registry<Celestial>> CELESTIALS_KEY = ResourceKey.createRegistryKey(ResourceLocation.fromNamespaceAndPath("genesis", "celestials"));
+    public static final ResourceKey<Registry<Celestial>> CELESTIALS_KEY = ResourceKey.createRegistryKey(ResourceLocation.fromNamespaceAndPath("genesis", "celestial"));
 
     public static boolean isCreateDeployer(Player player) {
         ComponentContents contents = player.getDisplayName().getContents();

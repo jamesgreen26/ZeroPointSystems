@@ -192,7 +192,8 @@ dependencies {
     modRuntimeOnly("cc.tweaked:cc-tweaked-${minecraft_version}-forge:${cc_tweaked_version}")
 
 
-    modCompileOnly("maven.modrinth:vs-genesis:1.20.1-0.7.2")
+    // Genesis 0.8.0 isn't on Modrinth yet; resolved from libs/ through the flatDir repo (built from ../genesis).
+    modCompileOnly("shipwrights.genesis:genesis:1.20.1-0.8.0")
     // Clockwork really exists on 1.20.1; ZPS only reads its gas definitions when it is present.
     modCompileOnly("maven.modrinth:create-clockwork:1.20.1-forge-0.5.6") { transitive = false }
 

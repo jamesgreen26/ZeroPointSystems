@@ -5,6 +5,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import g_mungus.zps.ZPSMod;
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.RegisterScriptTypesEvent;
@@ -20,6 +21,8 @@ import net.minecraft.network.chat.ComponentContents;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
@@ -166,6 +169,30 @@ public class Compat {
             return SableCompat.gridsTouching(level, worldBounds);
         }
         return List.of();
+    }
+
+    /// Has the moving grid that owns the room around entity carry it along, when nothing carries it
+    /// already. Called at the end of every Entity#move, on both sides. Sable only: Valkyrien Skies
+    /// drags what is on a ship in its own way.
+    public static void carryWithRoom(Entity entity) {
+        if (isSableLoaded()) {
+            SableCompat.carryWithRoom(entity);
+        }
+    }
+
+    /// Keeps player's client up to date on which moving grid owns the room the player is in, which
+    /// the client needs to be carried by it (see #carryWithRoom).
+    public static void syncRoomGrid(ServerPlayer player) {
+        if (isSableLoaded()) {
+            SableCompat.syncRoomSubLevel(player);
+        }
+    }
+
+    /// Client side: the moving grid owning the room the local player is in, or null for none.
+    public static void setLocalPlayerRoomGrid(@Nullable UUID grid) {
+        if (isSableLoaded()) {
+            SableCompat.setLocalPlayerRoomSubLevel(grid);
+        }
     }
 
     @SubscribeEvent

@@ -42,6 +42,7 @@ public final class ZPSGamePackets {
         registrar.playToClient(GasConditionsS2CPacket.TYPE, GasConditionsS2CPacket.STREAM_CODEC, GasConditionsS2CPacket::handle);
         registrar.playToClient(AtmosphericCompositionS2CPacket.TYPE, AtmosphericCompositionS2CPacket.STREAM_CODEC, AtmosphericCompositionS2CPacket::handle);
         registrar.playToClient(RoomBreachS2CPacket.TYPE, RoomBreachS2CPacket.STREAM_CODEC, RoomBreachS2CPacket::handle);
+        registrar.playToClient(RoomGridS2CPacket.TYPE, RoomGridS2CPacket.STREAM_CODEC, RoomGridS2CPacket::handle);
     }
 
     public static void sendToServer(CustomPacketPayload payload) {

@@ -1,5 +1,6 @@
 package g_mungus.zps.compat;
 
+import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.companion.SableCompanion;
 import dev.ryanhcode.sable.companion.SubLevelAccess;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
@@ -7,6 +8,7 @@ import dev.ryanhcode.sable.companion.math.BoundingBox3d;
 import dev.ryanhcode.sable.companion.math.BoundingBox3i;
 import dev.ryanhcode.sable.companion.math.BoundingBox3ic;
 import dev.ryanhcode.sable.api.SubLevelAssemblyHelper;
+import dev.ryanhcode.sable.mixinterface.entity.entity_sublevel_collision.EntityMovementExtension;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import g_mungus.zps.ZPSMod;
@@ -14,24 +16,110 @@ import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.RegisterScriptTypesEvent;
 import g_mungus.zps.commands.api.ScriptTarget;
 import g_mungus.zps.commands.api.TargetApplicability;
+import g_mungus.zps.networking.RoomGridS2CPacket;
+import g_mungus.zps.room.RoomManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Position;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.common.util.FakePlayer;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.WeakHashMap;
 
 public final class SableCompat {
 
+    /** The sublevel each player's client was last told owns the room the player is in; empty for none. */
+    private static final Map<ServerPlayer, Optional<UUID>> SENT_ROOM_SUBLEVEL = new WeakHashMap<>();
+
+    /** Client side: the sublevel owning the room the local player is in, as the server last said. */
+    private static volatile @Nullable UUID localPlayerRoomSubLevel;
+
     private SableCompat() {
+    }
+
+    /// Only call after verifying that Sable is loaded.
+    /// Has the sublevel that owns the room around entity carry it, when no sublevel carries it already.
+    ///
+    /// Sable carries what stands on a sublevel or has its blocks close by, and lets go of anything
+    /// adrift in the middle of a cabin, which the ship then leaves behind. It lets go inside
+    /// Entity#move, so this is called at the end of every move to take hold again: the next move
+    /// carries the entity through that tick's change of pose, and the position sent to clients in
+    /// between is the one in the sublevel.
+    ///
+    /// A player's movement is its own client's, and so is its carrying: the server tells that client
+    /// which sublevel owns the player's room (#syncRoomSubLevel), and leaves its own copy of the
+    /// player to follow what the client reports.
+    static void carryWithRoom(Entity entity) {
+        if (Sable.HELPER.getTrackingSubLevel(entity) != null || entity.isPassenger()) {
+            return;
+        }
+        SubLevel owner;
+        if (entity.level() instanceof ServerLevel level) {
+            if (entity instanceof ServerPlayer) {
+                return;
+            }
+            owner = roomSubLevelAround(level, entity);
+        } else if (entity instanceof Player player && player.isLocalPlayer()) {
+            UUID id = localPlayerRoomSubLevel;
+            SubLevelContainer container = id == null ? null : SubLevelContainer.getContainer(entity.level());
+            owner = container == null ? null : container.getSubLevel(id);
+        } else {
+            // Everything else on a client goes where the server puts it.
+            return;
+        }
+        if (owner != null && !owner.isRemoved()) {
+            ((EntityMovementExtension) entity).sable$setTrackingSubLevel(owner);
+        }
+    }
+
+    /// Only call after verifying that Sable is loaded.
+    /// Tells player's client which sublevel owns the room the player is in, whenever that changes.
+    static void syncRoomSubLevel(ServerPlayer player) {
+        if (player instanceof FakePlayer || !player.connection.hasChannel(RoomGridS2CPacket.TYPE)) {
+            return;
+        }
+        SubLevel owner = roomSubLevelAround(player.serverLevel(), player);
+        Optional<UUID> id = Optional.ofNullable(owner).map(SubLevel::getUniqueId);
+        // A player the client has heard nothing about yet is told even of no room: it may remember an old one.
+        if (!id.equals(SENT_ROOM_SUBLEVEL.put(player, id))) {
+            PacketDistributor.sendToPlayer(player, new RoomGridS2CPacket(id));
+        }
+    }
+
+    static void setLocalPlayerRoomSubLevel(@Nullable UUID id) {
+        localPlayerRoomSubLevel = id;
+    }
+
+    /// The sublevel whose plot holds a room, active or dormant, around entity's eyes, or null. An
+    /// entity kept in a plot itself is Sable's to move, not a sublevel's to carry.
+    private static @Nullable SubLevel roomSubLevelAround(ServerLevel level, Entity entity) {
+        RoomManager rooms = RoomManager.get(level);
+        if (rooms.roomCount() == 0 || Sable.HELPER.getContaining(entity) != null) {
+            return null;
+        }
+        Vec3 eyes = entity.getEyePosition();
+        for (SubLevel subLevel : Sable.HELPER.getAllIntersecting(level, new BoundingBox3d(entity.getBoundingBox()))) {
+            if (rooms.knownRoomAt(BlockPos.containing(subLevel.logicalPose().transformPositionInverse(eyes))) != null) {
+                return subLevel;
+            }
+        }
+        return null;
     }
 
     static void registerScriptTypes(RegisterScriptTypesEvent event) {

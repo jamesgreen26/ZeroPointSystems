@@ -5,6 +5,7 @@ import g_mungus.zps.block.ModBlocks;
 import g_mungus.zps.block.gas.GasGaugeBlock;
 import g_mungus.zps.blockentity.gas.GasGaugeBlockEntity;
 import g_mungus.zps.compat.Compat;
+import g_mungus.zps.compat.GridSpace;
 import g_mungus.zps.gas.AtmosphereExposure;
 import g_mungus.zps.gas.ModGases;
 import g_mungus.zps.room.Room;
@@ -15,8 +16,12 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.animal.Pig;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
@@ -48,6 +53,10 @@ public class RoomSableGameTests {
     private static final BlockPos MAX = new BlockPos(7, 5, 7);
 
     private static final ResourceLocation FLUX = ModGases.FLUX.getResourceLocation();
+
+    /** How far above the arena floor the falling room starts, and for how long it is let fall. */
+    private static final double FALL_HEIGHT = 40;
+    private static final int FALL_TICKS = 12;
 
     /**
      * A pig standing in the world where a tilted sublevel's room now is breathes the room; one standing clear
@@ -105,6 +114,121 @@ public class RoomSableGameTests {
                 helper.succeed();
             });
         });
+    }
+
+    /**
+     * Things adrift in the middle of a room on a sublevel, touching none of its blocks, go with the sublevel
+     * as it falls: they stay where they were in the room. One adrift clear of the sublevel stays where it is
+     * in the world.
+     * <p>
+     * The sublevel has to move under Sable's own physics. Sable carries an entity through the change of pose
+     * its physics made that tick, and a frozen sublevel put somewhere new between ticks has made none.
+     */
+    @GameTest(template = TEMPLATE, batch = BATCH + "_carry", timeoutTicks = TIMEOUT)
+    public static void entityAdriftInASublevelsRoom_isCarriedWithIt(GameTestHelper helper) {
+        if (!Compat.isSableLoaded()) {
+            helper.succeed();
+            return;
+        }
+        ServerLevel level = helper.getLevel();
+        List<BlockPos> blocks = new ArrayList<>();
+        for (BlockPos pos : BlockPos.betweenClosed(MIN, MAX)) {
+            boolean edge = pos.getX() == MIN.getX() || pos.getX() == MAX.getX()
+                    || pos.getY() == MIN.getY() || pos.getY() == MAX.getY()
+                    || pos.getZ() == MIN.getZ() || pos.getZ() == MAX.getZ();
+            if (edge) {
+                helper.setBlock(pos, Blocks.STONE);
+                blocks.add(helper.absolutePos(pos));
+            }
+        }
+        BlockPos min = helper.absolutePos(MIN);
+        BlockPos max = helper.absolutePos(MAX);
+        // Well above the arena, with a long way to fall before it meets anything.
+        Vector3d high = new Vector3d(min.getX() + 2.5, min.getY() + FALL_HEIGHT, min.getZ() + 2.5);
+
+        helper.runAfterDelay(2, () -> {
+            SableBeamRig rig = SableBeamRig.assemble(level, min, max, blocks, new Quaterniond(), high);
+            helper.runAfterDelay(5, () -> {
+                RoomManager manager = RoomManager.get(level);
+                BlockPos plotCentre = centreOf(rig.blocksLeft());
+                manager.addGas(level, plotCentre, Map.of(ModGases.FLUX, 50.0), 300.0);
+                Room room = manager.roomAt(plotCentre);
+                if (room == null) {
+                    rig.remove();
+                    helper.fail("Gas into the shell on the sublevel should make a room in its plot; " + rig.describePose());
+                    return;
+                }
+                GridSpace grid = Compat.gridOf(level, plotCentre);
+                Vec3 roomCentre = Compat.toWorldPos(level, plotCentre, Vec3.atCenterOf(plotCentre));
+
+                // One that is no living thing, one that is: Sable moves the two by different roads.
+                List<Entity> adrift = List.of(adriftItem(level, roomCentre), adriftPig(level, roomCentre));
+                Entity clear = adriftItem(level, roomCentre.add(6, 0, 0));
+                Vec3 clearAt = clear.position();
+
+                helper.runAfterDelay(3, () -> {
+                    List<Vec3> worldBefore = adrift.stream().map(RoomSableGameTests::centreOf).toList();
+                    List<Vec3> localBefore = worldBefore.stream().map(grid::toLocal).toList();
+                    SableGridPhysicsProbe.setPhysicsPaused(level, false);
+                    helper.runAfterDelay(FALL_TICKS, () -> {
+                        SableGridPhysicsProbe.setPhysicsPaused(level, true);
+                        helper.runAfterDelay(2, () -> {
+                            try {
+                                for (int i = 0; i < adrift.size(); i++) {
+                                    Entity entity = adrift.get(i);
+                                    Vec3 world = centreOf(entity);
+                                    Vec3 local = grid.toLocal(world);
+                                    helper.assertTrue(entity.isAlive(), entity.getType() + " should still be there");
+                                    helper.assertTrue(worldBefore.get(i).y - world.y > 0.5, entity.getType()
+                                            + " should have fallen with the room from " + worldBefore.get(i) + ", is at " + world
+                                            + "; " + rig.describePose());
+                                    helper.assertTrue(local.distanceTo(localBefore.get(i)) < 0.05, entity.getType()
+                                            + " should be where it was in the room, " + localBefore.get(i) + ", is at " + local
+                                            + "; " + rig.describePose());
+                                }
+                                helper.assertTrue(clear.position().distanceTo(clearAt) < 0.05,
+                                        "The item clear of the sublevel should have stayed at " + clearAt + ", is at " + clear.position());
+                            } finally {
+                                adrift.forEach(Entity::discard);
+                                clear.discard();
+                                manager.dissolve(room);
+                                rig.remove();
+                            }
+                            helper.succeed();
+                        });
+                    });
+                });
+            });
+        });
+    }
+
+    private static Vec3 centreOf(Entity entity) {
+        return entity.getBoundingBox().getCenter();
+    }
+
+    /** An item hanging still in the air, its box centred on {@code worldCentre}. */
+    private static ItemEntity adriftItem(ServerLevel level, Vec3 worldCentre) {
+        ItemEntity item = new ItemEntity(level, worldCentre.x, worldCentre.y - EntityType.ITEM.getHeight() / 2.0, worldCentre.z,
+                new ItemStack(Items.IRON_INGOT), 0, 0, 0);
+        item.setNoGravity(true);
+        item.setUnlimitedLifetime();
+        level.addFreshEntity(item);
+        return item;
+    }
+
+    /**
+     * A pig hanging still in the air, its box centred on {@code worldCentre}, with nothing it wants to do. It
+     * keeps its AI: a mob without one is never moved at all, by a sublevel or anything else.
+     */
+    private static Pig adriftPig(ServerLevel level, Vec3 worldCentre) {
+        Pig pig = EntityType.PIG.create(level);
+        pig.moveTo(worldCentre.x, worldCentre.y - EntityType.PIG.getHeight() / 2.0, worldCentre.z, 0, 0);
+        pig.goalSelector.removeAllGoals(goal -> true);
+        pig.setNoGravity(true);
+        pig.setInvulnerable(true);
+        pig.setPersistenceRequired();
+        level.addFreshEntity(pig);
+        return pig;
     }
 
     /**

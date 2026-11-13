@@ -94,7 +94,8 @@
     "create.ScrollValueBehaviourAccessor",
     "ponder.ConfigBaseMixin",
     "ponder.ServerboundConfigPacketMixin",
-    "vs.PhysicsListenerExtension"
+    "vs.PhysicsListenerExtension",
+    "vs.RiderOffsetExtension"
   ],
   "injectors": {
     "defaultRequire": 1

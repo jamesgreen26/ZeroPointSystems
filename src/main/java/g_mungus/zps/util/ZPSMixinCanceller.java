@@ -10,7 +10,8 @@ import java.util.Map;
 public class ZPSMixinCanceller implements MixinCanceller {
     private static final Map<String, String> REQUIRED_MOD = Map.of(
             "g_mungus.zps.mixin.create.GoggleInfoExtension", "create",
-            "g_mungus.zps.mixin.vs.PhysicsListenerExtension", "valkyrienskies");
+            "g_mungus.zps.mixin.vs.PhysicsListenerExtension", "valkyrienskies",
+            "g_mungus.zps.mixin.vs.RiderOffsetExtension", "valkyrienskies");
 
     @Override
     public boolean shouldCancel(List<String> targetClassNames, String mixinClassName) {

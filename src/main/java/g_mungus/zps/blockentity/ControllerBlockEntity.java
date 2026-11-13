@@ -4,7 +4,6 @@ import g_mungus.zps.block.cableNetwork.ControllerInteraction;
 import g_mungus.zps.entity.ControllerSeatEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.Packet;
@@ -69,9 +68,8 @@ public abstract class ControllerBlockEntity<T extends ControllerSeatEntity> exte
     }
 
     @Override
-    void registerSeatEntity(T seat, Vec3i offset) {
+    void registerSeatEntity(T seat) {
         seat.blockEntity = this;
-        seat.offset = offset;
     }
 
     @Override

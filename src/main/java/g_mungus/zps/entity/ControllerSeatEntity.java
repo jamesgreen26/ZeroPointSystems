@@ -1,7 +1,6 @@
 package g_mungus.zps.entity;
 
 import g_mungus.zps.blockentity.ControllerBlockEntity;
-import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -10,9 +9,9 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -20,21 +19,18 @@ import org.jetbrains.annotations.Nullable;
 /**
  * The invisible spot a player stands on in front of an Octo- or Dodeca-Controller.
  *
+ * <p>The seat itself sits inside the controller's block and its rider is put one block out in front.
+ * That way it only ever has the one block to look at for its controller, however many others are
+ * nearby, and it is always in the controller's chunk — Valkyrien Skies does not tick entities in a
+ * ship chunk with no blocks in it.
+ *
  * <p>Both sides find the controller behind it: the server to drive and to tell when the seat is
  * orphaned, the rider's client to read which keys the controller is bound to. The keys themselves
  * are read and sent by {@code ControllerClientHooks}. Getting off is using the controller again, not
  * sneaking — see {@code PlayerMixin} and {@code ControllerInteraction}.
  */
-public abstract class ControllerSeatEntity extends Entity implements StandingVehicleEntity {
+public abstract class ControllerSeatEntity extends Entity implements StandingVehicleEntity, RiderOffsetVehicle {
     public @Nullable ControllerBlockEntity<?> blockEntity = null;
-    public Vec3i offset = Vec3i.ZERO;
-
-    private static final Vec3i[] ADJACENT_OFFSETS = {
-            new Vec3i(1, 0, 0),
-            new Vec3i(-1, 0, 0),
-            new Vec3i(0, 0, 1),
-            new Vec3i(0, 0, -1)
-    };
 
     protected ControllerSeatEntity(@NotNull EntityType<? extends ControllerSeatEntity> type, @NotNull Level level) {
         super(type, level);
@@ -59,31 +55,15 @@ public abstract class ControllerSeatEntity extends Entity implements StandingVeh
         }
     }
 
+    /** The controller is the block the seat is in. */
     private boolean findController() {
-        if (isFacingController(offset)) {
+        BlockEntity found = level().getBlockEntity(blockPosition());
+        if (found instanceof ControllerBlockEntity<?> controller && isOwnController(found)) {
+            blockEntity = controller;
             return true;
-        }
-        for (Vec3i testOffset : ADJACENT_OFFSETS) {
-            if (isFacingController(testOffset)) {
-                offset = testOffset;
-                return true;
-            }
         }
         blockEntity = null;
         return false;
-    }
-
-    private boolean isFacingController(Vec3i testOffset) {
-        BlockEntity found = level().getBlockEntity(blockPosition().offset(testOffset));
-        if (!(found instanceof ControllerBlockEntity<?> controller) || !isOwnController(found)) {
-            return false;
-        }
-        BlockState state = found.getBlockState();
-        if (!state.getValue(BlockStateProperties.HORIZONTAL_FACING).getOpposite().getNormal().equals(testOffset)) {
-            return false;
-        }
-        blockEntity = controller;
-        return true;
     }
 
     private void cleanupAndDiscard() {
@@ -141,17 +121,49 @@ public abstract class ControllerSeatEntity extends Entity implements StandingVeh
     }
 
     /**
-     * Nudges a standing passenger up slightly, so their feet rest on the controller rather than
-     * sinking into it. {@code StandingVehicleEntity} keeps them upright; this places them.
+     * Brings a standing passenger's feet down from the seat, which is centred in the controller's
+     * block, to the floor that block stands on, nudged up slightly so they rest on it rather than
+     * sinking in. {@code StandingVehicleEntity} keeps them upright; this places them.
      */
     @Override
     public double getPassengersRidingOffset() {
-        return super.getPassengersRidingOffset() - 0.025;
+        double seatLift = 0.5 - getBbHeight() / 2;
+        return super.getPassengersRidingOffset() - 0.025 - seatLift;
     }
 
-    /// Riders stand on the floor already, so they step off exactly where they are instead of popping up onto the seat.
+    /** One block out from the controller's face, at the height vanilla would put them. */
+    @Override
+    public @NotNull Vec3 riderPosition(@NotNull Entity passenger, float partialTick) {
+        return getPosition(partialTick)
+                .add(frontOffset())
+                .add(0.0, getPassengersRidingOffset() + passenger.getMyRidingOffset(), 0.0);
+    }
+
+    /**
+     * Read from the block every time rather than kept: the rider's client positions them before the
+     * seat has necessarily ticked, and the block is there on both sides.
+     */
+    private Vec3 frontOffset() {
+        BlockState state = level().getBlockState(blockPosition());
+        if (!state.hasProperty(HorizontalDirectionalBlock.FACING)) {
+            return Vec3.ZERO;
+        }
+        return Vec3.atLowerCornerOf(state.getValue(HorizontalDirectionalBlock.FACING).getNormal());
+    }
+
+    /** Through {@link #riderPosition}; Valkyrien Skies skips this on ships and asks that directly. */
+    @Override
+    protected void positionRider(@NotNull Entity passenger, Entity.@NotNull MoveFunction callback) {
+        if (hasPassenger(passenger)) {
+            Vec3 spot = riderPosition(passenger, 1.0f);
+            callback.accept(passenger, spot.x, spot.y, spot.z);
+        }
+    }
+
+    /// Riders stand on the floor already, so they step off where they are instead of popping up onto the seat —
+    /// a hair above it, so that stepping off onto a ship's floor does not leave them sunk into it.
     @Override
     public @NotNull Vec3 getDismountLocationForPassenger(@NotNull LivingEntity passenger) {
-        return passenger.position();
+        return passenger.position().add(0.0, 1.0e-4, 0.0);
     }
 }

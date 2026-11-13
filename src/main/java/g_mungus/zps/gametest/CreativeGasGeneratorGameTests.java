@@ -15,8 +15,8 @@ import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 import org.valkyrienskies.kelvin.KelvinMod;
 import org.valkyrienskies.kelvin.api.DuctNode;
+import org.valkyrienskies.kelvin.api.nodes.TankDuctNode;
 import org.valkyrienskies.kelvin.api.DuctNodePos;
-import org.valkyrienskies.kelvin.api.NodeBehaviorType;
 
 /**
  * The creative source: it fills its own node while its rate is above zero, stops when it is not,
@@ -63,8 +63,8 @@ public class CreativeGasGeneratorGameTests {
             helper.fail("The generator registered no node at all");
             return;
         }
-        if (node.getBehavior() != NodeBehaviorType.TANK) {
-            helper.fail("Expected a TANK node, got " + node.getBehavior());
+        if (!(node instanceof TankDuctNode)) {
+            helper.fail("Expected a TANK node, got " + node.getClass().getSimpleName());
         }
         // No ceiling, or a creative source left running would rupture its own block.
         if (node.getMaxPressure() < 1e30) {

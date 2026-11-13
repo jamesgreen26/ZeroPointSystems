@@ -1,7 +1,6 @@
 package g_mungus.zps.reactor;
 
 import org.valkyrienskies.kelvin.api.DuctNodePos;
-import org.valkyrienskies.kelvin.api.NodeBehaviorType;
 import org.valkyrienskies.kelvin.api.nodes.PipeDuctNode;
 
 import java.util.HashSet;
@@ -19,7 +18,7 @@ public class ReactorChamberNode extends PipeDuctNode {
     private final int reactorId;
 
     public ReactorChamberNode(DuctNodePos pos, int reactorId, double volume, double wallHeatCapacity) {
-        super(pos, NodeBehaviorType.PIPE, new HashSet<>(), volume, Double.MAX_VALUE, Double.MAX_VALUE,
+        super(pos, new HashSet<>(), volume, Double.MAX_VALUE, Double.MAX_VALUE,
                 wallHeatCapacity);
         this.reactorId = reactorId;
     }

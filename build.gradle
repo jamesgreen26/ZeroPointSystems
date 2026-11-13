@@ -197,14 +197,9 @@ dependencies {
     // Clockwork really exists on 1.20.1; ZPS only reads its gas definitions when it is present.
     modCompileOnly("maven.modrinth:create-clockwork:1.20.1-forge-0.5.6") { transitive = false }
 
-    // Kelvin (gas simulation) rides inside the ZPS jar; resolved from libs/ through the flatDir repo.
-    // Players install Kotlin for Forge, which Kelvin needs as its language provider and which cannot be bundled.
-    jarJar(modImplementation("org.valkyrienskies.kelvin:kelvin:${kelvin_version}")) {
-        version {
-            strictly "[1.20.1-0.5.1,)"
-            prefer "${kelvin_version}"
-        }
-    }
+    // Kelvin (gas simulation) is a separate mod players install, alongside Kotlin for Forge (its language
+    // provider). Its POM drags in Architectury, JEI and others that Kelvin already bundles or ZPS lists itself.
+    modImplementation("org.valkyrienskies.kelvin:kelvin-forge:${kelvin_version}") { transitive = false }
     modRuntimeOnly("thedarkcolour:kotlinforforge:${kotlinforforge_version}")
 
     // Kelvin needs Jackson at runtime. Valkyrien Skies bundles the same jars; without VS these are the copies.

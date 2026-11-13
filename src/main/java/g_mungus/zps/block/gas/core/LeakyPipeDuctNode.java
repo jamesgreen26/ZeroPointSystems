@@ -7,7 +7,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 import org.valkyrienskies.kelvin.api.DuctEdge;
 import org.valkyrienskies.kelvin.api.DuctNodePos;
-import org.valkyrienskies.kelvin.api.NodeBehaviorType;
 import org.valkyrienskies.kelvin.api.nodes.ILeakNode;
 import org.valkyrienskies.kelvin.api.nodes.PipeDuctNode;
 
@@ -29,7 +28,7 @@ public class LeakyPipeDuctNode extends PipeDuctNode implements ILeakNode {
 
     public LeakyPipeDuctNode(DuctNodePos pos, double volume, double maxPressure,
                              double maxTemperature, double heatCapacity) {
-        super(pos, NodeBehaviorType.PIPE, new HashSet<DuctEdge>(), volume, maxPressure,
+        super(pos, new HashSet<DuctEdge>(), volume, maxPressure,
                 maxTemperature, heatCapacity);
     }
 

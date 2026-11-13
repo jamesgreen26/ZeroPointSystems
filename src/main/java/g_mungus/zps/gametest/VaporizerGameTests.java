@@ -25,10 +25,10 @@ import g_mungus.zps.world.AtmosphericComposition;
 import org.valkyrienskies.kelvin.impl.registry.GasTypeRegistry;
 import org.valkyrienskies.kelvin.KelvinMod;
 import org.valkyrienskies.kelvin.api.DuctEdge;
+import org.valkyrienskies.kelvin.api.nodes.TankDuctNode;
 import org.valkyrienskies.kelvin.api.DuctNode;
 import org.valkyrienskies.kelvin.api.DuctNodePos;
 import org.valkyrienskies.kelvin.api.GasType;
-import org.valkyrienskies.kelvin.api.NodeBehaviorType;
 
 /**
  * The Vaporizer against its test recipe — blue ice and a lithium nugget to 0.3 kg of Steam and
@@ -108,8 +108,8 @@ public class VaporizerGameTests {
             helper.fail("The vaporizer registered no node at all");
             return;
         }
-        if (node.getBehavior() != NodeBehaviorType.TANK) {
-            helper.fail("Expected a TANK node, got " + node.getBehavior());
+        if (!(node instanceof TankDuctNode)) {
+            helper.fail("Expected a TANK node, got " + node.getClass().getSimpleName());
         }
         helper.succeed();
     }

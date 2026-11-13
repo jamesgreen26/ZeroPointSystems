@@ -33,7 +33,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.valkyrienskies.kelvin.api.DuctNode;
 import org.valkyrienskies.kelvin.api.DuctNodePos;
-import org.valkyrienskies.kelvin.api.NodeBehaviorType;
 import org.valkyrienskies.kelvin.api.nodes.PipeDuctNode;
 
 import java.util.HashSet;
@@ -72,7 +71,7 @@ public class GasFilterBlock extends GasNodeBlock implements EntityBlock {
 
     @Override
     public @NotNull DuctNode createNode(@NotNull DuctNodePos pos) {
-        return new PipeDuctNode(pos, NodeBehaviorType.PIPE, new HashSet<>(), DuctBlock.VOLUME,
+        return new PipeDuctNode(pos, new HashSet<>(), DuctBlock.VOLUME,
                 DuctBlock.MAX_PRESSURE, DuctBlock.MAX_TEMPERATURE, DuctBlock.HEAT_CAPACITY);
     }
 

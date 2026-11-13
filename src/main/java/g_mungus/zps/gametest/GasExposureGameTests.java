@@ -8,6 +8,8 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.animal.Pig;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.GameType;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
@@ -28,6 +30,22 @@ public class GasExposureGameTests {
         Pig pig = helper.spawnWithNoFreeWill(EntityType.PIG, STAND);
         helper.onEachTick(() -> GasExposure.expose(pig, temperature, false));
         return pig;
+    }
+
+    /** Gas of every kind leaves a player in creative mode alone: not lit, not frosted, not drowning. */
+    @GameTest(template = TEMPLATE, timeoutTicks = 100)
+    public static void gasSkipsACreativePlayer(GameTestHelper helper) {
+        Player player = helper.makeMockPlayer(GameType.CREATIVE);
+
+        for (double temperature : new double[]{GasExposure.LAVA_TEMPERATURE_K + 1.0, ZPSConfig.entityBurnGasTemperatureK(),
+                ZPSConfig.entityFreezeGasTemperatureK()}) {
+            helper.assertTrue(!GasExposure.expose(player, temperature, true),
+                    "Gas at " + temperature + " K should do nothing to a creative player");
+        }
+        helper.assertTrue(!player.isOnFire(), "The creative player should not be alight");
+        helper.assertTrue(player.getTicksFrozen() == 0, "The creative player should have no frost, has " + player.getTicksFrozen());
+        helper.assertTrue(!GasExposure.isDrowning(player), "The creative player should not be drowning");
+        helper.succeed();
     }
 
     @GameTest(template = TEMPLATE, timeoutTicks = 100)

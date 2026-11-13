@@ -69,10 +69,15 @@ public final class GasExposure {
      * Apply one tick of gas at {@code temperatureK} to {@code entity}, which is {@code drowning} if
      * the gas cannot be breathed.
      *
+     * <p>A player in creative mode is skipped altogether: no fire, no frost, no drowning.
+     *
      * @return whether the gas's temperature did anything: it was hot or cold enough, and the entity
      *         was not immune to what it does
      */
     public static boolean expose(Entity entity, double temperatureK, boolean drowning) {
+        if (entity instanceof Player player && player.isCreative()) {
+            return false;
+        }
         if (drowning && entity instanceof AtmosphereBreather breather) {
             breather.zps$setDrowningTick(entity.level().getGameTime());
         }

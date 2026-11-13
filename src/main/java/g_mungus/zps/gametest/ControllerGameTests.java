@@ -17,7 +17,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
-/** Riding an Octo-Controller: the screen lights while someone is on it, and sneaking does not get them off. */
+/** Riding an Octo-Controller: the screen lights while someone is on it, and sneaking gets them off. */
 @GameTestHolder(ZPSMod.MOD_ID)
 @PrefixGameTestTemplate(false)
 public class ControllerGameTests {
@@ -67,15 +67,25 @@ public class ControllerGameTests {
     }
 
     @GameTest(template = TEMPLATE)
-    public static void sneakingDoesNotGetTheRiderOff(GameTestHelper helper) {
+    /**
+     * The server sees sneaking only when it is not one of the controller's keys: the rider's client
+     * shadows a bound one and never reports it. So any sneak that arrives gets the rider off.
+     */
+    public static void sneakingGetsTheRiderOff(GameTestHelper helper) {
         Player player = board(helper);
         helper.runAfterDelay(2, () -> {
             player.setShiftKeyDown(true);
             player.rideTick();
-            if (!(player.getVehicle() instanceof ControllerSeatEntity)) {
-                helper.fail("Sneaking should not take the rider off a controller");
+            if (player.getVehicle() instanceof ControllerSeatEntity) {
+                helper.fail("Sneaking should take the rider off a controller");
+                return;
             }
-            helper.succeed();
+            helper.runAfterDelay(2, () -> {
+                if (active(helper)) {
+                    helper.fail("The controller should go dark once its rider sneaks off");
+                }
+                helper.succeed();
+            });
         });
     }
 

@@ -36,7 +36,8 @@
     "ponder.ScreenOpenerMixin",
     "RecipeBookComponentAccessor",
     "SelectorDeserializerNotMixin",
-    "SoundEngineMixin"
+    "SoundEngineMixin",
+    "ToggleKeyMappingMixin"
   ],
   "mixins": [
     "AbstractArrowAccessor",

@@ -33,11 +33,8 @@ public abstract class ControllerBlockEntity<T extends ControllerSeatEntity> exte
     /** GLFW's code for a key that is not bound. */
     public static final int UNBOUND = -1;
 
-    /**
-     * W A S D; then up, left, down, right as Space, Q, Left Shift, E; then Z X C V. Shift is free to
-     * be a key here because sneaking neither dismounts nor crouches a rider.
-     */
-    private static final int[] DEFAULT_KEYS = {87, 65, 83, 68, 32, 81, 340, 69, 90, 88, 67, 86};
+    /** W A S D; then the arrow keys up, left, down, right; then Z X C V — the keybinds of 2.6. */
+    private static final int[] DEFAULT_KEYS = {87, 65, 83, 68, 265, 263, 264, 262, 90, 88, 67, 86};
 
     private static final String KEYS_TAG = "Keys";
     /**

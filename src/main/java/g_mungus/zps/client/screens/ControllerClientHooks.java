@@ -21,6 +21,8 @@ import org.jetbrains.annotations.Nullable;
  * key reads as released and swallows its clicks (see {@code KeyMappingMixin}), so holding W does not
  * also walk and a bound E does not open the inventory. Use is never shadowed, because using the
  * controller again is how the rider gets off, and clicks otherwise work as normal while riding.
+ * Sneak gets them off too, as on any vehicle, unless its key is one of the controller's, when the
+ * shadowing keeps it from ever reaching the server.
  */
 public final class ControllerClientHooks {
     private ControllerClientHooks() {}

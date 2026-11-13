@@ -9,24 +9,16 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.material.Fluid;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Sneaking does nothing on a controller: shift may well be one of its keys. It neither steps the
- * rider off — using the controller again does that — nor crouches them, so the camera, hitbox and
- * model stay put. {@code isShiftKeyDown} itself still reports the key. A turtle helmet also counts
- * drowning in gas as being under water.
+ * Sneaking never crouches a rider on a controller, so the camera, hitbox and model stay put.
+ * {@code isShiftKeyDown} itself still reports the key, and it steps them off as on any vehicle —
+ * unless the sneak key is one of the controller's own, in which case the rider's client shadows it
+ * and never reports it (see {@code ControllerClientHooks}). A turtle helmet also counts drowning in
+ * gas as being under water.
  */
 @Mixin(Player.class)
 public abstract class PlayerMixin {
-
-    @Inject(method = "wantsToStopRiding", at = @At("HEAD"), cancellable = true)
-    private void zps$stayOnController(CallbackInfoReturnable<Boolean> cir) {
-        if (((Player) (Object) this).getVehicle() instanceof ControllerSeatEntity) {
-            cir.setReturnValue(false);
-        }
-    }
 
     @WrapOperation(
             method = "updatePlayerPose",

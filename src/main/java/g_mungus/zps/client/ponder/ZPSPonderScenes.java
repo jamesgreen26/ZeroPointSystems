@@ -323,7 +323,7 @@ public class ZPSPonderScenes {
         });
         setControllerActive(builder, util, true);
         builder.idle(40);
-        builder.overlay().showText(60).text("By default, WASD and Space, Q, Left Shift and E control the 8 redstone outputs.");
+        builder.overlay().showText(60).text("By default, WASD and the arrow keys control the 8 redstone outputs.");
         builder.idle(20);
         builder.world().toggleRedstonePower(util.select().position(1, 3, 5));
         builder.idle(8);

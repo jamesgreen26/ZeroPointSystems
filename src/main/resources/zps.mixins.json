@@ -33,6 +33,7 @@
     "RecipeBookComponentAccessor",
     "SelectorDeserializerNotMixin",
     "SoundEngineMixin",
+    "ToggleKeyMappingMixin",
     "SpriteSourcesInvoker",
     "ponder.NavigatableSimiScreenAccessor",
     "ponder.NavigatableSimiScreenMixin",

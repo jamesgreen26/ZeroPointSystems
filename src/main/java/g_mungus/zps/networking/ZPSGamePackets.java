@@ -211,6 +211,12 @@ public class ZPSGamePackets {
                 .consumerMainThread(RoomBreachS2CPacket::handle)
                 .add();
 
+        INSTANCE.messageBuilder(RoomGridS2CPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(RoomGridS2CPacket::encode)
+                .decoder(RoomGridS2CPacket::decode)
+                .consumerMainThread(RoomGridS2CPacket::handle)
+                .add();
+
         INSTANCE.messageBuilder(AtmosphericCompositionS2CPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(AtmosphericCompositionS2CPacket::encode)
                 .decoder(AtmosphericCompositionS2CPacket::decode)

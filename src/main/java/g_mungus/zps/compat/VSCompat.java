@@ -2,13 +2,20 @@ package g_mungus.zps.compat;
 
 import g_mungus.zps.commands.api.RegisterScriptCommandsEvent;
 import g_mungus.zps.commands.api.RegisterScriptTypesEvent;
+import g_mungus.zps.networking.RoomGridS2CPacket;
+import g_mungus.zps.networking.ZPSGamePackets;
+import g_mungus.zps.room.RoomManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.common.util.FakePlayer;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
 import org.joml.primitives.AABBdc;
@@ -18,14 +25,99 @@ import org.valkyrienskies.core.api.ships.Ship;
 import org.valkyrienskies.core.api.util.functions.DoubleTernaryConsumer;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 import org.valkyrienskies.mod.common.assembly.ShipAssembler;
+import org.valkyrienskies.mod.common.util.EntityDragger;
+import org.valkyrienskies.mod.common.util.EntityDraggingInformation;
+import org.valkyrienskies.mod.common.util.IEntityDraggingInformationProvider;
 import org.valkyrienskies.mod.common.util.VectorConversionsMCKt;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 public class VSCompat {
+
+    /** The ship each player's client was last told owns the room the player is in; {@link RoomGridS2CPacket#NONE} for none. */
+    private static final Map<ServerPlayer, Long> SENT_ROOM_SHIP = new WeakHashMap<>();
+
+    /** Client side: the ship owning the room the local player is in, as the server last said. */
+    private static volatile long localPlayerRoomShip = RoomGridS2CPacket.NONE;
+
+    /// Only call after verifying that VS is loaded.
+    /// Has the ship that owns the room around entity drag it, when no ship drags it already.
+    ///
+    /// VS drags an entity with the last ship it stood on, for a second or so after it last stood
+    /// there, and then lets it go: anything adrift in a cabin is left behind. This is called once
+    /// a tick for every entity, ahead of VS's dragging at the end of the tick. An entity no ship is
+    /// dragging is handed to its room's ship as if it had just boarded; one that ship is dragging
+    /// already has its time started over, so the drag never runs out while it is in the room.
+    ///
+    /// A player's dragging is its own client's, which then tells the server: the server tells
+    /// that client which ship owns the player's room (#syncRoomShip), and leaves its own copy of
+    /// the player to follow what the client reports.
+    static void carryWithRoom(Entity entity) {
+        long ship;
+        if (entity.level() instanceof ServerLevel level) {
+            if (entity instanceof ServerPlayer) {
+                return;
+            }
+            ship = roomShipAround(level, entity);
+        } else if (entity instanceof Player player && player.isLocalPlayer()) {
+            ship = localPlayerRoomShip;
+        } else {
+            // Everything else on a client is dragged as the server says.
+            return;
+        }
+        if (ship == RoomGridS2CPacket.NONE || entity.isPassenger() || !EntityDragger.isDraggable(entity)) {
+            return;
+        }
+        EntityDraggingInformation dragging = ((IEntityDraggingInformationProvider) entity).getDraggingInformation();
+        if (!dragging.isEntityBeingDraggedByAShip()) {
+            // Cleared first, so that a ship it stood on long ago counts as boarded afresh: VS then
+            // takes the ship's motion out of what the entity was doing, rather than adding to it.
+            dragging.setLastShipStoodOn(null);
+            dragging.setLastShipStoodOn(ship);
+        } else if (dragging.getLastShipStoodOn() == ship) {
+            dragging.setTicksSinceStoodOnShip(0);
+        }
+    }
+
+    /// Only call after verifying that VS is loaded.
+    /// Tells player's client which ship owns the room the player is in, whenever that changes.
+    static void syncRoomShip(ServerPlayer player) {
+        if (player instanceof FakePlayer || !ZPSGamePackets.INSTANCE.isRemotePresent(player.connection.connection)) {
+            return;
+        }
+        long ship = roomShipAround(player.serverLevel(), player);
+        // A player the client has heard nothing about yet is told even of no room: it may remember an old one.
+        Long sent = SENT_ROOM_SHIP.put(player, ship);
+        if (sent == null || sent != ship) {
+            ZPSGamePackets.sendToPlayer(player, new RoomGridS2CPacket(ship));
+        }
+    }
+
+    static void setLocalPlayerRoomShip(long ship) {
+        localPlayerRoomShip = ship;
+    }
+
+    /// The id of the ship holding a room, active or dormant, around entity's eyes, or
+    /// RoomGridS2CPacket#NONE.
+    private static long roomShipAround(ServerLevel level, Entity entity) {
+        RoomManager rooms = RoomManager.get(level);
+        if (rooms.roomCount() == 0) {
+            return RoomGridS2CPacket.NONE;
+        }
+        Vector3d eyes = VectorConversionsMCKt.toJOML(entity.getEyePosition());
+        for (Ship ship : VSGameUtilsKt.getShipsIntersecting(level, entity.getBoundingBox())) {
+            Vector3d local = ship.getTransform().getWorldToShip().transformPosition(eyes, new Vector3d());
+            if (rooms.knownRoomAt(BlockPos.containing(local.x, local.y, local.z)) != null) {
+                return ship.getId();
+            }
+        }
+        return RoomGridS2CPacket.NONE;
+    }
 
     /// Only call after verifying that VS is loaded
     static boolean assemble(ServerLevel level, BoundingBox volume) {

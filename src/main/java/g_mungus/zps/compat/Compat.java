@@ -20,6 +20,8 @@ import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
@@ -138,6 +140,29 @@ public class Compat {
             return VSCompat.gridsTouching(level, worldBounds);
         }
         return List.of();
+    }
+
+    /// Has the ship that owns the room around entity drag it along, when no ship drags it already.
+    /// Called once a tick for every entity, on both sides.
+    public static void carryWithRoom(Entity entity) {
+        if (isVSLoaded()) {
+            VSCompat.carryWithRoom(entity);
+        }
+    }
+
+    /// Keeps player's client up to date on which ship owns the room the player is in, which the
+    /// client needs to be dragged by it (see #carryWithRoom).
+    public static void syncRoomGrid(ServerPlayer player) {
+        if (isVSLoaded()) {
+            VSCompat.syncRoomShip(player);
+        }
+    }
+
+    /// Client side: the ship owning the room the local player is in, or RoomGridS2CPacket#NONE.
+    public static void setLocalPlayerRoomGrid(long grid) {
+        if (isVSLoaded()) {
+            VSCompat.setLocalPlayerRoomShip(grid);
+        }
     }
 
     @SubscribeEvent

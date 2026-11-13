@@ -1,7 +1,9 @@
 package g_mungus.zps.room;
 
 import g_mungus.zps.ZPSMod;
+import g_mungus.zps.compat.Compat;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -11,7 +13,7 @@ import net.minecraftforge.event.level.ChunkEvent;
 /**
  * Checks rooms whose blocks changed this tick, once each, after everything that could change them
  * has run. Block changes are reported by {@code ServerLevelMixin}; loaded chunks are searched for
- * flames.
+ * flames. Each player's client is kept told which ship owns the room the player is in.
  */
 @Mod.EventBusSubscriber(modid = ZPSMod.MOD_ID)
 public final class RoomEvents {
@@ -24,6 +26,13 @@ public final class RoomEvents {
         if (event.phase != TickEvent.Phase.END) return;
         if (event.level instanceof ServerLevel level) {
             RoomManager.get(level).tick(level);
+        }
+    }
+
+    @SubscribeEvent
+    static void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        if (event.phase == TickEvent.Phase.END && event.player instanceof ServerPlayer player) {
+            Compat.syncRoomGrid(player);
         }
     }
 

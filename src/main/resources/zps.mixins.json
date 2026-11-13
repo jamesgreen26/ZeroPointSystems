@@ -85,7 +85,8 @@
     "ponder.ServerboundConfigPacketMixin",
     "sable.SubLevelActorExtension",
     "sable.SubLevelEntityCollisionMixin",
-    "vs.PhysicsListenerExtension"
+    "vs.PhysicsListenerExtension",
+    "vs.RiderOffsetExtension"
   ],
   "injectors": {
     "defaultRequire": 1

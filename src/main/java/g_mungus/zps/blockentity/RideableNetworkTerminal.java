@@ -1,8 +1,6 @@
 package g_mungus.zps.blockentity;
 
-import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -11,8 +9,6 @@ import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Vector3d;
-import org.joml.Vector3dc;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,24 +39,20 @@ public abstract class RideableNetworkTerminal<T extends Entity> extends NetworkT
     }
 
     abstract EntityType<T> getSeatEntity();
-    abstract void registerSeatEntity(T seat, Vec3i offset);
+    abstract void registerSeatEntity(T seat);
 
+    /**
+     * Spawns the seat centred inside the block itself, so it stays in the block's chunk and can only
+     * belong to this block; the seat puts its rider wherever they should stand.
+     */
     public T spawnSeat(BlockPos blockPos, BlockState state, ServerLevel level) {
-
-        double height = 0.5;
-        BlockPos newPos = blockPos.relative(state.getValue(HorizontalDirectionalBlock.FACING));
-
         T entity = getSeatEntity().create(level);
         if (entity != null) {
-            registerSeatEntity(entity, blockPos.subtract(newPos));
+            registerSeatEntity(entity);
 
-            Vector3dc seatEntityPos = new Vector3d(newPos.getX() + 0.5, (newPos.getY() - 0.5) + height, newPos.getZ() + 0.5);
-            entity.moveTo(seatEntityPos.x(), seatEntityPos.y(), seatEntityPos.z());
-
-            entity.lookAt(
-                    EntityAnchorArgument.Anchor.EYES,
-                    Vec3.atLowerCornerOf(state.getValue(HorizontalDirectionalBlock.FACING).getNormal().offset(entity.getOnPos()))
-            );
+            Vec3 centre = Vec3.atCenterOf(blockPos);
+            entity.moveTo(centre.x, centre.y - entity.getBbHeight() / 2, centre.z,
+                    state.getValue(HorizontalDirectionalBlock.FACING).toYRot(), 0.0f);
 
             seats.add(entity);
 

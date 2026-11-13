@@ -13,6 +13,7 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
@@ -25,15 +26,19 @@ public class ControllerGameTests {
     private static final BlockPos CONTROLLER = new BlockPos(3, 2, 3);
 
     private static Player board(GameTestHelper helper) {
+        return board(helper, CONTROLLER, Direction.NORTH);
+    }
+
+    private static Player board(GameTestHelper helper, BlockPos pos, Direction facing) {
         BlockState state = ModBlocks.OCTO_CONTROLLER.get().defaultBlockState()
-                .setValue(OctoControllerBlock.FACING, Direction.NORTH);
-        helper.setBlock(CONTROLLER, state);
+                .setValue(OctoControllerBlock.FACING, facing);
+        helper.setBlock(pos, state);
         Player player = helper.makeMockPlayer(GameType.SURVIVAL);
-        if (!(helper.getBlockEntity(CONTROLLER) instanceof OctoControllerBlockEntity controller)) {
+        if (!(helper.getBlockEntity(pos) instanceof OctoControllerBlockEntity controller)) {
             helper.fail("No controller block entity");
             return player;
         }
-        controller.startRiding(player, false, helper.absolutePos(CONTROLLER), state, helper.getLevel());
+        controller.startRiding(player, false, helper.absolutePos(pos), state, helper.getLevel());
         if (!(player.getVehicle() instanceof ControllerSeatEntity)) {
             helper.fail("Using the controller should put the player on its seat");
         }
@@ -85,6 +90,46 @@ public class ControllerGameTests {
             seat.discard();
             if (active(helper)) {
                 helper.fail("A seat taken away under its rider should leave the controller dark");
+            }
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = TEMPLATE)
+    public static void theSeatIsInTheControllerAndTheRiderStandsInFront(GameTestHelper helper) {
+        Player player = board(helper);
+        helper.runAfterDelay(2, () -> {
+            if (!(player.getVehicle() instanceof ControllerSeatEntity seat)) {
+                helper.fail("The player should still be on the seat");
+                return;
+            }
+            if (!seat.blockPosition().equals(helper.absolutePos(CONTROLLER))) {
+                helper.fail("The seat should be inside the controller's block, was at " + seat.blockPosition());
+            }
+            Vec3 feet = helper.absoluteVec(Vec3.atBottomCenterOf(CONTROLLER.north()));
+            if (player.position().distanceTo(feet) > 1.0e-6) {
+                helper.fail("The rider should stand on the floor in front of the controller at " + feet
+                        + ", was at " + player.position());
+            }
+            helper.succeed();
+        });
+    }
+
+    /** Two controllers facing each other across one cell: each seat stays with its own controller. */
+    @GameTest(template = TEMPLATE)
+    public static void controllersSharingAFrontCellKeepTheirOwnSeats(GameTestHelper helper) {
+        BlockPos facingIt = CONTROLLER.north(2);
+        Player first = board(helper, CONTROLLER, Direction.NORTH);
+        Player second = board(helper, facingIt, Direction.SOUTH);
+        helper.runAfterDelay(2, () -> {
+            if (!(first.getVehicle() instanceof ControllerSeatEntity firstSeat)
+                    || !(second.getVehicle() instanceof ControllerSeatEntity secondSeat)) {
+                helper.fail("Both players should still be on their seats");
+                return;
+            }
+            if (firstSeat.blockEntity != helper.getBlockEntity(CONTROLLER)
+                    || secondSeat.blockEntity != helper.getBlockEntity(facingIt)) {
+                helper.fail("Each seat should belong to the controller it was spawned by");
             }
             helper.succeed();
         });

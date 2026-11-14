@@ -33,7 +33,7 @@ side = "BOTH"
 [[dependencies.zps]]
 modId = "kelvin"
 type = "required"
-versionRange = "[1.21.1-0.5.1,)"
+versionRange = "[1.21.1-0.5.2,)"
 ordering = "AFTER"
 side = "BOTH"
 

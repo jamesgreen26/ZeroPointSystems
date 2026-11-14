@@ -191,18 +191,11 @@ dependencies {
     additionalRuntimeClasspath(files('libs/jsapi.jar', 'libs/freetts.jar'))
     implementation(files('libs/Registrate-MC1.21-1.3.0+62.jar'))
 
-    jarJar(implementation("org.valkyrienskies.kelvin:kelvin:1.21.1-0.5.1+5866e7811e")) {
-        version {
-            strictly "[1.21.1-0.5.1+5866e7811e,)"
-            prefer "1.21.1-0.5.1+5866e7811e"
-        }
-    }
-    jarJar(implementation("dev.architectury:architectury-neoforge:13.0.6")) {
-        version {
-            strictly "[13.0.6,)"
-            prefer "13.0.6"
-        }
-    }
+    // Kelvin (gas simulation) is a separate mod players install. Its POM drags in JEI, Kotlin for Forge and
+    // Jackson modules that ZPS either lists itself or does not need.
+    implementation("org.valkyrienskies.kelvin:kelvin-forge:1.21.1-0.5.2+6e1f3db3a0") { transitive = false }
+    // Kelvin's API hands out Architectury types and its jar bundles Architectury, so ZPS only compiles against it.
+    implementation("dev.architectury:architectury-neoforge:13.0.6")
     additionalRuntimeClasspath("thedarkcolour:kotlinforforge-neoforge:5.8.0")
 
     jarJar(implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.14.0")) {

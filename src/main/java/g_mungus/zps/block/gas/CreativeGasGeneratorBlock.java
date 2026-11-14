@@ -21,7 +21,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.valkyrienskies.kelvin.api.DuctNode;
 import org.valkyrienskies.kelvin.api.DuctNodePos;
-import org.valkyrienskies.kelvin.api.NodeBehaviorType;
 import org.valkyrienskies.kelvin.api.nodes.TankDuctNode;
 
 import java.util.HashSet;
@@ -58,7 +57,7 @@ public class CreativeGasGeneratorBlock extends GasNodeBlock implements EntityBlo
     /** A tank with no ceiling: see the class javadoc. */
     @Override
     public @NotNull DuctNode createNode(@NotNull DuctNodePos pos) {
-        return new TankDuctNode(pos, NodeBehaviorType.TANK, new HashSet<>(), VOLUME,
+        return new TankDuctNode(pos, new HashSet<>(), VOLUME,
                 Double.MAX_VALUE, Double.MAX_VALUE, HEAT_CAPACITY, 1.0);
     }
 

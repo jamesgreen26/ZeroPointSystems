@@ -26,10 +26,10 @@ import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import org.valkyrienskies.kelvin.KelvinMod;
 import org.valkyrienskies.kelvin.api.DuctEdge;
+import org.valkyrienskies.kelvin.api.nodes.TankDuctNode;
 import org.valkyrienskies.kelvin.api.DuctNode;
 import org.valkyrienskies.kelvin.api.DuctNodePos;
 import org.valkyrienskies.kelvin.api.GasType;
-import org.valkyrienskies.kelvin.api.NodeBehaviorType;
 import org.valkyrienskies.kelvin.impl.registry.GasTypeRegistry;
 
 import java.util.List;
@@ -110,8 +110,8 @@ public class CryoCondenserGameTests {
         DuctNodePos condenser = node(helper, CONDENSER);
 
         DuctNode node = KelvinMod.INSTANCE.forceGetKelvin().getNodeAt(condenser);
-        if (node == null || node.getBehavior() != NodeBehaviorType.TANK) {
-            helper.fail("Expected a TANK node, got " + (node == null ? "none" : node.getBehavior()));
+        if (!(node instanceof TankDuctNode)) {
+            helper.fail("Expected a TANK node, got " + (node == null ? "none" : node.getClass().getSimpleName()));
             return;
         }
 

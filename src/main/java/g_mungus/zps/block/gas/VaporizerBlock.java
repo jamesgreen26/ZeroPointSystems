@@ -26,7 +26,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.valkyrienskies.kelvin.api.DuctNode;
 import org.valkyrienskies.kelvin.api.DuctNodePos;
-import org.valkyrienskies.kelvin.api.NodeBehaviorType;
 import org.valkyrienskies.kelvin.api.nodes.TankDuctNode;
 
 import java.util.HashSet;
@@ -68,7 +67,7 @@ public class VaporizerBlock extends GasNodeBlock implements EntityBlock {
 
     @Override
     public @NotNull DuctNode createNode(@NotNull DuctNodePos pos) {
-        return new TankDuctNode(pos, NodeBehaviorType.TANK, new HashSet<>(), VOLUME,
+        return new TankDuctNode(pos, new HashSet<>(), VOLUME,
                 MAX_PRESSURE, MAX_TEMPERATURE, HEAT_CAPACITY, 1.0);
     }
 

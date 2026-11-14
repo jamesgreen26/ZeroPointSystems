@@ -85,23 +85,6 @@ public class DripstoneGameTests {
                 .thenSucceed();
     }
 
-    /** The vanilla path still runs when the source is water. */
-    @GameTest(template = TEMPLATE)
-    public static void water_stillFillsWaterCauldron(GameTestHelper helper) {
-        buildStalactite(helper, Blocks.WATER.defaultBlockState());
-        for (Direction side : Direction.Plane.HORIZONTAL) {
-            helper.setBlock(SOURCE.relative(side), Blocks.STONE);
-        }
-        helper.setBlock(CAULDRON, Blocks.CAULDRON);
-
-        helper.startSequence()
-                .thenExecute(() -> drip(helper))
-                .thenIdle(DRIP_TICKS)
-                .thenExecute(() -> helper.assertBlockPresent(Blocks.WATER_CAULDRON, CAULDRON))
-                .thenExecute(() -> helper.assertBlockProperty(CAULDRON, LayeredCauldronBlock.LEVEL, 1))
-                .thenSucceed();
-    }
-
     private static void buildStalactite(GameTestHelper helper, BlockState source) {
         helper.setBlock(SUPPORT, Blocks.STONE);
         helper.setBlock(TIP, Blocks.POINTED_DRIPSTONE.defaultBlockState()

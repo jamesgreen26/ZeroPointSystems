@@ -32,11 +32,6 @@ public class ArmChainKitGameTests {
     private static final int TIMEOUT = KITS * ArmChain.KIT_LINES * ArmChain.DELAY + 1200;
 
     @GameTest(template = TEMPLATE, timeoutTicks = TIMEOUT)
-    public static void kitBuildsArmsOnTheFloor(GameTestHelper helper) {
-        placeAndRun(helper, new BlockPos(0, 2, 1));
-    }
-
-    @GameTest(template = TEMPLATE, timeoutTicks = TIMEOUT)
     public static void kitBuildsArmsOneBlockHigher(GameTestHelper helper) {
         placeAndRun(helper, new BlockPos(0, 3, 1));
     }

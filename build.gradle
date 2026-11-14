@@ -49,6 +49,9 @@ legacyForge {
             systemProperty 'forge.enabledGameTestNamespaces', 'zps'
             // ./gradlew runGameTestServer -PgametestFilter=name,other runs only the tests whose names contain one
             systemProperty 'zps.gametestFilter', (project.findProperty('gametestFilter') ?: '').toString()
+            // A world of its own, wiped before every run (below): entities saved by an earlier run load back in
+            // after a test has cleared its plot, and tests that count drops then fail.
+            programArguments.addAll '--world', 'gametest_world'
         }
     }
 
@@ -56,6 +59,12 @@ legacyForge {
         zps {
             sourceSet sourceSets.main
         }
+    }
+}
+
+tasks.named('runGameTestServer') {
+    doFirst {
+        delete file('run/gametest_world')
     }
 }
 

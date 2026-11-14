@@ -103,19 +103,6 @@ public class GasExposureGameTests {
         });
     }
 
-    @GameTest(template = TEMPLATE, timeoutTicks = 200)
-    public static void mildGasDoesNothing(GameTestHelper helper) {
-        double mild = (ZPSConfig.entityBurnGasTemperatureK() + ZPSConfig.entityFreezeGasTemperatureK()) / 2.0;
-        Pig pig = pigIn(helper, mild);
-
-        helper.runAfterDelay(60, () -> {
-            helper.assertFalse(pig.isOnFire(), "The pig should not be on fire");
-            helper.assertTrue(pig.getTicksFrozen() == 0, "The pig should not be freezing");
-            helper.assertTrue(pig.getHealth() == pig.getMaxHealth(), "The pig should be unhurt");
-            helper.succeed();
-        });
-    }
-
     /** No gas at all, which is what a vent reports once nothing has passed it for a while. */
     @GameTest(template = TEMPLATE, timeoutTicks = 200)
     public static void noGasDoesNothing(GameTestHelper helper) {

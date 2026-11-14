@@ -8,6 +8,7 @@ import g_mungus.zps.block.gas.core.GasNodeBlock;
 import g_mungus.zps.blockentity.gas.core.GasNodeBlockEntity;
 import g_mungus.zps.gas.ModGases;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
@@ -312,17 +313,20 @@ public class DuctGameTests {
         });
     }
 
-    /** Flowing water runs around a duct instead of washing it away. */
+    /** Flowing water leaves a duct standing instead of washing it away. */
     @GameTest(template = TEMPLATE)
     public static void flowingWaterLeavesTheDuct(GameTestHelper helper) {
+        BlockPos water = FIRST.north();
         helper.setBlock(FIRST, ModBlocks.GAS_DUCT.get().defaultBlockState());
-        helper.setBlock(FIRST.north(), Blocks.WATER.defaultBlockState());
+        // Wall the source in so the duct is its only way out. On open ground water heads for the nearest
+        // drop, which can be the platform edge, and then it never pushes against the duct at all.
+        for (Direction side : new Direction[]{Direction.NORTH, Direction.EAST, Direction.WEST}) {
+            helper.setBlock(water.relative(side), Blocks.STONE.defaultBlockState());
+        }
+        helper.setBlock(water, Blocks.WATER.defaultBlockState());
         helper.runAfterDelay(20, () -> {
             if (!helper.getBlockState(FIRST).is(ModBlocks.GAS_DUCT.get())) {
                 helper.fail("Flowing water should leave the duct, found " + helper.getBlockState(FIRST));
-            }
-            if (!helper.getBlockState(FIRST.east()).is(Blocks.WATER)) {
-                helper.fail("The water should have flowed beside the duct, found " + helper.getBlockState(FIRST.east()));
             }
             helper.succeed();
         });

@@ -7,7 +7,6 @@ import g_mungus.zps.gas.AtmosphereExposure;
 import g_mungus.zps.gas.api.HeatSource;
 import g_mungus.zps.gas.api.HeatSourceProvider;
 import g_mungus.zps.gas.api.HeatSources;
-import g_mungus.zps.world.BiomeTemperature;
 import g_mungus.zps.world.SpaceTemperature;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
@@ -45,6 +44,7 @@ public class SpaceTemperatureGameTests {
                 ? List.of(new HeatSource(Vec3.atCenterOf(star), 950, 10))
                 : List.of();
         HeatSources.register(provider);
+        double heated;
         try {
             double atSurface = SpaceTemperature.kelvin(helper.getLevel(), star, 200);
             if (Math.abs(atSurface - Math.pow(Math.pow(200, 4) + Math.pow(950, 4), 0.25)) > 0.01) {
@@ -54,13 +54,15 @@ public class SpaceTemperatureGameTests {
             if (farAway > 200.01) {
                 helper.fail("Far from every source, only the background should be left, got " + farAway + " K");
             }
-            double biome = BiomeTemperature.kelvinAt(helper.getLevel().getBiome(star).value(), star);
-            double read = AtmosphereExposure.temperatureK(helper.getLevel(), star);
-            if (read != biome) {
-                helper.fail("A biome not using zps:space should not be heated, got " + read + " K instead of " + biome + " K");
-            }
+            heated = AtmosphereExposure.temperatureK(helper.getLevel(), star);
         } finally {
             HeatSources.unregister(provider);
+        }
+        // Against the same reading with the source gone, not the biome's own figure: the air here is blended
+        // from the biomes around, which need not be the one underfoot.
+        double unheated = AtmosphereExposure.temperatureK(helper.getLevel(), star);
+        if (heated != unheated) {
+            helper.fail("A biome not using zps:space should not be heated, got " + heated + " K instead of " + unheated + " K");
         }
         helper.succeed();
     }

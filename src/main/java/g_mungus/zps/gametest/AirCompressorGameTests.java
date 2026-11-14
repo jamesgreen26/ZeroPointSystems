@@ -232,13 +232,12 @@ public class AirCompressorGameTests {
                             "Pressure overshot the cutoff: " + pressure + " Pa");
                     helper.assertTrue(compressor.getStatus() == AirCompressorBlockEntity.Status.OUTPUT_FULL,
                             "Still filling at " + pressure + " Pa: " + compressor.getStatus());
-                })
-                .thenExecute(() -> {
-                    double pressure = kelvin.getPressureAt(nodePos);
+                    // Waited for with the status rather than checked once after it: the compressor can report
+                    // full for a tick on the way up, and only staying short of the cutoff is a failure.
                     helper.assertTrue(pressure > ceiling * 0.85,
                             "It stopped well short of the cutoff, at " + pressure + " Pa");
-                    energyWhenFull[0] = energy(compressor);
                 })
+                .thenExecute(() -> energyWhenFull[0] = energy(compressor))
                 .thenIdle(10)
                 .thenExecute(() -> helper.assertTrue(energy(compressor) == energyWhenFull[0],
                         "A full compressor should spend nothing"))

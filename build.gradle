@@ -104,8 +104,13 @@ jar {
 }
 
 repositories {
-    mavenLocal()
     mavenCentral()
+
+    maven {
+        name = "g_mungus (Artifex)"
+        url = "https://artifex.soh.gg/maven/jamesgreen26/g-mungus/"
+        content { includeGroup "g_mungus" }
+    }
 
     maven { url = "https://maven.createmod.net" }
     maven {
@@ -158,7 +163,7 @@ dependencies {
         }
     }
 
-    // The script language behind the Script Terminal and Serial Bus, built from ~/git/munguscript.
+    // The script language behind the Script Terminal and Serial Bus (~/git/munguscript), from the Artifex maven.
     // Merged into the mod jar (see the jar block); Brigadier comes from the game.
     shade("g_mungus:munguscript:0.2.2") {
         transitive = false

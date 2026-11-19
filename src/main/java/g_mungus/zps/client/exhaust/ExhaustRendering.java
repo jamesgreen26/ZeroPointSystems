@@ -10,7 +10,6 @@ import dev.engine_room.flywheel.api.material.WriteMask;
 import dev.engine_room.flywheel.api.model.Model;
 import dev.engine_room.flywheel.api.vertex.MutableVertexList;
 import dev.engine_room.flywheel.lib.instance.SimpleInstanceType;
-import dev.engine_room.flywheel.lib.material.FogShaders;
 import dev.engine_room.flywheel.lib.material.SimpleMaterial;
 import dev.engine_room.flywheel.lib.material.SimpleLightShader;
 import dev.engine_room.flywheel.lib.material.SimpleMaterialShaders;
@@ -24,15 +23,15 @@ import org.lwjgl.system.MemoryUtil;
 
 /**
  * The Flywheel side of exhaust particles: the instance type that reads the batch ring, the
- * materials, and the cube every particle is drawn with.
+ * material, and the cube every particle is drawn with.
  *
- * <p>Every particle is drawn twice, once with each material, for the two passes of the weighted
- * blended transparency {@link ExhaustLayer} composites. The layer recognises these materials by
- * identity and sends their draws to its own targets with its own blending; the transparency and
- * write mask here only have to keep Flywheel from writing depth.
+ * <p>Every particle is drawn once, writing both targets of the weighted blended transparency
+ * {@link ExhaustLayer} composites. The layer recognises the material by identity and sends its
+ * draws to its own targets with its own blending; the transparency and write mask here only have
+ * to keep Flywheel from writing depth.
  *
- * <p>The materials' fragment shaders read a varying the instance shader writes, so the two only
- * work as a pair; nothing else should draw with these materials.
+ * <p>The material's fragment shader reads a varying the instance shader writes, so the two only
+ * work as a pair; nothing else should draw with this material.
  */
 public final class ExhaustRendering {
 
@@ -45,11 +44,11 @@ public final class ExhaustRendering {
             .cullShader(ZPSMod.resource("exhaust/cull.glsl"))
             .build();
 
-    /** Weighted colour: lit, fogged, and summed. */
-    public static final Material ACCUM_MATERIAL = SimpleMaterial.builder()
+    /** Weighted colour, lit, fogged and summed, and alongside it transmittance and nearest depth. */
+    public static final Material MATERIAL = SimpleMaterial.builder()
             .shaders(new SimpleMaterialShaders(
                     ZPSMod.resource("exhaust/material.vert"),
-                    ZPSMod.resource("exhaust/accum.frag")))
+                    ZPSMod.resource("exhaust/exhaust.frag")))
             .transparency(Transparency.TRANSLUCENT)
             .writeMask(WriteMask.COLOR)
             // Each particle is lit once, in the instance shader, from the sections the effect tracks.
@@ -59,18 +58,8 @@ public final class ExhaustRendering {
             .useOverlay(false)
             .build();
 
-    /** Transmittance and nearest depth: written exactly as the shader computes them, so unlit and unfogged. */
-    public static final Material REVEAL_MATERIAL = SimpleMaterial.builderOf(ACCUM_MATERIAL)
-            .shaders(new SimpleMaterialShaders(
-                    ZPSMod.resource("exhaust/material.vert"),
-                    ZPSMod.resource("exhaust/reveal.frag")))
-            .useLight(false)
-            .fog(FogShaders.NONE)
-            .build();
-
     private static final CubeMesh MESH = new CubeMesh();
-    public static final Model ACCUM_CUBE = new SingleMeshModel(MESH, ACCUM_MATERIAL);
-    public static final Model REVEAL_CUBE = new SingleMeshModel(MESH, REVEAL_MATERIAL);
+    public static final Model CUBE = new SingleMeshModel(MESH, MATERIAL);
 
     private ExhaustRendering() {
     }

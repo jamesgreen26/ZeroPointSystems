@@ -1,6 +1,5 @@
 package g_mungus.zps.client.exhaust;
 
-import dev.engine_room.flywheel.api.model.Model;
 import dev.engine_room.flywheel.api.visual.DynamicVisual;
 import dev.engine_room.flywheel.api.visual.Effect;
 import dev.engine_room.flywheel.api.visual.EffectVisual;
@@ -38,16 +37,14 @@ final class ExhaustEffect implements Effect {
     }
 
     /**
-     * Two instances per slot of the batch ring that has ever been used, one for each pass of the
-     * exhaust layer (see {@link ExhaustRendering}). Instances are only ever added, a
-     * batch at a time, and are never touched once made; slots without a live particle collapse to
-     * nothing in the shader.
+     * One instance per slot of the batch ring that has ever been used (see {@link ExhaustRendering}).
+     * Instances are only ever added, a batch at a time, and are never touched once made; slots
+     * without a live particle collapse to nothing in the shader.
      */
     private static final class Visual extends AbstractVisual
             implements EffectVisual<ExhaustEffect>, SimpleDynamicVisual, ShaderLightVisual {
 
-        private final List<ExhaustInstance> accumInstances = new ArrayList<>();
-        private final List<ExhaustInstance> revealInstances = new ArrayList<>();
+        private final List<ExhaustInstance> instances = new ArrayList<>();
         private SectionCollector sections;
         private LongSet trackedSections;
 
@@ -70,33 +67,24 @@ final class ExhaustEffect implements Effect {
                 sections.sections(tracked);
             }
             int wanted = ExhaustParticles.slotsInUse();
-            grow(accumInstances, wanted, ExhaustRendering.ACCUM_CUBE);
-            grow(revealInstances, wanted, ExhaustRendering.REVEAL_CUBE);
-        }
-
-        private void grow(List<ExhaustInstance> list, int wanted, Model model) {
-            if (list.size() >= wanted) {
+            if (instances.size() >= wanted) {
                 return;
             }
-            ExhaustInstance[] made = new ExhaustInstance[wanted - list.size()];
-            instancerProvider().instancer(ExhaustRendering.INSTANCE_TYPE, model).createInstances(made);
+            ExhaustInstance[] made = new ExhaustInstance[wanted - instances.size()];
+            instancerProvider().instancer(ExhaustRendering.INSTANCE_TYPE, ExhaustRendering.CUBE).createInstances(made);
             for (ExhaustInstance instance : made) {
-                instance.slot = list.size();
+                instance.slot = instances.size();
                 instance.setChanged();
-                list.add(instance);
+                instances.add(instance);
             }
         }
 
         @Override
         protected void _delete() {
-            for (ExhaustInstance instance : accumInstances) {
+            for (ExhaustInstance instance : instances) {
                 instance.delete();
             }
-            for (ExhaustInstance instance : revealInstances) {
-                instance.delete();
-            }
-            accumInstances.clear();
-            revealInstances.clear();
+            instances.clear();
         }
     }
 }

@@ -12,7 +12,6 @@ import dev.engine_room.flywheel.api.material.WriteMask;
 import dev.engine_room.flywheel.api.model.Model;
 import dev.engine_room.flywheel.api.vertex.MutableVertexList;
 import dev.engine_room.flywheel.lib.instance.SimpleInstanceType;
-import dev.engine_room.flywheel.lib.material.FogShaders;
 import dev.engine_room.flywheel.lib.material.SimpleMaterial;
 import dev.engine_room.flywheel.lib.material.SimpleLightShader;
 import dev.engine_room.flywheel.lib.material.SimpleMaterialShaders;
@@ -27,16 +26,16 @@ import org.lwjgl.system.MemoryUtil;
 
 /**
  * The Flywheel side of exhaust particles: the instance type that reads the batch ring, the
- * materials, and the cube every particle is drawn with.
+ * material, and the cube every particle is drawn with.
  *
- * <p>Every particle is drawn twice, once with each material, for the two passes of the weighted
- * blended transparency {@link ExhaustLayer} composites. The layer recognises these materials by
- * identity and sends their draws to its own targets with its own blending; the transparency and
- * write mask here only have to keep Flywheel from writing depth.
+ * <p>Every particle is drawn once, writing both targets of the weighted blended transparency
+ * {@link ExhaustLayer} composites. The layer recognises the material by identity and sends its
+ * draws to its own targets with its own blending; the transparency and write mask here only have
+ * to keep Flywheel from writing depth.
  *
  * <p>Under a shader pack, through Colorwheel, the pack draws Flywheel geometry into its own targets
- * and the layer cannot take the draws. Each particle is then drawn once, with {@link #PACK_MATERIAL}:
- * ordinary unsorted translucency that the pack lights and composites as it does any other.
+ * and the layer cannot take the draws. Each particle is then drawn with {@link #PACK_MATERIAL}
+ * instead: ordinary unsorted translucency that the pack lights and composites as it does any other.
  *
  * <p>The materials' fragment shaders read the heat the instance shader puts in the texture
  * coordinate, so the two only work as a pair; nothing else should draw with these materials.
@@ -55,11 +54,11 @@ public final class ExhaustRendering {
     /** Plain white, so sampling it at the heat the texture coordinate carries changes nothing. */
     private static final ResourceLocation WHITE = ZPSMod.resource("textures/effect/exhaust_white.png");
 
-    /** Weighted colour: lit, fogged, and summed. */
-    public static final Material ACCUM_MATERIAL = SimpleMaterial.builder()
+    /** Weighted colour, lit, fogged and summed, and alongside it transmittance and nearest depth. */
+    public static final Material MATERIAL = SimpleMaterial.builder()
             .shaders(new SimpleMaterialShaders(
                     ZPSMod.resource("exhaust/material.vert"),
-                    ZPSMod.resource("exhaust/accum.frag")))
+                    ZPSMod.resource("exhaust/exhaust.frag")))
             .texture(WHITE)
             .mipmap(false)
             .transparency(Transparency.TRANSLUCENT)
@@ -71,25 +70,15 @@ public final class ExhaustRendering {
             .useOverlay(false)
             .build();
 
-    /** Transmittance and nearest depth: written exactly as the shader computes them, so unlit and unfogged. */
-    public static final Material REVEAL_MATERIAL = SimpleMaterial.builderOf(ACCUM_MATERIAL)
-            .shaders(new SimpleMaterialShaders(
-                    ZPSMod.resource("exhaust/material.vert"),
-                    ZPSMod.resource("exhaust/reveal.frag")))
-            .useLight(false)
-            .fog(FogShaders.NONE)
-            .build();
-
     /** Under a shader pack: colour over what is behind, lit and fogged by the pack. */
-    public static final Material PACK_MATERIAL = SimpleMaterial.builderOf(ACCUM_MATERIAL)
+    public static final Material PACK_MATERIAL = SimpleMaterial.builderOf(MATERIAL)
             .shaders(new SimpleMaterialShaders(
                     ZPSMod.resource("exhaust/material.vert"),
                     ZPSMod.resource("exhaust/pack.frag")))
             .build();
 
     private static final CubeMesh MESH = new CubeMesh();
-    public static final Model ACCUM_CUBE = new SingleMeshModel(MESH, ACCUM_MATERIAL);
-    public static final Model REVEAL_CUBE = new SingleMeshModel(MESH, REVEAL_MATERIAL);
+    public static final Model CUBE = new SingleMeshModel(MESH, MATERIAL);
     public static final Model PACK_CUBE = new SingleMeshModel(MESH, PACK_MATERIAL);
 
     /** Colorwheel's backends, which Flywheel only picks while an Iris shader pack is in use. */

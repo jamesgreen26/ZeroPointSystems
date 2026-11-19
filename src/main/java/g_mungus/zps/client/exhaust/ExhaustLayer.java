@@ -16,10 +16,12 @@ import net.neoforged.neoforge.client.event.RegisterShadersEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
+import org.lwjgl.opengl.GL40;
 
 import java.io.IOException;
 
@@ -32,10 +34,11 @@ import java.io.IOException;
  * <p>Each frame with exhaust in it:
  * <ol>
  *     <li>{@code AFTER_SKY}: the layer's targets are sized to the main target and cleared.</li>
- *     <li>Flywheel's draws: {@link #afterSetup} sends the two exhaust materials' draws into the
- *     layer, with the blending weighted transparency needs. The accumulation target sums weighted
- *     colour; the revealage target multiplies down transmittance and keeps the nearest exhaust
- *     depth. Both are tested against the main depth buffer, which they share.</li>
+ *     <li>Flywheel's draws: {@link #afterSetup} sends the exhaust material's draws into the layer,
+ *     one framebuffer with both targets as draw buffers, each blended as weighted transparency
+ *     needs. The accumulation target sums weighted colour; the revealage target multiplies down
+ *     transmittance and keeps the nearest exhaust depth. Both are tested against the main depth
+ *     buffer, which they share.</li>
  *     <li>{@code AFTER_BLOCK_ENTITIES}: once every opaque thing is drawn, block entity renderers
  *     having drawn after Flywheel, the depth buffer and the image are copied, and the image's
  *     alpha is zeroed. Translucent blending adds each surface's alpha back as {@code a + d(1 - a)},
@@ -49,6 +52,8 @@ import java.io.IOException;
  * <p>Depths are compared per pixel at the nearest exhaust, so a translucent surface cutting through a
  * plume puts all of that pixel's exhaust on one side of it. With Fabulous graphics the level keeps
  * translucent terrain out of the main depth buffer and image, so exhaust always goes over it.
+ *
+ * <p>Blending each draw buffer its own way takes OpenGL 4.0. Without it there is no exhaust.
  */
 public final class ExhaustLayer {
 
@@ -66,8 +71,8 @@ public final class ExhaustLayer {
     private static int opaqueTexture;
     private static int opaqueColorTexture;
     private static int sceneColorTexture;
-    private static int accumFramebuffer;
-    private static int revealFramebuffer;
+    /** Draws to the accumulation target (draw buffer 0) and the revealage target (1). */
+    private static int layerFramebuffer;
     private static int opaqueFramebuffer;
     private static int opaqueColorFramebuffer;
     private static int sceneColorFramebuffer;
@@ -80,6 +85,8 @@ public final class ExhaustLayer {
     /** The framebuffer an exhaust draw replaced, while one is under way; 0 otherwise. */
     private static int redirectedFrom;
     private static boolean redirecting;
+    /** Whether the driver can blend draw buffers separately; null until first asked. */
+    private static @Nullable Boolean supported;
 
     private ExhaustLayer() {
     }
@@ -125,8 +132,7 @@ public final class ExhaustLayer {
 
     /** After Flywheel sets up a draw: an exhaust draw goes to the layer, with the layer's blending. */
     public static void afterSetup(Material material) {
-        boolean accum = material == ExhaustRendering.ACCUM_MATERIAL;
-        if (!accum && material != ExhaustRendering.REVEAL_MATERIAL) {
+        if (material != ExhaustRendering.MATERIAL) {
             return;
         }
         if (!open) {
@@ -137,17 +143,14 @@ public final class ExhaustLayer {
         }
         redirectedFrom = GL11.glGetInteger(GL30.GL_DRAW_FRAMEBUFFER_BINDING);
         redirecting = true;
-        GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, accum ? accumFramebuffer : revealFramebuffer);
-        if (accum) {
-            // rgb += rgb * (a * w), alpha += a * w
-            RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE,
-                    GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE);
-        } else {
-            // rgb *= 1 - a, alpha = min(alpha, depth)
-            RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE_MINUS_SRC_COLOR,
-                    GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE);
-            GL20.glBlendEquationSeparate(GL14.GL_FUNC_ADD, GL14.GL_MIN);
-        }
+        GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, layerFramebuffer);
+        // Accumulation, every draw buffer as far as Minecraft's state cache knows:
+        // rgb += rgb * (a * w), alpha += a * w
+        RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE,
+                GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE);
+        // Revealage, past the cache, which endRedirect squares again: rgb *= 1 - a, alpha = min(alpha, depth)
+        GL40.glBlendFuncSeparatei(1, GL11.GL_ZERO, GL11.GL_ONE_MINUS_SRC_COLOR, GL11.GL_ONE, GL11.GL_ONE);
+        GL40.glBlendEquationSeparatei(1, GL14.GL_FUNC_ADD, GL14.GL_MIN);
         drawn = true;
     }
 
@@ -162,11 +165,27 @@ public final class ExhaustLayer {
         }
         redirecting = false;
         GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, redirectedFrom);
+        // Back to one blend for every draw buffer, the one the state cache holds, so the cache is
+        // right for draw buffer 1 too: the cache skips calls that match it.
+        GL14.glBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ONE, GL11.GL_ONE);
         GL14.glBlendEquation(GL14.GL_FUNC_ADD);
+    }
+
+    private static boolean supported() {
+        if (supported == null) {
+            supported = GL.getCapabilities().OpenGL40;
+            if (!supported) {
+                ZPSMod.LOGGER.warn("Exhaust needs OpenGL 4.0 to blend its two targets separately; no exhaust will be drawn");
+            }
+        }
+        return supported;
     }
 
     /** Sizes the targets to the main target, and clears them. False if they could not be made. */
     private static boolean prepare() {
+        if (!supported()) {
+            return false;
+        }
         RenderTarget main = Minecraft.getInstance().getMainRenderTarget();
         if (main.width != width || main.height != height) {
             delete();
@@ -179,12 +198,11 @@ public final class ExhaustLayer {
             opaqueColorTexture = texture(GL11.GL_RGBA8, GL11.GL_RGBA);
             sceneColorTexture = texture(GL11.GL_RGBA8, GL11.GL_RGBA);
             int depthAttachment = main.isStencilEnabled() ? GL30.GL_DEPTH_STENCIL_ATTACHMENT : GL30.GL_DEPTH_ATTACHMENT;
-            accumFramebuffer = framebuffer(accumTexture, depthAttachment);
-            revealFramebuffer = framebuffer(revealTexture, depthAttachment);
-            opaqueFramebuffer = framebuffer(opaqueTexture, 0);
-            opaqueColorFramebuffer = framebuffer(opaqueColorTexture, 0);
-            sceneColorFramebuffer = framebuffer(sceneColorTexture, 0);
-            if (accumFramebuffer == 0 || revealFramebuffer == 0 || opaqueFramebuffer == 0
+            layerFramebuffer = framebuffer(depthAttachment, accumTexture, revealTexture);
+            opaqueFramebuffer = framebuffer(0, opaqueTexture);
+            opaqueColorFramebuffer = framebuffer(0, opaqueColorTexture);
+            sceneColorFramebuffer = framebuffer(0, sceneColorTexture);
+            if (layerFramebuffer == 0 || opaqueFramebuffer == 0
                     || opaqueColorFramebuffer == 0 || sceneColorFramebuffer == 0) {
                 delete();
                 return false;
@@ -197,15 +215,11 @@ public final class ExhaustLayer {
         // exhaust would be depth-tested against the last frame drawn into it, menus and all.
         sharedDepth = main.getDepthTextureId();
         int depthAttachment = main.isStencilEnabled() ? GL30.GL_DEPTH_STENCIL_ATTACHMENT : GL30.GL_DEPTH_ATTACHMENT;
-        for (int framebuffer : new int[]{accumFramebuffer, revealFramebuffer}) {
-            GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, framebuffer);
-            GL30.glFramebufferTexture2D(GL30.GL_DRAW_FRAMEBUFFER, depthAttachment, GL11.GL_TEXTURE_2D, sharedDepth, 0);
-        }
+        GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, layerFramebuffer);
+        GL30.glFramebufferTexture2D(GL30.GL_DRAW_FRAMEBUFFER, depthAttachment, GL11.GL_TEXTURE_2D, sharedDepth, 0);
         RenderSystem.colorMask(true, true, true, true);
-        GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, accumFramebuffer);
         GL30.glClearBufferfv(GL11.GL_COLOR, 0, new float[]{0f, 0f, 0f, 0f});
-        GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, revealFramebuffer);
-        GL30.glClearBufferfv(GL11.GL_COLOR, 0, new float[]{1f, 1f, 1f, NO_EXHAUST});
+        GL30.glClearBufferfv(GL11.GL_COLOR, 1, new float[]{1f, 1f, 1f, NO_EXHAUST});
         GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, previous);
         return true;
     }
@@ -223,12 +237,20 @@ public final class ExhaustLayer {
         return id;
     }
 
-    /** A framebuffer drawing to {@code color}, sharing the main depth buffer unless {@code depthAttachment} is 0. */
-    private static int framebuffer(int color, int depthAttachment) {
+    /**
+     * A framebuffer drawing to {@code colors}, draw buffer by draw buffer, sharing the main depth
+     * buffer unless {@code depthAttachment} is 0.
+     */
+    private static int framebuffer(int depthAttachment, int... colors) {
         int previous = GL11.glGetInteger(GL30.GL_FRAMEBUFFER_BINDING);
         int id = GL30.glGenFramebuffers();
         GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, id);
-        GL30.glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, color, 0);
+        int[] drawBuffers = new int[colors.length];
+        for (int i = 0; i < colors.length; i++) {
+            drawBuffers[i] = GL30.GL_COLOR_ATTACHMENT0 + i;
+            GL30.glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, drawBuffers[i], GL11.GL_TEXTURE_2D, colors[i], 0);
+        }
+        GL20.glDrawBuffers(drawBuffers);
         if (depthAttachment != 0) {
             GL30.glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, depthAttachment, GL11.GL_TEXTURE_2D, sharedDepth, 0);
         }
@@ -243,7 +265,7 @@ public final class ExhaustLayer {
     }
 
     private static void delete() {
-        for (int framebuffer : new int[]{accumFramebuffer, revealFramebuffer, opaqueFramebuffer,
+        for (int framebuffer : new int[]{layerFramebuffer, opaqueFramebuffer,
                 opaqueColorFramebuffer, sceneColorFramebuffer}) {
             if (framebuffer != 0) {
                 GL30.glDeleteFramebuffers(framebuffer);
@@ -254,7 +276,7 @@ public final class ExhaustLayer {
                 GlStateManager._deleteTexture(texture);
             }
         }
-        accumFramebuffer = revealFramebuffer = opaqueFramebuffer = opaqueColorFramebuffer = sceneColorFramebuffer = 0;
+        layerFramebuffer = opaqueFramebuffer = opaqueColorFramebuffer = sceneColorFramebuffer = 0;
         accumTexture = revealTexture = opaqueTexture = opaqueColorTexture = sceneColorTexture = 0;
         width = height = sharedDepth = 0;
     }

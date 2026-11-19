@@ -18,6 +18,7 @@
     "FogRendererMixin",
     "flywheel.GlProgramMixin",
     "flywheel.MaterialRenderStateMixin",
+    "flywheel.ProgramLinkerMixin",
     "GuiMixin",
     "KeyMappingMixin",
     "LevelRendererAccessor",

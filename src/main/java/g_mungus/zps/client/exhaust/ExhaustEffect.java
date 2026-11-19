@@ -38,8 +38,8 @@ final class ExhaustEffect implements Effect {
     }
 
     /**
-     * Two instances per slot of the batch ring that has ever been used, one for each pass of the
-     * exhaust layer, or one under a shader pack (see {@link ExhaustRendering}). Instances are only
+     * One instance per slot of the batch ring that has ever been used, drawn with the layer's
+     * material or, under a shader pack, the pack's (see {@link ExhaustRendering}). Instances are only
      * ever added, a batch at a time, and are never touched once made; slots without a live particle
      * collapse to nothing in the shader. A backend change makes a new visual, so which way it
      * draws is settled once.
@@ -47,9 +47,8 @@ final class ExhaustEffect implements Effect {
     private static final class Visual extends AbstractVisual
             implements EffectVisual<ExhaustEffect>, SimpleDynamicVisual, ShaderLightVisual {
 
-        private final List<ExhaustInstance> colorInstances = new ArrayList<>();
-        private final List<ExhaustInstance> revealInstances = new ArrayList<>();
-        private final boolean throughShaderPack = ExhaustRendering.throughShaderPack();
+        private final List<ExhaustInstance> instances = new ArrayList<>();
+        private final Model cube = ExhaustRendering.throughShaderPack() ? ExhaustRendering.PACK_CUBE : ExhaustRendering.CUBE;
         private SectionCollector sections;
         private LongSet trackedSections;
 
@@ -72,37 +71,24 @@ final class ExhaustEffect implements Effect {
                 sections.sections(tracked);
             }
             int wanted = ExhaustParticles.slotsInUse();
-            if (throughShaderPack) {
-                grow(colorInstances, wanted, ExhaustRendering.PACK_CUBE);
+            if (instances.size() >= wanted) {
                 return;
             }
-            grow(colorInstances, wanted, ExhaustRendering.ACCUM_CUBE);
-            grow(revealInstances, wanted, ExhaustRendering.REVEAL_CUBE);
-        }
-
-        private void grow(List<ExhaustInstance> list, int wanted, Model model) {
-            if (list.size() >= wanted) {
-                return;
-            }
-            ExhaustInstance[] made = new ExhaustInstance[wanted - list.size()];
-            instancerProvider().instancer(ExhaustRendering.INSTANCE_TYPE, model).createInstances(made);
+            ExhaustInstance[] made = new ExhaustInstance[wanted - instances.size()];
+            instancerProvider().instancer(ExhaustRendering.INSTANCE_TYPE, cube).createInstances(made);
             for (ExhaustInstance instance : made) {
-                instance.slot = list.size();
+                instance.slot = instances.size();
                 instance.setChanged();
-                list.add(instance);
+                instances.add(instance);
             }
         }
 
         @Override
         protected void _delete() {
-            for (ExhaustInstance instance : colorInstances) {
+            for (ExhaustInstance instance : instances) {
                 instance.delete();
             }
-            for (ExhaustInstance instance : revealInstances) {
-                instance.delete();
-            }
-            colorInstances.clear();
-            revealInstances.clear();
+            instances.clear();
         }
     }
 }

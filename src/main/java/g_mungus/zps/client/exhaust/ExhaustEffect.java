@@ -38,11 +38,11 @@ final class ExhaustEffect implements Effect {
     }
 
     /**
-     * One instance per slot of the batch ring that has ever been used, drawn with the layer's
-     * material or, under a shader pack, the pack's (see {@link ExhaustRendering}). Instances are only
-     * ever added, a batch at a time, and are never touched once made; slots without a live particle
-     * collapse to nothing in the shader. A backend change makes a new visual, so which way it
-     * draws is settled once.
+     * One instance per slot of the batch ring's used part, drawn with the layer's material or, under
+     * a shader pack, the pack's (see {@link ExhaustRendering}). Instances are added and removed at
+     * the end as the used part grows and shrinks, and are never touched otherwise; slots without a
+     * live particle collapse to nothing in the shader. A backend change makes a new visual, so which
+     * way it draws is settled once.
      */
     private static final class Visual extends AbstractVisual
             implements EffectVisual<ExhaustEffect>, SimpleDynamicVisual, ShaderLightVisual {
@@ -71,7 +71,10 @@ final class ExhaustEffect implements Effect {
                 sections.sections(tracked);
             }
             int wanted = ExhaustParticles.slotsInUse();
-            if (instances.size() >= wanted) {
+            while (instances.size() > wanted) {
+                instances.removeLast().delete();
+            }
+            if (instances.size() == wanted) {
                 return;
             }
             ExhaustInstance[] made = new ExhaustInstance[wanted - instances.size()];

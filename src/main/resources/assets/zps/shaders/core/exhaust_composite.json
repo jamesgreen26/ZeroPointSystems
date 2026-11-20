@@ -5,11 +5,10 @@
         { "name": "Accum" },
         { "name": "Reveal" },
         { "name": "OpaqueDepth" },
-        { "name": "SceneDepth" },
-        { "name": "Scene" },
         { "name": "Opaque" }
     ],
     "uniforms": [
-        { "name": "InvProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] }
+        { "name": "ExhaustProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "Pass", "type": "int", "count": 1, "values": [ 0 ] }
     ]
 }

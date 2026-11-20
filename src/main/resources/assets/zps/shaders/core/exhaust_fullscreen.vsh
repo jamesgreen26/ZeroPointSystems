@@ -1,4 +1,4 @@
-#version 150
+#version 330
 
 // A quad already in clip space, covering the screen.
 in vec3 Position;

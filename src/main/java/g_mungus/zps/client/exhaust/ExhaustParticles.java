@@ -8,6 +8,7 @@ import dev.engine_room.flywheel.backend.gl.shader.GlProgram;
 import g_mungus.zps.config.ZPSConfig;
 import g_mungus.zps.mixin.LevelRendererAccessor;
 import it.unimi.dsi.fastutil.HashCommon;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.Long2IntMap;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
@@ -46,8 +47,11 @@ import java.util.List;
  * <p>Records are in world space. An emitter on a moving grid hands over its own block space, and
  * the batch takes the grid's pose once, when it is placed; the particles never follow the grid.
  *
- * <p>The ring is overwritten oldest first, so once it is full a new batch takes the place of one
- * that may still be alive. Its size comes from the client config's {@code ExhaustParticlePool}.
+ * <p>A new batch takes the lowest slot whose batch has died, and the used part of the ring ends at
+ * the highest batch still alive. Everything per slot (the instances, the simulation, the upload)
+ * covers only that part, so it costs what is alive rather than what the pool could hold. Only
+ * once every slot is alive does a new batch take the place of the oldest. The pool's size comes
+ * from the client config's {@code ExhaustParticlePool}.
  * Both are read when the ring is built; a change to the particles per tick rebuilds it at the next
  * emit, dropping the exhaust in the air.
  *
@@ -86,8 +90,12 @@ public final class ExhaustParticles {
     private static ExhaustEffect effect;
     /** The manager {@link #effect} was added to; Flywheel replaces it, effects and all, on a reload. */
     private static VisualizationManager effectManager;
-    private static int nextBatch;
+    /** The used part of the ring: every batch at or above this has died, or was never written. */
     private static int batchesUsed;
+    /** Dead batches below {@link #batchesUsed}, lowest first, gathered for {@link #freeSlotsTick}. */
+    private static final IntArrayList freeSlots = new IntArrayList();
+    private static int freeSlotsTick = Integer.MIN_VALUE;
+    private static int freeSlotsTaken;
     private static volatile int slotsInUse;
     private static int lastEmitTick;
     /** The tick the simulation last stepped to; client ticks go on while paused, the clock does not. */
@@ -190,7 +198,7 @@ public final class ExhaustParticles {
             records.putInt(16, anchor.getX()).putInt(20, anchor.getY()).putInt(24, anchor.getZ());
         }
         for (int written = 0; written < particles; written += batchSize) {
-            int base = HEADER_BYTES + nextBatch * RECORD_BYTES;
+            int base = HEADER_BYTES + takeBatch(tick) * RECORD_BYTES;
             records.putInt(base, anchor.getX())
                     .putInt(base + 4, anchor.getY())
                     .putInt(base + 8, anchor.getZ())
@@ -216,17 +224,65 @@ public final class ExhaustParticles {
                     .putFloat(base + 88, Mth.clamp(exhaust.coldFraction(), 0f, 1f))
                     .putFloat(base + 92, Mth.clamp(exhaust.blueFraction(), 0f, 1f))
                     .putFloat(base + 96, (float) scale);
-            nextBatch = (nextBatch + 1) % capacity;
-            if (batchesUsed < capacity) {
-                batchesUsed++;
-                slotsInUse = batchesUsed * batchSize;
-            }
         }
         lastEmitTick = tick;
         trackPlume(new Vec3(start.x, start.y, start.z), worldDirection, (float) (exhaust.speed() * scale),
                 (float) (exhaust.width() * scale), velocity, tick);
         if (effect == null) {
             addEffect(VisualizationManager.getOrThrow(level));
+        }
+    }
+
+    /** Whether the batch in this slot has no particle left, nor any to come. Matches the shader's age test. */
+    private static boolean dead(int batch, int tick) {
+        return tick - records.getInt(HEADER_BYTES + batch * RECORD_BYTES + 12) > MAX_LIFETIME_TICKS;
+    }
+
+    /**
+     * The slot for a new batch: the lowest dead one, else one past the used part, else, with every
+     * slot alive, the oldest.
+     */
+    private static int takeBatch(int tick) {
+        if (freeSlotsTick != tick) {
+            freeSlotsTick = tick;
+            freeSlots.clear();
+            freeSlotsTaken = 0;
+            for (int batch = 0; batch < batchesUsed; batch++) {
+                if (dead(batch, tick)) {
+                    freeSlots.add(batch);
+                }
+            }
+        }
+        if (freeSlotsTaken < freeSlots.size()) {
+            return freeSlots.getInt(freeSlotsTaken++);
+        }
+        if (batchesUsed < capacity) {
+            slotsInUse = ++batchesUsed * batchSize;
+            return batchesUsed - 1;
+        }
+        int oldest = 0;
+        int oldestAge = Integer.MIN_VALUE;
+        for (int batch = 0; batch < capacity; batch++) {
+            int age = tick - records.getInt(HEADER_BYTES + batch * RECORD_BYTES + 12);
+            if (age > oldestAge) {
+                oldest = batch;
+                oldestAge = age;
+            }
+        }
+        return oldest;
+    }
+
+    /** Ends the used part of the ring at the highest batch still alive. */
+    private static void trimRing(int tick) {
+        int used = batchesUsed;
+        while (used > 0 && dead(used - 1, tick)) {
+            used--;
+        }
+        if (used != batchesUsed) {
+            batchesUsed = used;
+            slotsInUse = used * batchSize;
+            // Gathered against the old end; gather again at the next take.
+            freeSlotsTick = Integer.MIN_VALUE;
         }
     }
 
@@ -241,7 +297,7 @@ public final class ExhaustParticles {
         return effect != null;
     }
 
-    /** How many instances the effect should have: every slot of every batch used since it went idle. */
+    /** How many instances the effect should have: every slot up to the highest batch still alive. */
     static int slotsInUse() {
         return slotsInUse;
     }
@@ -333,8 +389,9 @@ public final class ExhaustParticles {
         BlockPos simOrigin = new BlockPos(records.getInt(16), records.getInt(20), records.getInt(24));
         ExhaustField.sync(level, ExhaustGrids.update(level, simOrigin, sectionLastUse.keySet()));
         records.putInt(28, tick);
-        upload();
-        ExhaustSimulation.step(tick, glTexture, batchSize);
+        trimRing(tick);
+        upload(batchesUsed);
+        ExhaustSimulation.step(tick, glTexture, batchSize, batchesUsed * batchSize);
     }
 
     public static void onLevelUnload(LevelEvent.Unload event) {
@@ -421,10 +478,11 @@ public final class ExhaustParticles {
         GL13.glActiveTexture(previousUnit);
     }
 
-    private static void upload() {
+    /** Uploads the header and the first {@code batches} records; the shaders read no further. */
+    private static void upload(int batches) {
         int previous = GL11.glGetInteger(GL31.GL_TEXTURE_BUFFER);
         GL15.glBindBuffer(GL31.GL_TEXTURE_BUFFER, glBuffer);
-        GL15.glBufferSubData(GL31.GL_TEXTURE_BUFFER, 0, records);
+        GL15.glBufferSubData(GL31.GL_TEXTURE_BUFFER, 0, records.slice(0, HEADER_BYTES + batches * RECORD_BYTES));
         GL15.glBindBuffer(GL31.GL_TEXTURE_BUFFER, previous);
     }
 
@@ -450,15 +508,16 @@ public final class ExhaustParticles {
         }
         effect = null;
         effectManager = null;
-        nextBatch = 0;
         batchesUsed = 0;
         slotsInUse = 0;
+        freeSlots.clear();
+        freeSlotsTick = Integer.MIN_VALUE;
         sectionLastUse.clear();
         trackedSections = LongSet.of();
         sectionsChanged = false;
         if (records != null) {
             MemoryUtil.memSet(MemoryUtil.memAddress(records) + HEADER_BYTES, 0, (long) capacity * RECORD_BYTES);
-            upload();
+            upload(capacity);
         }
     }
 }

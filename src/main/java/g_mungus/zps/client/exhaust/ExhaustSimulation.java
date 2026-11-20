@@ -133,9 +133,13 @@ final class ExhaustSimulation {
      *
      * @param batchesTexture the batch ring's texture buffer
      * @param batchSize      particles per batch, for the density weight
+     * @param active         the slots in the ring's used part, which are all that is stepped. A slot
+     *                       above it keeps a stale state, which is safe: a batch written there later
+     *                       has a spawn tick no state holds, so it starts afresh.
      */
-    static void step(int tick, int batchesTexture, int batchSize) {
-        if (slots == 0 || !programs()) {
+    static void step(int tick, int batchesTexture, int batchSize, int active) {
+        active = Math.min(active, slots);
+        if (active == 0 || !programs()) {
             return;
         }
         SavedState saved = SavedState.save();
@@ -147,8 +151,8 @@ final class ExhaustSimulation {
             int source = newPrev;
             for (int substep = 0; substep < SUBSTEPS; substep++) {
                 int target = substep % 2 == 0 ? a : b;
-                splat(source, batchSize);
-                advance(source, target, tick, substep);
+                splat(source, batchSize, active);
+                advance(source, target, tick, substep, active);
                 source = target;
             }
             prev = newPrev;
@@ -179,7 +183,7 @@ final class ExhaustSimulation {
     // Passes -------------------------------------------------------------------------------------
 
     /** Counts the particles in {@code source} per block into the field's density. */
-    private static void splat(int source, int batchSize) {
+    private static void splat(int source, int batchSize, int active) {
         GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, ExhaustField.densityFramebuffer());
         GL11.glViewport(0, 0, ExhaustField.DENSITY_WIDTH, ExhaustField.DENSITY_HEIGHT);
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
@@ -203,14 +207,14 @@ final class ExhaustSimulation {
         for (int attribute = 0; attribute < 3; attribute++) {
             GL33.glVertexAttribDivisor(attribute, 1);
         }
-        GL31.glDrawArraysInstanced(GL11.GL_POINTS, 0, 8, slots);
+        GL31.glDrawArraysInstanced(GL11.GL_POINTS, 0, 8, active);
         for (int attribute = 0; attribute < 3; attribute++) {
             GL33.glVertexAttribDivisor(attribute, 0);
         }
     }
 
     /** Moves every particle one substep, from {@code source} into {@code target}. */
-    private static void advance(int source, int target, int tick, int substep) {
+    private static void advance(int source, int target, int tick, int substep, int active) {
         GL13.glActiveTexture(GL13.GL_TEXTURE0 + UNIT_DENSITY);
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, ExhaustField.densityTexture());
         GL11.glDisable(GL11.GL_BLEND);
@@ -223,7 +227,7 @@ final class ExhaustSimulation {
         attributes(source);
         GL30.glBindBufferBase(GL30.GL_TRANSFORM_FEEDBACK_BUFFER, 0, buffers[target]);
         GL30.glBeginTransformFeedback(GL11.GL_POINTS);
-        GL11.glDrawArrays(GL11.GL_POINTS, 0, slots);
+        GL11.glDrawArrays(GL11.GL_POINTS, 0, active);
         GL30.glEndTransformFeedback();
         GL30.glBindBufferBase(GL30.GL_TRANSFORM_FEEDBACK_BUFFER, 0, 0);
         GL11.glDisable(GL30.GL_RASTERIZER_DISCARD);
